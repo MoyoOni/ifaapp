@@ -3,6 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/use-auth';
 import { UserRole, AdminSubRole } from '@common';
 import { LoadingSpinner } from './loading-spinner';
+import { logger } from '@/shared/utils/logger';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -26,7 +27,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Show loading state while checking auth
   if (isLoading) {
-    console.log('[ProtectedRoute] Loading...');
+    logger.info('[ProtectedRoute] Loading...');
     return (
       <div className="min-h-screen flex items-center justify-center bg-stone-50">
         <LoadingSpinner />
@@ -36,7 +37,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Redirect to login if not authenticated
   if (!user) {
-    console.log('[ProtectedRoute] No user, redirecting to login');
+    logger.info('[ProtectedRoute] No user, redirecting to login');
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
@@ -53,10 +54,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     }
   }
 
-  console.log(`[ProtectedRoute] User: ${user.id}, Role: ${user.role}, SubRole: ${user.adminSubRole}, Allowed: ${allowedRoles.join(',')}, Access: ${hasAccess}`);
+  logger.info(`[ProtectedRoute] User: ${user.id}, Role: ${user.role}, SubRole: ${user.adminSubRole}, Allowed: ${allowedRoles.join(',')}, Access: ${hasAccess}`);
 
   if (!hasAccess) {
-    console.log(`[ProtectedRoute] Access denied. Redirecting to ${redirectTo}`);
+    logger.info(`[ProtectedRoute] Access denied. Redirecting to ${redirectTo}`);
     // Redirect to unauthorized page or home
     return <Navigate to={redirectTo} replace />;
   }

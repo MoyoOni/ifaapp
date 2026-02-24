@@ -23,6 +23,7 @@ import { ModeToggle } from './mode-toggle';
 import NotificationDropdown from './notification-dropdown';
 import api from '@/lib/api';
 import { getNavItemsForRole, getRoleDisplayName, getRoleBadgeColor, type NavItem } from '../config/navigation';
+import { logger } from '@/shared/utils/logger';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 interface SidebarLayoutProps {
@@ -32,7 +33,7 @@ interface SidebarLayoutProps {
 export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
     children
 }) => {
-    console.log('[SidebarLayout] Render');
+    logger.info('[SidebarLayout] Render');
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();

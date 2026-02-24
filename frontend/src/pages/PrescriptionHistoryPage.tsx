@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FileText, Search, Calendar, User, Clock, CheckCircle, XCircle, Eye, Download } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import _api from '@/lib/api';
+import { logger } from '@/shared/utils/logger';
 
 interface Prescription {
   id: string;
@@ -169,12 +170,12 @@ const PrescriptionHistoryView: React.FC = () => {
 
   const handleViewPrescription = (prescriptionId: string) => {
     // Navigate to prescription detail view
-    console.log(`Viewing prescription: ${prescriptionId}`);
+    logger.info(`Viewing prescription: ${prescriptionId}`);
   };
 
   const handleDownloadPrescription = (prescriptionId: string) => {
     // Handle PDF download
-    console.log(`Downloading prescription: ${prescriptionId}`);
+    logger.info(`Downloading prescription: ${prescriptionId}`);
   };
 
   if (isLoading) {

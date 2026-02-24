@@ -14,7 +14,19 @@
       "Bash(node:*)",
       "Bash(git init:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git checkout:*)",
+      "Bash(# Check which admin sub-views are imported within admin-dashboard-view or nowhere grep -rn \"\"analytics-dashboard-view\\\\|circle-management-view\\\\|content-moderation-dashboard\\\\|dispute-center-view\\\\|fraud-alerts-view\\\\|payout-approvals-view\\\\|platform-health-view\\\\|quality-assurance-view\\\\|reported-content-view\\\\|temple-management-view\\\\|verification-queue-view\\\\|platform-monitoring-dashboard\\\\|verification-dashboard\"\" \"\"C:/Users/Test/ifa_app/frontend/src/\"\" --include=\"\"*.tsx\"\" --include=\"\"*.ts\"\" -l)",
+      "Bash(# Check orphaned files: analytics, circle-management, content-moderation, etc grep -rn \"\"analytics-dashboard\\\\|circle-management\\\\|content-moderation\\\\|dispute-center\\\\|fraud-alerts\\\\|payout-approvals\\\\|platform-health\\\\|quality-assurance\\\\|reported-content\\\\|temple-management-view\\\\|verification-queue\\\\|platform-monitoring\\\\|verification-dashboard\"\" \"\"C:/Users/Test/ifa_app/frontend/src/\"\" --include=\"\"*.tsx\"\" --include=\"\"*.ts\"\")",
+      "Bash(# Check which admin/verification/content-moderation files are NOT imported by admin-dashboard-view grep -n \"\"import\"\" \"\"C:/Users/Test/ifa_app/frontend/src/features/admin/admin-dashboard-view.tsx\"\")",
+      "Bash(# Check features/appointments/booking-flow - who imports it? grep -rn \"\"appointments/booking-flow\"\" \"\"C:/Users/Test/ifa_app/frontend/src/\"\" --include=\"\"*.tsx\"\" --include=\"\"*.ts\"\")",
+      "Bash(# Check the Home.tsx page - is it used? \\(separate from HomePage in App.tsx\\) grep -rn \"\"from.*pages/Home\\\\b\\\\|import.*Home\\\\b\"\" \"\"C:/Users/Test/ifa_app/frontend/src/\"\" --include=\"\"*.tsx\"\" --include=\"\"*.ts\"\")",
+      "Bash(# Check lazy-loading.tsx - is it imported anywhere? grep -rn \"\"lazy-loading\"\" \"\"C:/Users/Test/ifa_app/frontend/src/\"\" --include=\"\"*.tsx\"\" --include=\"\"*.ts\"\")",
+      "Bash(# Check any remaining console usage in shared/utils grep -rn \"\"console\\\\.\"\" \"\"C:/Users/Test/ifa_app/frontend/src/shared/\"\" --include=\"\"*.tsx\"\" --include=\"\"*.ts\"\")",
+      "Bash(# Final check: verify appointments/booking-flow and appointments/booking-confirmation orphan status grep -rn \"\"appointments/booking-flow\\\\|appointments/booking-confirmation\"\" \"\"C:/Users/Test/ifa_app/frontend/src/\"\" --include=\"\"*.tsx\"\" --include=\"\"*.ts\"\")",
+      "Bash(# Is appointments/booking-flow itself imported anywhere outside its own directory? grep -rn \"\"booking-flow\"\" \"\"C:/Users/Test/ifa_app/frontend/src/\"\" --include=\"\"*.tsx\"\" --include=\"\"*.ts\"\")",
+      "Bash(# Check if client-hub/client-dashboard-view.tsx is used by checking for client-dashboard-view specifically in non-test files grep -rn \"\"client-dashboard-view\\\\|ClientDashboardView\"\" \"\"C:/Users/Test/ifa_app/frontend/src/\"\" --include=\"\"*.tsx\"\" --include=\"\"*.ts\"\")",
+      "Bash(# Check if features/appointments/booking-flow.tsx is itself orphaned \\(nothing imports it\\) grep -rn \"\"from.*appointments/booking\"\" \"\"C:/Users/Test/ifa_app/frontend/src/\"\" --include=\"\"*.tsx\"\" --include=\"\"*.ts\"\")"
     ]
   }
 }

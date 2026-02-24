@@ -4,6 +4,7 @@ import { User, Mail, ArrowLeft, Loader2 } from 'lucide-react';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { DEMO_USERS } from '@/demo';
 import { getDashboardPathForRole } from '@/shared/config/navigation';
+import { logger } from '@/shared/utils/logger';
 
 const QuickAccessPage: React.FC = () => {
   const navigate = useNavigate();
@@ -32,7 +33,7 @@ const QuickAccessPage: React.FC = () => {
     } catch (err: any) {
       const errorMessage = err instanceof Error ? err.message : 'Quick access failed. Please try again.';
       setError(errorMessage);
-      console.error('Quick Access Error:', err);
+      logger.error('Quick Access Error:', err);
     } finally {
       setIsSubmitting(false);
     }

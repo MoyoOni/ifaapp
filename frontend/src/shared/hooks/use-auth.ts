@@ -49,20 +49,20 @@ export function useAuth(): AuthState & {
   const isAuthenticated = tokenCheck;
   const userId = user?.id || localStorage.getItem('userId');
 
-  console.log(`[useAuth] Render. tokenCheck: ${tokenCheck}, userId: ${userId}, isAuthenticated: ${isAuthenticated}`);
+  logger.info(`[useAuth] Render. tokenCheck: ${tokenCheck}, userId: ${userId}, isAuthenticated: ${isAuthenticated}`);
 
   // Fetch user data if authenticated
   const { data: userData, isLoading } = useQuery<User | null>({
     queryKey: ['user', userId],
     queryFn: async () => {
-      console.log(`[useAuth] Fetching user ${userId}`);
+      logger.info(`[useAuth] Fetching user ${userId}`);
       if (!userId) return null;
       try {
         const response = await api.get(`/users/${userId}`);
-        console.log(`[useAuth] Fetched user data:`, response.data);
+        logger.info(`[useAuth] Fetched user data:`, response.data);
         return response.data;
       } catch (error: any) {
-        console.error(`[useAuth] Fetch error:`, error);
+        logger.error(`[useAuth] Fetch error:`, error);
 
         if (!isDemoMode && error.response?.status >= 500) {
           Sentry.captureException(error, {

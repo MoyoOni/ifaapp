@@ -8,9 +8,9 @@ import { useAuth } from './shared/hooks/use-auth';
 import { getDashboardPathForRole } from './shared/config/navigation';
 import { ProtectedRoute, AdminRoute, BabalawoRoute, VendorRoute } from './shared/components/protected-route';
 import { UserRole } from '@common';
+import { logger } from '@/shared/utils/logger';
 import SpiritualJourneyView from './features/client-hub/spiritual-journey-view';
 import BabalawoDiscoveryView from './features/babalawo/discovery/babalawo-discovery-view';
-import _CommunityAccessView from './features/community/community-access-view';
 import CircleDirectory from './features/circles/circle-directory'; // Import CircleDirectory
 import CircleDetailView from './features/circles/circle-detail-view'; // Import CircleDetailView
 import ProfilePage from './pages/ProfilePage';
@@ -100,10 +100,10 @@ const HomePage: React.FC = () => {
 
       // Check if user needs to complete onboarding first
       if (!user.hasOnboarded) {
-        console.log('[App:HomePage] User has not onboarded, redirecting to onboarding');
+        logger.info('[App:HomePage] User has not onboarded, redirecting to onboarding');
         navigate('/onboarding', { replace: true });
       } else if (user.role) {
-        console.log('[App:HomePage] Redirecting to:', getDashboardPathForRole(user.role));
+        logger.info('[App:HomePage] Redirecting to:', getDashboardPathForRole(user.role));
         navigate(getDashboardPathForRole(user.role), { replace: true });
       }
     }

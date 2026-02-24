@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import EventsDirectory from '@/features/events/events-directory';
+import { logger } from '@/shared/utils/logger';
 
 /**
  * Events Page
@@ -13,7 +14,7 @@ const EventsPage: React.FC = () => {
     try {
       navigate('/events/create');
     } catch (error) {
-      console.error('Navigation error:', error);
+      logger.error('Navigation error:', error);
       // Fallback navigation
       window.location.href = '/events/create';
     }
@@ -24,11 +25,11 @@ const EventsPage: React.FC = () => {
       if (eventSlug) {
         navigate(`/events/${eventSlug}`);
       } else {
-        console.warn('Invalid event slug provided');
+        logger.warn('Invalid event slug provided');
         navigate('/events');
       }
     } catch (error) {
-      console.error('Navigation error:', error);
+      logger.error('Navigation error:', error);
       // Fallback navigation
       if (eventSlug) {
         window.location.href = `/events/${eventSlug}`;

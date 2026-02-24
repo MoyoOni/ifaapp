@@ -2,16 +2,17 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { getDashboardPathForRole } from '@/shared/config/navigation';
+import { logger } from '@/shared/utils/logger';
 
 const Home: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  console.log('[Home] Render. User:', user);
+  logger.info('[Home] Render. User:', user);
 
   React.useEffect(() => {
     if (user) {
-      console.log('[Home] Redirecting to:', getDashboardPathForRole(user.role));
+      logger.info('[Home] Redirecting to:', getDashboardPathForRole(user.role));
       navigate(getDashboardPathForRole(user.role), { replace: true });
     }
   }, [user, navigate]);

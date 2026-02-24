@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/react';
 import { isDemoMode } from '../shared/config/demo-mode';
+import { logger } from '../shared/utils/logger';
 
 export function initSentry() {
     const dsn = import.meta.env.VITE_SENTRY_DSN;
@@ -34,9 +35,9 @@ export function initSentry() {
         // Set demo mode tag for error tracking (HC-203.3)
         Sentry.setTag('demoMode', isDemoMode ? 'enabled' : 'disabled');
 
-        console.log(`Sentry initialized for ${environment}`);
+        logger.info(`Sentry initialized for ${environment}`);
     } else {
-        console.warn('Sentry disabled (no DSN or development mode)');
+        logger.warn('Sentry disabled (no DSN or development mode)');
     }
 }
 

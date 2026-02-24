@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mail, User, Phone, MessageSquare } from 'lucide-react';
 import { Button } from '@/shared/components/button';
+import { logger } from '@/shared/utils/logger';
 
 const InviteClientView: React.FC = () => {
   const navigate = useNavigate();
@@ -78,7 +79,7 @@ const InviteClientView: React.FC = () => {
         message: 'Join me on this spiritual journey to connect with traditional Ifa wisdom and guidance.'
       });
     } catch (err) {
-      console.error('Error inviting client:', err);
+      logger.error('Error inviting client:', err);
       alert('Failed to invite client. Please try again.');
     } finally {
       setIsSubmitting(false);

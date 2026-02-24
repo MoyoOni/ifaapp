@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { HelpCircle, Search, Mail, Phone, MessageCircle, BookOpen, Users, Shield, ArrowRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { logger } from '@/shared/utils/logger';
 
 const HelpPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -150,7 +151,7 @@ const HelpPage: React.FC = () => {
                   className="bg-white rounded-2xl border border-stone-200 p-6 hover:shadow-md transition-shadow cursor-pointer group"
                   onClick={() => {
                     // In real app, this would navigate to category-specific help
-                    console.log(`Selected category: ${category.id}`);
+                    logger.info(`Selected category: ${category.id}`);
                   }}
                 >
                   <div className="w-12 h-12 bg-highlight/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-highlight/20 transition-colors">

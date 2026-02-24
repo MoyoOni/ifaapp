@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Settings, User, Bell, Shield, Palette, Moon, Sun, Mail, Lock, CreditCard, Trash2, LogOut } from 'lucide-react';
 import { useAuth } from '@/shared/hooks/use-auth';
+import { logger } from '@/shared/utils/logger';
 
 const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -46,7 +47,7 @@ const SettingsPage: React.FC = () => {
   const handleDeleteAccount = () => {
     if (confirm('This action cannot be undone. Are you sure you want to delete your account?')) {
       // In real app, this would call delete account API
-      console.log('Account deletion requested');
+      logger.info('Account deletion requested');
     }
   };
 

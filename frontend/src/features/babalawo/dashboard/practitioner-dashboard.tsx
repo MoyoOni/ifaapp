@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Calendar, MessageSquare, DollarSign, Bell, Loader2, BookOpen, Building2 } from 'lucide-react';
 import ClientList from '../../client-hub/client-list';
-import { useBabalawoDashboard } from '@/shared/hooks/use-dashboard';
+import { useBabalawoDashboard } from '@/shared/hooks/dashboard';
 import { useAuth } from '@/shared/hooks/use-auth';
 
 interface PractitionerDashboardProps {

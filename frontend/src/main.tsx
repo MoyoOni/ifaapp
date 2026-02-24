@@ -8,14 +8,15 @@ import { ThemeProvider } from './shared/contexts/theme-provider';
 import { DevRoleSwitcher } from './shared/components/dev-role-switcher';
 import { initSentry } from './shared/config/sentry';
 import { isDemoMode } from './shared/config/demo-mode';
+import { logger } from './shared/utils/logger';
 import App from './App';
 import './index.css';
 
 // Log demo mode status (HC-203.3)
 if (isDemoMode) {
-  console.warn('🎭 Demo Mode: ENABLED - API failures will use demo data');
+  logger.warn('Demo Mode: ENABLED - API failures will use demo data');
 } else {
-  console.log('✅ Demo Mode: DISABLED - API errors will propagate to Sentry');
+  logger.info('Demo Mode: DISABLED - API errors will propagate to Sentry');
 }
 
 initSentry();

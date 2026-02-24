@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { MessageSquare, AlertTriangle, Eye, Trash2, Check, X, Search, Flag, Clock, Shield } from 'lucide-react';
 import { useAuth } from '@/shared/hooks/use-auth';
+import { logger } from '@/shared/utils/logger';
 
 interface Report {
   id: string;
@@ -133,13 +134,13 @@ const ContentModerationDashboard: React.FC = () => {
 
   const handleReviewReport = (reportId: string, action: 'approve' | 'dismiss') => {
     // Mock implementation
-    console.log(`Reviewing report ${reportId} with action: ${action}`);
+    logger.info(`Reviewing report ${reportId} with action: ${action}`);
     setSelectedReport(null);
   };
 
   const handleTakeAction = (targetId: string, action: 'remove' | 'warn' | 'suspend') => {
     // Mock implementation
-    console.log(`Taking action ${action} on target ${targetId}`);
+    logger.info(`Taking action ${action} on target ${targetId}`);
   };
 
   return (
