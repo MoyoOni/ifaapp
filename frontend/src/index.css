@@ -1,0 +1,539 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Low Data Mode Styles */
+.low-data-mode img {
+  display: none;
+}
+
+.low-data-mode [style*="background-image"] {
+  background-image: none !important;
+}
+
+.low-data-mode video,
+.low-data-mode iframe {
+  display: none;
+}
+
+@layer base {
+  :root {
+    /* ISESE Design System - LIGHT MODE */
+    /* Bright Orisha-inspired color palette with high saturation */
+    
+    /* Base Background - Bright, high-saturation background */
+    --background: 204 70% 95%;  /* #EBF7FF - Bright sky blue background */
+    /* #EBF7FF - Bright sky blue background */
+    
+    /* Core Colors - Based on Orisha color system */
+    --primary: 142 60% 40%;      /* #3A7D4F - Vibrant palm green for Osun */
+    /* Vibrant palm green for Osun */
+    --primary-foreground: 0 0% 100%; /* White for contrast */
+    
+    --secondary: 35 70% 50%;     /* #E6A341 - Vibrant amber for Ogun */
+    /* Vibrant amber orange for Ogun */
+    --secondary-foreground: 0 0% 100%; /* White for contrast */
+    
+    --accent: 204 80% 45%;       /* #3388AA - Vibrant ocean blue for Yemoja */
+    /* Vibrant ocean blue for Yemoja */
+    --accent-foreground: 0 0% 100%; /* White for contrast */
+    
+    --highlight: 345 70% 55%;    /* #E65C7F - Vibrant pink-red for Shango */
+    /* Vibrant pink-red for Shango */
+    --highlight-foreground: 0 0% 100%; /* White for contrast */
+    
+    /* Semantic Colors */
+    --success: 120 50% 45%;      /* #4CAF50 - Fresh success green */
+    /* Fresh success green */
+    --success-foreground: 0 0% 100%;
+    
+    --warning: 45 85% 55%;       /* #F5A623 - Vibrant warning gold */
+    /* Vibrant warning gold */
+    --warning-foreground: 0 0% 100%;
+    
+    --error: 0 70% 55%;          /* #E53935 - Vibrant error red */
+    /* Vibrant error red */
+    --error-foreground: 0 0% 100%;
+    
+    /* Neutrals - Maintaining good contrast on light backgrounds */
+    --foreground: 220 10% 15%;   /* #263238 - Deep blue-gray for text */
+    /* Deep blue-gray for text */
+    --foreground-secondary: 220 8% 30%; /* #546E7A - Secondary text */
+    /* Secondary text */
+    --muted: 220 10% 65%;       /* #B0BEC5 - Muted */
+    /* Muted */
+    --muted-foreground: 220 8% 40%; /* #78909C - Muted text */
+    /* Muted text */
+    
+    --card: 0 0% 100%;           /* #FFFFFF - Pure white for cards */
+    /* Pure white for cards */
+    --card-foreground: 220 10% 15%; /* Consistent text color */
+    /* Consistent text color */
+    
+    --popover: 0 0% 100%;        /* Pure white for popovers */
+    --popover-foreground: 220 10% 15%; /* Consistent text color */
+    
+    --border: 220 15% 85%;      /* #CFD8DC - Light gray borders */
+    /* Light gray borders */
+    --input: 220 15% 85%;       /* Light gray inputs */
+    --ring: 204 80% 45%;        /* Accent color for focus rings */
+    /* Accent color for focus rings */
+    
+    --radius: 0.5rem;
+    /* 8px */
+  }
+
+  .dark {
+    /* ISESE Design System - DARK MODE */
+    /* Warm, earthy night — like firelight in a sacred grove */
+    /* Mirrors light mode's intentional warmth with deep indigo-brown tones */
+
+    /* Base Background - Warm deep indigo with a hint of brown, not cold gray */
+    --background: 230 18% 11%;        /* #171B26 - Deep sacred night */
+
+    /* Core Colors - Same Orisha palette, lifted for dark backgrounds */
+    --primary: 148 45% 50%;           /* #4CA868 - Luminous palm green (Osun) */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 35 72% 58%;          /* #D4943A - Warm glowing amber (Ogun) */
+    --secondary-foreground: 230 18% 11%;
+
+    --accent: 200 65% 55%;            /* #4BA3CC - Moonlit ocean blue (Yemoja) */
+    --accent-foreground: 0 0% 100%;
+
+    --highlight: 345 60% 65%;         /* #D4728A - Soft torch-lit rose (Shango) */
+    --highlight-foreground: 0 0% 100%;
+
+    /* Semantic Colors - Slightly desaturated so they don't scream */
+    --success: 148 40% 48%;
+    --success-foreground: 0 0% 100%;
+    --warning: 40 70% 58%;
+    --warning-foreground: 230 18% 11%;
+    --error: 0 55% 58%;
+    --error-foreground: 0 0% 100%;
+
+    /* Neutrals - Warm-tinted so text feels soft, not sterile */
+    --foreground: 220 15% 93%;        /* #ECEEf2 - Warm off-white for body text */
+    --foreground-secondary: 220 10% 72%; /* #ADB3BF - Soft secondary text */
+    --muted: 230 12% 25%;             /* #363B4A - Muted surface */
+    --muted-foreground: 220 10% 58%;  /* #868E9F - Readable muted text */
+
+    /* Cards - Subtle elevation, warm undertone */
+    --card: 230 16% 15%;              /* #1F2330 - Slightly raised from bg */
+    --card-foreground: 220 15% 93%;
+
+    --popover: 230 16% 15%;
+    --popover-foreground: 220 15% 93%;
+
+    /* Borders & Inputs - Visible but not harsh */
+    --border: 230 12% 24%;            /* #353A49 - Soft warm border */
+    --input: 230 12% 20%;             /* #2D3140 - Input fields slightly recessed */
+    --ring: 200 65% 55%;              /* Match accent for focus rings */
+  }
+
+  body {
+    /* System font stack: Inter preferred, fallback to system sans-serif */
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    min-height: 100vh;
+    @apply antialiased;
+  }
+
+  ::selection {
+    background-color: hsl(var(--primary) / 0.3);
+    color: hsl(var(--primary-foreground));
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  .brand-font {
+    /* System font stack: Fraunces preferred, fallback to system serif */
+    font-family: 'Fraunces', 'Georgia', 'Times New Roman', serif;
+    letter-spacing: -0.02em;
+    font-weight: 600;
+  }
+
+  /* Custom scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted) / 0.3);
+    border-radius: 10px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted) / 0.5);
+  }
+
+  /* Improved contrast utilities for text on backgrounds */
+  .text-on-light {
+    color: hsl(var(--foreground));
+  }
+
+  .text-on-dark {
+    color: hsl(var(--foreground));
+  }
+
+  /* Background image overlay for better text contrast */
+  .bg-image-overlay {
+    position: relative;
+  }
+
+  .bg-image-overlay::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.5) 0%,
+      rgba(0, 0, 0, 0.7) 100%
+    );
+    z-index: 1;
+    pointer-events: none;
+    border-radius: inherit;
+  }
+
+  .bg-image-overlay > * {
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Light mode background image overlay - darker overlay for white text */
+  .bg-image-overlay-light::before {
+    background: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.6) 0%,
+      rgba(0, 0, 0, 0.8) 100%
+    );
+  }
+
+}
+
+/* ============================================================
+   DARK MODE OVERRIDES
+   Remap all hardcoded Tailwind stone/gray colors to dark-aware
+   equivalents. These must live OUTSIDE @layer base so they beat
+   Tailwind utility classes in specificity.
+   ============================================================ */
+
+/* --- TEXT: dark stone/gray → foreground tokens --- */
+.dark .text-stone-900,
+.dark .text-stone-800,
+.dark .text-gray-900,
+.dark .text-gray-800 {
+  color: hsl(var(--foreground)) !important;
+}
+
+.dark .text-stone-700,
+.dark .text-stone-600,
+.dark .text-gray-700,
+.dark .text-gray-600 {
+  color: hsl(var(--foreground-secondary)) !important;
+}
+
+.dark .text-stone-500,
+.dark .text-stone-400,
+.dark .text-gray-500,
+.dark .text-gray-400 {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.dark .text-stone-300,
+.dark .text-stone-200,
+.dark .text-gray-300,
+.dark .text-gray-200 {
+  color: hsl(var(--muted)) !important;
+}
+
+/* --- BACKGROUNDS: dark stone/white → card/background tokens --- */
+.dark .bg-white {
+  background-color: hsl(var(--card)) !important;
+}
+
+.dark .bg-stone-50,
+.dark .bg-stone-100,
+.dark .bg-gray-50,
+.dark .bg-gray-100 {
+  background-color: hsl(var(--background)) !important;
+}
+
+.dark .bg-stone-200,
+.dark .bg-stone-100\/50,
+.dark .bg-gray-200 {
+  background-color: hsl(var(--muted)) !important;
+}
+
+/* --- BORDERS: dark stone → border token --- */
+.dark .border-stone-100,
+.dark .border-stone-200,
+.dark .border-stone-300,
+.dark .border-gray-100,
+.dark .border-gray-200,
+.dark .border-gray-300 {
+  border-color: hsl(var(--border)) !important;
+}
+
+/* --- DIVIDE: dark stone → border token --- */
+.dark .divide-stone-100 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-stone-200 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: hsl(var(--border)) !important;
+}
+
+/* --- RING: dark stone → border token --- */
+.dark .ring-stone-200,
+.dark .ring-gray-200 {
+  --tw-ring-color: hsl(var(--border)) !important;
+}
+
+/* --- COLORED BADGES/PILLS: soften for dark backgrounds --- */
+/* Greens */
+.dark .bg-green-50,
+.dark .bg-green-100,
+.dark .bg-emerald-50,
+.dark .bg-emerald-100 {
+  background-color: hsl(148 40% 20%) !important;
+}
+.dark .text-green-700,
+.dark .text-green-800,
+.dark .text-emerald-700,
+.dark .text-emerald-800 {
+  color: hsl(148 50% 65%) !important;
+}
+
+/* Blues */
+.dark .bg-blue-50,
+.dark .bg-blue-100 {
+  background-color: hsl(210 45% 20%) !important;
+}
+.dark .text-blue-700,
+.dark .text-blue-800 {
+  color: hsl(210 60% 70%) !important;
+}
+
+/* Reds */
+.dark .bg-red-50,
+.dark .bg-red-100 {
+  background-color: hsl(0 40% 20%) !important;
+}
+.dark .text-red-700,
+.dark .text-red-800 {
+  color: hsl(0 55% 68%) !important;
+}
+
+/* Yellows / Ambers */
+.dark .bg-yellow-50,
+.dark .bg-yellow-100,
+.dark .bg-amber-50,
+.dark .bg-amber-100 {
+  background-color: hsl(40 40% 18%) !important;
+}
+.dark .text-yellow-700,
+.dark .text-yellow-800,
+.dark .text-amber-700,
+.dark .text-amber-800 {
+  color: hsl(40 70% 65%) !important;
+}
+
+/* Purples */
+.dark .bg-purple-50,
+.dark .bg-purple-100 {
+  background-color: hsl(270 35% 20%) !important;
+}
+.dark .text-purple-700,
+.dark .text-purple-800 {
+  color: hsl(270 50% 70%) !important;
+}
+
+/* Orange */
+.dark .bg-orange-50,
+.dark .bg-orange-100 {
+  background-color: hsl(25 40% 18%) !important;
+}
+.dark .text-orange-700,
+.dark .text-orange-800 {
+  color: hsl(25 60% 65%) !important;
+}
+
+/* Teal */
+.dark .bg-teal-50,
+.dark .bg-teal-100 {
+  background-color: hsl(175 35% 18%) !important;
+}
+.dark .text-teal-700,
+.dark .text-teal-800 {
+  color: hsl(175 45% 60%) !important;
+}
+
+/* --- SOLID COLOR BUTTONS: slightly adjust for dark context --- */
+.dark .bg-green-500 { background-color: hsl(148 45% 42%) !important; }
+.dark .bg-green-600 { background-color: hsl(148 45% 38%) !important; }
+.dark .bg-green-800 { background-color: hsl(148 35% 25%) !important; }
+.dark .bg-blue-500 { background-color: hsl(210 55% 48%) !important; }
+.dark .bg-blue-600 { background-color: hsl(210 55% 42%) !important; }
+.dark .bg-red-500 { background-color: hsl(0 55% 48%) !important; }
+.dark .bg-red-600 { background-color: hsl(0 55% 42%) !important; }
+.dark .bg-yellow-500 { background-color: hsl(40 70% 48%) !important; }
+.dark .bg-yellow-600 { background-color: hsl(40 70% 42%) !important; }
+.dark .bg-purple-500 { background-color: hsl(270 45% 50%) !important; }
+.dark .bg-purple-600 { background-color: hsl(270 45% 42%) !important; }
+.dark .bg-amber-500 { background-color: hsl(35 65% 48%) !important; }
+.dark .bg-orange-500 { background-color: hsl(25 60% 48%) !important; }
+
+/* --- PLACEHOLDER TEXT --- */
+.dark .placeholder\:text-stone-400::placeholder,
+.dark .placeholder\:text-gray-400::placeholder {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+/* --- SHADOW: soften in dark mode --- */
+.dark .shadow-sm,
+.dark .shadow,
+.dark .shadow-md,
+.dark .shadow-lg {
+  --tw-shadow-color: rgba(0, 0, 0, 0.35);
+}
+
+/* --- HOVER STATES --- */
+.dark .hover\:bg-stone-50:hover,
+.dark .hover\:bg-stone-100:hover,
+.dark .hover\:bg-gray-50:hover,
+.dark .hover\:bg-gray-100:hover {
+  background-color: hsl(var(--muted)) !important;
+}
+
+.dark .hover\:bg-stone-200:hover,
+.dark .hover\:bg-gray-200:hover {
+  background-color: hsl(230 12% 28%) !important;
+}
+
+.dark .hover\:text-stone-900:hover,
+.dark .hover\:text-gray-900:hover {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* --- FOCUS STATES --- */
+.dark .focus\:border-stone-300:focus,
+.dark .focus\:border-gray-300:focus {
+  border-color: hsl(var(--ring)) !important;
+}
+
+/* --- WHITE TEXT stays white in dark mode (already on colored bgs) --- */
+.dark .text-white {
+  color: #ffffff !important;
+}
+
+/* --- GRADIENTS: remap light gradients for dark mode --- */
+/* Stone/white gradients → dark card surfaces */
+.dark .from-stone-50 { --tw-gradient-from: hsl(var(--card)) !important; }
+.dark .from-stone-100 { --tw-gradient-from: hsl(var(--card)) !important; }
+.dark .from-stone-200 { --tw-gradient-from: hsl(var(--muted)) !important; }
+.dark .from-white { --tw-gradient-from: hsl(var(--card)) !important; }
+.dark .to-stone-50 { --tw-gradient-to: hsl(var(--background)) !important; }
+.dark .to-stone-100 { --tw-gradient-to: hsl(var(--background)) !important; }
+.dark .to-white { --tw-gradient-to: hsl(var(--card)) !important; }
+
+/* Emerald/teal page backgrounds → dark tinted surfaces */
+.dark .from-emerald-50 { --tw-gradient-from: hsl(160 20% 12%) !important; }
+.dark .to-emerald-50 { --tw-gradient-to: hsl(160 20% 10%) !important; }
+.dark .to-teal-50 { --tw-gradient-to: hsl(175 18% 11%) !important; }
+.dark .from-teal-50 { --tw-gradient-from: hsl(175 18% 12%) !important; }
+
+/* Amber/highlight page backgrounds */
+.dark .from-amber-50 { --tw-gradient-from: hsl(35 25% 13%) !important; }
+.dark .to-amber-50 { --tw-gradient-to: hsl(35 25% 11%) !important; }
+.dark .from-amber-100 { --tw-gradient-from: hsl(35 25% 16%) !important; }
+
+/* Blue page backgrounds */
+.dark .from-blue-50 { --tw-gradient-from: hsl(210 25% 13%) !important; }
+.dark .to-blue-50 { --tw-gradient-to: hsl(210 25% 11%) !important; }
+
+/* Purple page backgrounds */
+.dark .from-purple-50 { --tw-gradient-from: hsl(270 20% 13%) !important; }
+.dark .to-purple-50 { --tw-gradient-to: hsl(270 20% 11%) !important; }
+
+/* Highlight/rose tints */
+.dark .from-highlight\/10 { --tw-gradient-from: hsl(345 30% 15%) !important; }
+
+/* --- EMERALD/TEAL accents used in Find My Guide --- */
+.dark .bg-emerald-50 { background-color: hsl(160 20% 14%) !important; }
+.dark .bg-teal-50 { background-color: hsl(175 18% 14%) !important; }
+.dark .border-emerald-100 { border-color: hsl(160 20% 22%) !important; }
+.dark .border-emerald-300 { border-color: hsl(160 30% 30%) !important; }
+.dark .text-emerald-600 { color: hsl(160 45% 55%) !important; }
+.dark .text-emerald-700 { color: hsl(160 45% 55%) !important; }
+.dark .text-emerald-800 { color: hsl(160 50% 60%) !important; }
+.dark .bg-emerald-500 { background-color: hsl(160 45% 38%) !important; }
+.dark .bg-emerald-600 { background-color: hsl(160 45% 34%) !important; }
+.dark .hover\:bg-emerald-700:hover { background-color: hsl(160 45% 30%) !important; }
+.dark .hover\:bg-emerald-50:hover { background-color: hsl(160 20% 18%) !important; }
+.dark .bg-teal-500 { background-color: hsl(175 40% 36%) !important; }
+.dark .bg-teal-600 { background-color: hsl(175 40% 32%) !important; }
+
+/* --- ADDITIONAL MISSING COLORED TEXT --- */
+.dark .text-green-600 { color: hsl(148 45% 55%) !important; }
+.dark .text-blue-600 { color: hsl(210 55% 60%) !important; }
+.dark .text-red-600 { color: hsl(0 50% 60%) !important; }
+.dark .text-red-500 { color: hsl(0 50% 58%) !important; }
+.dark .text-yellow-600 { color: hsl(40 65% 58%) !important; }
+.dark .text-amber-600 { color: hsl(35 60% 58%) !important; }
+.dark .text-purple-600 { color: hsl(270 45% 62%) !important; }
+.dark .text-orange-600 { color: hsl(25 55% 58%) !important; }
+.dark .text-teal-600 { color: hsl(175 40% 52%) !important; }
+.dark .text-teal-700 { color: hsl(175 40% 52%) !important; }
+.dark .text-indigo-600 { color: hsl(240 45% 62%) !important; }
+
+/* --- INPUT/FORM ELEMENTS --- */
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: hsl(var(--input)) !important;
+  color: hsl(var(--foreground)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+/* --- MIN-H-SCREEN containers that set their own bg --- */
+.dark .min-h-screen.bg-stone-50,
+.dark .min-h-screen.bg-stone-100,
+.dark .min-h-screen.bg-gray-50 {
+  background-color: hsl(var(--background)) !important;
+}
+
+/* --- GRADIENT CARDS that use from-X/10 opacity tints --- */
+.dark .bg-gradient-to-br,
+.dark .bg-gradient-to-r,
+.dark .bg-gradient-to-b {
+  /* Gradients will use the remapped from-/to- values above */
+}
+
+/* --- HOVER on white cards --- */
+.dark .hover\:bg-white:hover {
+  background-color: hsl(var(--card)) !important;
+}
+
+/* --- WHITE/LIGHT BORDERS on dark indicators --- */
+.dark .border-white {
+  border-color: hsl(var(--border)) !important;
+}
+
+/* --- SCROLLBAR in dark mode --- */
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}

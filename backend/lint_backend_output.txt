@@ -1,0 +1,774 @@
+
+> @ile-ase/backend@0.1.0 lint
+> eslint "{src,apps,libs,test}/**/*.ts" --fix
+
+
+C:\Users\Test\ifa_app\backend\src\academy\academy.service.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\academy\academy.service.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\academy\academy.service.ts
+   73:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  186:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  423:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  434:48  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  539:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\academy\dto\complete-lesson.dto.ts
+  1:10  error  'IsString' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Test\ifa_app\backend\src\academy\dto\create-enrollment.dto.ts
+  1:10  error  'IsString' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Test\ifa_app\backend\src\admin\admin.controller.ts
+  6:3  error  'Delete' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Test\ifa_app\backend\src\admin\admin.service.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\admin\admin.service.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\admin\admin.service.ts
+     9:29  error  'UserRole' is defined but never used      @typescript-eslint/no-unused-vars
+   274:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   306:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   330:10  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   383:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   995:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1192:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1228:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1484:64  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\admin\audit.service.ts
+   9:13  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  51:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\admin\dto\advisory-board.dto.ts
+  5:3  error  'IsNumber' is defined but never used  @typescript-eslint/no-unused-vars
+  8:3  error  'Min' is defined but never used       @typescript-eslint/no-unused-vars
+  9:3  error  'Max' is defined but never used       @typescript-eslint/no-unused-vars
+
+C:\Users\Test\ifa_app\backend\src\admin\interceptors\audit.interceptor.ts
+  12:71  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  73:53  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  88:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  88:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\app.module.ts
+   3:38  error  'APP_FILTER' is defined but never used       @typescript-eslint/no-unused-vars
+  15:10  error  'DocumentsModule' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Test\ifa_app\backend\src\appointments\appointments.service.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\appointments\appointments.service.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\appointments\appointments.service.ts
+   15:23  error  'User' is defined but never used                   @typescript-eslint/no-unused-vars
+  401:20  error  'minute' is never reassigned. Use 'const' instead  prefer-const
+
+C:\Users\Test\ifa_app\backend\src\appointments\booking.integration.test.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\appointments\booking.integration.test.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\auth\auth.service.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\auth\auth.service.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\auth\auth.service.ts
+   62:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  141:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  178:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  218:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  231:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  243:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\auth\dto\quick-access.dto.ts
+  1:19  error  'IsString' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Test\ifa_app\backend\src\babalawo-client\babalawo-client.service.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\babalawo-client\babalawo-client.service.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\babalawo-client\babalawo-client.service.ts
+  3:3  error  'NotFoundException' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Test\ifa_app\backend\src\cache\cache-manager.service.ts
+   17:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   27:49  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   35:43  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   43:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   53:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   63:59  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   71:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   79:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   87:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   95:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  103:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  111:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  119:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  127:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  135:47  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  143:47  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  153:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  163:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\cache\redis-cache.service.ts
+    6:24  error  Unexpected any. Specify a different type                                      @typescript-eslint/no-explicit-any
+   98:16  error  'key' is defined but never used. Allowed unused args must match /^_/u         @typescript-eslint/no-unused-vars
+  106:16  error  'key' is defined but never used. Allowed unused args must match /^_/u         @typescript-eslint/no-unused-vars
+  106:29  error  'value' is defined but never used. Allowed unused args must match /^_/u       @typescript-eslint/no-unused-vars
+  106:39  error  'ttlSeconds' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  188:40  error  Unexpected any. Specify a different type                                      @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\certificates\certificate.service.ts
+    7:13  error  'path' is defined but never used          @typescript-eslint/no-unused-vars
+  133:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  259:45  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  300:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\circles\circles.service.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\circles\circles.service.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\circles\circles.service.ts
+  218:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  364:11  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  577:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\common\errors\map-to-standard-error.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\common\errors\map-to-standard-error.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\common\errors\map-to-standard-error.ts
+  1:10  error  'HttpException' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Test\ifa_app\backend\src\common\filters\sentry-exception.filter.ts
+  34:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  43:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\common\middleware\sentry.middleware.ts
+  11:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  13:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  14:24  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  15:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\dashboard\dashboard.service.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\dashboard\dashboard.service.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\database\database-optimization.controller.ts
+  65:53  error  'threshold' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\Test\ifa_app\backend\src\database\database-optimization.service.ts
+  17:47  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  41:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\demo\demo.controller.ts
+  18:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\disputes\disputes.service.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\disputes\disputes.service.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\disputes\disputes.service.ts
+  144:56  error  'type' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  169:18  error  Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
+  301:83  error  Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
+  320:83  error  Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\documents\documents.service.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\documents\documents.service.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\documents\documents.service.ts
+  180:58  error  'currentUser' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\Test\ifa_app\backend\src\events\events.service.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\events\events.service.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\events\events.service.ts
+  116:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  275:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\forum\forum.controller.ts
+  82:20  error  'currentUser' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\Test\ifa_app\backend\src\forum\forum.service.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\forum\forum.service.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\forum\forum.service.ts
+   68:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  637:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\health\health.service.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\health\health.service.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\images\image-optimization.service.ts
+  36:48  error  'quality' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Test\ifa_app\backend\src\images\image.controller.ts
+  92:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\interceptors\logging.interceptor.ts
+  11:71  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  14:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  22:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  72:10  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\main.ts
+  29:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  29:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  29:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\marketplace\dto\update-product.dto.ts
+  11:3  error  'ArrayMinSize' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Test\ifa_app\backend\src\marketplace\marketplace.controller.ts
+   6:3   error  'Delete' is defined but never used       @typescript-eslint/no-unused-vars
+  34:39  error  'OrderStatus' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Test\ifa_app\backend\src\marketplace\marketplace.service.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\marketplace\marketplace.service.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\marketplace\marketplace.service.ts
+   96:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  140:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  279:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  377:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  501:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  619:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\messaging\dto\create-message.dto.ts
+  25:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\messaging\messaging.gateway.ts
+  14:10  error  'UseGuards' is defined but never used   @typescript-eslint/no-unused-vars
+  15:10  error  'WsJwtGuard' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Test\ifa_app\backend\src\messaging\messaging.service.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\messaging\messaging.service.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\messaging\messaging.service.ts
+  116:60  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  202:50  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  256:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\metrics\metrics.service.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\metrics\metrics.service.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\middleware\request-id.middleware.ts
+  16:13  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\notifications\dto\register-device-token.dto.ts
+  13:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\notifications\email.service.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\notifications\email.service.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\notifications\email.service.ts
+   40:61  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   48:56  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  124:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  188:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\notifications\notification.processor.ts
+  14:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  14:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  14:54  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\notifications\notification.service.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\notifications\notification.service.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\notifications\notification.service.ts
+    2:10  error  'ConfigService' is defined but never used  @typescript-eslint/no-unused-vars
+   34:10  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+   81:77  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  103:76  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  109:69  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  123:18  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  243:90  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  259:92  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  275:87  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  291:87  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  309:71  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  325:80  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  341:69  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  379:79  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  395:82  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  411:82  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  427:79  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  443:81  error  Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\notifications\notifications.controller.ts
+  124:20  error  'currentUser' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\Test\ifa_app\backend\src\notifications\push-notification.service.ts
+   16:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  105:71  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  122:69  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  150:22  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  156:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  167:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  169:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  174:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  184:67  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  187:67  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  201:43  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  221:74  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  236:82  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  265:24  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  271:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  275:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  275:59  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  285:82  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  305:49  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\payments\currency.service.ts
+  43:13  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  65:61  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  73:67  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  80:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\payments\dto\initialize-payment.dto.ts
+  1:63  error  'IsEmail' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Test\ifa_app\backend\src\payments\payments.controller.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\payments\payments.controller.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\payments\payments.controller.ts
+   19:10  error  'VerifyPaymentDto' is defined but never used                                   @typescript-eslint/no-unused-vars
+  105:20  error  'currentUser' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  118:42  error  Unexpected any. Specify a different type                                       @typescript-eslint/no-explicit-any
+  130:45  error  Unexpected any. Specify a different type                                       @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\payments\payments.service.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\payments\payments.service.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\payments\payments.service.ts
+   38:30  error  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  186:15  error  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  224:15  error  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  353:32  error  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  372:48  error  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  376:22  error  Require statement not part of import statement                            @typescript-eslint/no-var-requires
+  439:51  error  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  563:53  error  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  563:79  error  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  574:5   error  'userId' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  638:20  error  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  660:60  error  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  672:14  error  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  822:42  error  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  902:76  error  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\payments\webhook-monitor.service.ts
+  2:16  error  'CronExpression' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Test\ifa_app\backend\src\prescriptions\dto\create-prescription.dto.ts
+  9:3  error  'IsObject' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Test\ifa_app\backend\src\prescriptions\prescriptions.controller.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\prescriptions\prescriptions.controller.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\prescriptions\prescriptions.service.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\prescriptions\prescriptions.service.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\prescriptions\prescriptions.service.ts
+   96:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  355:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  450:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  529:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  592:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  627:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\recommendations\recommendations.service.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\recommendations\recommendations.service.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\recommendations\recommendations.service.ts
+  20:44  error  'currentUser' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  70:28  error  Unexpected any. Specify a different type                                       @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\reviews\dto\create-product-review.dto.ts
+  1:39  error  'IsEnum' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Test\ifa_app\backend\src\reviews\reviews.service.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\reviews\reviews.service.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\reviews\reviews.service.ts
+  115:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  241:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  349:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\search\search.controller.ts
+   1:46  error  'Param' is defined but never used         @typescript-eslint/no-unused-vars
+  49:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\search\search.processor.ts
+  14:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  14:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  14:54  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\search\search.service.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\search\search.service.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\search\search.service.ts
+   44:20  error  Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
+  164:11  error  'normalizedQuery' is assigned a value but never used                    @typescript-eslint/no-unused-vars
+  231:70  error  Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
+  247:62  error  'data' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  247:69  error  Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\security\security-config.service.ts
+   73:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   96:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  116:22  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\security\virus-scan.service.ts
+  340:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\sentry\sentry.service.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\sentry\sentry.service.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\sentry\sentry.service.ts
+  24:27  error  'hint' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  43:31  error  Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
+  43:61  error  Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\temples\temples.controller.ts
+  7:3  error  'ApiParam' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Test\ifa_app\backend\src\temples\temples.service.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\temples\temples.service.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\throttler-verification.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\throttler-verification.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\tutors\tutors.service.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\tutors\tutors.service.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\tutors\tutors.service.ts
+   92:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  307:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\types\flutterwave-node-v3.d.ts
+   7:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   7:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   8:22  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   8:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   9:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   9:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  10:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  10:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  11:24  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  11:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  12:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  12:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  13:30  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  13:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  14:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  14:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  15:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  15:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  16:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  16:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  17:62  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  18:47  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  23:47  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  24:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  25:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  26:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  31:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  31:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  32:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  32:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  33:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  34:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  35:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  36:46  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  41:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  41:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  42:43  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  43:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  44:46  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  44:60  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  49:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  49:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  50:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  51:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  52:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  52:54  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  57:50  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  58:48  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  59:45  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  60:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\users\users.service.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\users\users.service.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\utils\api-error.ts
+  6:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\utils\query-optimizer.ts
+   98:13  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  111:13  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  142:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  145:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  194:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  195:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\utils\sanitize.util.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\utils\sanitize.util.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\utils\yoruba-validation.util.ts
+  32:9  error  'yorubaDiacritics' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Test\ifa_app\backend\src\verification\verification.service.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\verification\verification.service.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\verification\verification.service.ts
+  10:29  error  'VerificationTier' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Test\ifa_app\backend\src\video-call\video-call.service.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\video-call\video-call.service.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\wallet\dto\release-escrow.dto.ts
+  1:63  error  'Max' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Test\ifa_app\backend\src\wallet\dto\sync-actions.dto.ts
+  25:12  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\wallet\wallet.controller.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\wallet\wallet.controller.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\wallet\wallet.controller.ts
+    7:28  error  'ReleaseTier' is defined but never used   @typescript-eslint/no-unused-vars
+  166:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\src\wallet\wallet.service.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/src\wallet\wallet.service.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\src\wallet\wallet.service.ts
+  260:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  670:54  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  819:84  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  824:79  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  887:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  997:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Test\ifa_app\backend\test\api-contracts.e2e-spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/test\api-contracts.e2e-spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\test\consultation-booking.e2e-spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/test\consultation-booking.e2e-spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\test\db-relationships.integration.spec.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/test\db-relationships.integration.spec.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\test\e2e-setup.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/test\e2e-setup.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+C:\Users\Test\ifa_app\backend\test\mocks\common.mock.ts
+  0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/test\mocks\common.mock.ts` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.json
+However, that TSConfig does not include this file. Either:
+- Change ESLint's list of included files to not include this file
+- Change that TSConfig to include this file
+- Create a new TSConfig that includes this file and include it in your parserOptions.project
+See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+
+Ô£û 329 problems (329 errors, 0 warnings)
+
+npm error Lifecycle script `lint` failed with error:
+npm error code 1
+npm error path C:\Users\Test\ifa_app\backend
+npm error workspace @ile-ase/backend@0.1.0
+npm error location C:\Users\Test\ifa_app\backend
+npm error command failed
+npm error command C:\WINDOWS\system32\cmd.exe /d /s /c eslint "{src,apps,libs,test}/**/*.ts" --fix

@@ -1,0 +1,1280 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                        String                   @id @default(uuid())
+  email                     String                   @unique
+  name                      String
+  passwordHash              String
+  role                      String
+  yorubaName                String?
+  avatar                    String?
+  bio                       String?
+  aboutMe                   String?
+  gender                    String?
+  age                       Int?
+  location                  String?
+  culturalLevel             String                   @default("Omo Ilé")
+  rankXP                    Int                      @default(0)
+  dialectPreference         String?
+  themeColor                String?
+  profileVisibility         String                   @default("community")
+  interests                 String[]                 @default([])
+  verified                  Boolean                  @default(false)
+  hasOnboarded              Boolean                  @default(false)
+  adminSubRole              String?                  // FINANCE, MODERATOR, COMPLIANCE, SUPPORT, SUPER
+  templeId                  String?
+  createdAt                 DateTime                 @default(now())
+  updatedAt                 DateTime                 @updatedAt
+  availability              Json?
+  appointmentsAsBabalawo    Appointment[]            @relation("BabalawoAppointments")
+  appointmentsAsClient      Appointment[]            @relation("ClientAppointments")
+  babalawoClients           BabalawoClient[]         @relation("BabalawoRelationships")
+  clientsAsBabalawo         BabalawoClient[]         @relation("ClientRelationships")
+  babalawoReviews           BabalawoReview[]         @relation("BabalawoReviewClient")
+  babalawoReviewsReceived   BabalawoReview[]         @relation("BabalawoReviewBabalawo")
+  certificates              Certificate[]
+  circlesApproved           Circle[]                 @relation("CircleApprover")
+  circlesCreated            Circle[]                 @relation("CircleCreator")
+  circlesSuggested          Circle[]                 @relation("CircleSuggester")
+  circleMemberships         CircleMember[]           @relation("CircleMembers")
+  circleSuggestionsReviewed CircleSuggestion[]       @relation("CircleReviewer")
+  circleSuggestions         CircleSuggestion[]       @relation("CircleSuggester")
+  coursesInstructed         Course[]                 @relation("CourseInstructor")
+  courseReviewsGiven        CourseReview[]           @relation("CourseReviewStudent")
+  deviceTokens              DeviceToken[]            @relation("DeviceTokens")
+  disputesAsComplainant     Dispute[]                @relation("DisputesAsComplainant")
+  disputesAsRespondent      Dispute[]                @relation("DisputesAsRespondent")
+  sharedDocuments           Document[]               @relation("SharedDocuments")
+  documents                 Document[]               @relation("UploadedDocuments")
+  enrollments               Enrollment[]             @relation("EnrollmentStudent")
+  escrows                   Escrow[]                 @relation("EscrowUser")
+  eventsCreated             Event[]                  @relation("EventCreator")
+  eventRegistrations        EventRegistration[]      @relation("EventRegistrations")
+  postsAuthored             ForumPost[]              @relation("PostAuthor")
+  threadsAuthored           ForumThread[]            @relation("ThreadAuthor")
+  threadsLastPoster         ForumThread[]            @relation("ThreadLastPoster")
+  guidancePlansCreated      GuidancePlan[]           @relation("GuidancePlanBabalawo")
+  guidancePlansReceived     GuidancePlan[]           @relation("GuidancePlanClient")
+  receivedMessages          Message[]                @relation("ReceivedMessages")
+  sentMessages              Message[]                @relation("SentMessages")
+  notifications             Notification[]           @relation("NotificationRecipient")
+  ordersPlaced              Order[]                  @relation("OrderCustomer")
+  payments                  Payment[]
+  postAcknowledgments       PostAcknowledgment[]     @relation("PostAcknowledgments")
+  productReviews            ProductReview[]          @relation("ReviewCustomer")
+  socialLinks               SocialLink[]
+  userJourney               SpiritualJourney?        @relation("SpiritualJourneyUser")
+  templesFounded            Temple?                  @relation("TempleFounder")
+  templeFollows             TempleFollow[]           @relation("TempleFollows")
+  transactions              Transaction[]            @relation("TransactionUser")
+  tutorProfile              Tutor?                   @relation("TutorUser")
+  tutorSessions             TutorSession[]           @relation("TutorSessions")
+  wordHistories             UserWordHistory[]        @relation("UserWordHistory")
+  vendorProfile             Vendor?
+  verificationApp           VerificationApplication?
+  userWallet                Wallet?                  @relation("WalletUser")
+  withdrawalRequests        WithdrawalRequest[]      @relation("WithdrawalUser")
+  castVotes                 AdvisoryVoteCast[]       @relation("CastVotes")
+  proposedVotes             AdvisoryVote[]           @relation("ProposedVotes")
+  templesJoined             Temple[]                 @relation("TempleMembers")
+
+  @@map("users")
+}
+
+model SocialLink {
+  id       String @id @default(uuid())
+  userId   String
+  platform String
+  url      String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Certificate {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  issuer    String
+  date      String
+  tier      String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationApplication {
+  id                 String                @id @default(uuid())
+  userId             String                @unique
+  lineage            String
+  mentorEndorsements String[]
+  yearsOfService     Int
+  documentation      String[]
+  specialization     String[]
+  languages          String[]
+  currentStage       String                @default("APPLICATION")
+  tier               String?
+  submittedAt        DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  approvedAt         DateTime?
+  approvedById       String?
+  rejectedAt         DateTime?
+  rejectedById       String?
+  rejectionReason    String?
+  user               User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  history            VerificationHistory[]
+
+  @@index([userId])
+  @@index([currentStage])
+}
+
+model VerificationHistory {
+  id            String                  @id @default(uuid())
+  applicationId String
+  stage         String
+  status        String
+  reviewerId    String?
+  notes         String?
+  timestamp     BigInt
+  application   VerificationApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+}
+
+model BabalawoClient {
+  id                      String    @id @default(uuid())
+  babalawoId              String
+  clientId                String
+  status                  String    @default("ACTIVE")
+  notes                   String?
+  assignedAt              DateTime  @default(now())
+  changedAt               DateTime?
+  covenantAgreed          Boolean   @default(false)
+  covenantText            String?
+  durationMonths          Int?
+  endDate                 DateTime?
+  exclusivityAcknowledged Boolean   @default(false)
+  expiredAt               DateTime?
+  gracePeriodEnd          DateTime?
+  gracePeriodStart        DateTime?
+  inGracePeriod           Boolean   @default(false)
+  relationshipType        String    @default("ONE_OFF")
+  renewalPromptSentAt     DateTime?
+  renewalPrompted         Boolean   @default(false)
+  startDate               DateTime?
+  babalawo                User      @relation("BabalawoRelationships", fields: [babalawoId], references: [id], onDelete: Cascade)
+  client                  User      @relation("ClientRelationships", fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([babalawoId, clientId])
+  @@index([babalawoId])
+  @@index([clientId])
+  @@index([status])
+  @@index([relationshipType])
+  @@index([endDate])
+  @@index([inGracePeriod])
+}
+
+model Message {
+  id             String    @id @default(uuid())
+  senderId       String
+  receiverId     String
+  content        String
+  encrypted      Boolean   @default(true)
+  read           Boolean   @default(false)
+  attachments    Json?
+  createdAt      DateTime  @default(now())
+  readAt         DateTime?
+  autoDeleteAt   DateTime?
+  autoDeleteDays Int?
+  confidential   Boolean   @default(false)
+  deletedAt      DateTime?
+  privacyLevel   String    @default("PRIVATE")
+  receiver       User      @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender         User      @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([senderId, receiverId])
+  @@index([receiverId, read])
+  @@index([createdAt])
+  @@index([autoDeleteAt])
+  @@index([confidential])
+  @@index([privacyLevel])
+}
+
+model Document {
+  id               String    @id @default(uuid())
+  uploadedBy       String
+  sharedWith       String
+  type             String
+  filename         String
+  originalFilename String
+  size             Int
+  mimeType         String
+  s3Key            String
+  signedUrl        String?
+  urlExpiresAt     DateTime?
+  description      String?
+  scanned          Boolean   @default(false)
+  scanMethod       String?
+  scanTimestamp    DateTime?
+  threatDetected   Boolean?
+  threatName       String?
+  encrypted        Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  sharer           User      @relation("SharedDocuments", fields: [sharedWith], references: [id], onDelete: Cascade)
+  uploader         User      @relation("UploadedDocuments", fields: [uploadedBy], references: [id], onDelete: Cascade)
+
+  @@index([uploadedBy, sharedWith])
+  @@index([s3Key])
+}
+
+model Appointment {
+  id           String        @id @default(uuid())
+  babalawoId   String
+  clientId     String
+  date         String
+  time         String
+  timezone     String        @default("Africa/Lagos")
+  duration     Int           @default(60)
+  status       String        @default("UPCOMING")
+  price        Float?
+  notes        String?
+  cancelledAt  DateTime?
+  cancelledBy  String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  recordingUrl String?
+  videoRoomId  String?
+  videoToken   String?
+  topic        String?
+  babalawo     User          @relation("BabalawoAppointments", fields: [babalawoId], references: [id], onDelete: Cascade)
+  client       User          @relation("ClientAppointments", fields: [clientId], references: [id], onDelete: Cascade)
+  guidancePlan GuidancePlan?
+
+  @@index([babalawoId, date])
+  @@index([clientId])
+  @@index([status])
+  @@index([date, status])
+  @@index([createdAt])
+}
+
+model GuidancePlan {
+  id                 String      @id @default(uuid())
+  appointmentId      String      @unique
+  babalawoId         String
+  clientId           String
+  type               String      @default("AKOSE")
+  items              Json
+  totalCost          Float
+  platformServiceFee Float       @default(100)
+  currency           String      @default("NGN")
+  instructions       String?
+  status             String      @default("PENDING")
+  escrowId           String?     @unique
+  approvedAt         DateTime?
+  completedAt        DateTime?
+  cancelledAt        DateTime?
+  notes              String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  appointment        Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  babalawo           User        @relation("GuidancePlanBabalawo", fields: [babalawoId], references: [id], onDelete: Cascade)
+  client             User        @relation("GuidancePlanClient", fields: [clientId], references: [id], onDelete: Cascade)
+  escrow             Escrow?     @relation(fields: [escrowId], references: [id])
+
+  @@index([appointmentId])
+  @@index([babalawoId])
+  @@index([clientId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([babalawoId, status])
+  @@index([clientId, status])
+}
+
+model ForumCategory {
+  id          String        @id @default(uuid())
+  name        String
+  slug        String        @unique
+  description String?
+  icon        String?
+  order       Int           @default(0)
+  isActive    Boolean       @default(true)
+  isTeachings Boolean       @default(false)
+  threadCount Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  threads     ForumThread[]
+
+  @@index([slug])
+  @@index([isActive])
+}
+
+model ForumThread {
+  id                     String            @id @default(uuid())
+  categoryId             String
+  authorId               String
+  title                  String
+  content                String
+  status                 String            @default("ACTIVE")
+  isPinned               Boolean           @default(false)
+  isLocked               Boolean           @default(false)
+  isApproved             Boolean           @default(true)
+  viewCount              Int               @default(0)
+  postCount              Int               @default(0)
+  lastPostAt             DateTime?
+  lastPostBy             String?
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
+  circleSuggestionThread Circle?           @relation("CircleSuggestionThread")
+  circleSuggestion       CircleSuggestion?
+  posts                  ForumPost[]
+  author                 User              @relation("ThreadAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  category               ForumCategory     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  lastPoster             User?             @relation("ThreadLastPoster", fields: [lastPostBy], references: [id])
+
+  @@index([categoryId])
+  @@index([authorId])
+  @@index([status])
+  @@index([isPinned, createdAt])
+  @@index([createdAt])
+}
+
+model ForumPost {
+  id               String               @id @default(uuid())
+  threadId         String
+  authorId         String
+  content          String
+  status           String               @default("ACTIVE")
+  isEdited         Boolean              @default(false)
+  editedAt         DateTime?
+  acknowledgeCount Int                  @default(0)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  author           User                 @relation("PostAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  thread           ForumThread          @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  acknowledgments  PostAcknowledgment[]
+
+  @@index([threadId, createdAt])
+  @@index([authorId])
+  @@index([status])
+}
+
+model PostAcknowledgment {
+  id        String    @id @default(uuid())
+  postId    String
+  userId    String
+  createdAt DateTime  @default(now())
+  post      ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User      @relation("PostAcknowledgments", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
+}
+
+model Vendor {
+  id                        String    @id @default(uuid())
+  userId                    String    @unique
+  businessName              String
+  businessLicense           String?
+  taxId                     String?
+  status                    String    @default("PENDING")
+  endorsementBy             String?
+  description               String?
+  verifiedAt                DateTime?
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+  artisanHeritageProof      String?
+  culturalAuthenticityNotes String?
+  rejectionReason           String?
+  reviewedAt                DateTime?
+  reviewedBy                String?
+  yorubaProficiencyLevel    String?
+  yorubaProficiencyProof    String?
+  orders                    Order[]
+  products                  Product[]
+  user                      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Tutor {
+  id             String         @id @default(uuid())
+  userId         String         @unique
+  businessName   String?
+  teachingStyle  String?
+  languages      String[]
+  experience     Int?
+  hourlyRate     Float
+  currency       String         @default("NGN")
+  specialization String[]
+  availability   String?
+  status         String         @default("PENDING")
+  endorsementBy  String?
+  description    String?
+  verifiedAt     DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  user           User           @relation("TutorUser", fields: [userId], references: [id], onDelete: Cascade)
+  sessions       TutorSession[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model TutorSession {
+  id          String    @id @default(uuid())
+  tutorId     String
+  studentId   String
+  date        String
+  time        String
+  timezone    String    @default("Africa/Lagos")
+  duration    Int       @default(60)
+  status      String    @default("UPCOMING")
+  price       Float
+  currency    String    @default("NGN")
+  notes       String?
+  cancelledAt DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  student     User      @relation("TutorSessions", fields: [studentId], references: [id], onDelete: Cascade)
+  tutor       Tutor     @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+
+  @@index([tutorId, date])
+  @@index([studentId])
+  @@index([status])
+}
+
+model Product {
+  id              String          @id @default(uuid())
+  vendorId        String
+  name            String
+  category        String
+  type            String          @default("PHYSICAL")
+  description     String
+  longDescription String?
+  price           Float
+  currency        String          @default("NGN")
+  stock           Int?
+  images          String[]
+  provenance      String?
+  usageProtocol   String?
+  status          String          @default("ACTIVE")
+  approvedBy      String?
+  verifiedTier    String          @default("COMMUNITY_LISTED")
+  taxCompliant    Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  orders          OrderItem[]
+  vendor          Vendor          @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  reviews         ProductReview[]
+
+  @@index([vendorId])
+  @@index([category])
+  @@index([status])
+  @@index([verifiedTier])
+  @@index([vendorId, status])
+  @@index([category, status])
+}
+
+model Order {
+  id              String      @id @default(uuid())
+  customerId      String
+  vendorId        String
+  status          String      @default("PENDING")
+  totalAmount     Float
+  currency        String      @default("NGN")
+  taxAmount       Float?
+  shippingCost    Float?
+  shippingAddress String?
+  paymentMethod   String?
+  paymentId       String?
+  paidAt          DateTime?
+  shippedAt       DateTime?
+  deliveredAt     DateTime?
+  cancelledAt     DateTime?
+  notes           String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  carrier         String?
+  trackingNumber  String?
+  trackingUrl     String?
+  customer        User        @relation("OrderCustomer", fields: [customerId], references: [id], onDelete: Cascade)
+  vendor          Vendor      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  items           OrderItem[]
+
+  @@index([customerId])
+  @@index([vendorId])
+  @@index([status])
+  @@index([customerId, status])
+  @@index([vendorId, status])
+  @@index([paidAt])
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  orderId   String
+  productId String
+  quantity  Int
+  price     Float
+  createdAt DateTime @default(now())
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model ProductReview {
+  id               String    @id @default(uuid())
+  productId        String
+  customerId       String
+  rating           Int
+  title            String?
+  content          String?
+  acknowledgeCount Int       @default(0)
+  status           String    @default("PENDING")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  flaggedCount     Int       @default(0)
+  moderatedAt      DateTime?
+  moderatedBy      String?
+  moderationNotes  String?
+  orderId          String?
+  customer         User      @relation("ReviewCustomer", fields: [customerId], references: [id], onDelete: Cascade)
+  product          Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, customerId])
+  @@index([productId])
+  @@index([customerId])
+  @@index([status])
+  @@index([orderId])
+}
+
+model BabalawoReview {
+  id                    String    @id @default(uuid())
+  babalawoId            String
+  clientId              String
+  appointmentId         String?
+  rating                Int
+  title                 String?
+  content               String?
+  accuracyRating        Int?
+  communicationRating   Int?
+  culturalRespectRating Int?
+  acknowledgeCount      Int       @default(0)
+  status                String    @default("PENDING")
+  moderatedBy           String?
+  moderatedAt           DateTime?
+  moderationNotes       String?
+  flaggedCount          Int       @default(0)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  babalawo              User      @relation("BabalawoReviewClient", fields: [babalawoId], references: [id], onDelete: Cascade)
+  client                User      @relation("BabalawoReviewBabalawo", fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([babalawoId, clientId])
+  @@index([babalawoId])
+  @@index([clientId])
+  @@index([status])
+  @@index([appointmentId])
+}
+
+model CourseReview {
+  id                   String    @id @default(uuid())
+  courseId             String
+  studentId            String
+  enrollmentId         String?
+  rating               Int
+  title                String?
+  content              String?
+  contentQualityRating Int?
+  instructorRating     Int?
+  valueRating          Int?
+  acknowledgeCount     Int       @default(0)
+  status               String    @default("PENDING")
+  moderatedBy          String?
+  moderatedAt          DateTime?
+  moderationNotes      String?
+  flaggedCount         Int       @default(0)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  course               Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  student              User      @relation("CourseReviewStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, studentId])
+  @@index([courseId])
+  @@index([studentId])
+  @@index([status])
+  @@index([enrollmentId])
+}
+
+model Course {
+  id                 String         @id @default(uuid())
+  instructorId       String
+  title              String
+  slug               String         @unique
+  description        String
+  category           String
+  level              String         @default("BEGINNER")
+  thumbnail          String?
+  duration           Int?
+  price              Float
+  currency           String         @default("NGN")
+  status             String         @default("DRAFT")
+  approvedBy         String?
+  enrolledCount      Int            @default(0)
+  lessonCount        Int            @default(0)
+  certificateEnabled Boolean        @default(true)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  instructor         User           @relation("CourseInstructor", fields: [instructorId], references: [id], onDelete: Cascade)
+  reviews            CourseReview[]
+  enrollments        Enrollment[]
+  lessons            Lesson[]
+
+  @@index([instructorId])
+  @@index([category])
+  @@index([status])
+  @@index([slug])
+}
+
+model Lesson {
+  id          String             @id @default(uuid())
+  courseId    String
+  title       String
+  order       Int
+  type        String             @default("VIDEO")
+  content     String?
+  videoUrl    String?
+  audioUrl    String?
+  duration    Int?
+  resources   String[]
+  status      String             @default("DRAFT")
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  course      Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  completions LessonCompletion[]
+
+  @@index([courseId, order])
+}
+
+model Enrollment {
+  id               String             @id @default(uuid())
+  courseId         String
+  studentId        String
+  status           String             @default("ACTIVE")
+  progress         Float              @default(0)
+  enrolledAt       DateTime           @default(now())
+  completedAt      DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  certificate      CourseCertificate?
+  course           Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  student          User               @relation("EnrollmentStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  LessonCompletion LessonCompletion[]
+
+  @@unique([courseId, studentId])
+  @@index([studentId])
+  @@index([courseId])
+  @@index([status])
+}
+
+model LessonCompletion {
+  id           String     @id @default(uuid())
+  enrollmentId String
+  lessonId     String
+  completedAt  DateTime   @default(now())
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  lesson       Lesson     @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([enrollmentId, lessonId])
+  @@index([enrollmentId])
+}
+
+model CourseCertificate {
+  id             String     @id @default(uuid())
+  enrollmentId   String     @unique
+  certificateUrl String
+  issuedAt       DateTime   @default(now())
+  enrollment     Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@index([enrollmentId])
+}
+
+model Wallet {
+  id           String        @id @default(uuid())
+  userId       String        @unique
+  balance      Float         @default(0)
+  currency     String        @default("NGN")
+  locked       Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  escrows      Escrow[]
+  transactions Transaction[]
+  user         User          @relation("WalletUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Transaction {
+  id                 String    @id @default(uuid())
+  walletId           String
+  userId             String
+  type               String
+  amount             Float
+  currency           String    @default("NGN")
+  status             String    @default("PENDING")
+  description        String?
+  reference          String?
+  metadata           Json?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  manuallyVerified   Boolean   @default(false)
+  manuallyVerifiedAt DateTime?
+  manuallyVerifiedBy String?
+  webhookReceived    Boolean   @default(false)
+  webhookReceivedAt  DateTime?
+  user               User      @relation("TransactionUser", fields: [userId], references: [id], onDelete: Cascade)
+  wallet             Wallet    @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@index([walletId])
+  @@index([userId])
+  @@index([type])
+  @@index([status])
+  @@index([reference])
+  @@index([webhookReceived])
+  @@index([createdAt])
+  @@index([userId, type])
+  @@index([userId, status])
+  @@index([walletId, createdAt])
+}
+
+model Dispute {
+  id                    String    @id @default(uuid())
+  orderId               String?
+  escrowId              String?
+  appointmentId         String?
+  complainantId         String
+  respondentId          String
+  type                  String
+  category              String
+  title                 String
+  description           String
+  evidence              String[]
+  status                String    @default("OPEN")
+  priority              String    @default("NORMAL")
+  routedTo              String?
+  assignedTo            String?
+  escalatedAt           DateTime?
+  resolution            String?
+  resolvedBy            String?
+  resolvedAt            DateTime?
+  resolutionType        String?
+  advisoryBoardVotes    Json?
+  advisoryBoardDecision String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  closedAt              DateTime?
+  complainant           User      @relation("DisputesAsComplainant", fields: [complainantId], references: [id], onDelete: Cascade)
+  escrow                Escrow?   @relation("EscrowDisputes", fields: [escrowId], references: [id])
+  respondent            User      @relation("DisputesAsRespondent", fields: [respondentId], references: [id], onDelete: Cascade)
+
+  @@index([complainantId])
+  @@index([respondentId])
+  @@index([status])
+  @@index([type])
+  @@index([category])
+  @@index([routedTo])
+  @@index([orderId])
+  @@index([escrowId])
+  @@index([appointmentId])
+  @@index([status, createdAt])
+  @@index([type, status])
+}
+
+model Escrow {
+  id            String              @id @default(uuid())
+  userId        String
+  recipientId   String?
+  walletId      String
+  amount        Float
+  currency      String              @default("NGN")
+  type          String
+  relatedId     String?
+  status        String              @default("HOLD")
+  autoReleaseAt DateTime?
+  expiryDate    DateTime?
+  releaseTiers  Json?
+  releasedAt    DateTime?
+  releasedBy    String?
+  disputeId     String?
+  notes         String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  disputes      Dispute[]           @relation("EscrowDisputes")
+  user          User                @relation("EscrowUser", fields: [userId], references: [id], onDelete: Cascade)
+  wallet        Wallet              @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  guidancePlan  GuidancePlan?
+  withdrawals   WithdrawalRequest[] @relation("EscrowWithdrawals")
+
+  @@index([userId])
+  @@index([recipientId])
+  @@index([walletId])
+  @@index([type, relatedId])
+  @@index([status])
+  @@index([autoReleaseAt])
+  @@index([userId, status])
+  @@index([status, autoReleaseAt])
+}
+
+model WithdrawalRequest {
+  id          String    @id @default(uuid())
+  userId      String
+  escrowId    String?
+  amount      Float
+  currency    String    @default("NGN")
+  bankAccount String?
+  bankName    String?
+  accountName String?
+  status      String    @default("PENDING")
+  adminNotes  String?
+  processedAt DateTime?
+  processedBy String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  escrow      Escrow?   @relation("EscrowWithdrawals", fields: [escrowId], references: [id])
+  user        User      @relation("WithdrawalUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([status, createdAt])
+  @@index([userId, status])
+}
+
+model Temple {
+  id            String         @id @default(uuid())
+  name          String
+  yorubaName    String?
+  slug          String         @unique
+  description   String?
+  history       String?
+  mission       String?
+  address       String?
+  city          String?
+  state         String?
+  country       String         @default("Nigeria")
+  location      String?
+  coordinates   Json?
+  phone         String?
+  email         String?
+  website       String?
+  logo          String?
+  bannerImage   String?
+  images        String[]
+  founderId     String?        @unique
+  foundedYear   Int?
+  status        String         @default("ACTIVE")
+  verified      Boolean        @default(false)
+  verifiedAt    DateTime?
+  verifiedBy    String?
+  type          String         @default("STUDY_CIRCLE")
+  lineage       String?
+  tradition     String?
+  specialties   String[]
+  socialLinks   Json?
+  babalawoCount Int            @default(0)
+  clientCount   Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  followerCount Int            @default(0)
+  events        Event[]
+  founder       User?          @relation("TempleFounder", fields: [founderId], references: [id])
+  followers     TempleFollow[]
+  babalawos     User[]         @relation("TempleMembers")
+
+  @@index([slug])
+  @@index([status])
+  @@index([verified])
+  @@index([city, state])
+  @@index([founderId])
+  @@index([type])
+}
+
+model TempleFollow {
+  id        String   @id @default(uuid())
+  userId    String
+  templeId  String
+  createdAt DateTime @default(now())
+  temple    Temple   @relation(fields: [templeId], references: [id], onDelete: Cascade)
+  user      User     @relation("TempleFollows", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, templeId])
+  @@index([userId])
+  @@index([templeId])
+}
+
+model Circle {
+  id                 String            @id @default(uuid())
+  name               String
+  description        String?
+  slug               String            @unique
+  creatorId          String
+  privacy            String            @default("PUBLIC")
+  topics             String[]
+  location           String?
+  avatar             String?
+  banner             String?
+  memberCount        Int               @default(0)
+  active             Boolean           @default(true)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  approvedAt         DateTime?
+  approvedBy         String?
+  status             String            @default("ACTIVE")
+  suggestedBy        String?
+  suggestionThreadId String?           @unique
+  approver           User?             @relation("CircleApprover", fields: [approvedBy], references: [id])
+  creator            User              @relation("CircleCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  suggester          User?             @relation("CircleSuggester", fields: [suggestedBy], references: [id])
+  suggestionThread   ForumThread?      @relation("CircleSuggestionThread", fields: [suggestionThreadId], references: [id])
+  members            CircleMember[]
+  suggestion         CircleSuggestion?
+  events             Event[]
+
+  @@index([creatorId])
+  @@index([slug])
+  @@index([privacy])
+  @@index([active])
+  @@index([status])
+  @@index([topics])
+}
+
+model CircleSuggestion {
+  id          String      @id @default(uuid())
+  suggestedBy String
+  threadId    String      @unique
+  circleId    String?     @unique
+  status      String      @default("PENDING")
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  notes       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  circle      Circle?     @relation(fields: [circleId], references: [id])
+  reviewer    User?       @relation("CircleReviewer", fields: [reviewedBy], references: [id])
+  suggester   User        @relation("CircleSuggester", fields: [suggestedBy], references: [id], onDelete: Cascade)
+  thread      ForumThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([suggestedBy])
+  @@index([threadId])
+}
+
+model CircleMember {
+  id       String    @id @default(uuid())
+  circleId String
+  userId   String
+  role     String    @default("MEMBER")
+  status   String    @default("ACTIVE")
+  joinedAt DateTime  @default(now())
+  leftAt   DateTime?
+  circle   Circle    @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  user     User      @relation("CircleMembers", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([circleId, userId])
+  @@index([circleId])
+  @@index([userId])
+  @@index([status])
+}
+
+model Event {
+  id                   String              @id @default(uuid())
+  title                String
+  description          String?
+  slug                 String              @unique
+  creatorId            String
+  type                 String
+  category             String?
+  startDate            DateTime
+  endDate              DateTime?
+  timezone             String              @default("Africa/Lagos")
+  location             String?
+  locationType         String              @default("PHYSICAL")
+  virtualLink          String?
+  price                Float               @default(0)
+  currency             String              @default("NGN")
+  capacity             Int?
+  requiresRegistration Boolean             @default(true)
+  registrationDeadline DateTime?
+  image                String?
+  status               String              @default("UPCOMING")
+  published            Boolean             @default(false)
+  templeId             String?
+  circleId             String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  circle               Circle?             @relation(fields: [circleId], references: [id])
+  creator              User                @relation("EventCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  temple               Temple?             @relation(fields: [templeId], references: [id])
+  registrations        EventRegistration[]
+
+  @@index([creatorId])
+  @@index([slug])
+  @@index([status])
+  @@index([published])
+  @@index([startDate])
+  @@index([type])
+  @@index([templeId])
+  @@index([circleId])
+}
+
+model EventRegistration {
+  id           String    @id @default(uuid())
+  eventId      String
+  userId       String
+  status       String    @default("REGISTERED")
+  paid         Boolean   @default(false)
+  paymentId    String?
+  notes        String?
+  registeredAt DateTime  @default(now())
+  cancelledAt  DateTime?
+  attendedAt   DateTime?
+  event        Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user         User      @relation("EventRegistrations", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+  @@index([status])
+}
+
+model DeviceToken {
+  id         String   @id @default(uuid())
+  userId     String
+  token      String   @unique
+  platform   String
+  deviceInfo Json?
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation("DeviceTokens", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, active])
+  @@index([platform])
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String
+  type      String
+  category  String?
+  title     String
+  message   String
+  data      Json?
+  read      Boolean   @default(false)
+  readAt    DateTime?
+  emailSent Boolean   @default(false)
+  pushSent  Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User      @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, read])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model DailyYorubaWord {
+  id              String            @id @default(uuid())
+  word            String
+  pronunciation   String
+  definition      String
+  example         String
+  culturalContext String
+  category        String
+  date            DateTime          @unique
+  viewCount       Int               @default(0)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  userHistory     UserWordHistory[]
+
+  @@index([date])
+  @@index([category])
+}
+
+model UserWordHistory {
+  id       String          @id @default(uuid())
+  userId   String
+  wordId   String
+  viewedAt DateTime        @default(now())
+  user     User            @relation("UserWordHistory", fields: [userId], references: [id], onDelete: Cascade)
+  word     DailyYorubaWord @relation(fields: [wordId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, wordId])
+  @@index([userId])
+  @@index([wordId])
+  @@index([viewedAt])
+}
+
+model SpiritualJourney {
+  id           String              @id @default(uuid())
+  userId       String              @unique
+  startedAt    DateTime            @default(now())
+  lastUpdated  DateTime            @updatedAt
+  intention    String?
+  currentLevel String              @default("BEGINNER")
+  milestones   JourneyMilestone[]
+  reflections  JourneyReflection[]
+  user         User                @relation("SpiritualJourneyUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([currentLevel])
+}
+
+model JourneyMilestone {
+  id          String           @id @default(uuid())
+  journeyId   String
+  title       String
+  description String?
+  category    String
+  date        DateTime         @default(now())
+  image       String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  journey     SpiritualJourney @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+
+  @@index([journeyId])
+  @@index([category])
+  @@index([date])
+}
+
+model JourneyReflection {
+  id        String           @id @default(uuid())
+  journeyId String
+  title     String?
+  content   String
+  mood      String?
+  tags      String[]
+  isPrivate Boolean          @default(true)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  journey   SpiritualJourney @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+
+  @@index([journeyId])
+  @@index([createdAt])
+  @@index([isPrivate])
+}
+
+model AdvisoryVote {
+  id               String               @id @default(cuid())
+  title            String
+  description      String
+  proposerId       String
+  deadline         DateTime
+  requiredMajority RequiredMajority
+  status           VoteStatus
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  casts            AdvisoryVoteCast[]
+  options          AdvisoryVoteOption[]
+  proposer         User                 @relation("ProposedVotes", fields: [proposerId], references: [id])
+
+  @@map("advisory_votes")
+}
+
+model AdvisoryVoteOption {
+  id        String       @id @default(cuid())
+  option    String
+  voteId    String
+  voteCount Int          @default(0)
+  vote      AdvisoryVote @relation(fields: [voteId], references: [id], onDelete: Cascade)
+
+  @@map("advisory_vote_options")
+}
+
+model AdvisoryVoteCast {
+  id        String       @id @default(cuid())
+  userId    String
+  voteId    String
+  option    String
+  createdAt DateTime     @default(now())
+  user      User         @relation("CastVotes", fields: [userId], references: [id])
+  vote      AdvisoryVote @relation(fields: [voteId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, voteId])
+  @@map("advisory_vote_casts")
+}
+
+model Payment {
+  id            String    @id @default(uuid())
+  userId        String
+  transactionId String    @unique
+  amount        Float
+  currency      String    @default("NGN")
+  purpose       String
+  provider      String
+  status        String    @default("PENDING")
+  metadata      Json?
+  verified      Boolean   @default(false)
+  verifiedAt    DateTime?
+  verifiedBy    String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([transactionId])
+  @@index([status])
+  @@index([verified])
+}
+
+enum RequiredMajority {
+  SIMPLE
+  SUPER
+  UNANIMOUS
+}
+
+enum VoteStatus {
+  PENDING
+  ACTIVE
+  CLOSED
+  APPROVED
+  REJECTED
+}
+
+model AuditLog {
+  id             String    @id @default(uuid())
+  userId         String
+  action         String
+  resourceType   String
+  resourceId     String?
+  previousValues Json?
+  newValues      Json?
+  ipAddress      String?
+  userAgent      String?
+  metadata       Json?
+  createdAt      DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([resourceType, resourceId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([userId, action])
+  @@map("audit_logs")
+}

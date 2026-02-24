@@ -1,0 +1,79 @@
+
+Running 3 tests using 3 workers
+
+BROWSER LOG: [vite] connecting...
+BROWSER LOG: [vite] connected.
+BROWSER LOG: [vite] connecting...
+BROWSER LOG: [vite] connecting...
+BROWSER LOG: [vite] connected.
+BROWSER LOG: [vite] connected.
+BROWSER LOG: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+BROWSER LOG: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+BROWSER LOG: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+Intercepted /api/auth/login
+Intercepted /api/auth/register
+  Ô£ô  1 [chromium] ÔÇ║ e2e\auth.spec.ts:57:3 ÔÇ║ Authentication & Onboarding Flows ÔÇ║ Scenario 1: User Sign Up & Email Verification (2.5s)
+  Ô£ÿ  3 [chromium] ÔÇ║ e2e\auth.spec.ts:142:3 ÔÇ║ Authentication & Onboarding Flows ÔÇ║ Scenario 3: User Logout & Redirect to Login (7.4s)
+  Ô£ÿ  2 [chromium] ÔÇ║ e2e\auth.spec.ts:99:3 ÔÇ║ Authentication & Onboarding Flows ÔÇ║ Scenario 2: User Login (Client Role) & Redirect to Dashboard (17.5s)
+
+
+  1) [chromium] ÔÇ║ e2e\auth.spec.ts:99:3 ÔÇ║ Authentication & Onboarding Flows ÔÇ║ Scenario 2: User Login (Client Role) & Redirect to Dashboard 
+
+    Error: [2mexpect([22m[31mpage[39m[2m).[22mtoHaveURL[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Expected pattern: [32m/\/client\/dashboard/[39m
+    Received string:  [31m"http://localhost:5173/"[39m
+    Timeout: 15000ms
+
+    Call log:
+    [2m  - Expect "toHaveURL" with timeout 15000ms[22m
+    [2m    18 ├ù unexpected value "http://localhost:5173/"[22m
+
+
+      136 |
+      137 |     // 5. Verify redirection to dashboard
+    > 138 |     await expect(page).toHaveURL(/\/client\/dashboard/, { timeout: 15000 });
+          |                        ^
+      139 |     await expect(page.getByText(/Welcome, Client/i)).toBeVisible();
+      140 |   });
+      141 |
+        at C:\Users\Test\ifa_app\frontend\e2e\auth.spec.ts:138:24
+
+    attachment #1: screenshot (image/png) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+    test-results\auth-Authentication-Onboar-3ce6a--Role-Redirect-to-Dashboard-chromium\test-failed-1.png
+    ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+
+    Error Context: test-results\auth-Authentication-Onboar-3ce6a--Role-Redirect-to-Dashboard-chromium\error-context.md
+
+  2) [chromium] ÔÇ║ e2e\auth.spec.ts:142:3 ÔÇ║ Authentication & Onboarding Flows ÔÇ║ Scenario 3: User Logout & Redirect to Login 
+
+    Error: [2mexpect([22m[31mpage[39m[2m).[22mtoHaveURL[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Expected pattern: [32m/\/client\/dashboard/[39m
+    Received string:  [31m"http://localhost:5173/"[39m
+    Timeout: 5000ms
+
+    Call log:
+    [2m  - Expect "toHaveURL" with timeout 5000ms[22m
+    [2m    9 ├ù unexpected value "http://localhost:5173/"[22m
+
+
+      161 |     await page.fill('input[name="password"]', 'Password123!');
+      162 |     await page.click('button[type="submit"]');
+    > 163 |     await expect(page).toHaveURL(/\/client\/dashboard/);
+          |                        ^
+      164 |
+      165 |     // 2. Perform Logout
+      166 |     // Need to find where the logout button is. 
+        at C:\Users\Test\ifa_app\frontend\e2e\auth.spec.ts:163:24
+
+    attachment #1: screenshot (image/png) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+    test-results\auth-Authentication-Onboar-84f92-er-Logout-Redirect-to-Login-chromium\test-failed-1.png
+    ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+
+    Error Context: test-results\auth-Authentication-Onboar-84f92-er-Logout-Redirect-to-Login-chromium\error-context.md
+
+  2 failed
+    [chromium] ÔÇ║ e2e\auth.spec.ts:99:3 ÔÇ║ Authentication & Onboarding Flows ÔÇ║ Scenario 2: User Login (Client Role) & Redirect to Dashboard 
+    [chromium] ÔÇ║ e2e\auth.spec.ts:142:3 ÔÇ║ Authentication & Onboarding Flows ÔÇ║ Scenario 3: User Logout & Redirect to Login 
+  1 passed (22.1s)

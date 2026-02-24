@@ -1,0 +1,106 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - main [ref=e5]:
+    - generic [ref=e6]:
+      - button "Toggle menu" [ref=e7] [cursor=pointer]:
+        - img [ref=e9]
+      - heading "Ilé Àṣẹ" [level=1] [ref=e10]
+      - button [ref=e11] [cursor=pointer]:
+        - img [ref=e12]
+    - generic [ref=e18]:
+      - generic [ref=e24]:
+        - generic [ref=e25]:
+          - generic [ref=e26]:
+            - img [ref=e27]
+            - generic [ref=e33]: E kaasan
+          - heading "Good Afternoon, Friend" [level=1] [ref=e34]
+          - paragraph [ref=e35]: Welcome to your spiritual home. Explore, learn, and connect with the traditions of Ifá.
+        - generic [ref=e38]:
+          - img [ref=e40]
+          - generic [ref=e43]: Word of the Day
+      - generic [ref=e47]:
+        - heading "Quick Actions" [level=2] [ref=e49]
+        - generic [ref=e50]:
+          - button "Find a Temple Ilé Ifá" [ref=e51] [cursor=pointer]:
+            - img [ref=e53]
+            - paragraph [ref=e56]: Find a Temple
+            - paragraph [ref=e57]: Ilé Ifá
+          - button "Connect with Babalawo Awọn Babalawo" [ref=e58] [cursor=pointer]:
+            - img [ref=e60]
+            - paragraph [ref=e65]: Connect with Babalawo
+            - paragraph [ref=e66]: Awọn Babalawo
+          - button "Learn & Grow Ilé-ẹkọ" [ref=e67] [cursor=pointer]:
+            - img [ref=e69]
+            - paragraph [ref=e72]: Learn & Grow
+            - paragraph [ref=e73]: Ilé-ẹkọ
+          - button "Sacred Items Ọjà" [ref=e74] [cursor=pointer]:
+            - img [ref=e76]
+            - paragraph [ref=e80]: Sacred Items
+            - paragraph [ref=e81]: Ọjà
+          - button "Community Events Àjọ" [ref=e82] [cursor=pointer]:
+            - img [ref=e84]
+            - paragraph [ref=e86]: Community Events
+            - paragraph [ref=e87]: Àjọ
+          - button "Discussions Ìfọ̀rọ̀wérọ̀" [ref=e88] [cursor=pointer]:
+            - img [ref=e90]
+            - paragraph [ref=e92]: Discussions
+            - paragraph [ref=e93]: Ìfọ̀rọ̀wérọ̀
+      - generic [ref=e94]:
+        - button "Discover Find a Babalawo Connect with verified spiritual guides Browse Directory" [ref=e95] [cursor=pointer]:
+          - generic [ref=e96]:
+            - img [ref=e98]
+            - generic [ref=e101]: Discover
+          - heading "Find a Babalawo" [level=3] [ref=e102]
+          - paragraph [ref=e103]: Connect with verified spiritual guides
+          - generic [ref=e104]:
+            - text: Browse Directory
+            - img [ref=e105]
+        - generic [ref=e107]:
+          - generic [ref=e108]:
+            - generic [ref=e109]:
+              - img [ref=e111]
+              - generic [ref=e113]: Consultations
+            - button "View All" [ref=e114] [cursor=pointer]
+          - generic [ref=e115]:
+            - generic [ref=e116]:
+              - img [ref=e117]
+              - generic [ref=e120]:
+                - paragraph [ref=e121]: Baba Femi Sowande
+                - paragraph [ref=e122]: 2/10/2026
+              - generic [ref=e123]: COMPLETED
+            - generic [ref=e124]:
+              - img [ref=e125]
+              - generic [ref=e128]:
+                - paragraph [ref=e129]: Baba Femi Sowande
+                - paragraph [ref=e130]: 2/25/2026
+              - generic [ref=e131]: UPCOMING
+        - generic [ref=e132]:
+          - generic [ref=e134]:
+            - img [ref=e136]
+            - generic [ref=e139]: Guidance Plans
+          - generic [ref=e141]:
+            - img [ref=e142]
+            - generic [ref=e145]:
+              - paragraph [ref=e146]: AKOSE
+              - paragraph [ref=e147]: from Baba Femi Sowande
+            - generic [ref=e148]: PENDING
+        - generic [ref=e150]:
+          - button "Wallet Balance ₦50,000" [ref=e151] [cursor=pointer]:
+            - img [ref=e153]
+            - generic [ref=e156]:
+              - paragraph [ref=e157]: Wallet Balance
+              - paragraph [ref=e158]: ₦50,000
+            - img [ref=e159]
+          - button "2 Messages 2 unread" [ref=e161] [cursor=pointer]:
+            - generic [ref=e162]:
+              - img [ref=e163]
+              - generic [ref=e165]: "2"
+            - generic [ref=e166]:
+              - paragraph [ref=e167]: Messages
+              - paragraph [ref=e168]: 2 unread
+            - img [ref=e169]
+  - button "Dev Switcher" [ref=e172] [cursor=pointer]:
+    - img [ref=e173]
+```

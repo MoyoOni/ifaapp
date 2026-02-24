@@ -1,0 +1,182 @@
+src/App.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/App.tsx(48,1): error TS6133: 'PersonalizedHomeView' is declared but its value is never read.
+src/App.tsx(53,1): error TS6133: 'useOfflineSync' is declared but its value is never read.
+src/App.tsx(64,10): error TS6133: 'selectedBabalawoId' is declared but its value is never read.
+src/App.tsx(65,10): error TS6133: 'selectedClientId' is declared but its value is never read.
+src/App.tsx(79,10): error TS6133: 'showVideoCall' is declared but its value is never read.
+src/App.tsx(94,26): error TS6133: 'role' is declared but its value is never read.
+src/App.tsx(625,15): error TS2322: Type '{ circleId: string; onBack: () => void; onEdit: () => void; }' is not assignable to type 'IntrinsicAttributes & CircleDetailViewProps'.
+  Property 'circleId' does not exist on type 'IntrinsicAttributes & CircleDetailViewProps'.
+src/App.tsx(664,15): error TS2322: Type '{ eventId: string; onBack: () => void; onRegister: () => void; }' is not assignable to type 'IntrinsicAttributes & EventDetailViewProps'.
+  Property 'eventId' does not exist on type 'IntrinsicAttributes & EventDetailViewProps'.
+src/App.tsx(678,13): error TS2322: Type '{ onSelectEvent: (eventId: any) => void; onCreateEvent: () => void; }' is not assignable to type 'IntrinsicAttributes & EventsDirectoryProps'.
+  Property 'onSelectEvent' does not exist on type 'IntrinsicAttributes & EventsDirectoryProps'.
+src/App.tsx(678,29): error TS7006: Parameter 'eventId' implicitly has an 'any' type.
+src/features/academy/academy-view.tsx(3,43): error TS6133: 'Play' is declared but its value is never read.
+src/features/academy/academy-view.tsx(3,56): error TS6133: 'CheckCircle' is declared but its value is never read.
+src/features/academy/academy-view.tsx(3,69): error TS6133: 'Filter' is declared but its value is never read.
+src/features/academy/course-detail-view.tsx(3,46): error TS6133: 'Play' is declared but its value is never read.
+src/features/academy/course-detail-view.tsx(70,10): error TS6133: 'showEnrollment' is declared but its value is never read.
+src/features/academy/course-detail-view.tsx(70,26): error TS6133: 'setShowEnrollment' is declared but its value is never read.
+src/features/academy/lesson-player-view.tsx(3,21): error TS6133: 'Play' is declared but its value is never read.
+src/features/academy/lesson-player-view.tsx(3,27): error TS6133: 'Pause' is declared but its value is never read.
+src/features/academy/lesson-player-view.tsx(3,54): error TS6133: 'BookOpen' is declared but its value is never read.
+src/features/academy/lesson-player-view.tsx(66,9): error TS6133: 'user' is declared but its value is never read.
+src/features/academy/lesson-player-view.tsx(148,9): error TS6133: 'handlePlayPause' is declared but its value is never read.
+src/features/admin/admin-dashboard-view.tsx(3,81): error TS6133: 'FileText' is declared but its value is never read.
+src/features/admin/advisory-board-voting-view.tsx(7,3): error TS6133: 'Clock' is declared but its value is never read.
+src/features/admin/advisory-board-voting-view.tsx(13,1): error TS6133: 'Button' is declared but its value is never read.
+src/features/admin/advisory-board-voting-view.tsx(13,24): error TS2307: Cannot find module '../../shared/components/ui/button' or its corresponding type declarations.
+src/features/admin/advisory-board-voting-view.tsx(14,1): error TS6133: 'Input' is declared but its value is never read.
+src/features/admin/advisory-board-voting-view.tsx(14,23): error TS2307: Cannot find module '../../shared/components/ui/input' or its corresponding type declarations.
+src/features/admin/advisory-board-voting-view.tsx(15,1): error TS6133: 'Textarea' is declared but its value is never read.
+src/features/admin/advisory-board-voting-view.tsx(15,26): error TS2307: Cannot find module '../../shared/components/ui/textarea' or its corresponding type declarations.
+src/features/admin/advisory-board-voting-view.tsx(16,1): error TS6192: All imports in import declaration are unused.
+src/features/admin/advisory-board-voting-view.tsx(16,79): error TS2307: Cannot find module '../../shared/components/ui/select' or its corresponding type declarations.
+src/features/admin/advisory-board-voting-view.tsx(17,1): error TS6133: 'Label' is declared but its value is never read.
+src/features/admin/advisory-board-voting-view.tsx(17,23): error TS2307: Cannot find module '../../shared/components/ui/label' or its corresponding type declarations.
+src/features/admin/advisory-board-voting-view.tsx(18,1): error TS6133: 'Badge' is declared but its value is never read.
+src/features/admin/advisory-board-voting-view.tsx(18,23): error TS2307: Cannot find module '../../shared/components/ui/badge' or its corresponding type declarations.
+src/features/admin/advisory-board-voting-view.tsx(113,31): error TS2345: Argument of type '{ title: string; description: string; voteOptions: string[]; deadline: string; requiredMajority: "SIMPLE" | "SUPER" | "UNANIMOUS"; }' is not assignable to parameter of type 'Omit<AdvisoryVote, "id" | "votes" | "voterCount" | "results">'.
+  Type '{ title: string; description: string; voteOptions: string[]; deadline: string; requiredMajority: "SIMPLE" | "SUPER" | "UNANIMOUS"; }' is missing the following properties from type 'Omit<AdvisoryVote, "id" | "votes" | "voterCount" | "results">': status, createdAt, proposer
+src/features/admin/advisory-board-voting-view.tsx(180,12): error TS2304: Cannot find name 'Flag'.
+src/features/admin/advisory-board-voting-view.tsx(235,16): error TS2304: Cannot find name 'BarChart3'.
+src/features/admin/advisory-board-voting-view.tsx(289,28): error TS2304: Cannot find name 'XCircle'.
+src/features/admin/advisory-board-voting-view.tsx(349,24): error TS2304: Cannot find name 'CheckCircle2'.
+src/features/admin/advisory-board-voting-view.tsx(399,84): error TS2339: Property 'role' does not exist on type '{ id: string; name: string; yorubaName?: string | undefined; }'.
+src/features/admin/analytics-dashboard-view.tsx(34,9): error TS6133: 'user' is declared but its value is never read.
+src/features/admin/dispute-center-view.tsx(3,96): error TS6133: 'Filter' is declared but its value is never read.
+src/features/admin/dispute-center-view.tsx(53,9): error TS6133: 'user' is declared but its value is never read.
+src/features/admin/fraud-alerts-view.tsx(3,33): error TS6133: 'CheckCircle' is declared but its value is never read.
+src/features/admin/fraud-alerts-view.tsx(13,9): error TS6133: 'user' is declared but its value is never read.
+src/features/admin/payout-approvals-view.tsx(3,10): error TS6133: 'DollarSign' is declared but its value is never read.
+src/features/admin/payout-approvals-view.tsx(3,44): error TS6133: 'Clock' is declared but its value is never read.
+src/features/admin/payout-approvals-view.tsx(3,60): error TS6133: 'AlertCircle' is declared but its value is never read.
+src/features/admin/payout-approvals-view.tsx(36,9): error TS6133: 'user' is declared but its value is never read.
+src/features/admin/vendor-review-view.tsx(182,34): error TS2339: Property 'yorubaName' does not exist on type '{ id: string; name: string; email: string; verified: boolean; }'.
+src/features/admin/vendor-review-view.tsx(246,91): error TS2339: Property 'yorubaName' does not exist on type '{ id: string; name: string; email: string; verified: boolean; }'.
+src/features/admin/verification-queue-view.tsx(3,32): error TS6133: 'Clock' is declared but its value is never read.
+src/features/admin/verification-queue-view.tsx(3,58): error TS6133: 'AlertCircle' is declared but its value is never read.
+src/features/admin/verification-queue-view.tsx(37,9): error TS6133: 'user' is declared but its value is never read.
+src/features/analytics/analytics-dashboard.tsx(4,1): error TS6133: 'api' is declared but its value is never read.
+src/features/appointments/appointments-calendar.tsx(2,20): error TS6133: 'useMutation' is declared but its value is never read.
+src/features/appointments/appointments-calendar.tsx(3,44): error TS6133: 'Check' is declared but its value is never read.
+src/features/appointments/appointments-calendar.tsx(3,51): error TS6133: 'AlertCircle' is declared but its value is never read.
+src/features/appointments/appointments-calendar.tsx(45,3): error TS6133: 'onBookAppointment' is declared but its value is never read.
+src/features/appointments/appointments-calendar.tsx(51,9): error TS6133: 'queryClient' is declared but its value is never read.
+src/features/babalawo/directory/babalawo-directory.tsx(2,34): error TS6133: 'Star' is declared but its value is never read.
+src/features/babalawo/grace-period-banner.tsx(17,3): error TS6133: 'gracePeriodStart' is declared but its value is never read.
+src/features/babalawo/profile/babalawo-profile-card.tsx(2,18): error TS6133: 'Star' is declared but its value is never read.
+src/features/circles/circle-detail-view.tsx(3,86): error TS6133: 'CheckCircle' is declared but its value is never read.
+src/features/circles/circle-directory.tsx(6,1): error TS6133: 'useNavigate' is declared but its value is never read.
+src/features/circles/circle-directory.tsx(6,29): error TS2307: Cannot find module 'react-router-dom' or its corresponding type declarations.
+src/features/circles/circle-directory.tsx(42,9): error TS6133: 'user' is declared but its value is never read.
+src/features/client-hub/personal-awo-dashboard.tsx(3,10): error TS6133: 'User' is declared but its value is never read.
+src/features/client-hub/personal-awo-dashboard.tsx(3,72): error TS6133: 'Clock' is declared but its value is never read.
+src/features/documents/documents-portal.tsx(3,76): error TS6133: 'Plus' is declared but its value is never read.
+src/features/documents/documents-portal.tsx(52,28): error TS6133: 'setSelectedDocument' is declared but its value is never read.
+src/features/events/event-creation-form.tsx(3,22): error TS6133: 'Calendar' is declared but its value is never read.
+src/features/events/event-detail-view.tsx(1,17): error TS6133: 'useState' is declared but its value is never read.
+src/features/events/event-detail-view.tsx(3,60): error TS6133: 'DollarSign' is declared but its value is never read.
+src/features/events/event-detail-view.tsx(3,85): error TS6133: 'XCircle' is declared but its value is never read.
+src/features/events/event-detail-view.tsx(3,103): error TS6133: 'Settings' is declared but its value is never read.
+src/features/events/events-directory.tsx(3,50): error TS6133: 'Users' is declared but its value is never read.
+src/features/forum/create-thread-form.tsx(112,34): error TS2339: Property 'isActive' does not exist on type 'ForumCategory'.
+src/features/forum/create-thread-form.tsx(115,31): error TS2339: Property 'icon' does not exist on type 'ForumCategory'.
+src/features/forum/create-thread-form.tsx(115,51): error TS2339: Property 'icon' does not exist on type 'ForumCategory'.
+src/features/guidance-plans/guidance-plan-creation-view.tsx(2,24): error TS2307: Cannot find module '../../shared/components/ui/button' or its corresponding type declarations.
+src/features/guidance-plans/guidance-plan-creation-view.tsx(3,23): error TS2307: Cannot find module '../../shared/components/ui/input' or its corresponding type declarations.
+src/features/guidance-plans/guidance-plan-creation-view.tsx(4,26): error TS2307: Cannot find module '../../shared/components/ui/textarea' or its corresponding type declarations.
+src/features/guidance-plans/guidance-plan-creation-view.tsx(5,23): error TS2307: Cannot find module '../../shared/components/ui/label' or its corresponding type declarations.
+src/features/guidance-plans/guidance-plan-creation-view.tsx(6,1): error TS6133: 'Badge' is declared but its value is never read.
+src/features/guidance-plans/guidance-plan-creation-view.tsx(6,23): error TS2307: Cannot find module '../../shared/components/ui/badge' or its corresponding type declarations.
+src/features/guidance-plans/guidance-plan-creation-view.tsx(223,28): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/features/guidance-plans/guidance-plan-creation-view.tsx(235,28): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/features/guidance-plans/guidance-plan-creation-view.tsx(251,30): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/features/guidance-plans/guidance-plan-creation-view.tsx(284,32): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/features/guidance-plans/guidance-plan-creation-view.tsx(298,32): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/features/guidance-plans/guidance-plan-creation-view.tsx(309,30): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/features/guidance-plans/guidance-plan-creation-view.tsx(339,36): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/features/home/personalized-home-view.tsx(3,54): error TS6133: 'Calendar' is declared but its value is never read.
+src/features/home/personalized-home-view.tsx(98,48): error TS2339: Property 'id' does not exist on type 'DailyYorubaWord'.
+src/features/home/personalized-home-view.tsx(98,107): error TS2339: Property 'id' does not exist on type 'DailyYorubaWord'.
+src/features/home/personalized-home-view.tsx(116,46): error TS2339: Property 'id' does not exist on type 'DailyYorubaWord'.
+src/features/home/personalized-home-view.tsx(116,105): error TS2339: Property 'id' does not exist on type 'DailyYorubaWord'.
+src/features/home/personalized-home-view.tsx(157,19): error TS2322: Type '{ temples: { id: string; name: string; yorubaName?: string | undefined; slug: string; description: string; logo?: string | undefined; }[]; onTempleSelect: (temple: any) => void; }' is not assignable to type 'IntrinsicAttributes & FeaturedTemplesSectionProps'.
+  Property 'temples' does not exist on type 'IntrinsicAttributes & FeaturedTemplesSectionProps'.
+src/features/home/personalized-home-view.tsx(158,36): error TS7006: Parameter 'temple' implicitly has an 'any' type.
+src/features/marketplace/cart-view.tsx(2,10): error TS6133: 'useQuery' is declared but its value is never read.
+src/features/marketplace/cart-view.tsx(161,77): error TS18048: 'item.stock' is possibly 'undefined'.
+src/features/marketplace/marketplace-view.tsx(3,48): error TS6133: 'Star' is declared but its value is never read.
+src/features/marketplace/marketplace-view.tsx(6,1): error TS6192: All imports in import declaration are unused.
+src/features/marketplace/marketplace-view.tsx(79,42): error TS6133: 'vendorsLoading' is declared but its value is never read.
+src/features/marketplace/marketplace-view.tsx(238,28): error TS18048: 'product.stock' is possibly 'undefined'.
+src/features/marketplace/product-detail-view.tsx(63,9): error TS6133: 'user' is declared but its value is never read.
+src/features/marketplace/product-detail-view.tsx(123,57): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/features/marketplace/product-detail-view.tsx(229,18): error TS18048: 'product.stock' is possibly 'undefined'.
+src/features/marketplace/product-detail-view.tsx(238,71): error TS18048: 'product.stock' is possibly 'undefined'.
+src/features/marketplace/vendor-application-form.tsx(3,19): error TS6133: 'Upload' is declared but its value is never read.
+src/features/marketplace/vendor-application-form.tsx(66,32): error TS2345: Argument of type '{ artisanHeritageProof: string | undefined; yorubaProficiencyLevel: "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "NATIVE" | undefined; yorubaProficiencyProof: string | undefined; ... 5 more ...; noCounterfeitSpiritualItems: boolean; }' is not assignable to parameter of type '{ businessName: string; businessLicense: string; taxId: string; endorsementBy: string; description: string; artisanHeritageProof: string; yorubaProficiencyLevel: "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "NATIVE" | ""; yorubaProficiencyProof: string; noCounterfeitSpiritualItems: boolean; }'.
+  Types of property 'businessLicense' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/features/marketplace/vendor-order-detail-view.tsx(3,82): error TS6133: 'Save' is declared but its value is never read.
+src/features/messages/inbox/message-inbox.tsx(3,33): error TS6133: 'User' is declared but its value is never read.
+src/features/onboarding/onboarding-view.tsx(32,9): error TS6133: 'culturalLevels' is declared but its value is never read.
+src/features/payments/payment-callback-view.tsx(47,5): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(options: DefinedInitialDataOptions<unknown, Error, unknown, (string | null)[]>, queryClient?: QueryClient | undefined): DefinedUseQueryResult<unknown, Error>', gave the following error.
+    Object literal may only specify known properties, and 'onSuccess' does not exist in type 'DefinedInitialDataOptions<unknown, Error, unknown, (string | null)[]>'.
+  Overload 2 of 3, '(options: UndefinedInitialDataOptions<any, Error, any, (string | null)[]>, queryClient?: QueryClient | undefined): UseQueryResult<any, Error>', gave the following error.
+    Object literal may only specify known properties, and 'onSuccess' does not exist in type 'UndefinedInitialDataOptions<any, Error, any, (string | null)[]>'.
+  Overload 3 of 3, '(options: UseQueryOptions<any, Error, any, (string | null)[]>, queryClient?: QueryClient | undefined): UseQueryResult<any, Error>', gave the following error.
+    Object literal may only specify known properties, and 'onSuccess' does not exist in type 'UseQueryOptions<any, Error, any, (string | null)[]>'.
+src/features/payments/payment-callback-view.tsx(47,17): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/features/payments/payment-callback-view.tsx(94,52): error TS2339: Property 'amount' does not exist on type '{}'.
+src/features/payments/payment-callback-view.tsx(94,81): error TS2339: Property 'currency' does not exist on type '{}'.
+src/features/payments/payment-callback-view.tsx(96,34): error TS2339: Property 'reference' does not exist on type '{}'.
+src/features/payments/payment-callback-view.tsx(98,48): error TS2339: Property 'reference' does not exist on type '{}'.
+src/features/payments/payment-modal.tsx(3,47): error TS6133: 'AlertCircle' is declared but its value is never read.
+src/features/payments/payment-modal.tsx(29,3): error TS6133: 'onSuccess' is declared but its value is never read.
+src/features/prescriptions/prescription-approval-view.tsx(78,17): error TS6133: 'data' is declared but its value is never read.
+src/features/prescriptions/prescription-creation-form.tsx(15,11): error TS6196: 'Appointment' is declared but never used.
+src/features/profile/profile-customization-view.tsx(3,31): error TS6133: 'Camera' is declared but its value is never read.
+src/features/profile/profile-customization-view.tsx(3,39): error TS6133: 'Globe' is declared but its value is never read.
+src/features/profile/profile-customization-view.tsx(4,25): error TS6133: 'UserRole' is declared but its value is never read.
+src/features/profile/profile-customization.tsx(2,10): error TS6133: 'useQuery' is declared but its value is never read.
+src/features/profile/profile-customization.tsx(15,23): error TS2339: Property 'themeColor' does not exist on type 'User'.
+src/features/spiritual-journey/journey-timeline-view.tsx(2,20): error TS6133: 'useMutation' is declared but its value is never read.
+src/features/spiritual-journey/journey-timeline-view.tsx(177,37): error TS6133: 'index' is declared but its value is never read.
+src/features/temple/temple-detail-view.tsx(4,18): error TS6133: 'TempleType' is declared but its value is never read.
+src/features/temple/temple-management-view.tsx(3,16): error TS6133: 'Upload' is declared but its value is never read.
+src/features/temple/temple-management-view.tsx(3,34): error TS6133: 'Plus' is declared but its value is never read.
+src/features/temple/temple-management-view.tsx(60,9): error TS6133: 'assignBabalawoMutation' is declared but its value is never read.
+src/features/tutors/tutor-directory.tsx(2,18): error TS6133: 'Filter' is declared but its value is never read.
+src/features/tutors/tutor-directory.tsx(2,26): error TS6133: 'MapPin' is declared but its value is never read.
+src/features/tutors/tutor-directory.tsx(2,34): error TS6133: 'Star' is declared but its value is never read.
+src/features/tutors/tutor-directory.tsx(2,55): error TS6133: 'Clock' is declared but its value is never read.
+src/features/tutors/tutor-directory.tsx(2,62): error TS6133: 'DollarSign' is declared but its value is never read.
+src/features/tutors/tutor-profile-card.tsx(2,44): error TS6133: 'Star' is declared but its value is never read.
+src/features/tutors/tutor-profile-card.tsx(2,50): error TS6133: 'CheckCircle' is declared but its value is never read.
+src/features/tutors/tutor-session-management.tsx(3,20): error TS6133: 'Clock' is declared but its value is never read.
+src/features/tutors/tutor-session-management.tsx(3,27): error TS6133: 'CheckCircle' is declared but its value is never read.
+src/features/tutors/tutor-session-management.tsx(3,40): error TS6133: 'XCircle' is declared but its value is never read.
+src/features/tutors/tutor-session-management.tsx(3,49): error TS6133: 'AlertCircle' is declared but its value is never read.
+src/features/tutors/tutor-session-management.tsx(67,9): error TS6133: 'sessionsByDate' is declared but its value is never read.
+src/features/verification/verification-application-form.tsx(3,10): error TS6133: 'FileText' is declared but its value is never read.
+src/features/verification/verification-application-form.tsx(3,20): error TS6133: 'Upload' is declared but its value is never read.
+src/features/verification/verification-application-form.tsx(5,1): error TS6133: 'VerificationStage' is declared but its value is never read.
+src/features/video-call/video-call-view.tsx(126,33): error TS6133: 'user' is declared but its value is never read.
+src/features/wallet/transaction-history-view.tsx(11,3): error TS6133: 'Download' is declared but its value is never read.
+src/features/wallet/wallet-dashboard-view.tsx(11,3): error TS6133: 'TrendingDown' is declared but its value is never read.
+src/features/wallet/wallet-dashboard-view.tsx(70,3): error TS6133: 'onDeposit' is declared but its value is never read.
+src/features/wallet/wallet-dashboard-view.tsx(78,10): error TS6133: 'isDepositing' is declared but its value is never read.
+src/features/wallet/wallet-dashboard-view.tsx(78,24): error TS6133: 'setIsDepositing' is declared but its value is never read.
+src/features/wallet/wallet-dashboard-view.tsx(111,42): error TS6133: 'escrowsLoading' is declared but its value is never read.
+src/features/wallet/wallet-dashboard-view.tsx(145,9): error TS6133: 'depositMutation' is declared but its value is never read.
+src/features/wallet/wallet-dashboard-view.tsx(184,9): error TS6133: 'handleDeposit' is declared but its value is never read.
+src/shared/components/verification-badge.tsx(20,3): error TS6133: 'stage' is declared but its value is never read.
+src/shared/contexts/cart-context.tsx(63,64): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/shared/contexts/cart-context.tsx(89,62): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.

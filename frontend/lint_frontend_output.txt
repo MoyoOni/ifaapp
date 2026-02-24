@@ -1,0 +1,35 @@
+
+> @ile-ase/frontend@0.1.0 lint
+> eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0
+
+
+Oops! Something went wrong! :(
+
+ESLint: 10.0.1
+
+Error: Cannot find module '@eslint/plugin-kit'
+Require stack:
+- C:\Users\Test\ifa_app\frontend\node_modules\eslint\lib\languages\js\source-code\source-code.js
+- C:\Users\Test\ifa_app\frontend\node_modules\eslint\lib\languages\js\source-code\index.js
+- C:\Users\Test\ifa_app\frontend\node_modules\eslint\lib\languages\js\index.js
+- C:\Users\Test\ifa_app\frontend\node_modules\eslint\lib\config\default-config.js
+- C:\Users\Test\ifa_app\frontend\node_modules\eslint\lib\eslint\eslint.js
+- C:\Users\Test\ifa_app\frontend\node_modules\eslint\lib\cli.js
+- C:\Users\Test\ifa_app\frontend\node_modules\eslint\bin\eslint.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1420:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1058:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1063:22)
+    at Module._load (node:internal/modules/cjs/loader:1226:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)
+    at Module.require (node:internal/modules/cjs/loader:1503:12)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (C:\Users\Test\ifa_app\frontend\node_modules\eslint\lib\languages\js\source-code\source-code.js:22:6)
+    at Module._compile (node:internal/modules/cjs/loader:1760:14)
+npm error Lifecycle script `lint` failed with error:
+npm error code 2
+npm error path C:\Users\Test\ifa_app\frontend
+npm error workspace @ile-ase/frontend@0.1.0
+npm error location C:\Users\Test\ifa_app\frontend
+npm error command failed
+npm error command C:\WINDOWS\system32\cmd.exe /d /s /c eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0

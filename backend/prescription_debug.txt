@@ -1,0 +1,70 @@
+
+> @ile-ase/backend@0.1.0 test
+> jest src/prescriptions/prescriptions.service.spec.ts
+
+FAIL src/prescriptions/prescriptions.service.spec.ts (6.501 s)
+  GuidancePlansService
+    ÔêÜ should be defined (13 ms)
+    createGuidancePlan
+      ÔêÜ should create plan successfully (4 ms)
+      ÔêÜ should throw ForbiddenException if not Babalawo (24 ms)
+      ÔêÜ should throw BadRequestException if appointment not COMPLETED (4 ms)
+      ÔêÜ should throw BadRequestException if total cost mismatch (18 ms)
+    approveGuidancePlan
+      ├ù should approve plan and create escrow (5 ms)
+      ├ù should reject plan (3 ms)
+      ÔêÜ should throw ForbiddenException if not owner (2 ms)
+    completeGuidancePlan
+      ÔêÜ should complete plan and release escrow (2 ms)
+      ÔêÜ should throw ForbiddenException if not Babalawo (2 ms)
+
+  ÔùÅ GuidancePlansService ÔÇ║ approveGuidancePlan ÔÇ║ should approve plan and create escrow
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: Anything, ObjectContaining {"data": ObjectContaining {"status": "APPROVED"}}
+    Received: {"data": {"approvedAt": 2026-02-10T20:27:25.941Z, "escrowId": "escrow-1", "notes": "[Approved: 2026-02-10T20:27:25.941Z]", "status": "APPROVED"}, "include": {"escrow": {"include": {"wallet": {"select": {"currency": true, "id": true}}}}}, "where": {"id": "plan-1"}}
+
+    Number of calls: 1
+
+      176 |         mockClient,
+      177 |       );
+    > 178 |       expect(prisma.guidancePlan.update).toHaveBeenCalledWith(
+          |                                          ^
+      179 |         expect.anything(),
+      180 |         expect.objectContaining({ data: expect.objectContaining({ status: 'APPROVED' }) }),
+      181 |       );
+
+      at Object.<anonymous> (prescriptions/prescriptions.service.spec.ts:178:42)
+
+  ÔùÅ GuidancePlansService ÔÇ║ approveGuidancePlan ÔÇ║ should reject plan
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: Anything, ObjectContaining {"data": ObjectContaining {"status": "CANCELLED"}}
+    Received: {"data": {"cancelledAt": 2026-02-10T20:27:25.946Z, "notes": "[Rejected: Too expensive]", "status": "CANCELLED"}, "where": {"id": "plan-1"}}
+
+    Number of calls: 1
+
+      192 |       await service.approveGuidancePlan('plan-1', 'client-1', dto, mockClient);
+      193 |
+    > 194 |       expect(prisma.guidancePlan.update).toHaveBeenCalledWith(
+          |                                          ^
+      195 |         expect.anything(),
+      196 |         expect.objectContaining({ data: expect.objectContaining({ status: 'CANCELLED' }) }),
+      197 |       );
+
+      at Object.<anonymous> (prescriptions/prescriptions.service.spec.ts:194:42)
+
+Test Suites: 1 failed, 1 total
+Tests:       2 failed, 8 passed, 10 total
+Snapshots:   0 total
+Time:        6.789 s
+Ran all test suites matching /src\\prescriptions\\prescriptions.service.spec.ts/i.
+npm error Lifecycle script `test` failed with error:
+npm error code 1
+npm error path C:\Users\Test\ifa_app\backend
+npm error workspace @ile-ase/backend@0.1.0
+npm error location C:\Users\Test\ifa_app\backend
+npm error command failed
+npm error command C:\WINDOWS\system32\cmd.exe /d /s /c jest src/prescriptions/prescriptions.service.spec.ts

@@ -1,0 +1,75 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - main [ref=e5]:
+    - generic [ref=e6]:
+      - button "Toggle menu" [ref=e7] [cursor=pointer]:
+        - img [ref=e9]
+      - heading "Ilé Àṣẹ" [level=1] [ref=e10]
+      - button [ref=e11] [cursor=pointer]:
+        - img [ref=e12]
+    - generic [ref=e18]:
+      - generic [ref=e19]:
+        - generic [ref=e20]:
+          - heading "Welcome, Client" [level=1] [ref=e21]
+          - paragraph [ref=e22]: Your personalized spiritual journey hub.
+        - generic [ref=e23]:
+          - button "Find Babalawo" [ref=e24] [cursor=pointer]:
+            - img [ref=e25]
+            - text: Find Babalawo
+          - button "Book Consultation" [ref=e30] [cursor=pointer]:
+            - img [ref=e31]
+            - text: Book Consultation
+      - generic [ref=e33]:
+        - button "My Consultations 0" [ref=e34] [cursor=pointer]:
+          - generic [ref=e35]:
+            - paragraph [ref=e36]: My Consultations
+            - heading "0" [level=3] [ref=e37]
+          - img [ref=e39]
+        - button "Guidance Plans 0" [ref=e41] [cursor=pointer]:
+          - generic [ref=e42]:
+            - paragraph [ref=e43]: Guidance Plans
+            - heading "0" [level=3] [ref=e44]
+          - img [ref=e46]
+        - button "Unread Messages 0" [ref=e49] [cursor=pointer]:
+          - generic [ref=e50]:
+            - paragraph [ref=e51]: Unread Messages
+            - heading "0" [level=3] [ref=e52]
+          - img [ref=e54]
+        - button "Wallet Balance ₦0" [ref=e56] [cursor=pointer]:
+          - generic [ref=e57]:
+            - paragraph [ref=e58]: Wallet Balance
+            - heading "₦0" [level=3] [ref=e59]
+          - img [ref=e61]
+      - generic [ref=e64]:
+        - generic [ref=e67]:
+          - img [ref=e70]
+          - heading "Begin Your Journey" [level=1] [ref=e73]
+          - paragraph [ref=e74]: The path to destiny is rarely walked alone. Connect with a verified Babaláwo to unlock the full potential of your dashboard, receive guidance, and align with your true self.
+          - button "Find a Spiritual Guide" [ref=e76] [cursor=pointer]:
+            - img [ref=e77]
+            - text: Find a Spiritual Guide
+        - generic [ref=e81]:
+          - generic [ref=e82]:
+            - generic [ref=e83]:
+              - heading "My Communities" [level=3] [ref=e84]
+              - button "View All" [ref=e85] [cursor=pointer]
+            - generic [ref=e86]:
+              - paragraph [ref=e87]: Not yet part of any temples.
+              - paragraph [ref=e88]: Not yet part of any circles.
+          - generic [ref=e89]:
+            - generic [ref=e90]:
+              - heading "Recent Consultations" [level=3] [ref=e91]
+              - button "View All" [ref=e92] [cursor=pointer]
+            - paragraph [ref=e94]: No recent consultations.
+          - generic [ref=e95]:
+            - heading "Marketplace" [level=3] [ref=e96]
+            - paragraph [ref=e97]: Recommended items for your journey
+            - button "Browse Sacred Items" [ref=e98] [cursor=pointer]:
+              - img [ref=e99]
+              - text: Browse Sacred Items
+  - button "CLIENT" [ref=e103] [cursor=pointer]:
+    - img [ref=e104]
+    - generic [ref=e107]: CLIENT
+```
