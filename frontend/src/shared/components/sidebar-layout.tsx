@@ -24,6 +24,7 @@ import NotificationDropdown from './notification-dropdown';
 import api from '@/lib/api';
 import { getNavItemsForRole, getRoleDisplayName, getRoleBadgeColor, type NavItem } from '../config/navigation';
 import { logger } from '@/shared/utils/logger';
+import { useDailyOdu } from '@/shared/hooks/use-daily-odu';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 interface SidebarLayoutProps {
@@ -42,6 +43,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [isHovering, setIsHovering] = useState(false);
     const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
+    const { displayString: dailyOduDisplay } = useDailyOdu();
 
     // Fetch unread notification count for bell badge
     const { data: unreadCount } = useQuery<{ count: number }>({
@@ -551,7 +553,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                             <h2 className="text-2xl font-bold brand-font text-foreground capitalize">
                                 {location.pathname === '/' ? 'Home' : location.pathname.substring(1).split('/')[0].replace(/-/g, ' ')}
                             </h2>
-                            <p className="text-sm text-muted-foreground">Monday, October 24th • Odu: Eji Ogbe</p>
+                            <p className="text-sm text-muted-foreground">{dailyOduDisplay}</p>
                         </div>
                     </div>
 
