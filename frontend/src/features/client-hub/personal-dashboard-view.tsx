@@ -17,11 +17,13 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { useClientDashboard } from '@/shared/hooks/dashboard';
+import { useUserStats } from '@/shared/hooks/use-user-stats';
 
 const PersonalDashboardView: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: dashboard, isLoading } = useClientDashboard();
+  const userStats = useUserStats();
 
   if (isLoading) {
     return (
@@ -81,9 +83,9 @@ const PersonalDashboardView: React.FC = () => {
                   <Award className="text-yellow-300" size={20} />
                   <span className="text-sm font-medium">Spiritual Growth</span>
                 </div>
-                <div className="text-2xl font-bold">Level 3</div>
+                <div className="text-2xl font-bold">Level {userStats.level}</div>
                 <div className="w-full bg-white/30 rounded-full h-2 mt-2">
-                  <div className="bg-yellow-300 h-2 rounded-full w-3/4"></div>
+                  <div className={`bg-yellow-300 h-2 rounded-full ${userStats.levelProgressClass}`}></div>
                 </div>
               </div>
               
@@ -101,7 +103,7 @@ const PersonalDashboardView: React.FC = () => {
                   <Star className="text-blue-300" size={20} />
                   <span className="text-sm font-medium">Learning Progress</span>
                 </div>
-                <div className="text-2xl font-bold">67%</div>
+                <div className="text-2xl font-bold">{userStats.learningProgress}%</div>
                 <p className="text-xs text-emerald-100 mt-1">Academy Courses</p>
               </div>
             </div>
