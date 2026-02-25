@@ -68,7 +68,7 @@ export const BookingForm: React.FC<BookingFormProps> = ({ babalawoId, babalawoNa
       const demoBabalawo = getDemoUserById(babalawoId) as DemoUser | null;
       const demoAppointment = {
         id: demoId,
-        confirmationCode: `CONF-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
+        confirmationCode: `CONF-${Date.now().toString(36).slice(-6).toUpperCase()}`,
         clientId: user?.id || 'demo-client-1',
         babalawoId,
         babalawo: {

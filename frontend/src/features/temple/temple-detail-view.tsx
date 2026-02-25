@@ -9,6 +9,7 @@ import { isDemoMode } from '@/shared/config/demo-mode';
 import { DEMO_EVENTS, DEMO_TEMPLES, DEMO_USERS } from '@/demo';
 import BabalawoProfileCard from '../babalawo/profile/babalawo-profile-card';
 import BabalawoProfileModal from '@/shared/components/babalawo-profile-modal';
+import { seededRandomInt } from '@/shared/utils/seeded-random';
 // import { DEMO_TEMPLES, getDemoUsersByRole } from '@/demo';
 
 interface TempleDetailViewProps {
@@ -53,7 +54,7 @@ const TempleDetailView: React.FC<TempleDetailViewProps> = ({
           data.babalawos = data.babalawos.map((b: any) => ({
             ...b,
             rating: b.rating || 5.0,
-            reviewCount: b.reviewCount || Math.floor(Math.random() * 50) + 10,
+            reviewCount: b.reviewCount || seededRandomInt(`${b.id}-reviews`, 10, 59),
             specialties: b.interests || b.specialization || ['Ifa Divination', 'Counseling'] // Fallback
           }));
         }
@@ -78,7 +79,7 @@ const TempleDetailView: React.FC<TempleDetailViewProps> = ({
             avatar: user.avatar,
             verified: (user as any).verified ?? true,
             rating: (user as any).rating || 5.0,
-            reviewCount: (user as any).reviewCount || Math.floor(Math.random() * 50) + 10,
+            reviewCount: (user as any).reviewCount || seededRandomInt(`${user.id}-reviews`, 10, 59),
             specialties: (user as any).services?.map((service: any) => service.title) || (user as any).interests || ['Ifa Divination'],
             verificationApps: [{ tier: 'MASTER' }]
           }));

@@ -61,7 +61,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({
           id: `demo-event-${Date.now()}`,
           title: data.title,
           description: data.description,
-          slug: `${slugBase}-${Math.random().toString(36).slice(2, 6)}`,
+          slug: `${slugBase}-${Date.now().toString(36).slice(-4)}`,
           type: data.type,
           category: data.category,
           startDate: data.startDate,

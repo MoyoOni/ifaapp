@@ -16,5 +16,10 @@ module.exports = {
     ],
     '@typescript-eslint/no-explicit-any': 'warn',
     '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+    'no-restricted-properties': ['error', {
+      object: 'Math',
+      property: 'random',
+      message: 'Use seededRandom() from @/shared/utils/seeded-random instead of Math.random() to prevent data flickering.',
+    }],
   },
 };

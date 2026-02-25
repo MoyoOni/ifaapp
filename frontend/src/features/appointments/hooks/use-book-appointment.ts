@@ -51,7 +51,7 @@ export const useBookAppointment = () => {
 
       const demoBabalawo = getDemoUserById(data.babalawoId);
       const demoClient = getDemoUserById(data.clientId);
-      const confirmationCode = `DEMO-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+      const confirmationCode = `DEMO-${Date.now().toString(36).slice(-6).toUpperCase()}`;
 
       setError(null);
       return {

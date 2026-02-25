@@ -19,6 +19,7 @@ import { isDemoMode } from '@/shared/config/demo-mode';
 import { DEMO_TEMPLES, DEMO_CIRCLES } from '@/demo';
 import { logger } from '@/shared/utils/logger';
 import { cn } from '@/lib/utils';
+import { seededRandomInt, seededFutureDate } from '@/shared/utils/seeded-random';
 
 interface Community {
   id: string;
@@ -75,14 +76,14 @@ const CommunityAccessView: React.FC = () => {
             yorubaName: temple.yorubaName,
             description: temple.description,
             type: 'temple' as const,
-            memberCount: temple.memberCount || Math.floor(Math.random() * 200) + 50,
+            memberCount: temple.memberCount || seededRandomInt(`${temple.id}-members`, 50, 249),
             location: temple.location || `${temple.city}, ${temple.state}`,
             verified: temple.verified,
-            rating: temple.rating || Math.floor(Math.random() * 2) + 4,
+            rating: temple.rating || seededRandomInt(`${temple.id}-rating`, 4, 5),
             category: 'Spiritual Center',
             nextEvent: {
               title: 'Weekly Community Gathering',
-              date: new Date(Date.now() + 86400000 * (Math.random() * 7)).toISOString()
+              date: seededFutureDate(`${temple.id}-event`, 7)
             }
           })),
           ...circles.map((circle: any) => ({
@@ -91,10 +92,10 @@ const CommunityAccessView: React.FC = () => {
             yorubaName: circle.yorubaName,
             description: circle.description,
             type: 'circle' as const,
-            memberCount: circle.memberCount || Math.floor(Math.random() * 50) + 10,
+            memberCount: circle.memberCount || seededRandomInt(`${circle.id}-members`, 10, 59),
             location: circle.location,
             verified: circle.verified || false,
-            rating: circle.rating || Math.floor(Math.random() * 2) + 4,
+            rating: circle.rating || seededRandomInt(`${circle.id}-rating`, 4, 5),
             category: circle.category || 'Study Circle',
             nextEvent: circle.nextMeeting ? {
               title: circle.nextMeeting.title,
@@ -116,14 +117,14 @@ const CommunityAccessView: React.FC = () => {
           yorubaName: temple.yorubaName,
           description: temple.description,
           type: 'temple',
-          memberCount: Math.floor(Math.random() * 200) + 50,
+          memberCount: seededRandomInt(`${temple.id}-members`, 50, 249),
           location: temple.location,
           verified: temple.verified,
-          rating: Math.floor(Math.random() * 2) + 4,
+          rating: seededRandomInt(`${temple.id}-rating`, 4, 5),
           category: 'Spiritual Center',
           nextEvent: {
             title: 'Weekly Community Gathering',
-            date: new Date(Date.now() + 86400000 * (Math.random() * 7)).toISOString()
+            date: seededFutureDate(`${temple.id}-event`, 7)
           }
         }));
 
@@ -134,14 +135,14 @@ const CommunityAccessView: React.FC = () => {
           yorubaName: (circle as any).yorubaName,
           description: circle.description,
           type: 'circle',
-          memberCount: (circle as any).memberCount || Math.floor(Math.random() * 50) + 10,
+          memberCount: (circle as any).memberCount || seededRandomInt(`${circle.id}-members`, 10, 59),
           location: (circle as any).location || 'Virtual',
           verified: (circle as any).verified || false,
-          rating: Math.floor(Math.random() * 2) + 4,
+          rating: seededRandomInt(`${circle.id}-rating`, 4, 5),
           category: (circle as any).category || 'Study Circle',
           nextEvent: {
             title: (circle as any).nextEventTitle || 'Circle Gathering',
-            date: (circle as any).nextEventDate || new Date(Date.now() + 86400000 * (Math.random() * 14)).toISOString()
+            date: (circle as any).nextEventDate || seededFutureDate(`${circle.id}-event`, 14)
           }
         }));
 

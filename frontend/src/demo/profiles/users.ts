@@ -178,6 +178,8 @@ export const DEMO_USERS: Record<string, DemoUser> = {
         ],
         specialization: ['Cleansing', 'Obatala Rituals'],
         createdAt: '2024-09-12T13:00:00Z',
+        rating: 4.7,
+        reviewCount: 56,
         phone: '+234-700-000-0005'
     },
 

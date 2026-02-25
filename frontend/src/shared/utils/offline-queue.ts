@@ -16,13 +16,15 @@ export interface QueuedAction {
 
 const QUEUE_KEY = 'ile-ase-offline-queue';
 const MAX_RETRIES = 3;
+let queueCounter = 0;
 
 /**
  * Add action to offline queue
  */
 export function queueAction(action: Omit<QueuedAction, 'id' | 'timestamp' | 'retries'>): string {
   const queue = getQueue();
-  const id = `action-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  const id = `action-${Date.now()}-${(++queueCounter).toString(36)}`;
+
   
   const queuedAction: QueuedAction = {
     id,

@@ -4,11 +4,12 @@ import { setLogContext } from '@/shared/utils/logger';
 
 const REQUEST_ID_HEADER = 'x-request-id';
 
+let requestCounter = 0;
 function generateRequestId(): string {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return crypto.randomUUID();
   }
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+  return `${Date.now()}-${(++requestCounter).toString(36)}`;
 }
 
 /**

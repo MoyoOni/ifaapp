@@ -15,6 +15,7 @@ import { isDemoMode } from '@/shared/config/demo-mode';
 import { DEMO_USERS, DEMO_TEMPLES } from '@/demo';
 import { logger } from '@/shared/utils/logger';
 import { cn } from '@/lib/utils';
+import { seededRandomInt } from '@/shared/utils/seeded-random';
 
 interface Babalawo {
   id: string;
@@ -88,8 +89,8 @@ const BabalawoDiscoveryView: React.FC = () => {
               bio: user.bio,
               location: user.location,
               culturalLevel: (user as any).culturalLevel || 'Babalawo',
-              rating: (user as any).rating || Math.floor(Math.random() * 2) + 4,
-              reviewCount: (user as any).reviews || Math.floor(Math.random() * 50) + 10,
+              rating: (user as any).rating || seededRandomInt(`${user.id}-rating`, 4, 5),
+              reviewCount: (user as any).reviews || (user as any).reviewCount || seededRandomInt(`${user.id}-reviews`, 10, 59),
               specialties: (user as any).services?.map((s: any) => s.title) || ['Spiritual Guidance'],
               temple: {
                 id: temple?.id || 'temple-1',
