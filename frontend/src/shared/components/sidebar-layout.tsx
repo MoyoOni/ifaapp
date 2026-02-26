@@ -19,6 +19,7 @@ import { useAuth } from '../hooks/use-auth';
 import { cn } from '@/lib/utils';
 import { LanguageSwitcher } from './language-switcher';
 import { ModeToggle } from './mode-toggle';
+import { OrishaThemeSelector } from './orisha-theme-selector';  // Import the new component
 import NotificationDropdown from './notification-dropdown';
 import api from '@/lib/api';
 import { getNavItemsForRole, getRoleDisplayName, getRoleBadgeColor, type NavItem } from '../config/navigation';
@@ -50,11 +51,25 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
     const { data: unreadCount } = useQuery<{ count: number }>({
         queryKey: ['notifications-unread-count', user?.id],
         queryFn: async () => {
-            const response = await api.get('/notifications/unread-count');
-            return response.data;
+            try {
+                const response = await api.get('/notifications/unread-count');
+                return response.data;
+            } catch (error) {
+                // In demo mode, return a default value without logging the error
+                if (import.meta.env.VITE_DEMO_MODE === 'true' || import.meta.env.VITE_ENABLE_DEMO_MODE === 'true') {
+                    console.warn('[Ilé Àṣẹ] [user:demo-client-1] Failed to fetch unread notification count, using demo value');
+                    return { count: 0 };
+                }
+                
+                logger.error('Failed to fetch unread notification count:', error);
+                // Return a default value when API fails
+                return { count: 0 };
+            }
         },
         enabled: !!user,
         refetchInterval: 30000, // Refresh every 30 seconds
+        retry: 1, // Retry once on failure
+        staleTime: 60000, // Consider data fresh for 1 minute
     });
 
     // Get role-based navigation items
@@ -477,6 +492,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                         </div>
                         <LanguageSwitcher />
                         <ModeToggle />
+                        <OrishaThemeSelector />  // Add the new component
                     </div>
                 </header>
 

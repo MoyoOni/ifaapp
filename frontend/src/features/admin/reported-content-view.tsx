@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, CheckCircle, Trash2, Shield, Eye } from 'lucide-react';
+import { Flag } from 'lucide-react';
 import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
-
+import { Button } from '@/shared/components/ui/button';
+import { Badge } from '@/shared/components/ui/badge';
 import { getDemoReportedContent } from '@/demo';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
@@ -22,7 +23,6 @@ interface ReportedItem {
 
 const ReportedContentView: React.FC = () => {
     const queryClient = useQueryClient();
-    const [selectedItem, setSelectedItem] = useState<ReportedItem | null>(null);
 
     // Fetch reported content
     const { data: reports = [], isLoading } = useQuery<ReportedItem[]>({
@@ -53,17 +53,19 @@ const ReportedContentView: React.FC = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['admin-reported-content'] });
-            setSelectedItem(null);
         },
     });
 
-    const handleResolve = (action: 'DISMISS' | 'REMOVE') => {
-        if (!selectedItem) return;
-        resolveMutation.mutate({
-            type: selectedItem.type,
-            id: selectedItem.id,
-            action,
-        });
+    const handleAction = (id: string, action: string) => {
+        const item = reports.find(r => r.id === id);
+        if (!item) return;
+        if (action === 'remove') {
+            resolveMutation.mutate({ type: item.type, id, action: 'REMOVE' });
+        } else if (action === 'dismiss') {
+            resolveMutation.mutate({ type: item.type, id, action: 'DISMISS' });
+        } else {
+            logger.info(`Action '${action}' on report ${id}`);
+        }
     };
 
     if (isLoading) {
@@ -88,21 +90,21 @@ const ReportedContentView: React.FC = () => {
                 <div key={report.id} className="border border-input rounded-xl p-6">
                   <div className="flex flex-wrap justify-between items-start gap-4 mb-4">
                     <div>
-                      <h2 className="text-[1.125rem] font-[700] text-foreground">{report.contentTitle}</h2>
+                      <h2 className="text-[1.125rem] font-[700] text-foreground">{report.targetName}</h2>
                       <p className="text-[0.875rem] text-muted-foreground">
-                        Reported by {report.reporterName} • {new Date(report.timestamp).toLocaleDateString()}
+                        Reported by {report.reporter} • {new Date(report.createdAt).toLocaleDateString()}
                       </p>
                     </div>
                     <Badge variant="outline" className="text-[0.75rem] font-[700]">
-                      {report.category}
+                      {report.type.replace(/_/g, ' ')}
                     </Badge>
                   </div>
-                  
-                  <p className="text-[0.875rem] text-foreground mb-6">{report.reason}</p>
-                  
+
+                  <p className="text-[0.875rem] text-foreground mb-6">Flagged {report.flaggedCount} times</p>
+
                   <div className="bg-muted rounded-xl p-4 mb-6">
                     <h3 className="text-[1rem] font-[700] text-foreground mb-2">Content Preview</h3>
-                    <p className="text-[0.875rem] text-foreground line-clamp-3">{report.contentPreview}</p>
+                    <p className="text-[0.875rem] text-foreground line-clamp-3">{report.content}</p>
                   </div>
                   
                   <div className="flex flex-wrap gap-3">

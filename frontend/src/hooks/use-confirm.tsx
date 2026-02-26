@@ -40,20 +40,22 @@ export const useConfirm = () => {
     setIsOpen(false);
   }, [resolveReject]);
 
+  const ConfirmationDialogComponent = () => {
+    return (
+      <ConfirmationDialog
+        isOpen={isOpen}
+        title={options.title || 'Confirm Action'}
+        message={options.message}
+        confirmText={options.confirmText}
+        cancelText={options.cancelText}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+      />
+    );
+  };
+
   return {
-    ConfirmationDialog: () => {
-      return (
-        <ConfirmationDialog
-          isOpen={isOpen}
-          title={options.title || 'Confirm Action'}
-          message={options.message}
-          confirmText={options.confirmText}
-          cancelText={options.cancelText}
-          onConfirm={handleConfirm}
-          onCancel={handleCancel}
-        />
-      );
-    },
+    ConfirmationDialog: ConfirmationDialogComponent,
     confirm
   };
 };

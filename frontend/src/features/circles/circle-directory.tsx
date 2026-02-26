@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Users, UserPlus, Loader2, Lightbulb, Globe, Lock, MapPin, ChevronRight } from 'lucide-react';
+import { Users, UserPlus, Lightbulb, Globe, Lock, MapPin, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { useCirclesQuery } from '@/shared/hooks/queries';
@@ -156,7 +156,6 @@ const CircleDirectory: React.FC<CircleDirectoryProps> = ({ onSelectCircle, onCre
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="h-12 text-[0.875rem]"
-              leftIcon={<Search className="text-muted-foreground" />}
             />
           </div>
           <Select value={privacyFilter} onValueChange={setPrivacyFilter}>

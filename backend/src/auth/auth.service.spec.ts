@@ -5,6 +5,8 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { MessagingService } from '../messaging/messaging.service';
+import { UserService } from '../modules/user/user.service';
+import { ImpersonationService } from '../shared/services/impersonation.service';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -44,6 +46,16 @@ describe('AuthService', () => {
     sendSystemMessage: jest.fn(),
   };
 
+  const mockUserService = {
+    findById: jest.fn(),
+    findByEmail: jest.fn(),
+  };
+
+  const mockImpersonationService = {
+    startImpersonation: jest.fn(),
+    stopImpersonation: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -52,6 +64,8 @@ describe('AuthService', () => {
         { provide: JwtService, useValue: mockJwtService },
         { provide: ConfigService, useValue: mockConfigService },
         { provide: MessagingService, useValue: mockMessagingService },
+        { provide: UserService, useValue: mockUserService },
+        { provide: ImpersonationService, useValue: mockImpersonationService },
       ],
     }).compile();
 
@@ -445,7 +459,7 @@ describe('AuthService', () => {
       expect(jwtService.sign).toHaveBeenCalledTimes(2);
       expect(jwtService.sign).toHaveBeenCalledWith(mockPayload, {
         secret: 'test-jwt-secret',
-        expiresIn: '15m',
+        expiresIn: '1h',
       });
       expect(jwtService.sign).toHaveBeenCalledWith(mockPayload, {
         secret: 'test-refresh-secret',

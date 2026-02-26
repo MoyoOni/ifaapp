@@ -1,23 +1,19 @@
 import React, { useState } from 'react';
-import { Users, LogIn } from 'lucide-react';
+import { Users } from 'lucide-react';
 import { AdminUser } from './admin-shared-components';
-import LoadingSpinner from '@/components/common/LoadingSpinner';
-import Input from '@/components/common/Input';
-import Select from '@/components/common/Select';
-import Button from '@/components/common/Button';
+import { Input } from '@/shared/components/ui/input';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/shared/components/ui/select';
+import { Button } from '@/shared/components/ui/button';
 
 interface AdminUserManagementTabProps {
     users: AdminUser[];
-    usersLoading: boolean;
     onImpersonate: (userId: string) => void;
 }
 
 const AdminUserManagementTab: React.FC<AdminUserManagementTabProps> = ({
     users,
-    usersLoading,
     onImpersonate,
 }) => {
-    const [showAll, setShowAll] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [roleFilter, setRoleFilter] = useState('');
 

@@ -1,6 +1,5 @@
 import React from 'react';
 import { Plus, Calendar, MessageSquare, Settings } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 interface QuickActionsProps {
   className?: string;

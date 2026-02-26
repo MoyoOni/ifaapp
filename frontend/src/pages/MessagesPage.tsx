@@ -53,6 +53,7 @@ const MessagesPage: React.FC = () => {
                   <button
                     onClick={() => navigate('/messages')}
                     className="p-2 hover:bg-white rounded-xl transition-colors text-stone-400 hover:text-stone-800"
+                    aria-label="Back to messages"
                   >
                     <ArrowLeft size={24} />
                   </button>

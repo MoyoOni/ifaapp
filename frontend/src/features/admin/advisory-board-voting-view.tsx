@@ -4,7 +4,6 @@ import {
   Vote,
   Users,
   Calendar,
-  Loader2,
   Plus,
   XCircle,
   CheckCircle2,
@@ -53,6 +52,7 @@ interface CastVoteDto {
 
 const AdvisoryBoardVotingView: React.FC = () => {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'active' | 'closed' | 'create'>('active');
 
@@ -155,20 +155,20 @@ const AdvisoryBoardVotingView: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (options.length < 2) {
+    if (newVote.voteOptions.length < 2) {
       showToast('Please provide at least 2 voting options', 'error');
       return;
     }
-    
-    if (!title.trim()) {
+
+    if (!newVote.title.trim()) {
       showToast('Please fill in all required fields', 'error');
       return;
     }
-    
+
     createVoteMutation.mutate({
       title: newVote.title,
       description: newVote.description,
-      voteOptions: options,
+      voteOptions: newVote.voteOptions,
       deadline: newVote.deadline,
       requiredMajority: newVote.requiredMajority
     });

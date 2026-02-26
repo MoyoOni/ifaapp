@@ -13,6 +13,7 @@ import {
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { logger } from '@/shared/utils/logger';
+import { useToast } from '@/components/common/ToastProvider';
 import { isDemoMode } from '@/shared/config/demo-mode';
 import { getUserWallet } from '@/demo';
 import { TransactionType, TransactionStatus, Currency, PaymentPurpose } from '@common';

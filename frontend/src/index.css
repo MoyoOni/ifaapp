@@ -2,6 +2,98 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Light theme colors based on Orisha system */
+  --background: 50 25% 96%; /* Sacred Ivory - Sacred Ivory light */
+  --foreground: 24 15% 15%; /* Deep Sacred - Deep sacred light */
+  --foreground-secondary: 24 10% 40%; /* Soft Sacred - Medium neutral for secondary text */
+  
+  --muted: 24 5% 90%; /* Light neutral */
+  --muted-foreground: 24 5% 60%; /* Muted Sacred - Light neutral for muted text */
+  
+  --popover: 50 25% 96%; /* Sacred Ivory - Card background */
+  --popover-foreground: 24 15% 15%; /* Deep Sacred - Card text */
+  
+  --border: 24 5% 85%; /* Border Sacred - Subtle border color */
+  --input: 24 5% 85%; /* Border Sacred - Input border */
+  
+  --card: 50 25% 96%; /* Sacred Ivory - Card surface */
+  --card-foreground: 24 15% 15%; /* Deep Sacred - Card text */
+  
+  --primary: 38 92% 50%; /* Osun Gold - Golden yellow */
+  --primary-foreground: 0 0% 98%; /* Light text on primary */
+  
+  --secondary: 350 90% 45%; /* Ogun Iron - Deep red */
+  --secondary-foreground: 0 0% 98%; /* Light text on secondary */
+  
+  --accent: 15 70% 45%; /* Ogun Rust - Rust brown */
+  --accent-foreground: 0 0% 98%; /* Light text on accent */
+  
+  --highlight: 0 85% 55%; /* Shango Thunder - Bright red */
+  --highlight-foreground: 0 0% 98%; /* Light text on highlight */
+  
+  --success: 142 86% 28%; /* Oshun Forest - Emerald green */
+  --success-foreground: 0 0% 98%; /* Light text on success */
+  
+  --warning: 15 70% 45%; /* Ogun Rust - Rust brown */
+  --warning-foreground: 0 0% 98%; /* Light text on warning */
+  
+  --error: 0 85% 55%; /* Shango Thunder - Bright red */
+  --error-foreground: 0 0% 98%; /* Light text on error */
+  
+  --destructive: 0 85% 55%; /* Shango Thunder - Same as error for consistency */
+  --destructive-foreground: 0 0% 98%; /* Light text on destructive */
+  
+  --ring: 24 5% 60%; /* Ring color */
+  
+  --radius: 0.5rem;
+}
+
+.dark {
+  /* Dark theme colors based on Orisha system */
+  --background: 24 10% 10%; /* Dark background */
+  --foreground: 40 10% 90%; /* Deep Sacred - Inverted for dark mode */
+  --foreground-secondary: 40 5% 70%; /* Soft Sacred - Inverted for dark mode */
+  
+  --muted: 24 5% 15%; /* Darker neutral */
+  --muted-foreground: 40 5% 50%; /* Muted Sacred - Inverted for dark mode */
+  
+  --popover: 24 10% 8%; /* Dark popover */
+  --popover-foreground: 40 10% 90%; /* Popover text */
+  
+  --border: 30 5% 30%; /* Border Sacred - Inverted for dark mode */
+  --input: 30 5% 30%; /* Input border */
+  
+  --card: 24 10% 8%; /* Dark card surface */
+  --card-foreground: 40 10% 90%; /* Card text */
+  
+  --primary: 38 92% 60%; /* Osun Gold - Adjusted for dark mode */
+  --primary-foreground: 0 0% 20%; /* Darker text on primary */
+  
+  --secondary: 350 90% 55%; /* Ogun Iron - Adjusted for dark mode */
+  --secondary-foreground: 0 0% 98%; /* Light text on secondary */
+  
+  --accent: 15 70% 55%; /* Ogun Rust - Adjusted for dark mode */
+  --accent-foreground: 0 0% 98%; /* Light text on accent */
+  
+  --highlight: 0 85% 65%; /* Shango Thunder - Adjusted for dark mode */
+  --highlight-foreground: 0 0% 98%; /* Light text on highlight */
+  
+  --success: 142 86% 35%; /* Oshun Forest - Adjusted for dark mode */
+  --success-foreground: 0 0% 98%; /* Light text on success */
+  
+  --warning: 15 70% 55%; /* Ogun Rust - Adjusted for dark mode */
+  --warning-foreground: 0 0% 98%; /* Light text on warning */
+  
+  --error: 0 85% 65%; /* Shango Thunder - Adjusted for dark mode */
+  --error-foreground: 0 0% 98%; /* Light text on error */
+  
+  --destructive: 0 85% 65%; /* Shango Thunder - Adjusted for dark mode */
+  --destructive-foreground: 0 0% 98%; /* Light text on destructive */
+  
+  --ring: 24 5% 40%; /* Ring color for dark mode */
+}
+
 /* Custom scrollbar styling */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
@@ -260,23 +352,4 @@ html {
   grid-row: span 3;
 }
 
-/* Dark mode adjustments for specific elements */
-@media (prefers-color-scheme: dark) {
-  .dark\:bg-white {
-    background-color: hsl(var(--card));
-  }
-  
-  .dark\:bg-stone-50,
-  .dark\:bg-stone-100 {
-    background-color: hsl(var(--background));
-  }
-  
-  .dark\:text-stone-900,
-  .dark\:text-stone-800 {
-    color: hsl(var(--foreground));
-  }
-  
-  .dark\:border-stone-200 {
-    border-color: hsl(var(--border));
-  }
-}
+/* Remove the old dark mode adjustments as we now define proper CSS variables */

@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Users, Shield, MessageSquare, Calendar,
+  Users, Shield, MessageSquare,
   AlertTriangle, DollarSign, BarChart3,
-  Building2, Store, Activity, LogIn, Link as LinkIcon, CheckCircle, XCircle
+  Building2, Store, Activity, XCircle
 } from 'lucide-react';
 import { useAuth } from '@/shared/hooks/use-auth';
+import { usePrompt } from '@/hooks/use-prompt';
 import api from '@/lib/api';
 import VerificationQueueView from './verification-queue-view';
 import DisputeCenterView from './dispute-center-view';
@@ -64,10 +65,17 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ initialTab }) =
   const [activeTab, setActiveTab] = useState<AdminTab>(initialTab || 'overview');
 
   const { showToast } = useToast();
+  const { PromptDialog, prompt: promptInput } = usePrompt();
 
   const impersonateUser = async (id: string, name: string) => {
     try {
-      const reason = window.prompt('Please provide a reason for impersonating this user (Audited):');
+      const reason = await promptInput({
+        title: 'User Impersonation (Audited)',
+        message: 'Please provide a mandatory reason for impersonating this user. This action will be logged.',
+        placeholder: 'Reason for impersonation...',
+        confirmText: 'Impersonate',
+        required: true,
+      });
       if (!reason) return;
       await impersonate(id, reason);
       showToast(`Impersonating ${name}`, 'success');
@@ -149,7 +157,7 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ initialTab }) =
             verificationsLoading={verificationsLoading}
             onNavigateToVerification={() => setActiveTab('verification')}
             onNavigateToUsers={() => setActiveTab('users')}
-            onImpersonate={impersonateUser}
+            onImpersonate={(userId) => impersonateUser(userId, '')}
           />
         );
       case 'verification': return <VerificationQueueView />;
@@ -157,8 +165,7 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ initialTab }) =
         return (
           <AdminUserManagementTab
             users={users}
-            usersLoading={usersLoading}
-            onImpersonate={impersonateUser}
+            onImpersonate={(userId) => impersonateUser(userId, '')}
           />
         );
       case 'temples':
@@ -197,6 +204,7 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ initialTab }) =
 
   return (
     <div className="min-h-screen bg-background text-white p-6">
+      <PromptDialog />
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="space-y-2">

@@ -8,7 +8,7 @@
 import { designTokens } from './tokens';
 
 // Mapping of hardcoded font classes to design token equivalents
-export const typographyMappings = {
+export const typographyMappings: Record<string, string> = {
   // Font size mappings
   'text-xs': `text-[${designTokens.fontSize.xs[0]}]`, // 0.75rem
   'text-sm': `text-[${designTokens.fontSize.sm[0]}]`, // 0.875rem
@@ -116,7 +116,7 @@ export function convertCommonTypography(className: string): string {
   let result = className;
   
   // Replace common combinations first
-  Object.entries(commonTypographyCombinations).forEach(([pattern, replacement]) => {
+  Object.entries(commonTypographyCombinations).forEach(([pattern, _replacement]) => {
     // Split the classnames to arrays for comparison
     const patternClasses = pattern.split(' ');
     const classNames = result.split(' ');

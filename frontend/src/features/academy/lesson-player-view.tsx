@@ -6,7 +6,6 @@ import { logger } from '@/shared/utils/logger';
 import { isDemoMode } from '@/shared/config/demo-mode';
 import { getCourseById } from './course-data';
 // import { useAuth } from '@/shared/hooks/use-auth';
-import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface Lesson {
   id: string;

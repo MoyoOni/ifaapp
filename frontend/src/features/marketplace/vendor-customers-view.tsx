@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
-import { Users, MapPin, Calendar, Star, Mail, Phone, Eye, Filter, Search } from 'lucide-react';
+import { Users, MapPin, Star, Eye, Filter, Search } from 'lucide-react';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { useQuery } from '@tanstack/react-query';
-import api from '@/lib/api';
-import { DEMO_USERS } from '@/demo';
 
 interface VendorCustomerInsightsViewProps {
   onBack?: () => void;

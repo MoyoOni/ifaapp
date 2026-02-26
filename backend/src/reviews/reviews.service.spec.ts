@@ -51,6 +51,7 @@ describe('ReviewsService', () => {
 
     const mockCurrentUser = {
         id: 'user-1',
+        sub: 'user-1',
         email: 'user@example.com',
         role: 'CLIENT' as any,
         verified: true,
@@ -83,6 +84,7 @@ describe('ReviewsService', () => {
 
             const mockReview = {
                 id: 'review-1',
+        sub: 'review-1',
                 productId,
                 userId: mockCurrentUser.id,
                 ...dto,
@@ -147,6 +149,7 @@ describe('ReviewsService', () => {
 
             const mockReview = {
                 id: 'review-1',
+        sub: 'review-1',
                 babalawoId,
                 clientId: mockCurrentUser.id,
                 ...dto,
@@ -191,6 +194,7 @@ describe('ReviewsService', () => {
 
             const mockReview = {
                 id: 'review-1',
+        sub: 'review-1',
                 courseId,
                 userId: mockCurrentUser.id,
                 ...dto,

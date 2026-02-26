@@ -9,6 +9,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { MessagingService } from './messaging.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { UseGuards, UnauthorizedException, Logger } from '@nestjs/common';
@@ -16,7 +17,15 @@ import { WsJwtGuard } from '../auth/guards/ws-jwt.guard';
 
 @WebSocketGateway({
   cors: {
-    origin: '*', // In production, restrict this
+    origin: (origin: string, callback: (err: Error | null, allow?: boolean) => void) => {
+      const allowed = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const allowedOrigins = allowed.split(',').map((o) => o.trim());
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`Origin ${origin} not allowed by CORS`));
+      }
+    },
   },
   namespace: 'messaging',
 })
@@ -28,19 +37,25 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
 
   constructor(
     private readonly messagingService: MessagingService,
-    private readonly jwtService: JwtService
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService
   ) {}
 
   async handleConnection(client: Socket) {
     try {
-      // Validate Token
       const token = this.extractToken(client);
       if (!token) {
         throw new UnauthorizedException('No token provided');
       }
 
+      const jwtSecret = this.configService.get<string>('JWT_SECRET');
+      if (!jwtSecret) {
+        this.logger.error('JWT_SECRET is not configured. Rejecting WebSocket connection.');
+        throw new UnauthorizedException('Server misconfigured');
+      }
+
       const payload = this.jwtService.verify(token, {
-        secret: process.env.JWT_SECRET || 'change-me-in-production',
+        secret: jwtSecret,
       });
 
       // Attach user to socket
@@ -61,6 +76,7 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
     this.logger.log(`Client disconnected: ${client.id}`);
   }
 
+  @UseGuards(WsJwtGuard)
   @SubscribeMessage('sendMessage')
   async handleSendMessage(
     @ConnectedSocket() client: Socket,
@@ -84,7 +100,6 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
     this.server.to(`user_${payload.receiverId}`).emit('new_message', message);
 
     // Also emit back to sender (for confirmation/multi-device sync)
-    // Note: The service returns the message with decrypted content for the sender
     client.emit('message_sent', message);
 
     return message;

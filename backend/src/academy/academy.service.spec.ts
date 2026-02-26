@@ -40,6 +40,7 @@ describe('AcademyService', () => {
 
     const mockCurrentUser = {
         id: 'instructor-1',
+        sub: 'instructor-1',
         email: 'instructor@example.com',
         role: 'BABALAWO' as any,
         verified: true,
@@ -112,6 +113,7 @@ describe('AcademyService', () => {
 
             mockPrismaService.course.findUnique.mockResolvedValue({
                 id: 'course-1',
+        sub: 'course-1',
                 status: 'APPROVED',
             });
             mockPrismaService.enrollment.findUnique.mockResolvedValue(null);

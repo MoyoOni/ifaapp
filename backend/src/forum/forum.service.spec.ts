@@ -48,6 +48,7 @@ describe('ForumService', () => {
 
     const mockCurrentUser = {
         id: 'user-1',
+        sub: 'user-1',
         email: 'user@example.com',
         role: 'CLIENT' as any,
         verified: true,
@@ -90,6 +91,7 @@ describe('ForumService', () => {
         it('should return category by slug', async () => {
             const mockCategory = {
                 id: 'cat-1',
+        sub: 'cat-1',
                 name: 'General Discussion',
                 slug: 'general',
             };
@@ -125,6 +127,7 @@ describe('ForumService', () => {
 
             const mockCategory = {
                 id: 'cat-new',
+        sub: 'cat-new',
                 ...dto,
                 threadCount: 0,
                 createdAt: new Date(),
@@ -181,6 +184,7 @@ describe('ForumService', () => {
 
             const mockThread = {
                 id: 'thread-1',
+        sub: 'thread-1',
                 ...dto,
                 authorId: mockCurrentUser.id,
                 status: 'ACTIVE',
@@ -213,6 +217,7 @@ describe('ForumService', () => {
         it('should return thread with posts', async () => {
             const mockThread = {
                 id: 'thread-1',
+        sub: 'thread-1',
                 title: 'Test Thread',
                 posts: [
                     { id: 'post-1', content: 'First post' },
@@ -286,6 +291,7 @@ describe('ForumService', () => {
 
             const mockPost = {
                 id: 'post-1',
+        sub: 'post-1',
                 ...dto,
                 authorId: mockCurrentUser.id,
                 status: 'ACTIVE',
@@ -315,6 +321,7 @@ describe('ForumService', () => {
 
             const mockAcknowledgment = {
                 id: 'ack-1',
+        sub: 'ack-1',
                 postId,
                 userId: mockCurrentUser.id,
                 createdAt: new Date(),

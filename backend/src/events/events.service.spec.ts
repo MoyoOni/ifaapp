@@ -27,6 +27,7 @@ describe('EventsService', () => {
 
     const mockCurrentUser = {
         id: 'user-1',
+        sub: 'user-1',
         email: 'user@example.com',
         role: 'CLIENT' as any,
         verified: true,
@@ -63,6 +64,7 @@ describe('EventsService', () => {
 
             const mockEvent = {
                 id: 'event-1',
+        sub: 'event-1',
                 ...dto,
                 slug: 'ifa-festival-2024',
                 creatorId: mockCurrentUser.id,
@@ -135,6 +137,7 @@ describe('EventsService', () => {
         it('should return event by ID', async () => {
             const mockEvent = {
                 id: 'event-1',
+        sub: 'event-1',
                 title: 'Test Event',
                 registrations: [],
             };
@@ -150,6 +153,7 @@ describe('EventsService', () => {
         it('should return event by slug', async () => {
             const mockEvent = {
                 id: 'event-1',
+        sub: 'event-1',
                 slug: 'test-event',
                 title: 'Test Event',
             };
@@ -247,6 +251,7 @@ describe('EventsService', () => {
 
             const mockRegistration = {
                 id: 'reg-1',
+        sub: 'reg-1',
                 eventId,
                 userId: mockCurrentUser.id,
                 status: 'REGISTERED',
@@ -298,6 +303,7 @@ describe('EventsService', () => {
 
             const mockExistingRegistration = {
                 id: 'reg-1',
+        sub: 'reg-1',
                 eventId,
                 userId: mockCurrentUser.id,
             };
@@ -317,6 +323,7 @@ describe('EventsService', () => {
 
             const mockRegistration = {
                 id: 'reg-1',
+        sub: 'reg-1',
                 eventId,
                 userId: mockCurrentUser.id,
                 status: 'REGISTERED',

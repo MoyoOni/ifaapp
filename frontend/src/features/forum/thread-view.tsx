@@ -8,8 +8,6 @@ import { isDemoMode } from '@/shared/config/demo-mode';
 import { UserRole } from '@common';
 import AseAcknowledgmentButton from './ase-acknowledgment-button';
 import { DEMO_FORUM_POSTS_BY_THREAD, DEMO_FORUM_THREADS } from './forum-demo';
-import LoadingSpinner from '@/components/common/LoadingSpinner';
-import { useModal } from '@/components/common/ModalProvider';
 import { useConfirm } from '@/hooks/use-confirm';
 
 interface ForumPost {

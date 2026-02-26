@@ -45,9 +45,7 @@ import { MetricsModule } from './metrics/metrics.module';
 import { QueueModule } from './common/queue/queue.module';
 // import { TestModule } from './test/test.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
-// import { SentryModule } from './sentry/sentry.module';
-// import { SentryExceptionFilter } from './common/filters/sentry-exception.filter';
-// import { SentryMiddleware } from './common/middleware/sentry.middleware';
+import { SentryModule } from './sentry/sentry.module';
 
 // import { ScheduleModule } from '@nestjs/schedule';
 import { DiscoveryModule } from '@nestjs/core';
@@ -104,6 +102,7 @@ import { InfrastructureModule } from './shared/infrastructure.module';
     SecurityModule,
     SharedModule,
     InfrastructureModule,
+    SentryModule,
   ],
   controllers: [],
   providers: [

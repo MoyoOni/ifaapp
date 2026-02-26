@@ -27,6 +27,7 @@ describe('CirclesService', () => {
 
     const mockCurrentUser = {
         id: 'user-1',
+        sub: 'user-1',
         email: 'user@example.com',
         role: 'CLIENT' as any,
         verified: true,
@@ -65,6 +66,7 @@ describe('CirclesService', () => {
 
             const mockCircle = {
                 id: 'circle-1',
+        sub: 'circle-1',
                 ...dto,
                 slug: 'ifa-study-circle',
                 createdBy: adminUser.id,
@@ -111,6 +113,7 @@ describe('CirclesService', () => {
         it('should return circle by ID', async () => {
             const mockCircle = {
                 id: 'circle-1',
+        sub: 'circle-1',
                 name: 'Test Circle',
                 members: [],
             };
@@ -146,6 +149,7 @@ describe('CirclesService', () => {
 
             const mockMembership = {
                 id: 'membership-1',
+        sub: 'membership-1',
                 circleId,
                 userId: mockCurrentUser.id,
                 role: 'MEMBER',
@@ -184,6 +188,7 @@ describe('CirclesService', () => {
 
             const mockMembership = {
                 id: 'membership-1',
+        sub: 'membership-1',
                 circleId,
                 userId: mockCurrentUser.id,
                 status: 'ACTIVE',

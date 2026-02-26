@@ -4,19 +4,17 @@ import { cn } from '@/lib/utils';
 export type ToastType = 'default' | 'success' | 'error' | 'warning' | 'info';
 
 interface ToastProps {
-  id?: string;
   message: string;
   type?: ToastType;
   duration?: number;
   onClose?: () => void;
 }
 
-const Toast: React.FC<ToastProps> = ({ 
-  id, 
-  message, 
-  type = 'default', 
-  duration = 3000, 
-  onClose 
+const Toast: React.FC<ToastProps> = ({
+  message,
+  type = 'default',
+  duration = 3000,
+  onClose
 }) => {
   const [isVisible, setIsVisible] = useState(true);
 

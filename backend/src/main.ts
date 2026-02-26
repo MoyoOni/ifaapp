@@ -3,14 +3,13 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
-// import { initSentry } from './sentry';
-// import { SentryExceptionFilter } from './filters/sentry-exception.filter';
+import { initSentry } from './sentry';
 import { AppModule } from './app.module';
 import { SecurityConfigService } from './security/security-config.service';
 
 const logger = new Logger('Bootstrap');
 
-// initSentry();
+initSentry();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -18,8 +17,6 @@ async function bootstrap() {
   // Get security configuration service
   const securityService = app.get(SecurityConfigService);
   const configService = app.get(ConfigService);
-
-  // app.useGlobalFilters(new SentryExceptionFilter());
 
   // Security middleware with enhanced configuration
   const helmetConfig = securityService.getHelmetConfig();

@@ -124,7 +124,6 @@ export class AccessibilityUtil {
       }
       
       // Try to infer better alt text from surrounding context
-      const parent = img.parentElement;
       const sibling = img.nextElementSibling || img.previousElementSibling;
       
       // Look for nearby text that could serve as alt text

@@ -1,5 +1,6 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
 import { logger } from '@/shared/utils/logger';
+import { isDemoMode } from '@/shared/config/demo-mode';
 
 interface Props {
   children: ReactNode;
@@ -9,6 +10,7 @@ interface Props {
 interface State {
   hasError: boolean;
   error?: Error;
+  errorMessage?: string;
 }
 
 class ErrorBoundary extends Component<Props, State> {
@@ -17,11 +19,20 @@ class ErrorBoundary extends Component<Props, State> {
   };
 
   public static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
+    return { 
+      hasError: true, 
+      error,
+      errorMessage: error.message
+    };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     logger.error('Error caught by boundary:', error, errorInfo);
+    
+    // Specifically log module loading errors
+    if (error.message.includes('Failed to fetch dynamically imported module')) {
+      logger.warn(`[Ilé Àṣẹ] [user:${isDemoMode ? 'demo-client-1' : 'unknown'}] Dynamic import failed:`, error);
+    }
   }
 
   public render(): ReactNode {
@@ -29,6 +40,11 @@ class ErrorBoundary extends Component<Props, State> {
       if (this.props.fallback) {
         return this.props.fallback;
       }
+
+      // Check if this is a module loading error
+      const isModuleLoadError = this.state.errorMessage?.includes('Failed to fetch dynamically imported module') ||
+                               this.state.errorMessage?.includes('Import assertion') ||
+                               this.state.errorMessage?.includes('Cannot resolve module');
 
       return (
         <div className="flex flex-col items-center justify-center min-h-[60vh] p-4 bg-stone-50 dark:bg-stone-900">
@@ -38,16 +54,33 @@ class ErrorBoundary extends Component<Props, State> {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Something went wrong</h2>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+              {isModuleLoadError ? 'Page Loading Issue' : 'Something went wrong'}
+            </h2>
             <p className="text-gray-600 dark:text-gray-300 mb-6">
-              We apologize for the inconvenience. Our team has been notified of the issue.
+              {isModuleLoadError 
+                ? 'There was an issue loading the page. This may be due to a network connectivity issue or a temporary server problem.' 
+                : 'We apologize for the inconvenience. Our team has been notified of the issue.'}
             </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-amber-700 hover:bg-amber-800 text-white rounded-md transition-colors"
-            >
-              Refresh Page
-            </button>
+            <div className="space-y-3">
+              <button
+                onClick={() => window.location.reload()}
+                className="block w-full px-4 py-2 bg-amber-700 hover:bg-amber-800 text-white rounded-md transition-colors"
+              >
+                Refresh Page
+              </button>
+              <button
+                onClick={() => window.location.assign('/')}
+                className="block w-full px-4 py-2 bg-gray-700 hover:bg-gray-800 text-white rounded-md transition-colors"
+              >
+                Go Home
+              </button>
+            </div>
+            {isDemoMode && (
+              <p className="mt-4 text-sm text-amber-600 dark:text-amber-400">
+                Demo Mode Active: Features may be limited
+              </p>
+            )}
           </div>
         </div>
       );

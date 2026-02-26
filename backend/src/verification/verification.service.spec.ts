@@ -34,6 +34,7 @@ describe('VerificationService', () => {
 
     const mockCurrentUser = {
         id: 'user-1',
+        sub: 'user-1',
         email: 'user@example.com',
         role: 'CLIENT' as any,
         verified: false,
@@ -41,6 +42,7 @@ describe('VerificationService', () => {
 
     const mockAdminUser = {
         id: 'admin-1',
+        sub: 'admin-1',
         email: 'admin@example.com',
         role: 'ADMIN' as any,
         verified: true,
@@ -75,12 +77,14 @@ describe('VerificationService', () => {
 
             const mockApplication = {
                 id: 'app-1',
+        sub: 'app-1',
                 userId,
                 ...dto,
                 currentStage: 'APPLICATION',
                 history: [
                     {
                         id: 'hist-1',
+        sub: 'hist-1',
                         stage: 'APPLICATION',
                         status: 'PENDING',
                         timestamp: BigInt(Date.now()),
@@ -115,6 +119,7 @@ describe('VerificationService', () => {
 
             const existingApp = {
                 id: 'app-1',
+        sub: 'app-1',
                 userId,
             };
 
@@ -132,6 +137,7 @@ describe('VerificationService', () => {
 
             const mockApplication = {
                 id: 'app-1',
+        sub: 'app-1',
                 userId,
                 lineage: 'Orunmila',
                 currentStage: 'APPLICATION',
@@ -179,6 +185,7 @@ describe('VerificationService', () => {
                 history: [
                     {
                         id: 'hist-2',
+        sub: 'hist-2',
                         stage: 'INTERVIEW',
                         status: 'APPROVED',
                         reviewerId: mockAdminUser.id,
@@ -253,6 +260,7 @@ describe('VerificationService', () => {
             const mockApplications = [
                 {
                     id: 'app-1',
+        sub: 'app-1',
                     userId: 'user-1',
                     currentStage: 'APPLICATION',
                     user: { id: 'user-1', name: 'User 1', email: 'user1@example.com', role: 'CLIENT' },
@@ -260,6 +268,7 @@ describe('VerificationService', () => {
                 },
                 {
                     id: 'app-2',
+        sub: 'app-2',
                     userId: 'user-2',
                     currentStage: 'INTERVIEW',
                     user: { id: 'user-2', name: 'User 2', email: 'user2@example.com', role: 'CLIENT' },
@@ -279,6 +288,7 @@ describe('VerificationService', () => {
             const mockApplications = [
                 {
                     id: 'app-1',
+        sub: 'app-1',
                     userId: 'user-1',
                     currentStage: 'INTERVIEW',
                     user: { id: 'user-1', name: 'User 1', email: 'user1@example.com', role: 'CLIENT' },

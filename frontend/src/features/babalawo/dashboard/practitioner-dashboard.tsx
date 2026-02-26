@@ -1,9 +1,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Calendar, MessageSquare, DollarSign, Bell, Loader2, BookOpen, Building2 } from 'lucide-react';
+import { Users, Calendar, Loader2, BookOpen, Building2, BarChart3, User } from 'lucide-react';
 import ClientList from '../../client-hub/client-list';
 import { useBabalawoDashboard } from '@/shared/hooks/dashboard';
 import { useAuth } from '@/shared/hooks/use-auth';
+import { Button } from '@/shared/components/ui/button';
 
 interface PractitionerDashboardProps {
     userId?: string;
@@ -123,16 +124,16 @@ const PractitionerDashboard: React.FC<PractitionerDashboardProps> = ({ userId, i
                         <p className="text-[2rem] font-[700]">{stats.totalClients}</p>
                       </div>
                       <div className="bg-card border border-input rounded-2xl p-6">
-                        <h3 className="text-[1rem] font-[500] text-muted-foreground">Pending Sessions</h3>
-                        <p className="text-[2rem] font-[700] text-foreground">{stats.pendingSessions}</p>
+                        <h3 className="text-[1rem] font-[500] text-muted-foreground">Pending Requests</h3>
+                        <p className="text-[2rem] font-[700] text-foreground">{stats.pendingRequests}</p>
                       </div>
                       <div className="bg-card border border-input rounded-2xl p-6">
                         <h3 className="text-[1rem] font-[500] text-muted-foreground">Revenue (This Month)</h3>
-                        <p className="text-[2rem] font-[700] text-foreground">₦{stats.monthlyRevenue.toLocaleString()}</p>
+                        <p className="text-[2rem] font-[700] text-foreground">{stats.monthlyEarnings}</p>
                       </div>
                       <div className="bg-card border border-input rounded-2xl p-6">
-                        <h3 className="text-[1rem] font-[500] text-muted-foreground">Avg. Response Time</h3>
-                        <p className="text-[2rem] font-[700] text-foreground">{stats.avgResponseTime}</p>
+                        <h3 className="text-[1rem] font-[500] text-muted-foreground">Upcoming Sessions</h3>
+                        <p className="text-[2rem] font-[700] text-foreground">{stats.upcomingSessions}</p>
                       </div>
                     </div>
                     
@@ -143,17 +144,17 @@ const PractitionerDashboard: React.FC<PractitionerDashboardProps> = ({ userId, i
                           <Button variant="outline" size="sm">View All</Button>
                         </div>
                         
-                        {recentAppointments.length > 0 ? (
+                        {upcomingAppointments.length > 0 ? (
                           <div className="space-y-4">
-                            {recentAppointments.map(appointment => (
+                            {upcomingAppointments.map((appointment: AppointmentDisplay) => (
                               <div key={appointment.id} className="flex items-center justify-between p-4 border border-input rounded-xl hover:bg-muted/50 transition-colors">
                                 <div>
                                   <h3 className="text-[1rem] font-[700] text-foreground">{appointment.clientName}</h3>
-                                  <p className="text-[0.875rem] text-muted-foreground">{appointment.serviceType}</p>
+                                  <p className="text-[0.875rem] text-muted-foreground">{appointment.type}</p>
                                 </div>
                                 <div className="text-right">
-                                  <p className="text-[0.875rem] font-[500] text-foreground">{new Date(appointment.time).toLocaleDateString()}</p>
-                                  <p className="text-[0.875rem] text-muted-foreground">{new Date(appointment.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                  <p className="text-[0.875rem] font-[500] text-foreground">{appointment.date}</p>
+                                  <p className="text-[0.875rem] text-muted-foreground">{appointment.time}</p>
                                 </div>
                               </div>
                             ))}
@@ -170,29 +171,21 @@ const PractitionerDashboard: React.FC<PractitionerDashboardProps> = ({ userId, i
                         <h2 className="text-[1.25rem] font-[700] text-foreground mb-6">Quick Actions</h2>
                         
                         <div className="space-y-4">
-                          <Button className="w-full justify-start" asChild>
-                            <Link to="/babalawo/schedule">
-                              <Calendar className="w-4 h-4 mr-2" />
-                              Manage Schedule
-                            </Link>
+                          <Button className="w-full justify-start" onClick={() => navigate('/practitioner/calendar')}>
+                            <Calendar className="w-4 h-4 mr-2" />
+                            Manage Schedule
                           </Button>
-                          <Button className="w-full justify-start" asChild>
-                            <Link to="/babalawo/clients">
-                              <Users className="w-4 h-4 mr-2" />
-                              View Clients
-                            </Link>
+                          <Button className="w-full justify-start" onClick={() => navigate('/practitioner/my-seekers')}>
+                            <Users className="w-4 h-4 mr-2" />
+                            View Clients
                           </Button>
-                          <Button className="w-full justify-start" asChild>
-                            <Link to="/babalawo/analytics">
-                              <BarChart3 className="w-4 h-4 mr-2" />
-                              View Analytics
-                            </Link>
+                          <Button className="w-full justify-start" onClick={() => navigate('/practitioner/earnings-report')}>
+                            <BarChart3 className="w-4 h-4 mr-2" />
+                            View Analytics
                           </Button>
-                          <Button className="w-full justify-start" asChild>
-                            <Link to="/babalawo/profile">
-                              <User className="w-4 h-4 mr-2" />
-                              Edit Profile
-                            </Link>
+                          <Button className="w-full justify-start" onClick={() => navigate('/profile')}>
+                            <User className="w-4 h-4 mr-2" />
+                            Edit Profile
                           </Button>
                         </div>
                       </div>
@@ -220,7 +213,7 @@ const PractitionerDashboard: React.FC<PractitionerDashboardProps> = ({ userId, i
                     <button onClick={() => navigate('/practitioner/consultations')} className="px-4 py-2 bg-white border border-stone-300 text-stone-800 font-bold rounded-xl shadow-sm hover:bg-stone-50 transition-colors flex items-center gap-2">
                         <Calendar size={18} /> Calendar
                     </button>
-                    <button onClick={() => navigate('/practitioner/clients/invite')} className="px-4 py-2 bg-highlight text-white font-bold rounded-xl shadow-lg hover:bg-yellow-600 transition-colors flex items-center gap-2">
+                    <button onClick={() => navigate('/practitioner/invite-client')} className="px-4 py-2 bg-highlight text-white font-bold rounded-xl shadow-lg hover:bg-yellow-600 transition-colors flex items-center gap-2">
                         <Users size={18} /> Invite Seeker
                     </button>
                 </div>

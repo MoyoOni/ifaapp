@@ -1,6 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
 import { parseApiError, reportApiError } from '@/shared/utils/api-error';
 import { setLogContext } from '@/shared/utils/logger';
+import { isDemoMode } from '@/shared/config/demo-mode';
 
 const REQUEST_ID_HEADER = 'x-request-id';
 
@@ -82,7 +83,13 @@ api.interceptors.response.use(
     (error as Error & { userMessage?: string; isNetworkError?: boolean }).userMessage =
       parsed.userMessage;
     (error as Error & { isNetworkError?: boolean }).isNetworkError = parsed.isNetworkError;
-    reportApiError(error, { endpoint: originalRequest?.url });
+    
+    // In demo mode, we'll log the error but not necessarily report it to Sentry
+    if (isDemoMode) {
+      console.warn(`[Ilé Àṣẹ] Demo Mode: API error at ${originalRequest?.url}`, error);
+    } else {
+      reportApiError(error, { endpoint: originalRequest?.url });
+    }
 
     return Promise.reject(error);
   }

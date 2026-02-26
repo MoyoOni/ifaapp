@@ -77,7 +77,7 @@ export class FocusTrapUtil {
       this.element.querySelectorAll<HTMLElement>(focusableSelector)
     ).filter(el => {
       // Filter out elements that are not visible or disabled
-      return !el.disabled && 
+      return !(el as HTMLButtonElement).disabled &&
              el.offsetParent !== null && 
              el.getAttribute('aria-hidden') !== 'true' && 
              window.getComputedStyle(el).visibility !== 'hidden';

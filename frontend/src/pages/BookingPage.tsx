@@ -19,7 +19,7 @@ interface BabalawoDetails {
 
 const getBabalawoDetails = async (id: string): Promise<BabalawoDetails> => {
   try {
-    const response = await api.get(`/babalawos/${id}`);
+    const response = await api.get(`/users/${id}`);
     return {
       name: response.data?.name || 'Babalawo',
       yorubaName: response.data?.yorubaName,

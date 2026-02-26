@@ -51,11 +51,7 @@ export function useProfileQuery(userId: string) {
     demoData: DEMO_USERS[userId as keyof typeof DEMO_USERS] || undefined,
     queryOptions: {
       // Only retry when not in demo mode
-      retry: !isDemoMode ? 1 : false,
-      // Handle errors differently based on demo mode
-      onError: (error) => {
-        console.warn(`Failed to fetch profile for user ${userId}`, error);
-      }
+      retry: !isDemoMode ? 1 : false
     }
   });
 }

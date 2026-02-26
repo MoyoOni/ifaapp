@@ -746,6 +746,7 @@ model Transaction {
   manuallyVerifiedBy String?
   webhookReceived    Boolean   @default(false)
   webhookReceivedAt  DateTime?
+  idempotencyKey     String?   @unique
   user               User      @relation("TransactionUser", fields: [userId], references: [id], onDelete: Cascade)
   wallet             Wallet    @relation(fields: [walletId], references: [id], onDelete: Cascade)
 

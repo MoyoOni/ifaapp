@@ -1,20 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import {
-  Search,
-  Filter,
-  MapPin,
-  Star,
-  ChevronDown,
-  Verified
-} from 'lucide-react';
+// motion import removed - not currently used
 import api from '@/lib/api';
+import { Button } from '@/shared/components/ui';
 import { isDemoMode } from '@/shared/config/demo-mode';
 import { DEMO_USERS, DEMO_TEMPLES } from '@/demo';
 import { logger } from '@/shared/utils/logger';
-import { cn } from '@/lib/utils';
+// cn import removed - not currently used
 import { seededRandomInt } from '@/shared/utils/seeded-random';
 import { BabalawoDirectorySkeleton } from '@/shared/components/skeleton';
 
@@ -36,6 +29,9 @@ interface Babalawo {
     yorubaName?: string;
     verified: boolean;
   };
+  services?: Array<{ title: string }>;
+  responseTime?: string;
+  yearsOfExperience?: number;
 }
 
 interface DiscoveryFilters {
@@ -48,7 +44,7 @@ interface DiscoveryFilters {
 
 const BabalawoDiscoveryView: React.FC = () => {
   const navigate = useNavigate();
-  const [filters, setFilters] = useState<DiscoveryFilters>({
+  const [filters] = useState<DiscoveryFilters>({
     search: '',
     specialty: 'all',
     location: '',
@@ -56,7 +52,8 @@ const BabalawoDiscoveryView: React.FC = () => {
     minRating: 0
   });
 
-  const [showFilters, setShowFilters] = useState(false);
+  // Add activeFilter state
+  const [activeFilter, setActiveFilter] = useState('all');
 
   // Fetch all Babalawos
   const { data: babalawos = [], isLoading } = useQuery<Babalawo[]>({
@@ -93,6 +90,9 @@ const BabalawoDiscoveryView: React.FC = () => {
               rating: (user as any).rating || seededRandomInt(`${user.id}-rating`, 4, 5),
               reviewCount: (user as any).reviews || (user as any).reviewCount || seededRandomInt(`${user.id}-reviews`, 10, 59),
               specialties: (user as any).services?.map((s: any) => s.title) || ['Spiritual Guidance'],
+              services: (user as any).services || [{ title: 'Spiritual Consultation' }],
+              responseTime: (user as any).responseTime || 'Within a day',
+              yearsOfExperience: (user as any).yearsOfExperience || seededRandomInt(`${user.id}-exp`, 5, 30),
               temple: {
                 id: temple?.id || 'temple-1',
                 name: temple?.name || 'Sacred Temple',
@@ -147,20 +147,13 @@ const BabalawoDiscoveryView: React.FC = () => {
     });
   }, [babalawos, filters]);
 
-  // Get unique specialties for filter dropdown
-  const specialties = useMemo(() => {
-    const allSpecialties = new Set<string>();
-    babalawos.forEach(babalawo => {
-      if (babalawo.specialties) {
-        babalawo.specialties.forEach(spec => allSpecialties.add(spec));
-      }
-    });
-    return ['all', ...Array.from(allSpecialties)].sort();
-  }, [babalawos]);
-
-  const handleFilterChange = (key: keyof DiscoveryFilters, value: any) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
-  };
+  // Define filter tabs array after filteredBabalawos is available
+  const filterTabs = [
+    { id: 'all', label: 'All', count: filteredBabalawos.length },
+    { id: 'verified', label: 'Verified', count: filteredBabalawos.filter(b => b.verified).length },
+    { id: 'nearby', label: 'Nearby', count: filteredBabalawos.length }, // Could implement distance logic
+    { id: 'top-rated', label: 'Top Rated', count: filteredBabalawos.filter(b => b.rating && b.rating >= 4.5).length },
+  ];
 
   if (isLoading) {
     return (
@@ -180,13 +173,14 @@ const BabalawoDiscoveryView: React.FC = () => {
 
         <div className="bg-card rounded-2xl border border-input p-1 mb-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-1">
-            {filters.map((filter) => (
+            {filterTabs.map((filter) => (
               <button
                 key={filter.id}
                 className={`py-3 px-4 rounded-xl text-center transition-colors ${activeFilter === filter.id
                   ? 'bg-primary text-primary-foreground'
                   : 'text-foreground hover:bg-muted'
                   }`}
+                onClick={() => setActiveFilter(filter.id)}
               >
                 <div className="font-[700] text-[1rem]">{filter.count}</div>
                 <div className="text-[0.875rem]">{filter.label}</div>
@@ -207,22 +201,22 @@ const BabalawoDiscoveryView: React.FC = () => {
                   />
                   <div>
                     <h2 className="text-[1.125rem] font-[700] text-foreground">{babalawo.name}</h2>
-                    <p className="text-[0.875rem] text-muted-foreground">{babalawo.specialty}</p>
+                    <p className="text-[0.875rem] text-muted-foreground">{babalawo.culturalLevel}</p>
                   </div>
                 </div>
 
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {babalawo.services.slice(0, 3).map((service, idx) => (
+                  {babalawo.specialties?.slice(0, 3).map((specialty, idx) => (
                     <span
                       key={idx}
                       className="px-3 py-1 bg-muted text-foreground rounded-full text-[0.75rem] font-[500]"
                     >
-                      {service}
+                      {specialty}
                     </span>
                   ))}
-                  {babalawo.services.length > 3 && (
+                  {babalawo.specialties && babalawo.specialties.length > 3 && (
                     <span className="px-3 py-1 bg-muted text-foreground rounded-full text-[0.75rem] font-[500]">
-                      +{babalawo.services.length - 3} more
+                      +{babalawo.specialties.length - 3} more
                     </span>
                   )}
                 </div>
@@ -230,19 +224,19 @@ const BabalawoDiscoveryView: React.FC = () => {
                 <div className="mb-6">
                   <div className="flex justify-between text-[0.875rem] text-foreground mb-1">
                     <span>Response Time</span>
-                    <span>{babalawo.responseTime}</span>
+                    <span>{babalawo.responseTime || 'Varies'}</span>
                   </div>
                   <div className="flex justify-between text-[0.875rem] text-foreground">
                     <span>Experience</span>
-                    <span>{babalawo.yearsOfExperience} years</span>
+                    <span>{babalawo.yearsOfExperience || 'Not specified'} years</span>
                   </div>
                 </div>
 
                 <Button
                   className="w-full"
-                  onClick={() => navigate(`/babalawo/${babalawo.id}`)}
+                  onClick={() => navigate(`/booking/${babalawo.id}`)}
                 >
-                  View Profile
+                  Book Consultation
                 </Button>
               </div>
             </div>

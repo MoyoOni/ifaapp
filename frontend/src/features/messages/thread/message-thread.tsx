@@ -7,11 +7,9 @@ import {
 import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
 import { PrivacyLevel, AutoDeleteDays } from '@common';
-import { queueAction, isOnline } from '@/shared/utils/offline-queue';
 import { useDraftMessage } from '@/shared/hooks/use-draft-message';
 import { useMessageSocket } from '../hooks/use-message-socket';
 import { sendMessage, getConversation, markAsRead } from '../message-service';
-import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface Attachment {
   id: string;

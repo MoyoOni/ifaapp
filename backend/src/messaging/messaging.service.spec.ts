@@ -26,6 +26,7 @@ describe('MessagingService', () => {
 
     const mockCurrentUser = {
         id: 'user-1',
+        sub: 'user-1',
         email: 'user@example.com',
         role: 'CLIENT' as any,
         verified: true,
@@ -33,6 +34,7 @@ describe('MessagingService', () => {
 
     const mockOtherUser = {
         id: 'user-2',
+        sub: 'user-2',
         name: 'Other User',
         email: 'other@example.com',
     };
@@ -66,6 +68,7 @@ describe('MessagingService', () => {
 
             const mockMessage = {
                 id: 'message-1',
+        sub: 'message-1',
                 senderId: mockCurrentUser.id,
                 receiverId: dto.receiverId,
                 content: dto.content,
@@ -98,6 +101,7 @@ describe('MessagingService', () => {
         it('should send system message without authorization checks', async () => {
             const mockMessage = {
                 id: 'message-1',
+        sub: 'message-1',
                 senderId: 'system',
                 receiverId: 'user-1',
                 content: 'Welcome to the platform!',
@@ -146,6 +150,7 @@ describe('MessagingService', () => {
             const mockMessages = [
                 {
                     id: 'msg-1',
+        sub: 'msg-1',
                     senderId: 'user-2',
                     receiverId: 'user-1',
                     content: 'Latest message',
@@ -174,6 +179,7 @@ describe('MessagingService', () => {
         it('should mark message as read', async () => {
             const mockMessage = {
                 id: 'message-1',
+        sub: 'message-1',
                 senderId: 'user-2',
                 receiverId: 'user-1',
                 content: 'Test',
@@ -208,6 +214,7 @@ describe('MessagingService', () => {
         it('should throw ForbiddenException when user is not receiver', async () => {
             const mockMessage = {
                 id: 'message-1',
+        sub: 'message-1',
                 receiverId: 'user-3',
             };
 

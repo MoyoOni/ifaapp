@@ -31,6 +31,7 @@ describe('DocumentsService', () => {
 
     const mockCurrentUser = {
         id: 'babalawo-1',
+        sub: 'babalawo-1',
         email: 'babalawo@example.com',
         role: 'BABALAWO' as any,
         verified: true,
@@ -85,6 +86,7 @@ describe('DocumentsService', () => {
 
             const mockRelationship = {
                 id: 'rel-1',
+        sub: 'rel-1',
                 babalawoId: mockCurrentUser.id,
                 clientId: dto.sharedWith,
                 status: 'ACTIVE',
@@ -92,6 +94,7 @@ describe('DocumentsService', () => {
 
             const mockDocument = {
                 id: 'doc-1',
+        sub: 'doc-1',
                 uploadedBy: mockCurrentUser.id,
                 sharedWith: dto.sharedWith,
                 filename: dto.filename,
@@ -194,6 +197,7 @@ describe('DocumentsService', () => {
         it('should throw ForbiddenException when user has no access', async () => {
             const mockDocument = {
                 id: 'doc-1',
+        sub: 'doc-1',
                 uploadedBy: 'other-user',
                 sharedWith: 'another-user',
             };
@@ -234,6 +238,7 @@ describe('DocumentsService', () => {
         it('should throw ForbiddenException when user is not uploader', async () => {
             const mockDocument = {
                 id: 'doc-1',
+        sub: 'doc-1',
                 uploadedBy: 'other-user',
             };
 

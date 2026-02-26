@@ -1,10 +1,13 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { BookOpen, GraduationCap, Clock, CheckCircle, Play, ArrowRight } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { logger } from '@/shared/utils/logger';
 import { isDemoMode } from '@/shared/config/demo-mode';
+import { Button } from '@/shared/components/ui/button';
+import { Badge } from '@/shared/components/ui/badge';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface Enrollment {
@@ -43,8 +46,9 @@ interface MyCoursesViewProps {
  * My Courses View Component
  * Dashboard showing enrolled courses with progress tracking
  */
-const MyCoursesView: React.FC<MyCoursesViewProps> = ({ onSelectEnrollment }) => {
+const MyCoursesView: React.FC<MyCoursesViewProps> = ({ onSelectEnrollment: _onSelectEnrollment }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Fetch enrollments with demo fallback
   const { data: enrollments = [], isLoading: enrollmentsLoading } = useQuery<Enrollment[]>({
@@ -55,9 +59,6 @@ const MyCoursesView: React.FC<MyCoursesViewProps> = ({ onSelectEnrollment }) => 
         return response.data || [];
       } catch (e) {
         if (!isDemoMode) throw e;
-
-        if (!isDemoMode) throw e;
-
 
         logger.error('Failed to fetch enrollments, using demo data', e);
         // Collect demo enrollments from sessionStorage
@@ -105,9 +106,6 @@ const MyCoursesView: React.FC<MyCoursesViewProps> = ({ onSelectEnrollment }) => 
     enabled: !!user,
   });
 
-  const activeEnrollments = enrollments.filter((e) => e.status === 'ACTIVE');
-  const completedEnrollments = enrollments.filter((e) => e.status === 'COMPLETED');
-
   if (enrollmentsLoading) {
     return (
       <div className="min-h-screen bg-background text-white p-6 flex items-center justify-center">
@@ -139,7 +137,7 @@ const MyCoursesView: React.FC<MyCoursesViewProps> = ({ onSelectEnrollment }) => 
                       <p className="text-[0.875rem] text-muted-foreground">{enrollment.course.instructor.name}</p>
                     </div>
                     <Badge 
-                      variant={enrollment.status === 'completed' ? 'success' : 'secondary'}
+                      variant={enrollment.status === 'completed' ? 'default' : 'secondary'}
                       className="text-[0.75rem] font-[700]"
                     >
                       {enrollment.status.charAt(0).toUpperCase() + enrollment.status.slice(1)}
@@ -161,7 +159,7 @@ const MyCoursesView: React.FC<MyCoursesViewProps> = ({ onSelectEnrollment }) => 
                   
                   <div className="flex items-center justify-between">
                     <span className="text-[0.875rem] text-muted-foreground">
-                      {enrollment.completedLessons} of {enrollment.totalLessons} lessons
+                      {Math.round((enrollment.progress / 100) * enrollment.course.lessonCount)} of {enrollment.course.lessonCount} lessons
                     </span>
                     <Button size="sm" variant="outline">
                       {enrollment.status === 'completed' ? 'Review' : 'Continue'}
@@ -176,8 +174,8 @@ const MyCoursesView: React.FC<MyCoursesViewProps> = ({ onSelectEnrollment }) => 
             <BookOpen className="w-16 h-16 text-muted mx-auto mb-4" />
             <h3 className="text-[1.25rem] font-[700] text-foreground mb-2">No courses enrolled</h3>
             <p className="text-[0.875rem] text-muted-foreground mb-6">Start your learning journey by enrolling in a course</p>
-            <Button asChild>
-              <Link to="/academy">Browse Courses</Link>
+            <Button onClick={() => window.location.href = '/academy'}>
+              Browse Courses
             </Button>
           </div>
         )}

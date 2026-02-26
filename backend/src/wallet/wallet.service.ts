@@ -150,10 +150,22 @@ export class WalletService {
    * Deposit funds to wallet
    * NOTE: Can be called directly or via payment gateway webhook
    */
-  async depositFunds(userId: string, dto: CreateDepositDto, currentUser?: CurrentUserPayload) {
+  async depositFunds(userId: string, dto: CreateDepositDto, currentUser?: CurrentUserPayload, idempotencyKey?: string) {
     // If currentUser is provided, verify ownership
     if (currentUser && currentUser.id !== userId) {
       throw new ForbiddenException('You can only deposit to your own wallet');
+    }
+
+    // Idempotency check: if key provided, return existing transaction if found
+    if (idempotencyKey) {
+      const existing = await this.prisma.transaction.findUnique({
+        where: { idempotencyKey },
+        include: { wallet: true },
+      });
+      if (existing) {
+        this.logger.log(`Idempotent deposit: returning existing transaction ${existing.id}`);
+        return { wallet: existing.wallet, transaction: existing };
+      }
     }
 
     const wallet = await this.getOrCreateWallet(userId, dto.currency || Currency.NGN);
@@ -162,34 +174,32 @@ export class WalletService {
       throw new BadRequestException('Wallet is locked. Please contact support.');
     }
 
-    // Create transaction
-    const transaction = await this.prisma.transaction.create({
-      data: {
-        walletId: wallet.id,
-        userId,
-        type: TransactionType.DEPOSIT,
-        amount: dto.amount,
-        currency: dto.currency || wallet.currency,
-        status: TransactionStatus.COMPLETED,
-        description: `Deposit: ${dto.amount} ${dto.currency || wallet.currency}`,
-        reference: dto.reference,
-      },
-    });
-
-    // Update wallet balance
-    const updatedWallet = await this.prisma.wallet.update({
-      where: { id: wallet.id },
-      data: {
-        balance: {
-          increment: dto.amount,
+    return this.prisma.$transaction(async (tx) => {
+      const transaction = await tx.transaction.create({
+        data: {
+          walletId: wallet.id,
+          userId,
+          type: TransactionType.DEPOSIT,
+          amount: dto.amount,
+          currency: dto.currency || wallet.currency,
+          status: TransactionStatus.COMPLETED,
+          description: `Deposit: ${dto.amount} ${dto.currency || wallet.currency}`,
+          reference: dto.reference,
+          idempotencyKey: idempotencyKey || undefined,
         },
-      },
-    });
+      });
 
-    return {
-      wallet: updatedWallet,
-      transaction,
-    };
+      const updatedWallet = await tx.wallet.update({
+        where: { id: wallet.id },
+        data: {
+          balance: {
+            increment: dto.amount,
+          },
+        },
+      });
+
+      return { wallet: updatedWallet, transaction };
+    });
   }
 
   /**
@@ -214,24 +224,27 @@ export class WalletService {
         `Refund ${amount} ${currency} for user ${userId} exceeds balance ${balance}. Recording anyway (gateway already refunded).`
       );
     }
-    const updatedWallet = await this.prisma.wallet.update({
-      where: { id: wallet.id },
-      data: { balance: { decrement: amount } },
+
+    return this.prisma.$transaction(async (tx) => {
+      const updatedWallet = await tx.wallet.update({
+        where: { id: wallet.id },
+        data: { balance: { decrement: amount } },
+      });
+      const transaction = await tx.transaction.create({
+        data: {
+          walletId: wallet.id,
+          userId,
+          type: TransactionType.REFUND,
+          amount,
+          currency,
+          status: TransactionStatus.COMPLETED,
+          description: `Refund to payment source: ${amount} ${currency}`,
+          reference,
+          metadata: (metadata ?? undefined) as object | undefined,
+        },
+      });
+      return { wallet: updatedWallet, transaction };
     });
-    const transaction = await this.prisma.transaction.create({
-      data: {
-        walletId: wallet.id,
-        userId,
-        type: TransactionType.REFUND,
-        amount,
-        currency,
-        status: TransactionStatus.COMPLETED,
-        description: `Refund to payment source: ${amount} ${currency}`,
-        reference,
-        metadata: (metadata ?? undefined) as object | undefined,
-      },
-    });
-    return { wallet: updatedWallet, transaction };
   }
 
   /**
@@ -336,53 +349,53 @@ export class WalletService {
         }
       : null;
 
-    // Create escrow
-    const escrow = await this.prisma.escrow.create({
-      data: {
-        userId,
-        recipientId: dto.recipientId,
-        walletId: wallet.id,
-        amount: dto.amount,
-        currency: dto.currency || wallet.currency,
-        type: dto.type,
-        relatedId: dto.relatedId,
-        status: EscrowStatus.HOLD,
-        autoReleaseAt,
-        expiryDate,
-        releaseTiers: releaseTiers as unknown as object,
-        notes: dto.notes,
-      },
-    });
-
-    // Deduct from wallet balance
-    await this.prisma.wallet.update({
-      where: { id: wallet.id },
-      data: {
-        balance: {
-          decrement: dto.amount,
-        },
-      },
-    });
-
-    // Create transaction record
-    await this.prisma.transaction.create({
-      data: {
-        walletId: wallet.id,
-        userId,
-        type: TransactionType.ESCROW_HOLD,
-        amount: -dto.amount,
-        currency: dto.currency || wallet.currency,
-        status: TransactionStatus.COMPLETED,
-        description: `Escrow hold: ${dto.type} - ${dto.amount} ${dto.currency || wallet.currency}`,
-        metadata: {
-          escrowId: escrow.id,
+    // All escrow creation steps must be atomic
+    return this.prisma.$transaction(async (tx) => {
+      const escrow = await tx.escrow.create({
+        data: {
+          userId,
+          recipientId: dto.recipientId,
+          walletId: wallet.id,
+          amount: dto.amount,
+          currency: dto.currency || wallet.currency,
           type: dto.type,
           relatedId: dto.relatedId,
+          status: EscrowStatus.HOLD,
+          autoReleaseAt,
+          expiryDate,
+          releaseTiers: releaseTiers as unknown as object,
+          notes: dto.notes,
         },
-      },
-    });
+      });
 
-    return escrow;
+      await tx.wallet.update({
+        where: { id: wallet.id },
+        data: {
+          balance: {
+            decrement: dto.amount,
+          },
+        },
+      });
+
+      await tx.transaction.create({
+        data: {
+          walletId: wallet.id,
+          userId,
+          type: TransactionType.ESCROW_HOLD,
+          amount: -dto.amount,
+          currency: dto.currency || wallet.currency,
+          status: TransactionStatus.COMPLETED,
+          description: `Escrow hold: ${dto.type} - ${dto.amount} ${dto.currency || wallet.currency}`,
+          metadata: {
+            escrowId: escrow.id,
+            type: dto.type,
+            relatedId: dto.relatedId,
+          },
+        },
+      });
+
+      return escrow;
+    });
   }
 
   /**
@@ -474,88 +487,86 @@ export class WalletService {
       newStatus = EscrowStatus.RELEASED;
     }
 
-    // Update escrow status
-    const updatedEscrow = await this.prisma.escrow.update({
-      where: { id: escrow.id },
-      data: {
-        status: newStatus,
-        releaseTiers: updatedReleaseTiers as unknown as object,
-        releasedAt: newStatus === EscrowStatus.RELEASED ? new Date() : escrow.releasedAt,
-        releasedBy: currentUser.id,
-        notes: dto.notes,
-      },
+    // All escrow release steps must be atomic
+    return this.prisma.$transaction(async (tx) => {
+      const updatedEscrow = await tx.escrow.update({
+        where: { id: escrow.id },
+        data: {
+          status: newStatus,
+          releaseTiers: updatedReleaseTiers as unknown as object,
+          releasedAt: newStatus === EscrowStatus.RELEASED ? new Date() : escrow.releasedAt,
+          releasedBy: currentUser.id,
+          notes: dto.notes,
+        },
+      });
+
+      if (escrow.recipientId) {
+        const recipientWallet = await this.getOrCreateWallet(
+          escrow.recipientId,
+          escrow.currency as Currency
+        );
+
+        await tx.wallet.update({
+          where: { id: recipientWallet.id },
+          data: {
+            balance: {
+              increment: releaseAmount,
+            },
+          },
+        });
+
+        await tx.transaction.create({
+          data: {
+            walletId: recipientWallet.id,
+            userId: escrow.recipientId,
+            type: TransactionType.ESCROW_RELEASE,
+            amount: releaseAmount,
+            currency: escrow.currency,
+            status: TransactionStatus.COMPLETED,
+            description: `Escrow release${dto.tier ? ` (${dto.tier})` : ''}: ${escrow.type} - ${releaseAmount} ${escrow.currency}`,
+            metadata: {
+              escrowId: escrow.id,
+              type: escrow.type,
+              relatedId: escrow.relatedId,
+              tier: dto.tier,
+              releaseAmount,
+              totalAmount: escrow.amount,
+            },
+          },
+        });
+      } else {
+        await tx.wallet.update({
+          where: { id: escrow.walletId },
+          data: {
+            balance: {
+              increment: releaseAmount,
+            },
+          },
+        });
+
+        await tx.transaction.create({
+          data: {
+            walletId: escrow.walletId,
+            userId: escrow.userId,
+            type: TransactionType.ESCROW_RELEASE,
+            amount: releaseAmount,
+            currency: escrow.currency,
+            status: TransactionStatus.COMPLETED,
+            description: `Escrow release (returned)${dto.tier ? ` (${dto.tier})` : ''}: ${escrow.type} - ${releaseAmount} ${escrow.currency}`,
+            metadata: {
+              escrowId: escrow.id,
+              type: escrow.type,
+              relatedId: escrow.relatedId,
+              tier: dto.tier,
+              releaseAmount,
+              totalAmount: escrow.amount,
+            },
+          },
+        });
+      }
+
+      return updatedEscrow;
     });
-
-    // If there's a recipient, add funds to their wallet
-    if (escrow.recipientId) {
-      const recipientWallet = await this.getOrCreateWallet(
-        escrow.recipientId,
-        escrow.currency as Currency
-      );
-
-      await this.prisma.wallet.update({
-        where: { id: recipientWallet.id },
-        data: {
-          balance: {
-            increment: releaseAmount,
-          },
-        },
-      });
-
-      // Create transaction for recipient
-      await this.prisma.transaction.create({
-        data: {
-          walletId: recipientWallet.id,
-          userId: escrow.recipientId,
-          type: TransactionType.ESCROW_RELEASE,
-          amount: releaseAmount,
-          currency: escrow.currency,
-          status: TransactionStatus.COMPLETED,
-          description: `Escrow release${dto.tier ? ` (${dto.tier})` : ''}: ${escrow.type} - ${releaseAmount} ${escrow.currency}`,
-          metadata: {
-            escrowId: escrow.id,
-            type: escrow.type,
-            relatedId: escrow.relatedId,
-            tier: dto.tier,
-            releaseAmount,
-            totalAmount: escrow.amount,
-          },
-        },
-      });
-    } else {
-      // No recipient, return funds to original wallet
-      await this.prisma.wallet.update({
-        where: { id: escrow.walletId },
-        data: {
-          balance: {
-            increment: releaseAmount,
-          },
-        },
-      });
-
-      // Create transaction for return
-      await this.prisma.transaction.create({
-        data: {
-          walletId: escrow.walletId,
-          userId: escrow.userId,
-          type: TransactionType.ESCROW_RELEASE,
-          amount: releaseAmount,
-          currency: escrow.currency,
-          status: TransactionStatus.COMPLETED,
-          description: `Escrow release (returned)${dto.tier ? ` (${dto.tier})` : ''}: ${escrow.type} - ${releaseAmount} ${escrow.currency}`,
-          metadata: {
-            escrowId: escrow.id,
-            type: escrow.type,
-            relatedId: escrow.relatedId,
-            tier: dto.tier,
-            releaseAmount,
-            totalAmount: escrow.amount,
-          },
-        },
-      });
-    }
-
-    return updatedEscrow;
   }
 
   /**
@@ -582,44 +593,45 @@ export class WalletService {
       throw new BadRequestException(`Cannot cancel escrow with status ${escrow.status}`);
     }
 
-    // Refund remaining amount
+    // All cancellation steps must be atomic
     const remainingAmount = escrow.amount;
-    if (remainingAmount > 0) {
-      await this.prisma.wallet.update({
-        where: { id: escrow.walletId },
+
+    return this.prisma.$transaction(async (tx) => {
+      if (remainingAmount > 0) {
+        await tx.wallet.update({
+          where: { id: escrow.walletId },
+          data: {
+            balance: { increment: remainingAmount },
+          },
+        });
+
+        await tx.transaction.create({
+          data: {
+            walletId: escrow.walletId,
+            userId: escrow.userId,
+            type: TransactionType.DEPOSIT,
+            amount: remainingAmount,
+            currency: escrow.currency as Currency,
+            status: TransactionStatus.COMPLETED,
+            description: `Escrow cancellation refund for ${escrow.type}`,
+            metadata: {
+              escrowId: escrow.id,
+              cancelledBy: currentUser.id,
+            } as object,
+          },
+        });
+      }
+
+      await tx.escrow.update({
+        where: { id: escrowId },
         data: {
-          balance: { increment: remainingAmount },
+          status: EscrowStatus.CANCELLED,
+          notes: `Cancelled by ${currentUser.role === 'ADMIN' ? 'admin' : 'user'}`,
         },
       });
 
-      // Create refund transaction
-      await this.prisma.transaction.create({
-        data: {
-          walletId: escrow.walletId,
-          userId: escrow.userId,
-          type: TransactionType.DEPOSIT,
-          amount: remainingAmount,
-          currency: escrow.currency as Currency,
-          status: TransactionStatus.COMPLETED,
-          description: `Escrow cancellation refund for ${escrow.type}`,
-          metadata: {
-            escrowId: escrow.id,
-            cancelledBy: currentUser.id,
-          } as object,
-        },
-      });
-    }
-
-    // Update escrow status
-    await this.prisma.escrow.update({
-      where: { id: escrowId },
-      data: {
-        status: EscrowStatus.CANCELLED,
-        notes: `Cancelled by ${currentUser.role === 'ADMIN' ? 'admin' : 'user'}`,
-      },
+      return { success: true, refundedAmount: remainingAmount };
     });
-
-    return { success: true, refundedAmount: remainingAmount };
   }
 
   async freezeEscrowForDispute(escrowId: string, disputeId: string) {
@@ -721,7 +733,6 @@ export class WalletService {
         }
 
         if (remainingAmount <= 0) {
-          // Already fully released, just mark as expired
           await this.prisma.escrow.update({
             where: { id: escrow.id },
             data: {
@@ -731,44 +742,44 @@ export class WalletService {
           continue;
         }
 
-        // Return remaining funds to sender's wallet
-        await this.prisma.wallet.update({
-          where: { id: escrow.walletId },
-          data: {
-            balance: {
-              increment: remainingAmount,
+        // Wallet update, transaction creation, and escrow status update must be atomic
+        await this.prisma.$transaction(async (tx) => {
+          await tx.wallet.update({
+            where: { id: escrow.walletId },
+            data: {
+              balance: {
+                increment: remainingAmount,
+              },
             },
-          },
-        });
+          });
 
-        // Create transaction for refund
-        await this.prisma.transaction.create({
-          data: {
-            walletId: escrow.walletId,
-            userId: escrow.userId,
-            type: TransactionType.REFUND,
-            amount: remainingAmount,
-            currency: escrow.currency,
-            status: TransactionStatus.COMPLETED,
-            description: `Escrow auto-expired and refunded: ${escrow.type} - ${remainingAmount} ${escrow.currency}`,
-            metadata: {
-              escrowId: escrow.id,
-              type: escrow.type,
-              relatedId: escrow.relatedId,
-              reason: 'AUTO_EXPIRY',
+          await tx.transaction.create({
+            data: {
+              walletId: escrow.walletId,
+              userId: escrow.userId,
+              type: TransactionType.REFUND,
+              amount: remainingAmount,
+              currency: escrow.currency,
+              status: TransactionStatus.COMPLETED,
+              description: `Escrow auto-expired and refunded: ${escrow.type} - ${remainingAmount} ${escrow.currency}`,
+              metadata: {
+                escrowId: escrow.id,
+                type: escrow.type,
+                relatedId: escrow.relatedId,
+                reason: 'AUTO_EXPIRY',
+              },
             },
-          },
-        });
+          });
 
-        // Update escrow status
-        await this.prisma.escrow.update({
-          where: { id: escrow.id },
-          data: {
-            status: EscrowStatus.EXPIRED,
-            notes: escrow.notes
-              ? `${escrow.notes}\n[Auto-expired and refunded: ${now.toISOString()}]`
-              : `[Auto-expired and refunded: ${now.toISOString()}]`,
-          },
+          await tx.escrow.update({
+            where: { id: escrow.id },
+            data: {
+              status: EscrowStatus.EXPIRED,
+              notes: escrow.notes
+                ? `${escrow.notes}\n[Auto-expired and refunded: ${now.toISOString()}]`
+                : `[Auto-expired and refunded: ${now.toISOString()}]`,
+            },
+          });
         });
 
         // Send notifications to both parties

@@ -29,6 +29,7 @@ describe('TemplesService', () => {
 
     const mockCurrentUser = {
         id: 'user-1',
+        sub: 'user-1',
         email: 'babalawo@example.com',
         role: 'BABALAWO' as any,
         verified: true,
@@ -65,6 +66,7 @@ describe('TemplesService', () => {
 
             const mockTemple = {
                 id: 'temple-1',
+        sub: 'temple-1',
                 ...dto,
                 slug: 'ile-ifa-orunmila',
                 founderId: mockCurrentUser.id,
@@ -125,6 +127,7 @@ describe('TemplesService', () => {
         it('should return temple by ID', async () => {
             const mockTemple = {
                 id: 'temple-1',
+        sub: 'temple-1',
                 name: 'Test Temple',
                 babalawos: [],
             };
@@ -190,6 +193,7 @@ describe('TemplesService', () => {
 
             const mockFollow = {
                 id: 'follow-1',
+        sub: 'follow-1',
                 templeId,
                 userId,
                 createdAt: new Date(),
@@ -211,6 +215,7 @@ describe('TemplesService', () => {
 
             const mockFollow = {
                 id: 'follow-1',
+        sub: 'follow-1',
                 templeId,
                 userId,
             };

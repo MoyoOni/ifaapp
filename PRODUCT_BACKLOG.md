@@ -325,6 +325,68 @@ The following items are still open and target production‑grade quality prior t
 
 ---
 
+## 🛡️ Production Hardening (P0 Critical Fixes)
+> The following items were identified during a pre-launch audit as critical fixes required to prevent data corruption, financial loss, and security breaches. They are non-negotiable before onboarding the first 1000 users.
+
+### HARDENING-1: Implement Transactional Integrity for Wallet Operations
+- **Priority:** Critical
+- **Story Points:** 5
+- **Status:** ⬜ READY
+- **Description:** Wrap all financial operations (deposits, withdrawals, transfers) in atomic database transactions using Prisma's `$transaction` API to prevent data inconsistency and financial loss in case of partial failures.
+- **Acceptance Criteria:**
+  - `wallet.service.ts` methods that modify multiple tables are wrapped in `$transaction`.
+  - All database writes within the block use the transactional `tx` client.
+  - A failure at any step correctly rolls back the entire operation.
+
+### HARDENING-2: Add Idempotency to Payment Endpoints
+- **Priority:** Critical
+- **Story Points:** 4
+- **Status:** ⬜ READY
+- **Description:** Prevent double-charging by implementing idempotency keys for all payment-related endpoints. The system must check for a unique `Idempotency-Key` header and return the original response if the key has been seen before.
+- **Acceptance Criteria:**
+  - Payment initiation endpoints require an `Idempotency-Key` header.
+  - A `Transaction` or similar model stores the key.
+  - The service layer checks for the key before processing a new payment.
+
+### HARDENING-3: Fix Critical WebSocket Security Holes
+- **Priority:** High
+- **Story Points:** 3
+- **Status:** ⬜ READY
+- **Description:** Secure the real-time messaging gateway by (1) restricting the WebSocket CORS origin to the configured `FRONTEND_URL` instead of `'*'`, and (2) removing the hardcoded fallback JWT secret to prevent auth bypass if the environment variable is missing.
+- **Acceptance Criteria:**
+  - `messaging.gateway.ts` CORS origin is no longer `'*'`.
+  - The server fails to start if `JWT_SECRET` is not provided.
+
+### HARDENING-4: Activate Sentry Error Monitoring
+- **Priority:** High
+- **Story Points:** 3
+- **Status:** ⬜ READY
+- **Description:** Uncomment and fully configure Sentry error monitoring in both the frontend and backend to gain visibility into production errors.
+- **Acceptance Criteria:**
+  - `Sentry.init()` is active in both `frontend/src/main.tsx` and `backend/src/main.ts`.
+  - `SENTRY_DSN` environment variables are configured and validated.
+  - Errors are successfully reported to Sentry from both applications.
+
+### HARDENING-5: Remove Hardcoded Secrets from Version Control
+- **Priority:** High
+- **Story Points:** 2
+- **Status:** ⬜ READY
+- **Description:** Remove all development secrets and credentials from `scripts/docker-compose.yml` and any other version-controlled files. Replace them with environment variable placeholders.
+- **Acceptance Criteria:**
+  - `docker-compose.yml` uses placeholders like `${POSTGRES_PASSWORD}`.
+  - No sensitive keys or passwords are present in the git history.
+
+### HARDENING-6: Configure Database Connection Pooling
+- **Priority:** Medium
+- **Story Points:** 2
+- **Status:** ⬜ READY
+- **Description:** Configure database connection pooling to handle concurrent users and prevent the application from exhausting the database connection limit under load.
+- **Acceptance Criteria:**
+  - The Prisma `DATABASE_URL` is configured with `?connection_limit=X`.
+  - The connection limit is documented and appropriate for the expected load.
+
+---
+
 ## 📁 Post-Launch & Backend Maintenance
 ### BACKEND-1: Full backend overhaul (V7-005)
 - **Priority:** High (P1/P2)

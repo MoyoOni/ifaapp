@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Building2, CheckCircle, XCircle, Clock, Users, MapPin, Shield, Search } from 'lucide-react';
+import { Building2, CheckCircle, XCircle, Clock, MapPin, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
 import { isDemoMode } from '@/shared/config/demo-mode';
@@ -95,7 +95,6 @@ const buildDemoTemples = (): Temple[] => {
  */
 const TempleManagementView: React.FC = () => {
   const [filter, setFilter] = useState<FilterType>('all');
-  const [searchQuery, setSearchQuery] = useState('');
   const queryClient = useQueryClient();
 
   // Fetch all temples
@@ -147,19 +146,7 @@ const TempleManagementView: React.FC = () => {
     },
   });
 
-  // Filter temples by search query
-  const filteredTemples = temples.filter((temple) => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      temple.name.toLowerCase().includes(query) ||
-      temple.yorubaName?.toLowerCase().includes(query) ||
-      temple.city?.toLowerCase().includes(query) ||
-      temple.state?.toLowerCase().includes(query) ||
-      temple.country?.toLowerCase().includes(query) ||
-      temple.founder.name.toLowerCase().includes(query)
-    );
-  });
+  const filteredTemples = temples;
 
   const { showModal } = useModal();
 
@@ -178,15 +165,113 @@ const TempleManagementView: React.FC = () => {
   const handleReject = (templeId: string) => {
     showModal({
       title: 'Reject Temple',
-      message: 'Please provide a reason for rejection:',
+      message: 'Are you sure you want to reject this temple registration?',
       confirmText: 'Reject',
       cancelText: 'Cancel',
-      showInput: true,
-      inputPlaceholder: 'Enter rejection reason...',
-      onConfirm: (reason) => {
-        if (reason) {
-          rejectTempleMutation.mutate(templeId);
-        }
+      onConfirm: () => {
+        rejectTempleMutation.mutate(templeId);
       }
     });
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+          <Building2 size={24} />
+          Temple Management
+        </h2>
+        <div className="flex gap-2">
+          {(['all', 'pending', 'verified', 'rejected'] as FilterType[]).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                filter === f
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}
+            >
+              {f.charAt(0).toUpperCase() + f.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-card rounded-xl border border-input overflow-hidden">
+        {filteredTemples.length > 0 ? (
+          <div className="divide-y divide-border">
+            {filteredTemples.map((temple) => (
+              <div key={temple.id} className="p-4 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="bg-primary/10 p-3 rounded-full">
+                    <Building2 className="text-primary" size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-foreground">{temple.name}</h3>
+                    {temple.yorubaName && (
+                      <p className="text-sm text-muted-foreground italic">{temple.yorubaName}</p>
+                    )}
+                    <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                      {temple.city && (
+                        <span className="flex items-center gap-1">
+                          <MapPin size={12} /> {temple.city}{temple.state ? `, ${temple.state}` : ''}
+                        </span>
+                      )}
+                      <span className="flex items-center gap-1">
+                        <Clock size={12} /> {new Date(temple.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {temple.verified ? (
+                    <span className="flex items-center gap-1 text-xs text-green-400 bg-green-500/10 px-2 py-1 rounded-full">
+                      <CheckCircle size={12} /> Verified
+                    </span>
+                  ) : temple.status === 'REJECTED' ? (
+                    <span className="flex items-center gap-1 text-xs text-red-400 bg-red-500/10 px-2 py-1 rounded-full">
+                      <XCircle size={12} /> Rejected
+                    </span>
+                  ) : (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleVerify(temple.id)}
+                        disabled={verifyTempleMutation.isPending}
+                        className="px-3 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                      >
+                        Verify
+                      </button>
+                      <button
+                        onClick={() => handleReject(temple.id)}
+                        disabled={rejectTempleMutation.isPending}
+                        className="px-3 py-1.5 text-xs bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <Building2 className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+            <p className="text-muted-foreground">No temples found</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default TempleManagementView;

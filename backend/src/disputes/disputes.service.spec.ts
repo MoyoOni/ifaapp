@@ -27,6 +27,7 @@ describe('DisputesService', () => {
 
     const mockCurrentUser = {
         id: 'user-1',
+        sub: 'user-1',
         email: 'user@example.com',
         role: 'CLIENT' as any,
         verified: true,
@@ -34,6 +35,7 @@ describe('DisputesService', () => {
 
     const mockAdminUser = {
         id: 'admin-1',
+        sub: 'admin-1',
         email: 'admin@example.com',
         role: 'ADMIN' as any,
         verified: true,
@@ -72,6 +74,7 @@ describe('DisputesService', () => {
 
             const mockDispute = {
                 id: 'dispute-1',
+        sub: 'dispute-1',
                 complainantId: mockCurrentUser.id,
                 respondentId: dto.respondentId,
                 type: dto.type,
@@ -125,6 +128,7 @@ describe('DisputesService', () => {
         it('should return dispute by ID', async () => {
             const mockDispute = {
                 id: 'dispute-1',
+        sub: 'dispute-1',
                 complainantId: mockCurrentUser.id,
                 respondentId: 'user-2',
                 type: 'ORDER',
@@ -149,6 +153,7 @@ describe('DisputesService', () => {
         it('should throw ForbiddenException when user is not owner', async () => {
             const mockDispute = {
                 id: 'dispute-1',
+        sub: 'dispute-1',
                 complainantId: 'other-user',
                 respondentId: 'third-user',
             };

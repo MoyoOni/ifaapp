@@ -22,8 +22,8 @@ const PrescriptionApprovalPage: React.FC = () => {
     <div className="container mx-auto px-4 py-8">
       <PrescriptionApprovalView
         guidancePlanId={guidancePlanId}
-        onApproved={() => navigate('/prescriptions/history')}
-        onRejected={() => navigate('/prescriptions/history')}
+        onApproved={() => navigate('/prescription-history')}
+        onRejected={() => navigate('/prescription-history')}
       />
     </div>
   );

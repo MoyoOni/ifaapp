@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
+import { getQueueToken } from '@nestjs/bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from './email.service';
 import { Logger } from '@nestjs/common';
@@ -23,6 +24,7 @@ describe('EmailService', () => {
   let service: EmailService;
   let prisma: PrismaService;
   let configService: ConfigService;
+  let mockQueue: { add: jest.Mock };
   let logger: any;
 
   const mockSendGridApiKey = 'test-sendgrid-key';
@@ -31,6 +33,7 @@ describe('EmailService', () => {
   beforeEach(async () => {
     mockSend.mockReset();
     mockSetApiKey.mockReset();
+    mockQueue = { add: jest.fn() };
     logger = {
       log: jest.fn(),
       warn: jest.fn(),
@@ -54,6 +57,10 @@ describe('EmailService', () => {
               findUnique: jest.fn(),
             },
           })),
+        },
+        {
+          provide: getQueueToken('notifications'),
+          useValue: mockQueue,
         },
       ],
     }).compile();
@@ -88,7 +95,7 @@ describe('EmailService', () => {
         return null;
       });
 
-      const newService = new EmailService(prisma, configService);
+      const newService = new EmailService(prisma, configService, mockQueue as any);
       expect(logger.warn).toHaveBeenCalledWith('SendGrid not configured. Email notifications will be logged only.');
     });
   });
@@ -102,8 +109,26 @@ describe('EmailService', () => {
       message: 'Your appointment has been confirmed',
     };
 
+    it('should queue email notification', async () => {
+      await service.sendNotificationEmail(mockUserId, mockNotification);
+
+      expect(mockQueue.add).toHaveBeenCalledWith('sendEmail', {
+        userId: mockUserId,
+        notification: mockNotification,
+      });
+    });
+  });
+
+  describe('executeSendEmail', () => {
+    const mockUserId = 'user-123';
+    const mockNotification = {
+      id: 'notif-123',
+      type: 'APPOINTMENT',
+      title: 'Appointment Update',
+      message: 'Your appointment has been confirmed',
+    };
+
     const mockUser = {
-      id: mockUserId,
       email: 'user@example.com',
       name: 'Test User',
       yorubaName: 'Test Yoruba Name',
@@ -113,11 +138,11 @@ describe('EmailService', () => {
       (prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
     });
 
-    it('should send email notification when SendGrid is configured', async () => {
+    it('should send email when SendGrid is configured', async () => {
       mockSend.mockResolvedValueOnce({});
       (service as any).isConfigured = true;
 
-      await service.sendNotificationEmail(mockUserId, mockNotification);
+      await service.executeSendEmail(mockUserId, mockNotification);
 
       expect(prisma.user.findUnique).toHaveBeenCalledWith({
         where: { id: mockUserId },
@@ -132,37 +157,49 @@ describe('EmailService', () => {
       expect(logger.log).toHaveBeenCalledWith(`Email sent to ${mockUser.email} for notification ${mockNotification.id}`);
     });
 
-    it('should log email instead of sending when SendGrid is not configured', async () => {
-      // Temporarily disable SendGrid
+    it('should log email mock when SendGrid is not configured', async () => {
       const originalIsConfigured = (service as any).isConfigured;
       (service as any).isConfigured = false;
 
-      await service.sendNotificationEmail(mockUserId, mockNotification);
+      await service.executeSendEmail(mockUserId, mockNotification);
 
-      expect(logger.log).toHaveBeenCalledWith(`[EMAIL] To: ${mockUser.email}`);
-      expect(logger.log).toHaveBeenCalledWith(`[EMAIL] Subject: Appointment Update - Ilé Àṣẹ`);
-      expect(logger.log).toHaveBeenCalledWith(expect.stringMatching(/\[EMAIL\] Body:/));
+      expect(logger.log).toHaveBeenCalledWith(expect.stringMatching(/\[EMAIL-MOCK\]/));
 
-      // Restore
       (service as any).isConfigured = originalIsConfigured;
     });
 
     it('should throw error when user is not found', async () => {
       (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
 
-      await expect(service.sendNotificationEmail(mockUserId, mockNotification)).rejects.toThrow('User not found');
+      await expect(service.executeSendEmail(mockUserId, mockNotification)).rejects.toThrow('User not found');
     });
 
     it('should handle email sending errors', async () => {
       mockSend.mockRejectedValueOnce(new Error('SendGrid error'));
       (service as any).isConfigured = true;
 
-      await expect(service.sendNotificationEmail(mockUserId, mockNotification)).rejects.toThrow('SendGrid error');
+      await expect(service.executeSendEmail(mockUserId, mockNotification)).rejects.toThrow('SendGrid error');
       expect(logger.error).toHaveBeenCalledWith('Failed to send email: SendGrid error');
     });
   });
 
   describe('sendPasswordResetEmail', () => {
+    const mockEmail = 'user@example.com';
+    const mockResetToken = 'reset-token-123';
+    const mockUserName = 'Test User';
+
+    it('should queue password reset email', async () => {
+      await service.sendPasswordResetEmail(mockEmail, mockResetToken, mockUserName);
+
+      expect(mockQueue.add).toHaveBeenCalledWith('sendPasswordReset', {
+        email: mockEmail,
+        resetToken: mockResetToken,
+        userName: mockUserName,
+      });
+    });
+  });
+
+  describe('executeSendPasswordReset', () => {
     const mockEmail = 'user@example.com';
     const mockResetToken = 'reset-token-123';
     const mockUserName = 'Test User';
@@ -182,7 +219,7 @@ describe('EmailService', () => {
       mockSend.mockResolvedValueOnce({});
       (service as any).isConfigured = true;
 
-      await service.sendPasswordResetEmail(mockEmail, mockResetToken, mockUserName);
+      await service.executeSendPasswordReset(mockEmail, mockResetToken, mockUserName);
 
       expect(mockSend).toHaveBeenCalledWith({
         to: mockEmail,
@@ -193,18 +230,14 @@ describe('EmailService', () => {
       expect(logger.log).toHaveBeenCalledWith(`Password reset email sent to ${mockEmail}`);
     });
 
-    it('should log password reset email instead of sending when SendGrid is not configured', async () => {
-      // Temporarily disable SendGrid
+    it('should log mock when SendGrid is not configured', async () => {
       const originalIsConfigured = (service as any).isConfigured;
       (service as any).isConfigured = false;
 
-      await service.sendPasswordResetEmail(mockEmail, mockResetToken, mockUserName);
+      await service.executeSendPasswordReset(mockEmail, mockResetToken, mockUserName);
 
-      expect(logger.log).toHaveBeenCalledWith(`[EMAIL] Password Reset To: ${mockEmail}`);
-      expect(logger.log).toHaveBeenCalledWith(`[EMAIL] Reset URL: ${mockFrontendUrl}/reset-password?token=${mockResetToken}`);
-      expect(logger.log).toHaveBeenCalledWith(`[EMAIL] Reset Token: ${mockResetToken}`);
+      expect(logger.log).toHaveBeenCalledWith(expect.stringMatching(/\[EMAIL-MOCK\].*Password Reset/));
 
-      // Restore
       (service as any).isConfigured = originalIsConfigured;
     });
 
@@ -212,7 +245,7 @@ describe('EmailService', () => {
       mockSend.mockRejectedValueOnce(new Error('SendGrid error'));
       (service as any).isConfigured = true;
 
-      await expect(service.sendPasswordResetEmail(mockEmail, mockResetToken, mockUserName)).rejects.toThrow('SendGrid error');
+      await expect(service.executeSendPasswordReset(mockEmail, mockResetToken, mockUserName)).rejects.toThrow('SendGrid error');
       expect(logger.error).toHaveBeenCalledWith('Failed to send password reset email: SendGrid error');
     });
   });

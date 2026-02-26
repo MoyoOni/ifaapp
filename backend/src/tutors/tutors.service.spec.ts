@@ -24,6 +24,7 @@ describe('TutorsService', () => {
 
     const mockCurrentUser = {
         id: 'tutor-1',
+        sub: 'tutor-1',
         email: 'tutor@example.com',
         role: 'BABALAWO' as any,
         verified: true,
@@ -81,6 +82,7 @@ describe('TutorsService', () => {
 
             mockPrismaService.tutor.findUnique.mockResolvedValue({
                 id: 'tutor-1',
+        sub: 'tutor-1',
                 status: 'APPROVED',
                 hourlyRate: 6000,
             });

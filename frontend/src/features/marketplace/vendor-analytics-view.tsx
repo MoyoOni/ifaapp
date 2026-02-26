@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
-import { BarChart3, TrendingUp, Users, ShoppingCart, DollarSign, Calendar, Filter, Download, Eye } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, ShoppingCart, DollarSign, Calendar, Download, Eye } from 'lucide-react';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { useQuery } from '@tanstack/react-query';
-import api from '@/lib/api';
-import { DEMO_USERS } from '@/demo';
 
 interface VendorAnalyticsViewProps {
   onBack?: () => void;

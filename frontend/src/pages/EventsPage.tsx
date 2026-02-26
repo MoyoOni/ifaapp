@@ -12,11 +12,11 @@ const EventsPage: React.FC = () => {
 
   const handleCreateEvent = () => {
     try {
-      navigate('/events/create');
+      navigate('/event-create');
     } catch (error) {
       logger.error('Navigation error:', error);
       // Fallback navigation
-      window.location.href = '/events/create';
+      window.location.href = '/event-create';
     }
   };
 

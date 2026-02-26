@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from './users.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { CacheManagerService } from '../cache/cache-manager.service';
+import { SearchService } from '../search/search.service';
 import { NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 
 describe('UsersService', () => {
@@ -23,6 +25,18 @@ describe('UsersService', () => {
                     provide: PrismaService,
                     useValue: mockPrismaService,
                 },
+                {
+                    provide: CacheManagerService,
+                    useValue: {
+                        getUserProfile: jest.fn().mockResolvedValue(null),
+                        cacheUserProfile: jest.fn().mockResolvedValue(true),
+                        invalidateUserCache: jest.fn().mockResolvedValue(undefined),
+                    },
+                },
+                {
+                    provide: SearchService,
+                    useValue: { search: jest.fn(), index: jest.fn(), triggerIndexing: jest.fn() },
+                },
             ],
         }).compile();
 
@@ -37,6 +51,7 @@ describe('UsersService', () => {
             const mockUsers = [
                 {
                     id: 'user-1',
+        sub: 'user-1',
                     email: 'user1@example.com',
                     name: 'User One',
                     role: 'CLIENT' as any,
@@ -44,6 +59,7 @@ describe('UsersService', () => {
                 },
                 {
                     id: 'user-2',
+        sub: 'user-2',
                     email: 'user2@example.com',
                     name: 'User Two',
                     role: 'BABALAWO' as any,
@@ -67,6 +83,7 @@ describe('UsersService', () => {
             const mockBabalawos = [
                 {
                     id: 'baba-1',
+        sub: 'baba-1',
                     email: 'baba1@example.com',
                     name: 'Babalawo One',
                     role: 'BABALAWO' as any,
@@ -90,6 +107,7 @@ describe('UsersService', () => {
             const mockVerifiedUsers = [
                 {
                     id: 'user-1',
+        sub: 'user-1',
                     email: 'verified@example.com',
                     name: 'Verified User',
                     role: 'CLIENT' as any,
@@ -113,6 +131,7 @@ describe('UsersService', () => {
             const mockSearchResults = [
                 {
                     id: 'user-1',
+        sub: 'user-1',
                     email: 'user@example.com',
                     name: 'Adeola',
                     yorubaName: 'Adéọlá',
@@ -161,6 +180,7 @@ describe('UsersService', () => {
         it('should return a user by ID with all relations', async () => {
             const mockUser = {
                 id: 'user-1',
+        sub: 'user-1',
                 email: 'user@example.com',
                 name: 'Test User',
                 role: 'CLIENT' as any,
@@ -204,6 +224,7 @@ describe('UsersService', () => {
     describe('update', () => {
         const currentUser = {
             id: 'user-1',
+        sub: 'user-1',
             email: 'user@example.com',
             role: 'CLIENT' as any,
             verified: true,
@@ -218,6 +239,7 @@ describe('UsersService', () => {
 
             const mockUpdatedUser = {
                 id: 'user-1',
+        sub: 'user-1',
                 email: 'user@example.com',
                 name: 'Updated Name',
                 bio: 'Updated bio',
@@ -241,6 +263,7 @@ describe('UsersService', () => {
         it('should allow admin to update any user profile', async () => {
             const adminUser = {
                 id: 'admin-1',
+        sub: 'admin-1',
                 email: 'admin@example.com',
                 role: 'ADMIN' as any,
                 verified: true,
@@ -249,6 +272,7 @@ describe('UsersService', () => {
             const dto = { name: 'Updated by admin' } as any;
             const mockUpdatedUser = {
                 id: 'user-2',
+        sub: 'user-2',
                 email: 'user2@example.com',
                 verified: true,
             };
@@ -275,6 +299,7 @@ describe('UsersService', () => {
             const dto = { yorubaName: 'Adéọlá' };
             const mockUpdatedUser = {
                 id: 'user-1',
+        sub: 'user-1',
                 yorubaName: 'Adéọlá',
             };
 
@@ -311,6 +336,7 @@ describe('UsersService', () => {
 
             const mockUpdatedUser = {
                 id: 'user-1',
+        sub: 'user-1',
                 ...onboardingData,
                 hasOnboarded: true,
             };
@@ -332,6 +358,7 @@ describe('UsersService', () => {
         it('should set hasOnboarded to true even with empty data', async () => {
             const mockUpdatedUser = {
                 id: 'user-1',
+        sub: 'user-1',
                 hasOnboarded: true,
             };
 

@@ -5,8 +5,7 @@
 
 import { logger } from '@/shared/utils/logger';
 import api from '@/lib/api';
-import { getDemoThread, saveDemoMessage, generateSimulatedReply } from './demo-messages';
-import { useQueryClient } from '@tanstack/react-query';
+import { getDemoThread, saveDemoMessage, generateSimulatedReply, getDemoInbox } from './demo-messages';
 
 // Define message types
 export interface Message {
@@ -112,11 +111,6 @@ export const getInbox = async (userId: string): Promise<Conversation[]> => {
   // Fallback to demo conversations with sessionStorage persistence
   return getDemoInbox(userId) as Conversation[];
 };
-
-// Import the getDemoInbox function from demo-messages
-// We need to add this to the export in demo-messages.ts
-// But for now we'll define it locally to match the external function signature
-export { getDemoInbox } from './demo-messages';
 
 // Mark conversation as read
 export const markAsRead = async (userId: string, otherUserId: string): Promise<void> => {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Calendar, Clock, MapPin, MoreVertical } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/shared/components/ui/button';
 
 interface Session {
   id: string;

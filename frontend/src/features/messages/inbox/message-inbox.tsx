@@ -31,7 +31,6 @@ interface MessageInboxProps {
 const MessageInbox: React.FC<MessageInboxProps> = ({ userId, onSelectConversation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
-  const [isDemoMode, setIsDemoMode] = useState(false);
 
   const { data: conversations = [], isLoading } = useQuery<Conversation[]>({
     queryKey: ['message-inbox', userId],

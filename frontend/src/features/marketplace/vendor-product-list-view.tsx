@@ -27,9 +27,9 @@ const VendorProductListView: React.FC<VendorProductListViewProps> = ({
 
     const handleBack = () => (onBack ? onBack() : navigate('/vendor/dashboard'));
     const handleCreateProduct = () =>
-        (onCreateProduct ? onCreateProduct() : navigate('/vendor/inventory'));
+        (onCreateProduct ? onCreateProduct() : navigate('/vendor/products'));
     const handleEditProduct = (productId: string) =>
-        (onEditProduct ? onEditProduct(productId) : navigate('/vendor/inventory'));
+        (onEditProduct ? onEditProduct(productId) : navigate('/vendor/products'));
 
     const { data: products = [], isLoading } = useQuery<Product[]>({
         queryKey: ['vendor-products', user?.id],

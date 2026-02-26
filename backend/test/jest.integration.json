@@ -7,6 +7,9 @@
   "testEnvironment": "node",
   "testTimeout": 30000,
   "moduleNameMapper": {
-    "^@ile-ase/common$": "<rootDir>/test/mocks/common.mock.ts"
+    "^@ile-ase/common$": "<rootDir>/test/mocks/common.mock.ts",
+    "^@/(.*)$": "<rootDir>/src/$1",
+    "^@common/(.*)$": "<rootDir>/../common/src/$1",
+    "^@common$": "<rootDir>/../common/src"
   }
 }

@@ -74,5 +74,10 @@ export function validateEnv(config: Record<string, unknown>): Env {
     throw new Error('ENCRYPTION_KEY is required in production for secure messaging');
   }
 
+  // SENTRY_DSN is required in production for error monitoring
+  if (parsed.data.NODE_ENV === 'production' && !parsed.data.SENTRY_DSN) {
+    throw new Error('SENTRY_DSN is required in production for error monitoring');
+  }
+
   return parsed.data;
 }

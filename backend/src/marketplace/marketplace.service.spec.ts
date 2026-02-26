@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MarketplaceService } from './marketplace.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { OrderNotificationService } from './order-notification.service';
+import { SearchService } from '../search/search.service';
 import { NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 
 jest.mock('@ile-ase/common', () => {
@@ -60,6 +61,7 @@ describe('MarketplaceService', () => {
 
     const mockCurrentUser = {
         id: 'user-1',
+        sub: 'user-1',
         email: 'user@example.com',
         role: 'VENDOR' as any,
         verified: true,
@@ -76,6 +78,10 @@ describe('MarketplaceService', () => {
                 {
                     provide: OrderNotificationService,
                     useValue: mockOrderNotificationService,
+                },
+                {
+                    provide: SearchService,
+                    useValue: { search: jest.fn(), index: jest.fn(), triggerIndexing: jest.fn() },
                 },
             ],
         }).compile();
@@ -98,6 +104,7 @@ describe('MarketplaceService', () => {
 
             const mockVendor = {
                 id: 'vendor-1',
+        sub: 'vendor-1',
                 userId: mockCurrentUser.id,
                 ...dto,
                 status: 'PENDING',
@@ -163,12 +170,14 @@ describe('MarketplaceService', () => {
 
             const mockVendor = {
                 id: 'vendor-1',
+        sub: 'vendor-1',
                 userId: mockCurrentUser.id,
                 status: 'APPROVED',
             };
 
             const mockProduct = {
                 id: 'product-1',
+        sub: 'product-1',
                 vendorId: mockVendor.id,
                 ...dto,
                 status: 'ACTIVE',
@@ -252,6 +261,7 @@ describe('MarketplaceService', () => {
 
             const mockOrder = {
                 id: 'order-1',
+        sub: 'order-1',
                 customerId: mockCurrentUser.id,
                 vendorId: 'vendor-1',
                 totalAmount: 2000,
@@ -320,6 +330,7 @@ describe('MarketplaceService', () => {
 
             const mockReview = {
                 id: 'review-1',
+        sub: 'review-1',
                 userId: mockCurrentUser.id,
                 ...dto,
                 createdAt: new Date(),

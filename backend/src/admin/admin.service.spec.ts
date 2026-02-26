@@ -5,6 +5,8 @@ import { VerificationService } from '../verification/verification.service';
 import { WalletService } from '../wallet/wallet.service';
 import { PaymentsService } from '../payments/payments.service';
 import { CirclesService } from '../circles/circles.service';
+import { NotificationService } from '../notifications/notification.service';
+import { AuditService } from './audit.service';
 
 jest.mock('@ile-ase/common', () => {
   const actual = jest.requireActual('@ile-ase/common');
@@ -25,6 +27,7 @@ describe('AdminService', () => {
 
   const mockAdminUser = {
     id: 'admin-1',
+        sub: 'admin-1',
     email: 'admin@example.com',
     role: 'ADMIN',
     verified: true,
@@ -32,6 +35,7 @@ describe('AdminService', () => {
 
   const mockNonAdminUser = {
     id: 'user-1',
+        sub: 'user-1',
     email: 'user@example.com',
     role: 'CLIENT',
     verified: false,
@@ -56,6 +60,14 @@ describe('AdminService', () => {
         {
           provide: CirclesService,
           useValue: { createFromSuggestion: jest.fn() },
+        },
+        {
+          provide: NotificationService,
+          useValue: { sendNotification: jest.fn(), createNotification: jest.fn() },
+        },
+        {
+          provide: AuditService,
+          useValue: { log: jest.fn(), getAuditLog: jest.fn() },
         },
         {
           provide: PrismaService,
@@ -182,6 +194,7 @@ describe('AdminService', () => {
       const mockUsers = [
         {
           id: 'user-1',
+        sub: 'user-1',
           email: 'user1@example.com',
           name: 'User One',
           role: 'CLIENT',
@@ -246,11 +259,13 @@ describe('AdminService', () => {
       const mockApplications = [
         {
           id: 'app-1',
+        sub: 'app-1',
           userId: 'user-1',
           currentStage: 'APPLICATION',
           submittedAt: new Date(),
           user: {
             id: 'user-1',
+        sub: 'user-1',
             name: 'John Doe',
             email: 'john@example.com',
             role: 'CLIENT',
@@ -307,6 +322,7 @@ describe('AdminService', () => {
       const mockEscrows = [
         {
           id: 'escrow-1',
+        sub: 'escrow-1',
           status: 'DISPUTED',
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -360,6 +376,7 @@ describe('AdminService', () => {
       const mockWithdrawals = [
         {
           id: 'withdrawal-1',
+        sub: 'withdrawal-1',
           userId: 'user-1',
           amount: 5000,
           currency: 'NGN',

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, CheckCircle, XCircle, Clock, ArrowUp, User, FileText, Loader2, Search } from 'lucide-react';
+import { AlertTriangle, CheckCircle, XCircle, Clock, ArrowUp, User, FileText, Search } from 'lucide-react';
 import { UserRole } from '@common';
 import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';

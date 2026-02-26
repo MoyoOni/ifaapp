@@ -16,9 +16,9 @@ export class ColorMigrationUtil {
     // Process each class and replace hardcoded colors with tokens
     const migratedClasses = classes.map(cls => {
       // Check both the legacy to token map and semantic colors
-      const mappedClass = 
-        colorMappingReference.legacyToTokenMap[cls] || 
-        colorMappingReference.semanticColors[cls] || 
+      const mappedClass =
+        (colorMappingReference.legacyToTokenMap as Record<string, string>)[cls] ||
+        (colorMappingReference.semanticColors as Record<string, string>)[cls] ||
         cls; // If no mapping found, return the original class
       
       return mappedClass;

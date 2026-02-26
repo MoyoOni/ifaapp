@@ -1,5 +1,5 @@
 import React from 'react';
-import { SidebarLayout } from '@/components/layout/sidebar-layout';
+import { SidebarLayout } from '@/shared/components/sidebar-layout';
 import { DashboardHeader } from './dashboard-header';
 import { DashboardStats } from './dashboard-stats';
 import { RecentActivity } from './recent-activity';

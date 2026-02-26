@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { MessageCircle, Mail, LifeBuoy, HelpCircle, Search, Filter, Send, Paperclip, Clock, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
+import { MessageCircle, Mail, LifeBuoy, HelpCircle, Search, Send, Clock, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import api from '@/lib/api';
 
 interface VendorSupportCenterViewProps {
   onBack?: () => void;
@@ -182,9 +181,7 @@ const VendorSupportCenterView: React.FC<VendorSupportCenterViewProps> = ({ onBac
       subject: newTicketSubject,
       message: newTicketMessage,
       priority: newTicketPriority as 'low' | 'medium' | 'high' | 'urgent',
-      category: newTicketCategory as 'technical' | 'billing' | 'account' | 'product' | 'other',
-      updatedAt: new Date().toISOString(),
-      replies: []
+      category: newTicketCategory as 'technical' | 'billing' | 'account' | 'product' | 'other'
     });
   };
 
@@ -334,10 +331,10 @@ const VendorSupportCenterView: React.FC<VendorSupportCenterViewProps> = ({ onBac
                   <div className="flex justify-end">
                     <button
                       type="submit"
-                      disabled={mutation.isLoading}
+                      disabled={mutation.isPending}
                       className="px-6 py-3 bg-highlight text-white rounded-xl font-bold hover:bg-yellow-500 transition-all flex items-center gap-2"
                     >
-                      {mutation.isLoading ? (
+                      {mutation.isPending ? (
                         <>
                           <div className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin"></div>
                           Submitting...

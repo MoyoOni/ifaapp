@@ -1,5 +1,3 @@
-import React from 'react';
-
 const ProfileSkeleton = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-4">

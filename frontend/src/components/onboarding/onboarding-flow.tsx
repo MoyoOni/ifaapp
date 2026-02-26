@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/shared/components/ui/button';
 import { CheckCircle, Sparkles, HeartHandshake, GraduationCap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

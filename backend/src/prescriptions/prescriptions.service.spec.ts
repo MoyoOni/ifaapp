@@ -71,6 +71,7 @@ describe('GuidancePlansService', () => {
     const babalawoId = 'babalawo-1';
     const mockCurrentUser: CurrentUserPayload = {
       id: babalawoId,
+      sub: babalawoId,
       email: 'babalawo@example.com',
       role: 'BABALAWO',
       verified: true,
@@ -89,6 +90,7 @@ describe('GuidancePlansService', () => {
 
     const mockAppointment = {
       id: 'appt-1',
+        sub: 'appt-1',
       babalawoId,
       clientId: 'client-1',
       status: 'COMPLETED',
@@ -101,6 +103,7 @@ describe('GuidancePlansService', () => {
       prisma.guidancePlan.findUnique.mockResolvedValue(null); // No existing plan
       prisma.guidancePlan.create.mockResolvedValue({
         id: 'plan-1',
+        sub: 'plan-1',
         ...createDto,
         babalawoId,
         clientId: 'client-1',
@@ -150,6 +153,7 @@ describe('GuidancePlansService', () => {
     it('should throw ForbiddenException if user is not the babalawo', async () => {
       const wrongUser: CurrentUserPayload = {
         id: 'other-babalawo',
+        sub: 'other-babalawo',
         email: 'other@example.com',
         role: 'BABALAWO',
         verified: true,
@@ -207,6 +211,7 @@ describe('GuidancePlansService', () => {
     const clientId = 'client-1';
     const mockCurrentUser: CurrentUserPayload = {
       id: clientId,
+      sub: clientId,
       email: 'client@example.com',
       role: 'CLIENT',
       verified: true,
@@ -304,6 +309,7 @@ describe('GuidancePlansService', () => {
     it('should throw ForbiddenException if user is not the client', async () => {
       const wrongUser: CurrentUserPayload = {
         id: 'other-client',
+        sub: 'other-client',
         email: 'other@example.com',
         role: 'CLIENT',
         verified: true,
@@ -335,6 +341,7 @@ describe('GuidancePlansService', () => {
     it('should return guidance plan if user is client', async () => {
       const clientUser: CurrentUserPayload = {
         id: 'client-1',
+        sub: 'client-1',
         email: 'client@example.com',
         role: 'CLIENT',
         verified: true,
@@ -349,6 +356,7 @@ describe('GuidancePlansService', () => {
     it('should return guidance plan if user is babalawo', async () => {
       const babalawoUser: CurrentUserPayload = {
         id: 'babalawo-1',
+        sub: 'babalawo-1',
         email: 'babalawo@example.com',
         role: 'BABALAWO',
         verified: true,
@@ -363,6 +371,7 @@ describe('GuidancePlansService', () => {
     it('should return guidance plan if user is admin', async () => {
       const adminUser: CurrentUserPayload = {
         id: 'admin-1',
+        sub: 'admin-1',
         email: 'admin@example.com',
         role: 'ADMIN',
         verified: true,
@@ -377,6 +386,7 @@ describe('GuidancePlansService', () => {
     it('should throw ForbiddenException if user has no permission', async () => {
       const unauthorizedUser: CurrentUserPayload = {
         id: 'unauthorized',
+        sub: 'unauthorized',
         email: 'unauthorized@example.com',
         role: 'CLIENT',
         verified: true,
@@ -391,6 +401,7 @@ describe('GuidancePlansService', () => {
     it('should throw NotFoundException if guidance plan does not exist', async () => {
       const clientUser: CurrentUserPayload = {
         id: 'client-1',
+        sub: 'client-1',
         email: 'client@example.com',
         role: 'CLIENT',
         verified: true,
@@ -407,6 +418,7 @@ describe('GuidancePlansService', () => {
     const userId = 'user-1';
     const mockCurrentUser: CurrentUserPayload = {
       id: userId,
+      sub: userId,
       email: 'user@example.com',
       role: 'BABALAWO',
       verified: true,
@@ -414,6 +426,7 @@ describe('GuidancePlansService', () => {
     const mockPlans = [
       {
         id: 'plan-1',
+        sub: 'plan-1',
         babalawoId: userId,
         clientId: 'client-1',
         status: 'PENDING',
@@ -459,6 +472,7 @@ describe('GuidancePlansService', () => {
     it('should throw ForbiddenException if user is not the owner and not admin', async () => {
       const otherUser: CurrentUserPayload = {
         id: 'other-user',
+        sub: 'other-user',
         email: 'other@example.com',
         role: 'CLIENT',
         verified: true,
@@ -481,6 +495,7 @@ describe('GuidancePlansService', () => {
     const babalawoId = 'babalawo-1';
     const mockCurrentUser: CurrentUserPayload = {
       id: babalawoId,
+      sub: babalawoId,
       email: 'babalawo@example.com',
       role: 'BABALAWO',
       verified: true,
@@ -532,6 +547,7 @@ describe('GuidancePlansService', () => {
     it('should throw ForbiddenException if user is not the babalawo', async () => {
       const wrongUser: CurrentUserPayload = {
         id: 'other-babalawo',
+        sub: 'other-babalawo',
         email: 'other@example.com',
         role: 'BABALAWO',
         verified: true,
@@ -556,6 +572,7 @@ describe('GuidancePlansService', () => {
     const babalawoId = 'babalawo-1';
     const mockCurrentUser: CurrentUserPayload = {
       id: babalawoId,
+      sub: babalawoId,
       email: 'babalawo@example.com',
       role: 'BABALAWO',
       verified: true,
@@ -606,6 +623,7 @@ describe('GuidancePlansService', () => {
     it('should throw ForbiddenException if user is not the babalawo', async () => {
       const wrongUser: CurrentUserPayload = {
         id: 'other-babalawo',
+        sub: 'other-babalawo',
         email: 'other@example.com',
         role: 'BABALAWO',
         verified: true,
@@ -629,6 +647,7 @@ describe('GuidancePlansService', () => {
     const guidancePlanId = 'plan-1';
     const mockCurrentUser: CurrentUserPayload = {
       id: 'client-1',
+        sub: 'client-1',
       email: 'client@example.com',
       role: 'CLIENT',
       verified: true,
@@ -706,6 +725,7 @@ describe('GuidancePlansService', () => {
     it('should throw ForbiddenException if user has no permission', async () => {
       const unauthorizedUser: CurrentUserPayload = {
         id: 'unauthorized',
+        sub: 'unauthorized',
         email: 'unauthorized@example.com',
         role: 'CLIENT',
         verified: true,
@@ -730,6 +750,7 @@ describe('GuidancePlansService', () => {
     const guidancePlanId = 'plan-1';
     const mockCurrentUser: CurrentUserPayload = {
       id: 'client-1',
+        sub: 'client-1',
       email: 'client@example.com',
       role: 'CLIENT',
       verified: true,

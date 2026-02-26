@@ -11,6 +11,12 @@ import {
   SelectContent, 
   SelectItem 
 } from './select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from './dropdown-menu';
 
 export {
   Button,
@@ -24,4 +30,8 @@ export {
   SelectValue,
   SelectContent,
   SelectItem,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 };

@@ -25,6 +25,7 @@ describe('VideoCallService', () => {
 
     const mockCurrentUser = {
         id: 'user-1',
+        sub: 'user-1',
         email: 'user@example.com',
         role: 'CLIENT' as any,
         verified: true,
@@ -48,6 +49,7 @@ describe('VideoCallService', () => {
         it('should generate video call token', async () => {
             const mockAppointment = {
                 id: 'apt-1',
+        sub: 'apt-1',
                 babalawoId: 'bab-1',
                 clientId: mockCurrentUser.id,
                 status: 'UPCOMING',
@@ -75,6 +77,7 @@ describe('VideoCallService', () => {
         it('should end video session', async () => {
             const mockAppointment = {
                 id: 'apt-1',
+        sub: 'apt-1',
                 babalawoId: 'bab-1',
                 clientId: mockCurrentUser.id,
                 status: 'IN_SESSION',
@@ -93,6 +96,7 @@ describe('VideoCallService', () => {
         it('should return video call info', async () => {
             const mockAppointment = {
                 id: 'apt-1',
+        sub: 'apt-1',
                 babalawoId: 'bab-1',
                 clientId: mockCurrentUser.id,
                 videoRoomId: 'room-1',

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Query, Headers, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { WalletService } from './wallet.service';
 import { CreateDepositDto } from './dto/create-deposit.dto';
@@ -39,9 +39,10 @@ export class WalletController {
   async deposit(
     @Param('userId') userId: string,
     @Body() dto: CreateDepositDto,
-    @CurrentUser() currentUser: CurrentUserPayload
+    @CurrentUser() currentUser: CurrentUserPayload,
+    @Headers('idempotency-key') idempotencyKey?: string
   ) {
-    return this.walletService.depositFunds(userId, dto, currentUser);
+    return this.walletService.depositFunds(userId, dto, currentUser, idempotencyKey);
   }
 
   /**

@@ -124,7 +124,10 @@
       "integration\\.spec\\.ts$"
     ],
     "moduleNameMapper": {
-      "^@ile-ase/common$": "<rootDir>/../test/mocks/common.mock.ts"
+      "^@ile-ase/common$": "<rootDir>/../test/mocks/common.mock.ts",
+      "^@common/(.*)$": "<rootDir>/../../common/src/$1",
+      "^@common$": "<rootDir>/../../common/src",
+      "^@/(.*)$": "<rootDir>/$1"
     }
   }
 }

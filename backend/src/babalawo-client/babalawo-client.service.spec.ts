@@ -19,6 +19,7 @@ describe('BabalawoClientService', () => {
 
     const mockCurrentUser = {
         id: 'babalawo-1',
+        sub: 'babalawo-1',
         email: 'babalawo@example.com',
         role: 'BABALAWO' as any,
         verified: true,
@@ -42,6 +43,7 @@ describe('BabalawoClientService', () => {
             const dto = { clientId: 'client-1' };
             const mockRelationship = {
                 id: 'rel-1',
+        sub: 'rel-1',
                 babalawoId: mockCurrentUser.id,
                 clientId: dto.clientId,
                 status: 'ACTIVE',
@@ -80,6 +82,7 @@ describe('BabalawoClientService', () => {
 
             const mockRelationship = {
                 id: 'rel-1',
+        sub: 'rel-1',
                 babalawoId: 'bab-1',
                 clientId,
                 status: 'ACTIVE',

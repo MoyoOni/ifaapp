@@ -53,13 +53,13 @@ const ProfilePage: React.FC = () => {
         break;
       case 'product-detail':
         if (params) {
-          navigate(`/marketplace/${params}`);
+          navigate(`/product/${params}`);
         } else {
           navigate('/marketplace');
         }
         break;
       case 'vendor-dashboard':
-        navigate('/vendor/inventory');
+        navigate('/vendor/products');
         break;
       case 'babalawo-dashboard':
         navigate('/practitioner/dashboard');

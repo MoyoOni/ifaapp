@@ -76,9 +76,6 @@ export class TouchTargetUtil {
     ] as HTMLElement[];
 
     potentialProblemElements.forEach(element => {
-      // Check if the element is causing overflow issues
-      const computedStyle = window.getComputedStyle(element);
-      
       // If the element has min-h-screen but is causing double scroll
       if (element.classList.contains('min-h-screen')) {
         const parent = element.parentElement;

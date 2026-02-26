@@ -3,9 +3,9 @@ import { Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../hooks/use-auth';
 import api from '@/lib/api';
 import { logger } from '../utils/logger';
-import { useModal } from '@/components/common/ModalProvider';
 import { useToast } from '@/components/common/ToastProvider';
 import { useConfirm } from '@/hooks/use-confirm';
+import { usePrompt } from '@/hooks/use-prompt';
 
 interface MaskedValueProps {
   value: string;
@@ -15,31 +15,24 @@ interface MaskedValueProps {
   className?: string;
   children?: React.ReactNode;
   isSensitive?: boolean; // New prop to indicate high sensitivity
-  revealText?: string;
-  maskCharacter?: string;
 }
 
-const MaskedValue: React.FC<MaskedValueProps> = ({ value, revealText = "Reveal", maskCharacter = "*", children }) => {
-  const [revealed, setRevealed] = useState(false);
-  const { showModal } = useModal();
+const MaskedValue: React.FC<MaskedValueProps> = ({
+  value,
+  entityType,
+  entityId,
+  label = 'Value',
+  className = '',
+  children,
+  isSensitive = false,
+}) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const [revealing, setRevealing] = useState(false);
+  const [_showAlert, setShowAlert] = useState(false);
+  const { user } = useAuth();
   const { showToast } = useToast();
   const { ConfirmationDialog, confirm: confirmDialog } = useConfirm();
-
-  const handleReveal = () => {
-    if (revealed) {
-      setRevealed(false);
-    } else {
-      showModal({
-        title: 'Confirm Reveal',
-        message: 'Are you sure you want to reveal this sensitive information?',
-        confirmText: 'Reveal',
-        cancelText: 'Cancel',
-        onConfirm: () => {
-          setRevealed(true);
-        }
-      });
-    }
-  };
+  const { PromptDialog, prompt: promptInput } = usePrompt();
 
   const toggleVisibility = async () => {
     if (!user?.isImpersonated) {
@@ -49,10 +42,10 @@ const MaskedValue: React.FC<MaskedValueProps> = ({ value, revealText = "Reveal",
 
     if (!isVisible) {
       // Admin is trying to reveal PII during impersonation
-      let reason = '';
-      
+      let reason: string | null = null;
+
       if (isSensitive) {
-        // For highly sensitive data, show a warning
+        // For highly sensitive data, show a warning first
         setShowAlert(true);
         const confirmed = await confirmDialog({
           title: 'Sensitive Information',
@@ -64,23 +57,24 @@ const MaskedValue: React.FC<MaskedValueProps> = ({ value, revealText = "Reveal",
           return;
         }
 
-        // eslint-disable-next-line no-restricted-globals -- Admin PII audit flow requires text input; TODO: replace with form dialog
-        const promptResult = window.prompt('Provide mandatory reason for accessing sensitive information (audited):');
-        if (promptResult === null) {
-          return; // User cancelled
-        }
-        reason = promptResult;
+        reason = await promptInput({
+          title: 'Mandatory Audit Reason',
+          message: 'Provide mandatory reason for accessing sensitive information (audited):',
+          placeholder: 'Reason for access...',
+          confirmText: 'Proceed',
+          required: true,
+        });
       } else {
-        // eslint-disable-next-line no-restricted-globals -- Admin PII audit flow requires text input; TODO: replace with form dialog
-        const promptResult = window.prompt('Provide reason for revealing sensitive information (audited):');
-        if (promptResult === null) {
-          return; // User cancelled
-        }
-        reason = promptResult;
+        reason = await promptInput({
+          title: 'Audit Reason',
+          message: 'Provide reason for revealing sensitive information (audited):',
+          placeholder: 'Reason for access...',
+          confirmText: 'Reveal',
+          required: true,
+        });
       }
 
-      if (!reason || reason.trim().length === 0) {
-        showToast('A reason is required to access sensitive information.', 'warning');
+      if (!reason) {
         return;
       }
       
@@ -137,6 +131,8 @@ const MaskedValue: React.FC<MaskedValueProps> = ({ value, revealText = "Reveal",
 
   return (
     <div className={`flex items-center gap-2 ${className}`}>
+      <ConfirmationDialog />
+      <PromptDialog />
       <span className={`truncate ${isSensitive && isVisible ? 'text-red-600 font-medium' : ''}`}>
         {getMaskedValue(value)}
       </span>

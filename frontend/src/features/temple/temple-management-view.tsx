@@ -5,6 +5,7 @@ import { Temple, UpdateTempleDto } from '@common';
 import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
 import { useAuth } from '@/shared/hooks/use-auth';
+import { useConfirm } from '@/hooks/use-confirm';
 // import { DEMO_TEMPLES } from '@/demo';
 
 interface TempleManagementViewProps {
@@ -23,6 +24,7 @@ const TempleManagementView: React.FC<TempleManagementViewProps> = ({
 }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { ConfirmationDialog, confirm: confirmDialog } = useConfirm();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<Partial<UpdateTempleDto>>({});
 
@@ -376,8 +378,14 @@ return (
                 </div>
                 {isEditing && (
                   <button
-                    onClick={() => {
-                      if (confirm(`Remove ${babalawo.name} from this temple?`)) {
+                    onClick={async () => {
+                      const confirmed = await confirmDialog({
+                        title: 'Remove Babalawo',
+                        message: `Are you sure you want to remove ${babalawo.name} from this temple?`,
+                        confirmText: 'Remove',
+                        cancelText: 'Cancel',
+                      });
+                      if (confirmed) {
                         removeBabalawoMutation.mutate(babalawo.id);
                       }
                     }}
@@ -409,6 +417,7 @@ return (
         </div>
       </div>
     </div>
+    <ConfirmationDialog />
   </div>
 );
 };

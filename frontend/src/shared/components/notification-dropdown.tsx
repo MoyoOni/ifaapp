@@ -80,7 +80,14 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ onClose }) 
   if (!user) {
     return (
       <>
-        <div className="fixed inset-0 z-40" onClick={onClose} />
+        <div 
+          className="fixed inset-0 z-40" 
+          onClick={onClose}
+          onKeyDown={(e) => e.key === 'Escape' && onClose()}
+          role="button"
+          tabIndex={0}
+          aria-label="Close notifications"
+        />
         <div className="absolute right-0 top-full mt-2 w-72 bg-card border border-border rounded-xl shadow-xl z-50 p-4">
           <p className="text-sm text-muted-foreground text-center">Log in to see notifications</p>
         </div>
@@ -90,7 +97,14 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ onClose }) 
 
   return (
     <>
-      <div className="fixed inset-0 z-40" onClick={onClose} />
+      <div 
+        className="fixed inset-0 z-40" 
+        onClick={onClose}
+        onKeyDown={(e) => e.key === 'Escape' && onClose()}
+        role="button"
+        tabIndex={0}
+        aria-label="Close notifications"
+      />
       <div className="absolute right-0 top-full mt-2 w-80 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">

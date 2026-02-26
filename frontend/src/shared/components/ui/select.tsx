@@ -10,6 +10,7 @@ interface SelectProps {
 interface SelectTriggerProps {
   children: React.ReactNode;
   className?: string;
+  onClick?: () => void;
 }
 
 interface SelectValueProps {
@@ -27,6 +28,7 @@ interface SelectItemProps {
   value: string;
   className?: string;
   disabled?: boolean;
+  onSelect?: (value: string) => void;
 }
 
 export const Select: React.FC<SelectProps> = ({ 
@@ -67,12 +69,14 @@ export const Select: React.FC<SelectProps> = ({
   };
 
   // Find the selected item's content to display as the trigger value
-  const selectedItemContent = React.Children.toArray(children).find(child => 
-    React.isValidElement(child) && 
-    child.props.value === selectedValue
+  const selectedItemContent = React.Children.toArray(children).find(child =>
+    React.isValidElement(child) &&
+    (child.props as Record<string, unknown>).value === selectedValue
   );
 
-  const triggerContent = selectedItemContent ? selectedItemContent.props.children : null;
+  const triggerContent = selectedItemContent && React.isValidElement(selectedItemContent)
+    ? selectedItemContent.props.children
+    : null;
 
   return (
     <div ref={selectRef} className="relative w-full">
@@ -147,7 +151,7 @@ export const SelectContent: React.FC<SelectContentProps & { isOpen?: boolean; on
           if (React.isValidElement(child) && child.type === SelectItem) {
             return React.cloneElement(child, {
               onSelect: onValueChange
-            } as SelectItemProps);
+            } as Partial<SelectItemProps>);
           }
           return child;
         })}

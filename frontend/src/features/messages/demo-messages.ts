@@ -286,6 +286,3 @@ export function generateSimulatedReply(userId: string, otherUserId: string): Dem
   saveStoredMessages(stored);
   return reply;
 }
-
-// Export getDemoInbox for use in the messaging service
-export { getDemoInbox };

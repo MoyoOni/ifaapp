@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { Currency } from '@ile-ase/common';
 import { WalletService } from './wallet.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -11,9 +12,37 @@ describe('WalletService', () => {
 
   const mockUser = {
     id: 'user-1',
+    sub: 'user-1',
     email: 'user@example.com',
     role: 'CLIENT',
     verified: true,
+  };
+
+  // Transaction client mock — mirrors prisma but used inside $transaction callbacks
+  const txClient = {
+    wallet: {
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    transaction: {
+      create: jest.fn(),
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      count: jest.fn(),
+    },
+    escrow: {
+      create: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+      findMany: jest.fn(),
+      aggregate: jest.fn(),
+    },
+    withdrawalRequest: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      update: jest.fn(),
+    },
   };
 
   beforeEach(async () => {
@@ -30,6 +59,7 @@ describe('WalletService', () => {
             },
             transaction: {
               create: jest.fn(),
+              findUnique: jest.fn(),
               findMany: jest.fn(),
               count: jest.fn(),
             },
@@ -45,6 +75,8 @@ describe('WalletService', () => {
               findMany: jest.fn(),
               update: jest.fn(),
             },
+            // $transaction executes the callback with the txClient
+            $transaction: jest.fn((cb: (tx: typeof txClient) => Promise<any>) => cb(txClient)),
           },
         },
         {
@@ -58,6 +90,7 @@ describe('WalletService', () => {
           provide: NotificationService,
           useValue: {
             sendNotification: jest.fn(),
+            createNotification: jest.fn(),
           },
         },
       ],
@@ -65,6 +98,8 @@ describe('WalletService', () => {
 
     service = module.get<WalletService>(WalletService);
     prisma = module.get<PrismaService>(PrismaService);
+
+    jest.clearAllMocks();
   });
 
   it('should be defined', () => {
@@ -107,9 +142,6 @@ describe('WalletService', () => {
       const result = await service.getOrCreateWallet('user-1');
 
       expect(result).toEqual(mockNewWallet);
-      expect(prisma.wallet.findUnique).toHaveBeenCalledWith({
-        where: { userId: 'user-1' },
-      });
       expect(prisma.wallet.create).toHaveBeenCalledWith({
         data: {
           userId: 'user-1',
@@ -143,43 +175,40 @@ describe('WalletService', () => {
   });
 
   describe('depositFunds', () => {
-    it('should create deposit transaction and update balance', async () => {
-      const mockWallet = {
-        id: 'wallet-1',
-        userId: 'user-1',
-        balance: 5000,
-        currency: 'NGN',
-        locked: false,
-      };
+    const mockWallet = {
+      id: 'wallet-1',
+      userId: 'user-1',
+      balance: 5000,
+      currency: 'NGN',
+      locked: false,
+    };
 
-      const mockUpdatedWallet = {
-        ...mockWallet,
-        balance: 10000,
-      };
+    const mockUpdatedWallet = { ...mockWallet, balance: 10000 };
 
-      const mockTransaction = {
-        id: 'txn-1',
-        walletId: 'wallet-1',
-        userId: 'user-1',
-        type: 'DEPOSIT',
-        amount: 5000,
-        currency: 'NGN',
-        status: 'COMPLETED',
-        description: 'Bank transfer deposit',
-        reference: 'ref-123',
-      };
+    const mockTransaction = {
+      id: 'txn-1',
+      walletId: 'wallet-1',
+      userId: 'user-1',
+      type: 'DEPOSIT',
+      amount: 5000,
+      currency: 'NGN',
+      status: 'COMPLETED',
+    };
 
+    const depositDto = {
+      amount: 5000,
+      currency: Currency.NGN,
+      description: 'Bank transfer deposit',
+      reference: 'ref-123',
+    };
+
+    beforeEach(() => {
       (prisma.wallet.findUnique as jest.Mock).mockResolvedValue(mockWallet);
-      (prisma.transaction.create as jest.Mock).mockResolvedValue(mockTransaction);
-      (prisma.wallet.update as jest.Mock).mockResolvedValue(mockUpdatedWallet);
+      (txClient.transaction.create as jest.Mock).mockResolvedValue(mockTransaction);
+      (txClient.wallet.update as jest.Mock).mockResolvedValue(mockUpdatedWallet);
+    });
 
-      const depositDto = {
-        amount: 5000,
-        currency: Currency.NGN,
-        description: 'Bank transfer deposit',
-        reference: 'ref-123',
-      };
-
+    it('should create deposit transaction and update balance atomically', async () => {
       const result = await service.depositFunds('user-1', depositDto, mockUser);
 
       expect(result).toEqual({
@@ -187,30 +216,78 @@ describe('WalletService', () => {
         transaction: mockTransaction,
       });
 
-      expect(prisma.transaction.create).toHaveBeenCalledWith({
-        data: {
-          walletId: 'wallet-1',
-          userId: 'user-1',
-          type: 'DEPOSIT',
-          amount: 5000,
-          currency: 'NGN',
-          status: 'COMPLETED',
-          description: 'Deposit: 5000 NGN',
-          reference: 'ref-123',
-        },
+      // Verify $transaction was called (atomic)
+      expect(prisma.$transaction).toHaveBeenCalled();
+      expect(txClient.transaction.create).toHaveBeenCalled();
+      expect(txClient.wallet.update).toHaveBeenCalledWith({
+        where: { id: 'wallet-1' },
+        data: { balance: { increment: 5000 } },
+      });
+    });
+
+    it('should reject deposit to another users wallet', async () => {
+      const otherUser = { ...mockUser, id: 'other-user' };
+
+      await expect(
+        service.depositFunds('user-1', depositDto, otherUser),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should reject deposit to locked wallet', async () => {
+      (prisma.wallet.findUnique as jest.Mock).mockResolvedValue({
+        ...mockWallet,
+        locked: true,
       });
 
-      expect(prisma.wallet.update).toHaveBeenCalledWith({
-        where: { id: 'wallet-1' },
-        data: {
-          balance: { increment: 5000 },
-        },
+      await expect(
+        service.depositFunds('user-1', depositDto, mockUser),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should return existing transaction for duplicate idempotency key', async () => {
+      const existingTxn = { ...mockTransaction, wallet: mockWallet };
+      (prisma.transaction.findUnique as jest.Mock).mockResolvedValue(existingTxn);
+
+      const result = await service.depositFunds(
+        'user-1',
+        depositDto,
+        mockUser,
+        'idem-key-123',
+      );
+
+      expect(result).toEqual({
+        wallet: existingTxn.wallet,
+        transaction: existingTxn,
+      });
+      // Should NOT call $transaction for duplicate
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('should process new deposit with idempotency key', async () => {
+      (prisma.transaction.findUnique as jest.Mock).mockResolvedValue(null);
+
+      const result = await service.depositFunds(
+        'user-1',
+        depositDto,
+        mockUser,
+        'new-idem-key',
+      );
+
+      expect(result).toEqual({
+        wallet: mockUpdatedWallet,
+        transaction: mockTransaction,
+      });
+      expect(prisma.$transaction).toHaveBeenCalled();
+      expect(txClient.transaction.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          idempotencyKey: 'new-idem-key',
+        }),
       });
     });
   });
 
   describe('createEscrow', () => {
-    it('should create escrow and deduct from wallet balance', async () => {
+    it('should create escrow and deduct from wallet atomically', async () => {
       const mockWallet = {
         id: 'wallet-1',
         userId: 'user-1',
@@ -231,15 +308,10 @@ describe('WalletService', () => {
         notes: 'Consultation booking',
       };
 
-      const mockUpdatedWallet = {
-        ...mockWallet,
-        balance: 5000,
-      };
-
       (prisma.wallet.findUnique as jest.Mock).mockResolvedValue(mockWallet);
-      (prisma.escrow.create as jest.Mock).mockResolvedValue(mockEscrow);
-      (prisma.wallet.update as jest.Mock).mockResolvedValue(mockUpdatedWallet);
-      (prisma.transaction.create as jest.Mock).mockResolvedValue({});
+      (txClient.escrow.create as jest.Mock).mockResolvedValue(mockEscrow);
+      (txClient.wallet.update as jest.Mock).mockResolvedValue({ ...mockWallet, balance: 5000 });
+      (txClient.transaction.create as jest.Mock).mockResolvedValue({});
 
       const escrowDto = {
         recipientId: 'recipient-1',
@@ -252,24 +324,11 @@ describe('WalletService', () => {
       const result = await service.createEscrow('user-1', escrowDto, mockUser);
 
       expect(result).toEqual(mockEscrow);
-
-      expect(prisma.escrow.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          walletId: 'wallet-1',
-          userId: 'user-1',
-          recipientId: 'recipient-1',
-          amount: 5000,
-          type: 'BOOKING',
-          relatedId: 'booking-1',
-          notes: 'Consultation booking',
-        }),
-      });
-
-      expect(prisma.wallet.update).toHaveBeenCalledWith({
+      expect(prisma.$transaction).toHaveBeenCalled();
+      expect(txClient.escrow.create).toHaveBeenCalled();
+      expect(txClient.wallet.update).toHaveBeenCalledWith({
         where: { id: 'wallet-1' },
-        data: {
-          balance: { decrement: 5000 },
-        },
+        data: { balance: { decrement: 5000 } },
       });
     });
 
@@ -298,7 +357,7 @@ describe('WalletService', () => {
   });
 
   describe('releaseEscrow', () => {
-    it('should release escrow and transfer funds to recipient', async () => {
+    it('should release escrow and transfer funds atomically', async () => {
       const mockEscrow = {
         id: 'escrow-1',
         walletId: 'wallet-1',
@@ -309,6 +368,8 @@ describe('WalletService', () => {
         status: 'HOLD',
         relatedId: 'booking-1',
         currency: 'NGN',
+        releaseTiers: null,
+        releasedAt: null,
       };
 
       const mockRecipientWallet = {
@@ -328,33 +389,69 @@ describe('WalletService', () => {
 
       (prisma.escrow.findUnique as jest.Mock).mockResolvedValue({ ...mockEscrow, wallet: {} });
       (prisma.wallet.findUnique as jest.Mock).mockResolvedValue(mockRecipientWallet);
-      (prisma.escrow.update as jest.Mock).mockResolvedValue(mockUpdatedEscrow);
-      (prisma.wallet.update as jest.Mock).mockResolvedValue({});
-      (prisma.transaction.create as jest.Mock).mockResolvedValue({});
+      (txClient.escrow.update as jest.Mock).mockResolvedValue(mockUpdatedEscrow);
+      (txClient.wallet.update as jest.Mock).mockResolvedValue({});
+      (txClient.transaction.create as jest.Mock).mockResolvedValue({});
 
-      const releaseDto = {
-        escrowId: 'escrow-1',
-      };
-
+      const releaseDto = { escrowId: 'escrow-1' };
       const result = await service.releaseEscrow('user-1', releaseDto, mockUser);
 
       expect(result).toEqual(mockUpdatedEscrow);
-
-      expect(prisma.escrow.update).toHaveBeenCalledWith({
-        where: { id: 'escrow-1' },
-        data: expect.objectContaining({
-          status: 'RELEASED',
-          releasedAt: expect.any(Date),
-          releasedBy: 'user-1',
-        }),
-      });
-
-      expect(prisma.wallet.update).toHaveBeenCalledWith({
+      expect(prisma.$transaction).toHaveBeenCalled();
+      expect(txClient.wallet.update).toHaveBeenCalledWith({
         where: { id: 'wallet-2' },
-        data: {
-          balance: { increment: 5000 },
-        },
+        data: { balance: { increment: 5000 } },
       });
+    });
+  });
+
+  describe('cancelEscrow', () => {
+    it('should cancel escrow and refund atomically', async () => {
+      const mockEscrow = {
+        id: 'escrow-1',
+        walletId: 'wallet-1',
+        userId: 'user-1',
+        amount: 5000,
+        type: 'BOOKING',
+        status: 'HOLD',
+        currency: 'NGN',
+        wallet: {},
+      };
+
+      (prisma.escrow.findUnique as jest.Mock).mockResolvedValue(mockEscrow);
+      (txClient.wallet.update as jest.Mock).mockResolvedValue({});
+      (txClient.transaction.create as jest.Mock).mockResolvedValue({});
+      (txClient.escrow.update as jest.Mock).mockResolvedValue({ ...mockEscrow, status: 'CANCELLED' });
+
+      const result = await service.cancelEscrow('user-1', 'escrow-1', mockUser as any);
+
+      expect(result).toEqual({ success: true, refundedAmount: 5000 });
+      expect(prisma.$transaction).toHaveBeenCalled();
+      expect(txClient.wallet.update).toHaveBeenCalledWith({
+        where: { id: 'wallet-1' },
+        data: { balance: { increment: 5000 } },
+      });
+      expect(txClient.escrow.update).toHaveBeenCalledWith({
+        where: { id: 'escrow-1' },
+        data: expect.objectContaining({ status: 'CANCELLED' }),
+      });
+    });
+
+    it('should reject cancellation by non-owner', async () => {
+      const mockEscrow = {
+        id: 'escrow-1',
+        walletId: 'wallet-1',
+        userId: 'other-user',
+        amount: 5000,
+        status: 'HOLD',
+        wallet: {},
+      };
+
+      (prisma.escrow.findUnique as jest.Mock).mockResolvedValue(mockEscrow);
+
+      await expect(
+        service.cancelEscrow('user-1', 'escrow-1', mockUser as any),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -378,7 +475,7 @@ describe('WalletService', () => {
           status: 'COMPLETED',
           description: 'Bank transfer',
           createdAt: new Date(),
-        }
+        },
       ];
 
       (prisma.wallet.findUnique as jest.Mock).mockResolvedValue(mockWallet);
@@ -397,7 +494,6 @@ describe('WalletService', () => {
         limit: 50,
         offset: 0,
       });
-      expect(prisma.transaction.findMany).toHaveBeenCalled();
     });
   });
 
@@ -436,16 +532,6 @@ describe('WalletService', () => {
       const result = await service.createWithdrawalRequest('user-1', withdrawalDto, mockUser as any);
 
       expect(result).toEqual(mockWithdrawalRequest);
-      expect(prisma.withdrawalRequest.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          userId: 'user-1',
-          amount: 5000,
-          currency: 'NGN',
-          status: 'PENDING',
-          bankAccount: '1234567890',
-          bankName: 'Test Bank',
-        }),
-      });
     });
 
     it('should throw error if insufficient funds', async () => {

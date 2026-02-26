@@ -1,6 +1,4 @@
 import * as Sentry from '@sentry/react';
-import { Integrations } from '@sentry/tracing';
-import { BrowserTracing } from '@sentry/browser';
 
 // Initialize Sentry for error monitoring
 export const initSentry = () => {
@@ -12,33 +10,16 @@ export const initSentry = () => {
   Sentry.init({
     dsn: process.env.VITE_SENTRY_DSN || '',
     integrations: [
-      new BrowserTracing({
-        // Set 'tracePropagationTargets' to control for which URLs distributed tracing should be enabled
-        tracePropagationTargets: [
-          /^https:\/\/your-website\.com/,
-          /^https:\/\/api\.your-website\.com/,
-          // Add your production URLs here
-        ],
+      Sentry.browserTracingIntegration({
+        // Add your production URLs here for distributed tracing
       }),
     ],
     // Performance Monitoring
     tracesSampleRate: 0.5, // Capture 50% of transactions for performance monitoring
-    
-    // Session Replay - uncomment if you want to use this feature
-    /*
-    replaysSessionSampleRate: 0.1, // This sets the sample rate at 10% for session replay
-    replaysOnErrorSampleRate: 1.0, // If you're not already sampling the entire session, change the sample rate to 100% when sampling sessions where errors occur.
-    integrations: [
-      new Sentry.Replay({
-        maskAllText: false,
-        blockAllMedia: false,
-      }),
-    ],
-    */
-    
+
     // Set environment based on NODE_ENV
     environment: process.env.NODE_ENV || 'development',
-    
+
     // Add release version if available
     release: process.env.VITE_APP_VERSION || undefined,
   });

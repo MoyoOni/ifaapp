@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { TrendingUp, Users, DollarSign, Calendar, Package, AlertTriangle, Loader2 } from 'lucide-react';
+import { TrendingUp, Users, DollarSign, Calendar, Package, AlertTriangle } from 'lucide-react';
 import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
 import { isDemoMode } from '@/shared/config/demo-mode';

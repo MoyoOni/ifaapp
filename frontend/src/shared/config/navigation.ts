@@ -53,11 +53,11 @@ const CLIENT_NAV_ITEMS: NavItem[] = [
 const BABALAWO_NAV_ITEMS: NavItem[] = [
   { id: 'practice-center', label: 'Practice Center', icon: LayoutDashboard, path: '/practitioner/dashboard' },
   { id: 'messages', label: 'Messages', icon: MessageSquare, path: '/messages' },
-  { id: 'my-seekers', label: 'My Seekers', icon: Users, path: '/practitioner/seekers' },
+  { id: 'my-seekers', label: 'My Seekers', icon: Users, path: '/practitioner/my-seekers' },
   { id: 'consultation-schedule', label: 'Calendar', icon: Calendar, path: '/practitioner/consultations' },
-  { id: 'service-offerings', label: 'Service Offerings', icon: BookOpen, path: '/practitioner/services' },
-  { id: 'temple-connection', label: 'Temple Connection', icon: Building2, path: '/practitioner/temple' },
-  { id: 'practice-earnings', label: 'Practice Earnings', icon: DollarSign, path: '/practitioner/earnings' },
+  { id: 'service-offerings', label: 'Service Offerings', icon: BookOpen, path: '/practitioner/service-offering' },
+  { id: 'temple-connection', label: 'Temple Connection', icon: Building2, path: '/practitioner/temple-connection' },
+  { id: 'practice-earnings', label: 'Practice Earnings', icon: DollarSign, path: '/practitioner/earnings-report' },
   { id: 'professional-growth', label: 'Professional Growth', icon: TrendingUp, path: '/academy' },
   { id: 'profile', label: 'My Profile', icon: User, path: '/profile' },
 ];
@@ -66,17 +66,18 @@ const BABALAWO_NAV_ITEMS: NavItem[] = [
 const VENDOR_NAV_ITEMS: NavItem[] = [
   { id: 'sacred-shop', label: 'My Sacred Shop', icon: LayoutDashboard, path: '/vendor/dashboard' },
   { id: 'messages', label: 'Messages', icon: MessageSquare, path: '/messages' },
-  { id: 'product-workshop', label: 'Inventory', icon: Package, path: '/vendor/workshop' },
+  { id: 'product-workshop', label: 'Inventory', icon: Package, path: '/vendor/products' },
   { id: 'customer-care', label: 'Customer Care', icon: Users, path: '/vendor/support' },
   { id: 'community-market', label: 'Community Market', icon: ShoppingBag, path: '/marketplace' },
-  { id: 'sales-insights', label: 'Revenue/Analytics', icon: BarChart3, path: '/vendor/insights' },
+  { id: 'sales-insights', label: 'Revenue/Analytics', icon: BarChart3, path: '/vendor/analytics' },
   { id: 'academy', label: 'Academy', icon: TrendingUp, path: '/academy' },
   { id: 'profile', label: 'My Profile', icon: User, path: '/profile' },
 ];
 
 // Admin-specific navigation
+// All admin sub-pages are tabs within AdminDashboardView, routed via /admin/:tab
 const ADMIN_NAV_ITEMS: NavItem[] = [
-  { id: 'community-stewardship', label: 'Community Stewardship', icon: Shield, path: '/admin' },
+  { id: 'community-stewardship', label: 'Community Stewardship', icon: Shield, path: '/admin/dashboard' },
   { id: 'messages', label: 'Messages', icon: MessageSquare, path: '/messages' },
   {
     id: 'member-verification',
@@ -105,13 +106,6 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     icon: Activity,
     path: '/admin/health',
     requiredAdminSubRoles: [AdminSubRole.COMPLIANCE, AdminSubRole.SUPER]
-  },
-  {
-    id: 'tradition-preservation',
-    label: 'Tradition Preservation',
-    icon: BookOpen,
-    path: '/admin/content',
-    requiredAdminSubRoles: [AdminSubRole.MODERATOR, AdminSubRole.SUPER]
   },
   {
     id: 'sacred-finance',
@@ -161,7 +155,7 @@ export function getDashboardPathForRole(role: UserRole | string | undefined): st
   switch (role) {
     case UserRole.ADMIN:
     case UserRole.ADVISORY_BOARD_MEMBER:
-      return '/admin';
+      return '/admin/dashboard';
     case UserRole.BABALAWO:
       return '/practitioner/dashboard';
     case UserRole.VENDOR:

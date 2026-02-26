@@ -2,10 +2,9 @@ import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
     Users, Shield, CheckCircle, MessageSquare, Calendar,
-    Link as LinkIcon, DollarSign, BarChart3
+    Link as LinkIcon
 } from 'lucide-react';
 import { StatCard, UserListItem, VerificationListItem, AdminUser, VerificationApplication } from './admin-shared-components';
-import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface PlatformStats {
     totalUsers: number;
