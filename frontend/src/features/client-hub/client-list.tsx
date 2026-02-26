@@ -5,6 +5,7 @@ import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
 import { isDemoMode } from '@/shared/config/demo-mode';
 import { getAllDemoUsers } from '@/demo';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface Client {
   id: string;
@@ -51,7 +52,7 @@ const ClientList: React.FC<ClientListProps> = ({ babalawoId, onSelectClient, onM
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="w-12 h-12 border-4 border-highlight border-t-transparent rounded-full animate-spin"></div>
+        <LoadingSpinner size="lg" variant="highlight" />
       </div>
     );
   }

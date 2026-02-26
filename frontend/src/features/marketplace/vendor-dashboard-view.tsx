@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Package, ShoppingBag, TrendingUp, Plus, Edit, Trash2, ArrowRight, Filter, MessageCircle } from 'lucide-react';
+import { Package, ShoppingBag, TrendingUp, Plus, Edit, Trash2, ArrowRight, Filter, MessageCircle, Users } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { logger } from '@/shared/utils/logger';
@@ -75,7 +75,10 @@ const VendorDashboardView: React.FC<VendorDashboardViewProps> = ({
 }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'inventory' | 'orders' | 'revenue' | 'support'>(initialTab);
+  // Add new tabs to the tabs array
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'inventory' | 'orders' | 'revenue' | 'support' | 'analytics' | 'customers'>(
+    initialTab === 'analytics' || initialTab === 'customers' ? initialTab : 'overview'
+  );
 
   const handleManageProducts = () => {
     setSelectedTab('inventory');
@@ -108,6 +111,17 @@ const VendorDashboardView: React.FC<VendorDashboardViewProps> = ({
   const handleViewOrder = (orderId: string) => {
     if (onViewOrder) onViewOrder(orderId);
     else navigate(`/vendor/orders/${orderId}`);
+  };
+
+  // Add new handlers for the new tabs
+  const handleViewAnalytics = () => {
+    setSelectedTab('analytics');
+    navigate('/vendor/analytics');
+  };
+
+  const handleViewCustomers = () => {
+    setSelectedTab('customers');
+    navigate('/vendor/customers');
   };
 
   // Fetch vendor profile with demo fallback
@@ -365,16 +379,29 @@ const VendorDashboardView: React.FC<VendorDashboardViewProps> = ({
         {/* Tabs */}
         <div className="border-b border-stone-200 overflow-x-auto pb-px">
           <div className="flex items-center gap-4 sm:gap-8 min-w-max">
-            {(['overview', 'inventory', 'orders', 'revenue', 'support'] as const).map((tab) => (
+            {(['overview', 'inventory', 'orders', 'revenue', 'support', 'analytics', 'customers'] as const).map((tab) => (
               <button
                 key={tab}
-                onClick={() => setSelectedTab(tab)}
+                onClick={() => {
+                  if (tab === 'analytics') {
+                    handleViewAnalytics();
+                  } else if (tab === 'customers') {
+                    handleViewCustomers();
+                  } else {
+                    setSelectedTab(tab);
+                  }
+                }}
                 className={`py-3 px-2 font-bold text-sm transition-all relative whitespace-nowrap ${selectedTab === tab
                   ? 'text-highlight'
                   : 'text-stone-400 hover:text-stone-600'
                   }`}
               >
-                {tab === 'inventory' ? 'Inventory' : tab === 'revenue' ? 'Revenue/Analytics' : tab === 'support' ? 'Customer Care' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                {tab === 'inventory' ? 'Inventory' : 
+                 tab === 'revenue' ? 'Revenue/Analytics' : 
+                 tab === 'support' ? 'Customer Care' : 
+                 tab === 'analytics' ? 'Performance Analytics' : 
+                 tab === 'customers' ? 'Customer Insights' : 
+                 tab.charAt(0).toUpperCase() + tab.slice(1)}
                 {selectedTab === tab && (
                   <div className="absolute bottom-0 left-0 w-full h-0.5 bg-highlight rounded-t-full"></div>
                 )}
@@ -806,6 +833,72 @@ const VendorDashboardView: React.FC<VendorDashboardViewProps> = ({
                   <p className="text-stone-500">Your support tickets will appear here once submitted.</p>
                 </div>
               )}
+            </div>
+          )}
+
+          {selectedTab === 'analytics' && (
+            <div className="space-y-6 sm:space-y-8">
+              <div className="grid grid-cols-1 gap-4 sm:gap-6">
+                <button
+                  onClick={handleViewAnalytics}
+                  className="bg-white p-4 sm:p-6 rounded-2xl border border-stone-100 shadow-sm hover:shadow-lg transition-all text-left group"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-12 h-12 bg-green-50 text-green-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <TrendingUp size={24} />
+                    </div>
+                    <ArrowRight size={20} className="text-stone-300 group-hover:text-highlight group-hover:translate-x-1 transition-all" />
+                  </div>
+                  <h3 className="text-lg font-bold text-stone-800 mb-1">Performance Analytics</h3>
+                  <p className="text-sm text-stone-500">View sales trends and business insights</p>
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <h2 className="text-lg sm:text-xl font-bold text-stone-800">Recent Analytics Summary</h2>
+                <div className="bg-white p-6 rounded-xl border border-stone-100 shadow-sm">
+                  <p className="text-stone-500">Your detailed analytics will be displayed on the dedicated analytics page.</p>
+                  <button 
+                    onClick={handleViewAnalytics}
+                    className="mt-4 px-4 py-2 bg-highlight text-white rounded-lg font-bold text-sm"
+                  >
+                    View Full Analytics
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {selectedTab === 'customers' && (
+            <div className="space-y-6 sm:space-y-8">
+              <div className="grid grid-cols-1 gap-4 sm:gap-6">
+                <button
+                  onClick={handleViewCustomers}
+                  className="bg-white p-4 sm:p-6 rounded-2xl border border-stone-100 shadow-sm hover:shadow-lg transition-all text-left group"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Users size={24} />
+                    </div>
+                    <ArrowRight size={20} className="text-stone-300 group-hover:text-highlight group-hover:translate-x-1 transition-all" />
+                  </div>
+                  <h3 className="text-lg font-bold text-stone-800 mb-1">Customer Insights</h3>
+                  <p className="text-sm text-stone-500">Understand your customer base and interactions</p>
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <h2 className="text-lg sm:text-xl font-bold text-stone-800">Customer Overview</h2>
+                <div className="bg-white p-6 rounded-xl border border-stone-100 shadow-sm">
+                  <p className="text-stone-500">Detailed customer information and insights are available on the dedicated customer insights page.</p>
+                  <button 
+                    onClick={handleViewCustomers}
+                    className="mt-4 px-4 py-2 bg-highlight text-white rounded-lg font-bold text-sm"
+                  >
+                    View Customer Insights
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>

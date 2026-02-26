@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mail, User, Phone, MessageSquare } from 'lucide-react';
 import { Button } from '@/shared/components/button';
 import { logger } from '@/shared/utils/logger';
+import { useToast } from '@/components/common/ToastProvider';
 
 const InviteClientView: React.FC = () => {
   const navigate = useNavigate();
@@ -56,9 +57,7 @@ const InviteClientView: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleInvite = async () => {
     if (!validate()) {
       return;
     }
@@ -78,13 +77,14 @@ const InviteClientView: React.FC = () => {
         phone: '',
         message: 'Join me on this spiritual journey to connect with traditional Ifa wisdom and guidance.'
       });
-    } catch (err) {
-      logger.error('Error inviting client:', err);
-      alert('Failed to invite client. Please try again.');
+    } catch (error) {
+      showToast('Failed to invite client. Please try again.', 'error');
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const { showToast } = useToast();
 
   if (success) {
     return (

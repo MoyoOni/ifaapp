@@ -67,17 +67,12 @@ export class AuditInterceptor implements NestInterceptor {
 
           // Prepare audit log entry
           const auditEntry = {
-            adminId: user.id,
+            userId: user.id,
             action,
-            entityType: auditMetadata.resourceType,
-            entityId: resourceId || '',
-            payload: {
-              previousValues: this.extractPreviousValues(req, method),
-              newValues: this.extractNewValues(req, method, response),
-              method,
-              url: req.url,
-              statusCode: res.statusCode,
-            },
+            resourceType: auditMetadata.resourceType,
+            resourceId: resourceId || '',
+            previousValues: this.extractPreviousValues(req, method),
+            newValues: this.extractNewValues(req, method, response),
             ipAddress: this.getClientIp(req),
             userAgent: req.headers['user-agent'],
           };

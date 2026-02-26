@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
 import { getDemoAppointmentById, getDemoUserById, type DemoUser } from '@/demo';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface Appointment {
   id: string;
@@ -84,7 +85,11 @@ export const BookingConfirmation: React.FC = () => {
     }
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return (
+    <div className="flex justify-center items-center h-64">
+      <LoadingSpinner size="lg" variant="primary" label="Processing booking..." />
+    </div>
+  );
   if (error) {
     return (
       <div className="max-w-md mx-auto p-6 space-y-4">

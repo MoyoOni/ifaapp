@@ -5,7 +5,7 @@ import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
 import VerificationBadge from '@/shared/components/verification-badge';
 import { getDemoUser, getUserTempleRelationships } from '@/demo';
-
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface PersonalAwo {
   id: string;
@@ -115,7 +115,7 @@ const PersonalAwoDashboard: React.FC<PersonalAwoDashboardProps> = ({
   if (isLoading) {
     return (
       <div className="min-h-[400px] flex items-center justify-center p-6 bg-stone-50 rounded-[2.5rem]">
-        <div className="w-16 h-16 border-4 border-highlight border-t-transparent rounded-full animate-spin"></div>
+        <LoadingSpinner size="lg" variant="highlight" />
       </div>
     );
   }

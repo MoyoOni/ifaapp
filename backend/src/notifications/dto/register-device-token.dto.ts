@@ -8,6 +8,10 @@ export class RegisterDeviceTokenDto {
   @IsEnum(Platform)
   platform!: Platform;
 
+  @IsString()
+  @IsOptional()
+  deviceType?: string;
+
   @IsObject()
   @IsOptional()
   deviceInfo?: any;

@@ -3,6 +3,9 @@ import { Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../hooks/use-auth';
 import api from '@/lib/api';
 import { logger } from '../utils/logger';
+import { useModal } from '@/components/common/ModalProvider';
+import { useToast } from '@/components/common/ToastProvider';
+import { useConfirm } from '@/hooks/use-confirm';
 
 interface MaskedValueProps {
   value: string;
@@ -12,21 +15,31 @@ interface MaskedValueProps {
   className?: string;
   children?: React.ReactNode;
   isSensitive?: boolean; // New prop to indicate high sensitivity
+  revealText?: string;
+  maskCharacter?: string;
 }
 
-const MaskedValue: React.FC<MaskedValueProps> = ({ 
-  value, 
-  entityType, 
-  entityId, 
-  label = 'Value',
-  className = '',
-  children,
-  isSensitive = false,
-}) => {
-  const { user } = useAuth();
-  const [isVisible, setIsVisible] = useState(false);
-  const [revealing, setRevealing] = useState(false);
-  const [, setShowAlert] = useState(false);
+const MaskedValue: React.FC<MaskedValueProps> = ({ value, revealText = "Reveal", maskCharacter = "*", children }) => {
+  const [revealed, setRevealed] = useState(false);
+  const { showModal } = useModal();
+  const { showToast } = useToast();
+  const { ConfirmationDialog, confirm: confirmDialog } = useConfirm();
+
+  const handleReveal = () => {
+    if (revealed) {
+      setRevealed(false);
+    } else {
+      showModal({
+        title: 'Confirm Reveal',
+        message: 'Are you sure you want to reveal this sensitive information?',
+        confirmText: 'Reveal',
+        cancelText: 'Cancel',
+        onConfirm: () => {
+          setRevealed(true);
+        }
+      });
+    }
+  };
 
   const toggleVisibility = async () => {
     if (!user?.isImpersonated) {
@@ -41,31 +54,33 @@ const MaskedValue: React.FC<MaskedValueProps> = ({
       if (isSensitive) {
         // For highly sensitive data, show a warning
         setShowAlert(true);
-        const confirmed = window.confirm(
-          `You are about to view highly sensitive information (${label}).\n\n` +
-          'This action will be logged with your identity, reason, and timestamp.\n\n' +
-          'Are you sure you want to proceed?'
-        );
-        
+        const confirmed = await confirmDialog({
+          title: 'Sensitive Information',
+          message: `You are about to view highly sensitive information (${label}). This action will be logged with your identity, reason, and timestamp. Are you sure you want to proceed?`,
+          confirmText: 'Proceed',
+        });
+
         if (!confirmed) {
           return;
         }
-        
+
+        // eslint-disable-next-line no-restricted-globals -- Admin PII audit flow requires text input; TODO: replace with form dialog
         const promptResult = window.prompt('Provide mandatory reason for accessing sensitive information (audited):');
         if (promptResult === null) {
           return; // User cancelled
         }
         reason = promptResult;
       } else {
+        // eslint-disable-next-line no-restricted-globals -- Admin PII audit flow requires text input; TODO: replace with form dialog
         const promptResult = window.prompt('Provide reason for revealing sensitive information (audited):');
         if (promptResult === null) {
           return; // User cancelled
         }
         reason = promptResult;
       }
-      
+
       if (!reason || reason.trim().length === 0) {
-        alert('A reason is required to access sensitive information.');
+        showToast('A reason is required to access sensitive information.', 'warning');
         return;
       }
       
@@ -89,7 +104,7 @@ const MaskedValue: React.FC<MaskedValueProps> = ({
         }
       } catch (error) {
         logger.error('Failed to log PII reveal', error);
-        alert('Failed to access sensitive information. Action has been logged.');
+        showToast('Failed to access sensitive information. Action has been logged.', 'error');
       } finally {
         setRevealing(false);
         setShowAlert(false);
@@ -152,6 +167,7 @@ const MaskedValue: React.FC<MaskedValueProps> = ({
       )}
       
       {children}
+      <ConfirmationDialog />
     </div>
   );
 };

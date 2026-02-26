@@ -6,6 +6,7 @@ import { useAuth } from '@/shared/hooks/use-auth';
 import { logger } from '@/shared/utils/logger';
 import { isDemoMode } from '@/shared/config/demo-mode';
 import { DEMO_GUIDANCE_PLANS, getDemoAppointmentById, getDemoUserById } from '@/demo';
+import { useToast } from '@/components/common/ToastProvider';
 
 interface GuidancePlanItem {
   name: string;
@@ -61,7 +62,7 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
 }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [rejectionNotes, setRejectionNotes] = useState('');
+  const [rejectionReason, setRejectionReason] = useState('');
 
   const buildDemoPlan = (planId: string): GuidancePlan | null => {
     const demoPlan = DEMO_GUIDANCE_PLANS[planId as keyof typeof DEMO_GUIDANCE_PLANS];
@@ -152,7 +153,7 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
       try {
         const response = await api.post(`/guidance-plans/${guidancePlanId}/approve/${user?.id}`, {
           approve,
-          notes: approve ? undefined : rejectionNotes,
+          notes: approve ? undefined : rejectionReason,
         });
         return response.data;
       } catch (error) {
@@ -226,9 +227,11 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
     approveMutation.mutate(true);
   };
 
+  const { showToast } = useToast();
+
   const handleReject = () => {
-    if (!rejectionNotes.trim()) {
-      alert('Please provide a reason for rejection');
+    if (!rejectionReason.trim()) {
+      showToast('Please provide a reason for rejection', 'error');
       return;
     }
     approveMutation.mutate(false);
@@ -463,8 +466,8 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
               Rejection Reason (if rejecting)
             </label>
             <textarea
-              value={rejectionNotes}
-              onChange={(e) => setRejectionNotes(e.target.value)}
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
               rows={3}
               className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-highlight"
               placeholder="Optional: Provide a reason for rejection..."

@@ -30,11 +30,11 @@ class ErrorBoundary extends Component<Props, State> {
     render() {
         if (this.state.hasError) {
             return (
-                <div className="min-h-screen flex items-center justify-center bg-cream-50">
+                <div className="min-h-screen flex items-center justify-center bg-muted">
                     <div className="text-center max-w-md px-6">
                         <div className="mb-6">
                             <svg
-                                className="mx-auto h-16 w-16 text-amber-700"
+                                className="mx-auto h-16 w-16 text-warning"
                                 fill="none"
                                 viewBox="0 0 24 24"
                                 stroke="currentColor"
@@ -47,15 +47,15 @@ class ErrorBoundary extends Component<Props, State> {
                                 />
                             </svg>
                         </div>
-                        <h1 className="text-2xl font-bold text-stone-800 mb-4">
+                        <h1 className="text-[1.5rem] font-[700] text-foreground mb-4">
                             Something went wrong
                         </h1>
-                        <p className="text-stone-600 mb-6">
+                        <p className="text-[0.875rem] text-muted-foreground mb-6">
                             We've been notified and are working on a fix. Please try refreshing the page.
                         </p>
                         <button
                             onClick={() => window.location.reload()}
-                            className="px-6 py-3 bg-amber-700 text-white rounded-lg hover:bg-amber-800 transition-colors font-medium"
+                            className="px-6 py-3 bg-warning text-warning-foreground rounded-lg hover:bg-warning/90 transition-colors font-[500]"
                         >
                             Reload Page
                         </button>
@@ -70,9 +70,9 @@ class ErrorBoundary extends Component<Props, State> {
 
 export default Sentry.withErrorBoundary(ErrorBoundary, {
     fallback: (
-        <div className="min-h-screen flex items-center justify-center bg-cream-50">
+        <div className="min-h-screen flex items-center justify-center bg-muted">
             <div className="text-center">
-                <p className="text-stone-600">An error occurred</p>
+                <p className="text-muted-foreground">An error occurred</p>
             </div>
         </div>
     ),

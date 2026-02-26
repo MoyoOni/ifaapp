@@ -22,12 +22,11 @@ export class AuditService {
     try {
       return await this.prisma.auditLog.create({
         data: {
-          adminId: params.adminId,
+          userId: params.adminId,
           action: params.action,
-          entityType: params.entityType,
-          entityId: params.entityId,
-          payload: params.payload || {},
-          reason: params.reason,
+          resourceType: params.entityType,
+          resourceId: params.entityId,
+          metadata: params.payload || {},
           ipAddress: params.ipAddress,
           userAgent: params.userAgent,
         },
@@ -47,19 +46,19 @@ export class AuditService {
     offset?: number;
   }) {
     const where: any = {};
-    if (filters.adminId) where.adminId = filters.adminId;
-    if (filters.entityType) where.entityType = filters.entityType;
+    if (filters.adminId) where.userId = filters.adminId;
+    if (filters.entityType) where.resourceType = filters.entityType;
     if (filters.action) where.action = filters.action;
 
     if (filters.startDate || filters.endDate) {
-      where.timestamp = {};
-      if (filters.startDate) where.timestamp.gte = filters.startDate;
-      if (filters.endDate) where.timestamp.lte = filters.endDate;
+      where.createdAt = {};
+      if (filters.startDate) where.createdAt.gte = filters.startDate;
+      if (filters.endDate) where.createdAt.lte = filters.endDate;
     }
 
     return this.prisma.auditLog.findMany({
       where,
-      orderBy: { timestamp: 'desc' },
+      orderBy: { createdAt: 'desc' },
       take: filters.limit || 50,
       skip: filters.offset || 0,
     });

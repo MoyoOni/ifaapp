@@ -20,6 +20,7 @@ import { DEMO_TEMPLES, DEMO_CIRCLES } from '@/demo';
 import { logger } from '@/shared/utils/logger';
 import { cn } from '@/lib/utils';
 import { seededRandomInt, seededFutureDate } from '@/shared/utils/seeded-random';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface Community {
   id: string;
@@ -172,7 +173,7 @@ const CommunityAccessView: React.FC = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-stone-50 to-amber-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600"></div>
+        <LoadingSpinner size="lg" variant="accent" />
       </div>
     );
   }

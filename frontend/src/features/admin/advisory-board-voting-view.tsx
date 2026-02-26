@@ -15,6 +15,8 @@ import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
 import { isDemoMode } from '@/shared/config/demo-mode';
 import { useAuth } from '@/shared/hooks/use-auth';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { useToast } from '@/components/common/ToastProvider';
 
 interface AdvisoryVote {
   id: string;
@@ -150,26 +152,23 @@ const AdvisoryBoardVotingView: React.FC = () => {
     requiredMajority: 'SIMPLE' as 'SIMPLE' | 'SUPER' | 'UNANIMOUS'
   });
 
-  const handleCreateVote = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Filter out empty options
-    const filteredOptions = newVote.voteOptions.filter(opt => opt.trim() !== '');
-
-    if (filteredOptions.length < 2) {
-      alert('Please provide at least 2 voting options');
+    
+    if (options.length < 2) {
+      showToast('Please provide at least 2 voting options', 'error');
       return;
     }
-
-    if (!newVote.title || !newVote.description || !newVote.deadline) {
-      alert('Please fill in all required fields');
+    
+    if (!title.trim()) {
+      showToast('Please fill in all required fields', 'error');
       return;
     }
-
+    
     createVoteMutation.mutate({
       title: newVote.title,
       description: newVote.description,
-      voteOptions: filteredOptions,
+      voteOptions: options,
       deadline: newVote.deadline,
       requiredMajority: newVote.requiredMajority
     });
@@ -224,7 +223,7 @@ const AdvisoryBoardVotingView: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-highlight" />
+        <LoadingSpinner size="lg" variant="highlight" />
       </div>
     );
   }
@@ -292,7 +291,7 @@ const AdvisoryBoardVotingView: React.FC = () => {
           )}
 
           {activeTab === 'create' && user?.role === 'ADVISORY_BOARD_MEMBER' && (
-            <form onSubmit={handleCreateVote} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-muted mb-2">
                   Vote Title *
@@ -394,7 +393,7 @@ const AdvisoryBoardVotingView: React.FC = () => {
                 >
                   {createVoteMutation.isPending ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <LoadingSpinner size="sm" variant="highlight" />
                       Creating Vote...
                     </>
                   ) : (

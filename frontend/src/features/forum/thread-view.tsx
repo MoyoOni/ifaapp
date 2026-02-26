@@ -8,6 +8,9 @@ import { isDemoMode } from '@/shared/config/demo-mode';
 import { UserRole } from '@common';
 import AseAcknowledgmentButton from './ase-acknowledgment-button';
 import { DEMO_FORUM_POSTS_BY_THREAD, DEMO_FORUM_THREADS } from './forum-demo';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { useModal } from '@/components/common/ModalProvider';
+import { useConfirm } from '@/hooks/use-confirm';
 
 interface ForumPost {
   id: string;
@@ -115,6 +118,7 @@ const ThreadView: React.FC<ThreadViewProps> = ({ threadId, onBack }) => {
   const [replyText, setReplyText] = useState('');
   const postsEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+  const { ConfirmationDialog, confirm } = useConfirm();
 
   // Fetch thread with demo fallback
   const { data: thread, isLoading: threadLoading } = useQuery<ForumThread>({
@@ -376,8 +380,13 @@ const ThreadView: React.FC<ThreadViewProps> = ({ threadId, onBack }) => {
                 </button>
               )}
               <button
-                onClick={() => {
-                  if (confirm('Are you sure you want to delete this thread?')) {
+                onClick={async () => {
+                  const confirmed = await confirm({
+                    title: 'Delete Thread',
+                    message: 'Are you sure you want to delete this thread? This cannot be undone.',
+                    confirmText: 'Delete',
+                  });
+                  if (confirmed) {
                     deleteThreadMutation.mutate();
                   }
                 }}
@@ -516,6 +525,7 @@ const ThreadView: React.FC<ThreadViewProps> = ({ threadId, onBack }) => {
           </div>
         )}
       </div>
+      <ConfirmationDialog />
     </div>
   );
 };

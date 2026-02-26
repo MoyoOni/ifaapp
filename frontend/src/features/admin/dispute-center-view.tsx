@@ -7,6 +7,7 @@ import { logger } from '@/shared/utils/logger';
 import { isDemoMode } from '@/shared/config/demo-mode';
 import { getDemoUserById, type DemoUser } from '@/demo';
 import { useToast } from '@/shared/components/toast';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface Dispute {
   id: string;
@@ -265,7 +266,7 @@ const DisputeCenterView: React.FC = () => {
       {/* Dispute List */}
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-12 h-12 animate-spin text-highlight" />
+          <LoadingSpinner size="lg" variant="highlight" />
         </div>
       ) : filteredDisputes.length === 0 ? (
         <p className="text-center text-muted py-12">No disputes found.</p>
@@ -420,7 +421,7 @@ const DisputeCenterView: React.FC = () => {
                     className="flex-1 px-6 py-3 bg-green-500/20 hover:bg-green-500/30 text-green-300 rounded-xl font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {resolveDisputeMutation.isPending ? (
-                      <Loader2 size={18} className="animate-spin" />
+                      <LoadingSpinner size="sm" variant="primary" />
                     ) : (
                       <CheckCircle size={18} />
                     )}
@@ -433,7 +434,7 @@ const DisputeCenterView: React.FC = () => {
                       className="px-6 py-3 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 rounded-xl font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                       {escalateDisputeMutation.isPending ? (
-                        <Loader2 size={18} className="animate-spin" />
+                        <LoadingSpinner size="sm" variant="primary" />
                       ) : (
                         <ArrowUp size={18} />
                       )}

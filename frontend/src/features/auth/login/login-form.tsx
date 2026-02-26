@@ -75,7 +75,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ selectedRole, onSuccess, onSwitch
   return (
     <div className="bg-white rounded-[2.5rem] p-10 md:p-12 border border-stone-100 shadow-2xl space-y-8 max-w-md w-full relative overflow-hidden font-sans">
       {/* Decorative Gold Line */}
-      <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-stone-100 via-highlight to-stone-100"></div>
+      <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-input via-highlight to-input"></div>
 
       {/* Single overlay during sign-in to prevent form flicker */}
       {isSubmitting && (
@@ -88,8 +88,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ selectedRole, onSuccess, onSwitch
       )}
 
       <div className="text-center space-y-2">
-        <h2 className="text-4xl font-bold brand-font text-stone-800 tracking-tight">Welcome Back</h2>
-        <p className="text-stone-500 font-medium">
+        <h2 className="text-[2rem] sm:text-[2.5rem] font-bold brand-font text-stone-800 tracking-tight">Welcome Back</h2>
+        <p className="text-stone-500 text-[1rem] font-medium">
           {selectedRole ? (
             <>Signing in as <span className="text-highlight font-bold capitalize">{selectedRole}</span></>
           ) : (
@@ -103,7 +103,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ selectedRole, onSuccess, onSwitch
         <div className="space-y-2">
           <label
             htmlFor="email"
-            className="text-xs font-bold uppercase text-stone-400 tracking-widest ml-1"
+            className="text-[0.875rem] font-semibold uppercase text-stone-400 tracking-widest ml-1"
           >
             Email Address
           </label>
@@ -128,11 +128,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ selectedRole, onSuccess, onSwitch
           <div className="flex items-center justify-between ml-1">
             <label
               htmlFor="password"
-              className="text-xs font-bold uppercase text-stone-400 tracking-widest"
+              className="text-[0.875rem] font-semibold uppercase text-stone-400 tracking-widest"
             >
               Password
             </label>
-            <button type="button" className="text-xs font-bold text-highlight hover:text-yellow-600 transition-colors">
+            <button type="button" className="text-[0.875rem] font-semibold text-highlight hover:text-yellow-600 transition-colors">
               Forgot?
             </button>
           </div>
@@ -164,12 +164,12 @@ const LoginForm: React.FC<LoginFormProps> = ({ selectedRole, onSuccess, onSwitch
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full py-4 bg-highlight text-white rounded-2xl font-bold text-base shadow-lg shadow-highlight/20 hover:shadow-xl hover:bg-yellow-500 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
+          className="w-full py-4 bg-highlight text-white rounded-2xl font-bold text-[1rem] shadow-lg shadow-highlight/20 hover:shadow-xl hover:bg-yellow-500 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
         >
           {isSubmitting ? (
             <>
               <Loader2 size={20} className="animate-spin" />
-              <span>Accessing...</span>
+              <span className="text-[1rem]">Accessing...</span>
             </>
           ) : (
             'Sign In'
@@ -179,7 +179,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ selectedRole, onSuccess, onSwitch
 
       {/* Demo Login Buttons */}
       <div className="pt-8 border-t border-stone-100">
-        <p className="text-[10px] font-bold uppercase text-stone-300 tracking-widest text-center mb-4">
+        <p className="text-[0.75rem] font-bold uppercase text-stone-300 tracking-widest text-center mb-4">
           Quick Access (Demo)
         </p>
         <div className="grid grid-cols-3 gap-3">
@@ -189,7 +189,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ selectedRole, onSuccess, onSwitch
               type="button"
               onClick={() => handleDemoLogin(role)}
               disabled={isSubmitting}
-              className="py-2 px-3 bg-stone-50 hover:bg-stone-100 text-stone-500 hover:text-stone-800 border border-stone-100 rounded-xl text-xs font-bold transition-all capitalize"
+              className="py-2 px-3 bg-stone-50 hover:bg-stone-100 text-stone-500 hover:text-stone-800 border border-stone-100 rounded-xl text-[0.875rem] font-bold transition-all capitalize"
             >
               {role}
             </button>
@@ -200,7 +200,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ selectedRole, onSuccess, onSwitch
       {/* Switch to Register */}
       {onSwitchToRegister && (
         <div className="text-center pt-2">
-          <p className="text-stone-400 text-sm font-medium">
+          <p className="text-stone-400 text-[0.875rem] font-medium">
             New to Ifá?{' '}
             <button
               onClick={onSwitchToRegister}
@@ -215,7 +215,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ selectedRole, onSuccess, onSwitch
       {/* Switch to Quick Access */}
       {onSwitchToQuickAccess && (
         <div className="text-center pt-2">
-          <p className="text-stone-400 text-sm font-medium">
+          <p className="text-stone-400 text-[0.875rem] font-medium">
             Need a demo account?{' '}
             <button
               onClick={onSwitchToQuickAccess}
@@ -226,7 +226,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ selectedRole, onSuccess, onSwitch
           </p>
         </div>
       )}
-    </div>
+    </div> // Added missing closing tag
   );
 };
 

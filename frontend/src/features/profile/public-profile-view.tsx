@@ -17,7 +17,8 @@ import {
   Clock,
   ShoppingBag,
 } from 'lucide-react';
-import { DEMO_USERS } from '@/demo/profiles/users';
+import { useProfileQuery } from './hooks/use-profile-query';
+import ProfileSkeleton from './components/profile-skeleton';
 import { UserRole } from '@common';
 
 interface PublicProfileViewProps {
@@ -33,22 +34,22 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
   onBack,
   currentUserId,
 }) => {
-  // Resolve user from demo data
-  const user =
-    DEMO_USERS[userId] ||
-    Object.values(DEMO_USERS).find((u) => u.id === userId) ||
-    null;
+  const { data: user, isLoading, isError } = useProfileQuery(userId);
 
   const isCurrentUser = currentUserId === userId;
   const isBabalawo = user?.role === UserRole.BABALAWO;
   const isVendor = user?.role === UserRole.VENDOR;
 
-  if (!user) {
+  if (isLoading) {
+    return <ProfileSkeleton />;
+  }
+
+  if (isError || !user) {
     return (
       <div className="max-w-4xl mx-auto py-20 text-center">
         <User size={48} className="mx-auto text-stone-300 mb-4" />
-        <h2 className="text-xl font-bold text-stone-600 mb-2">Profile Not Found</h2>
-        <p className="text-stone-400 mb-6">This user doesn't exist or their profile is private.</p>
+        <h2 className="text-xl font-bold text-stone-600 mb-2">This user hasn't set up their profile yet</h2>
+        <p className="text-stone-400 mb-6">The user has not added any profile information.</p>
         <button
           onClick={onBack}
           className="px-5 py-2.5 bg-primary text-white rounded-xl font-medium hover:opacity-90 transition-opacity"
@@ -60,42 +61,16 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
   }
 
   const interests = user.interests || [];
-  const services = (user as any).services || [];
-  const specializations = (user as any).specialization || [];
-  const rating = (user as any).rating || 0;
-  const reviewCount = (user as any).reviewCount || 0;
+  const services = user.services || [];
+  const specializations = user.specialization || [];
+  const rating = user.rating || 0;
+  const reviewCount = user.reviewCount || 0;
 
-  // Derive friend connections as "communities" for demo
-  const communities = (user.friends || [])
-    .map((friendId: string) => {
-      const friend = DEMO_USERS[friendId];
-      if (!friend) return null;
-      return {
-        id: friend.id,
-        name: friend.name,
-        type: friend.role === 'BABALAWO' ? 'Temple' : friend.role === 'VENDOR' ? 'Market' : 'Circle',
-        slug: friend.id,
-      };
-    })
-    .filter(Boolean);
+  // Use real community connections from user data
+  const communities = user.communities || [];
 
-  // Demo posts (client only)
-  const posts = !isBabalawo && !isVendor ? [
-    {
-      id: 'p1',
-      title: 'My First Divination Experience',
-      date: 'Feb 10, 2026',
-      content:
-        'Today I had my first Dafa session with Baba Ifatunde. The experience was deeply moving and I feel more connected to my ancestors than ever before.',
-    },
-    {
-      id: 'p2',
-      title: 'Learning Yoruba Greetings',
-      date: 'Jan 28, 2026',
-      content:
-        'Started my journey into Yoruba language. E kàárọ̀ (Good morning) — such a beautiful way to start each day with intention.',
-    },
-  ] : [];
+  // Use real posts from user data instead of hardcoded demo posts
+  const posts = user.posts || [];
 
   // Role badge styling
   const roleBadge = isBabalawo
@@ -109,13 +84,12 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
       {/* ── Hero Card ── */}
       <div className="bg-white border border-stone-200 rounded-2xl shadow-sm overflow-hidden">
         {/* Top accent bar — color varies by role */}
-        <div className={`h-1.5 ${
-          isBabalawo
-            ? 'bg-gradient-to-r from-secondary via-primary to-accent'
-            : isVendor
-              ? 'bg-gradient-to-r from-accent via-secondary to-highlight'
-              : 'bg-gradient-to-r from-primary via-secondary to-accent'
-        }`} />
+        <div className={`h-1.5 ${isBabalawo
+          ? 'bg-gradient-to-r from-secondary via-primary to-accent'
+          : isVendor
+            ? 'bg-gradient-to-r from-accent via-secondary to-highlight'
+            : 'bg-gradient-to-r from-primary via-secondary to-accent'
+          }`} />
 
         <div className="p-6 md:p-8">
           <div className="flex flex-col sm:flex-row gap-6">
@@ -463,16 +437,16 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
                 </>
               ) : isVendor ? (
                 <>
-                  <StatCard value="12" label="Products" />
-                  <StatCard value="4.9" label="Rating" />
-                  <StatCard value="89" label="Sales" />
+                  <StatCard value={String(user.productsCount || 0)} label="Products" />
+                  <StatCard value={String(user.vendorRating || '0.0')} label="Rating" />
+                  <StatCard value={String(user.salesCount || 0)} label="Sales" />
                   <StatCard value={String(communities.length)} label="Connections" />
                 </>
               ) : (
                 <>
-                  <StatCard value="5" label="Sessions" />
-                  <StatCard value="3" label="Guidance Plans" />
-                  <StatCard value="1" label="Year Active" />
+                  <StatCard value={String(user.sessionsCount || 0)} label="Sessions" />
+                  <StatCard value={String(user.guidancePlansCount || 0)} label="Guidance Plans" />
+                  <StatCard value={String(user.yearsActive || 0)} label="Years Active" />
                   <StatCard value={String(communities.length)} label="Connections" />
                 </>
               )}
@@ -600,7 +574,7 @@ function ConnectCard({
             <ActionButton
               label="Share"
               icon={<Share2 size={14} />}
-              onClick={() => {}}
+              onClick={() => { }}
             />
           </>
         ) : (
@@ -622,17 +596,17 @@ function ConnectCard({
             <ActionButton
               label="Add Friend"
               icon={<User size={14} />}
-              onClick={() => alert('Friend requests coming soon!')}
+              onClick={() => onNavigate('add-friend', user.id)}
             />
             <ActionButton
               label="Share"
               icon={<Share2 size={14} />}
-              onClick={() => {}}
+              onClick={() => { }}
             />
             <ActionButton
               label="Report"
               icon={<Flag size={14} />}
-              onClick={() => alert('Report feature coming soon.')}
+              onClick={() => onNavigate('report-user', user.id)}
               muted
             />
           </>
@@ -678,13 +652,12 @@ function ActionButton({
   return (
     <button
       onClick={onClick}
-      className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-        primary
-          ? 'bg-primary text-white hover:opacity-90'
-          : muted
-            ? 'bg-stone-50 text-stone-400 hover:bg-stone-100 hover:text-stone-500'
-            : 'bg-stone-50 text-stone-600 hover:bg-stone-100'
-      }`}
+      className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${primary
+        ? 'bg-primary text-white hover:opacity-90'
+        : muted
+          ? 'bg-stone-50 text-stone-400 hover:bg-stone-100 hover:text-stone-500'
+          : 'bg-stone-50 text-stone-600 hover:bg-stone-100'
+        }`}
     >
       {icon}
       {label}

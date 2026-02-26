@@ -243,7 +243,7 @@ const EarningsReportView: React.FC = () => {
       </div>
 
       {/* Payment Information */}
-      <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl p-6 border border-green-100">
+      <div className="bg-gradient-to-r from-muted to-muted/50 rounded-2xl p-6 border border-input">
         <div className="flex items-start gap-4">
           <div className="p-3 bg-green-100 rounded-xl text-green-700">
             <DollarSign size={24} />

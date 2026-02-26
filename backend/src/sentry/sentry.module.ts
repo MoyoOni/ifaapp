@@ -1,11 +1,15 @@
-import { Module, Global } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { SentryService } from './sentry.service';
+import { Module } from '@nestjs/common';
+import { SentryInterceptor } from './sentry.interceptor';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 
-@Global()
 @Module({
-  imports: [ConfigModule],
-  providers: [SentryService],
-  exports: [SentryService],
+  providers: [
+    SentryInterceptor,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: SentryInterceptor,
+    },
+  ],
+  exports: [SentryInterceptor],
 })
 export class SentryModule {}

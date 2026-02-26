@@ -10,6 +10,8 @@ import { PrivacyLevel, AutoDeleteDays } from '@common';
 import { queueAction, isOnline } from '@/shared/utils/offline-queue';
 import { useDraftMessage } from '@/shared/hooks/use-draft-message';
 import { useMessageSocket } from '../hooks/use-message-socket';
+import { sendMessage, getConversation, markAsRead } from '../message-service';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface Attachment {
   id: string;
@@ -108,15 +110,20 @@ const MessageThread: React.FC<MessageThreadProps> = ({ userId, otherUserId, onBa
     };
   }, []);
 
+  // Track whether we're in demo mode for this conversation
+  const [isDemoMode, setIsDemoMode] = useState(false);
+
   // Fetch conversation messages
   const { data: messages = [], isLoading } = useQuery<Message[]>({
     queryKey: ['message-conversation', userId, otherUserId],
     queryFn: async () => {
       try {
-        const response = await api.get(`/messaging/conversation/${userId}/${otherUserId}`);
-        return response.data;
+        const result = await getConversation(userId, otherUserId);
+        // Determine if we're in demo mode based on which service was used
+        setIsDemoMode(result.some(msg => msg.id.startsWith('demo-') || msg.id.startsWith('seed-')));
+        return result;
       } catch (e) {
-        logger.warn('Conversation fetch failed');
+        logger.error('Failed to fetch conversation', e);
         return [];
       }
     },
@@ -167,47 +174,40 @@ const MessageThread: React.FC<MessageThreadProps> = ({ userId, otherUserId, onBa
         })
       );
 
-      // If offline
-      if (!isOnline()) {
-        queueAction({
-          type: 'message',
-          endpoint: `/messaging/send/${userId}`,
-          method: 'POST',
-          payload: {
-            receiverId: otherUserId,
-            content,
-            attachments: uploadedAttachments,
-            confidential,
-            privacyLevel,
-            autoDeleteDays: autoDeleteDays || undefined,
-          },
-        });
-        // Return a mock response for immediate UI feedback
-        return {
-          id: `temp-${Date.now()}`,
-          content,
+      // Call the unified messaging service
+      return sendMessage(userId, otherUserId, content, uploadedAttachments, confidential, privacyLevel, autoDeleteDays);
+    },
+    onMutate: async (newMessage) => {
+      await queryClient.cancelQueries({ queryKey: ['message-conversation', userId, otherUserId] });
+      const previousMessages = queryClient.getQueryData<Message[]>(['message-conversation', userId, otherUserId]);
+
+      if (previousMessages) {
+        const optimisticMessage: Message = {
+          id: `opt-${Date.now()}`,
+          content: newMessage.content,
           senderId: userId,
           receiverId: otherUserId,
           createdAt: new Date().toISOString(),
           read: false,
-          attachments: uploadedAttachments
+          sender: { id: userId, name: 'You' },
+          receiver: { id: otherUserId, name: resolvedOtherUser?.name || 'User' },
+          attachments: [], // Optimistic message doesn't have attachments yet
         };
+        queryClient.setQueryData(['message-conversation', userId, otherUserId], [...previousMessages, optimisticMessage]);
       }
 
-      const response = await api.post(`/messaging/send/${userId}`, {
-        receiverId: otherUserId,
-        content,
-        attachments: uploadedAttachments,
-        confidential,
-        privacyLevel,
-        autoDeleteDays: autoDeleteDays || undefined,
-      });
-      return response.data;
+      return { previousMessages };
+    },
+    onError: (err, _newMessage, context) => {
+      if (context?.previousMessages) {
+        queryClient.setQueryData(['message-conversation', userId, otherUserId], context.previousMessages);
+      }
+      logger.error('Failed to send message', err);
     },
     onSuccess: () => {
       setMessageText('');
       setSelectedFiles([]);
-      clearDraft(); // Clear draft on successful send
+      clearDraft();
       queryClient.invalidateQueries({ queryKey: ['message-conversation', userId, otherUserId] });
       queryClient.invalidateQueries({ queryKey: ['message-inbox', userId] });
     },
@@ -216,7 +216,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({ userId, otherUserId, onBa
   // Mark as read mutation
   const markAsReadMutation = useMutation({
     mutationFn: async () => {
-      await api.patch(`/messaging/conversation/${otherUserId}/${userId}/read`);
+      await markAsRead(userId, otherUserId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['message-conversation', userId, otherUserId] });
@@ -327,6 +327,15 @@ const MessageThread: React.FC<MessageThreadProps> = ({ userId, otherUserId, onBa
         </div>
       </div>
 
+      {/* Demo Mode Banner */}
+      {isDemoMode && (
+        <div className="bg-amber-500/10 border-b border-amber-500/20 px-6 py-2">
+          <p className="max-w-4xl mx-auto text-xs text-amber-400 text-center">
+            Demo mode — Messages are stored in your browser session and will reset when you close the tab.
+          </p>
+        </div>
+      )}
+
       {/* Messages Container */}
       <div className="flex-1 overflow-y-auto p-6 relative"> {/* Added relative positioning for dropdown */}
         <div className="max-w-4xl mx-auto space-y-4">
@@ -386,6 +395,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({ userId, otherUserId, onBa
                               setMenuOpenMessageId(isMenuOpen ? null : message.id);
                             }}
                             className="text-xs opacity-70 hover:opacity-100 ml-2"
+                            aria-label={isMenuOpen ? "Close message menu" : "Open message menu"}
                           >
                             <MoreVertical size={14} />
                           </button>
@@ -513,7 +523,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({ userId, otherUserId, onBa
               {selectedFiles.map((file, i) => (
                 <div key={i} className="relative bg-white/10 p-2 rounded-lg flex items-center gap-2 min-w-[150px]">
                   <span className="text-xs truncate max-w-[100px]">{file.name}</span>
-                  <button type="button" onClick={() => removeSelectedFile(i)} className="ml-auto text-red-400 hover:text-red-300">
+                  <button type="button" onClick={() => removeSelectedFile(i)} className="ml-auto text-red-400 hover:text-red-300" aria-label={`Remove file ${file.name}`}>
                     <Trash2 size={14} />
                   </button>
                 </div>
@@ -529,6 +539,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({ userId, otherUserId, onBa
               multiple
               onChange={handleFileSelect}
               accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
+              aria-label="Attach files"
             />
             <button
               type="button"
@@ -548,18 +559,14 @@ const MessageThread: React.FC<MessageThreadProps> = ({ userId, otherUserId, onBa
               <Settings size={20} />
             </button>
             <div className="flex-1">
-              <textarea
+              <input
+                type="text"
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage(e);
-                  }
-                }}
-                placeholder="Type your message... (Enter to send, Shift+Enter for new line)"
-                rows={1}
-                className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder:text-muted outline-none focus:ring-2 focus:ring-highlight resize-none min-h-[44px] max-h-32 custom-scrollbar"
+                placeholder="Type a message..."
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 outline-none focus:ring-4 focus:ring-highlight/10 focus:border-highlight transition-all resize-none"
+                disabled={sendMessageMutation.isPending}
+                aria-label="Message input"
               />
               {confidential && (
                 <div className="flex items-center gap-2 mt-2 text-xs text-yellow-400">

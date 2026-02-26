@@ -81,7 +81,7 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
   const [depositAmount, setDepositAmount] = useState('');
   const [releasingEscrowId, setReleasingEscrowId] = useState<string | null>(null);
 
-
+  const { showToast } = useToast();
 
   // Fetch wallet balance
   const { data: walletBalance } = useQuery<WalletBalance>({
@@ -170,6 +170,10 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
     setShowPaymentModal(false);
     setDepositAmount('');
     queryClient.invalidateQueries({ queryKey: ['wallet-balance'] });
+  };
+
+  const handleWithdrawal = () => {
+    showToast('Withdrawal request submitted for processing. (Simulated)', 'info');
   };
 
   return (
@@ -499,7 +503,7 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
               <h3 className="text-2xl font-bold text-stone-800 brand-font text-center">Withdraw Funds</h3>
               <form onSubmit={(e) => {
                 e.preventDefault();
-                alert('Withdrawal request submitted for processing. (Simulated)');
+                handleWithdrawal();
                 setShowWithdrawModal(false);
               }} className="space-y-6">
                 <div className="space-y-2">

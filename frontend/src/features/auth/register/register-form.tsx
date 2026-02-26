@@ -56,12 +56,14 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, on
   return (
     <div className="bg-white rounded-[2.5rem] p-10 md:p-12 border border-stone-100 shadow-2xl space-y-8 max-w-md w-full relative overflow-hidden font-sans">
       {/* Decorative Gold Line */}
-      <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-stone-100 via-highlight to-stone-100"></div>
+      <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-input via-highlight to-input"></div>
 
       <div className="text-center space-y-2">
-        <h2 className="text-4xl font-bold brand-font text-stone-800 tracking-tight">Begin Your Journey</h2>
-        <p className="text-stone-500 font-medium">
-          Joining the community as a <span className="text-highlight font-bold capitalize">{selectedRole === UserRole.CLIENT ? 'Seeker' : selectedRole.toLowerCase()}</span>
+        <h2 className="text-[1.5rem] md:text-[2rem] font-[700] text-stone-800 tracking-tight brand-font">
+          Begin Your Journey
+        </h2>
+        <p className="text-[0.875rem] text-stone-500 font-[500]">
+          Joining the community as a <span className="text-highlight font-[700] capitalize">{selectedRole === UserRole.CLIENT ? 'Seeker' : selectedRole.toLowerCase()}</span>
         </p>
       </div>
 
@@ -69,7 +71,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, on
 
         {/* Name */}
         <div className="space-y-1.5">
-          <label className="text-xs font-bold uppercase text-stone-400 tracking-widest ml-1">
+          <label className="text-[0.875rem] font-[500] text-stone-400 tracking-widest ml-1">
             Full Name
           </label>
           <div className="relative group">
@@ -88,8 +90,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, on
 
         {/* Yoruba Name */}
         <div className="space-y-1.5">
-          <label className="text-xs font-bold uppercase text-stone-400 tracking-widest ml-1">
-            Yoruba Name <span className="text-stone-300 font-normal normal-case tracking-normal">(Optional)</span>
+          <label className="text-[0.875rem] font-[500] text-stone-400 tracking-widest ml-1">
+            Yoruba Name <span className="text-stone-300 font-[400] normal-case tracking-normal">(Optional)</span>
           </label>
           <input
             type="text"
@@ -102,7 +104,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, on
 
         {/* Email */}
         <div className="space-y-1.5">
-          <label className="text-xs font-bold uppercase text-stone-400 tracking-widest ml-1">
+          <label className="text-[0.875rem] font-[500] text-stone-400 tracking-widest ml-1">
             Email Address
           </label>
           <div className="relative group">
@@ -121,7 +123,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, on
         {/* Password */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-bold uppercase text-stone-400 tracking-widest ml-1">
+            <label className="text-[0.875rem] font-[500] text-stone-400 tracking-widest ml-1">
               Password
             </label>
             <div className="relative group">
@@ -142,7 +144,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, on
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-bold uppercase text-stone-400 tracking-widest ml-1">
+            <label className="text-[0.875rem] font-[500] text-stone-400 tracking-widest ml-1">
               Confirm
             </label>
             <div className="relative group">
@@ -165,7 +167,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, on
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm font-medium flex items-center justify-center">
+          <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-[0.875rem] font-[500] flex items-center justify-center">
             {error}
           </div>
         )}
@@ -174,12 +176,12 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, on
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full py-4 bg-highlight text-white rounded-2xl font-bold text-base shadow-lg shadow-highlight/20 hover:shadow-xl hover:bg-yellow-500 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none mt-2"
+          className="w-full py-4 bg-highlight text-white rounded-2xl font-[700] text-[1rem] shadow-lg shadow-highlight/20 hover:shadow-xl hover:bg-yellow-500 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none mt-2"
         >
           {isSubmitting ? (
             <>
               <Loader2 size={20} className="animate-spin" />
-              <span>Joining...</span>
+              <span className="text-[1rem]">Joining...</span>
             </>
           ) : (
             'Create Account'
@@ -190,11 +192,11 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, on
       {/* Switch to Login */}
       {onSwitchToLogin && (
         <div className="text-center pt-2">
-          <p className="text-stone-400 text-sm font-medium">
+          <p className="text-stone-400 text-[0.875rem] font-[500]">
             Already have an account?{' '}
             <button
               onClick={onSwitchToLogin}
-              className="text-highlight hover:text-yellow-600 font-bold transition-colors ml-1"
+              className="text-highlight hover:text-yellow-600 font-[700] transition-colors ml-1"
             >
               Sign In
             </button>

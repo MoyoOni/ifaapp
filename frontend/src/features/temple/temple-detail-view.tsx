@@ -10,6 +10,7 @@ import { DEMO_EVENTS, DEMO_TEMPLES, DEMO_USERS } from '@/demo';
 import BabalawoProfileCard from '../babalawo/profile/babalawo-profile-card';
 import BabalawoProfileModal from '@/shared/components/babalawo-profile-modal';
 import { seededRandomInt } from '@/shared/utils/seeded-random';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 // import { DEMO_TEMPLES, getDemoUsersByRole } from '@/demo';
 
 interface TempleDetailViewProps {

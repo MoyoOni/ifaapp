@@ -6,6 +6,8 @@ import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
 import { isDemoMode } from '@/shared/config/demo-mode';
 import { getDemoUserById, type DemoUser } from '@/demo';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
+
 interface WithdrawalRequest {
   id: string;
   userId: string;
@@ -152,7 +154,7 @@ const PayoutApprovalsView: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <Loader2 className="w-6 h-6 animate-spin text-highlight" />
+        <LoadingSpinner size="md" variant="highlight" />
       </div>
     );
   }

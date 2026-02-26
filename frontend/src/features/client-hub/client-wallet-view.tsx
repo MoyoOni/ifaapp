@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Wallet, TrendingUp, CreditCard, ArrowDown, ArrowUp, Download, Eye, X, Check } from 'lucide-react';
 import { useAuth } from '@/shared/hooks/use-auth';
+import { useToast } from '@/components/common/ToastProvider';
 
 interface Transaction {
   id: string;
@@ -117,17 +118,17 @@ const ClientWalletView: React.FC = () => {
     .filter(t => t.type === 'credit' && t.status === 'completed')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const handleAddFunds = () => {
-    if (!amountToAdd || isNaN(parseFloat(amountToAdd)) || parseFloat(amountToAdd) <= 0) {
-      alert('Please enter a valid amount');
+  const { showToast } = useToast();
+
+  const handleAddMoney = async () => {
+    if (!amountToAdd || parseFloat(amountToAdd) <= 0) {
+      showToast('Please enter a valid amount', 'error');
       return;
     }
-    
+
     // Here would be the actual implementation to add funds
     // For now, just close the modal and show a success message
-    alert(`Successfully added ₦${parseFloat(amountToAdd).toLocaleString()} to your wallet via ${paymentMethod}`);
-    setShowAddFundsModal(false);
-    setAmountToAdd('');
+    showToast(`Successfully added ₦${parseFloat(amountToAdd).toLocaleString()} to your wallet via ${paymentMethod}`, 'success');
   };
 
   return (
@@ -412,7 +413,7 @@ const ClientWalletView: React.FC = () => {
                   Cancel
                 </button>
                 <button
-                  onClick={handleAddFunds}
+                  onClick={handleAddMoney}
                   className="flex-1 py-3 bg-highlight text-white rounded-xl font-bold hover:bg-yellow-600 transition-colors"
                 >
                   Add Funds

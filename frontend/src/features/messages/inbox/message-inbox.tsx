@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MessageSquare, Search, Plus, MoreHorizontal, User } from 'lucide-react';
-import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getInbox } from '../message-service';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface Conversation {
   id: string;
@@ -30,23 +31,17 @@ interface MessageInboxProps {
 const MessageInbox: React.FC<MessageInboxProps> = ({ userId, onSelectConversation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const [isDemoMode, setIsDemoMode] = useState(false);
 
   const { data: conversations = [], isLoading } = useQuery<Conversation[]>({
     queryKey: ['message-inbox', userId],
     queryFn: async () => {
-      let apiConversations: Conversation[] = [];
       try {
-        const response = await api.get(`/messaging/inbox/${userId}`);
-        apiConversations = response.data || [];
+        return await getInbox(userId);
       } catch (e) {
-        logger.warn('Using demo inbox');
+        logger.error('Failed to fetch inbox', e);
+        return [];
       }
-
-      if (apiConversations.length > 0) {
-        return apiConversations;
-      }
-
-      return [];
     },
     enabled: !!userId,
   });
@@ -92,19 +87,28 @@ const MessageInbox: React.FC<MessageInboxProps> = ({ userId, onSelectConversatio
                 Unread
               </button>
             </div>
-            <button className="p-3 bg-highlight text-white rounded-xl shadow-lg shadow-highlight/20 hover:bg-yellow-600 transition-all hover:scale-105 active:scale-95">
+            <button className="p-3 bg-highlight text-white rounded-xl shadow-lg shadow-highlight/20 hover:bg-yellow-600 transition-all hover:scale-105 active:scale-95" aria-label="Create new message">
               <Plus size={20} />
             </button>
           </div>
         </div>
       </div>
 
+      {/* Demo Mode Banner - we determine this dynamically based on the conversation IDs */}
+      {(conversations.length > 0 && conversations.some(conv => conv.id.startsWith('demo-') || conv.id.startsWith('seed-'))) && (
+        <div className="bg-amber-50 border-b border-amber-200 px-6 py-2">
+          <p className="text-xs text-amber-700 text-center">
+            Demo mode — Showing sample conversations. Messages are stored in your browser session.
+          </p>
+        </div>
+      )}
+
       {/* 2. Conversations List */}
       <div className="flex-1 overflow-y-auto custom-scrollbar">
         <AnimatePresence mode="popLayout">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-24 gap-4">
-              <div className="w-12 h-12 border-4 border-highlight/20 border-t-highlight rounded-full animate-spin"></div>
+              <LoadingSpinner size="lg" variant="highlight" />
               <span className="text-stone-400 font-medium">Opening Sanctuary...</span>
             </div>
           ) : filteredConversations.length === 0 ? (
@@ -178,7 +182,7 @@ const MessageInbox: React.FC<MessageInboxProps> = ({ userId, onSelectConversatio
 
                   {/* Action Hover */}
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="p-2 hover:bg-stone-200 rounded-lg text-stone-400 hover:text-stone-600">
+                    <button className="p-2 hover:bg-stone-200 rounded-lg text-stone-400 hover:text-stone-600" aria-label="More options">
                       <MoreHorizontal size={20} />
                     </button>
                   </div>

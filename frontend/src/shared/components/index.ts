@@ -19,6 +19,22 @@ export type { Toast, ToastType } from './toast';
 export { EmptyState, NoSearchResults, NoCircles, NoEvents, NoProducts } from './empty-state';
 export type { EmptyStateProps } from './empty-state';
 
+// Skeleton components
+export { 
+  Skeleton, 
+  SkeletonCircle, 
+  SkeletonText, 
+  DashboardSkeleton, 
+  ProfileSkeleton, 
+  TempleDirectorySkeleton, 
+  BabalawoDirectorySkeleton, 
+  MarketplaceSkeleton, 
+  MessagesSkeleton,
+  TempleDetailSkeleton,
+  AcademySkeleton,
+  AdminDashboardSkeleton
+} from './skeleton';
+
 // Form components
 export { FormField, SubmitButton } from './form-field';
 export type { FormFieldProps, SubmitButtonProps } from './form-field';

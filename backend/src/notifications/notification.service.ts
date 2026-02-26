@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from './email.service';
@@ -46,8 +46,8 @@ export class NotificationService {
 
   constructor(
     private prisma: PrismaService,
-    private emailService: EmailService,
-    private pushService: PushNotificationService
+    @Optional() private pushService?: PushNotificationService,
+    @Optional() private emailService?: EmailService,
   ) {}
 
   /**
@@ -70,7 +70,7 @@ export class NotificationService {
       });
 
       // Send via email if requested
-      if (dto.sendEmail) {
+      if (dto.sendEmail && this.emailService) {
         try {
           await this.emailService.sendNotificationEmail(dto.userId, notification);
           await this.prisma.notification.update({
@@ -80,10 +80,12 @@ export class NotificationService {
         } catch (error) {
           this.logger.error(`Failed to send email notification: ${(error as any).message}`);
         }
+      } else if (dto.sendEmail && !this.emailService) {
+        this.logger.warn('EmailService unavailable; cannot send email notification');
       }
 
       // Push notifications temporarily disabled (feature removed)
-      if (dto.sendPush) {
+      if (dto.sendPush && this.pushService) {
         try {
           await this.pushService.sendToUser(dto.userId, {
             title: dto.title,
@@ -102,6 +104,8 @@ export class NotificationService {
         } catch (error) {
           this.logger.error(`Failed to send push notification: ${(error as any).message}`);
         }
+      } else if (dto.sendPush && !this.pushService) {
+        this.logger.warn('PushNotificationService unavailable; skipping push');
       }
 
       return notification;

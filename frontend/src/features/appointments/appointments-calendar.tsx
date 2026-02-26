@@ -5,6 +5,7 @@ import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
 import { isDemoMode } from '@/shared/config/demo-mode';
 import { getDemoUser, getUserAppointments } from '@/demo';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface Appointment {
   id: string;
@@ -198,245 +199,137 @@ const AppointmentsCalendar: React.FC<AppointmentsCalendarProps> = ({
 
   return (
     <div className="min-h-screen bg-background text-white p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <h1 className="text-5xl font-bold brand-font text-highlight">Appointments</h1>
-            <p className="text-muted text-lg">
-              {isBabalawo ? 'Manage your consultations' : 'Your scheduled sessions'}
-            </p>
-          </div>
-          {!isBabalawo && (
-            <button
-              onClick={() => setShowBookingModal(true)}
-              className="flex items-center gap-2 bg-highlight hover:bg-highlight/90 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-xl"
-            >
-              <Plus size={20} />
-              Book Appointment
-            </button>
-          )}
+      <div className="p-6 max-w-6xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-[1.5rem] font-[700] text-foreground">Appointments</h1>
+          <p className="text-[0.875rem] text-muted-foreground">Manage your scheduled consultations</p>
         </div>
-
-        {/* Calendar Date Picker */}
-        <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-          <div className="flex items-center gap-4 mb-4">
-            <Calendar size={24} className="text-highlight" />
-            <h2 className="text-xl font-bold text-white">Select Date</h2>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 bg-card border border-input rounded-2xl p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-[1.25rem] font-[700] text-foreground">
+                {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </h2>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
+                >
+                  Prev
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setCurrentDate(new Date())}
+                >
+                  Today
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-7 gap-1 mb-2">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                <div key={day} className="text-center p-2 text-[0.875rem] font-[500] text-muted-foreground">
+                  {day}
+                </div>
+              ))}
+            </div>
+            
+            <div className="grid grid-cols-7 gap-1">
+              {renderCalendarDays().map((day, index) => (
+                <div 
+                  key={index} 
+                  className={`min-h-24 p-2 border border-input ${
+                    day.month !== currentDate.getMonth() ? 'bg-muted/20' : ''
+                  }`}
+                >
+                  {day.date && (
+                    <>
+                      <div className="text-[0.875rem] font-[500] text-foreground">
+                        {day.date.getDate()}
+                      </div>
+                      <div className="mt-1 space-y-1 max-h-20 overflow-y-auto">
+                        {getAppointmentsForDay(day.date).slice(0, 2).map(appt => (
+                          <div 
+                            key={appt.id} 
+                            className="text-[0.75rem] p-1 bg-primary/10 text-primary rounded truncate"
+                            title={`${appt.clientName}: ${appt.serviceType}`}
+                          >
+                            {appt.clientName.split(' ')[0]}
+                          </div>
+                        ))}
+                        {getAppointmentsForDay(day.date).length > 2 && (
+                          <div className="text-[0.75rem] text-muted-foreground">
+                            +{getAppointmentsForDay(day.date).length - 2} more
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            min={new Date().toISOString().split('T')[0]}
-            className="w-full max-w-xs bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-highlight"
-          />
-          {datesWithAppointments.length > 0 && (
-            <p className="text-sm text-muted mt-3">
-              Dates with appointments: {datesWithAppointments.length}
-            </p>
-          )}
-        </div>
-
-        {/* Appointments List */}
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="w-12 h-12 border-4 border-highlight border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        ) : filteredAppointments.length === 0 ? (
-          <div className="text-center py-12 text-muted">
-            <Calendar size={48} className="mx-auto mb-4 opacity-50" />
-            <p className="text-lg">No appointments on this date.</p>
-            {!isBabalawo && (
-              <button
-                onClick={() => setShowBookingModal(true)}
-                className="mt-4 text-highlight hover:text-highlight/80 underline"
-              >
-                Book an appointment
-              </button>
+          
+          <div className="bg-card border border-input rounded-2xl p-6">
+            <h2 className="text-[1.25rem] font-[700] text-foreground mb-6">Upcoming Appointments</h2>
+            
+            {upcomingAppointments.length > 0 ? (
+              <div className="space-y-4">
+                {upcomingAppointments.map(appt => (
+                  <div 
+                    key={appt.id} 
+                    className={`p-4 rounded-xl border ${
+                      appt.status === 'confirmed' ? 'border-primary/30 bg-primary/5' : 
+                      appt.status === 'pending' ? 'border-warning/30 bg-warning/5' : 
+                      'border-destructive/30 bg-destructive/5'
+                    }`}
+                  >
+                    <div className="flex justify-between">
+                      <h3 className="text-[1rem] font-[700] text-foreground">{appt.serviceType}</h3>
+                      <Badge 
+                        variant={
+                          appt.status === 'confirmed' ? 'default' : 
+                          appt.status === 'pending' ? 'secondary' : 
+                          'destructive'
+                        }
+                        className="text-[0.75rem] font-[700]"
+                      >
+                        {appt.status.charAt(0).toUpperCase() + appt.status.slice(1)}
+                      </Badge>
+                    </div>
+                    <p className="text-[0.875rem] text-foreground mt-1">{appt.clientName}</p>
+                    <p className="text-[0.875rem] text-muted-foreground">
+                      {new Date(appt.date).toLocaleDateString()} • {appt.time}
+                    </p>
+                    <div className="mt-3 flex gap-2">
+                      <Button variant="outline" size="sm" className="text-[0.875rem]">
+                        Details
+                      </Button>
+                      <Button size="sm" className="text-[0.875rem]">
+                        Contact
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Calendar className="w-12 h-12 text-muted mx-auto mb-4" />
+                <p className="text-[0.875rem] text-muted-foreground">No upcoming appointments</p>
+              </div>
             )}
           </div>
-        ) : (
-          <div className="space-y-4">
-            {filteredAppointments.map((appointment) => (
-              <div
-                key={appointment.id}
-                className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:border-highlight transition-all"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 space-y-4">
-                    {/* Time and Duration */}
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2">
-                        <Clock size={20} className="text-highlight" />
-                        <span className="text-xl font-bold text-white">
-                          {formatTime(appointment.time)}
-                        </span>
-                      </div>
-                      <span className="text-muted">
-                        {appointment.duration} minutes
-                      </span>
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusColor(appointment.status)}`}>
-                        {appointment.status}
-                      </span>
-                    </div>
-
-                    {/* Client/Babalawo Info */}
-                    {isBabalawo ? (
-                      appointment.client && (
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">
-                            {appointment.client.name[0]}
-                          </div>
-                          <div>
-                            <p className="text-white font-medium">{appointment.client.name}</p>
-                            {appointment.client.yorubaName && (
-                              <p className="text-muted text-sm">
-                                {appointment.client.yorubaName}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    ) : (
-                      appointment.babalawo && (
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-highlight/20 flex items-center justify-center text-sm font-bold text-highlight">
-                            {appointment.babalawo.name[0]}
-                          </div>
-                          <div>
-                            <p className="text-white font-medium">{appointment.babalawo.name}</p>
-                            {appointment.babalawo.yorubaName && (
-                              <p className="text-muted text-sm">
-                                {appointment.babalawo.yorubaName}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    )}
-
-                    {/* Timezone */}
-                    <p className="text-muted text-sm flex items-center gap-2">
-                      <MapPin size={14} />
-                      Timezone: {appointment.timezone || 'Africa/Lagos (WAT)'}
-                    </p>
-
-                    {/* Notes */}
-                    {appointment.notes && (
-                      <div className="bg-white/5 rounded-lg p-3">
-                        <p className="text-muted text-sm">{appointment.notes}</p>
-                      </div>
-                    )}
-
-                    {/* Price */}
-                    {appointment.price && (
-                      <p className="text-highlight font-bold">
-                        ₦{appointment.price.toLocaleString()}
-                      </p>
-                    )}
-                  </div>
-                  
-                  {/* Action Buttons */}
-                  <div className="flex flex-col gap-2 ml-4">
-                    {(appointment.status === 'UPCOMING' || appointment.status === 'REQUESTED') && (
-                      <>
-                        <button
-                          onClick={() => {
-                            if (isBabalawo) {
-                              updateAppointmentStatusMutation.mutate({
-                                appointmentId: appointment.id,
-                                status: 'IN_SESSION'
-                              });
-                            } else {
-                              setEditingAppointment(appointment);
-                            }
-                          }}
-                          className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                          title={isBabalawo ? "Start Session" : "Edit Appointment"}
-                        >
-                          {isBabalawo ? <CheckCircle size={18} className="text-green-500" /> : <Edit size={18} />}
-                        </button>
-                        <button
-                          onClick={() => cancelAppointmentMutation.mutate(appointment.id)}
-                          disabled={cancelAppointmentMutation.isPending}
-                          className="p-2 hover:bg-red-500/20 rounded-lg transition-colors"
-                          title="Cancel Appointment"
-                        >
-                          {cancelAppointmentMutation.isPending ? (
-                            <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin"></div>
-                          ) : (
-                            <X size={18} className="text-red-400" />
-                          )}
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Booking Modal Placeholder */}
-        {showBookingModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6">
-            <div className="bg-background border border-white/20 rounded-2xl p-8 max-w-md w-full space-y-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-2xl font-bold brand-font text-white">Book Appointment</h3>
-                <button
-                  onClick={() => setShowBookingModal(false)}
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              <p className="text-muted">
-                Booking form would be implemented here. Requires Personal Awo relationship.
-              </p>
-              <button
-                onClick={() => setShowBookingModal(false)}
-                className="w-full bg-highlight hover:bg-highlight/90 text-white px-6 py-3 rounded-xl font-bold transition-all"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Edit Appointment Modal */}
-        {editingAppointment && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6">
-            <div className="bg-background border border-white/20 rounded-2xl p-8 max-w-md w-full space-y-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-2xl font-bold brand-font text-white">Edit Appointment</h3>
-                <button
-                  onClick={() => setEditingAppointment(null)}
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              <p className="text-muted">
-                Edit functionality would be implemented here.
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setEditingAppointment(null)}
-                  className="flex-1 bg-highlight hover:bg-highlight/90 text-white px-6 py-3 rounded-xl font-bold transition-all"
-                >
-                  Save Changes
-                </button>
-                <button
-                  onClick={() => setEditingAppointment(null)}
-                  className="flex-1 bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-xl font-bold transition-all"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );

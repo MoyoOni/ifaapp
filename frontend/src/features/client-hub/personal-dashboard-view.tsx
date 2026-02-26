@@ -18,6 +18,7 @@ import {
 import { useAuth } from '@/shared/hooks/use-auth';
 import { useClientDashboard } from '@/shared/hooks/dashboard';
 import { useUserStats } from '@/shared/hooks/use-user-stats';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 const PersonalDashboardView: React.FC = () => {
   const navigate = useNavigate();
@@ -28,7 +29,7 @@ const PersonalDashboardView: React.FC = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+        <LoadingSpinner size="lg" variant="primary" />
       </div>
     );
   }

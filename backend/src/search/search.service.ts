@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
@@ -13,7 +13,7 @@ export class SearchService {
 
   constructor(
     private prisma: PrismaService,
-    @InjectQueue('search') private readonly searchQueue: Queue
+    @Optional() @InjectQueue('search') private readonly searchQueue?: Queue
   ) { }
 
   /**
@@ -230,7 +230,11 @@ export class SearchService {
    */
   async triggerIndexing(entityType: string, entityId: string, data?: any) {
     this.logger.log(`Queueing indexing for ${entityType} ${entityId}`);
-    await this.searchQueue.add('indexEntity', { entityType, entityId, data });
+    if (this.searchQueue) {
+      await this.searchQueue.add('indexEntity', { entityType, entityId, data });
+    } else {
+      this.logger.warn('Search queue unavailable; skipping indexing job');
+    }
   }
 
   /**
@@ -238,7 +242,11 @@ export class SearchService {
    */
   async triggerRemoval(type: string, id: string) {
     this.logger.log(`Queueing removal for ${type} ${id}`);
-    await this.searchQueue.add('removeEntity', { type, id });
+    if (this.searchQueue) {
+      await this.searchQueue.add('removeEntity', { type, id });
+    } else {
+      this.logger.warn('Search queue unavailable; skipping removal job');
+    }
   }
 
   /**

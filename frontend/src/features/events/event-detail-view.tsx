@@ -7,6 +7,7 @@ import { logger } from '@/shared/utils/logger';
 import { isDemoMode } from '@/shared/config/demo-mode';
 import { DEMO_EVENTS, DEMO_USERS } from '@/demo';
 import AddToCalendar from '@/shared/components/add-to-calendar';
+import { useToast } from '@/components/common/ToastProvider';
 
 interface EventDetail {
   id: string;
@@ -68,6 +69,7 @@ interface EventDetailViewProps {
 const EventDetailView: React.FC<EventDetailViewProps> = ({ eventSlug, onBack }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   const getSessionRegistration = (eventId: string) => {
     if (typeof sessionStorage === 'undefined') {
@@ -184,10 +186,10 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ eventSlug, onBack }) 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['event', eventSlug] });
       queryClient.invalidateQueries({ queryKey: ['events'] });
-      alert('Successfully registered for event!');
+      showToast('Successfully registered for event!', 'success');
     },
     onError: (error: any) => {
-      alert(error.response?.data?.message || 'Failed to register for event');
+      showToast(error.response?.data?.message || 'Failed to register for event', 'error');
     },
   });
 
@@ -214,7 +216,7 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ eventSlug, onBack }) 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['event', eventSlug] });
       queryClient.invalidateQueries({ queryKey: ['events'] });
-      alert('Registration cancelled');
+      showToast('Registration cancelled', 'success');
     },
   });
 

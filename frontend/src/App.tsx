@@ -22,6 +22,9 @@ import SettingsPage from './pages/SettingsPage';
 import HelpPage from './pages/HelpPage';
 import VendorDirectoryPage from './pages/VendorDirectoryPage';
 import NotificationsPage from './pages/NotificationsPage';
+import LoadingSpinner from './components/common/LoadingSpinner';
+import { ToastProvider } from './components/common/ToastProvider';
+import { ModalProvider } from './components/common/ModalProvider';
 
 // Lazy Loaded Components
 const BookingPage = React.lazy(() => import('./pages/BookingPage').then(m => ({ default: m.BookingPage })));
@@ -70,6 +73,9 @@ const VendorOrderListView = React.lazy(() => import('./features/marketplace/vend
 const MySeekersView = React.lazy(() => import('./features/babalawo/my-seekers-view'));
 const ServiceOfferingView = React.lazy(() => import('./features/babalawo/service-offering-view'));
 const TempleConnectionView = React.lazy(() => import('./features/babalawo/temple-connection-view'));
+const VendorAnalyticsView = React.lazy(() => import('./features/marketplace/vendor-analytics-view'));
+const VendorCustomerInsightsView = React.lazy(() => import('./features/marketplace/vendor-customers-view'));
+const VendorSupportCenterView = React.lazy(() => import('./features/marketplace/vendor-support-view'));
 const OnboardingView = React.lazy(() => import('./features/onboarding/onboarding-view'));
 
 // Initialize React Query client
@@ -124,20 +130,20 @@ const HomePage: React.FC = () => {
   // Show landing page for non-authenticated users
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 flex items-center justify-center"> {/* Updated background to match new theme */}
+      <div className="min-h-screen bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center"> {/* Updated background to match new theme */}
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-stone-900 mb-4">Welcome to Ìlú Àṣẹ</h1>
-          <p className="text-stone-600 mb-8">Your gateway to authentic spiritual guidance</p>
+          <h1 className="text-[2.25rem] font-[700] text-foreground mb-4">Welcome to Ìlú Àṣẹ</h1>
+          <p className="text-[0.875rem] text-muted-foreground mb-8">Your gateway to authentic spiritual guidance</p>
           <div className="space-x-4">
             <button
               onClick={() => navigate('/login')}
-              className="px-6 py-3 bg-primary text-white font-bold rounded-xl hover:opacity-90 transition-colors"
+              className="px-6 py-3 bg-primary text-white font-[700] rounded-xl hover:opacity-90 transition-colors"
             >
               Sign In
             </button>
             <button
               onClick={() => navigate('/signup')}
-              className="px-6 py-3 bg-white border border-primary text-primary font-bold rounded-xl hover:bg-primary/5 transition-colors"
+              className="px-6 py-3 bg-white border border-primary text-primary font-[700] rounded-xl hover:bg-primary/5 transition-colors"
             >
               Create Account
             </button>
@@ -285,7 +291,7 @@ const ClientConsultationsPage: React.FC = () => {
   if (!user?.id) {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
-        <p className="text-stone-500">Sign in to view your consultations.</p>
+        <p className="text-muted-foreground">Sign in to view your consultations.</p>
       </div>
     );
   }
@@ -299,7 +305,7 @@ const PractitionerConsultationsPage: React.FC = () => {
   if (!user?.id) {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
-        <p className="text-stone-500">Sign in to manage consultations.</p>
+        <p className="text-muted-foreground">Sign in to manage consultations.</p>
       </div>
     );
   }
@@ -338,129 +344,129 @@ const ForumHomePage: React.FC = () => {
   );
 };
 
-const LoadingSpinner = () => (
-  <div className="flex items-center justify-center min-h-[400px]">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-  </div>
-);
-
-function App() {
+// Wrap the application with providers
+export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router>
-        <ErrorBoundary>
-          <div className="App bg-background text-foreground"> {/* Apply theme variables globally */}
-            <React.Suspense fallback={<LoadingSpinner />}>
-              <Routes>
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/signup" element={<SignupPage />} />
-                <Route path="/quick-access" element={<QuickAccessPage />} /> {/* Add quick access route */}
-                <Route path="/test-sentry" element={<SentryTestPage />} /> {/* Sentry testing route */}
-                <Route path="/notifications" element={<NotificationsPage />} /> {/* Notification center */}
-                <Route path="/settings" element={<SettingsPage />} /> {/* User settings */}
-                <Route path="/help" element={<HelpPage />} /> {/* Help and support */}
-                <Route path="/vendors" element={<VendorDirectoryPage />} /> {/* Vendor directory */}
-                <Route path="/onboarding" element={<OnboardingView />} />
-                <Route element={<LayoutWrapper />}>
-                  <Route path="/" element={<HomePage />} />
-                  <Route path="/client/dashboard" element={
-                    <ErrorBoundary>
-                      <ProtectedRoute allowedRoles={[UserRole.CLIENT, UserRole.ADMIN]}>
-                        <PersonalDashboardView />
-                      </ProtectedRoute>
-                    </ErrorBoundary>
-                  } />
-                  <Route path="/client/spiritual-journey" element={
-                    <ErrorBoundary>
-                      <ProtectedRoute allowedRoles={[UserRole.CLIENT, UserRole.ADMIN]}>
-                        <SpiritualJourneyView />
-                      </ProtectedRoute>
-                    </ErrorBoundary>
-                  } />
-                  <Route path="/personal-dashboard" element={
-                    <ErrorBoundary>
-                      <ProtectedRoute allowedRoles={[UserRole.CLIENT, UserRole.ADMIN]}>
-                        <PersonalDashboardView />
-                      </ProtectedRoute>
-                    </ErrorBoundary>
-                  } />
-                  <Route path="/client/wallet" element={<ErrorBoundary><ProtectedRoute allowedRoles={['CLIENT']}><ClientWalletView /></ProtectedRoute></ErrorBoundary>} />
-                  <Route path="/client/consultations" element={<ErrorBoundary><ProtectedRoute allowedRoles={['CLIENT']}><ClientConsultationsView /></ProtectedRoute></ErrorBoundary>} />
-                  <Route path="/practitioner/dashboard" element={<ErrorBoundary><BabalawoRoute><PractitionerDashboard /></BabalawoRoute></ErrorBoundary>} />
-                  <Route path="/vendor/dashboard" element={<ErrorBoundary><VendorRoute><VendorDashboardView /></VendorRoute></ErrorBoundary>} />
-                  <Route path="/admin" element={<ErrorBoundary><AdminRoute><AdminDashboardView /></AdminRoute></ErrorBoundary>} />
-                  <Route path="/admin/users" element={<ErrorBoundary><AdminRoute><AdminDashboardView initialTab="users" /></AdminRoute></ErrorBoundary>} />
-                  <Route path="/admin/vendors" element={<ErrorBoundary><AdminRoute><VendorReviewView /></AdminRoute></ErrorBoundary>} />
-                  <Route path="/admin/verification" element={<ErrorBoundary><AdminRoute><AdminDashboardView initialTab="verification" /></AdminRoute></ErrorBoundary>} />
-                  <Route path="/admin/quality" element={<ErrorBoundary><AdminRoute><AdminDashboardView initialTab="quality" /></AdminRoute></ErrorBoundary>} />
-                  <Route path="/admin/health" element={<ErrorBoundary><AdminRoute><AdminDashboardView initialTab="health" /></AdminRoute></ErrorBoundary>} />
-                  <Route path="/admin/advisory-board" element={<ErrorBoundary><AdminRoute><AdvisoryBoardVotingView /></AdminRoute></ErrorBoundary>} />
-                  <Route path="/admin/temples" element={<ErrorBoundary><AdminRoute><AdminDashboardView initialTab="temples" /></AdminRoute></ErrorBoundary>} />
-                  <Route path="/admin/withdrawals" element={<ErrorBoundary><AdminRoute><AdminDashboardView initialTab="withdrawals" /></AdminRoute></ErrorBoundary>} />
-                  <Route path="/admin/fraud" element={<ErrorBoundary><AdminRoute><AdminDashboardView initialTab="fraud" /></AdminRoute></ErrorBoundary>} />
-                  <Route path="/admin/content" element={<ErrorBoundary><AdminRoute><AdminDashboardView initialTab="content" /></AdminRoute></ErrorBoundary>} />
-                  <Route path="/temples" element={<ErrorBoundary><TempleDirectoryPage /></ErrorBoundary>} />
-                  <Route path="/temples/:slug" element={<ErrorBoundary><TempleDetailPage /></ErrorBoundary>} />
-                  <Route path="/babalawo" element={<ErrorBoundary><BabalawoDiscoveryView /></ErrorBoundary>} />
-                  <Route path="/circles" element={<ErrorBoundary><CircleDirectory /></ErrorBoundary>} />
-                  <Route path="/circles/:slug" element={<ErrorBoundary><CircleDetailPage /></ErrorBoundary>} />
-                  <Route path="/forum" element={<ErrorBoundary><ForumHomePage /></ErrorBoundary>} />
-                  <Route path="/forum/:threadId" element={<ErrorBoundary><ForumThreadPage /></ErrorBoundary>} />
-                  <Route path="/academy" element={<ErrorBoundary><AcademyPage /></ErrorBoundary>} />
-                  <Route path="/academy/course/:courseId" element={<ErrorBoundary><CourseDetailPage /></ErrorBoundary>} />
-                  <Route path="/academy/my-courses" element={<ErrorBoundary><MyCoursesPage /></ErrorBoundary>} />
-                  <Route path="/academy/learn/:enrollmentId" element={<ErrorBoundary><LessonPlayerPage /></ErrorBoundary>} />
-                  <Route path="/wallet" element={<ErrorBoundary><WalletPage /></ErrorBoundary>} />
-                  <Route path="/wallet/transactions" element={<ErrorBoundary><TransactionHistoryPage /></ErrorBoundary>} />
-                  <Route path="/consultations" element={<ErrorBoundary><ClientConsultationsPage /></ErrorBoundary>} />
-                  <Route path="/practitioner/consultations" element={<ErrorBoundary><BabalawoRoute><PractitionerConsultationsPage /></BabalawoRoute></ErrorBoundary>} />
-                  <Route path="/practitioner/calendar" element={<ErrorBoundary><BabalawoRoute><PractitionerCalendarView /></BabalawoRoute></ErrorBoundary>} />
-                  <Route path="/practitioner/availability" element={<ErrorBoundary><BabalawoRoute><SetAvailabilityView /></BabalawoRoute></ErrorBoundary>} />
-                  <Route path="/practitioner/earnings" element={<ErrorBoundary><BabalawoRoute><EarningsReportView /></BabalawoRoute></ErrorBoundary>} />
-                  <Route path="/practitioner/seekers" element={<ErrorBoundary><BabalawoRoute><PractitionerDashboard initialTab="seekers" /></BabalawoRoute></ErrorBoundary>} />
-                  <Route path="/practitioner/clients" element={<ErrorBoundary><BabalawoRoute><PractitionerDashboard initialTab="seekers" /></BabalawoRoute></ErrorBoundary>} />
-                  <Route path="/practitioner/clients/invite" element={<ErrorBoundary><BabalawoRoute><InviteClientView /></BabalawoRoute></ErrorBoundary>} />
-                  <Route path="/practitioner/services" element={<ErrorBoundary><BabalawoRoute><PractitionerDashboard initialTab="services" /></BabalawoRoute></ErrorBoundary>} />
-                  <Route path="/practitioner/temple" element={<ErrorBoundary><BabalawoRoute><PractitionerDashboard initialTab="temple" /></BabalawoRoute></ErrorBoundary>} />
-                  <Route path="/practitioner/my-seekers" element={<ErrorBoundary><BabalawoRoute><MySeekersView /></BabalawoRoute></ErrorBoundary>} />
-                  <Route path="/practitioner/service-offering" element={<ErrorBoundary><BabalawoRoute><ServiceOfferingView /></BabalawoRoute></ErrorBoundary>} />
-                  <Route path="/practitioner/temple-connection" element={<ErrorBoundary><BabalawoRoute><TempleConnectionView /></BabalawoRoute></ErrorBoundary>} />
-                  <Route path="/vendor/orders" element={<ErrorBoundary><VendorRoute><VendorOrderListView /></VendorRoute></ErrorBoundary>} />
-                  <Route path="/vendor/orders/:orderId" element={<ErrorBoundary><VendorRoute><VendorOrderListView /></VendorRoute></ErrorBoundary>} />
-                  <Route path="/vendor/products" element={<ErrorBoundary><VendorRoute><VendorProductListView /></VendorRoute></ErrorBoundary>} />
-                  <Route path="/vendor/products/add" element={<ErrorBoundary><VendorRoute><VendorProductListView mode="create" /></VendorRoute></ErrorBoundary>} />
-                  <Route path="/vendor/products/new" element={<ErrorBoundary><VendorRoute><VendorProductListView mode="create" /></VendorRoute></ErrorBoundary>} />
-                  <Route path="/vendor/products/edit/:productId" element={<ErrorBoundary><VendorRoute><VendorProductListView mode="edit" /></VendorRoute></ErrorBoundary>} />
-                  <Route path="/vendor/workshop" element={<ErrorBoundary><VendorRoute><VendorDashboardView initialTab="inventory" /></VendorRoute></ErrorBoundary>} />
-                  <Route path="/vendor/insights" element={<ErrorBoundary><VendorRoute><VendorDashboardView initialTab="revenue" /></VendorRoute></ErrorBoundary>} />
-                  <Route path="/vendor/support" element={<ErrorBoundary><VendorRoute><VendorDashboardView initialTab="support" /></VendorRoute></ErrorBoundary>} />
-                  <Route path="/booking/:babalawoId" element={<ErrorBoundary><BookingPage /></ErrorBoundary>} />
-                  <Route path="/booking/:appointmentId/confirmation" element={<ErrorBoundary><BookingConfirmation /></ErrorBoundary>} />
-                  <Route path="/profile" element={<ErrorBoundary><ProfilePage /></ErrorBoundary>} />
-                  <Route path="/profile/:userId" element={<ErrorBoundary><ProfilePage /></ErrorBoundary>} />
-                  <Route path="/events" element={<ErrorBoundary><EventsPage /></ErrorBoundary>} />
-                  <Route path="/events/create" element={<ErrorBoundary><EventCreatePage /></ErrorBoundary>} />
-                  <Route path="/events/:slug" element={<ErrorBoundary><EventDetailPage /></ErrorBoundary>} />
-                  <Route path="/messages" element={<ErrorBoundary><MessagesPage /></ErrorBoundary>} />
-                  <Route path="/messages/:otherUserId" element={<ErrorBoundary><MessagesPage /></ErrorBoundary>} />
-                  <Route path="/marketplace" element={<ErrorBoundary><MarketplacePage /></ErrorBoundary>} />
-                  <Route path="/marketplace/:productId" element={<ErrorBoundary><ProductDetailPage /></ErrorBoundary>} />
-                  <Route path="/cart" element={<ErrorBoundary><CartPage /></ErrorBoundary>} />
-                  <Route path="/checkout" element={<ErrorBoundary><CheckoutPage /></ErrorBoundary>} />
-                  <Route path="/guidance-plans" element={<ErrorBoundary><GuidancePlansPage /></ErrorBoundary>} />
-                  <Route path="/prescriptions/create" element={<ErrorBoundary><PrescriptionCreationPage /></ErrorBoundary>} />
-                  <Route path="/prescriptions/approve/:id" element={<ErrorBoundary><PrescriptionApprovalPage /></ErrorBoundary>} />
-                  <Route path="/prescriptions/history" element={<ErrorBoundary><PrescriptionHistoryPage /></ErrorBoundary>} />
-                  <Route path="/yoruba-word/:wordId" element={<ErrorBoundary><YorubaWordDetailPage /></ErrorBoundary>} />
-                  <Route path="*" element={<NotFound />} />
-                </Route>
-              </Routes>
-            </React.Suspense>
-          </div>
-        </ErrorBoundary>
-      </Router >
-    </QueryClientProvider >
+      <ErrorBoundary>
+        <ToastProvider>
+          <ModalProvider>
+            <Router>
+              <div className="App bg-background text-foreground"> {/* Apply theme variables globally */}
+                <React.Suspense fallback={<LoadingSpinner />}>
+                  <Routes>
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/signup" element={<SignupPage />} />
+                    <Route path="/quick-access" element={<QuickAccessPage />} /> {/* Add quick access route */}
+                    <Route path="/test-sentry" element={<SentryTestPage />} /> {/* Sentry testing route */}
+                    <Route path="/notifications" element={<NotificationsPage />} /> {/* Notification center */}
+                    <Route path="/settings" element={<SettingsPage />} /> {/* User settings */}
+                    <Route path="/help" element={<HelpPage />} /> {/* Help and support */}
+                    <Route path="/vendors" element={<VendorDirectoryPage />} /> {/* Vendor directory */}
+                    <Route path="/onboarding" element={<OnboardingView />} />
+                    <Route element={<LayoutWrapper />}>
+                      <Route path="/" element={<HomePage />} />
+                      <Route path="/client/dashboard" element={
+                        <ErrorBoundary>
+                          <ProtectedRoute allowedRoles={[UserRole.CLIENT, UserRole.ADMIN]}>
+                            <PersonalDashboardView />
+                          </ProtectedRoute>
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/client/spiritual-journey" element={
+                        <ErrorBoundary>
+                          <ProtectedRoute allowedRoles={[UserRole.CLIENT, UserRole.ADMIN]}>
+                            <SpiritualJourneyView />
+                          </ProtectedRoute>
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/personal-dashboard" element={
+                        <ErrorBoundary>
+                          <ProtectedRoute allowedRoles={[UserRole.CLIENT, UserRole.ADMIN]}>
+                            <PersonalDashboardView />
+                          </ProtectedRoute>
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/client/wallet" element={<ErrorBoundary><ProtectedRoute allowedRoles={['CLIENT']}><ClientWalletView /></ProtectedRoute></ErrorBoundary>} />
+                      <Route path="/client/consultations" element={<ErrorBoundary><ProtectedRoute allowedRoles={['CLIENT']}><ClientConsultationsView /></ProtectedRoute></ErrorBoundary>} />
+                      <Route path="/practitioner/dashboard" element={<ErrorBoundary><BabalawoRoute><PractitionerDashboard /></BabalawoRoute></ErrorBoundary>} />
+                      <Route path="/vendor/dashboard" element={<ErrorBoundary><VendorRoute><VendorDashboardView /></VendorRoute></ErrorBoundary>} />
+                      <Route path="/admin" element={<ErrorBoundary><AdminRoute><AdminDashboardView /></AdminRoute></ErrorBoundary>} />
+                      <Route path="/admin/users" element={<ErrorBoundary><AdminRoute><AdminDashboardView initialTab="users" /></AdminRoute></ErrorBoundary>} />
+                      <Route path="/admin/vendors" element={<ErrorBoundary><AdminRoute><VendorReviewView /></AdminRoute></ErrorBoundary>} />
+                      <Route path="/admin/verification" element={<ErrorBoundary><AdminRoute><AdminDashboardView initialTab="verification" /></AdminRoute></ErrorBoundary>} />
+                      <Route path="/admin/quality" element={<ErrorBoundary><AdminRoute><AdminDashboardView initialTab="quality" /></AdminRoute></ErrorBoundary>} />
+                      <Route path="/admin/health" element={<ErrorBoundary><AdminRoute><AdminDashboardView initialTab="health" /></AdminRoute></ErrorBoundary>} />
+                      <Route path="/admin/advisory-board" element={<ErrorBoundary><AdminRoute><AdvisoryBoardVotingView /></AdminRoute></ErrorBoundary>} />
+                      <Route path="/admin/temples" element={<ErrorBoundary><AdminRoute><AdminDashboardView initialTab="temples" /></AdminRoute></ErrorBoundary>} />
+                      <Route path="/admin/withdrawals" element={<ErrorBoundary><AdminRoute><AdminDashboardView initialTab="withdrawals" /></AdminRoute></ErrorBoundary>} />
+                      <Route path="/admin/fraud" element={<ErrorBoundary><AdminRoute><AdminDashboardView initialTab="fraud" /></AdminRoute></ErrorBoundary>} />
+                      <Route path="/admin/content" element={<ErrorBoundary><AdminRoute><AdminDashboardView initialTab="content" /></AdminRoute></ErrorBoundary>} />
+                      <Route path="/temples" element={<ErrorBoundary><TempleDirectoryPage /></ErrorBoundary>} />
+                      <Route path="/temples/:slug" element={<ErrorBoundary><TempleDetailPage /></ErrorBoundary>} />
+                      <Route path="/babalawo" element={<ErrorBoundary><BabalawoDiscoveryView /></ErrorBoundary>} />
+                      <Route path="/circles" element={<ErrorBoundary><CircleDirectory /></ErrorBoundary>} />
+                      <Route path="/circles/:slug" element={<ErrorBoundary><CircleDetailPage /></ErrorBoundary>} />
+                      <Route path="/forum" element={<ErrorBoundary><ForumHomePage /></ErrorBoundary>} />
+                      <Route path="/forum/:threadId" element={<ErrorBoundary><ForumThreadPage /></ErrorBoundary>} />
+                      <Route path="/academy" element={<ErrorBoundary><AcademyPage /></ErrorBoundary>} />
+                      <Route path="/academy/course/:courseId" element={<ErrorBoundary><CourseDetailPage /></ErrorBoundary>} />
+                      <Route path="/academy/my-courses" element={<ErrorBoundary><MyCoursesPage /></ErrorBoundary>} />
+                      <Route path="/academy/learn/:enrollmentId" element={<ErrorBoundary><LessonPlayerPage /></ErrorBoundary>} />
+                      <Route path="/wallet" element={<ErrorBoundary><WalletPage /></ErrorBoundary>} />
+                      <Route path="/wallet/transactions" element={<ErrorBoundary><TransactionHistoryPage /></ErrorBoundary>} />
+                      <Route path="/consultations" element={<ErrorBoundary><ClientConsultationsPage /></ErrorBoundary>} />
+                      <Route path="/practitioner/consultations" element={<ErrorBoundary><BabalawoRoute><PractitionerConsultationsPage /></BabalawoRoute></ErrorBoundary>} />
+                      <Route path="/practitioner/calendar" element={<ErrorBoundary><BabalawoRoute><PractitionerCalendarView /></BabalawoRoute></ErrorBoundary>} />
+                      <Route path="/practitioner/availability" element={<ErrorBoundary><BabalawoRoute><SetAvailabilityView /></BabalawoRoute></ErrorBoundary>} />
+                      <Route path="/practitioner/earnings" element={<ErrorBoundary><BabalawoRoute><EarningsReportView /></BabalawoRoute></ErrorBoundary>} />
+                      <Route path="/practitioner/seekers" element={<ErrorBoundary><BabalawoRoute><PractitionerDashboard initialTab="seekers" /></BabalawoRoute></ErrorBoundary>} />
+                      <Route path="/practitioner/clients" element={<ErrorBoundary><BabalawoRoute><PractitionerDashboard initialTab="seekers" /></BabalawoRoute></ErrorBoundary>} />
+                      <Route path="/practitioner/clients/invite" element={<ErrorBoundary><BabalawoRoute><InviteClientView /></BabalawoRoute></ErrorBoundary>} />
+                      <Route path="/practitioner/services" element={<ErrorBoundary><BabalawoRoute><PractitionerDashboard initialTab="services" /></BabalawoRoute></ErrorBoundary>} />
+                      <Route path="/practitioner/temple" element={<ErrorBoundary><BabalawoRoute><PractitionerDashboard initialTab="temple" /></BabalawoRoute></ErrorBoundary>} />
+                      <Route path="/practitioner/my-seekers" element={<ErrorBoundary><BabalawoRoute><MySeekersView /></BabalawoRoute></ErrorBoundary>} />
+                      <Route path="/practitioner/service-offering" element={<ErrorBoundary><BabalawoRoute><ServiceOfferingView /></BabalawoRoute></ErrorBoundary>} />
+                      <Route path="/practitioner/temple-connection" element={<ErrorBoundary><BabalawoRoute><TempleConnectionView /></BabalawoRoute></ErrorBoundary>} />
+                      <Route path="/vendor/orders" element={<ErrorBoundary><VendorRoute><VendorOrderListView /></VendorRoute></ErrorBoundary>} />
+                      <Route path="/vendor/orders/:orderId" element={<ErrorBoundary><VendorRoute><VendorOrderListView /></VendorRoute></ErrorBoundary>} />
+                      <Route path="/vendor/products" element={<ErrorBoundary><VendorRoute><VendorProductListView /></VendorRoute></ErrorBoundary>} />
+                      <Route path="/vendor/products/add" element={<ErrorBoundary><VendorRoute><VendorProductListView mode="create" /></VendorRoute></ErrorBoundary>} />
+                      <Route path="/vendor/products/new" element={<ErrorBoundary><VendorRoute><VendorProductListView mode="create" /></VendorRoute></ErrorBoundary>} />
+                      <Route path="/vendor/products/edit/:productId" element={<ErrorBoundary><VendorRoute><VendorProductListView mode="edit" /></VendorRoute></ErrorBoundary>} />
+                      <Route path="/vendor/analytics" element={<ErrorBoundary><VendorRoute><VendorAnalyticsView /></VendorRoute></ErrorBoundary>} />
+                      <Route path="/vendor/customers" element={<ErrorBoundary><VendorRoute><VendorCustomerInsightsView /></VendorRoute></ErrorBoundary>} />
+                      <Route path="/vendor/support-center" element={<ErrorBoundary><VendorRoute><VendorSupportCenterView /></VendorRoute></ErrorBoundary>} />
+                      <Route path="/vendor/workshop" element={<ErrorBoundary><VendorRoute><VendorDashboardView initialTab="inventory" /></VendorRoute></ErrorBoundary>} />
+                      <Route path="/vendor/insights" element={<ErrorBoundary><VendorRoute><VendorDashboardView initialTab="revenue" /></VendorRoute></ErrorBoundary>} />
+                      <Route path="/vendor/support" element={<ErrorBoundary><VendorRoute><VendorDashboardView initialTab="support" /></VendorRoute></ErrorBoundary>} />
+                      <Route path="/booking/:babalawoId" element={<ErrorBoundary><BookingPage /></ErrorBoundary>} />
+                      <Route path="/booking/:appointmentId/confirmation" element={<ErrorBoundary><BookingConfirmation /></ErrorBoundary>} />
+                      <Route path="/profile" element={<ErrorBoundary><ProfilePage /></ErrorBoundary>} />
+                      <Route path="/profile/:userId" element={<ErrorBoundary><ProfilePage /></ErrorBoundary>} />
+                      <Route path="/events" element={<ErrorBoundary><EventsPage /></ErrorBoundary>} />
+                      <Route path="/events/create" element={<ErrorBoundary><EventCreatePage /></ErrorBoundary>} />
+                      <Route path="/events/:slug" element={<ErrorBoundary><EventDetailPage /></ErrorBoundary>} />
+                      <Route path="/messages" element={<ErrorBoundary><MessagesPage /></ErrorBoundary>} />
+                      <Route path="/messages/:otherUserId" element={<ErrorBoundary><MessagesPage /></ErrorBoundary>} />
+                      <Route path="/marketplace" element={<ErrorBoundary><MarketplacePage /></ErrorBoundary>} />
+                      <Route path="/marketplace/:productId" element={<ErrorBoundary><ProductDetailPage /></ErrorBoundary>} />
+                      <Route path="/cart" element={<ErrorBoundary><CartPage /></ErrorBoundary>} />
+                      <Route path="/checkout" element={<ErrorBoundary><CheckoutPage /></ErrorBoundary>} />
+                      <Route path="/guidance-plans" element={<ErrorBoundary><GuidancePlansPage /></ErrorBoundary>} />
+                      <Route path="/prescriptions/create" element={<ErrorBoundary><PrescriptionCreationPage /></ErrorBoundary>} />
+                      <Route path="/prescriptions/approve/:id" element={<ErrorBoundary><PrescriptionApprovalPage /></ErrorBoundary>} />
+                      <Route path="/prescriptions/history" element={<ErrorBoundary><PrescriptionHistoryPage /></ErrorBoundary>} />
+                      <Route path="/yoruba-word/:wordId" element={<ErrorBoundary><YorubaWordDetailPage /></ErrorBoundary>} />
+                      <Route path="*" element={<NotFound />} />
+                    </Route>
+                  </Routes>
+                </React.Suspense>
+              </div>
+            </Router>
+          </ModalProvider>
+        </ToastProvider>
+      </ErrorBoundary>
+    </QueryClientProvider>
   );
 }
-
-export default App;

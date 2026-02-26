@@ -244,6 +244,154 @@ To create a culturally respectful and spiritually authentic digital space where 
 
 ---
 
+## 🔧 Quality & Cleanup Tasks (P0 Production Readiness)
+The following items are still open and target production‑grade quality prior to launch.
+
+### QUALITY-1: Resolve TypeScript Errors (V4-702)
+- **Priority:** Critical
+- **Story Points:** 5
+- **Status:** ⬜ READY
+- **Description:** Fix the remaining ~200 real TypeScript compilation errors across the frontend; these are not unused-variable warnings.
+- **Acceptance Criteria:**
+  - `npx tsc --noEmit` completes with zero errors
+  - No `any` casts introduced during fixes
+  - ESLint/CI step reports zero TypeScript errors
+
+### QUALITY-2: Decompose `circle-detail-view.tsx` (V4-703)
+- **Priority:** High
+- **Story Points:** 3
+- **Status:** ⬜ READY
+- **Description:** Reduce the 916‑line component into smaller, maintainable pieces as originally intended in V4-504.
+- **Acceptance Criteria:**
+  - Primary component < 500 lines
+  - Behavior and styling unchanged
+  - Unit tests still passing
+
+### QUALITY-3: Replace remaining `confirm()` call (V4-705)
+- **Priority:** High
+- **Story Points:** 1
+- **Status:** ⬜ READY
+- **Description:** The only browser `confirm()` still present is in temple‑management; swap it for the `useConfirm` hook and audit backlog accuracy.
+- **Acceptance Criteria:**
+  - No `confirm()` usage remains in source code
+  - ESLint rule blocking `confirm` enforces this
+
+### QUALITY-4: Accessibility lint fixes
+- **Priority:** High
+- **Story Points:** 2
+- **Status:** ⬜ READY
+- **Description:** Address ARIA/accessible name errors reported by the linter (e.g. buttons without discernible text, select elements missing accessible names).
+- **Acceptance Criteria:**
+  - All accessibility warnings in `get_errors` output are resolved
+  - Continuous integration shows zero a11y lint errors
+
+### QUALITY-5: Cleanup unused imports & error boundary issue
+- **Priority:** Medium
+- **Story Points:** 1
+- **Status:** ⬜ READY
+- **Description:** Remove the unused `ErrorBoundary` import at the top of `App.tsx` (it is only referenced in a dynamic import) and clean up any similar artifacts.
+- **Acceptance Criteria:**
+  - `tsc` no longer warns about unused variables
+  - Code readability improved
+
+### QUALITY-6: Fix dynamic import failure for MessagesPage
+- **Priority:** Critical
+- **Story Points:** 1
+- **Status:** ⬜ READY
+- **Description:** Resolve Vite error where `MessagesPage` failed to load (`Failed to fetch dynamically imported module`). Ensure the page path is correct and the lazy import includes a fallback.
+- **Acceptance Criteria:**
+  - Navigating to /messages no longer triggers module load error
+  - ErrorBoundary displays meaningful message if lazy load fails
+
+### QUALITY-7: Install missing backend dependencies & update package.json
+- **Priority:** Critical
+- **Story Points:** 1
+- **Status:** ⬜ READY
+- **Description:** Ensure the backend `package.json` includes all required modules (`@nestjs-modules/mailer`, `@nestjs-modules/mailer/dist/adapters/handlebars.adapter`, `redis`, etc.) and that `npm install` runs without missing peer dependency warnings.
+- **Acceptance Criteria:**
+  - `npm ci` executes cleanly in backend folder
+  - Mailer and Redis modules are present in `dependencies`
+  - Developer guide updated with installation instructions
+
+### QUALITY-8: Fix backend compilation errors (29+ TS errors)
+- **Priority:** Critical
+- **Story Points:** 5
+- **Status:** ⬜ READY
+- **Description:** Address the TypeScript errors currently preventing the backend from compiling, including missing imports, wrong DTO types, method signature mismatches, and absent fields (e.g. passwordHash on user creation).
+- **Acceptance Criteria:**
+  - `npm run build` or `npx tsc --noEmit` in backend succeeds with zero errors
+  - All services referenced by controllers compile (email, notification, push, admin)
+  - Unit tests added where errors were fixed
+
+---
+
+## 📁 Post-Launch & Backend Maintenance
+### BACKEND-1: Full backend overhaul (V7-005)
+- **Priority:** High (P1/P2)
+- **Story Points:** 21+
+- **Status:** ⬜ READY
+- **Description:** Address 20+ open TODO comments, add missing unit tests, and implement proper backup/restore procedures.
+- **Acceptance Criteria:**
+  - All `// TODO` comments removed or turned into backlog items
+  - Code coverage increased significantly (target 80%+)
+  - Backup jobs configured and verified
+
+### QUALITY-6: Spiritual Journey evaluation/decision
+- **Priority:** Medium (post‑MVP decision)
+- **Story Points:** 3
+- **Status:** ⬜ READY
+- **Description:** The spiritual journey feature is routed but was earlier marked as deferred. Decide whether to fully integrate, replace, or remove the module, then implement the chosen path.
+- **Acceptance Criteria:**
+  - Decision documented in backlog
+  - Code reflects the decision (link added, or files removed)
+
+### QUALITY-7: Install missing backend dependencies & update package.json
+- **Priority:** Critical
+- **Story Points:** 1
+- **Status:** ⬜ READY
+- **Description:** Ensure the backend `package.json` includes all required modules (`@nestjs-modules/mailer`, `@nestjs-modules/mailer/dist/adapters/handlebars.adapter`, `redis`, etc.) and that `npm install` runs without missing peer dependency warnings.
+- **Acceptance Criteria:**
+  - `npm ci` executes cleanly in backend folder
+  - Mailer and Redis modules are present in `dependencies`
+  - Developer guide updated with installation instructions
+
+### QUALITY-8: Fix backend compilation errors (29+ TS errors)
+- **Priority:** Critical
+- **Story Points:** 5
+- **Status:** ⬜ READY
+- **Description:** Address the TypeScript errors currently preventing the backend from compiling, including missing imports, wrong DTO types, method signature mismatches, and absent fields (e.g. passwordHash on user creation).
+- **Acceptance Criteria:**
+  - `npm run build` or `npx tsc --noEmit` in backend succeeds with zero errors
+  - All services referenced by controllers compile (email, notification, push, admin)
+  - Unit tests added where errors were fixed
+
+---
+
+## 📁 Post-Launch & Backend Maintenance
+### BACKEND-1: Full backend overhaul (V7-005)
+- **Priority:** High (P1/P2)
+- **Story Points:** 21+
+- **Status:** ⬜ READY
+- **Description:** Address 20+ open TODO comments, add missing unit tests, and implement proper backup/restore procedures.
+- **Acceptance Criteria:**
+  - All `// TODO` comments removed or turned into backlog items
+  - Code coverage increased significantly (target 80%+)
+  - Backup jobs configured and verified
+
+### BACKEND-2: TODO audit
+- **Priority:** High
+- **Story Points:** 1
+- **Status:** ⬜ READY
+- **Description:** Run a global search for any remaining TODO comments and create corresponding tasks if they indicate unfinished work.
+- **Acceptance Criteria:**
+  - No stray TODO comments left in production code
+  - All discovered items are tracked in the backlog
+
+
+---
+
+---
+
 ## P1 - Launch-Critical Features (Post-Demo)
 
 ### LAUNCH-1: Academy Enrollment Enhancement

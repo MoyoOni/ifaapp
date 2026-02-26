@@ -26,10 +26,12 @@ import {
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
-import { useToast } from '@/shared/components/toast';
+import { useToast } from '@/components/common/ToastProvider';
 import { logger } from '@/shared/utils/logger';
 import { isDemoMode } from '@/shared/config/demo-mode';
 import { DEMO_CIRCLES, DEMO_USERS } from '@/demo';
+import { Link, useLocation } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 
 interface CircleDetail {
   id: string;
@@ -110,10 +112,11 @@ interface CircleDetailViewProps {
  */
 const CircleDetailView: React.FC<CircleDetailViewProps> = ({ circleSlug, onBack }) => {
   const { user } = useAuth();
-  const toast = useToast();
+  const { showToast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'feed' | 'members' | 'events' | 'resources'>('feed');
   const [newPost, setNewPost] = useState('');
+  const location = useLocation();
 
   const setSessionMembership = (circleId: string, isJoining: boolean) => {
     if (typeof sessionStorage === 'undefined') {
@@ -249,10 +252,10 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({ circleSlug, onBack 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['circle-events', circle?.id] });
       queryClient.invalidateQueries({ queryKey: ['events'] });
-      toast.success('Event approved and promoted to main events directory');
+      showToast('Event approved and promoted to main events directory', 'success');
     },
     onError: (error: any) => {
-      toast.error(error?.response?.data?.message || 'Failed to approve event');
+      showToast(error?.response?.data?.message || 'Failed to approve event', 'error');
     },
   });
 
@@ -321,7 +324,7 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({ circleSlug, onBack 
       queryClient.invalidateQueries({ queryKey: ['circle-feed', circle?.id] });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to create post');
+      showToast(error.response?.data?.message || 'Failed to create post', 'error');
     },
   });
 
@@ -364,7 +367,7 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({ circleSlug, onBack 
       queryClient.invalidateQueries({ queryKey: ['circles'] });
     },
     onError: (error: any) => {
-      alert(error.response?.data?.message || 'Failed to join circle');
+      showToast(error.response?.data?.message || 'Failed to join circle', 'error');
     },
   });
 
@@ -480,7 +483,7 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({ circleSlug, onBack 
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
           </div>
         ) : (
-          <div className="h-48 md:h-64 bg-gradient-to-br from-primary/20 to-emerald-100" />
+          <div className="h-48 md:h-64 bg-gradient-to-br from-primary/20 to-primary/10" />
         )}
 
         {/* Circle Info Overlay */}

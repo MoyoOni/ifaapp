@@ -6,6 +6,7 @@ import { logger } from '@/shared/utils/logger';
 import { isDemoMode } from '@/shared/config/demo-mode';
 import { getCourseById } from './course-data';
 // import { useAuth } from '@/shared/hooks/use-auth';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface Lesson {
   id: string;
@@ -352,7 +353,7 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
               </button>
             )}
             <div>
-              <h1 className="text-2xl font-bold brand-font text-white">{course.title}</h1>
+              <h1 className="text-[1.5rem] font-[700] brand-font text-white">{course.title}</h1>
               <p className="text-sm text-muted">
                 By {course.instructor.yorubaName || course.instructor.name}
               </p>
@@ -362,7 +363,7 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
           {/* Progress */}
           <div className="text-right">
             <div className="text-sm text-muted mb-1">Progress</div>
-            <div className="text-2xl font-bold text-highlight">{Math.round(enrollment.progress)}%</div>
+            <div className="text-[1.5rem] font-[700] text-highlight">{Math.round(enrollment.progress)}%</div>
             <div className="w-32 bg-white/10 rounded-full h-2 mt-2">
               <div
                 className="bg-highlight h-2 rounded-full transition-all"
@@ -379,7 +380,7 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
               <>
                 {/* Lesson Title */}
                 <div>
-                  <h2 className="text-3xl font-bold mb-2">{currentLesson.title}</h2>
+                  <h2 className="text-[1.875rem] font-[700] mb-2">{currentLesson.title}</h2>
                   <div className="flex items-center gap-4 text-sm text-muted">
                     <span className="capitalize">{currentLesson.type.toLowerCase()}</span>
                     {currentLesson.duration && (
@@ -439,7 +440,7 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
                 {/* Resources */}
                 {currentLesson.resources && currentLesson.resources.length > 0 && (
                   <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-                    <h3 className="text-lg font-bold mb-4">Resources</h3>
+                    <h3 className="text-[1.125rem] font-[700] mb-4">Resources</h3>
                     <div className="space-y-2">
                       {currentLesson.resources.map((resource, index) => (
                         <a
@@ -461,7 +462,7 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
                   <button
                     onClick={handleCompleteLesson}
                     disabled={completeLessonMutation.isPending}
-                    className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-highlight text-foreground rounded-xl font-bold hover:bg-secondary transition-colors disabled:opacity-50"
+                    className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-highlight text-foreground rounded-xl font-[700] hover:bg-secondary transition-colors disabled:opacity-50"
                   >
                     {completeLessonMutation.isPending ? (
                       <>
@@ -487,7 +488,7 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
                       }
                     }}
                     disabled={course.lessons.findIndex((l) => l.id === currentLessonId) === 0}
-                    className="px-6 py-3 border border-white/20 text-white rounded-xl font-bold hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-6 py-3 border border-white/20 text-white rounded-xl font-[700] hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     ← Previous
                   </button>
@@ -503,7 +504,7 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
                       course.lessons.findIndex((l) => l.id === currentLessonId) ===
                       course.lessons.length - 1
                     }
-                    className="px-6 py-3 border border-white/20 text-white rounded-xl font-bold hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-6 py-3 border border-white/20 text-white rounded-xl font-[700] hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Next →
                   </button>

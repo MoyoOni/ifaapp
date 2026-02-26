@@ -26,7 +26,12 @@
       "Bash(# Final check: verify appointments/booking-flow and appointments/booking-confirmation orphan status grep -rn \"\"appointments/booking-flow\\\\|appointments/booking-confirmation\"\" \"\"C:/Users/Test/ifa_app/frontend/src/\"\" --include=\"\"*.tsx\"\" --include=\"\"*.ts\"\")",
       "Bash(# Is appointments/booking-flow itself imported anywhere outside its own directory? grep -rn \"\"booking-flow\"\" \"\"C:/Users/Test/ifa_app/frontend/src/\"\" --include=\"\"*.tsx\"\" --include=\"\"*.ts\"\")",
       "Bash(# Check if client-hub/client-dashboard-view.tsx is used by checking for client-dashboard-view specifically in non-test files grep -rn \"\"client-dashboard-view\\\\|ClientDashboardView\"\" \"\"C:/Users/Test/ifa_app/frontend/src/\"\" --include=\"\"*.tsx\"\" --include=\"\"*.ts\"\")",
-      "Bash(# Check if features/appointments/booking-flow.tsx is itself orphaned \\(nothing imports it\\) grep -rn \"\"from.*appointments/booking\"\" \"\"C:/Users/Test/ifa_app/frontend/src/\"\" --include=\"\"*.tsx\"\" --include=\"\"*.ts\"\")"
+      "Bash(# Check if features/appointments/booking-flow.tsx is itself orphaned \\(nothing imports it\\) grep -rn \"\"from.*appointments/booking\"\" \"\"C:/Users/Test/ifa_app/frontend/src/\"\" --include=\"\"*.tsx\"\" --include=\"\"*.ts\"\")",
+      "Bash(npx eslint src/shared/utils/seeded-random.ts --no-error-on-unmatched-pattern)",
+      "Bash(npx eslint src/shared/utils/seeded-random.ts)",
+      "Bash(npx eslint --config .eslintrc.cjs src/shared/utils/seeded-random.ts)",
+      "Bash(npx eslint --version)",
+      "Bash(npx --package eslint@latest eslint --version)"
     ]
   }
 }

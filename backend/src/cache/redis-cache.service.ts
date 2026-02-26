@@ -93,19 +93,44 @@ export class RedisCacheService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Get value from cache
+   * Get value from cache.
+   * Returns null on miss or error — callers should fall back to DB.
    */
   async get<T>(key: string): Promise<T | null> {
-    // Redis not available - return null to trigger database fetch
-    return null;
+    if (!this.isAvailable()) {
+      return null;
+    }
+
+    try {
+      const value = await this.client!.get(key);
+      return value === null ? null : (JSON.parse(value) as T);
+    } catch (error) {
+      this.logger.warn(`Redis unavailable for key ${key}, falling back to DB`);
+      return null;
+    }
   }
 
   /**
-   * Set value in cache with optional TTL
+   * Set value in cache with optional TTL.
+   * Returns false on error — does not throw.
    */
   async set<T>(key: string, value: T, ttlSeconds?: number): Promise<boolean> {
-    // Redis not available - return false
-    return false;
+    if (!this.isAvailable()) {
+      return false;
+    }
+
+    try {
+      const stringValue = JSON.stringify(value);
+      if (ttlSeconds) {
+        await this.client!.setEx(key, ttlSeconds, stringValue);
+      } else {
+        await this.client!.set(key, stringValue);
+      }
+      return true;
+    } catch (error) {
+      this.logger.warn(`Redis set failed for key ${key}, skipping cache`);
+      return false;
+    }
   }
 
   /**

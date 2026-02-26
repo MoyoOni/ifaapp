@@ -28,7 +28,7 @@ model User {
   interests                 String[]                 @default([])
   verified                  Boolean                  @default(false)
   hasOnboarded              Boolean                  @default(false)
-  adminSubRole              String?                  // FINANCE, MODERATOR, COMPLIANCE, SUPPORT, SUPER
+  adminSubRole              String? // FINANCE, MODERATOR, COMPLIANCE, SUPPORT, SUPER
   templeId                  String?
   createdAt                 DateTime                 @default(now())
   updatedAt                 DateTime                 @updatedAt
@@ -67,6 +67,7 @@ model User {
   notifications             Notification[]           @relation("NotificationRecipient")
   ordersPlaced              Order[]                  @relation("OrderCustomer")
   payments                  Payment[]
+  auditLogs                 AuditLog[]               @relation("UserAuditLogs")
   postAcknowledgments       PostAcknowledgment[]     @relation("PostAcknowledgments")
   productReviews            ProductReview[]          @relation("ReviewCustomer")
   socialLinks               SocialLink[]
@@ -1257,7 +1258,7 @@ enum VoteStatus {
 }
 
 model AuditLog {
-  id             String    @id @default(uuid())
+  id             String   @id @default(uuid())
   userId         String
   action         String
   resourceType   String
@@ -1267,9 +1268,9 @@ model AuditLog {
   ipAddress      String?
   userAgent      String?
   metadata       Json?
-  createdAt      DateTime  @default(now())
+  createdAt      DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation("UserAuditLogs", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([resourceType, resourceId])

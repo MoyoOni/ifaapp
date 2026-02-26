@@ -4,13 +4,14 @@ import { MarketplaceService } from './marketplace.service';
 import { OrderNotificationService } from './order-notification.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuthModule } from '../auth/auth.module';
+import { SearchModule } from '../search/search.module';
 
 /**
  * Marketplace Module
  * Vendor verification, product listings, orders, and reviews
  */
 @Module({
-  imports: [PrismaModule, AuthModule],
+  imports: [PrismaModule, AuthModule, SearchModule],
   controllers: [MarketplaceController],
   providers: [MarketplaceService, OrderNotificationService],
   exports: [MarketplaceService],

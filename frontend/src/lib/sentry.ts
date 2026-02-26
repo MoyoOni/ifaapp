@@ -1,54 +1,85 @@
 import * as Sentry from '@sentry/react';
-import { isDemoMode } from '../shared/config/demo-mode';
-import { logger } from '../shared/utils/logger';
+import { Integrations } from '@sentry/tracing';
+import { BrowserTracing } from '@sentry/browser';
 
-export function initSentry() {
-    const dsn = import.meta.env.VITE_SENTRY_DSN;
-    const environment = import.meta.env.VITE_ENVIRONMENT || import.meta.env.MODE || 'development';
+// Initialize Sentry for error monitoring
+export const initSentry = () => {
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Sentry is disabled in development mode');
+    return;
+  }
 
-    if (dsn && environment !== 'development') {
-        Sentry.init({
-            dsn,
-            environment,
-            integrations: [
-                Sentry.browserTracingIntegration(),
-                Sentry.replayIntegration({
-                    maskAllText: true,
-                    blockAllMedia: true,
-                }),
-            ],
-            tracesSampleRate: environment === 'production' ? 0.1 : 1.0,
-            replaysSessionSampleRate: 0.1,
-            replaysOnErrorSampleRate: 1.0,
-            beforeSend(event) {
-                // Filter sensitive data
-                if (event.request) {
-                    delete event.request.cookies;
-                    if (event.request.headers) {
-                        delete event.request.headers.authorization;
-                    }
-                }
-                return event;
-            },
-        });
+  Sentry.init({
+    dsn: process.env.VITE_SENTRY_DSN || '',
+    integrations: [
+      new BrowserTracing({
+        // Set 'tracePropagationTargets' to control for which URLs distributed tracing should be enabled
+        tracePropagationTargets: [
+          /^https:\/\/your-website\.com/,
+          /^https:\/\/api\.your-website\.com/,
+          // Add your production URLs here
+        ],
+      }),
+    ],
+    // Performance Monitoring
+    tracesSampleRate: 0.5, // Capture 50% of transactions for performance monitoring
+    
+    // Session Replay - uncomment if you want to use this feature
+    /*
+    replaysSessionSampleRate: 0.1, // This sets the sample rate at 10% for session replay
+    replaysOnErrorSampleRate: 1.0, // If you're not already sampling the entire session, change the sample rate to 100% when sampling sessions where errors occur.
+    integrations: [
+      new Sentry.Replay({
+        maskAllText: false,
+        blockAllMedia: false,
+      }),
+    ],
+    */
+    
+    // Set environment based on NODE_ENV
+    environment: process.env.NODE_ENV || 'development',
+    
+    // Add release version if available
+    release: process.env.VITE_APP_VERSION || undefined,
+  });
 
-        // Set demo mode tag for error tracking (HC-203.3)
-        Sentry.setTag('demoMode', isDemoMode ? 'enabled' : 'disabled');
+  // Add global error handlers
+  window.addEventListener('error', (event) => {
+    Sentry.captureException(event.error);
+  });
 
-        logger.info(`Sentry initialized for ${environment}`);
-    } else {
-        logger.warn('Sentry disabled (no DSN or development mode)');
+  window.addEventListener('unhandledrejection', (event) => {
+    Sentry.captureException(event.reason);
+  });
+};
+
+// Function to capture a custom error
+export const captureError = (error: Error, extraContext?: Record<string, any>) => {
+  Sentry.withScope((scope) => {
+    if (extraContext) {
+      Object.keys(extraContext).forEach(key => {
+        scope.setExtra(key, extraContext[key]);
+      });
     }
-}
+    Sentry.captureException(error);
+  });
+};
 
-export function setUser(user: { id: string; email?: string; role?: string }) {
-    Sentry.setUser(user);
-}
+// Function to set user context
+export const setUserContext = (user: { id: string; email?: string; username?: string }) => {
+  Sentry.setUser({
+    id: user.id,
+    email: user.email,
+    username: user.username,
+  });
+};
 
-export function clearUser() {
-    Sentry.setUser(null);
-}
+// Function to clear user context
+export const clearUserContext = () => {
+  Sentry.setUser(null);
+};
 
-export function captureException(error: Error, context?: Record<string, any>) {
-    Sentry.captureException(error, { extra: context });
-}
+// Function to add breadcrumbs
+export const addBreadcrumb = (breadcrumb: Sentry.Breadcrumb) => {
+  Sentry.addBreadcrumb(breadcrumb);
+};

@@ -1,7 +1,9 @@
 import { Module, Global } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { Reflector } from '@nestjs/core';
 import { PrismaModule } from '@/prisma/prisma.module';
+import { UserModule } from '../modules/user/user.module';
 import { AuditService } from './services/audit.service';
 import { ImpersonationService } from './services/impersonation.service';
 import { PiiMaskingUtil } from './utils/pii-masking.util';
@@ -13,16 +15,18 @@ import { AdminSubRolesGuard } from './guards/admin-sub-roles.guard';
 @Module({
   imports: [
     JwtModule.registerAsync({
-      imports: [ConfigModule],
+      imports: [ConfigModule, UserModule],
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: configService.get<string>('JWT_EXPIRES_IN') || '1d' },
+        signOptions: { expiresIn: (configService.get<string>('JWT_EXPIRES_IN') || '1d') as any },
       }),
       inject: [ConfigService],
     }),
     PrismaModule,
+    UserModule,
   ],
   providers: [
+    Reflector,
     AuditService,
     ImpersonationService,
     PiiMaskingUtil,
@@ -31,6 +35,7 @@ import { AdminSubRolesGuard } from './guards/admin-sub-roles.guard';
     AdminSubRolesGuard,
   ],
   exports: [
+    Reflector,
     AuditService,
     ImpersonationService,
     PiiMaskingUtil,

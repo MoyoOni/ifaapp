@@ -31,6 +31,33 @@ services:
       timeout: 5s
       retries: 5
 
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: ilease-backend
+    working_dir: /app
+    volumes:
+      - ../backend:/app
+    ports:
+      - '3000:3000'
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://ilease:change-me-in-production@postgres:5432/ilease?schema=public
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev-secret-at-least-32-chars-xxxxxxxxxxxxxxxxxxxxx
+      JWT_REFRESH_SECRET: dev-refresh-secret-xxxxxxxxxxxxxxxxxxxxx
+      ENCRYPTION_KEY: dev-32-char-encryption-key-xxx
+      FRONTEND_URL: http://localhost:5173
+      ENABLE_VIRUS_SCAN: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: npm run dev
+
 volumes:
   postgres_data:
   redis_data:

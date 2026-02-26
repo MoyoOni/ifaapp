@@ -42,15 +42,12 @@ export class ImpersonationService {
 
     // Log the impersonation action
     await this.auditService.logAction({
-      adminId: adminUser.id,
+      userId: adminUser.id,
       action: 'IMPERSONATE_USER',
-      entityType: 'USER',
-      entityId: targetUserId,
-      reason,
-      payload: {
-        impersonatedUserId: targetUserId,
-        impersonation: true,
-      },
+      resourceType: 'USER',
+      resourceId: targetUserId,
+      previousValues: undefined,
+      newValues: { reason, impersonatedUserId: targetUserId, impersonation: true },
     });
 
     // Generate impersonation token

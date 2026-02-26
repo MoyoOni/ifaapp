@@ -1,6 +1,6 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { APP_GUARD, APP_INTERCEPTOR, APP_FILTER } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR, APP_FILTER, Reflector } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { validateEnv } from './config/env.validation';
 import { infrastructureConfig } from './shared/config/infrastructure.config';
@@ -44,11 +44,13 @@ import { HealthModule } from './health/health.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { QueueModule } from './common/queue/queue.module';
 // import { TestModule } from './test/test.module';
+import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 // import { SentryModule } from './sentry/sentry.module';
 // import { SentryExceptionFilter } from './common/filters/sentry-exception.filter';
 // import { SentryMiddleware } from './common/middleware/sentry.middleware';
 
-import { ScheduleModule } from '@nestjs/schedule';
+// import { ScheduleModule } from '@nestjs/schedule';
+import { DiscoveryModule } from '@nestjs/core';
 import { SharedModule } from './shared/shared.module';
 import { InfrastructureModule } from './shared/infrastructure.module';
 
@@ -59,7 +61,8 @@ import { InfrastructureModule } from './shared/infrastructure.module';
       validate: validateEnv,
       load: [infrastructureConfig],
     }),
-    ScheduleModule.forRoot(),
+    DiscoveryModule,
+    // ScheduleModule.forRoot(), // disabled until Reflector issue resolved
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
@@ -93,7 +96,7 @@ import { InfrastructureModule } from './shared/infrastructure.module';
     DemoModule,
     HealthModule,
     MetricsModule,
-    QueueModule,
+    // QueueModule, // disabled until BullMQ version mismatch is resolved
     SearchModule,
     DashboardModule,
     DatabaseModule,
@@ -104,6 +107,7 @@ import { InfrastructureModule } from './shared/infrastructure.module';
   ],
   controllers: [],
   providers: [
+    Reflector,
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
@@ -112,12 +116,10 @@ import { InfrastructureModule } from './shared/infrastructure.module';
       provide: APP_INTERCEPTOR,
       useClass: LoggingInterceptor,
     },
-    /*
     {
       provide: APP_FILTER,
-      useClass: SentryExceptionFilter,
+      useClass: GlobalExceptionFilter,
     },
-    */
   ],
 })
 export class AppModule implements NestModule {

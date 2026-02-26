@@ -111,103 +111,93 @@ const PractitionerDashboard: React.FC<PractitionerDashboardProps> = ({ userId, i
             case 'overview':
             default:
                 return (
-                    <>
-                        {/* Stats Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm flex items-start justify-between">
-                                <div>
-                                    <p className="text-stone-600 text-sm font-bold uppercase tracking-wider">Active Seekers</p>
-                                    <h3 className="text-3xl font-bold text-stone-900 mt-1">{stats.totalClients}</h3>
-                                </div>
-                                <div className="bg-blue-100 p-3 rounded-xl text-blue-700">
-                                    <Users size={24} />
-                                </div>
-                            </div>
-
-                            <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm flex items-start justify-between">
-                                <div>
-                                    <p className="text-stone-600 text-sm font-bold uppercase tracking-wider">Upcoming Sessions</p>
-                                    <h3 className="text-3xl font-bold text-stone-900 mt-1">{stats.upcomingSessions}</h3>
-                                </div>
-                                <div className="bg-purple-100 p-3 rounded-xl text-purple-700">
-                                    <Calendar size={24} />
-                                </div>
-                            </div>
-
-                            <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm flex items-start justify-between">
-                                <div>
-                                    <p className="text-stone-600 text-sm font-bold uppercase tracking-wider">Pending Requests</p>
-                                    <h3 className="text-3xl font-bold text-stone-900 mt-1">{stats.pendingRequests}</h3>
-                                </div>
-                                <div className="bg-orange-100 p-3 rounded-xl text-orange-700">
-                                    <Bell size={24} />
-                                </div>
-                            </div>
-
-                            <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm flex items-start justify-between">
-                                <div>
-                                    <p className="text-stone-600 text-sm font-bold uppercase tracking-wider">Earnings (Mo)</p>
-                                    <h3 className="text-3xl font-bold text-stone-900 mt-1">{stats.monthlyEarnings}</h3>
-                                </div>
-                                <div className="bg-green-100 p-3 rounded-xl text-green-700">
-                                    <DollarSign size={24} />
-                                </div>
-                            </div>
+                  <div className="p-6 max-w-7xl mx-auto">
+                    <div className="mb-8">
+                      <h1 className="text-[1.5rem] font-[700] text-foreground">My Dashboard</h1>
+                      <p className="text-[0.875rem] text-muted-foreground">Manage your practice and appointments</p>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                      <div className="bg-gradient-to-r from-primary to-secondary rounded-2xl p-6 text-white">
+                        <h3 className="text-[1rem] font-[500] opacity-80">Total Clients</h3>
+                        <p className="text-[2rem] font-[700]">{stats.totalClients}</p>
+                      </div>
+                      <div className="bg-card border border-input rounded-2xl p-6">
+                        <h3 className="text-[1rem] font-[500] text-muted-foreground">Pending Sessions</h3>
+                        <p className="text-[2rem] font-[700] text-foreground">{stats.pendingSessions}</p>
+                      </div>
+                      <div className="bg-card border border-input rounded-2xl p-6">
+                        <h3 className="text-[1rem] font-[500] text-muted-foreground">Revenue (This Month)</h3>
+                        <p className="text-[2rem] font-[700] text-foreground">₦{stats.monthlyRevenue.toLocaleString()}</p>
+                      </div>
+                      <div className="bg-card border border-input rounded-2xl p-6">
+                        <h3 className="text-[1rem] font-[500] text-muted-foreground">Avg. Response Time</h3>
+                        <p className="text-[2rem] font-[700] text-foreground">{stats.avgResponseTime}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                      <div className="bg-card border border-input rounded-2xl p-6">
+                        <div className="flex justify-between items-center mb-6">
+                          <h2 className="text-[1.25rem] font-[700] text-foreground">Recent Appointments</h2>
+                          <Button variant="outline" size="sm">View All</Button>
                         </div>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                            {/* Main Column: Client List */}
-                            <div className="lg:col-span-2 space-y-6">
-                                <ClientList
-                                    babalawoId={resolvedUserId}
-                                    onSelectClient={(id) => navigate(`/profile/${id}`)}
-                                    onMessageClient={(id) => navigate(`/messages/${id}`)}
-                                />
-                            </div>
-
-                            {/* Sidebar Column: Schedule & Tasks */}
-                            <div className="space-y-6">
-                                {/* Upcoming Schedule */}
-                                <div className="bg-white rounded-2xl p-6 border border-stone-200 shadow-sm">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h3 className="font-bold text-xl text-stone-900">Today's Schedule</h3>
-                                        <button onClick={() => navigate('/practitioner/consultations')} className="text-xs font-bold text-highlight hover:underline">View All</button>
-                                    </div>
-
-                                    <div className="space-y-3">
-                                        {upcomingAppointments.map(app => (
-                                            <div key={app.id} className="flex items-start gap-4 p-3 rounded-xl hover:bg-stone-50 transition-colors border border-transparent hover:border-stone-200">
-                                                <div className="flex flex-col items-center min-w-[60px]">
-                                                    <span className="text-xs font-bold text-stone-500 uppercase">{app.date}</span>
-                                                    <span className="text-stone-900 font-bold">{app.time}</span>
-                                                </div>
-                                                <div className="w-1 h-10 bg-highlight/20 rounded-full"></div>
-                                                <div>
-                                                    <h4 className="font-bold text-stone-900 text-sm">{app.clientName}</h4>
-                                                    <p className="text-xs text-stone-600">{app.type}</p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                        {upcomingAppointments.length === 0 && (
-                                            <p className="text-stone-600 text-sm text-center py-4">No appointments today.</p>
-                                        )}
-                                    </div>
+                        
+                        {recentAppointments.length > 0 ? (
+                          <div className="space-y-4">
+                            {recentAppointments.map(appointment => (
+                              <div key={appointment.id} className="flex items-center justify-between p-4 border border-input rounded-xl hover:bg-muted/50 transition-colors">
+                                <div>
+                                  <h3 className="text-[1rem] font-[700] text-foreground">{appointment.clientName}</h3>
+                                  <p className="text-[0.875rem] text-muted-foreground">{appointment.serviceType}</p>
                                 </div>
-
-                                {/* Quick Actions Card */}
-                                <div className="bg-gradient-to-br from-foreground to-stone-900 rounded-2xl p-6 text-white relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-
-                                    <h3 className="font-bold text-xl mb-2 relative z-10">Broadcast Message</h3>
-                                    <p className="text-sm text-stone-300 mb-6 relative z-10">Send an update or teaching to all your seekers at once.</p>
-
-                                    <button className="w-full py-3 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl font-bold transition-all flex items-center justify-center gap-2 relative z-10 text-sm">
-                                        <MessageSquare size={16} /> Compose Broadcast
-                                    </button>
+                                <div className="text-right">
+                                  <p className="text-[0.875rem] font-[500] text-foreground">{new Date(appointment.time).toLocaleDateString()}</p>
+                                  <p className="text-[0.875rem] text-muted-foreground">{new Date(appointment.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                                 </div>
-                            </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8">
+                            <Calendar className="w-12 h-12 text-muted mx-auto mb-3" />
+                            <p className="text-[0.875rem] text-muted-foreground">No recent appointments</p>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="bg-card border border-input rounded-2xl p-6">
+                        <h2 className="text-[1.25rem] font-[700] text-foreground mb-6">Quick Actions</h2>
+                        
+                        <div className="space-y-4">
+                          <Button className="w-full justify-start" asChild>
+                            <Link to="/babalawo/schedule">
+                              <Calendar className="w-4 h-4 mr-2" />
+                              Manage Schedule
+                            </Link>
+                          </Button>
+                          <Button className="w-full justify-start" asChild>
+                            <Link to="/babalawo/clients">
+                              <Users className="w-4 h-4 mr-2" />
+                              View Clients
+                            </Link>
+                          </Button>
+                          <Button className="w-full justify-start" asChild>
+                            <Link to="/babalawo/analytics">
+                              <BarChart3 className="w-4 h-4 mr-2" />
+                              View Analytics
+                            </Link>
+                          </Button>
+                          <Button className="w-full justify-start" asChild>
+                            <Link to="/babalawo/profile">
+                              <User className="w-4 h-4 mr-2" />
+                              Edit Profile
+                            </Link>
+                          </Button>
                         </div>
-                    </>
+                      </div>
+                    </div>
+                  </div>
                 );
         }
     };

@@ -6,6 +6,7 @@ import api from '@/lib/api';
 import { DEMO_TEMPLES } from '@/demo';
 import { logger } from '@/shared/utils/logger';
 import { isDemoMode } from '@/shared/config/demo-mode';
+import { TempleDirectorySkeleton } from '@/shared/components/skeleton';
 
 interface TempleCardProps {
   temple: Temple;
@@ -234,11 +235,7 @@ const TempleDirectory: React.FC<TempleDirectoryProps> = ({ onSelectTemple }) => 
 
       {/* 3. Results Grid */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3, 4, 5, 6].map(i => (
-            <div key={i} className="h-80 rounded-2xl bg-emerald-100 animate-pulse"></div>
-          ))}
-        </div>
+        <TempleDirectorySkeleton />
       ) : filteredTemples.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 bg-emerald-50 rounded-3xl border border-emerald-100 text-center p-6">
           <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mb-6">

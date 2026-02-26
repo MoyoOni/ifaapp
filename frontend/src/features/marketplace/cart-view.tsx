@@ -4,6 +4,7 @@ import { ShoppingCart, Trash2, Plus, Minus, ArrowLeft, ArrowRight } from 'lucide
 import { useCart } from '@/shared/contexts/cart-context';
 // import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
+import { useToast } from '@/components/common/ToastProvider';
 
 interface CartViewProps {
   onBack?: () => void;
@@ -16,18 +17,20 @@ interface CartViewProps {
  */
 const CartView: React.FC<CartViewProps> = ({ onBack, onCheckout }) => {
   const { user } = useAuth();
-  const { items, removeItem, updateQuantity, totalItems, totalAmount, currency } = useCart();
+  const { items: cartItems, removeItem, updateQuantity, totalItems, totalAmount, currency } = useCart();
   // const queryClient = useQueryClient();
+
+  const { showToast } = useToast();
 
   const handleCheckout = () => {
     if (!user) {
-      alert('Please log in to checkout');
-      return;
+      showToast('Please log in to checkout', 'info');
+      return null;
     }
 
-    if (items.length === 0) {
-      alert('Your cart is empty');
-      return;
+    if (cartItems.length === 0) {
+      showToast('Your cart is empty', 'info');
+      return null;
     }
 
     // Navigate to checkout flow
@@ -36,7 +39,7 @@ const CartView: React.FC<CartViewProps> = ({ onBack, onCheckout }) => {
     }
   };
 
-  if (items.length === 0) {
+  if (cartItems.length === 0) {
     return (
       <div className="min-h-screen bg-stone-50 text-stone-800 p-6 flex items-center justify-center">
         <div className="max-w-md w-full text-center">
@@ -84,7 +87,7 @@ const CartView: React.FC<CartViewProps> = ({ onBack, onCheckout }) => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Cart Items */}
           <div className="lg:col-span-2 space-y-4">
-            {items.map((item) => (
+            {cartItems.map((item) => (
               <div
                 key={item.productId}
                 className="bg-white rounded-2xl p-6 border border-stone-100 shadow-sm flex flex-col sm:flex-row items-start gap-6 relative overflow-hidden group"

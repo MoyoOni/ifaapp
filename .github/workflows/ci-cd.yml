@@ -1,0 +1,198 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  NODE_VERSION: '18.x'
+
+jobs:
+  test-backend:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x]
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:6-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          npm ci
+
+      - name: Run linters
+        run: |
+          cd backend
+          npm run lint
+
+      - name: Run tests
+        run: |
+          cd backend
+          npm run test:run
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test_secret
+          SMTP_HOST: smtp.test.com
+          SMTP_PORT: 587
+          SMTP_USER: test@test.com
+          SMTP_PASS: testpass
+          FRONTEND_URL: http://localhost:3000
+          SUPPORT_EMAIL: support@test.com
+
+  test-frontend:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Run linters
+        run: |
+          cd frontend
+          npm run lint
+
+      - name: Run tests
+        run: |
+          cd frontend
+          npm run test:run
+
+      - name: Type checking
+        run: |
+          cd frontend
+          npx tsc --noEmit
+
+  build-and-deploy:
+    needs: [test-backend, test-frontend]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          npm ci --only=production
+          cd ../frontend
+          npm ci --only=production
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm run build
+        env:
+          VITE_REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
+          VITE_SENTRY_DSN: ${{ secrets.SENTRY_DSN_FRONTEND }}
+          VITE_APP_VERSION: ${{ github.sha }}
+
+      - name: Build backend
+        run: |
+          cd backend
+          npm run build
+        env:
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN_BACKEND }}
+
+      - name: Deploy to production
+        run: |
+          echo "Deploying to production..."
+          # Here you would typically deploy to your hosting platform
+          # For example, AWS, GCP, Azure, Vercel, Netlify, etc.
+          # aws s3 sync dist/ s3://${{ secrets.PROD_S3_BUCKET }} --delete
+          # gcloud app deploy
+          # docker build -t app:latest .
+          # docker push gcr.io/project-id/app:latest
+          # kubectl set image deployment/app app=gcr.io/project-id/app:latest
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          GOOGLE_CLOUD_PROJECT_ID: ${{ secrets.GOOGLE_CLOUD_PROJECT_ID }}
+          GOOGLE_APPLICATION_CREDENTIALS_DATA: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_DATA }}
+
+      - name: Notify Slack
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          channel: '#deployments'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        if: always()
+
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Run npm audit
+        run: |
+          cd backend
+          npm audit --audit-level high
+          cd ../frontend
+          npm audit --audit-level high
+
+      - name: Run dependency check
+        uses: actions/checkout@v3
+        with:
+          repository: 'github/super-linter'
+          ref: 'v4'
+        run: |
+          docker run -e RUN_LOCAL=true -e VALIDATE_JAVASCRIPT_ES=true -e VALIDATE_TYPESCRIPT_ES=true -e VALIDATE_JSON=true -e VALIDATE_YAML=true -v ${{ github.workspace }}/backend:/tmp/lint -v ${{ github.workspace }}/frontend:/tmp/lint ghcr.io/github/super-linter:slim-v4
+
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+        with:
+          languages: javascript, typescript

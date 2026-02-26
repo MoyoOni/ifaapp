@@ -7,7 +7,6 @@ import {
     LogOut,
     Wallet,
     Bell,
-    Search,
     ChevronDown,
     MessageSquare,
     ChevronLeft,
@@ -26,6 +25,8 @@ import { getNavItemsForRole, getRoleDisplayName, getRoleBadgeColor, type NavItem
 import { logger } from '@/shared/utils/logger';
 import { useDailyOdu } from '@/shared/hooks/use-daily-odu';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { ProfileMenuDropdown } from './profile-menu-dropdown';
+import { User as UserType } from '@common';
 
 interface SidebarLayoutProps {
     children: React.ReactNode;
@@ -257,62 +258,13 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                             {/* Profile Dropdown Menu */}
                             <AnimatePresence>
                                 {isProfileMenuOpen && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                        transition={{ duration: 0.2 }}
-                                        className="absolute bottom-full left-0 w-full mb-2 bg-popover rounded-2xl shadow-elevation-2 border border-border overflow-hidden p-2 z-[60]"
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        <div className="space-y-1">
-                                            <button
-                                                onClick={() => handleNavClick('/profile')}
-                                                className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-secondary/10 text-sm font-medium text-foreground transition-colors"
-                                            >
-                                                <User size={16} className="text-highlight" />
-                                                My Profile
-                                            </button>
-                                            <button
-                                                onClick={() => handleNavClick('/messages')}
-                                                className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-secondary/10 text-sm font-medium text-foreground transition-colors"
-                                            >
-                                                <MessageSquare size={16} className="text-primary" />
-                                                Messages
-                                                <span className="ml-auto bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded-full font-bold">3</span>
-                                            </button>
-                                            <button
-                                                onClick={() => handleNavClick('/wallet')}
-                                                className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-secondary/10 text-sm font-medium text-foreground transition-colors"
-                                            >
-                                                <Wallet size={16} className="text-secondary" />
-                                                Wallet
-                                            </button>
-                                            <div className="h-px bg-border my-1" />
-                                            <button
-                                                onClick={() => handleNavClick('/settings')}
-                                                className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-secondary/10 text-sm font-medium text-foreground transition-colors"
-                                            >
-                                                <Settings size={16} className="text-muted-foreground" />
-                                                Settings
-                                            </button>
-                                            <button
-                                                onClick={() => handleNavClick('/help')}
-                                                className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-secondary/10 text-sm font-medium text-foreground transition-colors"
-                                            >
-                                                <HelpCircle size={16} className="text-muted-foreground" />
-                                                Help & Support
-                                            </button>
-                                            <div className="h-px bg-border my-1" />
-                                            <button
-                                                onClick={logout}
-                                                className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-error/10 text-error transition-colors"
-                                            >
-                                                <LogOut size={16} />
-                                                Log Out
-                                            </button>
-                                        </div>
-                                    </motion.div>
+                                    <ProfileMenuDropdown
+                                        user={user as unknown as UserType}
+                                        onNavigate={handleNavClick}
+                                        onLogout={logout}
+                                        roleDisplayName={roleDisplayName}
+                                        roleBadgeColor={roleBadgeColor}
+                                    />
                                 )}
                             </AnimatePresence>
                         </div>
@@ -333,66 +285,15 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                                 </div>
                             </div>
                             {isProfileMenuOpen && (
-                                <motion.div
-                                    initial={{ opacity: 0, scale: 0.9 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.9 }}
-                                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-popover rounded-2xl shadow-elevation-2 border border-border overflow-hidden p-2 z-[60]"
-                                    onClick={(e) => e.stopPropagation()}
-                                >
-                                    <div className="space-y-1">
-                                        <div className="px-3 py-2 border-b border-border">
-                                            <p className="text-sm font-bold text-foreground">{user?.name || 'User'}</p>
-                                            <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide inline-block mt-1", roleBadgeColor)}>
-                                                {roleDisplayName}
-                                            </span>
-                                        </div>
-                                        <button
-                                            onClick={() => handleNavClick('/profile')}
-                                            className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-secondary/10 text-sm font-medium text-foreground transition-colors"
-                                        >
-                                            <User size={16} className="text-highlight" />
-                                            My Profile
-                                        </button>
-                                        <button
-                                            onClick={() => handleNavClick('/messages')}
-                                            className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-secondary/10 text-sm font-medium text-foreground transition-colors"
-                                        >
-                                            <MessageSquare size={16} className="text-primary" />
-                                            Messages
-                                        </button>
-                                        <button
-                                            onClick={() => handleNavClick('/wallet')}
-                                            className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-secondary/10 text-sm font-medium text-foreground transition-colors"
-                                        >
-                                            <Wallet size={16} className="text-secondary" />
-                                            Wallet
-                                        </button>
-                                        <div className="h-px bg-border my-1" />
-                                        <button
-                                            onClick={() => handleNavClick('/settings')}
-                                            className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-secondary/10 text-sm font-medium text-foreground transition-colors"
-                                        >
-                                            <Settings size={16} className="text-muted-foreground" />
-                                            Settings
-                                        </button>
-                                        <button
-                                            onClick={() => handleNavClick('/help')}
-                                            className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-secondary/10 text-sm font-medium text-foreground transition-colors"
-                                        >
-                                            <HelpCircle size={16} className="text-muted-foreground" />
-                                            Help & Support
-                                        </button>
-                                        <div className="h-px bg-border my-1" />
-                                        <button
-                                            onClick={logout}
-                                            className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-error/10 text-error transition-colors"
-                                        >
-                                            <LogOut size={16} />
-                                            Log Out
-                                        </button>
-                                    </div>
-                                </motion.div>
+                                <ProfileMenuDropdown
+                                    user={user as unknown as UserType}
+                                    onNavigate={handleNavClick}
+                                    onLogout={logout}
+                                    roleDisplayName={roleDisplayName}
+                                    roleBadgeColor={roleBadgeColor}
+                                    showUserInfo
+                                    className="w-56 left-1/2 -translate-x-1/2"
+                                />
                             )}
                         </button>
                     </div>
@@ -559,14 +460,6 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
 
                     {/* Actions */}
                     <div className="flex items-center gap-3">
-                        <div className="relative group">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-hover:text-secondary transition-colors pointer-events-none" size={18} />
-                            <input
-                                type="text"
-                                placeholder="Search..."
-                                className="pl-10 pr-4 py-2.5 rounded-full bg-background border border-border focus:bg-card focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all text-sm w-64 outline-none placeholder:text-muted-foreground"
-                            />
-                        </div>
                         <div className="relative">
                             <button
                                 type="button"

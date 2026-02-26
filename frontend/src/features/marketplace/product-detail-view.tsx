@@ -7,6 +7,7 @@ import { useAuth } from '@/shared/hooks/use-auth';
 import { logger } from '@/shared/utils/logger';
 import { useCart } from '@/shared/contexts/cart-context';
 import { DEMO_PRODUCTS, DEMO_USERS } from '@/demo';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface Product {
   id: string;
@@ -159,7 +160,7 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ productId, onBack
   if (productLoading) {
     return (
       <div className="min-h-screen bg-background text-white p-6 flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-highlight border-t-transparent rounded-full animate-spin"></div>
+        <LoadingSpinner size="lg" variant="highlight" />
       </div>
     );
   }

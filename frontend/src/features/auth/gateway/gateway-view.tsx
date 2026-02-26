@@ -70,8 +70,8 @@ const GatewayView: React.FC<GatewayViewProps> = ({ onRoleSelected, onAuthenticat
     <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
       {/* Dynamic Background Patterns */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-bl from-highlight/5 via-amber-100/10 to-transparent rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2"></div>
-        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-gradient-to-tr from-stone-200/20 to-transparent rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2"></div>
+        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-bl from-highlight/5 via-accent/10 to-transparent rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2"></div>
+        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-gradient-to-tr from-muted/20 to-transparent rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2"></div>
       </div>
 
       <div className="w-full max-w-5xl relative z-10 flex flex-col items-center">
@@ -84,7 +84,7 @@ const GatewayView: React.FC<GatewayViewProps> = ({ onRoleSelected, onAuthenticat
 
           <div className="space-y-4">
             <h1 className="text-6xl md:text-8xl font-bold brand-font text-stone-900 tracking-tight leading-none">
-              Ìlú <span className="text-transparent bg-clip-text bg-gradient-to-r from-highlight to-yellow-600 italic">Àṣẹ</span>
+              Ìlú <span className="text-transparent bg-clip-text bg-gradient-to-r from-highlight to-accent italic">Àṣẹ</span>
             </h1>
             <p className="text-stone-500 text-xl font-medium max-w-lg mx-auto leading-relaxed">
               The digital heritage sanctuary for ancient wisdom. <br />

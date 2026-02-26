@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as admin from 'firebase-admin';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 
 export enum Platform {
@@ -29,7 +31,8 @@ export class PushNotificationService {
 
   constructor(
     private configService: ConfigService,
-    private prisma: PrismaService
+    private prisma: PrismaService,
+    @InjectQueue('notifications') private readonly notificationsQueue: Queue
   ) {
     this.initializeFirebase();
   }
@@ -125,9 +128,17 @@ export class PushNotificationService {
   }
 
   /**
-   * Send push notification to a specific user
+   * Queue push notification to a specific user
    */
   async sendToUser(userId: string, payload: PushNotificationPayload): Promise<void> {
+    this.logger.log(`Queueing push notification for user ${userId}`);
+    await this.notificationsQueue.add('sendPush', { userId, payload });
+  }
+
+  /**
+   * Actual execution of push sending (called by worker)
+   */
+  async executeSendPush(userId: string, payload: PushNotificationPayload): Promise<void> {
     try {
       // Get active device tokens for user
       const deviceTokens = await this.prisma.deviceToken.findMany({

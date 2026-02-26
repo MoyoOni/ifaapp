@@ -171,16 +171,21 @@ async function main() {
             }
         });
 
-        // Create Certificate
-        await prisma.certificate.create({
-            data: {
-                userId: user.id,
-                title: `Certified ${b.culturalLevel}`,
-                issuer: 'Council of Elders',
-                date: '2020-01-01',
-                tier: 'MASTER'
-            }
+        // Create Certificate (idempotent — skip if one already exists for this user)
+        const existingCert = await prisma.certificate.findFirst({
+            where: { userId: user.id },
         });
+        if (!existingCert) {
+            await prisma.certificate.create({
+                data: {
+                    userId: user.id,
+                    title: `Certified ${b.culturalLevel}`,
+                    issuer: 'Council of Elders',
+                    date: '2020-01-01',
+                    tier: 'MASTER'
+                }
+            });
+        }
     }
 
     // --- TEMPLES ---

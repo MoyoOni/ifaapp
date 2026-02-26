@@ -5,6 +5,7 @@ import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { logger } from '@/shared/utils/logger';
 import { isDemoMode } from '@/shared/config/demo-mode';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface Enrollment {
   id: string;
@@ -110,163 +111,74 @@ const MyCoursesView: React.FC<MyCoursesViewProps> = ({ onSelectEnrollment }) => 
   if (enrollmentsLoading) {
     return (
       <div className="min-h-screen bg-background text-white p-6 flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-highlight border-t-transparent rounded-full animate-spin"></div>
+        <LoadingSpinner size="lg" variant="primary" />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-background text-white p-6">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
-        <div>
-          <h1 className="text-4xl font-bold brand-font text-white mb-2">My Courses</h1>
-          <p className="text-muted">Your learning journey and progress</p>
+      <div className="max-w-6xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-[1.5rem] font-[700] text-foreground">My Courses</h1>
+          <p className="text-[0.875rem] text-muted-foreground">Track your learning progress</p>
         </div>
-
-        {/* Active Courses */}
-        {activeEnrollments.length > 0 && (
-          <div>
-            <h2 className="text-2xl font-bold mb-6">In Progress ({activeEnrollments.length})</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {activeEnrollments.map((enrollment) => (
-                <div
-                  key={enrollment.id}
-                  onClick={() => {
-                    if (onSelectEnrollment) {
-                      onSelectEnrollment(enrollment.id);
-                    }
-                  }}
-                  className="bg-white/5 border border-white/10 rounded-xl overflow-hidden hover:border-highlight/50 transition-all cursor-pointer group"
-                >
-                  {/* Thumbnail */}
-                  <div className="relative h-48 bg-white/5 overflow-hidden">
-                    {enrollment.course.thumbnail ? (
-                      <img
-                        src={enrollment.course.thumbnail}
-                        alt={enrollment.course.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-muted">
-                        <BookOpen size={48} />
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-foreground via-transparent to-transparent"></div>
-                    <div className="absolute bottom-4 left-4 right-4">
-                      <div className="text-lg font-bold line-clamp-2 mb-2">{enrollment.course.title}</div>
-                      <div className="w-full bg-white/20 rounded-full h-2 mb-2">
-                        <div
-                          className="bg-highlight h-2 rounded-full transition-all"
-                          style={{ width: `${enrollment.progress}%` }}
-                        ></div>
-                      </div>
-                      <div className="text-xs text-white/80">{Math.round(enrollment.progress)}% Complete</div>
+        
+        {enrollments && enrollments.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {enrollments.map((enrollment) => (
+              <div 
+                key={enrollment.id} 
+                className="bg-card border border-input rounded-xl overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => navigate(`/academy/course/${enrollment.courseId}`)}
+              >
+                <div className="p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h2 className="text-[1.125rem] font-[700] text-foreground mb-1">{enrollment.course.title}</h2>
+                      <p className="text-[0.875rem] text-muted-foreground">{enrollment.course.instructor.name}</p>
+                    </div>
+                    <Badge 
+                      variant={enrollment.status === 'completed' ? 'success' : 'secondary'}
+                      className="text-[0.75rem] font-[700]"
+                    >
+                      {enrollment.status.charAt(0).toUpperCase() + enrollment.status.slice(1)}
+                    </Badge>
+                  </div>
+                  
+                  <div className="mb-4">
+                    <div className="flex justify-between text-[0.875rem] text-foreground mb-1">
+                      <span>Progress</span>
+                      <span>{Math.round(enrollment.progress)}%</span>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-2">
+                      <div 
+                        className="bg-primary h-2 rounded-full" 
+                        style={{ width: `${enrollment.progress}%` }}
+                      ></div>
                     </div>
                   </div>
-
-                  {/* Course Info */}
-                  <div className="p-4 space-y-3">
-                    <div className="flex items-center gap-2 text-sm text-muted">
-                      <GraduationCap size={14} />
-                      <span>{enrollment.course.instructor.yorubaName || enrollment.course.instructor.name}</span>
-                    </div>
-
-                    <div className="flex items-center gap-4 text-xs text-muted">
-                      {enrollment.course.duration && (
-                        <div className="flex items-center gap-1">
-                          <Clock size={12} />
-                          <span>{enrollment.course.duration} hrs</span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-1">
-                        <BookOpen size={12} />
-                        <span>{enrollment.course.lessonCount} lessons</span>
-                      </div>
-                    </div>
-
-                    <button className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-highlight text-foreground rounded-lg font-bold hover:bg-secondary transition-colors">
-                      <Play size={16} />
-                      Continue Learning
-                    </button>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-[0.875rem] text-muted-foreground">
+                      {enrollment.completedLessons} of {enrollment.totalLessons} lessons
+                    </span>
+                    <Button size="sm" variant="outline">
+                      {enrollment.status === 'completed' ? 'Review' : 'Continue'}
+                    </Button>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
-        )}
-
-        {/* Completed Courses */}
-        {completedEnrollments.length > 0 && (
-          <div>
-            <h2 className="text-2xl font-bold mb-6">Completed ({completedEnrollments.length})</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {completedEnrollments.map((enrollment) => (
-                <div
-                  key={enrollment.id}
-                  className="bg-white/5 border border-white/10 rounded-xl overflow-hidden"
-                >
-                  {/* Thumbnail */}
-                  <div className="relative h-48 bg-white/5 overflow-hidden">
-                    {enrollment.course.thumbnail ? (
-                      <img
-                        src={enrollment.course.thumbnail}
-                        alt={enrollment.course.title}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-muted">
-                        <BookOpen size={48} />
-                      </div>
-                    )}
-                    <div className="absolute top-2 right-2 bg-highlight text-foreground px-3 py-1 rounded text-xs font-bold flex items-center gap-1">
-                      <CheckCircle size={14} />
-                      Completed
-                    </div>
-                  </div>
-
-                  {/* Course Info */}
-                  <div className="p-4 space-y-3">
-                    <h3 className="font-bold text-lg line-clamp-2">{enrollment.course.title}</h3>
-                    <div className="flex items-center gap-2 text-sm text-muted">
-                      <GraduationCap size={14} />
-                      <span>{enrollment.course.instructor.yorubaName || enrollment.course.instructor.name}</span>
-                    </div>
-
-                    {enrollment.certificate && enrollment.course.certificateEnabled && (
-                      <a
-                        href={enrollment.certificate.certificateUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-highlight text-highlight rounded-lg font-bold hover:bg-highlight/10 transition-colors"
-                      >
-                        <CheckCircle size={16} />
-                        View Certificate
-                      </a>
-                    )}
-
-                    {onSelectEnrollment && (
-                      <button
-                        onClick={() => onSelectEnrollment(enrollment.id)}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-white/20 text-white rounded-lg font-bold hover:bg-white/10 transition-colors"
-                      >
-                        Review Course
-                        <ArrowRight size={16} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Empty State */}
-        {enrollments.length === 0 && (
-          <div className="text-center py-12 text-muted">
-            <BookOpen size={64} className="mx-auto mb-4 opacity-50" />
-            <p className="text-xl mb-2">You haven't enrolled in any courses yet</p>
-            <p className="text-sm">Browse the Academy to find courses that interest you</p>
+        ) : (
+          <div className="text-center py-12">
+            <BookOpen className="w-16 h-16 text-muted mx-auto mb-4" />
+            <h3 className="text-[1.25rem] font-[700] text-foreground mb-2">No courses enrolled</h3>
+            <p className="text-[0.875rem] text-muted-foreground mb-6">Start your learning journey by enrolling in a course</p>
+            <Button asChild>
+              <Link to="/academy">Browse Courses</Link>
+            </Button>
           </div>
         )}
       </div>

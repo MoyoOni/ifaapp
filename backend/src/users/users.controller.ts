@@ -23,6 +23,11 @@ export class UsersController {
     return this.usersService.findOne(id);
   }
 
+  @Get(':id/profile')
+  async getProfile(@Param('id') id: string) {
+    return this.usersService.findOne(id);
+  }
+
   @Patch(':id')
   async update(
     @Param('id') id: string,

@@ -84,16 +84,6 @@ const ClientConsultationsView: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'scheduled': return 'bg-blue-100 text-blue-800';
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'scheduled': return Clock;
@@ -116,223 +106,96 @@ const ClientConsultationsView: React.FC = () => {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-bold brand-font text-stone-900">
-            My Consultations
-          </h1>
-          <p className="text-stone-600 text-lg">
-            Manage your spiritual consultation appointments and history.
-          </p>
-        </div>
-        <button 
-          onClick={() => navigate('/babalawo')}
-          className="px-6 py-3 bg-highlight text-white font-bold rounded-xl shadow-lg hover:bg-yellow-600 transition-colors flex items-center gap-2"
-        >
-          <Search size={18} /> Book New Consultation
-        </button>
-      </div>
-
-      {/* Stats Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-xl text-blue-700">
-              <Clock size={20} />
-            </div>
-            <div>
-              <p className="text-stone-600 text-sm font-bold uppercase tracking-wider">Scheduled</p>
-              <h3 className="text-xl font-bold text-stone-900">
-                {consultations.filter(c => c.status === 'scheduled').length}
-              </h3>
-            </div>
-          </div>
+      <div className="p-6 max-w-4xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-[1.5rem] font-[700] text-foreground">My Consultations</h1>
+          <p className="text-[0.875rem] text-muted-foreground">Manage your scheduled sessions</p>
         </div>
         
-        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-100 rounded-xl text-green-700">
-              <CheckCircle size={20} />
-            </div>
-            <div>
-              <p className="text-stone-600 text-sm font-bold uppercase tracking-wider">Completed</p>
-              <h3 className="text-xl font-bold text-stone-900">
-                {consultations.filter(c => c.status === 'completed').length}
-              </h3>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-100 rounded-xl text-purple-700">
-              <Calendar size={20} />
-            </div>
-            <div>
-              <p className="text-stone-600 text-sm font-bold uppercase tracking-wider">This Month</p>
-              <h3 className="text-xl font-bold text-stone-900">
-                {consultations.filter(c => c.date.getMonth() === new Date().getMonth()).length}
-              </h3>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-orange-100 rounded-xl text-orange-700">
-              <User size={20} />
-            </div>
-            <div>
-              <p className="text-stone-600 text-sm font-bold uppercase tracking-wider">Total Spent</p>
-              <h3 className="text-xl font-bold text-stone-900">
-                {formatCurrency(consultations.filter(c => c.status === 'completed').reduce((sum, c) => sum + c.price, 0))}
-              </h3>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-400" size={20} />
-            <input
-              type="text"
-              placeholder="Search consultations..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-stone-200 rounded-xl focus:ring-2 focus:ring-highlight focus:border-transparent"
-            />
-          </div>
-          <div className="flex gap-2">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="px-3 py-2 border border-stone-200 rounded-xl focus:ring-2 focus:ring-highlight focus:border-transparent"
-            >
-              <option value="all">All Status</option>
-              <option value="scheduled">Scheduled</option>
-              <option value="completed">Completed</option>
-              <option value="pending">Pending</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Consultations List */}
-      <div className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-stone-100">
-          <h2 className="text-xl font-bold text-stone-900">Consultation History</h2>
-          <p className="text-stone-600 mt-1">{filteredConsultations.length} consultations found</p>
-        </div>
-        
-        <div className="divide-y divide-stone-100">
-          {filteredConsultations.length > 0 ? (
-            filteredConsultations.map((consultation) => {
-              const StatusIcon = getStatusIcon(consultation.status);
-              return (
-                <div key={consultation.id} className="p-6 hover:bg-stone-50 transition-colors">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 bg-stone-200 rounded-full flex items-center justify-center">
-                          <User className="text-stone-600" size={24} />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex flex-wrap items-center gap-2 mb-2">
-                            <h3 className="text-lg font-bold text-stone-900">{consultation.babalawoName}</h3>
-                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${getStatusColor(consultation.status)}`}>
-                              <StatusIcon size={12} className="inline mr-1" />
-                              {consultation.status.charAt(0).toUpperCase() + consultation.status.slice(1)}
-                            </span>
-                          </div>
-                          <p className="text-stone-600 mb-2">{consultation.serviceType}</p>
-                          {consultation.templeName && (
-                            <p className="text-stone-500 text-sm flex items-center gap-1">
-                              <MapPin size={14} /> {consultation.templeName}
-                            </p>
-                          )}
-                          {consultation.notes && (
-                            <p className="text-stone-500 text-sm mt-2">"{consultation.notes}"</p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex flex-col md:items-end gap-2">
-                      <div className="text-right">
-                        <p className="text-stone-900 font-bold">{formatCurrency(consultation.price)}</p>
-                        <p className="text-stone-600 text-sm">
-                          {consultation.date.toLocaleDateString('en-US', { 
-                            weekday: 'short', 
-                            month: 'short', 
-                            day: 'numeric' 
-                          })} at {consultation.time}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        {consultation.status === 'scheduled' && (
-                          <>
-                            <button className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors">
-                              Reschedule
-                            </button>
-                            <button className="px-3 py-1 bg-red-100 text-red-700 rounded-lg text-sm font-medium hover:bg-red-200 transition-colors">
-                              Cancel
-                            </button>
-                          </>
-                        )}
-                        {(consultation.status === 'completed' || consultation.status === 'scheduled') && (
-                          <button className="px-3 py-1 bg-stone-100 text-stone-700 rounded-lg text-sm font-medium hover:bg-stone-200 transition-colors flex items-center gap-1">
-                            <MessageCircle size={14} /> Message
-                          </button>
-                        )}
-                      </div>
-                    </div>
+        {consultations.length > 0 ? (
+          <div className="space-y-6">
+            {consultations.map(consultation => (
+              <div key={consultation.id} className="bg-card border border-input rounded-2xl p-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                  <div>
+                    <h2 className="text-[1.125rem] font-[700] text-foreground">{consultation.serviceType}</h2>
+                    <p className="text-[0.875rem] text-muted-foreground">{consultation.babalawo.name}</p>
+                  </div>
+                  <Badge 
+                    variant={
+                      consultation.status === 'confirmed' ? 'default' : 
+                      consultation.status === 'pending' ? 'secondary' : 
+                      consultation.status === 'cancelled' ? 'destructive' : 
+                      'outline'
+                    }
+                    className="text-[0.75rem] font-[700]"
+                  >
+                    {consultation.status.charAt(0).toUpperCase() + consultation.status.slice(1)}
+                  </Badge>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div>
+                    <p className="text-[0.875rem] text-muted-foreground">Date</p>
+                    <p className="text-[1rem] font-[500] text-foreground">{new Date(consultation.date).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-[0.875rem] text-muted-foreground">Time</p>
+                    <p className="text-[1rem] font-[500] text-foreground">{consultation.time}</p>
+                  </div>
+                  <div>
+                    <p className="text-[0.875rem] text-muted-foreground">Duration</p>
+                    <p className="text-[1rem] font-[500] text-foreground">{consultation.duration} mins</p>
                   </div>
                 </div>
-              );
-            })
-          ) : (
-            <div className="p-12 text-center">
-              <Calendar size={48} className="mx-auto text-stone-300 mb-4" />
-              <h3 className="text-lg font-bold text-stone-900 mb-2">No consultations found</h3>
-              <p className="text-stone-600">
-                {searchTerm || statusFilter !== 'all' 
-                  ? 'Try adjusting your filters' 
-                  : 'Book your first consultation to get started'}
-              </p>
-              {!searchTerm && statusFilter === 'all' && (
-                <button 
-                  onClick={() => navigate('/babalawo')}
-                  className="mt-4 px-4 py-2 bg-highlight text-white font-bold rounded-xl hover:bg-yellow-600 transition-colors"
-                >
-                  Find a Babalawo
-                </button>
-              )}
-            </div>
-          )}
-        </div>
+                
+                <div className="flex flex-wrap gap-3">
+                  <Button variant="outline" size="sm">
+                    View Details
+                  </Button>
+                  {consultation.status === 'confirmed' && (
+                    <>
+                      <Button variant="outline" size="sm">
+                        Reschedule
+                      </Button>
+                      <Button variant="destructive" size="sm">
+                        Cancel
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <Calendar className="w-16 h-16 text-muted mx-auto mb-4" />
+            <h3 className="text-[1.25rem] font-[700] text-foreground mb-2">No consultations scheduled</h3>
+            <p className="text-[0.875rem] text-muted-foreground mb-6">Your upcoming sessions will appear here</p>
+            <Button asChild>
+              <Link to="/babalawo/discovery">Find a Spiritual Guide</Link>
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Upcoming Reminder */}
       {consultations.filter(c => c.status === 'scheduled').length > 0 && (
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100">
+        <div className="bg-gradient-to-r from-muted to-muted/50 rounded-2xl p-6 border border-input">
           <div className="flex items-start gap-4">
-            <div className="p-2 bg-blue-100 rounded-xl text-blue-700">
+            <div className="p-2 bg-muted rounded-xl text-muted-foreground">
               <Clock size={24} />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-stone-900 mb-2">Upcoming Consultation</h3>
-              <p className="text-stone-600 mb-3">
+              <h3 className="text-lg font-bold text-foreground mb-2">Upcoming Consultation</h3>
+              <p className="text-muted-foreground mb-3">
                 You have {consultations.filter(c => c.status === 'scheduled').length} scheduled consultation(s) coming up soon.
               </p>
               <div className="space-y-2">
                 {consultations.filter(c => c.status === 'scheduled').slice(0, 2).map(consultation => (
                   <div key={consultation.id} className="flex items-center gap-3 text-sm">
-                    <span className="font-medium text-stone-900">{consultation.babalawoName}</span>
-                    <span className="text-stone-600">
+                    <span className="font-medium text-foreground">{consultation.babalawoName}</span>
+                    <span className="text-muted-foreground">
                       on {consultation.date.toLocaleDateString()} at {consultation.time}
                     </span>
                   </div>
