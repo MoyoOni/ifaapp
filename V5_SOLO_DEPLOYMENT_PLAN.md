@@ -11,20 +11,25 @@
 **Code:** ✅ DONE (0 errors, 9/9 critical tests, ready to deploy)  
 **Blocking Items:** (3 things)
 
-1. **No AWS account provisioned** (infrastructure)
-   - Status: ⏳ TBD
-   - Impact: Can't deploy code anywhere
-   - Fix: 30 min to create account, 2 hours to provision
+1. **AWS account provisioned** (infrastructure)
+   - Status: ✅ DONE (Feb 27) — waiting 24hrs for full EC2/RDS access
+   - Impact: ~~Can't deploy code anywhere~~
+   - Next: Provision EC2 + RDS + Redis when access unlocks
 
-2. **No Stripe test account** (payments)
-   - Status: ⏳ TBD
-   - Impact: Can't process any transactions (testing or live)
-   - Fix: 1 hour to create, 1 hour to integrate + test
+2. **Payment gateways configured** (payments)
+   - Status: ✅ DONE (Feb 27) — Paystack + Flutterwave test keys in .env
+   - Impact: ~~Can't process any transactions~~
+   - Note: Codebase uses Paystack (Nigeria) + Flutterwave (international), NOT Stripe
 
-3. **No staging/production servers** (operational)
-   - Status: ⏳ TBD
+3. **Sentry error tracking configured** (monitoring)
+   - Status: ✅ DONE (Feb 27) — Backend + frontend DSNs in .env
+   - Impact: Errors will be captured from day one
+
+4. **No staging/production servers** (operational)
+   - Status: ⏳ Waiting for AWS access (24hr hold)
    - Impact: Nowhere to test, nowhere to run live
    - Fix: 4-6 hours initial setup, then deploy
+   - Deployment scripts ready: `scripts/ec2-setup.sh`, `scripts/deploy.sh`
 
 **Everything else** (security audit, monitoring, support guide) can be done AFTER deployment starts running.
 
@@ -35,7 +40,7 @@
 ```
 PHASE 1: SETUP (Feb 27 - Mar 8, 7 days)
 ├─ Get AWS account + basic infra (2 days)
-├─ Get Stripe test account + integrate (2 days)
+├─ Payment keys already configured ✅ (0 days)
 ├─ Deploy code to staging (1 day)
 └─ Test thoroughly (2 days)
 
@@ -47,7 +52,7 @@ PHASE 2: STAGING VALIDATION (Mar 8 - Mar 15, 7 days)
 
 PHASE 3: PRODUCTION PREP (Mar 15 - Mar 25, 10 days)
 ├─ Get production infrastructure ready (3 days)
-├─ Get Stripe LIVE account + keys (2 days)
+├─ Get Paystack/Flutterwave LIVE keys (1 day)
 ├─ Final security verification (2 days)
 └─ Load testing + capacity planning (3 days)
 
@@ -110,12 +115,12 @@ These 3 items BLOCK everything else:
    - 1 ElastiCache Redis (cache.t3.small)
    - Security groups so they can talk
 
-3. **[MUST DO BY MAR 1]** Get Stripe test account
-   - Sign up at Stripe.com
-   - Get test API keys
-   - Accept terms
+3. ~~**Get Stripe test account**~~ → ✅ DONE (Feb 27)
+   - Paystack test key configured
+   - Flutterwave test keys configured (public + secret + webhook hash)
+   - Sentry DSNs configured (backend + frontend)
 
-**Until these 3 are done, nothing else matters.**
+**Items 1 and 3 are DONE. Only item 2 (infrastructure) remains — waiting on AWS 24hr hold.**
 
 ---
 
@@ -133,7 +138,7 @@ The V5_PHASE_1_EXECUTION_STATUS.md assumed a 5-person team:
 1. AWS setup
 2. Deploy code
 3. Test
-4. Stripe integration
+4. Payment testing (Paystack/Flutterwave already configured)
 5. Security audit
 6. Monitoring
 7. Production setup
@@ -178,6 +183,6 @@ This week: Just get SOMETHING running. It doesn't have to be perfect.
 
 **Document Version:** 1.0  
 **Created:** February 27, 2026  
-**Status:** 🔴 YOU ARE HERE  
+**Status:** 🟡 AWS account done, waiting for infra access
 **Owner:** You (solo founder)  
-**Last Updated:** February 27, 2026
+**Last Updated:** February 27, 2026 (evening — payment + Sentry keys configured)

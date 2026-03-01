@@ -1,5 +1,5 @@
 import React from 'react';
-import { Skeleton } from './skeleton';
+import { Skeleton } from '@/shared/components/skeleton';
 import { cn } from '@/lib/utils';
 
 interface PageSkeletonProps {

@@ -6,7 +6,6 @@ import {
   Calendar, 
   FileText, 
   MessageCircle, 
-  Wallet,
   Users,
   MapPin,
   TrendingUp,
@@ -38,8 +37,6 @@ const PersonalDashboardView: React.FC = () => {
     consultations: dashboard?.recentConsultations?.length || 0,
     guidancePlans: dashboard?.pendingGuidancePlans?.length || 0,
     unreadMessages: dashboard?.unreadMessages || 0,
-    walletBalance: dashboard?.walletBalance?.amount ? 
-      `₦${dashboard.walletBalance.amount.toLocaleString()}` : '₦0',
     temples: dashboard?.communities?.temples?.length || 0,
     circles: dashboard?.communities?.circles?.length || 0
   };
@@ -166,21 +163,6 @@ const PersonalDashboardView: React.FC = () => {
             </div>
           </button>
 
-          <button
-            onClick={() => navigate('/client/wallet')}
-            className="bg-white p-6 rounded-2xl border border-green-100 shadow-sm hover:shadow-md hover:border-green-200 transition-all text-left group"
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-green-600 text-sm font-bold uppercase tracking-wider">Sacred Wallet</p>
-                <h3 className="text-3xl font-bold text-green-800 mt-1">{stats.walletBalance}</h3>
-                <p className="text-green-400 text-sm mt-1">Available funds</p>
-              </div>
-              <div className="bg-green-100 p-3 rounded-xl text-green-700 group-hover:bg-green-200 transition-colors">
-                <Wallet size={24} />
-              </div>
-            </div>
-          </button>
         </motion.div>
 
         {/* Personal Journey Sections */}
@@ -384,14 +366,6 @@ const PersonalDashboardView: React.FC = () => {
                 >
                   <MessageCircle size={18} className="text-amber-600" />
                   <span className="font-medium text-emerald-800">Visit Forum</span>
-                </button>
-                
-                <button
-                  onClick={() => navigate('/client/wallet')}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-emerald-50 transition-colors text-left"
-                >
-                  <Wallet size={18} className="text-green-600" />
-                  <span className="font-medium text-emerald-800">Top Up Wallet</span>
                 </button>
                 
                 <button

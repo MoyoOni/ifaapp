@@ -10,6 +10,8 @@ import { logger } from '@/shared/utils/logger';
 // cn import removed - not currently used
 import { seededRandomInt } from '@/shared/utils/seeded-random';
 import { BabalawoDirectorySkeleton } from '@/shared/components/skeleton';
+import { FeatureHeader } from '@/shared/components/feature-header';
+import { Search as SearchIcon } from 'lucide-react';
 
 interface Babalawo {
   id: string;
@@ -166,10 +168,7 @@ const BabalawoDiscoveryView: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-muted to-muted/50">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-8 text-center">
-          <h1 className="text-[1.5rem] font-[700] text-foreground mb-2">Find My Spiritual Guide</h1>
-          <p className="text-[0.875rem] text-muted-foreground">Connect with experienced babalawo for personalized guidance</p>
-        </div>
+        <FeatureHeader feature="find-guide" title="Find My Spiritual Guide" subtitle="Connect with experienced babalawo for personalized guidance" icon={SearchIcon} />
 
         <div className="bg-card rounded-2xl border border-input p-1 mb-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-1">

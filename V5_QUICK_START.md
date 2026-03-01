@@ -7,29 +7,26 @@
 ## 🚨 WHAT'S BLOCKING YOU? (3 Things)
 
 ```
-1. NO AWS ACCOUNT
-   ↓ Get here: aws.amazon.com/console
-   ↓ Time: 30 min
-   ↓ Impact: Can't deploy code anywhere
+1. ✅ AWS ACCOUNT — DONE (Feb 27, waiting 24hrs for full access)
 
 2. NO INFRASTRUCTURE (EC2 + RDS + Redis)
    ↓ Get here: AWS EC2/RDS/ElastiCache consoles
-   ↓ Time: 3 hours after AWS account created
+   ↓ Time: 3 hours after AWS access unlocks
    ↓ Impact: Nowhere to run code
 
-3. NO STRIPE TEST ACCOUNT
-   ↓ Get here: stripe.com/dashboard
-   ↓ Time: 1 hour
-   ↓ Impact: Can't process payments
+3. ✅ PAYMENT GATEWAYS — DONE (Feb 27)
+   ↓ Paystack + Flutterwave test keys configured
+   ↓ Sentry error tracking configured
+   ↓ Deployment scripts created
 ```
 
 **Fix in this order:**
-1. AWS account (30 min)
-2. Infrastructure (3 hours)
-3. Deploy code (2 hours)
-4. Stripe account (1 hour)
+1. ~~AWS account~~ ✅ Done
+2. Infrastructure (3 hours) — when AWS unlocks
+3. Deploy code (2 hours) — scripts ready
+4. ~~Payment account~~ ✅ Done
 
-**By Mar 3:** All 4 done, app is running, you're unblocked.
+**By Mar 3:** App is running, you're unblocked.
 
 ---
 
@@ -54,10 +51,10 @@
    - Decision matrix
 
 ### REFERENCE WHEN NEEDED
-4. **V5_STRIPE_SETUP_INSTRUCTIONS.md**
-   - Step-by-step Stripe test account setup
-   - Test payment flow
-   - LIVE account setup (for Mar 20)
+4. **V5_STRIPE_SETUP_INSTRUCTIONS.md** ← OUTDATED (codebase uses Paystack/Flutterwave, not Stripe)
+   - Payment keys already configured in .env
+   - Test keys: Paystack + Flutterwave
+   - LIVE keys: Get from Paystack/Flutterwave dashboards (Week 4)
 
 5. **V5_INFRASTRUCTURE_PROVISIONING_CHECKLIST.md**
    - Detailed AWS setup guide
@@ -119,7 +116,7 @@ BY SUNDAY (Mar 3, ~2 hours):
 |------|------|-------|--------|
 | 1 (Feb 27-Mar 3) | Get AWS + deploy | 16 | 🟢 START HERE |
 | 2 (Mar 4-10) | Test + fix bugs | 6 | ⏳ TBD |
-| 3 (Mar 11-17) | Stripe + auth | 7 | ⏳ TBD |
+| 3 (Mar 11-17) | Payments + test | 4.5 | ⏳ TBD (mostly done!) |
 | 4 (Mar 18-24) | Prod setup | 7 | ⏳ TBD |
 | 5 (Mar 25-31 + Apr 1) | Launch | 4 | ⏳ TBD |
 
@@ -135,8 +132,8 @@ BY SUNDAY (Mar 3, ~2 hours):
 **You ask:** "My backend won't start. Error: ECONNREFUSED"  
 **AI responds:** "That's a database connection error. Check your DATABASE_URL env var. Here's how to verify..."
 
-**You ask:** "Payment failed. Sentry shows 'Invalid API key'"  
-**AI responds:** "Your Stripe test key is wrong. Check your .env file, it should be sk_test_..."
+**You ask:** "Payment failed. Sentry shows 'Invalid API key'"
+**AI responds:** "Your Paystack/Flutterwave key may be wrong. Check PAYSTACK_SECRET_KEY and FLUTTERWAVE_SECRET_KEY in your .env file..."
 
 **You ask:** "Do I need to do X right now?"  
 **AI responds:** "No. Looking at V5_PERSONAL_TODO.md, X is Week 4. Skip it for now."
@@ -149,7 +146,7 @@ BY SUNDAY (Mar 3, ~2 hours):
 |-----------|-------------|--------|
 | AWS + RDS + Redis + EC2 deployed | Mar 3 | 🟢 THIS WEEK |
 | Code running on staging | Mar 3 | 🟢 THIS WEEK |
-| Stripe test working | Mar 5 | ⏳ NEXT WEEK |
+| Payment keys configured | Feb 27 | ✅ DONE |
 | All critical bugs fixed | Mar 8 | ⏳ NEXT WEEK |
 | Production infrastructure ready | Mar 20 | ⏳ 3 WEEKS |
 | Final testing complete | Mar 28 | ⏳ 4 WEEKS |
@@ -177,8 +174,8 @@ BY SUNDAY (Mar 3, ~2 hours):
 **Issue:** Database migration fails  
 **Do:** Check error message → Ask AI → Fix → Rerun
 
-**Issue:** Stripe payment fails  
-**Do:** Check Sentry → Ask AI → Debug → Test
+**Issue:** Payment fails
+**Do:** Check Sentry → Verify Paystack/Flutterwave keys → Ask AI → Debug → Test
 
 **Issue:** Don't know what to do next  
 **Do:** Look at V5_PERSONAL_TODO.md → That's what to do

@@ -70,6 +70,21 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
+  // Enable graceful shutdown hooks
+  // This ensures NestJS drains in-flight requests, closes DB connections,
+  // and shuts down BullMQ workers cleanly before the process exits.
+  app.enableShutdownHooks();
+
+  // Handle PM2/Docker SIGINT/SIGTERM gracefully
+  const shutdown = async (signal: string) => {
+    logger.warn(`Received ${signal}. Starting graceful shutdown...`);
+    await app.close();
+    logger.log('Application shut down gracefully.');
+    process.exit(0);
+  };
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
+
   const port = configService.get<number>('PORT') || 3000;
 
   await app.listen(port);

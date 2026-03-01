@@ -62,7 +62,6 @@ const PrescriptionApprovalPage = React.lazy(() => import('./pages/PrescriptionAp
 const PrescriptionHistoryPage = React.lazy(() => import('./pages/PrescriptionHistoryPage'));
 const PersonalDashboardView = React.lazy(() => import('./features/client-hub/personal-dashboard-view'));
 const ClientConsultationsView = React.lazy(() => import('./features/client-hub/client-consultations-view')); // Corrected filename
-const ClientWalletView = React.lazy(() => import('./features/client-hub/client-wallet-view'));
 const PractitionerDashboard = React.lazy(() => import('./features/babalawo/dashboard/practitioner-dashboard'));
 const InviteClientView = React.lazy(() => import('./features/babalawo/invite-client-view'));
 const PractitionerCalendarView = React.lazy(() => import('./features/babalawo/practitioner-calendar-view'));
@@ -82,8 +81,6 @@ const AcademyView = React.lazy(() => import('./features/academy/academy-view'));
 const CourseDetailView = React.lazy(() => import('./features/academy/course-detail-view'));
 const MyCoursesView = React.lazy(() => import('./features/academy/my-courses-view'));
 const LessonPlayerView = React.lazy(() => import('./features/academy/lesson-player-view'));
-const WalletDashboardView = React.lazy(() => import('./features/wallet/wallet-dashboard-view'));
-const TransactionHistoryView = React.lazy(() => import('./features/wallet/transaction-history-view'));
 const ConsultationList = React.lazy(() => import('./features/appointments/consultation-list'));
 const AppointmentsCalendar = React.lazy(() => import('./features/appointments/appointments-calendar'));
 const EventCreationForm = React.lazy(() => import('./features/events/event-creation-form'));
@@ -268,26 +265,6 @@ const LessonPlayerPage: React.FC = () => {
   );
 };
 
-const WalletPage: React.FC = () => {
-  const navigate = useNavigate();
-
-  return (
-    <WalletDashboardView
-      onViewTransactions={() => navigate('/wallet/transactions')}
-    />
-  );
-};
-
-const TransactionHistoryPage: React.FC = () => {
-  const navigate = useNavigate();
-
-  return (
-    <TransactionHistoryView
-      onBack={() => navigate('/wallet')}
-    />
-  );
-};
-
 const YorubaWordDetailPage: React.FC = () => {
   const { wordId } = useParams<{ wordId: string }>();
   const navigate = useNavigate();
@@ -404,7 +381,6 @@ function App() {
                       </ProtectedRoute>
                     </ErrorBoundary>
                   } />
-                  <Route path="/client/wallet" element={<ErrorBoundary><ProtectedRoute allowedRoles={['CLIENT'] as UserRole[]}><ClientWalletView /></ProtectedRoute></ErrorBoundary>} />
                   <Route path="/client/consultations" element={<ErrorBoundary><ProtectedRoute allowedRoles={['CLIENT'] as UserRole[]}><ClientConsultationsView /></ProtectedRoute></ErrorBoundary>} />
                   <Route path="/practitioner/dashboard" element={<ErrorBoundary><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><PractitionerDashboard /></ProtectedRoute></ErrorBoundary>} />
                   <Route path="/vendor/dashboard" element={<ErrorBoundary><ProtectedRoute allowedRoles={['VENDOR'] as UserRole[]}><VendorDashboardView /></ProtectedRoute></ErrorBoundary>} />
@@ -430,8 +406,6 @@ function App() {
                   <Route path="/academy/course/:courseId" element={<ErrorBoundary><CourseDetailPage /></ErrorBoundary>} />
                   <Route path="/academy/my-courses" element={<ErrorBoundary><MyCoursesPage /></ErrorBoundary>} />
                   <Route path="/academy/learn/:enrollmentId" element={<ErrorBoundary><LessonPlayerPage /></ErrorBoundary>} />
-                  <Route path="/wallet" element={<ErrorBoundary><WalletPage /></ErrorBoundary>} />
-                  <Route path="/wallet/transactions" element={<ErrorBoundary><TransactionHistoryPage /></ErrorBoundary>} />
                   <Route path="/consultations" element={<ErrorBoundary><ClientConsultationsPage /></ErrorBoundary>} />
                   <Route path="/practitioner/consultations" element={<ErrorBoundary><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><PractitionerConsultationsPage /></ProtectedRoute></ErrorBoundary>} />
                   <Route path="/practitioner/calendar" element={<ErrorBoundary><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><PractitionerCalendarView /></ProtectedRoute></ErrorBoundary>} />

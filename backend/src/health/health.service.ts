@@ -51,13 +51,17 @@ export class HealthService {
     };
 
     const configured = Object.entries(services).filter(([_, s]) => s.status !== 'disabled');
-    const down = configured.filter(([_, s]) => s.status === 'down');
     const degraded = configured.filter(([_, s]) => s.status === 'degraded');
 
+    // Only the database is a hard dependency — if it's down, the system is unhealthy.
+    // External services (payment gateways, S3, email) being down = degraded, not unhealthy.
+    const coreDown = services.database?.status === 'down';
+    const externalDown = configured.filter(([k, s]) => k !== 'database' && s.status === 'down');
+
     let status: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
-    if (down.length > 0 || configured.find(([k]) => k === 'database')?.[1].status === 'down') {
+    if (coreDown) {
       status = 'unhealthy';
-    } else if (degraded.length > 0) {
+    } else if (externalDown.length > 0 || degraded.length > 0) {
       status = 'degraded';
     }
 

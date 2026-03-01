@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Search, ShoppingCart, Package, Store, Star } from 'lucide-react';
+import { FeatureHeader } from '@/shared/components/feature-header';
 import api from '@/lib/api';
 import { useCart } from '@/shared/contexts/cart-context';
 import { logger } from '@/shared/utils/logger';
@@ -203,24 +204,19 @@ const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onSelectProduct }) =>
   return (
     <div className="py-6 animate-in fade-in duration-500">
       {/* Header */}
-      <div className="mb-8 text-center">
-        <h1 className="text-4xl md:text-5xl font-bold brand-font text-emerald-900 mb-3">Oja Ìlú Àṣẹ</h1>
-        <p className="text-xl text-emerald-700 max-w-3xl mx-auto">
-          Sacred Marketplace. Curated spiritual artifacts, verified botanical ingredients, and sacred texts for your journey. Accepted by the Council of Elders.
-        </p>
-      </div>
+      <FeatureHeader feature="marketplace" title="Oja Ìlú Àṣẹ" subtitle="Sacred Marketplace. Curated spiritual artifacts, verified botanical ingredients, and sacred texts for your journey." icon={Store} />
 
       {/* Search and Filters */}
-      <div className="mb-8 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl p-6 text-white shadow-lg mb-10">
+      <div className="mb-8 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-2xl p-6 text-white shadow-lg mb-10">
         <div className="max-w-3xl mx-auto">
           <div className="relative mb-4">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-emerald-200" size={20} />
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-purple-200" size={20} />
             <input
               type="text"
               placeholder="Search sacred items, herbs, tools..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 rounded-xl bg-white/20 text-white placeholder-emerald-100 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+              className="w-full pl-12 pr-4 py-4 rounded-xl bg-white/20 text-white placeholder-purple-100 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
             />
           </div>
           

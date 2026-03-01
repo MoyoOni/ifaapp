@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Users, UserPlus, Lightbulb, Globe, Lock, MapPin, ChevronRight } from 'lucide-react';
+import { FeatureHeader } from '@/shared/components/feature-header';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { useCirclesQuery } from '@/shared/hooks/queries';
@@ -91,61 +92,34 @@ const CircleDirectory: React.FC<CircleDirectoryProps> = ({ onSelectCircle, onCre
 
   return (
     <div className="space-y-8">
-      {/* Hero Header */}
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/10 via-card to-primary/5 border border-input shadow-xl"
-      >
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2" />
+      {/* Header */}
+      <FeatureHeader feature="community" title="Community Circles" subtitle="Connect with others around shared interests and cultural practices. Join a circle to learn, grow, and celebrate together." icon={Users}>
+        <div className="flex gap-3 mt-4">
+          {user?.role === UserRole.ADMIN && onCreateCircle && (
+            <button
+              type="button"
+              onClick={onCreateCircle}
+              className="px-4 py-2 bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700 transition-colors flex items-center gap-2 text-sm"
+            >
+              <UserPlus size={16} />
+              Create Circle
+            </button>
+          )}
+          {user && user.role !== UserRole.ADMIN && (
+            <button
+              type="button"
+              onClick={() => {
+                const forumUrl = '/forum?category=circle-suggestions&suggest=circle';
+                window.location.href = forumUrl;
+              }}
+              className="px-4 py-2 bg-white text-rose-700 border border-rose-200 rounded-xl font-bold hover:bg-rose-50 transition-colors flex items-center gap-2 text-sm"
+            >
+              <Lightbulb size={16} />
+              Suggest Circle
+            </button>
+          )}
         </div>
-
-        <div className="relative p-8 md:p-12">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-            <div>
-              <div className="inline-flex items-center gap-2 bg-emerald-100/80 text-emerald-800 px-4 py-2 rounded-full text-sm font-medium mb-4">
-                <Users size={16} />
-                <span>Community Hub</span>
-              </div>
-              <h1 className="text-[1.5rem] md:text-[2rem] font-bold text-foreground mb-2">
-                My <span className="text-primary">Circles</span>
-              </h1>
-              <p className="text-[0.875rem] md:text-base text-muted-foreground max-w-xl">
-                Connect with others around shared interests and cultural practices. Join a circle to learn, grow, and celebrate together.
-              </p>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-3">
-              {user?.role === UserRole.ADMIN && onCreateCircle && (
-                <button
-                  type="button"
-                  onClick={onCreateCircle}
-                  className="px-6 py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 transition-colors flex items-center gap-2 shadow-lg shadow-primary/20"
-                >
-                  <UserPlus size={20} />
-                  Create Circle
-                </button>
-              )}
-              {user && user.role !== UserRole.ADMIN && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    // Navigate to forum with circle suggestion category pre-selected
-                    const forumUrl = '/forum?category=circle-suggestions&suggest=circle';
-                    window.location.href = forumUrl;
-                  }}
-                  className="px-6 py-3 bg-white text-primary border-2 border-primary rounded-xl font-bold hover:bg-primary/5 transition-colors flex items-center gap-2"
-                >
-                  <Lightbulb size={20} />
-                  Suggest Circle
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </motion.section>
+      </FeatureHeader>
 
       {/* Search and Filters */}
       <div className="bg-card border border-input rounded-2xl p-6">

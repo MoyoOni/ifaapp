@@ -1,5 +1,6 @@
 import React from 'react';
 import { Calendar, Clock } from 'lucide-react';
+import { FeatureHeader } from '@/shared/components/feature-header';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 import { useAuth } from '@/shared/hooks/use-auth';
@@ -28,10 +29,7 @@ const ClientConsultationsView: React.FC = () => {
     <div className="space-y-6 animate-in fade-in duration-500">
       {/* Header */}
       <div className="p-6 max-w-4xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-[1.5rem] font-[700] text-foreground">My Consultations</h1>
-          <p className="text-[0.875rem] text-muted-foreground">Manage your scheduled sessions</p>
-        </div>
+        <FeatureHeader feature="consultations" title="My Consultations" subtitle="Manage your scheduled sessions" icon={Calendar} />
         
         {consultations.length > 0 ? (
           <div className="space-y-6">

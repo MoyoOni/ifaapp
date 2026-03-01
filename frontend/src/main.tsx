@@ -34,7 +34,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
-        <ThemeProvider defaultTheme="system" defaultOrishaTheme="all" storageKey="vite-ui-theme" orishaStorageKey="orisha-theme">
+        <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
           <CartProvider>
             <ToastProvider>
               <App />

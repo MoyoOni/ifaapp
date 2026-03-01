@@ -4,6 +4,7 @@ import MessageThread from '@/features/messages/thread/message-thread';
 import MessageInbox from '@/features/messages/inbox/message-inbox';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { MessageSquare, ArrowLeft } from 'lucide-react';
+import { FeatureHeader } from '@/shared/components/feature-header';
 import { motion, AnimatePresence } from 'framer-motion';
 
 /**
@@ -46,25 +47,23 @@ const MessagesPage: React.FC = () => {
       <div className="container mx-auto px-4 py-8 lg:py-12">
         <div className="max-w-5xl mx-auto">
           {/* Header Section */}
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <div className="flex items-center gap-4 mb-2">
-                {otherUserId && (
-                  <button
-                    onClick={() => navigate('/messages')}
-                    className="p-2 hover:bg-white rounded-xl transition-colors text-stone-400 hover:text-stone-800"
-                    aria-label="Back to messages"
-                  >
-                    <ArrowLeft size={24} />
-                  </button>
-                )}
-                <h1 className="text-4xl font-bold text-stone-900 brand-font tracking-tight">
-                  {otherUserId ? 'Conversation' : 'Your Inbox'}
-                </h1>
-              </div>
-              <p className="text-stone-500 font-medium">Private & Secure Communications</p>
-            </div>
-          </div>
+          <FeatureHeader
+            feature="messages"
+            title={otherUserId ? 'Conversation' : 'Your Inbox'}
+            subtitle="Private & Secure Communications"
+            icon={MessageSquare}
+          >
+            {otherUserId && (
+              <button
+                onClick={() => navigate('/messages')}
+                className="mt-3 p-2 hover:bg-white/50 rounded-xl transition-colors text-blue-400 hover:text-blue-800 inline-flex items-center gap-2 text-sm"
+                aria-label="Back to messages"
+              >
+                <ArrowLeft size={16} />
+                Back to Inbox
+              </button>
+            )}
+          </FeatureHeader>
 
           {/* Main Interface Content */}
           <div className="bg-white/40 backdrop-blur-md rounded-[2.5rem] border border-white shadow-2xl overflow-hidden min-h-[700px] flex flex-col relative transition-all duration-500">

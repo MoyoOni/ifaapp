@@ -44,7 +44,6 @@ const CLIENT_NAV_ITEMS: NavItem[] = [
   { id: 'my-consultations', label: 'My Consultations', icon: Calendar, path: '/client/consultations' },
   { id: 'learning-path', label: 'Academy', icon: GraduationCap, path: '/academy' },
   { id: 'community-circles', label: 'Community Circles', icon: Users, path: '/circles' },
-  { id: 'sacred-wallet', label: 'Sacred Wallet', icon: Wallet, path: '/client/wallet' },
   { id: 'marketplace', label: 'Marketplace', icon: ShoppingBag, path: '/marketplace' },
   { id: 'profile', label: 'My Profile', icon: User, path: '/profile' },
 ];

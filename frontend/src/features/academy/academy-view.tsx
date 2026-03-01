@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Search, BookOpen, GraduationCap, Play, Clock, CheckCircle, Users, Filter } from 'lucide-react';
+import { FeatureHeader } from '@/shared/components/feature-header';
 import { PageTransition } from '@/components/common/page-transition';
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
@@ -113,15 +114,7 @@ const AcademyView: React.FC<AcademyViewProps> = ({ onSelectCourse }) => {
       <div className="min-h-screen bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Main Header */}
-          <div className="mb-10">
-            <div className="flex items-center gap-2 mb-2">
-              <GraduationCap className="text-primary" size={32} />
-              <h1 className="text-3xl font-bold text-foreground">Ìlú Àṣẹ Academy</h1>
-            </div>
-            <p className="text-lg text-muted-foreground max-w-3xl">
-              Explore the wisdom of Ifá and Yoruba traditions through our curated collection of courses
-            </p>
-          </div>
+          <FeatureHeader feature="academy" title="Ìlú Àṣẹ Academy" subtitle="Explore the wisdom of Ifá and Yoruba traditions through our curated collection of courses" icon={GraduationCap} />
 
           {/* Filters and Search */}
           <div className="mb-8 flex flex-col sm:flex-row gap-4">

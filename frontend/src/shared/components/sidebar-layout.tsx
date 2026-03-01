@@ -5,7 +5,6 @@ import {
     X,
     User,
     LogOut,
-    Wallet,
     Bell,
     ChevronDown,
     MessageSquare,
@@ -19,7 +18,6 @@ import { useAuth } from '../hooks/use-auth';
 import { cn } from '@/lib/utils';
 import { LanguageSwitcher } from './language-switcher';
 import { ModeToggle } from './mode-toggle';
-import { OrishaThemeSelector } from './orisha-theme-selector';  // Import the new component
 import NotificationDropdown from './notification-dropdown';
 import api from '@/lib/api';
 import { getNavItemsForRole, getRoleDisplayName, getRoleBadgeColor, type NavItem } from '../config/navigation';
@@ -379,13 +377,6 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                                         <MessageSquare size={18} className="text-primary" />
                                         <span className="text-sm font-medium">Messages</span>
                                     </button>
-                                    <button
-                                        onClick={() => handleNavClick('/wallet')}
-                                        className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-secondary/10 text-foreground transition-colors text-left"
-                                    >
-                                        <Wallet size={18} className="text-secondary" />
-                                        <span className="text-sm font-medium">Wallet</span>
-                                    </button>
                                     <div className="h-px bg-border my-1" />
                                     <button
                                         onClick={() => handleNavClick('/settings')}
@@ -492,7 +483,6 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                         </div>
                         <LanguageSwitcher />
                         <ModeToggle />
-                        <OrishaThemeSelector />  // Add the new component
                     </div>
                 </header>
 
