@@ -6,7 +6,7 @@ import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { logger } from '@/shared/utils/logger';
 import { DEMO_FORUM_CATEGORIES } from './forum-demo';
-import { useToast } from '@/components/common/ToastProvider';
+import { useToast } from '@/shared/components/toast';
 
 interface ForumCategory {
   id: string;
@@ -225,18 +225,18 @@ Why this circle is needed: [Explain why this circle would benefit the community]
     },
   });
 
-  const { showToast } = useToast();
+  const { error } = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!selectedCategory) {
-      showToast('Please select a category', 'error');
+      error('Please select a category');
       return;
     }
     
     if (!title.trim() || !content.trim()) {
-      showToast('Please fill in all fields', 'error');
+      error('Please fill in all fields');
       return;
     }
     

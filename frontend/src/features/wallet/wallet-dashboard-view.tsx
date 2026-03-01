@@ -13,7 +13,7 @@ import {
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { logger } from '@/shared/utils/logger';
-import { useToast } from '@/components/common/ToastProvider';
+import { useToast } from '@/shared/components/toast';
 import { isDemoMode } from '@/shared/config/demo-mode';
 import { getUserWallet } from '@/demo';
 import { TransactionType, TransactionStatus, Currency, PaymentPurpose } from '@common';
@@ -82,7 +82,7 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
   const [depositAmount, setDepositAmount] = useState('');
   const [releasingEscrowId, setReleasingEscrowId] = useState<string | null>(null);
 
-  const { showToast } = useToast();
+  const { info } = useToast();
 
   // Fetch wallet balance
   const { data: walletBalance } = useQuery<WalletBalance>({
@@ -174,7 +174,7 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
   };
 
   const handleWithdrawal = () => {
-    showToast('Withdrawal request submitted for processing. (Simulated)', 'info');
+    info('Withdrawal request submitted for processing. (Simulated)');
   };
 
   return (

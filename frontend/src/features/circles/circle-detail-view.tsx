@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Users, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
-import { useToast } from '@/components/common/ToastProvider';
+import { useToast } from '@/shared/components/toast';
 import { logger } from '@/shared/utils/logger';
 import { isDemoMode } from '@/shared/config/demo-mode';
 import { DEMO_CIRCLES, DEMO_USERS } from '@/demo';
@@ -34,7 +34,7 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({
   onBack,
 }) => {
   const { user } = useAuth();
-  const { showToast } = useToast();
+  const { success, error: showError } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabType>('feed');
   const [newPost, setNewPost] = useState('');
@@ -197,12 +197,11 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['circle-events', circle?.id] });
       queryClient.invalidateQueries({ queryKey: ['events'] });
-      showToast('Event approved and promoted to main events directory', 'success');
+      success('Event approved and promoted to main events directory');
     },
-    onError: (error: any) => {
-      showToast(
-        error?.response?.data?.message || 'Failed to approve event',
-        'error'
+    onError: (err: any) => {
+      showError(
+        err?.response?.data?.message || 'Failed to approve event'
       );
     },
   });
@@ -220,10 +219,9 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({
       setNewPost('');
       queryClient.invalidateQueries({ queryKey: ['circle-feed', circle?.id] });
     },
-    onError: (error: any) => {
-      showToast(
-        error.response?.data?.message || 'Failed to create post',
-        'error'
+    onError: (err: any) => {
+      showError(
+        err.response?.data?.message || 'Failed to create post'
       );
     },
   });
@@ -264,10 +262,9 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({
       queryClient.invalidateQueries({ queryKey: ['circle', circleSlug] });
       queryClient.invalidateQueries({ queryKey: ['circles'] });
     },
-    onError: (error: any) => {
-      showToast(
-        error.response?.data?.message || 'Failed to join circle',
-        'error'
+    onError: (err: any) => {
+      showError(
+        err.response?.data?.message || 'Failed to join circle'
       );
     },
   });

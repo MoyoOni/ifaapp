@@ -25,7 +25,7 @@ import AdminUserManagementTab from './admin-user-management-tab';
 import { AdminUser, VerificationApplication } from './admin-shared-components';
 import { logger } from '@/shared/utils/logger';
 import { getDemoAdminStats, getAllDemoUsers, getDemoVerifications } from '@/demo';
-import { useToast } from '@/components/common/ToastProvider';
+import { useToast } from '@/shared/components/toast';
 
 interface PlatformStats {
   totalUsers: number;
@@ -64,7 +64,7 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ initialTab }) =
   const { user: currentUser, impersonate, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<AdminTab>(initialTab || 'overview');
 
-  const { showToast } = useToast();
+  const { success, error } = useToast();
   const { PromptDialog, prompt: promptInput } = usePrompt();
 
   const impersonateUser = async (id: string, name: string) => {
@@ -78,10 +78,10 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ initialTab }) =
       });
       if (!reason) return;
       await impersonate(id, reason);
-      showToast(`Impersonating ${name}`, 'success');
-    } catch (error: any) {
-      const msg = error.response?.data?.message || error.message || 'Unknown error';
-      showToast(`Impersonation failed: ${msg}`, 'error');
+      success(`Impersonating ${name}`);
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || 'Unknown error';
+      error(`Impersonation failed: ${msg}`);
     }
   };
 

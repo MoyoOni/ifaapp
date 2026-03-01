@@ -15,7 +15,7 @@ import { logger } from '@/shared/utils/logger';
 import { isDemoMode } from '@/shared/config/demo-mode';
 import { useAuth } from '@/shared/hooks/use-auth';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
-import { useToast } from '@/components/common/ToastProvider';
+import { useToast } from '@/shared/components/toast';
 
 interface AdvisoryVote {
   id: string;
@@ -52,7 +52,7 @@ interface CastVoteDto {
 
 const AdvisoryBoardVotingView: React.FC = () => {
   const { user } = useAuth();
-  const { showToast } = useToast();
+  const { error } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'active' | 'closed' | 'create'>('active');
 
@@ -156,12 +156,12 @@ const AdvisoryBoardVotingView: React.FC = () => {
     e.preventDefault();
     
     if (newVote.voteOptions.length < 2) {
-      showToast('Please provide at least 2 voting options', 'error');
+      error('Please provide at least 2 voting options');
       return;
     }
 
     if (!newVote.title.trim()) {
-      showToast('Please fill in all required fields', 'error');
+      error('Please fill in all required fields');
       return;
     }
 

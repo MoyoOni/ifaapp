@@ -7,7 +7,7 @@ import { logger } from '@/shared/utils/logger';
 import { isDemoMode } from '@/shared/config/demo-mode';
 import { getCourseById } from './course-data';
 import { AcademySkeleton } from '@/shared/components/skeleton';
-import { useToast } from '@/components/common/ToastProvider';
+import { useToast } from '@/shared/components/toast';
 
 // Orisha-themed styling helpers for course categories
 function getOrishaGradientClass(category: string): string {
@@ -91,7 +91,7 @@ interface CourseDetailViewProps {
 
 const CourseDetailView: React.FC<CourseDetailViewProps> = ({ courseId, onBack }) => {
   const { user } = useAuth();
-  const { showToast } = useToast();
+  const { success, error } = useToast();
   const queryClient = useQueryClient();
 
   // Fetch course
@@ -122,19 +122,19 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({ courseId, onBack })
   const { mutate: enroll, isPending: isEnrolling } = useMutation({
     mutationFn: () => api.post(`/academy/courses/${courseId}/enroll`),
     onSuccess: () => {
-      showToast(`You've been enrolled in ${course?.title || 'the course'}`, 'success');
+      success(`You've been enrolled in ${course?.title || 'the course'}`);
       queryClient.invalidateQueries({ queryKey: ['course', courseId] });
     },
     onError: (err) => {
       logger.error('Failed to enroll in course', err);
-      showToast('Could not enroll in the course. Please try again.', 'error');
+      error('Could not enroll in the course. Please try again.');
     },
   });
 
   // Handle enrollment
   const handleEnroll = () => {
     if (!user) {
-      showToast('You need to be logged in to enroll in a course', 'error');
+      error('You need to be logged in to enroll in a course');
       return;
     }
 

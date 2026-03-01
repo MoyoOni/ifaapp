@@ -6,7 +6,7 @@ import { useAuth } from '@/shared/hooks/use-auth';
 import { logger } from '@/shared/utils/logger';
 import { isDemoMode } from '@/shared/config/demo-mode';
 import { DEMO_GUIDANCE_PLANS, getDemoAppointmentById, getDemoUserById } from '@/demo';
-import { useToast } from '@/components/common/ToastProvider';
+import { useToast } from '@/shared/components/toast';
 
 interface GuidancePlanItem {
   name: string;
@@ -227,11 +227,11 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
     approveMutation.mutate(true);
   };
 
-  const { showToast } = useToast();
+  const { error } = useToast();
 
   const handleReject = () => {
     if (!rejectionReason.trim()) {
-      showToast('Please provide a reason for rejection', 'error');
+      error('Please provide a reason for rejection');
       return;
     }
     approveMutation.mutate(false);

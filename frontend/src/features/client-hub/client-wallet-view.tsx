@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Wallet, TrendingUp, CreditCard, ArrowDown, ArrowUp, Download, Eye, X, Check } from 'lucide-react';
 import { useAuth } from '@/shared/hooks/use-auth';
-import { useToast } from '@/components/common/ToastProvider';
+import { useToast } from '@/shared/components/toast';
 
 interface Transaction {
   id: string;
@@ -118,17 +118,17 @@ const ClientWalletView: React.FC = () => {
     .filter(t => t.type === 'credit' && t.status === 'completed')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const { showToast } = useToast();
+  const { error, success } = useToast();
 
   const handleAddMoney = async () => {
     if (!amountToAdd || parseFloat(amountToAdd) <= 0) {
-      showToast('Please enter a valid amount', 'error');
+      error('Please enter a valid amount');
       return;
     }
 
     // Here would be the actual implementation to add funds
     // For now, just close the modal and show a success message
-    showToast(`Successfully added ₦${parseFloat(amountToAdd).toLocaleString()} to your wallet via ${paymentMethod}`, 'success');
+    success(`Successfully added ₦${parseFloat(amountToAdd).toLocaleString()} to your wallet via ${paymentMethod}`);
   };
 
   return (

@@ -3,7 +3,7 @@ import { Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../hooks/use-auth';
 import api from '@/lib/api';
 import { logger } from '../utils/logger';
-import { useToast } from '@/components/common/ToastProvider';
+import { useToast } from '@/shared/components/toast';
 import { useConfirm } from '@/hooks/use-confirm';
 import { usePrompt } from '@/hooks/use-prompt';
 
@@ -30,7 +30,7 @@ const MaskedValue: React.FC<MaskedValueProps> = ({
   const [revealing, setRevealing] = useState(false);
   const [_showAlert, setShowAlert] = useState(false);
   const { user } = useAuth();
-  const { showToast } = useToast();
+  const { error: showError } = useToast();
   const { ConfirmationDialog, confirm: confirmDialog } = useConfirm();
   const { PromptDialog, prompt: promptInput } = usePrompt();
 
@@ -96,9 +96,9 @@ const MaskedValue: React.FC<MaskedValueProps> = ({
             logger.info('Sensitive data automatically hidden after timeout');
           }, 5 * 60 * 1000); // 5 minutes
         }
-      } catch (error) {
-        logger.error('Failed to log PII reveal', error);
-        showToast('Failed to access sensitive information. Action has been logged.', 'error');
+      } catch (err: any) {
+        logger.error('Failed to log PII reveal', err);
+        showError('Failed to access sensitive information. Action has been logged.');
       } finally {
         setRevealing(false);
         setShowAlert(false);

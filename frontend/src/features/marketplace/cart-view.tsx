@@ -4,7 +4,7 @@ import { ShoppingCart, Trash2, Plus, Minus, ArrowLeft, ArrowRight } from 'lucide
 import { useCart } from '@/shared/contexts/cart-context';
 // import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
-import { useToast } from '@/components/common/ToastProvider';
+import { useToast } from '@/shared/components/toast';
 
 interface CartViewProps {
   onBack?: () => void;
@@ -20,16 +20,16 @@ const CartView: React.FC<CartViewProps> = ({ onBack, onCheckout }) => {
   const { items: cartItems, removeItem, updateQuantity, totalItems, totalAmount, currency } = useCart();
   // const queryClient = useQueryClient();
 
-  const { showToast } = useToast();
+  const { info } = useToast();
 
   const handleCheckout = () => {
     if (!user) {
-      showToast('Please log in to checkout', 'info');
+      info('Please log in to checkout');
       return null;
     }
 
     if (cartItems.length === 0) {
-      showToast('Your cart is empty', 'info');
+      info('Your cart is empty');
       return null;
     }
 

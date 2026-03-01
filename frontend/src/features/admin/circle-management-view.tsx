@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
-import { useToast } from '@/components/common/ToastProvider';
+import { useToast } from '@/shared/components/toast';
 import { useModal } from '@/components/common/ModalProvider';
 import { usePrompt } from '@/hooks/use-prompt';
 
@@ -80,7 +80,7 @@ interface Circle {
  * Admin interface for managing circle suggestions and circles
  */
 const CircleManagementView: React.FC = () => {
-  const { showToast } = useToast();
+  const { success } = useToast();
   const { PromptDialog, prompt } = usePrompt();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'suggestions' | 'circles'>('suggestions');
@@ -133,12 +133,12 @@ const CircleManagementView: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-circle-suggestions'] });
       queryClient.invalidateQueries({ queryKey: ['circles'] });
-      showToast('Circle created successfully!', 'success');
+      success('Circle created successfully!');
       setShowCreateForm(false);
       setSelectedSuggestion(null);
     },
     onError: (error: any) => {
-      showToast(error?.response?.data?.message || 'Failed to approve suggestion', 'error');
+      error(error?.response?.data?.message || 'Failed to approve suggestion');
     },
   });
 
@@ -150,10 +150,10 @@ const CircleManagementView: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-circle-suggestions'] });
-      showToast('Suggestion rejected', 'success');
+      success('Suggestion rejected');
     },
     onError: (error: any) => {
-      showToast(error?.response?.data?.message || 'Failed to reject suggestion', 'error');
+      error(error?.response?.data?.message || 'Failed to reject suggestion');
     },
   });
 
@@ -171,9 +171,9 @@ const CircleManagementView: React.FC = () => {
           await api.delete(`/circles/${circle.id}`);
           queryClient.invalidateQueries({ queryKey: ['admin-circles'] });
           queryClient.invalidateQueries({ queryKey: ['circles'] });
-          showToast('Circle deleted successfully', 'success');
+          success('Circle deleted successfully');
         } catch (error: any) {
-          showToast(error?.response?.data?.message || 'Failed to delete circle', 'error');
+          error(error?.response?.data?.message || 'Failed to delete circle');
         }
       }
     });

@@ -7,7 +7,7 @@ import { isDemoMode } from '@/shared/config/demo-mode';
 import { UserRole, VendorStatus } from '@common';
 import { getDemoUsersByRole } from '@/demo';
 import VerificationBadge from '@/shared/components/verification-badge';
-import { useToast } from '@/components/common/ToastProvider';
+import { useToast } from '@/shared/components/toast';
 
 interface Vendor {
   id: string;
@@ -87,7 +87,7 @@ const VendorReviewView: React.FC = () => {
     },
   });
 
-  const { showToast } = useToast();
+  const { success } = useToast();
 
   const approveVendorMutation = useMutation({
     mutationFn: async ({ vendorId, notes }: { vendorId: string; notes: string }) => {
@@ -100,10 +100,10 @@ const VendorReviewView: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-vendors'] });
       setSelectedVendor(null);
       setReviewNotes('');
-      showToast('Vendor approved successfully!', 'success');
+      success('Vendor approved successfully!');
     },
     onError: (error: any) => {
-      showToast(`Failed to approve vendor: ${error.response?.data?.message || error.message}`, 'error');
+      error(`Failed to approve vendor: ${error.response?.data?.message || error.message}`);
     },
   });
 
@@ -120,10 +120,10 @@ const VendorReviewView: React.FC = () => {
       setSelectedVendor(null);
       setRejectionReason('');
       setReviewNotes('');
-      showToast('Vendor rejected successfully!', 'success');
+      success('Vendor rejected successfully!');
     },
     onError: (error: any) => {
-      showToast(`Failed to reject vendor: ${error.response?.data?.message || error.message}`, 'error');
+      error(`Failed to reject vendor: ${error.response?.data?.message || error.message}`);
     },
   });
 
