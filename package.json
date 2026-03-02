@@ -8,6 +8,7 @@
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev",
     "build": "npm run build --workspaces --if-present",
+    "build:vercel": "npm --prefix common run build && npm --prefix frontend run build",
     "test": "npm run test --workspaces --if-present",
     "test:e2e": "cd frontend && npm run test:e2e"
   },
