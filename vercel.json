@@ -1,12 +1,5 @@
 {
   "buildCommand": "cd frontend && npm install && npm run build",
   "outputDirectory": "frontend/dist",
-  "devCommand": "npm run dev:frontend",
-  "env": {
-    "VITE_API_URL": "@VITE_API_URL",
-    "VITE_SOCKET_URL": "@VITE_SOCKET_URL",
-    "VITE_DEMO_MODE": "@VITE_DEMO_MODE",
-    "VITE_AGORA_APP_ID": "@VITE_AGORA_APP_ID",
-    "VITE_SENTRY_DSN": "@VITE_SENTRY_DSN"
-  }
+  "devCommand": "npm run dev:frontend"
 }
