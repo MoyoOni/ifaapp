@@ -153,6 +153,7 @@ jobs:
       - name: Deploy to production via SSH
         uses: appleboy/ssh-action@v1
         with:
+          # Secrets configured in GitHub repository settings
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}

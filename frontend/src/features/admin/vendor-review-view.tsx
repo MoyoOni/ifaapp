@@ -248,7 +248,7 @@ const VendorReviewView: React.FC = () => {
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-stone-900">Review Application</h2>
-                <button onClick={() => setSelectedVendor(null)} className="p-2 hover:bg-stone-100 rounded-lg">
+                <button onClick={() => setSelectedVendor(null)} className="p-2 hover:bg-stone-100 rounded-lg" aria-label="Close vendor review" title="Close">
                   <XCircle size={20} />
                 </button>
               </div>

@@ -218,6 +218,7 @@ const ClientWalletView: React.FC = () => {
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value as any)}
               className="px-3 py-1 border border-stone-200 rounded-lg focus:ring-2 focus:ring-highlight focus:border-transparent"
+              aria-label="Filter transactions by category"
             >
               <option value="all">All Categories</option>
               <option value="consultation">Consultations</option>
@@ -356,6 +357,8 @@ const ClientWalletView: React.FC = () => {
               <button 
                 onClick={() => setShowAddFundsModal(false)}
                 className="text-stone-500 hover:text-stone-700"
+                aria-label="Close add funds modal"
+                title="Close"
               >
                 <X size={24} />
               </button>

@@ -342,7 +342,7 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
           <div className="mb-4 bg-white/10 rounded-full h-2 overflow-hidden">
             <div
               className="bg-highlight h-full transition-all duration-500"
-              style={{ width: `${progressPercent}%` }}
+              style={{ width: `${progressPercent}%` } as React.CSSProperties}
             />
           </div>
         )}

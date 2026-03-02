@@ -23,11 +23,11 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ userName }) => {
           />
         </div>
         
-        <button className="p-2 rounded-lg border border-input hover:bg-accent">
+        <button className="p-2 rounded-lg border border-input hover:bg-accent" aria-label="View notifications" title="Notifications">
           <Bell className="w-5 h-5 text-muted-foreground" />
         </button>
         
-        <button className="p-2 rounded-lg border border-input hover:bg-accent">
+        <button className="p-2 rounded-lg border border-input hover:bg-accent" aria-label="View calendar" title="Calendar">
           <Calendar className="w-5 h-5 text-muted-foreground" />
         </button>
       </div>

@@ -259,6 +259,8 @@ Why this circle is needed: [Explain why this circle would benefit the community]
             <button
               onClick={onCancel}
               className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              aria-label="Cancel and close thread creation"
+              title="Close"
             >
               <X size={24} className="text-muted" />
             </button>
@@ -275,6 +277,7 @@ Why this circle is needed: [Explain why this circle would benefit the community]
               value={selectedCategoryId}
               onChange={(e) => setSelectedCategoryId(e.target.value)}
               required
+              aria-label="Select forum category for new thread"
               className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:ring-2 focus:ring-highlight"
             >
               <option value="">Select a category</option>

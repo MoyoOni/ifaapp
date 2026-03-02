@@ -340,6 +340,8 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                                 <button
                                     onClick={toggleMobileMenu}
                                     className="p-2 rounded-xl hover:bg-secondary/10 text-muted-foreground hover:text-foreground transition-colors"
+                                    aria-label="Close mobile menu"
+                                    title="Close"
                                 >
                                     <X size={24} />
                                 </button>

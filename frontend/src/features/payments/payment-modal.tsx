@@ -163,6 +163,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             onClick={onClose}
             className="p-2 hover:bg-white/10 rounded-lg transition-colors"
             disabled={isProcessing}
+            aria-label="Close payment modal"
+            title="Close"
           >
             <X className="w-5 h-5" />
           </button>
@@ -197,6 +199,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                 value={selectedCurrency}
                 onChange={(e) => setSelectedCurrency(e.target.value as Currency)}
                 disabled={isProcessing}
+                aria-label="Select payment currency"
                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-highlight disabled:opacity-50"
               >
                 <option value={Currency.NGN}>₦ NGN (Nigerian Naira)</option>

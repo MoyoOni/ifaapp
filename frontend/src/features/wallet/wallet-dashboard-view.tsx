@@ -397,7 +397,7 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
                             <div className="w-full h-2 bg-stone-200 rounded-full overflow-hidden">
                               <div
                                 className="h-full bg-gradient-to-r from-green-400 to-blue-500 transition-all duration-500"
-                                style={{ width: `${(releasedAmount / escrow.amount) * 100}%` }}
+                                style={{ width: `${(releasedAmount / escrow.amount) * 100}%` } as React.CSSProperties}
                               />
                             </div>
                           </div>
@@ -524,7 +524,7 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
 
                 <div className="space-y-4 pt-2 border-t border-stone-100">
                   <h4 className="font-bold text-sm text-center">Destination Account</h4>
-                  <select className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-sm font-medium">
+                  <select className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-sm font-medium" aria-label="Select destination bank account">
                     <option>GTBank - *9920</option>
                     <option>Access Bank - *2210</option>
                     <option>Add New Bank Account...</option>

@@ -337,6 +337,8 @@ const AdvisoryBoardVotingView: React.FC = () => {
                           type="button"
                           onClick={() => handleRemoveOption(index)}
                           className="p-2 text-red-400 hover:text-red-300"
+                          aria-label={`Remove option ${index + 1}`}
+                          title="Remove option"
                         >
                           <XCircle size={20} />
                         </button>
@@ -362,6 +364,7 @@ const AdvisoryBoardVotingView: React.FC = () => {
                     type="datetime-local"
                     value={newVote.deadline}
                     onChange={(e) => setNewVote({ ...newVote, deadline: e.target.value })}
+                    aria-label="Set voting deadline"
                     className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-highlight"
                   />
                 </div>
@@ -376,6 +379,7 @@ const AdvisoryBoardVotingView: React.FC = () => {
                       ...newVote,
                       requiredMajority: e.target.value as 'SIMPLE' | 'SUPER' | 'UNANIMOUS'
                     })}
+                    aria-label="Select required majority type"
                     className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-highlight"
                   >
                     <option value="SIMPLE" className="bg-background">Simple Majority (50%)</option>
@@ -469,7 +473,7 @@ const AdvisoryBoardVotingView: React.FC = () => {
                                   <div className="w-32 bg-background/20 rounded-full h-2">
                                     <div
                                       className="bg-highlight h-2 rounded-full"
-                                      style={{ width: `${percentage}%` }}
+                                      style={{ width: `${percentage}%` } as React.CSSProperties}
                                     ></div>
                                   </div>
                                   <span className="text-white font-medium w-10">{percentage}%</span>

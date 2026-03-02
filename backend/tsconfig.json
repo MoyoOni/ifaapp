@@ -16,6 +16,7 @@
     "noImplicitAny": true,
     "strict": true,
     "strictPropertyInitialization": true,
+    "forceConsistentCasingInFileNames": true,
     "paths": {
       "@/*": ["./src/*"],
       "@common/*": ["../common/src/*"],
