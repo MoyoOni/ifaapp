@@ -116,6 +116,8 @@ const CartView: React.FC<CartViewProps> = ({ onBack, onCheckout }) => {
                       <button
                         onClick={() => updateQuantity(item.productId, item.quantity - 1)}
                         className="w-8 h-8 flex items-center justify-center bg-white rounded-md text-stone-600 shadow-sm hover:text-highlight transition-colors"
+                        aria-label={`Decrease quantity for ${item.name}`}
+                        title="Decrease quantity"
                       >
                         <Minus size={14} />
                       </button>
@@ -124,6 +126,8 @@ const CartView: React.FC<CartViewProps> = ({ onBack, onCheckout }) => {
                         onClick={() => updateQuantity(item.productId, item.quantity + 1)}
                         disabled={item.stock != null && item.quantity >= item.stock}
                         className="w-8 h-8 flex items-center justify-center bg-white rounded-md text-stone-600 shadow-sm hover:text-highlight transition-colors disabled:opacity-50"
+                        aria-label={`Increase quantity for ${item.name}`}
+                        title="Increase quantity"
                       >
                         <Plus size={14} />
                       </button>
