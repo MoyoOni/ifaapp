@@ -87,7 +87,12 @@
       "Bash(curl -s http://localhost:3000/api/academy/courses)",
       "Bash(curl -s http://localhost:3000/api/circles -H \"Authorization: Bearer $TOKEN\")",
       "Bash(curl -s http://localhost:3000/api/notifications -H \"Authorization: Bearer $TOKEN\")",
-      "Bash(curl -s http://localhost:3000/api/metrics)"
+      "Bash(curl -s http://localhost:3000/api/metrics)",
+      "Bash(npm ls react)",
+      "Bash(xargs -I{} node -e \"const p = require\\(''./'' + ''{}''\\); console.log\\(''{}'', p.version\\)\")",
+      "Bash(npm why react)",
+      "Bash(npx eslint src --ext ts,tsx --max-warnings 999)",
+      "Bash(npm why rxjs)"
     ]
   }
 }
