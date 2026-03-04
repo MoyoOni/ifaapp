@@ -26,10 +26,10 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
-      port: 5173,
+      port: 8100,
       proxy: {
         '/api': {
-          target: 'http://localhost:3000',
+          target: 'http://localhost:8080',
           changeOrigin: true,
         },
       },
