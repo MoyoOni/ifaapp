@@ -21,17 +21,18 @@
     "common"
   ],
   "devDependencies": {
-    "@testing-library/dom": "^9.3.4",
-    "@testing-library/react": "^14.1.2",
     "@types/express": "^4.17.21",
     "@types/node": "^20.11.17",
-    "concurrently": "^8.2.2",
-    "vitest": "^1.0.4"
+    "concurrently": "^8.2.2"
   },
   "dependencies": {
     "@types/pdfkit": "^0.17.5",
     "pdfkit": "^0.17.2",
     "rxjs": "^7.8.1",
     "validator": "^13.11.0"
+  },
+  "overrides": {
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
   }
 }

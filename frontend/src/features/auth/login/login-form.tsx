@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Mail, Lock, Loader2 } from 'lucide-react';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { UserRole } from '@common';
+import appLogo from '@/assets/logo.png';
 
 interface LoginFormProps {
   selectedRole?: UserRole;
@@ -87,7 +88,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ selectedRole, onSuccess, onSwitch
         </div>
       )}
 
-      <div className="text-center space-y-2">
+      <div className="text-center space-y-3">
+        <img src={appLogo} alt="Ìlú Àṣẹ" className="w-16 h-16 mx-auto rounded-2xl shadow-lg" />
         <h2 className="text-[2rem] sm:text-[2.5rem] font-bold brand-font text-stone-800 tracking-tight">Welcome Back</h2>
         <p className="text-stone-500 text-[1rem] font-medium">
           {selectedRole ? (

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Mail, Lock, User, Loader2 } from 'lucide-react';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { UserRole } from '@common';
+import appLogo from '@/assets/logo.png';
 
 interface RegisterFormProps {
   selectedRole: UserRole;
@@ -58,7 +59,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, on
       {/* Decorative Gold Line */}
       <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-input via-highlight to-input"></div>
 
-      <div className="text-center space-y-2">
+      <div className="text-center space-y-3">
+        <img src={appLogo} alt="Ìlú Àṣẹ" className="w-16 h-16 mx-auto rounded-2xl shadow-lg" />
         <h2 className="text-[1.5rem] md:text-[2rem] font-[700] text-stone-800 tracking-tight brand-font">
           Begin Your Journey
         </h2>

@@ -25,6 +25,7 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, './src'),
         '@common': path.resolve(__dirname, '../common/dist'),
       },
+      dedupe: ['react', 'react-dom'],
     },
     server: {
       port: 8100,
