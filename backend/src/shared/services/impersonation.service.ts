@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '@/modules/user/user.service';
 import { AuditService } from './audit.service';
-import { User } from '@prisma/client';
+import { User } from '../types/prisma-models';
 import { UserRole } from '@common/enums/user-role.enum';
 
 export interface ImpersonationResult {

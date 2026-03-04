@@ -429,7 +429,7 @@ export class ForumService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return acknowledgments.map((ack) => ack.user);
+    return acknowledgments.map((ack: any) => ack.user);
   }
 
   async findAllPosts(threadId: string) {

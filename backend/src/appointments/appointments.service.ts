@@ -12,7 +12,7 @@ import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { CheckAvailabilityDto } from './dto/check-availability.dto';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { WalletService } from '../wallet/wallet.service';
-import { Appointment, User } from '@prisma/client';
+import { Appointment } from '../shared/types/prisma-models';
 import { EscrowType, EscrowStatus } from '@ile-ase/common';
 import { AvailabilitySlot } from './types';
 
@@ -78,7 +78,7 @@ export class AppointmentsService {
 
     if (!babalawo) throw new BadRequestException('Babalawo not found.');
 
-    const conflicts = babalawo.appointmentsAsBabalawo.some((appt) =>
+    const conflicts = babalawo.appointmentsAsBabalawo.some((appt: any) =>
       this.timesOverlap(appt, date, time, duration)
     );
 

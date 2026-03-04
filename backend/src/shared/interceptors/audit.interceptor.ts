@@ -4,12 +4,11 @@ import {
   Injectable,
   NestInterceptor,
 } from '@nestjs/common';
-import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
 import { AuditService } from '../services/audit.service';
-import { User } from '@prisma/client';
+import { User } from '../types/prisma-models';
 
 export interface AuditMetadata {
   resourceType: string;
@@ -24,7 +23,7 @@ export class AuditInterceptor implements NestInterceptor {
     private readonly reflector: Reflector,
   ) {}
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  intercept(context: ExecutionContext, next: CallHandler) {
     const req = context.switchToHttp().getRequest<Request>();
     const res = context.switchToHttp().getResponse();
 
@@ -44,8 +43,8 @@ export class AuditInterceptor implements NestInterceptor {
     const originalQuery = { ...req.query };
 
     // Execute the handler and capture the response
-    return next.handle().pipe(
-      tap(async (response) => {
+    return (next.handle() as any).pipe(
+      tap(async (response: any) => {
         try {
           // Determine the user performing the action
           const user = req.user as User;

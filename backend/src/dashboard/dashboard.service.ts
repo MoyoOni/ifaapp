@@ -28,7 +28,7 @@ export class DashboardService {
       },
     });
 
-    const recentConsultations: ConsultationSummary[] = appointments.map((apt) => ({
+    const recentConsultations: ConsultationSummary[] = appointments.map((apt: any) => ({
       id: apt.id,
       clientId: apt.clientId,
       clientName: '',
@@ -56,7 +56,7 @@ export class DashboardService {
       },
     });
 
-    const pendingGuidancePlans: GuidancePlanSummary[] = guidancePlans.map((plan) => ({
+    const pendingGuidancePlans: GuidancePlanSummary[] = guidancePlans.map((plan: any) => ({
       id: plan.id,
       title: plan.type || 'Guidance Plan',
       consultationId: plan.appointmentId || '',
@@ -114,14 +114,14 @@ export class DashboardService {
       recentConsultations,
       pendingGuidancePlans,
       communities: {
-        temples: (user?.templesJoined || []).map((t) => ({
+        temples: (user?.templesJoined || []).map((t: any) => ({
           id: t.id,
           name: t.name,
           slug: t.slug,
           location: t.location || undefined,
           memberCount: 0,
         })),
-        circles: (user?.circleMemberships || []).map((m) => ({
+        circles: (user?.circleMemberships || []).map((m: any) => ({
           id: m.circle.id,
           name: m.circle.name,
           slug: m.circle.slug,
@@ -161,7 +161,7 @@ export class DashboardService {
       },
     });
 
-    const upcomingConsultations: ConsultationSummary[] = upcomingAppointments.map((apt) => ({
+    const upcomingConsultations: ConsultationSummary[] = upcomingAppointments.map((apt: any) => ({
       id: apt.id,
       clientId: apt.clientId,
       clientName: apt.client?.name || 'Unknown',
@@ -190,7 +190,7 @@ export class DashboardService {
       },
     });
 
-    const pendingGuidancePlans: GuidancePlanSummary[] = pendingPlans.map((plan) => ({
+    const pendingGuidancePlans: GuidancePlanSummary[] = pendingPlans.map((plan: any) => ({
       id: plan.id,
       title: plan.type || 'Guidance Plan',
       consultationId: plan.appointmentId || '',
@@ -211,7 +211,7 @@ export class DashboardService {
       },
     });
 
-    const activeClients = babalawoClients.map((bc) => ({
+    const activeClients = babalawoClients.map((bc: any) => ({
       id: bc.client.id,
       name: bc.client.name,
       avatar: bc.client.avatar || undefined,
@@ -230,7 +230,7 @@ export class DashboardService {
     });
 
     const monthlyEarnings = {
-      amount: monthlyEscrows.reduce((sum, e) => sum + Number(e.amount), 0),
+      amount: monthlyEscrows.reduce((sum: number, e: any) => sum + Number(e.amount), 0),
       currency: monthlyEscrows[0]?.currency || 'NGN',
       transactionCount: monthlyEscrows.length,
     };
@@ -343,9 +343,9 @@ export class DashboardService {
 
     const inventoryStatus = {
       totalProducts: products.length,
-      activeProducts: products.filter((p) => p.status === 'ACTIVE').length,
-      lowStock: products.filter((p) => p.stock !== null && p.stock > 0 && p.stock <= 5).length,
-      outOfStock: products.filter((p) => p.stock === 0).length,
+      activeProducts: products.filter((p: any) => p.status === 'ACTIVE').length,
+      lowStock: products.filter((p: any) => p.stock !== null && p.stock > 0 && p.stock <= 5).length,
+      outOfStock: products.filter((p: any) => p.stock === 0).length,
     };
 
     // Get recent orders
@@ -363,7 +363,7 @@ export class DashboardService {
       },
     });
 
-    const recentOrders = orders.map((order) => ({
+    const recentOrders = orders.map((order: any) => ({
       id: order.id,
       orderNumber: order.id.slice(0, 8).toUpperCase(),
       customerName: order.customer?.name || 'Unknown',
@@ -385,7 +385,7 @@ export class DashboardService {
     });
 
     const monthlyRevenue = {
-      amount: monthlyOrders.reduce((sum, o) => sum + Number(o.totalAmount), 0),
+      amount: monthlyOrders.reduce((sum: number, o: any) => sum + Number(o.totalAmount), 0),
       currency: monthlyOrders[0]?.currency || 'NGN',
       orderCount: monthlyOrders.length,
     };
@@ -400,7 +400,7 @@ export class DashboardService {
 
     // Get top products
     const topProducts = products
-      .map((p) => ({
+      .map((p: any) => ({
         id: p.id,
         name: p.name,
         price: Number(p.price),

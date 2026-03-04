@@ -1,6 +1,6 @@
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { User } from '@prisma/client';
+import { User } from '../types/prisma-models';
 
 @Injectable()
 export class AdminSubRolesGuard implements CanActivate {

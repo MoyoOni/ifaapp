@@ -430,7 +430,7 @@ export class MarketplaceService {
     const orderItems: Array<{ productId: string; quantity: number; price: number }> = [];
 
     for (const item of dto.items) {
-      const product = products.find((p) => p.id === item.productId);
+      const product = products.find((p: any) => p.id === item.productId);
       if (!product) {
         throw new BadRequestException(`Product ${item.productId} not found`);
       }
@@ -497,7 +497,7 @@ export class MarketplaceService {
 
     // Update product stock (for physical products)
     for (const item of dto.items) {
-      const product = products.find((p) => p.id === item.productId);
+      const product = products.find((p: any) => p.id === item.productId);
       if (product && product.type === 'PHYSICAL' && product.stock !== null) {
         await this.prisma.product.update({
           where: { id: product.id },

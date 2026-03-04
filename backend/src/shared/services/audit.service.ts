@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
-import { User } from '@prisma/client';
+import { User } from '../types/prisma-models';
 import { PiiMaskingUtil } from '../utils/pii-masking.util';
 
 export interface AuditLogEntry {

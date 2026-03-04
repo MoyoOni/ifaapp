@@ -1,7 +1,7 @@
 import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JobQueueService, JobData } from '../../queues/job-queue.service';
-import { User } from '@prisma/client';
+import { User } from '../../shared/types/prisma-models';
 
 export interface PushNotificationPayload {
   userId: string;

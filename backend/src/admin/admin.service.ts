@@ -874,7 +874,7 @@ export class AdminService {
 
     // Normalize
     const reports = [
-      ...productReviews.map((r) => ({
+      ...productReviews.map((r: any) => ({
         id: r.id,
         type: 'PRODUCT_REVIEW',
         content: r.content,
@@ -886,7 +886,7 @@ export class AdminService {
         authorName: r.customer.name,
         createdAt: r.createdAt,
       })),
-      ...babalawoReviews.map((r) => ({
+      ...babalawoReviews.map((r: any) => ({
         id: r.id,
         type: 'BABALAWO_REVIEW',
         content: r.content,
@@ -898,7 +898,7 @@ export class AdminService {
         authorName: r.client.name,
         createdAt: r.createdAt,
       })),
-      ...courseReviews.map((r) => ({
+      ...courseReviews.map((r: any) => ({
         id: r.id,
         type: 'COURSE_REVIEW',
         content: r.content,
@@ -1037,11 +1037,11 @@ export class AdminService {
     });
 
     // Format results to match frontend expectations
-    return votes.map((vote) => {
+    return votes.map((vote: any) => {
       const totalVotes = vote.casts.length;
       const yesVotes =
-        vote.options.find((opt) => opt.option.toLowerCase() === 'yes')?.voteCount || 0;
-      const noVotes = vote.options.find((opt) => opt.option.toLowerCase() === 'no')?.voteCount || 0;
+        vote.options.find((opt: any) => opt.option.toLowerCase() === 'yes')?.voteCount || 0;
+      const noVotes = vote.options.find((opt: any) => opt.option.toLowerCase() === 'no')?.voteCount || 0;
       const abstainVotes = totalVotes - yesVotes - noVotes;
 
       return {
@@ -1052,8 +1052,8 @@ export class AdminService {
           abstain: abstainVotes,
         },
         voterCount: totalVotes,
-        voteOptions: vote.options.map((opt) => opt.option),
-        results: vote.options.map((opt) => ({
+        voteOptions: vote.options.map((opt: any) => opt.option),
+        results: vote.options.map((opt: any) => ({
           option: opt.option,
           count: opt.voteCount,
           percentage: totalVotes > 0 ? Math.round((opt.voteCount / totalVotes) * 100) : 0,
@@ -1103,7 +1103,7 @@ export class AdminService {
     }
 
     // Verify the option is valid
-    const validOption = vote.options.find((opt) => opt.option === option);
+    const validOption = vote.options.find((opt: any) => opt.option === option);
     if (!validOption) {
       throw new BadRequestException('Invalid vote option');
     }
@@ -1180,7 +1180,7 @@ export class AdminService {
     }
 
     // Find the winning option
-    const winner = vote.options.reduce((prev, current) =>
+    const winner = vote.options.reduce((prev: any, current: any) =>
       prev.voteCount > current.voteCount ? prev : current
     );
 

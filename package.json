@@ -25,12 +25,7 @@
     "@types/node": "^20.11.17",
     "concurrently": "^8.2.2"
   },
-  "dependencies": {
-    "@types/pdfkit": "^0.17.5",
-    "pdfkit": "^0.17.2",
-    "rxjs": "^7.8.1",
-    "validator": "^13.11.0"
-  },
+  "dependencies": {},
   "overrides": {
     "react": "^19.2.3",
     "react-dom": "^19.2.3"

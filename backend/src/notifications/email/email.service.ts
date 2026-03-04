@@ -2,7 +2,7 @@ import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MailerService } from '@nestjs-modules/mailer';
 import { JobQueueService, JobData } from '../../queues/job-queue.service';
-import { User } from '@prisma/client';
+import { User } from '../../shared/types/prisma-models';
 
 export interface EmailPayload {
   to: string | string[];

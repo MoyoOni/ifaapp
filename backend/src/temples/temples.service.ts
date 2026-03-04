@@ -714,6 +714,6 @@ export class TemplesService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return follows.map((follow) => follow.temple);
+    return follows.map((follow: any) => follow.temple);
   }
 }

@@ -4,7 +4,7 @@ import {
   Injectable,
   NestInterceptor,
 } from '@nestjs/common';
-import { Observable, throwError } from 'rxjs';
+import { throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import * as Sentry from '@sentry/node';
 import { ConfigService } from '@nestjs/config';
@@ -13,14 +13,14 @@ import { ConfigService } from '@nestjs/config';
 export class SentryInterceptor implements NestInterceptor {
   constructor(private configService: ConfigService) {}
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  intercept(context: ExecutionContext, next: CallHandler) {
     if (process.env.NODE_ENV === 'development') {
       // Skip Sentry in development
       return next.handle();
     }
 
-    return next.handle().pipe(
-      catchError((error) => {
+    return (next.handle() as any).pipe(
+      catchError((error: any) => {
         // Capture the error in Sentry
         Sentry.withScope((scope) => {
           // Add context based on the request

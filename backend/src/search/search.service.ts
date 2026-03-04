@@ -72,7 +72,7 @@ export class SearchService {
           location: true,
         },
       });
-      results.results.push(...babalawos.map((b) => ({ type: 'babalawo', ...b })));
+      results.results.push(...babalawos.map((b: any) => ({ type: 'babalawo', ...b })));
     }
 
     // Search Temples
@@ -97,7 +97,7 @@ export class SearchService {
           verified: true,
         },
       });
-      results.results.push(...temples.map((t) => ({ type: 'temple', ...t })));
+      results.results.push(...temples.map((t: any) => ({ type: 'temple', ...t })));
     }
 
     // Search Products
@@ -124,7 +124,7 @@ export class SearchService {
           },
         },
       });
-      results.results.push(...products.map((p) => ({ ...p, type: 'product' })));
+      results.results.push(...products.map((p: any) => ({ ...p, type: 'product' })));
     }
 
     // Search Courses
@@ -148,7 +148,7 @@ export class SearchService {
           },
         },
       });
-      results.results.push(...courses.map((c) => ({ type: 'course', ...c })));
+      results.results.push(...courses.map((c: any) => ({ type: 'course', ...c })));
     }
 
     // Generate suggestions
@@ -200,9 +200,9 @@ export class SearchService {
     ]);
 
     const suggestions = [
-      ...babalawos.map((b) => ({ text: b.yorubaName || b.name, type: 'babalawo' })),
-      ...temples.map((t) => ({ text: t.yorubaName || t.name, type: 'temple' })),
-      ...products.map((p) => ({ text: p.name, type: 'product' })),
+      ...babalawos.map((b: { name: string; yorubaName: string | null }) => ({ text: b.yorubaName || b.name, type: 'babalawo' })),
+      ...temples.map((t: { name: string; yorubaName: string | null }) => ({ text: t.yorubaName || t.name, type: 'temple' })),
+      ...products.map((p: { name: string }) => ({ text: p.name, type: 'product' })),
     ].slice(0, limit);
 
     return suggestions;
