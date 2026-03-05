@@ -344,7 +344,7 @@ const LoadingSpinner = () => (
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router>
+      <Router basename={import.meta.env.BASE_URL}>
         <ErrorBoundary>
           <div className="App bg-background text-foreground"> {/* Apply theme variables globally */}
             <React.Suspense fallback={<LoadingSpinner />}>
