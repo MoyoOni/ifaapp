@@ -10,8 +10,11 @@ const __dirname = path.dirname(__filename);
 
 export default defineConfig(({ mode }) => {
   const withAnalyzer = process.env.ANALYZE === '1';
+  // GitHub Pages base path (change to empty string for custom domain)
+  const base = process.env.VITE_BASE_PATH || '/ifaapp/';
 
   return {
+    base,
     plugins: [
       react(),
       withAnalyzer && visualizer({
