@@ -55,14 +55,15 @@ PORT=3000
 NODE_ENV=production
 FRONTEND_URL=http://${EC2_HOST}
 
-# Payment Gateways
-PAYSTACK_SECRET_KEY=sk_test_c91b0866567596588f6b952d491ba10a86b6833a
-FLUTTERWAVE_PUBLIC_KEY=FLWPUBK_TEST-99bcb1a9fb478925d01e4890bf4ce62b-X
-FLUTTERWAVE_SECRET_KEY=FLWSECK_TEST-11bd1fa3353a67e40db1f378b0a3f988-X
-FLUTTERWAVE_SECRET_HASH=FLWSECK_TEST5f1659c16c15
+# Payment Gateways (IMPORTANT: Keep these SECRET - never commit real keys)
+# Get these from your payment gateway dashboards
+PAYSTACK_SECRET_KEY=your-paystack-secret-key-here
+FLUTTERWAVE_PUBLIC_KEY=your-flutterwave-public-key-here
+FLUTTERWAVE_SECRET_KEY=your-flutterwave-secret-key-here
+FLUTTERWAVE_SECRET_HASH=your-flutterwave-secret-hash-here
 
-# Error Tracking
-SENTRY_DSN=https://0e64f15b4016cc9080cc0657c2f67aed@o4510958532427776.ingest.de.sentry.io/4510958801059920
+# Error Tracking (IMPORTANT: Keep these SECRET - never commit real DSNs)
+SENTRY_DSN=your-sentry-dsn-here
 EOF
 
 echo ""
