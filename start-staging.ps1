@@ -117,7 +117,7 @@ Pop-Location
 Write-Host "`n" -ForegroundColor Cyan
 Write-Host "✅ Staging environment started!" -ForegroundColor Green
 Write-Host "================================================" -ForegroundColor Cyan
-Write-Host "Frontend:  http://localhost:3000" -ForegroundColor Cyan
+Write-Host "Frontend:  http://localhost:4040" -ForegroundColor Cyan
 Write-Host "API:       http://localhost:8080" -ForegroundColor Cyan
 Write-Host "Swagger:   http://localhost:8080/api/docs" -ForegroundColor Cyan
 Write-Host "Database:  localhost:5433" -ForegroundColor Cyan
@@ -130,4 +130,4 @@ Write-Host "  DB shell:      docker-compose -f docker-compose.staging.yml exec p
 Write-Host "  Stop:          docker-compose -f docker-compose.staging.yml down" -ForegroundColor Gray
 Write-Host "  Restart:       docker-compose -f docker-compose.staging.yml restart" -ForegroundColor Gray
 
-Write-Host "`n🚀 Ready to test! Open http://localhost:3000 in your browser." -ForegroundColor Green
+Write-Host "`n🚀 Ready to test! Open http://localhost:4040 in your browser." -ForegroundColor Green

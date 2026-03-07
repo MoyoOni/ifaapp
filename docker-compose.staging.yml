@@ -85,7 +85,7 @@ services:
     image: nginx:alpine
     container_name: ilu-ase-staging-nginx
     ports:
-      - "3000:80"
+      - "4040:80"
     volumes:
       - ./frontend/dist:/usr/share/nginx/html
       - ./docker/nginx.staging.conf:/etc/nginx/nginx.conf:ro

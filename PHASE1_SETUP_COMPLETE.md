@@ -56,7 +56,7 @@ cd c:\Users\Test\ifa_app
 - 🐘 PostgreSQL starts (port 5433)
 - 🔴 Redis starts (port 6380)
 - 🔵 Backend compiles & starts (port 8080)
-- 🏗️  Frontend builds & starts (via Nginx on port 3000)
+- 🏗️  Frontend builds & starts (via Nginx on port 4040)
 - 🔄 Database migrations run automatically
 - 📊 Health checks verify everything
 
@@ -66,7 +66,7 @@ cd c:\Users\Test\ifa_app
 
 Access the application:
 ```
-Frontend:  http://localhost:3000
+Frontend:  http://localhost:4040
 API Docs:  http://localhost:8080/api/docs
 Health:    http://localhost:8080/health
 ```
@@ -87,7 +87,7 @@ Run automated smoke tests:
                        │
                        ▼
 ┌─────────────────────────────────────────────────────────┐
-│ Nginx (Port 3000)                                       │
+│ Nginx (Port 4040)                                       │
 │ - Serves React frontend                                 │
 │ - Proxies /api/* to backend                            │
 │ - Proxies /socket.io/* for WebSockets                  │

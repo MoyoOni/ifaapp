@@ -109,7 +109,7 @@ Typically takes 30-60 seconds first time.
 
 ```bash
 # Open browser to:
-http://localhost:3000
+http://localhost:4040
 ```
 
 You should see the login page. ✅
@@ -353,4 +353,4 @@ curl http://localhost:8080/health
 .\start-staging.ps1 -Force
 ```
 
-Then open http://localhost:3000 🎉
+Then open http://localhost:4040 🎉

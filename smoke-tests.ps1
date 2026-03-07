@@ -17,7 +17,7 @@ param(
 
 $ErrorActionPreference = "Continue"
 $baseUrl = "http://localhost:8080"
-$frontendUrl = "http://localhost:3000"
+$frontendUrl = "http://localhost:4040"
 $passCount = 0
 $failCount = 0
 $skipTests = $Skip.Split(',').Trim()
