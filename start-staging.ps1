@@ -25,26 +25,27 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 Write-Host "🚀 Starting Ìlú Àṣẹ Staging Environment" -ForegroundColor Cyan
 Write-Host "================================================" -ForegroundColor Cyan
 
-# Check if .env.staging exists
-if (-not (Test-Path "$scriptDir\.env.staging")) {
-    Write-Host "❌ .env.staging not found!" -ForegroundColor Red
-    Write-Host "Please copy .env.staging.example or create .env.staging with production values" -ForegroundColor Yellow
+# Check if .env.staging.local exists
+if (-not (Test-Path "$scriptDir\.env.staging.local")) {
+    Write-Host "❌ .env.staging.local not found!" -ForegroundColor Red
+    Write-Host "Please copy .env.staging to .env.staging.local and fill in real values" -ForegroundColor Yellow
     exit 1
 }
+$envFile = "$scriptDir\.env.staging.local"
 
 # Stop existing containers if Force flag is set
 if ($Force) {
     Write-Host "`n🛑 Stopping existing containers..." -ForegroundColor Yellow
-    docker-compose -f "$scriptDir/docker-compose.staging.yml" down --remove-orphans
+    docker-compose -f "$scriptDir/docker-compose.staging.yml" --env-file $envFile down --remove-orphans
 }
 
 # Build backend if needed
 Write-Host "`n🔨 Building services..." -ForegroundColor Yellow
-docker-compose -f "$scriptDir/docker-compose.staging.yml" build --no-cache:$(!$Force)
+docker-compose -f "$scriptDir/docker-compose.staging.yml" --env-file $envFile build --no-cache:$(!$Force)
 
 # Start all services
 Write-Host "`n⬆️  Starting services..." -ForegroundColor Yellow
-docker-compose -f "$scriptDir/docker-compose.staging.yml" up -d
+docker-compose -f "$scriptDir/docker-compose.staging.yml" --env-file $envFile up -d
 
 # Wait for services to be healthy
 Write-Host "`n⏳ Waiting for services to be healthy..." -ForegroundColor Yellow
@@ -60,7 +61,7 @@ while ($attempt -lt $maxAttempts) {
     
     # Check PostgreSQL
     try {
-        $postgres = docker-compose -f "$scriptDir/docker-compose.staging.yml" exec -T postgres pg_isready -U staging_user -d ilu_ase_staging 2>/dev/null
+        $postgres = docker-compose -f "$scriptDir/docker-compose.staging.yml" --env-file $envFile exec -T postgres pg_isready -U staging_user -d ilu_ase_staging 2>/dev/null
         $postgresHealthy = $LASTEXITCODE -eq 0
     } catch {
         $postgresHealthy = $false
@@ -68,7 +69,7 @@ while ($attempt -lt $maxAttempts) {
     
     # Check Redis
     try {
-        $redis = docker-compose -f "$scriptDir/docker-compose.staging.yml" exec -T redis redis-cli ping 2>/dev/null
+        $redis = docker-compose -f "$scriptDir/docker-compose.staging.yml" --env-file $envFile exec -T redis redis-cli ping 2>/dev/null
         $redisHealthy = $redis -like "*PONG*" -or $redis -like "*OK*"
     } catch {
         $redisHealthy = $false
@@ -76,7 +77,7 @@ while ($attempt -lt $maxAttempts) {
     
     # Check Backend
     try {
-        $backend = Invoke-WebRequest -Uri "http://localhost:8080/health" -ErrorAction SilentlyContinue
+        $backend = Invoke-WebRequest -Uri "http://localhost:8080/api/health" -ErrorAction SilentlyContinue
         $backendHealthy = $backend.StatusCode -eq 200
     } catch {
         $backendHealthy = $false
@@ -99,12 +100,12 @@ if (-not ($postgresHealthy -and $redisHealthy -and $backendHealthy)) {
 
 # Run database migrations
 Write-Host "`n🔄 Running database migrations..." -ForegroundColor Yellow
-docker-compose -f "$scriptDir/docker-compose.staging.yml" exec -T backend npm run migrate:deploy 2>&1 | Select-Object -Last 10
+docker-compose -f "$scriptDir/docker-compose.staging.yml" --env-file $envFile exec -T backend npm run migrate:deploy 2>&1 | Select-Object -Last 10
 
 # Optionally seed data
 if ($Seed) {
     Write-Host "`n🌱 Seeding demo data..." -ForegroundColor Yellow
-    docker-compose -f "$scriptDir/docker-compose.staging.yml" exec -T backend npm run seed 2>&1 | Select-Object -Last 10
+    docker-compose -f "$scriptDir/docker-compose.staging.yml" --env-file $envFile exec -T backend npm run seed 2>&1 | Select-Object -Last 10
 }
 
 # Build frontend

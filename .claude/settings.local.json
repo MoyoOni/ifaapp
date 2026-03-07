@@ -105,7 +105,10 @@
       "Bash(xargs rm -f)",
       "Bash(npx eslint src/ --fix)",
       "Bash(cat c:/Users/Test/ifa_app/backend/eslint.config.*)",
-      "Bash(npx eslint src/ --format json)"
+      "Bash(npx eslint src/ --format json)",
+      "Bash(docker --version)",
+      "Bash(docker-compose --version)",
+      "Bash(powershell -ExecutionPolicy Bypass -File start-staging.ps1 -Force)"
     ]
   }
 }
