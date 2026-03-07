@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
-import { isDemoMode } from '@/shared/config/demo-mode';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 
 interface AnalyticsData {
@@ -22,31 +22,11 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ vendorId, activ
   const { data: analyticsData, isLoading: analyticsLoading } = useQuery<AnalyticsData>({
     queryKey: ['vendor-analytics', vendorId],
     queryFn: async () => {
-      if (isDemoMode) {
-        // Demo analytics data
-        return {
-          totalSales: 124,
-          totalOrders: 89,
-          totalProducts: 12,
-          totalRevenue: 45600,
-          revenueGrowth: 15,
-          avgOrderValue: 512,
-        };
-      }
-      
       try {
         const response = await api.get(`/vendors/${vendorId}/analytics`);
         return response.data;
       } catch (error) {
-        logger.error('Failed to fetch vendor analytics', error);
-        return {
-          totalSales: 0,
-          totalOrders: 0,
-          totalProducts: 0,
-          totalRevenue: 0,
-          revenueGrowth: 0,
-          avgOrderValue: 0,
-        };
+        throw error;
       }
     },
   });

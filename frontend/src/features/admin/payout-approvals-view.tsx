@@ -4,7 +4,7 @@ import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { UserRole } from '@common';
 import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
-import { isDemoMode } from '@/shared/config/demo-mode';
+
 import { getDemoUserById, type DemoUser } from '@/demo';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
@@ -52,7 +52,7 @@ const PayoutApprovalsView: React.FC = () => {
         });
         return response.data;
       } catch (error) {
-        if (!isDemoMode) throw error;
+        throw error;
 
         logger.warn('Failed to fetch withdrawals, using demo data');
         const demoBaba1 = getDemoUserById('demo-baba-1') || ({ id: 'demo-baba-1', name: 'Babalawo', role: UserRole.BABALAWO } as DemoUser);
@@ -420,3 +420,4 @@ const PayoutApprovalsView: React.FC = () => {
 };
 
 export default PayoutApprovalsView;
+

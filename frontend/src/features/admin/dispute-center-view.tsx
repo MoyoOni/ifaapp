@@ -4,7 +4,7 @@ import { AlertTriangle, CheckCircle, XCircle, Clock, ArrowUp, User, FileText, Se
 import { UserRole } from '@common';
 import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
-import { isDemoMode } from '@/shared/config/demo-mode';
+
 import { getDemoUserById, type DemoUser } from '@/demo';
 import { useToast } from '@/shared/components/toast';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
@@ -139,10 +139,7 @@ const DisputeCenterView: React.FC = () => {
         const response = await api.get('/disputes', { params });
         return response.data;
       } catch (error) {
-        if (!isDemoMode) throw error;
-
-        logger.warn('Failed to fetch disputes, using demo data');
-        return demoDisputes;
+        throw error;
       }
     },
   });

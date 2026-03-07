@@ -1,7 +1,6 @@
 import { AxiosError } from 'axios';
 import { logger, getLogContext } from './logger';
 import { captureException } from '@/shared/config/sentry';
-import { isDemoMode } from '@/shared/config/demo-mode';
 
 /** Standard API error shape (PB-202.5); backend returns { success: false, error: StandardApiError }. */
 export interface StandardApiError {
@@ -31,6 +30,8 @@ export interface ParsedApiError {
  * Parse any API error into a consistent, user-friendly shape.
  * Supports standardized format (success: false, error: { userMessage, code, ... }) and legacy shapes.
  * Use in catch blocks or via useApiErrorHandler() for toasts.
+ * 
+ * PRODUCTION: All errors use production message copy (no demo fallback messages).
  */
 export function parseApiError(error: unknown): ParsedApiError {
   const defaultResult: ParsedApiError = {
@@ -95,13 +96,9 @@ export function parseApiError(error: unknown): ParsedApiError {
           userMessage = 'The information provided could not be accepted. Please check and try again.';
           break;
         case 500:
-          userMessage = isDemoMode 
-            ? 'Demo mode: Server temporarily unavailable, using demo data.' 
-            : 'A server error occurred. Our team has been notified.';
+          userMessage = 'A server error occurred. Our team has been notified.';
           recoverySuggestions = [
-            isDemoMode 
-              ? 'Continue using demo features' 
-              : 'Try again later',
+            'Try again later',
             ...(import.meta.env.DEV && (data?.error || standardError?.message)
               ? ['Check Network tab → failed request → Response for backend error details']
               : []),
@@ -109,21 +106,15 @@ export function parseApiError(error: unknown): ParsedApiError {
           break;
         case 502:
         case 504:
-          userMessage = isDemoMode 
-            ? 'Demo mode: Service temporarily unavailable, using demo data.' 
-            : 'The service is temporarily unavailable. Please try again in a moment.';
+          userMessage = 'The service is temporarily unavailable. Please try again in a moment.';
           break;
         case 503:
-          userMessage = isDemoMode 
-            ? 'Demo mode: Service unavailable, using demo data.' 
-            : 'Service is temporarily unavailable. Please try again later.';
+          userMessage = 'Service is temporarily unavailable. Please try again later.';
           break;
         default:
           userMessage =
             status >= 500
-              ? (isDemoMode 
-                  ? 'Demo mode: Server error occurred, using demo data.' 
-                  : 'A server error occurred. Please try again later.')
+              ? 'A server error occurred. Please try again later.'
               : `Request failed (${status}). Please try again.`;
       }
     }
@@ -140,13 +131,9 @@ export function parseApiError(error: unknown): ParsedApiError {
   if (axiosError.request) {
     // No response received — network/connection issue
     return {
-      userMessage: isDemoMode 
-        ? 'Demo mode: Unable to connect, using demo data.' 
-        : 'Unable to connect. Please check your internet connection and try again.',
+      userMessage: 'Unable to connect. Please check your internet connection and try again.',
       recoverySuggestions: [
-        isDemoMode 
-          ? 'Continue using demo features' 
-          : 'Check your internet connection',
+        'Check your internet connection',
         'Try again in a moment',
       ],
       isNetworkError: true,
@@ -162,8 +149,10 @@ export function parseApiError(error: unknown): ParsedApiError {
 }
 
 /**
- * Report API error for logging and optional error tracking (e.g. Sentry).
+ * Report API error for logging and mandatory error tracking (Sentry).
  * Call from catch blocks or in the API response interceptor.
+ * 
+ * PRODUCTION: All API errors are captured and sent to Sentry.
  */
 export function reportApiError(
   error: unknown,
@@ -179,20 +168,16 @@ export function reportApiError(
         : 'unknown';
   const ctx = context?.action ?? context?.endpoint ?? '';
   
-  // In demo mode, we log differently
-  if (isDemoMode) {
-    logger.warn(`[Ilé Àṣẹ] [user:demo-client-1] API error ${ctx} (${detail}): ${parsed.userMessage}`);
-  } else {
-    logger.error(`API error ${ctx} (${detail}):`, parsed.userMessage, error);
-    const logCtx = getLogContext();
-    captureException(error, {
-      action: context?.action,
-      endpoint: context?.endpoint,
-      statusCode: parsed.statusCode,
-      userMessage: parsed.userMessage,
-      isNetworkError: parsed.isNetworkError,
-      traceId: logCtx.traceId,
-      userId: logCtx.userId,
-    });
-  }
+  // PRODUCTION: Always log error and capture to Sentry
+  logger.error(`API error ${ctx} (${detail}):`, parsed.userMessage, error);
+  const logCtx = getLogContext();
+  captureException(error, {
+    action: context?.action,
+    endpoint: context?.endpoint,
+    statusCode: parsed.statusCode,
+    userMessage: parsed.userMessage,
+    isNetworkError: parsed.isNetworkError,
+    traceId: logCtx.traceId,
+    userId: logCtx.userId,
+  });
 }

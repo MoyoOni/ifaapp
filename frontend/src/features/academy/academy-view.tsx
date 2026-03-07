@@ -9,8 +9,6 @@ import { Input } from '@/shared/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
 import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
-import { logger } from '@/shared/utils/logger';
-import { isDemoMode } from '@/shared/config/demo-mode';
 import { getAllCourses } from './course-data';
 import { AcademySkeleton } from '@/shared/components/skeleton';
 
@@ -47,7 +45,7 @@ interface AcademyViewProps {
 }
 
 // Import courses from course-data.ts
-const DEMO_COURSES: Course[] = getAllCourses();
+const courses: Course[] = getAllCourses();
 
 /**
  * Academy View Component
@@ -72,13 +70,7 @@ const AcademyView: React.FC<AcademyViewProps> = ({ onSelectCourse }) => {
         const response = await api.get(`/academy/courses?${params.toString()}`);
         return response.data;
       } catch (e) {
-        if (!isDemoMode) throw e;
-
-
-        logger.error('Failed to fetch courses, using demo data', e);
-        return selectedCategory === 'all'
-          ? DEMO_COURSES
-          : DEMO_COURSES.filter((course) => course.category === selectedCategory);
+        throw e;
       }
     },
   });

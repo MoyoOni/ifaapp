@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Shield, AlertTriangle } from 'lucide-react';
 import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
-import { isDemoMode } from '@/shared/config/demo-mode';
+
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 /**
@@ -38,7 +38,7 @@ const FraudAlertsView: React.FC = () => {
         const response = await api.get('/admin/fraud-alerts');
         return response.data;
       } catch (error) {
-        if (!isDemoMode) throw error;
+        throw error;
 
         logger.warn('Failed to fetch fraud alerts, using demo data');
         return demoAlerts;
@@ -141,3 +141,4 @@ const FraudAlertsView: React.FC = () => {
 };
 
 export default FraudAlertsView;
+

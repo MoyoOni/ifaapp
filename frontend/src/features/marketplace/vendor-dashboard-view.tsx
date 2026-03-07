@@ -3,9 +3,6 @@ import { useQuery } from '@tanstack/react-query';
 import { Package, ShoppingBag, TrendingUp, MessageCircle } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
-import { logger } from '@/shared/utils/logger';
-import { isDemoMode } from '@/shared/config/demo-mode';
-import { DEMO_USERS } from '@/demo';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/shared/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
@@ -33,16 +30,11 @@ const VendorDashboardView: React.FC<VendorDashboardViewProps> = ({ initialTab = 
   const { data: vendorData, isLoading } = useQuery<Vendor>({
     queryKey: ['vendor-profile', user?.id],
     queryFn: async () => {
-      if (isDemoMode) {
-        return Object.values(DEMO_USERS).find(u => u.id === user?.id) as any;
-      }
-      
       try {
         const response = await api.get(`/vendors/profile/${user?.id}`);
         return response.data;
       } catch (error) {
-        logger.error('Failed to fetch vendor profile', error);
-        return {} as Vendor;
+        throw error;
       }
     },
     enabled: !!user?.id,
@@ -131,3 +123,4 @@ const VendorDashboardView: React.FC<VendorDashboardViewProps> = ({ initialTab = 
 };
 
 export default VendorDashboardView;
+

@@ -1,7 +1,5 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
 import { logger } from '@/shared/utils/logger';
-import { isDemoMode } from '@/shared/config/demo-mode';
-
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
@@ -31,7 +29,7 @@ class ErrorBoundary extends Component<Props, State> {
     
     // Specifically log module loading errors
     if (error.message.includes('Failed to fetch dynamically imported module')) {
-      logger.warn(`[Ilé Àṣẹ] [user:${isDemoMode ? 'demo-client-1' : 'unknown'}] Dynamic import failed:`, error);
+      logger.warn(`[Ilé Àṣẹ] Dynamic import failed:`, error);
     }
   }
 
@@ -76,11 +74,7 @@ class ErrorBoundary extends Component<Props, State> {
                 Go Home
               </button>
             </div>
-            {isDemoMode && (
-              <p className="mt-4 text-sm text-amber-600 dark:text-amber-400">
-                Demo Mode Active: Features may be limited
-              </p>
-            )}
+            {/* Demo mode indicator removed - production only */}
           </div>
         </div>
       );

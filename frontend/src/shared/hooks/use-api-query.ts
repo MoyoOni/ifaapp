@@ -1,7 +1,5 @@
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { logger } from '@/shared/utils/logger';
-import { isDemoMode } from '@/shared/config/demo-mode';
 import * as Sentry from '@sentry/react';
 
 /**
@@ -69,14 +67,11 @@ export function useApiQuery<TData, TParams = Record<string, unknown>>({
         const response = await api.get(endpoint, { params: cleanParams });
         apiData = response.data;
       } catch (error) {
-        if (!isDemoMode) {
-          Sentry.captureException(error, {
-            tags: { endpoint, type: 'api_query' },
-            extra: { params }
-          });
-          throw error;
-        }
-        logger.warn(`API call to ${endpoint} failed, using demo data`);
+        Sentry.captureException(error, {
+          tags: { endpoint, type: 'api_query' },
+          extra: { params }
+        });
+        throw error;
       }
 
       // Get filtered demo data if available
@@ -95,9 +90,8 @@ export function useApiQuery<TData, TParams = Record<string, unknown>>({
         return apiData;
       }
 
-      // Fallback to demo data only when demo mode is enabled
-      if (!isDemoMode) throw new Error(`API failed: ${endpoint}`);
-      return (filteredDemo ?? []) as TData;
+      // No fallback - always throw on API error
+      throw new Error(`API failed: ${endpoint}`);
     },
     ...queryOptions,
   });
@@ -131,8 +125,6 @@ export function usePaginatedApiQuery<TItem, TParams = Record<string, unknown>>({
   params,
   page = 1,
   pageSize = 10,
-  demoData,
-  filterDemoData,
   queryOptions,
 }: PaginatedQueryConfig<TItem, TParams>) {
   return useQuery<PaginatedResponse<TItem>>({
@@ -148,29 +140,11 @@ export function usePaginatedApiQuery<TItem, TParams = Record<string, unknown>>({
         const response = await api.get(endpoint, { params: cleanParams });
         return response.data;
       } catch (error) {
-        if (!isDemoMode) {
-          Sentry.captureException(error, {
-            tags: { endpoint, type: 'paginated_api_query' },
-            extra: { params, page, pageSize }
-          });
-          throw error;
-        }
-        const allData = demoData
-          ? filterDemoData
-            ? filterDemoData(demoData, params)
-            : demoData
-          : [];
-
-        const start = (page - 1) * pageSize;
-        const paginatedData = allData.slice(start, start + pageSize);
-
-        return {
-          data: paginatedData,
-          total: allData.length,
-          page,
-          pageSize,
-          totalPages: Math.ceil(allData.length / pageSize),
-        };
+        Sentry.captureException(error, {
+          tags: { endpoint, type: 'paginated_api_query' },
+          extra: { params, page, pageSize }
+        });
+        throw error;
       }
     },
     ...queryOptions,
@@ -178,3 +152,4 @@ export function usePaginatedApiQuery<TItem, TParams = Record<string, unknown>>({
 }
 
 export default useApiQuery;
+

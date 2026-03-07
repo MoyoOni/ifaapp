@@ -4,9 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, Edit2, Trash2, Package, Search, Filter } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
-import { logger } from '@/shared/utils/logger';
-import { isDemoMode } from '@/shared/config/demo-mode';
-import { DEMO_PRODUCTS } from '@/demo';
 import { Product } from '@common';
 
 interface VendorProductListViewProps {
@@ -40,22 +37,7 @@ const VendorProductListView: React.FC<VendorProductListViewProps> = ({
                 });
                 return response.data;
             } catch (error) {
-                if (!isDemoMode) throw error;
-
-                logger.warn('Failed to fetch vendor products, using demo data');
-                return Object.values(DEMO_PRODUCTS)
-                    .filter((product) => product.vendorId === user?.id || !user?.id)
-                    .map((product) => ({
-                        id: product.id,
-                        name: product.name,
-                        category: product.category,
-                        price: product.price,
-                        currency: product.currency,
-                        stock: product.stock,
-                        status: product.status,
-                        vendorId: product.vendorId,
-                        images: product.images,
-                    })) as unknown as Product[];
+                throw error;
             }
         },
         enabled: !!user?.id
@@ -177,3 +159,4 @@ const VendorProductListView: React.FC<VendorProductListViewProps> = ({
 };
 
 export default VendorProductListView;
+

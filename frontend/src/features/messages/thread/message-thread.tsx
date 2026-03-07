@@ -108,17 +108,12 @@ const MessageThread: React.FC<MessageThreadProps> = ({ userId, otherUserId, onBa
     };
   }, []);
 
-  // Track whether we're in demo mode for this conversation
-  const [isDemoMode, setIsDemoMode] = useState(false);
-
   // Fetch conversation messages
   const { data: messages = [], isLoading } = useQuery<Message[]>({
     queryKey: ['message-conversation', userId, otherUserId],
     queryFn: async () => {
       try {
         const result = await getConversation(userId, otherUserId);
-        // Determine if we're in demo mode based on which service was used
-        setIsDemoMode(result.some(msg => msg.id.startsWith('demo-') || msg.id.startsWith('seed-')));
         return result;
       } catch (e) {
         logger.error('Failed to fetch conversation', e);
@@ -324,15 +319,6 @@ const MessageThread: React.FC<MessageThreadProps> = ({ userId, otherUserId, onBa
           </div>
         </div>
       </div>
-
-      {/* Demo Mode Banner */}
-      {isDemoMode && (
-        <div className="bg-amber-500/10 border-b border-amber-500/20 px-6 py-2">
-          <p className="max-w-4xl mx-auto text-xs text-amber-400 text-center">
-            Demo mode — Messages are stored in your browser session and will reset when you close the tab.
-          </p>
-        </div>
-      )}
 
       {/* Messages Container */}
       <div className="flex-1 overflow-y-auto p-6 relative"> {/* Added relative positioning for dropdown */}

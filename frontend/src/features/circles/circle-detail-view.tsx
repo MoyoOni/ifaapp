@@ -6,7 +6,7 @@ import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { useToast } from '@/shared/components/toast';
 import { logger } from '@/shared/utils/logger';
-import { isDemoMode } from '@/shared/config/demo-mode';
+
 import { DEMO_CIRCLES, DEMO_USERS } from '@/demo';
 import {
   CircleDetail,
@@ -47,88 +47,7 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({
         const response = await api.get(`/circles/${circleSlug}`);
         return response.data;
       } catch (e) {
-        if (!isDemoMode) throw e;
-
-        logger.error('Failed to fetch circle, using demo data', e);
-        const demoCircle = Object.values(DEMO_CIRCLES).find(
-          (circle) => circle.slug === circleSlug || circle.id === circleSlug
-        );
-
-        if (!demoCircle) {
-          return null;
-        }
-
-        const creator = DEMO_USERS[demoCircle.creatorId as keyof typeof DEMO_USERS];
-        const memberIds = demoCircle.memberIds || [];
-        const members = memberIds
-          .map((memberId) => DEMO_USERS[memberId as keyof typeof DEMO_USERS])
-          .filter(Boolean)
-          .map((member) => ({
-            id: `${demoCircle.id}-${member.id}`,
-            role: member.role,
-            joinedAt: demoCircle.createdAt,
-            user: {
-              id: member.id,
-              name: member.name,
-              yorubaName: member.yorubaName,
-              avatar: member.avatar,
-              verified: (member as any).verified ?? true,
-            },
-          }));
-
-        const sessionMembership = getSessionMembership(demoCircle.id);
-        const isMember =
-          sessionMembership?.status === 'ACTIVE' ||
-          (user?.id ? memberIds.includes(user.id) : false);
-
-        if (isMember && user?.id && !members.some((m) => m.user.id === user.id)) {
-          members.push({
-            id: `${demoCircle.id}-${user.id}`,
-            role: user.role || 'MEMBER',
-            joinedAt: demoCircle.createdAt,
-            user: {
-              id: user.id,
-              name: user.name || 'Community Member',
-              yorubaName: (user as any).yorubaName,
-              avatar: (user as any).avatar,
-              verified: true,
-            },
-          });
-        }
-
-        const memberCount = demoCircle.memberCount ?? members.length;
-        const adjustedMemberCount = isMember
-          ? Math.max(memberCount, members.length)
-          : memberCount;
-
-        return {
-          id: demoCircle.id,
-          name: demoCircle.name,
-          description: demoCircle.description,
-          slug: demoCircle.slug,
-          privacy: 'PUBLIC',
-          topics: ['Community'],
-          memberCount: adjustedMemberCount,
-          active: true,
-          createdAt: demoCircle.createdAt,
-          creator: {
-            id: creator?.id || demoCircle.creatorId,
-            name: creator?.name || 'Community Organizer',
-            yorubaName: creator?.yorubaName,
-            avatar: creator?.avatar,
-          },
-          members,
-          upcomingEvents: [],
-          resources: [],
-          userMembership: isMember
-            ? {
-                id: `${demoCircle.id}-${user?.id || 'demo-user'}`,
-                role: sessionMembership?.role || user?.role || 'MEMBER',
-                status: 'ACTIVE',
-              }
-            : undefined,
-          _count: { members: adjustedMemberCount },
-        } as CircleDetail;
+        throw e;
       }
     },
   });
@@ -428,3 +347,4 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({
 };
 
 export default CircleDetailView;
+

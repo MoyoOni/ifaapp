@@ -30,7 +30,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { CirclesModule } from './circles/circles.module';
 import { EventsModule } from './events/events.module';
 import { ReviewsModule } from './reviews/reviews.module';
-import { DemoModule } from './demo/demo.module';
+// Production: Demo module removed
 // import { SpiritualJourneyModule } from './spiritual-journey/spiritual-journey.module';
 import { SearchModule } from './search/search.module';
 import { DashboardModule } from './dashboard/dashboard.module';
@@ -91,7 +91,6 @@ import { InfrastructureModule } from './shared/infrastructure.module';
     CirclesModule,
     EventsModule,
     ReviewsModule,
-    DemoModule,
     HealthModule,
     MetricsModule,
     // QueueModule, // disabled until BullMQ version mismatch is resolved

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 // motion import removed - not currently used
 import api from '@/lib/api';
 import { Button } from '@/shared/components/ui';
-import { isDemoMode } from '@/shared/config/demo-mode';
+
 import { DEMO_USERS, DEMO_TEMPLES } from '@/demo';
 import { logger } from '@/shared/utils/logger';
 // cn import removed - not currently used
@@ -71,38 +71,7 @@ const BabalawoDiscoveryView: React.FC = () => {
         });
         return response.data || [];
       } catch (error) {
-        if (!isDemoMode) throw error;
-
-        logger.warn('Using demo data for Babalawo discovery');
-        return Object.values(DEMO_USERS)
-          .filter(user => user.role === 'BABALAWO')
-          .map(user => {
-            const temples = Object.values(DEMO_TEMPLES);
-            const temple = temples.find(t => t.babalawos?.includes(user.id)) || temples[0];
-
-            return {
-              id: user.id,
-              name: user.name,
-              yorubaName: (user as any).yorubaName,
-              avatar: user.avatar,
-              verified: (user as any).verified !== undefined ? (user as any).verified : true,
-              bio: user.bio,
-              location: user.location,
-              culturalLevel: (user as any).culturalLevel || 'Babalawo',
-              rating: (user as any).rating || seededRandomInt(`${user.id}-rating`, 4, 5),
-              reviewCount: (user as any).reviews || (user as any).reviewCount || seededRandomInt(`${user.id}-reviews`, 10, 59),
-              specialties: (user as any).services?.map((s: any) => s.title) || ['Spiritual Guidance'],
-              services: (user as any).services || [{ title: 'Spiritual Consultation' }],
-              responseTime: (user as any).responseTime || 'Within a day',
-              yearsOfExperience: (user as any).yearsOfExperience || seededRandomInt(`${user.id}-exp`, 5, 30),
-              temple: {
-                id: temple?.id || 'temple-1',
-                name: temple?.name || 'Sacred Temple',
-                yorubaName: temple?.yorubaName,
-                verified: temple?.verified || true
-              }
-            } as Babalawo;
-          });
+        throw error;
       }
     },
   });

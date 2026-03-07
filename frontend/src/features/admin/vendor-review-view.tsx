@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { XCircle, Store, Loader2, FileText, User } from 'lucide-react';
 import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
-import { isDemoMode } from '@/shared/config/demo-mode';
+
 import { UserRole, VendorStatus } from '@common';
 import { getDemoUsersByRole } from '@/demo';
 import VerificationBadge from '@/shared/components/verification-badge';
@@ -80,7 +80,7 @@ const VendorReviewView: React.FC = () => {
         const response = await api.get('/marketplace/vendors');
         return response.data;
       } catch (error) {
-        if (!isDemoMode) throw error;
+        throw error;
         logger.warn('Failed to fetch vendors, using demo data');
         return demoVendors;
       }

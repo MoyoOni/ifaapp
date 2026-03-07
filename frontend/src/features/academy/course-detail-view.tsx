@@ -4,7 +4,7 @@ import { ArrowLeft, BookOpen, GraduationCap, Clock, Users, Loader2 } from 'lucid
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { logger } from '@/shared/utils/logger';
-import { isDemoMode } from '@/shared/config/demo-mode';
+
 import { getCourseById } from './course-data';
 import { AcademySkeleton } from '@/shared/components/skeleton';
 import { useToast } from '@/shared/components/toast';
@@ -102,17 +102,6 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({ courseId, onBack })
         const response = await api.get(`/academy/courses/${courseId}`);
         return response.data;
       } catch (e) {
-        if (!isDemoMode) throw e;
-
-        logger.error('Failed to fetch course, using demo data', e);
-        
-        // Try to get course from demo data
-        const demoCourse = getCourseById(courseId);
-        if (demoCourse) {
-          return demoCourse;
-        }
-        
-        // If still not found, throw error to trigger error state
         throw e;
       }
     },

@@ -7,17 +7,12 @@ import { ToastProvider } from './shared/components/toast';
 import { ThemeProvider } from './shared/contexts/theme-provider';
 import { DevRoleSwitcher } from './shared/components/dev-role-switcher';
 import { initSentry } from './shared/config/sentry';
-import { isDemoMode } from './shared/config/demo-mode';
 import { logger } from './shared/utils/logger';
 import App from './App';
 import './index.css';
 
-// Log demo mode status (HC-203.3)
-if (isDemoMode) {
-  logger.warn('Demo Mode: ENABLED - API failures will use demo data');
-} else {
-  logger.info('Demo Mode: DISABLED - API errors will propagate to Sentry');
-}
+// Production: All errors propagate to Sentry
+logger.info('Production Mode: API errors will propagate to Sentry for monitoring');
 
 initSentry();
 

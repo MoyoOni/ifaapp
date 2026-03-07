@@ -3,8 +3,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Calendar, AlertTriangle } from 'lucide-react';
 import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
-import { isDemoMode } from '@/shared/config/demo-mode';
-import { getDemoUser, getUserAppointments } from '@/demo';
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
 
@@ -70,45 +68,7 @@ const AppointmentsCalendar: React.FC<AppointmentsCalendarProps> = ({
         const response = await api.get(endpoint);
         return response.data;
       } catch (error) {
-        if (!isDemoMode) throw error;
-
-        logger.warn('Failed to fetch appointments, using demo data');
-        const demoAppointments = getUserAppointments(userId);
-
-        return demoAppointments.map((apt) => ({
-          id: apt.id,
-          babalawoId: apt.babalawoId,
-          clientId: apt.clientId,
-          date: apt.date,
-          time: apt.time,
-          timezone: 'Africa/Lagos',
-          duration: apt.duration || 60,
-          status: (apt.status as Appointment['status']) || 'UPCOMING',
-          price: 25000,
-          notes: apt.notes,
-          babalawo: (() => {
-            const demoBaba = getDemoUser(apt.babalawoId);
-            return demoBaba
-              ? {
-                  id: demoBaba.id,
-                  name: demoBaba.name,
-                  yorubaName: demoBaba.yorubaName,
-                  avatar: demoBaba.avatar,
-                }
-              : undefined;
-          })(),
-          client: (() => {
-            const demoClient = getDemoUser(apt.clientId);
-            return demoClient
-              ? {
-                  id: demoClient.id,
-                  name: demoClient.name,
-                  yorubaName: demoClient.yorubaName,
-                  avatar: demoClient.avatar,
-                }
-              : undefined;
-          })(),
-        }));
+        throw error;
       }
     },
     enabled: !!userId,

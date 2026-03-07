@@ -401,3 +401,4 @@ const CheckoutView: React.FC<CheckoutViewProps> = ({ onBack, onSuccess }) => {
 };
 
 export default CheckoutView;
+

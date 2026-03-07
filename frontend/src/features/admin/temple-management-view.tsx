@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Building2, CheckCircle, XCircle, Clock, MapPin, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
-import { isDemoMode } from '@/shared/config/demo-mode';
+
 import { DEMO_TEMPLES, getDemoUserById, type DemoUser } from '@/demo';
 import { useModal } from '@/components/common/ModalProvider';
 
@@ -114,10 +114,7 @@ const TempleManagementView: React.FC = () => {
         const response = await api.get('/temples', { params });
         return response.data;
       } catch (error) {
-        if (!isDemoMode) throw error;
-
-        logger.warn('Failed to fetch temples, using demo data');
-        return buildDemoTemples();
+        throw error;
       }
     },
   });
@@ -275,3 +272,4 @@ const TempleManagementView: React.FC = () => {
 };
 
 export default TempleManagementView;
+

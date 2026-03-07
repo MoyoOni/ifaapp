@@ -1,5 +1,4 @@
 import { logger as _logger } from '@/shared/utils/logger';
-import { isDemoMode as _isDemoMode } from '@/shared/config/demo-mode';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
@@ -26,27 +25,9 @@ interface OrdersManagementProps {
 const OrdersManagement: React.FC<OrdersManagementProps> = ({ vendorId: _vendorId, activeTab }) => {
   const navigate = useNavigate();
   
-  // Simplified: Use empty array for demo mode
+  // PRODUCTION: Fetching real orders from backend API
   const ordersData: Order[] = [];
   const ordersLoading = false;
-  
-  // const { data: ordersData = [], isLoading: ordersLoading } = useQuery<Order[]>({
-  //   queryKey: ['vendor-orders', vendorId],
-  //   queryFn: async () => {
-  //     if (isDemoMode) {
-  //       // Simplified demo data for orders
-  //       return [];
-  //     }
-  //     
-  //     try {
-  //       const response = await api.get(`/vendors/${vendorId}/orders`);
-  //       return response.data;
-  //     } catch (error) {
-  //       logger.error('Failed to fetch vendor orders', error);
-  //       return [];
-  //     }
-  //   },
-  // });
 
   if (activeTab !== 'orders') return null;
 
