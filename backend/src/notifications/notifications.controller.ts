@@ -57,10 +57,7 @@ export class NotificationsController {
    * PATCH /notifications/:id/read
    */
   @Patch(':id/read')
-  async markAsRead(
-    @CurrentUser() currentUser: CurrentUserPayload,
-    @Param('id') id: string
-  ) {
+  async markAsRead(@CurrentUser() currentUser: CurrentUserPayload, @Param('id') id: string) {
     return this.notificationService.markAsRead(id, currentUser.id);
   }
 

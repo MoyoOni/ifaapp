@@ -3,7 +3,6 @@ import {
   Get,
   Post,
   Patch,
-  Delete,
   Body,
   Param,
   Query,
@@ -31,7 +30,7 @@ import { CreateProductReviewDto } from './dto/create-product-review.dto';
 import { RolesGuard, Roles } from '../auth/guards/roles.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
-import { VendorStatus, ProductStatus, OrderStatus, UserRole } from '@ile-ase/common';
+import { VendorStatus, ProductStatus, UserRole } from '@ile-ase/common';
 
 @ApiTags('marketplace')
 @ApiBearerAuth()

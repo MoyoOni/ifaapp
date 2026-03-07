@@ -37,16 +37,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     if (status >= 500) {
       this.logger.error(
         `${request.method} ${request.url} ${status} — ${message}`,
-        exception instanceof Error ? exception.stack : String(exception),
+        exception instanceof Error ? exception.stack : String(exception)
       );
     } else if (status >= 400) {
       this.logger.warn(`${request.method} ${request.url} ${status} — ${message}`);
     }
 
-    const rawResponse =
-      exception instanceof HttpException
-        ? exception.getResponse()
-        : message;
+    const rawResponse = exception instanceof HttpException ? exception.getResponse() : message;
 
     const errorPayload = mapToStandardError(status, rawResponse, requestId);
 
@@ -113,9 +110,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       ) {
         return {
           status: HttpStatus.UNAUTHORIZED,
-          message: err.name === 'TokenExpiredError'
-            ? 'Token has expired'
-            : 'Invalid authentication token',
+          message:
+            err.name === 'TokenExpiredError' ? 'Token has expired' : 'Invalid authentication token',
         };
       }
 

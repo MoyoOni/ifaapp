@@ -62,16 +62,15 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Successfully initiated impersonation' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
-  async impersonate(
-    @CurrentUser() adminUser: any,
-    @Body() impersonateDto: ImpersonateUserDto,
-  ) {
-    this.logger.log(`Admin ${adminUser.id} initiating impersonation of user ${impersonateDto.userId}`);
+  async impersonate(@CurrentUser() adminUser: any, @Body() impersonateDto: ImpersonateUserDto) {
+    this.logger.log(
+      `Admin ${adminUser.id} initiating impersonation of user ${impersonateDto.userId}`
+    );
 
     return this.authService.initiateImpersonation(
       adminUser,
       impersonateDto.userId,
-      impersonateDto.reason,
+      impersonateDto.reason
     );
   }
 

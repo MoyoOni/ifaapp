@@ -12,7 +12,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     } catch (error) {
       this.logger.error(
         'Failed to connect to PostgreSQL — endpoints requiring DB will return 503',
-        error instanceof Error ? error.message : String(error),
+        error instanceof Error ? error.message : String(error)
       );
       // Do NOT throw — let the app start so health endpoints and non-DB routes still work.
       // The GlobalExceptionFilter will catch PrismaClientInitializationError on DB calls

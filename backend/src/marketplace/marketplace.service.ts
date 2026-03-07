@@ -31,7 +31,7 @@ export class MarketplaceService {
     private prisma: PrismaService,
     private orderNotificationService: OrderNotificationService,
     private searchService: SearchService
-  ) { }
+  ) {}
 
   // ==================== Vendors ====================
 
@@ -218,8 +218,8 @@ export class MarketplaceService {
     if (containsProhibited) {
       throw new BadRequestException(
         'Akose/Ebo are sacred prescriptions and cannot be sold as marketplace products. ' +
-        'They must be provided through the prescription module after divination. ' +
-        'Please remove any references to Akose or Ebo from your product listing.'
+          'They must be provided through the prescription module after divination. ' +
+          'Please remove any references to Akose or Ebo from your product listing.'
       );
     }
 
@@ -252,7 +252,7 @@ export class MarketplaceService {
     if (hasCounterfeitIndicator) {
       throw new BadRequestException(
         'Counterfeit or replica spiritual items are prohibited. ' +
-        'All products must be authentic. Please provide proof of authenticity in the provenance field.'
+          'All products must be authentic. Please provide proof of authenticity in the provenance field.'
       );
     }
 

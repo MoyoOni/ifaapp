@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
-import { User } from '../types/prisma-models';
 import { PiiMaskingUtil } from '../utils/pii-masking.util';
 
 export interface AuditLogEntry {
@@ -17,19 +16,17 @@ export interface AuditLogEntry {
 
 @Injectable()
 export class AuditService {
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async logAction(entry: AuditLogEntry): Promise<void> {
     try {
       // Mask sensitive values before storing
-      const maskedPreviousValues = entry.previousValues 
-        ? PiiMaskingUtil.maskObject(entry.previousValues) 
+      const maskedPreviousValues = entry.previousValues
+        ? PiiMaskingUtil.maskObject(entry.previousValues)
         : undefined;
-      
-      const maskedNewValues = entry.newValues 
-        ? PiiMaskingUtil.maskObject(entry.newValues) 
+
+      const maskedNewValues = entry.newValues
+        ? PiiMaskingUtil.maskObject(entry.newValues)
         : undefined;
 
       // Cast to `any` to tolerate mismatches between generated Prisma types
@@ -55,9 +52,9 @@ export class AuditService {
 
   async getLogsForResource(resourceType: string, resourceId: string) {
     return await this.prisma.auditLog.findMany({
-      where: ({ resourceType, resourceId } as unknown) as any,
-      orderBy: ({ createdAt: 'desc' } as unknown) as any,
-      include: ({
+      where: { resourceType, resourceId } as unknown as any,
+      orderBy: { createdAt: 'desc' } as unknown as any,
+      include: {
         user: {
           select: {
             id: true,
@@ -67,16 +64,16 @@ export class AuditService {
             adminSubRole: true,
           },
         },
-      } as unknown) as any,
+      } as unknown as any,
     } as any);
   }
 
   async getLogsByUser(userId: string, limit: number = 50) {
     return await this.prisma.auditLog.findMany({
-      where: ({ userId } as unknown) as any,
-      orderBy: ({ createdAt: 'desc' } as unknown) as any,
+      where: { userId } as unknown as any,
+      orderBy: { createdAt: 'desc' } as unknown as any,
       take: limit,
-      include: ({
+      include: {
         user: {
           select: {
             id: true,
@@ -86,16 +83,16 @@ export class AuditService {
             adminSubRole: true,
           },
         },
-      } as unknown) as any,
+      } as unknown as any,
     } as any);
   }
 
   async getLogsByAction(action: string, limit: number = 50) {
     return await this.prisma.auditLog.findMany({
-      where: ({ action } as unknown) as any,
-      orderBy: ({ createdAt: 'desc' } as unknown) as any,
+      where: { action } as unknown as any,
+      orderBy: { createdAt: 'desc' } as unknown as any,
       take: limit,
-      include: ({
+      include: {
         user: {
           select: {
             id: true,
@@ -105,16 +102,16 @@ export class AuditService {
             adminSubRole: true,
           },
         },
-      } as unknown) as any,
+      } as unknown as any,
     } as any);
   }
 
   async getLogsByAdminSubRole(adminSubRole: string, limit: number = 50) {
     return await this.prisma.auditLog.findMany({
-      where: ({ user: { adminSubRole } } as unknown) as any,
-      orderBy: ({ createdAt: 'desc' } as unknown) as any,
+      where: { user: { adminSubRole } } as unknown as any,
+      orderBy: { createdAt: 'desc' } as unknown as any,
       take: limit,
-      include: ({
+      include: {
         user: {
           select: {
             id: true,
@@ -124,16 +121,16 @@ export class AuditService {
             adminSubRole: true,
           },
         },
-      } as unknown) as any,
+      } as unknown as any,
     } as any);
   }
 
   async getLogsByDateRange(startDate: Date, endDate: Date, limit: number = 100) {
     return await this.prisma.auditLog.findMany({
-      where: ({ createdAt: { gte: startDate, lte: endDate } } as unknown) as any,
-      orderBy: ({ createdAt: 'desc' } as unknown) as any,
+      where: { createdAt: { gte: startDate, lte: endDate } } as unknown as any,
+      orderBy: { createdAt: 'desc' } as unknown as any,
       take: limit,
-      include: ({
+      include: {
         user: {
           select: {
             id: true,
@@ -143,16 +140,16 @@ export class AuditService {
             adminSubRole: true,
           },
         },
-      } as unknown) as any,
+      } as unknown as any,
     } as any);
   }
 
   async getImpersonationLogs(limit: number = 50) {
     return await this.prisma.auditLog.findMany({
-      where: ({ action: 'IMPERSONATE_USER' } as unknown) as any,
-      orderBy: ({ createdAt: 'desc' } as unknown) as any,
+      where: { action: 'IMPERSONATE_USER' } as unknown as any,
+      orderBy: { createdAt: 'desc' } as unknown as any,
       take: limit,
-      include: ({
+      include: {
         user: {
           select: {
             id: true,
@@ -162,16 +159,16 @@ export class AuditService {
             adminSubRole: true,
           },
         },
-      } as unknown) as any,
+      } as unknown as any,
     } as any);
   }
 
   async getPiiRevealLogs(limit: number = 50) {
     return await this.prisma.auditLog.findMany({
-      where: ({ action: 'REVEAL_PII' } as unknown) as any,
-      orderBy: ({ createdAt: 'desc' } as unknown) as any,
+      where: { action: 'REVEAL_PII' } as unknown as any,
+      orderBy: { createdAt: 'desc' } as unknown as any,
       take: limit,
-      include: ({
+      include: {
         user: {
           select: {
             id: true,
@@ -181,7 +178,7 @@ export class AuditService {
             adminSubRole: true,
           },
         },
-      } as unknown) as any,
+      } as unknown as any,
     } as any);
   }
 }

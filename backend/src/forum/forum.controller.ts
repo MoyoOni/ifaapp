@@ -79,7 +79,7 @@ export class ForumController {
   @Get('threads/:threadId/posts')
   async findAllPosts(
     @Param('threadId') threadId: string,
-    @CurrentUser() currentUser?: CurrentUserPayload
+    @CurrentUser() _currentUser?: CurrentUserPayload
   ) {
     return this.forumService.findAllPosts(threadId);
   }

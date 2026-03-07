@@ -19,7 +19,7 @@ export class PushNotificationService {
   constructor(
     private configService: ConfigService,
     @Inject(forwardRef(() => JobQueueService))
-    private jobQueueService: JobQueueService,
+    private jobQueueService: JobQueueService
   ) {}
 
   /**
@@ -126,7 +126,12 @@ export class PushNotificationService {
   /**
    * Send a system notification
    */
-  async sendSystemNotification(userId: string, title: string, body: string, data?: any): Promise<void> {
+  async sendSystemNotification(
+    userId: string,
+    title: string,
+    body: string,
+    data?: any
+  ): Promise<void> {
     const payload: PushNotificationPayload = {
       userId,
       title,
@@ -148,7 +153,7 @@ export class PushNotificationService {
   async initializeQueueProcessor() {
     await this.jobQueueService.processQueue('notification', async (job) => {
       const payload = job.data as PushNotificationPayload;
-      
+
       try {
         // In a real implementation, we would integrate with Firebase Cloud Messaging (FCM)
         // or Apple Push Notification Service (APNs) here
@@ -174,12 +179,14 @@ export class PushNotificationService {
     // 1. Fetch the user's device tokens from the database
     // 2. Use the appropriate push notification service (FCM for Android, APNs for iOS)
     // 3. Send the notification to the device(s)
-    
-    this.logger.log(`Sending push notification to user ${payload.userId}: ${payload.title} - ${payload.body}`);
-    
+
+    this.logger.log(
+      `Sending push notification to user ${payload.userId}: ${payload.title} - ${payload.body}`
+    );
+
     // Simulate the sending process
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     // In a real implementation, we would have something like:
     /*
     const userDeviceTokens = await this.userService.getDeviceTokens(payload.userId);
@@ -200,9 +207,11 @@ export class PushNotificationService {
   async registerDeviceToken(userId: string, token: string, deviceType?: string): Promise<void> {
     // In a real implementation, we would store the device token in the database
     // For now, we'll just log the registration
-    
-    this.logger.log(`Registering device token for user ${userId}, type: ${deviceType || 'unknown'}`);
-    
+
+    this.logger.log(
+      `Registering device token for user ${userId}, type: ${deviceType || 'unknown'}`
+    );
+
     // In a real implementation, we would do something like:
     /*
     await this.prisma.deviceToken.upsert({

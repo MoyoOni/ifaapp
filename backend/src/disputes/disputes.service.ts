@@ -141,7 +141,7 @@ export class DisputesService {
   /**
    * Determine priority based on category and type
    */
-  private determinePriority(category: DisputeCategory, type: DisputeType): string {
+  private determinePriority(category: DisputeCategory, _type: DisputeType): string {
     // Spiritual misconduct is urgent
     if (category === DisputeCategory.SPIRITUAL_MISCONDUCT) {
       return 'URGENT';

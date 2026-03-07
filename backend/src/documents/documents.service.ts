@@ -177,7 +177,7 @@ export class DocumentsService {
    * Generates temporary signed URL for secure document access
    * NOTE: In production, will use S3 signed URLs with expiration
    */
-  async getSignedUrl(documentId: string, userId: string, currentUser: CurrentUserPayload) {
+  async getSignedUrl(documentId: string, userId: string, _currentUser: CurrentUserPayload) {
     const document = await this.prisma.document.findUnique({
       where: { id: documentId },
     });

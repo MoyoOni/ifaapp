@@ -54,7 +54,7 @@ export class FeatureFlagService {
   async getFeatureFlag(key: string): Promise<FeatureFlag | null> {
     try {
       const flagString = await this.redisService.get(`${this.FEATURE_FLAGS_KEY}:${key}`);
-      
+
       if (!flagString) {
         return null;
       }
@@ -74,10 +74,15 @@ export class FeatureFlagService {
   /**
    * Checks if a feature is enabled for a specific user
    */
-  async isFeatureEnabled(featureKey: string, userId?: string, userRole?: string, userSegment?: string): Promise<boolean> {
+  async isFeatureEnabled(
+    featureKey: string,
+    userId?: string,
+    userRole?: string,
+    userSegment?: string
+  ): Promise<boolean> {
     try {
       const flag = await this.getFeatureFlag(featureKey);
-      
+
       if (!flag) {
         this.logger.warn(`Feature flag ${featureKey} not found`);
         return false;
@@ -108,7 +113,11 @@ export class FeatureFlagService {
         }
 
         // Check segment-based targeting
-        if (flag.targeting.segmentBased && userSegment && flag.targeting.segmentBased.includes(userSegment)) {
+        if (
+          flag.targeting.segmentBased &&
+          userSegment &&
+          flag.targeting.segmentBased.includes(userSegment)
+        ) {
           return true;
         }
       }
@@ -136,11 +145,15 @@ export class FeatureFlagService {
   /**
    * Sets a user-specific override for a feature flag
    */
-  async setUserFeatureOverride(featureKey: string, userId: string, enabled: boolean): Promise<void> {
+  async setUserFeatureOverride(
+    featureKey: string,
+    userId: string,
+    enabled: boolean
+  ): Promise<void> {
     try {
       const key = `${this.USER_FEATURE_OVERRIDES_KEY}:${featureKey}:${userId}`;
       await this.redisService.set(key, enabled.toString(), 86400); // 24 hours expiry
-      
+
       this.logger.log(`Set user override for feature ${featureKey} (user: ${userId}): ${enabled}`);
     } catch (error: any) {
       this.logger.error(`Failed to set user override for feature ${featureKey}: ${error.message}`);
@@ -155,7 +168,7 @@ export class FeatureFlagService {
     try {
       const key = `${this.USER_FEATURE_OVERRIDES_KEY}:${featureKey}:${userId}`;
       const value = await this.redisService.get(key);
-      
+
       if (value === null || value === undefined) {
         return null;
       }
@@ -174,10 +187,12 @@ export class FeatureFlagService {
     try {
       const key = `${this.USER_FEATURE_OVERRIDES_KEY}:${featureKey}:${userId}`;
       await this.redisService.del(key);
-      
+
       this.logger.log(`Removed user override for feature ${featureKey} (user: ${userId})`);
     } catch (error: any) {
-      this.logger.error(`Failed to remove user override for feature ${featureKey}: ${error.message}`);
+      this.logger.error(
+        `Failed to remove user override for feature ${featureKey}: ${error.message}`
+      );
       throw error;
     }
   }
@@ -216,11 +231,13 @@ export class FeatureFlagService {
     try {
       await this.redisService.del(`${this.FEATURE_FLAGS_KEY}:${key}`);
       // Also delete all user overrides for this feature
-      const overrideKeys = await this.redisService.keys(`${this.USER_FEATURE_OVERRIDES_KEY}:${key}:*`);
+      const overrideKeys = await this.redisService.keys(
+        `${this.USER_FEATURE_OVERRIDES_KEY}:${key}:*`
+      );
       for (const overrideKey of overrideKeys) {
         await this.redisService.del(overrideKey);
       }
-      
+
       this.logger.log(`Deleted feature flag: ${key}`);
     } catch (error: any) {
       this.logger.error(`Failed to delete feature flag ${key}: ${error.message}`);
@@ -235,7 +252,7 @@ export class FeatureFlagService {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash |= 0; // Convert to 32bit integer
     }
     return Math.abs(hash);

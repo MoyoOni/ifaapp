@@ -29,7 +29,7 @@ export class EmailService {
     private mailerService: MailerService,
     private configService: ConfigService,
     @Inject(forwardRef(() => JobQueueService))
-    private jobQueueService: JobQueueService,
+    private jobQueueService: JobQueueService
   ) {}
 
   /**
@@ -47,9 +47,13 @@ export class EmailService {
         attachments: payload.attachments,
       });
 
-      this.logger.log(`Email sent successfully to ${Array.isArray(payload.to) ? payload.to.join(', ') : payload.to}`);
+      this.logger.log(
+        `Email sent successfully to ${Array.isArray(payload.to) ? payload.to.join(', ') : payload.to}`
+      );
     } catch (error: any) {
-      this.logger.error(`Failed to send email to ${Array.isArray(payload.to) ? payload.to.join(', ') : payload.to}: ${error.message}`);
+      this.logger.error(
+        `Failed to send email to ${Array.isArray(payload.to) ? payload.to.join(', ') : payload.to}: ${error.message}`
+      );
       throw error;
     }
   }
@@ -70,9 +74,13 @@ export class EmailService {
 
     try {
       await this.jobQueueService.addJob('email', emailJob);
-      this.logger.log(`Email queued for ${Array.isArray(payload.to) ? payload.to.join(', ') : payload.to}`);
+      this.logger.log(
+        `Email queued for ${Array.isArray(payload.to) ? payload.to.join(', ') : payload.to}`
+      );
     } catch (error: any) {
-      this.logger.error(`Failed to queue email for ${Array.isArray(payload.to) ? payload.to.join(', ') : payload.to}: ${error.message}`);
+      this.logger.error(
+        `Failed to queue email for ${Array.isArray(payload.to) ? payload.to.join(', ') : payload.to}: ${error.message}`
+      );
       throw error;
     }
   }
@@ -129,7 +137,8 @@ export class EmailService {
     const templateData: EmailTemplateData = {
       user,
       message: notification.message,
-      actionUrl: notification.actionUrl || `${this.configService.get('FRONTEND_URL')}/notifications`,
+      actionUrl:
+        notification.actionUrl || `${this.configService.get('FRONTEND_URL')}/notifications`,
       supportEmail: this.configService.get('SUPPORT_EMAIL'),
     };
 
@@ -198,7 +207,7 @@ export class EmailService {
   async initializeQueueProcessor() {
     await this.jobQueueService.processQueue('email', async (job) => {
       const payload = job.data as EmailPayload;
-      
+
       try {
         await this.sendEmail(payload);
         return { success: true };

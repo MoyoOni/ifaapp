@@ -16,7 +16,6 @@ import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
 import { PaymentsService, PaymentProvider } from './payments.service';
 import { InitializePaymentDto } from './dto/initialize-payment.dto';
-import { VerifyPaymentDto } from './dto/verify-payment.dto';
 import { RefundPaymentDto } from './dto/refund-payment.dto';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { PrismaService } from '../prisma/prisma.service';
@@ -102,7 +101,7 @@ export class PaymentsController {
   async verifyPayment(
     @Param('reference') reference: string,
     @Query('provider') provider?: PaymentProvider,
-    @CurrentUser() currentUser?: CurrentUserPayload
+    @CurrentUser() _currentUser?: CurrentUserPayload
   ) {
     return this.paymentsService.verifyPayment(reference, provider);
   }

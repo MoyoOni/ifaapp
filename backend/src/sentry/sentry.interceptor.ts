@@ -1,9 +1,4 @@
-import {
-  CallHandler,
-  ExecutionContext,
-  Injectable,
-  NestInterceptor,
-} from '@nestjs/common';
+import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
 import { throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import * as Sentry from '@sentry/node';
@@ -25,14 +20,14 @@ export class SentryInterceptor implements NestInterceptor {
         Sentry.withScope((scope) => {
           // Add context based on the request
           const request = context.switchToHttp().getRequest();
-          
+
           if (request) {
             scope.setExtra('url', request.url);
             scope.setExtra('method', request.method);
             scope.setExtra('params', request.params);
             scope.setExtra('query', request.query);
             scope.setExtra('body', request.body);
-            
+
             // Add user context if available
             if (request.user) {
               scope.setUser({

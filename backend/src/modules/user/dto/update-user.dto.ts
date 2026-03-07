@@ -1,4 +1,12 @@
-import { IsOptional, IsString, IsEmail, IsEnum, IsBoolean, IsNumber, IsObject } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsEmail,
+  IsEnum,
+  IsBoolean,
+  IsNumber,
+  IsObject,
+} from 'class-validator';
 import { UserRole } from '@common/enums/user-role.enum';
 import { CulturalLevel } from '@common/enums/cultural-level.enum';
 

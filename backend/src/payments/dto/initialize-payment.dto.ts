@@ -1,4 +1,4 @@
-import { IsNumber, IsString, IsOptional, IsEnum, Min, IsUUID, IsEmail } from 'class-validator';
+import { IsNumber, IsString, IsOptional, IsEnum, Min, IsUUID } from 'class-validator';
 import { Currency, PaymentPurpose } from '@ile-ase/common';
 
 export class InitializePaymentDto {

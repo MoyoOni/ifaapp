@@ -1,5 +1,4 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from './email.service';
 import { PushNotificationService } from './push-notification.service';
@@ -47,7 +46,7 @@ export class NotificationService {
   constructor(
     private prisma: PrismaService,
     @Optional() private pushService?: PushNotificationService,
-    @Optional() private emailService?: EmailService,
+    @Optional() private emailService?: EmailService
   ) {}
 
   /**

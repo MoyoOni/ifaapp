@@ -21,9 +21,7 @@ import { CdcSyncService } from './services/cdc-sync.service';
 
 @Global()
 @Module({
-  imports: [
-    ConfigModule,
-  ],
+  imports: [ConfigModule],
   providers: [
     // Infrastructure Services
     RedisService,

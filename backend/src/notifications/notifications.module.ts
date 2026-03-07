@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { NotificationService } from './notification.service';
 import { NotificationsController } from './notifications.controller';
 import { EmailService } from './email/email.service';
@@ -42,19 +42,13 @@ import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handleba
       inject: [ConfigService],
     }),
   ],
-  controllers: [
-    NotificationsController,
-  ],
+  controllers: [NotificationsController],
   providers: [
     NotificationService,
     EmailService,
     PushNotificationService,
     JobQueueService, // service available for injection by others
   ],
-  exports: [
-    NotificationService,
-    EmailService,
-    PushNotificationService,
-  ],
+  exports: [NotificationService, EmailService, PushNotificationService],
 })
 export class NotificationsModule {}

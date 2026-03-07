@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Query, Body, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { SearchService } from './search.service';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';

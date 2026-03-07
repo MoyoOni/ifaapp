@@ -11,7 +11,7 @@ export class RedisService implements OnModuleInit {
 
   async onModuleInit() {
     const redisUrl = this.configService.get<string>('REDIS_URL') || 'redis://localhost:6379';
-    
+
     this.client = createClient({
       url: redisUrl,
     });

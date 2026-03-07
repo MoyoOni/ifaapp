@@ -571,7 +571,7 @@ export class PaymentsService {
   private calculateRefundAmount(
     originalAmount: number,
     cancellationReason: string,
-    userId?: string
+    _userId?: string
   ): number {
     // 100% refund if Babalawo cancels
     if (cancellationReason === 'BABALAWO_CANCELLED') {

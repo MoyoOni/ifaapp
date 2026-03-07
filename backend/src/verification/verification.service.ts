@@ -7,7 +7,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateVerificationApplicationDto } from './dto/create-verification-application.dto';
 import { UpdateVerificationApplicationDto } from './dto/update-verification-application.dto';
-import { VerificationStage, VerificationTier } from '@ile-ase/common';
+import { VerificationStage } from '@ile-ase/common';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 
 @Injectable()

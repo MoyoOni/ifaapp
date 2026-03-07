@@ -150,7 +150,12 @@ export class WalletService {
    * Deposit funds to wallet
    * NOTE: Can be called directly or via payment gateway webhook
    */
-  async depositFunds(userId: string, dto: CreateDepositDto, currentUser?: CurrentUserPayload, idempotencyKey?: string) {
+  async depositFunds(
+    userId: string,
+    dto: CreateDepositDto,
+    currentUser?: CurrentUserPayload,
+    idempotencyKey?: string
+  ) {
     // If currentUser is provided, verify ownership
     if (currentUser && currentUser.id !== userId) {
       throw new ForbiddenException('You can only deposit to your own wallet');

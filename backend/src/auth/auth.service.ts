@@ -1,4 +1,9 @@
-import { Injectable, UnauthorizedException, ConflictException, Logger, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+  Logger,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
@@ -21,7 +26,7 @@ export class AuthService {
     private configService: ConfigService,
     private messagingService: MessagingService,
     private readonly userService: UserService,
-    private readonly impersonationService: ImpersonationService,
+    private readonly impersonationService: ImpersonationService
   ) {}
 
   async register(dto: RegisterDto) {
@@ -126,8 +131,9 @@ Aboru Aboye.`;
       where: { email },
     });
 
-    if (user && await bcrypt.compare(password, user.passwordHash)) {
+    if (user && (await bcrypt.compare(password, user.passwordHash))) {
       // Exclude password hash from returned user object
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { passwordHash, ...result } = user;
       return result;
     }
@@ -233,12 +239,12 @@ Aboru Aboye.`;
   async initiateImpersonation(
     adminUser: any,
     targetUserId: string,
-    reason: string,
+    reason: string
   ): Promise<{ token: string }> {
     const impersonationResult = await this.impersonationService.initiateImpersonation(
       adminUser,
       targetUserId,
-      reason,
+      reason
     );
 
     return {

@@ -1,10 +1,20 @@
-import { Controller, Get, Post, Patch, Body, Param, Query, Headers, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Body,
+  Param,
+  Query,
+  Headers,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { WalletService } from './wallet.service';
 import { CreateDepositDto } from './dto/create-deposit.dto';
 import { CreateWithdrawalRequestDto } from './dto/create-withdrawal-request.dto';
 import { CreateEscrowDto } from './dto/create-escrow.dto';
-import { ReleaseEscrowDto, ReleaseTier } from './dto/release-escrow.dto';
+import { ReleaseEscrowDto } from './dto/release-escrow.dto';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { TransactionType, TransactionStatus, EscrowType, EscrowStatus } from '@ile-ase/common';
 

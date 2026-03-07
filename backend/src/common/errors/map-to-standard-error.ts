@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus } from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common';
 import { ErrorCode } from './error-codes';
 import type { StandardErrorPayload } from './standard-error.response';
 

@@ -70,7 +70,7 @@ export class AcademyService {
   }
 
   async findAllCourses(instructorId?: string, category?: string, status?: CourseStatus) {
-    const where: any = {};
+    const where: Record<string, unknown> = {};
 
     if (instructorId) {
       where.instructorId = instructorId;
@@ -183,7 +183,7 @@ export class AcademyService {
       throw new ForbiddenException('Only admins can change course status');
     }
 
-    const updateData: any = { ...dto };
+    const updateData: Record<string, unknown> = { ...dto };
     delete updateData.status; // Handle status separately
 
     if (dto.status) {

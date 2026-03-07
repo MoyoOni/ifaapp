@@ -67,7 +67,7 @@ export class PiiMaskingUtil {
     'payload',
     'metadata',
     'previousValues',
-    'newValues'
+    'newValues',
   ];
 
   /**
@@ -75,9 +75,7 @@ export class PiiMaskingUtil {
    */
   private static isPiiField(fieldName: string): boolean {
     const lowerFieldName = fieldName.toLowerCase();
-    return this.PII_FIELDS.some(piiField => 
-      lowerFieldName.includes(piiField.toLowerCase())
-    );
+    return this.PII_FIELDS.some((piiField) => lowerFieldName.includes(piiField.toLowerCase()));
   }
 
   /**
@@ -97,15 +95,18 @@ export class PiiMaskingUtil {
       } else if (value.length > 4) {
         // Generic masking for longer strings
         const visibleChars = Math.max(1, Math.floor(value.length / 4));
-        return value.substring(0, visibleChars) + '*'.repeat(value.length - visibleChars * 2) + 
-               value.substring(value.length - visibleChars);
+        return (
+          value.substring(0, visibleChars) +
+          '*'.repeat(value.length - visibleChars * 2) +
+          value.substring(value.length - visibleChars)
+        );
       } else {
         // For shorter strings, return asterisks
         return '*'.repeat(value.length);
       }
     } else if (typeof value === 'object') {
       if (Array.isArray(value)) {
-        return value.map(item => this.maskValue(item));
+        return value.map((item) => this.maskValue(item));
       } else {
         return this.maskObject(value);
       }
@@ -132,7 +133,7 @@ export class PiiMaskingUtil {
         // Still check nested objects for PII even if field name isn't recognized
         if (typeof value === 'object' && value !== null) {
           if (Array.isArray(value)) {
-            maskedObj[key] = value.map(item => this.maskValue(item));
+            maskedObj[key] = value.map((item) => this.maskValue(item));
           } else {
             maskedObj[key] = this.maskObject(value);
           }
@@ -165,15 +166,18 @@ export class PiiMaskingUtil {
    */
   private static maskEmail(email: string): string {
     const [localPart, domain] = email.split('@');
-    
+
     if (!localPart || !domain) {
       return email; // Not a valid email
     }
 
     const visibleLocalLength = Math.max(1, Math.min(3, Math.floor(localPart.length / 3)));
-    const maskedLocal = localPart.substring(0, visibleLocalLength) + 
-                        '*'.repeat(Math.max(0, localPart.length - visibleLocalLength * 2)) +
-                        (localPart.length > visibleLocalLength ? localPart.substring(localPart.length - visibleLocalLength) : '');
+    const maskedLocal =
+      localPart.substring(0, visibleLocalLength) +
+      '*'.repeat(Math.max(0, localPart.length - visibleLocalLength * 2)) +
+      (localPart.length > visibleLocalLength
+        ? localPart.substring(localPart.length - visibleLocalLength)
+        : '');
 
     return `${maskedLocal}@${domain}`;
   }
@@ -184,7 +188,7 @@ export class PiiMaskingUtil {
   private static maskPhoneNumber(phone: string): string {
     // Extract only digits
     const digits = phone.replace(/\D/g, '');
-    
+
     if (digits.length < 4) {
       return '*'.repeat(phone.length);
     }
@@ -193,14 +197,15 @@ export class PiiMaskingUtil {
     const visibleStart = Math.min(2, Math.floor(digits.length / 4));
     const visibleEnd = Math.min(2, Math.floor(digits.length / 4));
 
-    const maskedDigits = digits.substring(0, visibleStart) + 
-                         '*'.repeat(Math.max(0, digits.length - visibleStart - visibleEnd)) +
-                         (digits.length > visibleStart ? digits.substring(digits.length - visibleEnd) : '');
+    const maskedDigits =
+      digits.substring(0, visibleStart) +
+      '*'.repeat(Math.max(0, digits.length - visibleStart - visibleEnd)) +
+      (digits.length > visibleStart ? digits.substring(digits.length - visibleEnd) : '');
 
     // Preserve original formatting by replacing digits
     let result = '';
     let digitIndex = 0;
-    
+
     for (let i = 0; i < phone.length; i++) {
       const char = phone[i];
       if (/\d/.test(char)) {
@@ -210,7 +215,7 @@ export class PiiMaskingUtil {
         result += char;
       }
     }
-    
+
     return result;
   }
 }

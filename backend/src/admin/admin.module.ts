@@ -23,10 +23,7 @@ import { FeatureFlagController } from './feature-flag.controller';
     CirclesModule,
     NotificationsModule,
   ],
-  controllers: [
-    AdminController,
-    FeatureFlagController,
-  ],
+  controllers: [AdminController, FeatureFlagController],
   providers: [AdminService, AdminAuditService],
   exports: [AdminService],
 })

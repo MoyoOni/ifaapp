@@ -21,7 +21,7 @@ export class SentryService {
         integrations: [nodeProfilingIntegration()],
         tracesSampleRate: environment === 'production' ? 0.1 : 1.0,
         profilesSampleRate: environment === 'production' ? 0.1 : 1.0,
-        beforeSend(event, hint) {
+        beforeSend(event, _hint) {
           // Filter out sensitive data
           if (event.request) {
             delete event.request.cookies;

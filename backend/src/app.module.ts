@@ -1,5 +1,5 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD, APP_INTERCEPTOR, APP_FILTER, Reflector } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { validateEnv } from './config/env.validation';
@@ -13,7 +13,7 @@ import { VerificationModule } from './verification/verification.module';
 import { BabalawoClientModule } from './babalawo-client/babalawo-client.module';
 import { MessagingModule } from './messaging/messaging.module';
 import { AppointmentsModule } from './appointments/appointments.module';
-import { DocumentsModule } from './documents/documents.module';
+// import { DocumentsModule } from './documents/documents.module';  // Temporarily commented out
 import { AdminModule } from './admin/admin.module';
 import { ForumModule } from './forum/forum.module';
 import { MarketplaceModule } from './marketplace/marketplace.module';
@@ -42,7 +42,7 @@ import { SecurityModule } from './security/security.module';
 // import { CertificateModule } from './certificates/certificate.module';  // Temporarily commented out
 import { HealthModule } from './health/health.module';
 import { MetricsModule } from './metrics/metrics.module';
-import { QueueModule } from './common/queue/queue.module';
+// import { QueueModule } from './common/queue/queue.module'; // disabled until BullMQ version mismatch is resolved
 // import { TestModule } from './test/test.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { SentryModule } from './sentry/sentry.module';

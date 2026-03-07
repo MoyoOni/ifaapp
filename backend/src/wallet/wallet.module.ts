@@ -8,7 +8,11 @@ import { PaymentsModule } from '../payments/payments.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [PrismaModule, /*ScheduleModule,*/ forwardRef(() => PaymentsModule), NotificationsModule],
+  imports: [
+    PrismaModule,
+    /*ScheduleModule,*/ forwardRef(() => PaymentsModule),
+    NotificationsModule,
+  ],
   providers: [WalletService, EscrowExpiryService],
   controllers: [WalletController],
   exports: [WalletService],

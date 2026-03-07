@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsUUID, IsNumber, IsEnum, Min, Max } from 'class-validator';
+import { IsString, IsOptional, IsUUID, IsNumber, IsEnum, Min } from 'class-validator';
 
 export enum ReleaseTier {
   TIER_1 = 'TIER_1',

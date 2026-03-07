@@ -16,7 +16,7 @@ import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
  */
 @Injectable()
 export class TemplesService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   /**
    * Check if user can create a temple
@@ -73,7 +73,7 @@ export class TemplesService {
     if (!canCreate) {
       throw new ForbiddenException(
         `You do not have permission to create a ${dto.type} temple. ` +
-        `Ilé Ifá requires Master-tier, Branch requires Senior-tier or Master endorsement.`
+          `Ilé Ifá requires Master-tier, Branch requires Senior-tier or Master endorsement.`
       );
     }
 

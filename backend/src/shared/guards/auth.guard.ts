@@ -19,7 +19,7 @@ export interface ExtendedUser {
 export class JwtAuthGuard extends AuthGuard('jwt') {
   constructor(
     private readonly reflector: Reflector,
-    private readonly impersonationService: ImpersonationService,
+    private readonly impersonationService: ImpersonationService
   ) {
     super();
   }
@@ -30,7 +30,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       context.getHandler(),
       context.getClass(),
     ]);
-    
+
     if (isPublic) {
       return true;
     }

@@ -92,7 +92,20 @@
       "Bash(xargs -I{} node -e \"const p = require\\(''./'' + ''{}''\\); console.log\\(''{}'', p.version\\)\")",
       "Bash(npm why react)",
       "Bash(npx eslint src --ext ts,tsx --max-warnings 999)",
-      "Bash(npm why rxjs)"
+      "Bash(npm why rxjs)",
+      "Bash(npx eslint src/)",
+      "Bash(sed 's/.*error  //')",
+      "Bash(npx jest --forceExit --passWithNoTests)",
+      "Bash(npx vitest run)",
+      "Bash(sed 's/.*FAIL //')",
+      "Bash(sed 's/ \\\\[.*//')",
+      "Bash(npx vitest run src/pages/Home.test.tsx)",
+      "Bash(npx vitest run src/pages/not-found.test.tsx)",
+      "Bash(ls c:/Users/Test/ifa_app/common/src/enums/user-role.enum.*)",
+      "Bash(xargs rm -f)",
+      "Bash(npx eslint src/ --fix)",
+      "Bash(cat c:/Users/Test/ifa_app/backend/eslint.config.*)",
+      "Bash(npx eslint src/ --format json)"
     ]
   }
 }
