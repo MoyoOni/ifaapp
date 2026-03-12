@@ -168,7 +168,10 @@ git grep -i "password\|secret\|key" -- ':(exclude).gitignore' | grep -v "placeho
 ### Phase 8: Performance & Monitoring ✅
 
 - [x] **Database connection pooling:** `connection_limit=10` (supports ~50-100 concurrent users)
-- [x] **Error tracking:** Sentry DSN configured for automatic error capture
+- [x] **Error tracking:** Sentry DSN configured and active (frontend + backend)
+- [ ] **Sentry alert rules:** Configure per [LAUNCH_METRICS.md](LAUNCH_METRICS.md) — error rate spike, payment errors, auth failures, new fatal issues
+- [ ] **Uptime monitor:** UptimeRobot (or similar) checking `https://app.ilu-ase.com/api/health` every 5 minutes
+- [ ] **Launch day targets confirmed:** Review [LAUNCH_METRICS.md](LAUNCH_METRICS.md) with team — error rate < 0.5%, p95 < 2s, payment success > 98%
 - [x] **Logging:** Structured logging with trace IDs for debugging
 - [x] **Frontend build size:** 709 KB main bundle (208 KB gzip) — acceptable
 - [x] **No source maps in production:** Build output excludes `.js.map` files

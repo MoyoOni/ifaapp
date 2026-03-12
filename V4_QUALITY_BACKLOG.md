@@ -66,8 +66,9 @@ A story is DONE when ALL of these are true:
 ## 📊 Overall Project Health
 
 ```
-PRODUCTION LAUNCH:  126 / 129 SP  ░███████████████████░  98%
-BUG FIXES (Sprint 7): 10 / 16 SP  ░████████████░░░░░░░░  63%
+PRODUCTION LAUNCH:  176 / 241 SP  ░█████████████░░░░░░░  73%
+SPRINT 9 (No AWS):    0 /  20 SP  ░░░░░░░░░░░░░░░░░░░░░   0%  ⬜ READY
+SPRINT 10 (AWS):      0 /  45 SP  ░░░░░░░░░░░░░░░░░░░░░   0%  🔴 BLOCKED
 ```
 
 | Sprint | Name | Points | Status |
@@ -77,7 +78,11 @@ BUG FIXES (Sprint 7): 10 / 16 SP  ░████████████░░�
 | **Sprint 3** | **✨ User Experience Polish** | **26 SP** | ✅ COMPLETED |
 | **Sprint 4** | **♿ Accessibility and Mobile** | **21 SP** | ✅ COMPLETED |
 | **Sprint 5** | **🔌 Backend and Real-Time Features** | **20 SP** | ✅ COMPLETED |
-| **Sprint 6** | **🚢 Production and Infrastructure Hardening** | **20 SP** | 🔵 IN PROGRESS (17/20 SP) |
+| **Sprint 6** | **🚢 Production and Infrastructure Hardening** | **20 SP** | ✅ COMPLETED |
+| **Sprint 7** | **🐛 Critical Bug Fixes and Build Stability** | **16 SP** | ✅ COMPLETED |
+| **Sprint 8** | **🛡️ Production Hardening (P0 Critical Fixes)** | **27 SP** | ✅ COMPLETED |
+| **Sprint 9** | **🔐 Pre-Launch Polish (No AWS Required)** | **20 SP** | ⬜ READY |
+| **Sprint 10** | **☁️ AWS Infrastructure & Go-Live** | **45 SP** | 🔴 BLOCKED: AWS |
 | **Sprint 7** | **🐛 Critical Bug Fixes and Build Stability** | **16 SP** | 🔵 IN PROGRESS (10/16 SP) |
 
 ### 📅 Timeline
@@ -1538,5 +1543,536 @@ The following critical bugs were identified and resolved during implementation:
 5. **ClientConsultationsView property access**: Fixed incorrect property access (babalawo.name → babalawoName)
 6. **ClientConsultationsView missing fields**: Added missing duration field to consultation objects
 7. **Notifications controller method name**: Fixed incorrect method call (getUnreadNotificationCount → getUnreadCount)
+
+---
+
+---
+
+# 🔐 SPRINT 9 — PRE-LAUNCH POLISH (NO AWS REQUIRED)
+
+> **20 SP · Target: March 14–21, 2026**
+> Everything in this sprint can be built and tested locally or in CI — no cloud infrastructure needed.
+> Complete Sprint 9 before provisioning AWS (Sprint 10).
+
+**Context (from Production Readiness Audit, Mar 11, 2026):**
+- CI health URL ✅ fixed
+- Login rate-limit ✅ added
+- Google env vars ✅ documented
+- Remaining gaps: email verification, legal pages, CI integration tests, empty-state, secret rotation, prod guard, alert rules
+
+```
+Sprint 9 Progress
+===========================================================================
+Total Points: 20 SP
+
+| Story | Points | Priority | Status |
+|-------|--------|----------|--------|
+| V4-901 Email Verification Flow | 5 SP | 🔴 P0 CRITICAL | ⬜ READY |
+| V4-902 Terms of Service Page | 2 SP | 🟠 P1 HIGH | ⬜ READY |
+| V4-903 Privacy Policy Page | 2 SP | 🟠 P1 HIGH | ⬜ READY |
+| V4-904 Integration Tests in CI | 3 SP | 🟠 P1 HIGH | ⬜ READY |
+| V4-905 First-Run / Admin Bootstrap | 3 SP | 🟡 P2 MEDIUM | ⬜ READY |
+| V4-906 Secret Rotation Runbook | 1 SP | 🟡 P2 MEDIUM | ⬜ READY |
+| V4-907 Frontend Production Env Guard | 2 SP | 🟡 P2 MEDIUM | ⬜ READY |
+| V4-908 Launch Metrics + Sentry Alerts | 2 SP | 🟡 P2 MEDIUM | ⬜ READY |
+===========================================================================
+```
+
+---
+
+### V4-901: Wire Email Verification Flow ⬜
+
+**Priority:** 🔴 P0 CRITICAL (required before opening to broad real users)
+**Story Points:** 5
+**Sprint:** Sprint 9 — Pre-Launch Polish
+
+**As a** new user registering on the platform,
+**I want** my email address verified before I can fully use the platform,
+**So that** my account is secure and the platform can contact me reliably.
+
+**Background:**
+`EmailService.sendVerificationEmail()` exists and builds a link to `/verify-email?token=...`. Registration in `auth.service.ts` does **not** call it; no `verificationToken` is created or stored; there is no `/verify-email` route or page in the frontend.
+
+**Acceptance Criteria:**
+- [ ] AC-1: `register()` in `auth.service.ts` generates a secure verification token (UUID or crypto-random), stores it on the user record, and calls `sendVerificationEmail()`
+- [ ] AC-2: `GET /auth/verify-email?token=...` endpoint validates the token, marks the user as verified, and invalidates the token (one-use)
+- [ ] AC-3: Frontend route `/verify-email` shows a loading state, calls the API, and renders a success or error message
+- [ ] AC-4: Signup success screen shows "Check your email to verify your account" message
+- [ ] AC-5: Backend returns a clear error if a user's email is not verified on login (or soft-warn — implementation choice, document the decision)
+- [ ] AC-6: Unit test covers the token generation and verification logic in `auth.service.ts`
+
+**Tasks:**
+1. Add `verificationToken String? @unique` and `emailVerifiedAt DateTime?` fields to `User` model in `prisma/schema.prisma` (and migrate)
+2. In `auth.service.ts` `register()`: generate token, save to DB, call `this.emailService.sendVerificationEmail(email, token)`
+3. Add `GET /auth/verify-email` controller endpoint and service method to validate token + update user
+4. Add frontend route `/verify-email` page component (simple: spinner → success/error)
+5. Update signup success UX to show "Check your email" message
+6. Write unit test for the token flow in `auth.service.spec.ts`
+
+**Decision gate:** If you choose to launch without email verification, update this story to: document the deferral, remove any UI text that implies emails are verified, and add a post-launch story.
+
+---
+
+### V4-902: Add /terms (Terms of Service) Page ⬜
+
+**Priority:** 🟠 P1 HIGH (legal requirement; app stores and payment providers often require it)
+**Story Points:** 2
+**Sprint:** Sprint 9 — Pre-Launch Polish
+
+**As a** prospective user,
+**I want** to read the Terms of Service before signing up,
+**So that** I understand my rights and the platform's rules.
+
+**Acceptance Criteria:**
+- [ ] AC-1: `/terms` route exists and renders a Terms of Service page
+- [ ] AC-2: Signup form has a "By continuing you agree to our [Terms of Service]" link
+- [ ] AC-3: Footer links to `/terms`
+- [ ] AC-4: Page is accessible (heading structure, readable on mobile)
+- [ ] AC-5: Content is at minimum a good-faith placeholder (can be updated by legal/product later)
+
+**Tasks:**
+1. Create `frontend/src/pages/TermsPage.tsx` with static content (sections: Acceptance, Use of Service, Payments, Prohibited Conduct, Termination, Governing Law)
+2. Add route `/terms` in the router
+3. Add link to signup form: "By signing up you agree to our [Terms of Service] and [Privacy Policy]"
+4. Add `/terms` link to site footer
+
+---
+
+### V4-903: Add /privacy (Privacy Policy) Page ⬜
+
+**Priority:** 🟠 P1 HIGH (required for Google OAuth consent screen; GDPR/NDPR compliance)
+**Story Points:** 2
+**Sprint:** Sprint 9 — Pre-Launch Polish
+
+**As a** prospective user,
+**I want** to read the Privacy Policy before signing up,
+**So that** I understand how my data is collected and used.
+
+**Acceptance Criteria:**
+- [ ] AC-1: `/privacy` route exists and renders a Privacy Policy page
+- [ ] AC-2: Signup form links to `/privacy` alongside `/terms`
+- [ ] AC-3: Footer links to `/privacy`
+- [ ] AC-4: Google OAuth consent screen URL can be set to `https://ilu-ase.com/privacy`
+- [ ] AC-5: Page covers: data collected, how it's used, third parties (Paystack/Flutterwave, Sentry), user rights, contact
+
+**Tasks:**
+1. Create `frontend/src/pages/PrivacyPage.tsx` with static content (sections: What We Collect, How We Use It, Third Parties, Your Rights, Contact)
+2. Add route `/privacy` in the router
+3. Link from signup form alongside Terms link (already added in V4-902)
+4. Add `/privacy` link to site footer
+
+---
+
+### V4-904: Add Integration Test Job to CI Pipeline ⬜
+
+**Priority:** 🟠 P1 HIGH (protects payment and auth regressions from shipping)
+**Story Points:** 3
+**Sprint:** Sprint 9 — Pre-Launch Polish
+
+**As a** developer,
+**I want** integration tests to run automatically on every PR and push,
+**So that** wallet, auth, and payment regressions are caught before they reach staging or production.
+
+**Background:**
+CI currently runs backend unit tests and frontend build — it does NOT run `npm run test:integration`. The wallet integration suite (9/9 passing) and auth/payment suites exist but aren't wired into CI.
+
+**Acceptance Criteria:**
+- [ ] AC-1: `.github/workflows/ci-cd.yml` has a dedicated `integration-tests` job
+- [ ] AC-2: Job spins up a Postgres service container (same version as production: 16)
+- [ ] AC-3: Job runs `cd backend && npm run test:integration -- --passWithNoTests`
+- [ ] AC-4: Wallet integration tests (9/9) pass in CI
+- [ ] AC-5: Job runs after unit tests, before deploy (so failures block deployment)
+- [ ] AC-6: Job uses environment variables from GitHub Secrets for `DATABASE_URL` (test DB)
+
+**Tasks:**
+1. Add `integration-tests` job to `.github/workflows/ci-cd.yml` with `services: postgres:16`
+2. Configure `DATABASE_URL` secret for test environment in GitHub Actions
+3. Add `needs: [test]` so integration tests run after unit tests
+4. Add `needs: [integration-tests]` to the deploy job so failures block deploy
+5. Verify in a dry-run (push to branch) that wallet tests pass in CI
+
+---
+
+### V4-905: First-Run / Empty State — Admin Bootstrap ⬜
+
+**Priority:** 🟡 P2 MEDIUM (prevents confusing blank-slate first deploy)
+**Story Points:** 3
+**Sprint:** Sprint 9 — Pre-Launch Polish
+
+**As a** platform administrator doing the first production deploy,
+**I want** a documented and scripted way to bootstrap initial content and the first admin account,
+**So that** the first visitor sees a coherent experience and we can manage the platform from day one.
+
+**Background:**
+First deploy has no users, no temples, no products, no Babalawos. Without a bootstrap, the app works but is empty in a confusing way. The demo seed script works locally but uses demo data — we need a production-safe bootstrap.
+
+**Acceptance Criteria:**
+- [ ] AC-1: `scripts/bootstrap-production.sh` (or equivalent npm script) creates the first admin user from env vars (email, password) without demo data
+- [ ] AC-2: Script is idempotent — running twice doesn't create duplicates
+- [ ] AC-3: `docs/FIRST_DEPLOY.md` documents the exact steps for first production deploy: run migrations → run bootstrap → verify admin login
+- [ ] AC-4: Admin can log in and access `/admin` immediately after bootstrap
+- [ ] AC-5: Empty state UI in key pages (temple directory, marketplace, babalawo directory) shows a friendly "Nothing here yet" message rather than a blank screen or error
+
+**Tasks:**
+1. Create `scripts/bootstrap-production.sh` that calls a seeding endpoint or Prisma script to create the first admin
+2. Add `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` to `.env.example`
+3. Write `docs/FIRST_DEPLOY.md` with step-by-step guide
+4. Audit key directory pages for empty-array handling — add empty-state UI where missing
+
+---
+
+### V4-906: Secret Rotation Runbook ⬜
+
+**Priority:** 🟡 P2 MEDIUM (avoids panic when rotation is needed)
+**Story Points:** 1
+**Sprint:** Sprint 9 — Pre-Launch Polish
+
+**As a** security-conscious operator,
+**I want** documented procedures for rotating JWT_SECRET and ENCRYPTION_KEY,
+**So that** I can respond to a credential compromise without losing user data or causing extended downtime.
+
+**Acceptance Criteria:**
+- [ ] AC-1: `docs/SECRET_ROTATION.md` documents the impact and procedure for rotating `JWT_SECRET` (all sessions invalidated — users must re-login)
+- [ ] AC-2: Doc covers `ENCRYPTION_KEY` rotation impact (encrypted fields must be re-encrypted — requires migration script or maintenance window)
+- [ ] AC-3: Doc covers DB password rotation procedure
+- [ ] AC-4: Doc is linked from `docs/DEPLOYMENT_PROCEDURES.md`
+
+**Tasks:**
+1. Create `docs/SECRET_ROTATION.md`
+2. Document `JWT_SECRET` rotation: stop service → update env → restart → users re-login
+3. Document `ENCRYPTION_KEY` rotation: maintenance window → decrypt with old → re-encrypt with new → update env
+4. Link from `DEPLOYMENT_PROCEDURES.md` in the "Security" section
+
+---
+
+### V4-907: Frontend Production Environment Guard ⬜
+
+**Priority:** 🟡 P2 MEDIUM (prevents hard-to-debug misconfiguration in prod)
+**Story Points:** 2
+**Sprint:** Sprint 9 — Pre-Launch Polish
+
+**As a** developer deploying the frontend,
+**I want** the app to fail fast and clearly if `VITE_API_URL` is misconfigured in production,
+**So that** we never silently serve a production frontend pointing at localhost.
+
+**Acceptance Criteria:**
+- [ ] AC-1: On app startup in production (`import.meta.env.PROD === true`), if `VITE_API_URL` is empty, not set, or contains `localhost`, a visible error banner or page is shown
+- [ ] AC-2: The guard runs before any API calls are made (in `main.tsx` or a top-level component)
+- [ ] AC-3: Error message is actionable: "VITE_API_URL is not configured correctly. Contact your system administrator."
+- [ ] AC-4: Guard does NOT trigger in development (only in production builds)
+- [ ] AC-5: Guard does NOT affect demo mode behaviour
+
+**Tasks:**
+1. In `main.tsx` or a `<ProductionGuard>` wrapper component, check `import.meta.env.PROD && (!VITE_API_URL || VITE_API_URL.includes('localhost'))`
+2. If check fails, render a full-page error instead of the app
+3. Add test for the guard logic (Vitest unit test)
+
+---
+
+### V4-908: Define Launch Metrics + Configure Sentry Alert Rules ⬜
+
+**Priority:** 🟡 P2 MEDIUM (required to know within minutes if launch goes wrong)
+**Story Points:** 2
+**Sprint:** Sprint 9 — Pre-Launch Polish
+
+**As a** launch engineer,
+**I want** defined metrics targets and automated alerts configured in Sentry,
+**So that** I know within 5 minutes if the April 1 launch is experiencing failures.
+
+**Acceptance Criteria:**
+- [ ] AC-1: `docs/LAUNCH_METRICS.md` defines targets: error rate < 0.5%, p95 API latency < 2s, signup success rate > 95%, payment success rate > 98%
+- [ ] AC-2: Sentry alert rule: notify on-call channel if error rate spikes > 5 errors/min
+- [ ] AC-3: Sentry alert rule: notify on payment-related errors (keywords: wallet, payment, checkout)
+- [ ] AC-4: `/api/health/detailed` response documented as the primary launch-day dashboard
+- [ ] AC-5: On-call contact list (name, phone/Slack) documented in runbook
+
+**Tasks:**
+1. Create `docs/LAUNCH_METRICS.md` with targets table and escalation contacts
+2. Configure Sentry alert rules (can be done in Sentry UI — document the steps)
+3. Add health endpoint response format to `LAUNCH_METRICS.md` as reference
+4. Link `LAUNCH_METRICS.md` from `docs/PRE_LAUNCH_CHECKLIST.md`
+
+---
+
+---
+
+# ☁️ SPRINT 10 — AWS INFRASTRUCTURE & GO-LIVE
+
+> **45 SP · Target: March 21 – April 1, 2026**
+> ALL stories in this sprint require AWS infrastructure. Do not start until Sprint 9 is complete.
+> **Blocker:** AWS account access, billing, VPC/IAM permissions, and domain registrar access required.
+
+```
+Sprint 10 Progress
+===========================================================================
+Total Points: 45 SP
+
+| Story | Points | Priority | Status |
+|-------|--------|----------|--------|
+| V6-201 Provision staging infrastructure | 8 SP | 🔴 P0 BLOCKER | 🔴 BLOCKED: AWS |
+| V6-202 Deploy to staging | 5 SP | 🔴 P0 BLOCKER | 🔴 BLOCKED: AWS staging |
+| V6-203 Staging smoke tests + sign-off | 3 SP | 🔴 P0 BLOCKER | 🔴 BLOCKED: AWS staging |
+| V6-204 Provision production infrastructure | 8 SP | 🔴 P0 BLOCKER | 🔴 BLOCKED: AWS |
+| V6-205 SSL certificates + DNS | 3 SP | 🔴 P0 BLOCKER | 🔴 BLOCKED: AWS |
+| V6-206 Backup script schedule + restore test | 3 SP | 🔴 P0 BLOCKER | 🔴 BLOCKED: AWS |
+| V6-207 Load test (100+ concurrent users) | 5 SP | 🟠 P1 HIGH | 🔴 BLOCKED: AWS staging |
+| V6-208 CDN + uptime monitor + APM alerts | 5 SP | 🟠 P1 HIGH | 🔴 BLOCKED: AWS |
+| V6-209 Production cutover + launch day | 5 SP | 🔴 P0 BLOCKER | 🔴 BLOCKED: AWS prod |
+===========================================================================
+```
+
+---
+
+### V6-201: Provision Staging Infrastructure on AWS 🔴
+
+**Priority:** 🔴 P0 BLOCKER
+**Story Points:** 8
+**Sprint:** Sprint 10 — AWS Infrastructure
+**Blocked by:** AWS account, billing, VPC setup
+
+**As a** DevOps engineer,
+**I want** a staging environment provisioned on AWS that mirrors production configuration,
+**So that** we can deploy, test, and validate the app before go-live.
+
+**Acceptance Criteria:**
+- [ ] AC-1: PostgreSQL 16 RDS instance (or EC2 Postgres) running in the staging VPC
+- [ ] AC-2: Redis instance (ElastiCache or EC2) available for WebSocket sessions and job queues
+- [ ] AC-3: EC2 (or ECS) instance with Node.js 20+ runtime, accessible via SSH
+- [ ] AC-4: Security groups restrict DB and Redis to app server only (no public access)
+- [ ] AC-5: All staging environment variables set (matching `.env.example` shape); `NODE_ENV=production`, `VITE_DEMO_MODE=false`
+- [ ] AC-6: `/api/health` returns `{"status":"ok"}` from staging server
+
+**Tasks:**
+1. Provision RDS Postgres 16 (or EC2 + Postgres) in staging VPC; create `ilu_ase_staging` database
+2. Provision ElastiCache Redis (or EC2 Redis) and note connection URL
+3. Launch EC2 t3.small (or ECS task) with Node.js 20+; configure IAM role with S3 backup access
+4. Set security groups: app server → DB (5432), app server → Redis (6379)
+5. Create staging secrets in AWS Secrets Manager (or .env file on server) from `.env.example`
+6. Document staging server IP/hostname in `docs/DEPLOYMENT_PROCEDURES.md`
+
+---
+
+### V6-202: Deploy Backend + Frontend to Staging 🔴
+
+**Priority:** 🔴 P0 BLOCKER
+**Story Points:** 5
+**Sprint:** Sprint 10 — AWS Infrastructure
+**Blocked by:** V6-201 (staging infrastructure)
+
+**As a** DevOps engineer,
+**I want** the backend and frontend deployed and running on staging,
+**So that** the QA team can run smoke tests against a real server.
+
+**Acceptance Criteria:**
+- [ ] AC-1: `scripts/deploy.sh` runs successfully on staging server (pull, install, migrate, build, PM2)
+- [ ] AC-2: All Prisma migrations apply cleanly (`prisma migrate deploy`)
+- [ ] AC-3: Frontend build served by nginx with correct API proxy to backend
+- [ ] AC-4: `VITE_DEMO_MODE=false` confirmed in staging build
+- [ ] AC-5: Sentry receives a test error from both frontend and backend (confirms DSN works)
+- [ ] AC-6: WebSocket connections work from browser to staging backend
+
+**Tasks:**
+1. SSH into staging server; clone repo and checkout `v4/quality` branch
+2. Copy `.env` files from Secrets Manager; run `scripts/deploy.sh`
+3. Verify `prisma migrate deploy` outputs all migrations applied
+4. Configure nginx: serve frontend build at `:80`, proxy `/api/*` to backend `:3000`
+5. Trigger a test Sentry error; verify it appears in Sentry dashboard
+6. Test WebSocket from a browser tab; verify connection and message flow
+
+---
+
+### V6-203: Staging Smoke Tests — All 8 Scenarios Pass 🔴
+
+**Priority:** 🔴 P0 BLOCKER
+**Story Points:** 3
+**Sprint:** Sprint 10 — AWS Infrastructure
+**Blocked by:** V6-202 (staging deployment)
+
+**As a** QA engineer,
+**I want** all 8 smoke test scenarios from `docs/PRE_LAUNCH_CHECKLIST.md` to pass on staging,
+**So that** we have confidence the app works end-to-end with real infrastructure before production.
+
+**Acceptance Criteria:**
+- [ ] AC-1: All 8 Phase 10 smoke test scenarios from `docs/PRE_LAUNCH_CHECKLIST.md` pass
+- [ ] AC-2: No P0 or P1 bugs found; any P2+ bugs documented and triaged
+- [ ] AC-3: Stakeholder sign-off obtained (product owner approves staging)
+- [ ] AC-4: Findings documented in a staging test report
+
+**Tasks:**
+1. Run through each of the 8 smoke test scenarios with VITE_DEMO_MODE=false
+2. Document any failures; fix P0 blockers before sign-off
+3. Re-run after fixes; get stakeholder sign-off on staging
+4. Write staging test report summary in `docs/STAGING_TEST_REPORT.md`
+
+---
+
+### V6-204: Provision Production Infrastructure 🔴
+
+**Priority:** 🔴 P0 BLOCKER
+**Story Points:** 8
+**Sprint:** Sprint 10 — AWS Infrastructure
+**Blocked by:** V6-203 (staging sign-off), AWS budget approval
+
+**As a** DevOps engineer,
+**I want** a production-grade AWS infrastructure provisioned,
+**So that** we can deploy the app to handle real users from April 1.
+
+**Acceptance Criteria:**
+- [ ] AC-1: RDS Postgres 16 Multi-AZ instance (production) with automated backups enabled (7-day retention)
+- [ ] AC-2: ElastiCache Redis (production) for WebSocket scaling and job queues
+- [ ] AC-3: EC2 (or ECS) with auto-scaling group, Application Load Balancer (ALB)
+- [ ] AC-4: ALB health check passes against `/api/health`
+- [ ] AC-5: Production environment variables set (all from `.env.example` shape); distinct from staging values
+- [ ] AC-6: CloudWatch alarms configured for CPU > 80%, DB connections > 80% of max
+
+**Tasks:**
+1. Provision RDS Postgres 16 Multi-AZ with 7-day backup retention in production VPC
+2. Provision ElastiCache Redis (production cluster mode if budget allows)
+3. Create EC2 Auto Scaling Group (min 1, max 3) behind ALB; target group health check = `/api/health`
+4. Set up production secrets in AWS Secrets Manager (JWT_SECRET, ENCRYPTION_KEY, DB creds, Sentry DSN, payment keys)
+5. Configure CloudWatch alarms; wire to SNS topic → on-call email/Slack
+6. Document production architecture diagram in `docs/ARCHITECTURE.md`
+
+---
+
+### V6-205: SSL Certificates + DNS Configuration 🔴
+
+**Priority:** 🔴 P0 BLOCKER
+**Story Points:** 3
+**Sprint:** Sprint 10 — AWS Infrastructure
+**Blocked by:** V6-204 (production infrastructure), domain registrar access
+
+**As a** user,
+**I want** the site to load over HTTPS with a valid certificate,
+**So that** my data is encrypted and my browser shows the padlock.
+
+**Acceptance Criteria:**
+- [ ] AC-1: ACM wildcard certificate issued for `*.ilu-ase.com` (or the actual production domain)
+- [ ] AC-2: ALB configured with HTTPS listener on port 443; HTTP redirects to HTTPS
+- [ ] AC-3: Route53 (or registrar DNS) A record for `ilu-ase.com` → ALB
+- [ ] AC-4: Route53 CNAME for `www.ilu-ase.com` → ALB
+- [ ] AC-5: `curl -I https://ilu-ase.com/api/health` returns `200 OK` and `Strict-Transport-Security` header
+- [ ] AC-6: SSL Labs grade A or higher (checked after launch)
+
+**Tasks:**
+1. Request ACM wildcard certificate for `*.ilu-ase.com`; validate via DNS CNAME
+2. Attach ACM cert to ALB HTTPS listener (port 443)
+3. Add ALB HTTP listener redirect rule: HTTP 301 → HTTPS
+4. Create Route53 A record (alias) for `ilu-ase.com` → ALB DNS name
+5. Create Route53 CNAME for `www.ilu-ase.com` → `ilu-ase.com`
+6. Verify SSL chain and headers with `curl -v`
+
+---
+
+### V6-206: Schedule backup-db.sh + Perform Restore Test 🔴
+
+**Priority:** 🔴 P0 BLOCKER (data loss risk without verified backups)
+**Story Points:** 3
+**Sprint:** Sprint 10 — AWS Infrastructure
+**Blocked by:** V6-204 (production infrastructure with S3 access)
+
+**As a** platform operator,
+**I want** automated database backups running and a verified restore procedure,
+**So that** we can recover from data loss without extended downtime.
+
+**Acceptance Criteria:**
+- [ ] AC-1: `scripts/backup-db.sh` configured on the production server with correct `DATABASE_URL` and `S3_BACKUP_BUCKET`
+- [ ] AC-2: Cron job runs hourly backup and daily full backup (crontab entry documented)
+- [ ] AC-3: Backup files appear in S3 bucket within 1 hour of scheduling
+- [ ] AC-4: Restore test: download latest backup, restore to a test DB, verify table counts match
+- [ ] AC-5: Restore procedure documented in `docs/DEPLOYMENT_PROCEDURES.md`
+- [ ] AC-6: Alert set up if backup fails (CloudWatch Events or cron job email)
+
+**Tasks:**
+1. Set `DATABASE_URL`, `S3_BACKUP_BUCKET`, and `AWS_REGION` on production server
+2. Add crontab entry: `0 * * * * /home/ubuntu/ifa_app/scripts/backup-db.sh` (hourly)
+3. Manually run `backup-db.sh`; verify S3 upload succeeds
+4. Download latest `.sql.gz` from S3; restore to a test RDS instance; run `SELECT COUNT(*) FROM "User";` and compare
+5. Document restore steps in `docs/DEPLOYMENT_PROCEDURES.md` under "Backup Recovery"
+6. Set up CloudWatch alarm on S3 PutObject failures for backup bucket
+
+---
+
+### V6-207: Load Test — 100+ Concurrent Users 🔴
+
+**Priority:** 🟠 P1 HIGH (identifies breaking point before real users discover it)
+**Story Points:** 5
+**Sprint:** Sprint 10 — AWS Infrastructure
+**Blocked by:** V6-202 (staging deployment)
+
+**As a** performance engineer,
+**I want** to know the application's breaking point under realistic load,
+**So that** we can fix bottlenecks before they affect real users on launch day.
+
+**Acceptance Criteria:**
+- [ ] AC-1: Load test tool (k6 or Artillery) script covers: login, view dashboard, load babalawo directory, initiate booking
+- [ ] AC-2: 100 concurrent virtual users, 5-minute sustained run, no errors at baseline
+- [ ] AC-3: p95 response time < 2s for all endpoints under 100 VUs
+- [ ] AC-4: System recovers cleanly after load test (no zombie DB connections, memory leak)
+- [ ] AC-5: Results documented in `docs/LOAD_TEST_RESULTS.md` with recommendations
+- [ ] AC-6: Any identified bottlenecks (DB pool exhaustion, slow queries) fixed or documented as post-launch
+
+**Tasks:**
+1. Write k6 script (or Artillery YAML) covering the 4 critical user flows
+2. Run against staging (never against production) with 50 VUs → ramp to 100 VUs
+3. Monitor RDS CPU, connections, and Redis memory during test
+4. Review slow query log (`pg_stat_statements`) for queries > 100ms
+5. Document results and any required fixes in `docs/LOAD_TEST_RESULTS.md`
+
+---
+
+### V6-208: CDN + Uptime Monitor + APM Alert Rules 🔴
+
+**Priority:** 🟠 P1 HIGH (needed within minutes of launch to react to issues)
+**Story Points:** 5
+**Sprint:** Sprint 10 — AWS Infrastructure
+**Blocked by:** V6-205 (SSL + DNS)
+
+**As a** platform operator,
+**I want** a CDN for static assets, uptime monitoring on the health endpoint, and APM alert rules configured,
+**So that** the site loads fast globally and we are alerted within 5 minutes of any outage.
+
+**Acceptance Criteria:**
+- [ ] AC-1: CloudFront distribution serves frontend static assets (JS/CSS/images) with cache headers
+- [ ] AC-2: UptimeRobot (or Pingdom) checks `https://ilu-ase.com/api/health` every 5 minutes; alerts on-call Slack channel on failure
+- [ ] AC-3: Sentry alert rule: notify if error rate > 5 errors/min in any 5-minute window
+- [ ] AC-4: Sentry alert rule: notify on any payment/wallet error (issue title contains "wallet" OR "payment" OR "checkout")
+- [ ] AC-5: CloudWatch dashboard showing: API p95 latency, DB connection count, Redis memory, error count
+
+**Tasks:**
+1. Create CloudFront distribution pointing to S3 (if static hosting) or ALB origin for frontend assets
+2. Set `Cache-Control: max-age=31536000, immutable` on hashed assets; `no-cache` on `index.html`
+3. Set up UptimeRobot free monitor on `/api/health`; configure Slack/email alert channel
+4. Configure Sentry alert rules in Sentry project settings (via UI, document steps)
+5. Create CloudWatch dashboard with the 5 key metrics; share link with team
+
+---
+
+### V6-209: Production Cutover + Launch Day Execution 🔴
+
+**Priority:** 🔴 P0 BLOCKER
+**Story Points:** 5
+**Sprint:** Sprint 10 — AWS Infrastructure
+**Blocked by:** V6-201 through V6-208 all complete; all Sprint 9 stories complete
+
+**As a** launch engineer,
+**I want** a smooth production cutover executed on April 1,
+**So that** real users can access the platform from the announced launch date.
+
+**Acceptance Criteria:**
+- [ ] AC-1: All 10 phases of `docs/PRE_LAUNCH_CHECKLIST.md` signed off
+- [ ] AC-2: `v4/quality` branch merged to `main`; CI/CD deploys to production automatically
+- [ ] AC-3: Production `/api/health` returns `{"status":"ok"}` within 5 minutes of deploy
+- [ ] AC-4: First user signup completed successfully on production (end-to-end smoke)
+- [ ] AC-5: Sentry shows zero critical errors in first 30 minutes post-launch
+- [ ] AC-6: Launch announcement sent after 30-minute stability window
+
+**Tasks:**
+1. Morning of April 1: Run final pre-launch checklist (`docs/PRE_LAUNCH_CHECKLIST.md` Phase 10)
+2. 9:00 AM: Merge `v4/quality` → `main`; monitor CI/CD pipeline for green
+3. 9:05–9:10 AM: Verify production health endpoint; complete one manual signup
+4. 9:10–9:40 AM: Monitor Sentry, CloudWatch, and UptimeRobot dashboard
+5. 9:40 AM: If no P0 issues, send launch announcement
+6. 10:00 AM+: Support team on-call; check-ins every 30 minutes for first 4 hours
 
 *Last updated: 2026-02-25*

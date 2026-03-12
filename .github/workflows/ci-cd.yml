@@ -78,8 +78,21 @@ jobs:
       - name: Build backend
         run: cd backend && npm run build
 
-      - name: Run tests
+      - name: Run unit tests
         run: cd backend && npm test -- --passWithNoTests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: ci-test-secret-that-is-at-least-32-characters-long
+          JWT_REFRESH_SECRET: ci-test-refresh-secret-that-is-at-least-32-characters
+          JWT_EXPIRES_IN: 15m
+          JWT_REFRESH_EXPIRES_IN: 7d
+          PORT: 3000
+          NODE_ENV: test
+          FRONTEND_URL: http://localhost:5173
+
+      - name: Run integration tests (wallet, auth, payments)
+        run: cd backend && npm run test:integration -- --passWithNoTests
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
           REDIS_URL: redis://localhost:6379
@@ -168,7 +181,7 @@ jobs:
 
             # Verify health
             sleep 5
-            curl -sf http://localhost:3000/health || echo "WARNING: Health check failed"
+            curl -sf http://localhost:3000/api/health || echo "WARNING: Health check failed"
 
       - name: Verify deployment
         if: success()

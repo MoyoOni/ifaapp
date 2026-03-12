@@ -1,23 +1,17 @@
 import React, { useState } from 'react';
 import { Mail, Lock, Loader2 } from 'lucide-react';
 import { useAuth } from '@/shared/hooks/use-auth';
-import { UserRole } from '@common';
 import appLogo from '@/assets/logo.png';
+import GoogleAuthButton from '../components/google-auth-button';
 
 interface LoginFormProps {
-  selectedRole?: UserRole;
   onSuccess?: () => void;
   onSwitchToRegister?: () => void;
-  onSwitchToQuickAccess?: () => void; // Add prop for quick access
 }
 
-/**
- * Login Form Component
- * Authenticates users with email and password
- */
-const LoginForm: React.FC<LoginFormProps> = ({ selectedRole, onSuccess, onSwitchToRegister, onSwitchToQuickAccess }) => {
+const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) => {
   const { login } = useAuth();
-  const [email, setEmail] = useState('');
+  const [emailOrPhone, setEmailOrPhone] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,57 +22,20 @@ const LoginForm: React.FC<LoginFormProps> = ({ selectedRole, onSuccess, onSwitch
     setIsSubmitting(true);
 
     try {
-      await login(email, password);
-      if (onSuccess) {
-        onSuccess();
-      }
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Login failed. Please try again.';
-      setError(errorMessage);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleDemoLogin = async (role: 'admin' | 'babalawo' | 'client') => {
-    let demoEmail = '';
-    let demoPass = '';
-
-    switch (role) {
-      case 'admin':
-        demoEmail = 'admin@ilease.ng';
-        demoPass = 'admin123';
-        break;
-      case 'babalawo':
-        demoEmail = 'babalawo@ilease.ng';
-        demoPass = 'babalawo123';
-        break;
-      case 'client':
-        demoEmail = 'client@ilease.ng';
-        demoPass = 'client123';
-        break;
-    }
-
-    setIsSubmitting(true);
-    setError(null);
-
-    try {
-      await login(demoEmail, demoPass);
+      await login(emailOrPhone, password);
       onSuccess?.();
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Login failed. Please try again.';
-      setError(errorMessage);
+      setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="bg-white rounded-[2.5rem] p-10 md:p-12 border border-stone-100 shadow-2xl space-y-8 max-w-md w-full relative overflow-hidden font-sans">
-      {/* Decorative Gold Line */}
-      <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-input via-highlight to-input"></div>
+    <div className="bg-white rounded-[2.5rem] p-10 md:p-12 border border-stone-100 shadow-2xl space-y-7 max-w-md w-full relative overflow-hidden font-sans">
+      <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-input via-highlight to-input" />
 
-      {/* Single overlay during sign-in to prevent form flicker */}
+      {/* Loading overlay */}
       {isSubmitting && (
         <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[2.5rem] bg-white/90 backdrop-blur-[2px]">
           <div className="flex flex-col items-center gap-3">
@@ -88,54 +45,56 @@ const LoginForm: React.FC<LoginFormProps> = ({ selectedRole, onSuccess, onSwitch
         </div>
       )}
 
+      {/* Header */}
       <div className="text-center space-y-3">
-        <img src={appLogo} alt="Ìlú Àṣẹ" className="w-16 h-16 mx-auto rounded-2xl shadow-lg" />
-        <h2 className="text-[2rem] sm:text-[2.5rem] font-bold brand-font text-stone-800 tracking-tight">Welcome Back</h2>
-        <p className="text-stone-500 text-[1rem] font-medium">
-          {selectedRole ? (
-            <>Signing in as <span className="text-highlight font-bold capitalize">{selectedRole}</span></>
-          ) : (
-            'Enter your details to access your sanctuary'
-          )}
-        </p>
+        <img src={appLogo} alt="Ilu Ase" className="w-16 h-16 mx-auto rounded-2xl shadow-lg" />
+        <h2 className="text-3xl font-bold brand-font text-stone-800 tracking-tight">Welcome Back</h2>
+        <p className="text-stone-500 text-base font-medium">Enter your details to access your sanctuary</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Email */}
-        <div className="space-y-2">
-          <label
-            htmlFor="email"
-            className="text-[0.875rem] font-semibold uppercase text-stone-400 tracking-widest ml-1"
-          >
-            Email Address
+      {/* Google Sign-In */}
+      <GoogleAuthButton
+        label="Continue with Google"
+        onSuccess={onSuccess}
+        onError={setError}
+      />
+
+      <div className="flex items-center gap-3">
+        <div className="flex-1 h-px bg-stone-100" />
+        <span className="text-xs text-stone-300 font-semibold uppercase tracking-widest">or</span>
+        <div className="flex-1 h-px bg-stone-100" />
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Email or Phone */}
+        <div className="space-y-1.5">
+          <label htmlFor="emailOrPhone" className="text-xs font-bold uppercase text-stone-400 tracking-widest ml-1">
+            Email or Phone Number
           </label>
           <div className="relative group">
             <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-stone-400 group-focus-within:text-highlight transition-colors" size={20} />
             <input
-              id="email"
-              name="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              id="emailOrPhone"
+              name="emailOrPhone"
+              type="text"
+              value={emailOrPhone}
+              onChange={(e) => setEmailOrPhone(e.target.value)}
               required
-              autoComplete="email"
-              placeholder="name@example.com"
+              autoComplete="username"
+              placeholder="name@example.com or 08012345678"
               className="w-full bg-stone-50 border border-stone-200 p-4 pl-14 rounded-2xl text-stone-800 outline-none focus:bg-white focus:border-highlight focus:ring-4 focus:ring-highlight/10 transition-all font-medium placeholder:text-stone-300"
             />
           </div>
         </div>
 
         {/* Password */}
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <div className="flex items-center justify-between ml-1">
-            <label
-              htmlFor="password"
-              className="text-[0.875rem] font-semibold uppercase text-stone-400 tracking-widest"
-            >
+            <label htmlFor="password" className="text-xs font-bold uppercase text-stone-400 tracking-widest">
               Password
             </label>
-            <button type="button" className="text-[0.875rem] font-semibold text-highlight hover:text-yellow-600 transition-colors">
-              Forgot?
+            <button type="button" className="text-xs font-semibold text-highlight hover:text-yellow-600 transition-colors">
+              Forgot password?
             </button>
           </div>
           <div className="relative group">
@@ -147,7 +106,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ selectedRole, onSuccess, onSwitch
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              minLength={8}
+              minLength={6}
               autoComplete="current-password"
               placeholder="Enter your password"
               className="w-full bg-stone-50 border border-stone-200 p-4 pl-14 rounded-2xl text-stone-800 outline-none focus:bg-white focus:border-highlight focus:ring-4 focus:ring-highlight/10 transition-all font-medium placeholder:text-stone-300"
@@ -155,80 +114,35 @@ const LoginForm: React.FC<LoginFormProps> = ({ selectedRole, onSuccess, onSwitch
           </div>
         </div>
 
-        {/* Error Message */}
         {error && (
-          <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm font-medium flex items-center justify-center">
+          <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm font-medium text-center">
             {error}
           </div>
         )}
 
-        {/* Submit Button */}
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full py-4 bg-highlight text-white rounded-2xl font-bold text-[1rem] shadow-lg shadow-highlight/20 hover:shadow-xl hover:bg-yellow-500 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
+          aria-label="Sign in"
+          className="w-full py-4 bg-highlight text-white rounded-2xl font-bold text-base shadow-lg shadow-highlight/20 hover:bg-yellow-500 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
         >
-          {isSubmitting ? (
-            <>
-              <Loader2 size={20} className="animate-spin" />
-              <span className="text-[1rem]">Accessing...</span>
-            </>
-          ) : (
-            'Sign In'
-          )}
+          Sign In
         </button>
       </form>
 
-      {/* Demo Login Buttons */}
-      <div className="pt-8 border-t border-stone-100">
-        <p className="text-[0.75rem] font-bold uppercase text-stone-300 tracking-widest text-center mb-4">
-          Quick Access (Demo)
-        </p>
-        <div className="grid grid-cols-3 gap-3">
-          {(['admin', 'babalawo', 'client'] as const).map((role) => (
-            <button
-              key={role}
-              type="button"
-              onClick={() => handleDemoLogin(role)}
-              disabled={isSubmitting}
-              className="py-2 px-3 bg-stone-50 hover:bg-stone-100 text-stone-500 hover:text-stone-800 border border-stone-100 rounded-xl text-[0.875rem] font-bold transition-all capitalize"
-            >
-              {role}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Switch to Register */}
       {onSwitchToRegister && (
-        <div className="text-center pt-2">
-          <p className="text-stone-400 text-[0.875rem] font-medium">
-            New to Ifá?{' '}
-            <button
-              onClick={onSwitchToRegister}
-              className="text-highlight hover:text-yellow-600 font-bold transition-colors ml-1"
-            >
-              Start your journey
-            </button>
-          </p>
-        </div>
+        <p className="text-center text-stone-400 text-sm font-medium pt-1">
+          New to Ifa?{' '}
+          <button
+            type="button"
+            onClick={onSwitchToRegister}
+            className="text-highlight hover:text-yellow-600 font-bold transition-colors"
+          >
+            Start your journey
+          </button>
+        </p>
       )}
-
-      {/* Switch to Quick Access */}
-      {onSwitchToQuickAccess && (
-        <div className="text-center pt-2">
-          <p className="text-stone-400 text-[0.875rem] font-medium">
-            Need a demo account?{' '}
-            <button
-              onClick={onSwitchToQuickAccess}
-              className="text-highlight hover:text-yellow-600 font-bold transition-colors ml-1"
-            >
-              Try Quick Access
-            </button>
-          </p>
-        </div>
-      )}
-    </div> // Added missing closing tag
+    </div>
   );
 };
 

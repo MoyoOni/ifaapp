@@ -283,6 +283,15 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                     </div>
                 )}
 
+                {/* Legal Links Footer */}
+                {showExpanded && (
+                    <div className="px-4 pb-2 flex gap-3 justify-center">
+                        <a href="/terms" className="text-[10px] text-muted-foreground hover:text-highlight transition-colors">Terms</a>
+                        <span className="text-[10px] text-muted-foreground">·</span>
+                        <a href="/privacy" className="text-[10px] text-muted-foreground hover:text-highlight transition-colors">Privacy</a>
+                    </div>
+                )}
+
                 {/* Collapsed User Avatar */}
                 {!showExpanded && (
                     <div className="p-3 border-t border-border/50" data-profile-menu>
@@ -405,6 +414,11 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                                     <LogOut size={20} />
                                     Log Out
                                 </button>
+
+                                <div className="flex gap-4 justify-center pt-2">
+                                    <a href="/terms" className="text-xs text-muted-foreground hover:text-highlight transition-colors">Terms</a>
+                                    <a href="/privacy" className="text-xs text-muted-foreground hover:text-highlight transition-colors">Privacy</a>
+                                </div>
                             </div>
                         </motion.aside>
                     </>

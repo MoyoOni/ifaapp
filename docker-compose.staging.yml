@@ -82,15 +82,18 @@ services:
       - staging-network
     restart: unless-stopped
 
-  # Nginx reverse proxy & frontend server
+  # Nginx reverse proxy & frontend server (builds React inside Docker)
   nginx:
-    image: nginx:alpine
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile.staging
+      args:
+        VITE_API_URL: /api
+        VITE_BASE_PATH: /
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
     container_name: ilu-ase-staging-nginx
     ports:
       - "4040:80"
-    volumes:
-      - ./frontend/dist:/usr/share/nginx/html:ro
-      - ./docker/nginx.staging.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       backend:
         condition: service_healthy

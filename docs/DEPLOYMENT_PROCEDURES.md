@@ -432,6 +432,13 @@ vercel rollback  # Automatically redeploy previous version
 
 ## Maintenance Operations
 
+### Secret Rotation
+
+See **[SECRET_ROTATION.md](SECRET_ROTATION.md)** for the full runbook covering:
+- `JWT_SECRET` / `JWT_REFRESH_SECRET` rotation (no downtime, users re-login)
+- `ENCRYPTION_KEY` rotation (requires maintenance window + re-encryption script)
+- Database password, payment API keys, and other secrets
+
 ### Weekly Database Backup
 
 ```bash

@@ -11,7 +11,7 @@ import { logger } from '@/shared/utils/logger';
 import { seededRandomInt } from '@/shared/utils/seeded-random';
 import { BabalawoDirectorySkeleton } from '@/shared/components/skeleton';
 import { FeatureHeader } from '@/shared/components/feature-header';
-import { Search as SearchIcon } from 'lucide-react';
+import { Search as SearchIcon, Users } from 'lucide-react';
 
 interface Babalawo {
   id: string;
@@ -156,6 +156,16 @@ const BabalawoDiscoveryView: React.FC = () => {
             ))}
           </div>
         </div>
+
+        {filteredBabalawos.length === 0 && (
+          <div className="text-center py-16 bg-card rounded-2xl border border-input">
+            <Users size={48} className="mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-xl font-bold text-foreground mb-2">No Babalawos found</h3>
+            <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+              No practitioners match your current filters. Try adjusting your search or check back as our community grows.
+            </p>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredBabalawos.map((babalawo) => (

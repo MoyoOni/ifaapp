@@ -16,6 +16,9 @@ import ProfilePage from './pages/ProfilePage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import QuickAccessPage from './pages/QuickAccessPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
+import TermsPage from './pages/TermsPage';
+import PrivacyPage from './pages/PrivacyPage';
 import SentryTestPage from './pages/SentryTestPage';
 import SettingsPage from './pages/SettingsPage';
 import HelpPage from './pages/HelpPage';
@@ -351,6 +354,9 @@ function App() {
               <Routes>
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/signup" element={<SignupPage />} />
+                <Route path="/verify-email" element={<VerifyEmailPage />} />
+                <Route path="/terms" element={<TermsPage />} />
+                <Route path="/privacy" element={<PrivacyPage />} />
                 <Route path="/quick-access" element={<QuickAccessPage />} /> {/* Add quick access route */}
                 <Route path="/test-sentry" element={<SentryTestPage />} /> {/* Sentry testing route */}
                 <Route path="/notifications" element={<NotificationsPage />} /> {/* Notification center */}

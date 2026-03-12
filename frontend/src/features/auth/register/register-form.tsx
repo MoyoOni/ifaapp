@@ -1,209 +1,236 @@
 import React, { useState } from 'react';
-import { Mail, Lock, User, Loader2 } from 'lucide-react';
+import { Mail, Lock, User, Phone, Loader2, ArrowLeft, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { UserRole } from '@common';
 import appLogo from '@/assets/logo.png';
+import GoogleAuthButton from '../components/google-auth-button';
+
+const ROLE_LABELS: Record<string, string> = {
+  CLIENT: 'Seeker',
+  BABALAWO: 'Babalawo',
+  VENDOR: 'Vendor',
+  ADMIN: 'Administrator',
+  ADVISORY_BOARD_MEMBER: 'Advisory Board Member',
+};
 
 interface RegisterFormProps {
   selectedRole: UserRole;
   onSuccess?: () => void;
   onSwitchToLogin?: () => void;
+  onBack?: () => void;
 }
 
-/**
- * Register Form Component
- * Creates new user accounts
- */
-const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, onSwitchToLogin }) => {
+const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, onSwitchToLogin, onBack }) => {
   const { register } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [yorubaName, setYorubaName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    // Validation
     if (password.length < 8) {
-      setError('Password must be at least 8 characters long');
+      setError('Password must be at least 8 characters');
       return;
     }
-
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
     }
 
     setIsSubmitting(true);
-
     try {
-      await register(email, password, name, selectedRole);
-      if (onSuccess) {
-        onSuccess();
-      }
+      await register(email, password, name, selectedRole, phone || undefined);
+      setRegisteredEmail(email);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Registration failed. Please try again.';
-      setError(errorMessage);
+      setError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  return (
-    <div className="bg-white rounded-[2.5rem] p-10 md:p-12 border border-stone-100 shadow-2xl space-y-8 max-w-md w-full relative overflow-hidden font-sans">
-      {/* Decorative Gold Line */}
-      <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-input via-highlight to-input"></div>
-
-      <div className="text-center space-y-3">
-        <img src={appLogo} alt="Ìlú Àṣẹ" className="w-16 h-16 mx-auto rounded-2xl shadow-lg" />
-        <h2 className="text-[1.5rem] md:text-[2rem] font-[700] text-stone-800 tracking-tight brand-font">
-          Begin Your Journey
-        </h2>
-        <p className="text-[0.875rem] text-stone-500 font-[500]">
-          Joining the community as a <span className="text-highlight font-[700] capitalize">{selectedRole === UserRole.CLIENT ? 'Seeker' : selectedRole.toLowerCase()}</span>
+  if (registeredEmail) {
+    return (
+      <div className="bg-white rounded-[2.5rem] p-8 md:p-10 border border-stone-100 shadow-2xl space-y-6 max-w-md w-full relative overflow-hidden font-sans text-center">
+        <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-input via-highlight to-input" />
+        <CheckCircle size={48} className="text-green-500 mx-auto" />
+        <h2 className="text-2xl font-bold brand-font text-stone-800">Check your email</h2>
+        <p className="text-stone-500 text-sm leading-relaxed">
+          We sent a verification link to{' '}
+          <span className="font-semibold text-stone-700">{registeredEmail}</span>.
+          Click the link to verify your address, then continue.
+        </p>
+        <button
+          type="button"
+          onClick={onSuccess}
+          className="w-full py-4 bg-highlight text-white rounded-2xl font-bold shadow-lg shadow-highlight/20 hover:bg-yellow-500 transition-all"
+        >
+          Continue to onboarding →
+        </button>
+        <p className="text-xs text-stone-400">
+          Didn't receive it? Check your spam folder or{' '}
+          <button
+            type="button"
+            onClick={() => setRegisteredEmail(null)}
+            className="text-highlight hover:text-yellow-600 font-medium"
+          >
+            go back
+          </button>.
         </p>
       </div>
+    );
+  }
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+  return (
+    <div className="bg-white rounded-[2.5rem] p-8 md:p-10 border border-stone-100 shadow-2xl space-y-6 max-w-md w-full relative overflow-hidden font-sans">
+      <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-input via-highlight to-input" />
 
-        {/* Name */}
-        <div className="space-y-1.5">
-          <label className="text-[0.875rem] font-[500] text-stone-400 tracking-widest ml-1">
-            Full Name
-          </label>
-          <div className="relative group">
-            <User className="absolute left-5 top-1/2 -translate-y-1/2 text-stone-400 group-focus-within:text-highlight transition-colors" size={20} />
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              minLength={2}
-              placeholder="Your full name"
-              className="w-full bg-stone-50 border border-stone-200 p-4 pl-14 rounded-2xl text-stone-800 outline-none focus:bg-white focus:border-highlight focus:ring-4 focus:ring-highlight/10 transition-all font-medium placeholder:text-stone-300"
-            />
-          </div>
+      {/* Header */}
+      <div className="flex items-start gap-3">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="mt-1 p-1.5 rounded-xl hover:bg-stone-100 text-stone-400 hover:text-stone-700 transition-colors flex-shrink-0"
+            aria-label="Back to role selection"
+          >
+            <ArrowLeft size={18} aria-hidden="true" />
+          </button>
+        )}
+        <div className="flex-1 text-center">
+          <img src={appLogo} alt="Ilu Ase" className="w-12 h-12 mx-auto rounded-2xl shadow-lg mb-3" />
+          <h2 className="text-2xl font-bold brand-font text-stone-800">Create Account</h2>
+          <p className="text-sm text-stone-500 mt-1">
+            Joining as a{' '}
+            <span className="text-highlight font-bold">{ROLE_LABELS[selectedRole] ?? selectedRole}</span>
+          </p>
         </div>
+      </div>
 
-        {/* Yoruba Name */}
-        <div className="space-y-1.5">
-          <label className="text-[0.875rem] font-[500] text-stone-400 tracking-widest ml-1">
-            Yoruba Name <span className="text-stone-300 font-[400] normal-case tracking-normal">(Optional)</span>
-          </label>
+      {/* Google Sign-Up */}
+      <GoogleAuthButton
+        label="Sign up with Google"
+        onSuccess={onSuccess}
+        onError={setError}
+      />
+
+      <div className="flex items-center gap-3">
+        <div className="flex-1 h-px bg-stone-100" />
+        <span className="text-xs text-stone-300 font-semibold uppercase tracking-widest">or</span>
+        <div className="flex-1 h-px bg-stone-100" />
+      </div>
+
+      {/* Form */}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Full Name */}
+        <div className="relative group">
+          <User className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-300 group-focus-within:text-highlight transition-colors" size={18} />
           <input
             type="text"
-            value={yorubaName}
-            onChange={(e) => setYorubaName(e.target.value)}
-            placeholder="Your name in tradition"
-            className="w-full bg-stone-50 border border-stone-200 p-4 rounded-2xl text-stone-800 outline-none focus:bg-white focus:border-highlight focus:ring-4 focus:ring-highlight/10 transition-all font-medium placeholder:text-stone-300"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            minLength={2}
+            placeholder="Full name"
+            className="w-full bg-stone-50 border border-stone-200 p-4 pl-12 rounded-2xl text-stone-800 outline-none focus:bg-white focus:border-highlight focus:ring-4 focus:ring-highlight/10 transition-all font-medium placeholder:text-stone-300"
           />
         </div>
 
         {/* Email */}
-        <div className="space-y-1.5">
-          <label className="text-[0.875rem] font-[500] text-stone-400 tracking-widest ml-1">
-            Email Address
-          </label>
+        <div className="relative group">
+          <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-300 group-focus-within:text-highlight transition-colors" size={18} />
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            placeholder="Email address"
+            className="w-full bg-stone-50 border border-stone-200 p-4 pl-12 rounded-2xl text-stone-800 outline-none focus:bg-white focus:border-highlight focus:ring-4 focus:ring-highlight/10 transition-all font-medium placeholder:text-stone-300"
+          />
+        </div>
+
+        {/* Phone (optional, Nigerian context) */}
+        <div className="relative group">
+          <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-300 group-focus-within:text-highlight transition-colors" size={18} />
+          <input
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="Phone number (optional) — e.g. 08012345678"
+            className="w-full bg-stone-50 border border-stone-200 p-4 pl-12 rounded-2xl text-stone-800 outline-none focus:bg-white focus:border-highlight focus:ring-4 focus:ring-highlight/10 transition-all font-medium placeholder:text-stone-300"
+          />
+        </div>
+
+        {/* Password */}
+        <div className="grid grid-cols-2 gap-3">
           <div className="relative group">
-            <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-stone-400 group-focus-within:text-highlight transition-colors" size={20} />
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-300 group-focus-within:text-highlight transition-colors" size={18} />
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               required
-              placeholder="name@example.com"
-              className="w-full bg-stone-50 border border-stone-200 p-4 pl-14 rounded-2xl text-stone-800 outline-none focus:bg-white focus:border-highlight focus:ring-4 focus:ring-highlight/10 transition-all font-medium placeholder:text-stone-300"
+              minLength={8}
+              autoComplete="new-password"
+              placeholder="Password"
+              className="w-full bg-stone-50 border border-stone-200 p-4 pl-12 rounded-2xl text-stone-800 outline-none focus:bg-white focus:border-highlight focus:ring-4 focus:ring-highlight/10 transition-all font-medium placeholder:text-stone-300"
+            />
+          </div>
+          <div className="relative group">
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-300 group-focus-within:text-highlight transition-colors" size={18} />
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              minLength={8}
+              autoComplete="new-password"
+              placeholder="Confirm"
+              className="w-full bg-stone-50 border border-stone-200 p-4 pl-12 rounded-2xl text-stone-800 outline-none focus:bg-white focus:border-highlight focus:ring-4 focus:ring-highlight/10 transition-all font-medium placeholder:text-stone-300"
             />
           </div>
         </div>
 
-        {/* Password */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label className="text-[0.875rem] font-[500] text-stone-400 tracking-widest ml-1">
-              Password
-            </label>
-            <div className="relative group">
-              <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-stone-400 group-focus-within:text-highlight transition-colors" size={20} />
-              <input
-                id="password"
-                name="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={8}
-                autoComplete="new-password"
-                placeholder="********"
-                className="w-full bg-stone-50 border border-stone-200 p-4 pl-14 rounded-2xl text-stone-800 outline-none focus:bg-white focus:border-highlight focus:ring-4 focus:ring-highlight/10 transition-all font-medium placeholder:text-stone-300"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-[0.875rem] font-[500] text-stone-400 tracking-widest ml-1">
-              Confirm
-            </label>
-            <div className="relative group">
-              <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-stone-400 group-focus-within:text-highlight transition-colors" size={20} />
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                minLength={8}
-                autoComplete="new-password"
-                placeholder="********"
-                className="w-full bg-stone-50 border border-stone-200 p-4 pl-14 rounded-2xl text-stone-800 outline-none focus:bg-white focus:border-highlight focus:ring-4 focus:ring-highlight/10 transition-all font-medium placeholder:text-stone-300"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Error Message */}
         {error && (
-          <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-[0.875rem] font-[500] flex items-center justify-center">
+          <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm font-medium text-center">
             {error}
           </div>
         )}
 
-        {/* Submit Button */}
+        <p className="text-xs text-stone-400 text-center px-2">
+          By creating an account you agree to our{' '}
+          <a href="/terms" className="text-highlight hover:underline">Terms of Service</a>
+          {' '}and{' '}
+          <a href="/privacy" className="text-highlight hover:underline">Privacy Policy</a>.
+        </p>
+
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full py-4 bg-highlight text-white rounded-2xl font-[700] text-[1rem] shadow-lg shadow-highlight/20 hover:shadow-xl hover:bg-yellow-500 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none mt-2"
+          aria-label="Create account"
+          className="w-full py-4 bg-highlight text-white rounded-2xl font-bold text-base shadow-lg shadow-highlight/20 hover:bg-yellow-500 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
         >
           {isSubmitting ? (
-            <>
-              <Loader2 size={20} className="animate-spin" />
-              <span className="text-[1rem]">Joining...</span>
-            </>
+            <><Loader2 size={20} className="animate-spin" /> Creating account...</>
           ) : (
             'Create Account'
           )}
         </button>
       </form>
 
-      {/* Switch to Login */}
       {onSwitchToLogin && (
-        <div className="text-center pt-2">
-          <p className="text-stone-400 text-[0.875rem] font-[500]">
-            Already have an account?{' '}
-            <button
-              onClick={onSwitchToLogin}
-              className="text-highlight hover:text-yellow-600 font-[700] transition-colors ml-1"
-            >
-              Sign In
-            </button>
-          </p>
-        </div>
+        <p className="text-center text-stone-400 text-sm">
+          Already have an account?{' '}
+          <button type="button" onClick={onSwitchToLogin} className="text-highlight hover:text-yellow-600 font-bold transition-colors">
+            Sign in
+          </button>
+        </p>
       )}
     </div>
   );

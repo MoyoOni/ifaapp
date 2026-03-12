@@ -36,7 +36,7 @@ interface AuthState {
 export function useAuth(): AuthState & {
   login: (email: string, password: string) => Promise<void>;
   quickAccess: (email: string) => Promise<void>;
-  register: (email: string, password: string, name: string, role: UserRole) => Promise<void>;
+  register: (email: string, password: string, name: string, role: UserRole, phone?: string) => Promise<void>;
   logout: () => void;
   setUser: (user: User | null) => void;
   devLogin: (role: UserRole) => void;
@@ -164,9 +164,9 @@ export function useAuth(): AuthState & {
     }
   };
 
-  const register = async (email: string, password: string, name: string, role: UserRole) => {
+  const register = async (email: string, password: string, name: string, role: UserRole, phone?: string) => {
     try {
-      const response = await api.post('/auth/register', { email, password, name, role });
+      const response = await api.post('/auth/register', { email, password, name, role, ...(phone ? { phone } : {}) });
       const { user: userResponse, accessToken, refreshToken } = response.data;
 
       localStorage.setItem('accessToken', accessToken);

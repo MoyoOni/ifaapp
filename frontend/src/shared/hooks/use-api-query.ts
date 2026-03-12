@@ -66,7 +66,17 @@ export function useApiQuery<TData, TParams = Record<string, unknown>>({
 
         const response = await api.get(endpoint, { params: cleanParams });
         apiData = response.data;
-      } catch (error) {
+      } catch (error: any) {
+        const status = error?.response?.status;
+        // Auth errors are expected when user is not logged in — don't report to Sentry
+        if (status === 401 || status === 403) {
+          throw error; // React Query handles this via error state, not ErrorBoundary
+        }
+        // 404 = resource doesn't exist — not an error worth reporting
+        if (status === 404) {
+          throw error;
+        }
+        // Unexpected errors — report to Sentry
         Sentry.captureException(error, {
           tags: { endpoint, type: 'api_query' },
           extra: { params }

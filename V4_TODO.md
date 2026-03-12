@@ -29,6 +29,8 @@
 | Sprint 6 | 🚢 Production and Infrastructure Hardening | 20 | ✅ COMPLETED |
 | Sprint 7 | 🐛 Critical Bug Fixes and Build Stability | 16 | ✅ COMPLETED |
 | Sprint 8 | 🛡️ Production Hardening (P0 Critical Fixes) | 27 | ✅ COMPLETED |
+| Sprint 9 | 🔐 Pre-Launch Polish (No AWS Required) | 20 | ⬜ READY |
+| Sprint 10 | ☁️ AWS Infrastructure & Go-Live | 45 | 🔴 BLOCKED: AWS |
 
 ---
 ---
@@ -138,6 +140,43 @@
 | 50 | ✅ **V4-805** Remove all hardcoded secrets from version control | 2 | DONE |
 | 51 | ✅ **V4-806** Configure database connection pooling | 2 | DONE |
 | 52 | ✅ **V4-807** Write critical-path tests (Auth, Payments, Wallet) | 8 | DONE |
+
+---
+
+## 🔐 SPRINT 9 — Pre-Launch Polish (No AWS Required) (20 SP) - ⬜ READY
+
+> All stories in this sprint can be completed locally/in CI without any cloud infrastructure.
+> Prerequisite: Sprint 8 complete. Do this BEFORE provisioning AWS.
+
+| # | Task | SP | Status |
+|---|------|----|--------|
+| 53 | ✅ **V4-901** Wire email verification flow (backend + frontend page) | 5 | DONE |
+| 54 | ✅ **V4-902** Add /terms (Terms of Service) page + links | 2 | DONE |
+| 55 | ✅ **V4-903** Add /privacy (Privacy Policy) page + links | 2 | DONE |
+| 56 | ✅ **V4-904** Add integration test job to CI pipeline | 3 | DONE |
+| 57 | ✅ **V4-905** First-run empty state — admin bootstrap + seed docs | 3 | DONE |
+| 58 | ✅ **V4-906** Secret rotation runbook (JWT_SECRET, ENCRYPTION_KEY) | 1 | DONE |
+| 59 | ✅ **V4-907** Frontend production env guard (fail fast if VITE_API_URL=localhost) | 2 | DONE |
+| 60 | ✅ **V4-908** Define launch metrics targets + configure Sentry alert rules | 2 | DONE |
+
+---
+
+## ☁️ SPRINT 10 — AWS Infrastructure & Go-Live (45 SP) - 🔴 BLOCKED (needs AWS)
+
+> All stories require AWS infrastructure provisioned. Do AFTER Sprint 9 is complete.
+> Blocker: AWS account, billing, and provisioning access required.
+
+| # | Task | SP | Status |
+|---|------|----|--------|
+| 61 | 🔴 **V6-201** Provision staging infrastructure (RDS Postgres 16 + ElastiCache Redis + EC2) | 8 | BLOCKED: AWS |
+| 62 | 🔴 **V6-202** Deploy backend + frontend to staging (deploy.sh + env vars) | 5 | BLOCKED: AWS staging |
+| 63 | 🔴 **V6-203** Run staging smoke tests — all 8 scenarios pass, get sign-off | 3 | BLOCKED: AWS staging |
+| 64 | 🔴 **V6-204** Provision production infrastructure (multi-AZ RDS, Redis, ALB, ECS) | 8 | BLOCKED: AWS |
+| 65 | 🔴 **V6-205** SSL certificates (ACM wildcard) + Route53 DNS for ilu-ase.com | 3 | BLOCKED: AWS |
+| 66 | 🔴 **V6-206** Schedule backup-db.sh (cron) + perform restore test on server | 3 | BLOCKED: AWS |
+| 67 | 🔴 **V6-207** Load test — 100+ concurrent users with k6 or Artillery | 5 | BLOCKED: AWS staging |
+| 68 | 🔴 **V6-208** CDN (CloudFront) + uptime monitor (/api/health) + APM alert rules | 5 | BLOCKED: AWS |
+| 69 | 🔴 **V6-209** Production cutover — final checklist, merge to main, monitor launch day | 5 | BLOCKED: AWS prod |
 
 ---
 

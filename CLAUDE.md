@@ -40,18 +40,20 @@ Before working on production readiness, AI agents MUST read these documents in o
 
 Before working on production launch tasks, AI agents MUST read:
 
-1. **[V4_QUALITY_BACKLOG.md](V4_QUALITY_BACKLOG.md)** - Full detailed backlog (6 sprints, 32 stories, 129 story points)
+1. **[V4_QUALITY_BACKLOG.md](V4_QUALITY_BACKLOG.md)** - Full detailed backlog (10 sprints, stories, 241 story points)
 2. **[V4_TODO.md](V4_TODO.md)** - Quick reference with execution order and task breakdowns
 
-**8 Sprints (172/176 SP = 98% complete):**
+**10 Sprints (176/241 SP = 73% complete — Sprints 1-8 done, 9-10 remaining):**
 - Sprint 1: 🔥 Foundational Trust and Cleanup (24 SP) — ✅ COMPLETED
 - Sprint 2: 🎨 Design System and UI Consistency (18 SP) — ✅ COMPLETED
 - Sprint 3: ✨ User Experience Polish (26 SP) — ✅ COMPLETED
 - Sprint 4: ♿ Accessibility and Mobile (21 SP) — ✅ COMPLETED
 - Sprint 5: 🔌 Backend and Real-Time (20 SP) — ✅ COMPLETED
 - Sprint 6: 🚢 Production Hardening (20 SP) — ✅ COMPLETED
-- Sprint 7: 🐛 Critical Bug Fixes (16 SP) — ✅ COMPLETED (18/16 SP exceeded)
-- Sprint 8: 🛡️ Production Hardening (27 SP) → **🚀 IN PROGRESS (24/27 SP = 89%)**
+- Sprint 7: 🐛 Critical Bug Fixes (16 SP) — ✅ COMPLETED
+- Sprint 8: 🛡️ Production Hardening (27 SP) — ✅ COMPLETED
+- Sprint 9: 🔐 Pre-Launch Polish / No AWS (20 SP) — ⬜ READY **(start here)**
+- Sprint 10: ☁️ AWS Infrastructure & Go-Live (45 SP) — 🔴 BLOCKED: AWS
 
 **Completed this session (Feb 26 — Sprint 8 Production Hardening):**
 - ✅ V4-801: Wallet transactions wrapped in Prisma $transaction (verified)
@@ -105,39 +107,33 @@ All critical blocker tasks completed:
 
 | Date | Milestone | Owner | Status |
 |------|-----------|-------|--------|
-| Mar 15 | **Staging Deployment** | DevOps | 📋 [Procedures Ready](docs/DEPLOYMENT_PROCEDURES.md#staging-deployment) |
-| Mar 22 | **Staging Smoke Tests** | QA/Product | 📋 [Checklist Ready](docs/PRE_LAUNCH_CHECKLIST.md#phase-10-final-smoke-tests) |
-| Mar 28 | **Production Cutover** | CTO/DevOps | 📋 [Runbook Ready](docs/DEPLOYMENT_PROCEDURES.md#production-deployment) |
+| Mar 14 | **Sprint 9 Start — Pre-Launch Polish (No AWS)** | Engineering | ⬜ READY |
+| Mar 21 | **Sprint 9 Complete** | Engineering | ⬜ READY |
+| Mar 21 | **Staging Infrastructure Provisioned** | DevOps | 🔴 BLOCKED: AWS |
+| Mar 25 | **Staging Smoke Tests Pass** | QA/Product | 🔴 BLOCKED: AWS |
+| Mar 28 | **Production Cutover** | CTO/DevOps | 🔴 BLOCKED: AWS |
 | Apr 01 | **Go Live** | All Hands | 🚀 LAUNCH |
 
-**Phase 1 (Next 1-2 weeks): Staging Setup**
-1. Provision staging PostgreSQL 16 + Redis + Node.js (DevOps)
-2. Create staging environment variables (SecureVault/AWS Secrets Manager)
-3. Deploy backend + frontend to staging
-4. Run smoke tests (8 scenarios from checklist)
-5. Fix any blocking issues
-6. Get stakeholder approval
+**Sprint 9 — Do First (No AWS needed) — See [V4_TODO.md](V4_TODO.md):**
+1. V4-901: Wire email verification flow (5 SP)
+2. V4-902: /terms page (2 SP)
+3. V4-903: /privacy page (2 SP)
+4. V4-904: Integration tests in CI (3 SP)
+5. V4-905: First-run / admin bootstrap (3 SP)
+6. V4-906: Secret rotation runbook (1 SP)
+7. V4-907: Frontend production env guard (2 SP)
+8. V4-908: Launch metrics + Sentry alerts (2 SP)
 
-**Phase 2 (Week of Mar 22): Production Preparation**
-1. Provision production infrastructure (DB, Redis, servers, CDN)
-2. Set up SSL certificates (wildcard for *.ilu-ase.com)
-3. Configure DNS
-4. Set up monitoring (Sentry, APM, uptime monitor)
-5. Set up backups (hourly DB snapshots, weekly archives)
-6. Create on-call schedule
-
-**Phase 3 (Mar 28-31): Pre-Launch Final Checks**
-1. Production database fully migrated
-2. All 10-phase checklist items verified
-3. Incident response team briefed
-4. Runbook reviewed
-5. Final staging smoke test passes
-
-**Phase 4 (April 1): Launch Day**
-1. Morning: Final health checks
-2. 9 AM: Deploy production (merge v4/quality to main, CI/CD deploys)
-3. 9-10 AM: Monitor error rate, response times, user signups
-4. 10 AM+: Announce launch, support team active
+**Sprint 10 — AWS-Dependent — See [V4_TODO.md](V4_TODO.md):**
+1. V6-201: Provision staging infrastructure (RDS + Redis + EC2)
+2. V6-202: Deploy to staging
+3. V6-203: Staging smoke tests + stakeholder sign-off
+4. V6-204: Provision production infrastructure
+5. V6-205: SSL + DNS
+6. V6-206: Backup schedule + restore test
+7. V6-207: Load test (100+ concurrent users)
+8. V6-208: CDN + uptime monitor + APM alerts
+9. V6-209: Production cutover + launch day
 
 ---
 

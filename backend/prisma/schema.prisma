@@ -11,6 +11,8 @@ datasource db {
 model User {
   id                        String                   @id @default(uuid())
   email                     String                   @unique
+  phone                     String?                  @unique
+  googleId                  String?                  @unique
   name                      String
   passwordHash              String
   role                      String
@@ -28,6 +30,8 @@ model User {
   profileVisibility         String                   @default("community")
   interests                 String[]                 @default([])
   verified                  Boolean                  @default(false)
+  emailVerificationToken    String?                  @unique
+  emailVerifiedAt           DateTime?
   hasOnboarded              Boolean                  @default(false)
   adminSubRole              String? // FINANCE, MODERATOR, COMPLIANCE, SUPPORT, SUPER
   templeId                  String?
