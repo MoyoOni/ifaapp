@@ -1,6 +1,6 @@
 -- AlterTable
-ALTER TABLE "User" ADD COLUMN "emailVerificationToken" TEXT,
+ALTER TABLE "users" ADD COLUMN "emailVerificationToken" TEXT,
 ADD COLUMN "emailVerifiedAt" TIMESTAMP(3);
 
 -- CreateIndex
-CREATE UNIQUE INDEX "User_emailVerificationToken_key" ON "User"("emailVerificationToken");
+CREATE UNIQUE INDEX "users_emailVerificationToken_key" ON "users"("emailVerificationToken");
