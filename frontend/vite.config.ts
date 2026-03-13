@@ -10,8 +10,9 @@ const __dirname = path.dirname(__filename);
 
 export default defineConfig(({ mode }) => {
   const withAnalyzer = process.env.ANALYZE === '1';
-  // GitHub Pages base path (change to empty string for custom domain)
-  const base = process.env.VITE_BASE_PATH || '/ifaapp/';
+  // Sanitize base path — Git Bash on Windows can corrupt '/' to a Windows path via MSYS
+  const rawBase = process.env.VITE_BASE_PATH || '/';
+  const base = rawBase.includes('Program Files') || rawBase.includes(':\\') ? '/' : rawBase;
 
   return {
     base,
