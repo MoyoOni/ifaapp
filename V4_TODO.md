@@ -161,16 +161,16 @@
 
 ---
 
-## ☁️ SPRINT 10 — AWS Infrastructure & Go-Live (45 SP) - 🔴 BLOCKED (needs AWS)
+## ☁️ SPRINT 10 — AWS Infrastructure & Go-Live (45 SP) - 🔵 IN PROGRESS
 
-> All stories require AWS infrastructure provisioned. Do AFTER Sprint 9 is complete.
-> Blocker: AWS account, billing, and provisioning access required.
+> All stories require AWS infrastructure provisioned.
+> **Staging is live as of March 13, 2026.**
 
 | # | Task | SP | Status |
 |---|------|----|--------|
-| 61 | 🔴 **V6-201** Provision staging infrastructure (RDS Postgres 16 + ElastiCache Redis + EC2) | 8 | BLOCKED: AWS |
-| 62 | 🔴 **V6-202** Deploy backend + frontend to staging (deploy.sh + env vars) | 5 | BLOCKED: AWS staging |
-| 63 | 🔴 **V6-203** Run staging smoke tests — all 8 scenarios pass, get sign-off | 3 | BLOCKED: AWS staging |
+| 61 | ✅ **V6-201** Provision staging infrastructure (RDS Postgres 16 + EC2 + S3) | 8 | DONE — EC2: i-07990461d23b46ad4 (100.52.200.113), RDS: ile-ase-staging.c2n2u4k461ge.us-east-1.rds.amazonaws.com |
+| 62 | ✅ **V6-202** Deploy backend + frontend to staging (Docker Compose) | 5 | DONE — All 4 containers healthy at http://100.52.200.113:4040 |
+| 63 | ⬜ **V6-203** Run staging smoke tests — all 8 scenarios pass, get sign-off | 3 | READY |
 | 64 | 🔴 **V6-204** Provision production infrastructure (multi-AZ RDS, Redis, ALB, ECS) | 8 | BLOCKED: AWS |
 | 65 | 🔴 **V6-205** SSL certificates (ACM wildcard) + Route53 DNS for ilu-ase.com | 3 | BLOCKED: AWS |
 | 66 | 🔴 **V6-206** Schedule backup-db.sh (cron) + perform restore test on server | 3 | BLOCKED: AWS |
@@ -274,7 +274,7 @@ Before deployment to staging/production, verify all operational items are comple
 | **Code Quality** | 95% ✅ | ❌ | 0 build errors, 9/9 critical tests passing |
 | **Documentation** | 95% ✅ | ❌ | PRE_LAUNCH_CHECKLIST.md, DEPLOYMENT_PROCEDURES.md complete |
 | **Testing** | 80% 🟡 | ❌ | 49 integration tests, load testing pending |
-| **Infrastructure** | 40% 🟡 | ✅ | **BLOCKING** — Staging/production provisioning TBD |
+| **Infrastructure** | 65% 🟡 | ✅ | Staging live (Mar 13) — Production provisioning TBD |
 | **Team Readiness** | 50% 🟡 | ✅ | **BLOCKING** — On-call rotation, ops training TBD |
 | **Security** | 85% ✅ | ❌ | OWASP checklist pending, rate limiting ready |
 | **Monitoring** | 60% 🟡 | ❌ | Sentry ready, APM setup pending |
@@ -282,7 +282,7 @@ Before deployment to staging/production, verify all operational items are comple
 | **Data Management** | 70% 🟡 | ❌ | Backup automation pending, restore test TBD |
 | **Launch Plan** | 50% 🟡 | ✅ | **BLOCKING** — Beta launch window, communication plan TBD |
 
-**Overall Readiness: 71% → Ready for staging when infrastructure provisioned**
+**Overall Readiness: 73% → Staging live, next: smoke tests (V6-203)**
 
 ---
 
@@ -290,8 +290,8 @@ Before deployment to staging/production, verify all operational items are comple
 
 | Week | Date | Milestone | Owner | Status |
 |------|------|-----------|-------|--------|
-| Week 1 | Mar 1 | **→ Infrastructure provisioned** | DevOps | ⬜ TODO |
-| Week 2 | Mar 8 | **→ Deploy to staging** | DevOps | ⬜ TODO |
+| Week 1 | Mar 1 | **→ Infrastructure provisioned** | DevOps | ✅ DONE (Mar 13) |
+| Week 2 | Mar 8 | **→ Deploy to staging** | DevOps | ✅ DONE (Mar 13) |
 | Week 2 | Mar 15 | **→ Smoke tests pass (8 scenarios)** | QA/Product | ⬜ TODO |
 | Week 3 | Mar 22 | **→ Production infrastructure ready** | DevOps | ⬜ TODO |
 | Week 4 | Mar 28 | **→ Final security audit** | Security | ⬜ TODO |
@@ -334,7 +334,7 @@ Before deployment to staging/production, verify all operational items are comple
 
 ## 🚨 Top 5 Launch Blockers
 
-1. **Infrastructure not provisioned** → Cannot deploy
+1. ✅ ~~**Infrastructure not provisioned** → Cannot deploy~~ — Staging live Mar 13
 2. **Staging smoke tests fail** → Cannot go to production
 3. **Backup/restore doesn't work** → Data loss risk, cannot launch
 4. **Incident runbook not reviewed** → Team unprepared for emergencies

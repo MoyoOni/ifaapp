@@ -53,7 +53,7 @@ Before working on production launch tasks, AI agents MUST read:
 - Sprint 7: 🐛 Critical Bug Fixes (16 SP) — ✅ COMPLETED
 - Sprint 8: 🛡️ Production Hardening (27 SP) — ✅ COMPLETED
 - Sprint 9: 🔐 Pre-Launch Polish / No AWS (20 SP) — ⬜ READY **(start here)**
-- Sprint 10: ☁️ AWS Infrastructure & Go-Live (45 SP) — 🔴 BLOCKED: AWS
+- Sprint 10: ☁️ AWS Infrastructure & Go-Live (45 SP) — 🔵 IN PROGRESS (V6-201 ✅, V6-202 ✅, V6-203 next)
 
 **Completed this session (Feb 26 — Sprint 8 Production Hardening):**
 - ✅ V4-801: Wallet transactions wrapped in Prisma $transaction (verified)
@@ -109,8 +109,8 @@ All critical blocker tasks completed:
 |------|-----------|-------|--------|
 | Mar 14 | **Sprint 9 Start — Pre-Launch Polish (No AWS)** | Engineering | ⬜ READY |
 | Mar 21 | **Sprint 9 Complete** | Engineering | ⬜ READY |
-| Mar 21 | **Staging Infrastructure Provisioned** | DevOps | 🔴 BLOCKED: AWS |
-| Mar 25 | **Staging Smoke Tests Pass** | QA/Product | 🔴 BLOCKED: AWS |
+| Mar 13 | **Staging Infrastructure Provisioned + Deployed** | DevOps | ✅ DONE |
+| Mar 21 | **Staging Smoke Tests Pass** | QA/Product | ⬜ READY |
 | Mar 28 | **Production Cutover** | CTO/DevOps | 🔴 BLOCKED: AWS |
 | Apr 01 | **Go Live** | All Hands | 🚀 LAUNCH |
 

@@ -1,23 +1,19 @@
 # 🧪 Quick Smoke Test Guide — Ìlú Àṣẹ Platform
 
-**Purpose:** Manual verification that key user flows work end-to-end before launch  
-**Environment:** Development (localhost) or Staging  
-**Time Required:** 20-30 minutes  
-**Date:** February 26, 2026
+**Purpose:** Manual verification that key user flows work end-to-end before launch
+**Environment:** Staging — http://100.52.200.113:4040
+**Time Required:** 20-30 minutes
+**Last Updated:** March 13, 2026
 
 ---
 
 ## 🚀 Quick Start
 
-### Prerequisites
-```bash
-# Start backend (from backend/)
-npm start
-# Should be listening on http://localhost:3000
-
-# Start frontend (from frontend/)
-npm run dev
-# Should be listening on http://localhost:5173
+### Staging URLs
+```
+Frontend:  http://100.52.200.113:4040
+Backend:   http://100.52.200.113:8080/api/health
+Swagger:   http://100.52.200.113:8080/api/docs
 ```
 
 ### Test Account
@@ -25,6 +21,8 @@ npm run dev
 Email: test@example.com
 Password: TestPassword123!
 ```
+
+> **Note:** The staging database starts empty. You will need to register a new account in Test 1 before running subsequent tests. There is no pre-seeded demo data on staging.
 
 ---
 
@@ -34,7 +32,7 @@ Password: TestPassword123!
 
 **Goal:** Verify users can sign up and complete cultural onboarding
 
-1. [ ] Open http://localhost:5173
+1. [ ] Open http://100.52.200.113:4040
 2. [ ] Click **"Sign Up"** or **"Register"**
 3. [ ] Enter:
    - Email: `smoke-test-${Date.now()}@example.com`
@@ -223,7 +221,7 @@ Password: TestPassword123!
 
 1. [ ] Clear browser cache:
    - DevTools → Application → Storage → Clear Site Data
-2. [ ] Reload homepage (http://localhost:5173):
+2. [ ] Reload homepage (http://100.52.200.113:4040):
    - Should load in **< 3 seconds**
    - DevTools → Network tab → check load times
 3. [ ] Navigate to booking page:
@@ -259,40 +257,36 @@ Password: TestPassword123!
 
 ## 🚨 If Something Fails
 
-### Backend Issues
+### Check Container Status (SSH into staging)
 ```bash
-# Check backend logs
-cd backend && npm start
-
-# Verify database running
-psql -U ilu_ase_user -h localhost -d ilu_ase_dev
-
-# Reset database (dev only!)
-npx prisma migrate reset --skip-generate
-
-# Apply migrations
-npx prisma migrate deploy
+ssh -i "~\ile-ase-key.pem" ubuntu@100.52.200.113
+cd ifaapp
+docker ps                                          # All 4 containers should show "healthy"
+docker logs ilu-ase-staging-backend --tail 50     # Backend errors
+docker logs ilu-ase-staging-nginx --tail 20       # Nginx errors
 ```
 
-### Frontend Issues
+### Restart Containers
 ```bash
-# Clear cache and rebuild
-cd frontend
-rm -rf node_modules .next dist
-npm install
-npm run dev
-
-# Check for TypeScript errors
-npm run build --verbose
+docker-compose -f docker-compose.staging.yml restart
+# Or restart a specific container:
+docker-compose -f docker-compose.staging.yml restart backend
 ```
 
 ### Network/API Issues
 ```bash
-# Test API directly
-curl -s http://localhost:3000/api/health | jq
+# Test API health directly
+curl -s http://100.52.200.113:8080/api/health
 
 # Check CORS headers
-curl -v http://localhost:3000/api/auth/register 2>&1 | grep "Access-Control"
+curl -v http://100.52.200.113:8080/api/auth/register 2>&1 | grep "Access-Control"
+```
+
+### If SSH Times Out (Your IP Changed)
+```powershell
+# From your local PowerShell:
+$MY_IP = (Invoke-WebRequest -Uri "https://checkip.amazonaws.com" -UseBasicParsing).Content.Trim()
+aws ec2 authorize-security-group-ingress --group-id sg-07d1b138ef04d0632 --protocol tcp --port 22 --cidr "$MY_IP/32"
 ```
 
 ---
@@ -312,9 +306,9 @@ After all 8 tests pass, sign off:
 
 ---
 
-**Duration:** ~20-30 minutes  
-**Effort:** Low (manual clicking, visual verification)  
-**Blocker?** Yes — All 8 tests must pass before staging deployment
+**Duration:** ~20-30 minutes
+**Effort:** Low (manual clicking, visual verification)
+**Blocker?** Yes — All 8 tests must pass before production deployment (V6-203)
 
-**Next Step:** If all pass → Ready for staging deployment (Mar 15)  
-**If issues:** Fix and re-run before proceeding
+**Next Step:** If all pass → sign off and proceed to V6-204 (production infrastructure)
+**If issues:** Fix on staging and re-run before proceeding

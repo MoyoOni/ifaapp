@@ -2,7 +2,33 @@
 
 **Application:** Ilé Àṣẹ — NestJS backend + React/Vite frontend
 **Domain:** ilu-ase.com
-**Last Updated:** March 2026
+**Last Updated:** March 13, 2026
+
+## ✅ Staging Environment — LIVE (March 13, 2026)
+
+| Resource | ID / Value |
+|----------|-----------|
+| EC2 Instance | `i-07990461d23b46ad4` — `t3.small`, Ubuntu 22.04 |
+| Public IP | `100.52.200.113` |
+| RDS | `ile-ase-staging.c2n2u4k461ge.us-east-1.rds.amazonaws.com` (Postgres 16, `db.t3.micro`) |
+| S3 Backup Bucket | `ile-ase-staging-backups-091653536932` |
+| IAM Role | `ile-ase-staging-ec2-role` → `ile-ase-staging-ec2-profile` |
+| EC2 Security Group | `sg-07d1b138ef04d0632` (ports 22/80/443/3000/4040/8080) |
+| RDS Security Group | `sg-06014a78d738484dc` (port 5432 from EC2 only) |
+| VPC | `vpc-0493986bc3065411b` |
+| Key Pair | `ile-ase-key` → `~\ile-ase-key.pem` |
+
+**Access:**
+```
+ssh -i "~\ile-ase-key.pem" ubuntu@100.52.200.113
+Frontend: http://100.52.200.113:4040
+Backend:  http://100.52.200.113:8080/api/health
+Swagger:  http://100.52.200.113:8080/api/docs
+```
+
+**Note:** SSH access is restricted to specific IPs. If SSH times out, your IP may have changed — run `(Invoke-WebRequest -Uri "https://checkip.amazonaws.com" -UseBasicParsing).Content.Trim()` and add your new IP to `sg-07d1b138ef04d0632` port 22.
+
+---
 
 This guide walks you through provisioning and configuring AWS infrastructure for two environments:
 - **Staging** (~$50/month) — one EC2 instance, RDS Micro, Redis on-box
