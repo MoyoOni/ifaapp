@@ -49,6 +49,7 @@ services:
       DATABASE_URL: postgresql://staging_user:${POSTGRES_PASSWORD:-staging_password_change_me}@postgres:5432/ilu_ase_staging?schema=public&connection_limit=10
       REDIS_URL: redis://:${REDIS_PASSWORD:-staging_redis_change_me}@redis:6379
       JWT_SECRET: ${JWT_SECRET:-staging_jwt_secret_change_me_min_32_chars}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-staging_jwt_refresh_secret_change_me_32c}
       JWT_EXPIRATION: 3600
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_staging}
       STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-pk_test_staging}
