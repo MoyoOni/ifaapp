@@ -24,14 +24,18 @@ interface OnboardingViewProps {
  * NOTE: "Personal Awo" relationship is sacred - users may change but not "unfriend" like social media
  */
 const OnboardingView: React.FC<OnboardingViewProps> = ({
-  userId,
-  userRole,
+  userId: userIdProp,
+  userRole: userRoleProp,
   onComplete,
   onLogout,
 }) => {
   const { t } = useLanguage();
-  const navigate = useNavigate(); // Add navigate hook
-  const { setUser } = useAuth(); // Get setUser from auth context
+  const navigate = useNavigate();
+  const { user: authUser, setUser } = useAuth();
+
+  // Fall back to auth context when not passed as props (e.g. routed directly to /onboarding)
+  const userId = userIdProp ?? authUser?.id;
+  const userRole = userRoleProp ?? authUser?.role;
   const [onboardingStep, setOnboardingStep] = useState<'welcome' | 'role-setup' | 'heritage' | 'form'>('welcome');
   const [welcomeSlide, setWelcomeSlide] = useState(0);
   const [roleSetupComplete, setRoleSetupComplete] = useState(false);
