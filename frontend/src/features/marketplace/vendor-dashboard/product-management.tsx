@@ -2,9 +2,6 @@ import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Package, Plus, Edit, Trash2, ArrowRight, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
-import { logger } from '@/shared/utils/logger';
-import { isDemoMode } from '@/shared/config/demo-mode';
-import { DEMO_PRODUCTS } from '@/demo';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
@@ -32,31 +29,17 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ vendorId, activeT
   const { data: productsData = [], isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ['vendor-products', vendorId],
     queryFn: async () => {
-      if (isDemoMode) {
-        return Object.values(DEMO_PRODUCTS).filter(p => p.vendorId === vendorId);
-      }
-      
       try {
         const response = await api.get(`/vendors/${vendorId}/products`);
         return response.data;
       } catch (error) {
-        logger.error('Failed to fetch vendor products', error);
-        return [];
+        throw error;
       }
     },
   });
 
   const deleteProductMutation = useMutation({
     mutationFn: async (productId: string) => {
-      if (isDemoMode) {
-        // In demo mode, we just update local state
-        // This is a simplified approach. A more robust solution might involve a client-side store.
-        queryClient.setQueryData<Product[]>(['vendor-products', vendorId], (oldData) => 
-          oldData ? oldData.filter(p => p.id !== productId) : []
-        );
-        return { id: productId };
-      }
-      
       const response = await api.delete(`/products/${productId}`);
       return response.data;
     },

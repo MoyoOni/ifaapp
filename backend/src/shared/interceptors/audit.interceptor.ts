@@ -1,15 +1,9 @@
-import {
-  CallHandler,
-  ExecutionContext,
-  Injectable,
-  NestInterceptor,
-} from '@nestjs/common';
-import { Observable } from 'rxjs';
+import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
 import { tap } from 'rxjs/operators';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
 import { AuditService } from '../services/audit.service';
-import { User } from '@prisma/client';
+import { User } from '../types/prisma-models';
 
 export interface AuditMetadata {
   resourceType: string;
@@ -21,13 +15,11 @@ export interface AuditMetadata {
 export class AuditInterceptor implements NestInterceptor {
   constructor(
     private readonly auditService: AuditService,
-    private readonly reflector: Reflector,
+    private readonly reflector: Reflector
   ) {}
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  intercept(context: ExecutionContext, next: CallHandler) {
     const req = context.switchToHttp().getRequest<Request>();
-    const res = context.switchToHttp().getResponse();
-
     // Check if audit is required for this endpoint
     const auditMetadata = this.reflector.getAllAndOverride<AuditMetadata>('audit', [
       context.getHandler(),
@@ -38,14 +30,12 @@ export class AuditInterceptor implements NestInterceptor {
       return next.handle();
     }
 
-    // Capture original body before handler executes (for POST/PUT operations)
-    const originalBody = { ...req.body };
+    // Capture original params before handler executes
     const originalParams = { ...req.params };
-    const originalQuery = { ...req.query };
 
     // Execute the handler and capture the response
-    return next.handle().pipe(
-      tap(async (response) => {
+    return (next.handle() as any).pipe(
+      tap(async (response: any) => {
         try {
           // Determine the user performing the action
           const user = req.user as User;
@@ -83,7 +73,7 @@ export class AuditInterceptor implements NestInterceptor {
           // Fail silently to prevent audit issues from breaking functionality
           console.error('Audit logging failed:', error);
         }
-      }),
+      })
     );
   }
 
@@ -119,14 +109,14 @@ export class AuditInterceptor implements NestInterceptor {
   private extractNewValues(
     req: Request,
     method: string,
-    response?: any,
+    response?: any
   ): Record<string, any> | undefined {
     if (method === 'POST' || method === 'PUT' || method === 'PATCH') {
       // For creation/update operations, use the request body
       if (Object.keys(req.body).length > 0) {
         return req.body;
       }
-      
+
       // If no body, maybe it's in response (for POST that returns created entity)
       if (response && typeof response === 'object') {
         return response;
@@ -137,8 +127,8 @@ export class AuditInterceptor implements NestInterceptor {
 
   private getClientIp(req: Request): string {
     return (
-      req.headers['x-forwarded-for'] as string ||
-      req.headers['x-real-ip'] as string ||
+      (req.headers['x-forwarded-for'] as string) ||
+      (req.headers['x-real-ip'] as string) ||
       req.connection.remoteAddress ||
       req.socket.remoteAddress ||
       (req as any).ip

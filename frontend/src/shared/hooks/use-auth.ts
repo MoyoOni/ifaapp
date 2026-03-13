@@ -4,7 +4,6 @@ import { UserRole, AdminSubRole } from '@common';
 import api from '@/lib/api';
 import { DEMO_USERS } from '@/demo';
 import { logger, setLogContext, clearLogContext } from '@/shared/utils/logger';
-import { isDemoMode } from '@/shared/config/demo-mode';
 import * as Sentry from '@sentry/react';
 
 interface User {
@@ -37,7 +36,7 @@ interface AuthState {
 export function useAuth(): AuthState & {
   login: (email: string, password: string) => Promise<void>;
   quickAccess: (email: string) => Promise<void>;
-  register: (email: string, password: string, name: string, role: UserRole) => Promise<void>;
+  register: (email: string, password: string, name: string, role: UserRole, phone?: string) => Promise<void>;
   logout: () => void;
   setUser: (user: User | null) => void;
   devLogin: (role: UserRole) => void;
@@ -64,12 +63,11 @@ export function useAuth(): AuthState & {
       } catch (error: any) {
         logger.error(`[useAuth] Fetch error:`, error);
 
-        if (!isDemoMode && error.response?.status >= 500) {
-          Sentry.captureException(error, {
-            tags: { type: 'auth_user_fetch' },
-            extra: { userId }
-          });
-        }
+        // Always capture errors to Sentry
+        Sentry.captureException(error, {
+          tags: { type: 'auth_user_fetch' },
+          extra: { userId }
+        });
 
         // Token might be invalid
         localStorage.removeItem('accessToken');
@@ -121,12 +119,11 @@ export function useAuth(): AuthState & {
       setUser(userResponse);
       setLogContext({ userId: userResponse.id });
     } catch (error: any) {
-      if (!isDemoMode) {
-        Sentry.captureException(error, {
-          tags: { type: 'auth_login' },
-          extra: { email }
-        });
-      }
+      // Always capture authentication errors to Sentry
+      Sentry.captureException(error, {
+        tags: { type: 'auth_login' },
+        extra: { email }
+      });
       const errorMessage = error.response?.data?.message || error.message || 'Login failed';
       throw new Error(errorMessage);
     }
@@ -167,9 +164,9 @@ export function useAuth(): AuthState & {
     }
   };
 
-  const register = async (email: string, password: string, name: string, role: UserRole) => {
+  const register = async (email: string, password: string, name: string, role: UserRole, phone?: string) => {
     try {
-      const response = await api.post('/auth/register', { email, password, name, role });
+      const response = await api.post('/auth/register', { email, password, name, role, ...(phone ? { phone } : {}) });
       const { user: userResponse, accessToken, refreshToken } = response.data;
 
       localStorage.setItem('accessToken', accessToken);
@@ -268,3 +265,4 @@ export function useAuth(): AuthState & {
     },
   };
 }
+

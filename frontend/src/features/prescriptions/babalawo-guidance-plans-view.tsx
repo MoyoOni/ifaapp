@@ -15,9 +15,6 @@ import {
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
-import { logger } from '@/shared/utils/logger';
-import { isDemoMode } from '@/shared/config/demo-mode';
-import { DEMO_GUIDANCE_PLANS, getDemoAppointmentById, getDemoUserById, type DemoUser } from '@/demo';
 
 interface GuidancePlanItem {
   name: string;
@@ -77,78 +74,6 @@ const BabalawoGuidancePlansView: React.FC<BabalawoGuidancePlansViewProps> = ({
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [expandedPlan, setExpandedPlan] = useState<string | null>(null);
 
-  const buildDemoPlans = (): GuidancePlan[] => {
-    return Object.values(DEMO_GUIDANCE_PLANS).map((plan) => {
-      const appointment = getDemoAppointmentById(plan.appointmentId);
-      const babalawo = getDemoUserById(plan.babalawoId) as DemoUser | null;
-      const client = getDemoUserById(plan.clientId) as DemoUser | null;
-      const steps = plan.steps || [];
-      const items: GuidancePlanItem[] = steps.length > 0
-        ? steps.map((step: string, index: number) => ({
-            name: step,
-            quantity: 1,
-            description: `Step ${index + 1}`,
-            cost: Math.max(1, Math.floor(plan.totalCost / steps.length)),
-          }))
-        : [{
-            name: 'Guidance Materials',
-            quantity: 1,
-            description: 'Demo item',
-            cost: plan.totalCost,
-          }];
-
-      return {
-        id: plan.id,
-        type: plan.type,
-        items,
-        totalCost: plan.totalCost,
-        platformServiceFee: 0,
-        currency: 'NGN',
-        instructions: steps.join('\n'),
-        status: plan.status,
-        appointment: {
-          id: plan.appointmentId,
-          date: appointment?.date || '2026-02-10',
-          time: appointment?.time || '10:00',
-        },
-        babalawo: {
-          id: plan.babalawoId,
-          name: babalawo?.name || 'Babalawo',
-          yorubaName: babalawo?.yorubaName,
-        },
-        client: {
-          id: plan.clientId,
-          name: client?.name || 'Client',
-          email: client?.email || 'client@example.com',
-        },
-        createdAt: plan.createdAt,
-      };
-    });
-  };
-
-  // Fetch guidance plans for this Babalawo
-  const getSessionPlans = (): GuidancePlan[] => {
-    if (typeof sessionStorage === 'undefined') {
-      return [];
-    }
-    const plans: GuidancePlan[] = [];
-    for (let i = 0; i < sessionStorage.length; i += 1) {
-      const key = sessionStorage.key(i);
-      if (!key || !key.startsWith('demo-guidance-plan:')) {
-        continue;
-      }
-      try {
-        const parsed = JSON.parse(sessionStorage.getItem(key) || '{}') as GuidancePlan;
-        if (parsed?.id) {
-          plans.push(parsed);
-        }
-      } catch (error) {
-        logger.warn('Failed to parse demo guidance plan from session', error);
-      }
-    }
-    return plans;
-  };
-
   const { data: guidancePlans, isLoading } = useQuery<GuidancePlan[]>({
     queryKey: ['babalawo-guidance-plans', user?.id, statusFilter],
     queryFn: async () => {
@@ -157,22 +82,7 @@ const BabalawoGuidancePlansView: React.FC<BabalawoGuidancePlansViewProps> = ({
         const response = await api.get(`/guidance-plans/user/${user?.id}`, { params });
         return response.data;
       } catch (error) {
-        if (!isDemoMode) throw error;
-
-        logger.warn('Failed to fetch guidance plans, using demo data');
-        const demoPlans = buildDemoPlans();
-        const sessionPlans = getSessionPlans();
-        const merged = [...demoPlans];
-        sessionPlans.forEach((plan) => {
-          if (!merged.some((existing) => existing.id === plan.id)) {
-            merged.push(plan);
-          }
-        });
-        const filtered = statusFilter ? merged.filter((plan) => plan.status === statusFilter) : merged;
-        if (user?.id) {
-          return filtered.filter((plan) => plan.babalawo.id === user.id);
-        }
-        return filtered;
+        throw error;
       }
     },
     enabled: !!user?.id,
@@ -539,3 +449,4 @@ const BabalawoGuidancePlansView: React.FC<BabalawoGuidancePlansViewProps> = ({
 };
 
 export default BabalawoGuidancePlansView;
+

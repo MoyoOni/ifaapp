@@ -24,16 +24,21 @@ interface OnboardingViewProps {
  * NOTE: "Personal Awo" relationship is sacred - users may change but not "unfriend" like social media
  */
 const OnboardingView: React.FC<OnboardingViewProps> = ({
-  userId,
-  userRole,
+  userId: userIdProp,
+  userRole: userRoleProp,
   onComplete,
   onLogout,
 }) => {
   const { t } = useLanguage();
-  const navigate = useNavigate(); // Add navigate hook
-  const { setUser } = useAuth(); // Get setUser from auth context
-  const [onboardingStep, setOnboardingStep] = useState<'welcome' | 'heritage' | 'form'>('welcome');
+  const navigate = useNavigate();
+  const { user: authUser, setUser } = useAuth();
+
+  // Fall back to auth context when not passed as props (e.g. routed directly to /onboarding)
+  const userId = userIdProp ?? authUser?.id;
+  const userRole = userRoleProp ?? authUser?.role;
+  const [onboardingStep, setOnboardingStep] = useState<'welcome' | 'role-setup' | 'heritage' | 'form'>('welcome');
   const [welcomeSlide, setWelcomeSlide] = useState(0);
+  const [roleSetupComplete, setRoleSetupComplete] = useState(false);
 
   const [yorubaName, setYorubaName] = useState('');
   const [location, setLocation] = useState('');
@@ -70,7 +75,12 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
     if (welcomeSlide < slides.length - 1) {
       setWelcomeSlide(prev => prev + 1);
     } else {
-      setOnboardingStep('heritage');
+      // Babalawo and Vendor get a role-specific setup step first
+      if (userRole === UserRole.BABALAWO || userRole === UserRole.VENDOR) {
+        setOnboardingStep('role-setup');
+      } else {
+        setOnboardingStep('heritage');
+      }
     }
   };
 
@@ -156,10 +166,72 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
             </div>
 
             <button
+              type="button"
               onClick={handleNextSlide}
               className="w-full py-5 bg-stone-900 text-white rounded-xl font-bold uppercase tracking-widest hover:bg-stone-800 transition-all shadow-lg flex items-center justify-center gap-2"
             >
               {welcomeSlide === slides.length - 1 ? t('enter_village') : t('continue')} <ChevronRight size={16} />
+            </button>
+          </div>
+        )}
+
+        {/* Role-Specific Setup Step (Babalawo & Vendor only) */}
+        {onboardingStep === 'role-setup' && userRole === UserRole.BABALAWO && (
+          <div className="bg-white rounded-[2rem] p-8 md:p-10 border border-stone-100 shadow-xl space-y-6 animate-in slide-in-from-bottom-8 duration-500">
+            <div className="text-center space-y-2">
+              <div className="w-16 h-16 bg-stone-50 rounded-2xl flex items-center justify-center mx-auto text-3xl">🌿</div>
+              <h2 className="text-3xl font-bold brand-font text-stone-800">Your Practice</h2>
+              <p className="text-stone-400 text-sm font-bold uppercase tracking-widest">Babalawo Setup</p>
+            </div>
+            <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5 space-y-3">
+              <p className="text-amber-800 font-bold text-sm">Verification Required</p>
+              <p className="text-amber-700 text-sm leading-relaxed">
+                To accept clients, your profile will need to be reviewed by our admin team. After completing setup, you can upload credentials from your profile.
+              </p>
+              <ul className="space-y-1.5 text-sm text-amber-700">
+                {['Certificate of initiation or training', 'Reference from a recognized temple', 'Brief biography of your practice'].map((item) => (
+                  <li key={item} className="flex items-start gap-2">
+                    <span className="text-amber-500 mt-0.5">•</span>{item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <button
+              type="button"
+              onClick={() => { setRoleSetupComplete(true); setOnboardingStep('heritage'); }}
+              className="w-full py-4 bg-stone-900 text-white rounded-xl font-bold uppercase tracking-widest hover:bg-stone-800 transition-all shadow-lg flex items-center justify-center gap-2"
+            >
+              I understand <ChevronRight size={16} />
+            </button>
+          </div>
+        )}
+
+        {onboardingStep === 'role-setup' && userRole === UserRole.VENDOR && (
+          <div className="bg-white rounded-[2rem] p-8 md:p-10 border border-stone-100 shadow-xl space-y-6 animate-in slide-in-from-bottom-8 duration-500">
+            <div className="text-center space-y-2">
+              <div className="w-16 h-16 bg-stone-50 rounded-2xl flex items-center justify-center mx-auto text-3xl">🛍️</div>
+              <h2 className="text-3xl font-bold brand-font text-stone-800">Your Shop</h2>
+              <p className="text-stone-400 text-sm font-bold uppercase tracking-widest">Vendor Setup</p>
+            </div>
+            <p className="text-stone-500 text-center">What category of items will you primarily sell?</p>
+            <div className="grid grid-cols-2 gap-3">
+              {['Sacred Tools', 'Ritual Herbs', 'Spiritual Jewelry', 'Ifa Materials', 'Cultural Clothing', 'Books & Media'].map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => { setRoleSetupComplete(true); setOnboardingStep('form'); }}
+                  className="py-3 px-4 bg-stone-50 border border-stone-200 rounded-xl text-sm font-semibold text-stone-700 hover:bg-stone-100 hover:border-stone-400 transition-all text-left"
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => { setRoleSetupComplete(true); setOnboardingStep('form'); }}
+              className="w-full py-3 text-stone-400 text-sm font-semibold hover:text-stone-600 transition-colors"
+            >
+              Skip for now
             </button>
           </div>
         )}
@@ -289,6 +361,7 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
             {/* Logout Option */}
             {onLogout && (
               <button
+                type="button"
                 onClick={onLogout}
                 className="w-full py-2 text-stone-400 font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:text-stone-600 transition-all"
               >

@@ -19,7 +19,7 @@ export interface JobResult {
 @Injectable()
 export class JobQueueService implements OnModuleInit {
   private readonly logger = new Logger(JobQueueService.name);
-  
+
   // Queue instances
   private queues: Map<string, Queue> = new Map();
   private workers: Map<string, Worker> = new Map();
@@ -27,7 +27,7 @@ export class JobQueueService implements OnModuleInit {
 
   constructor(
     private configService: ConfigService,
-    private redisService: RedisService,
+    private redisService: RedisService
   ) {}
 
   async onModuleInit() {
@@ -43,8 +43,10 @@ export class JobQueueService implements OnModuleInit {
     await this.createQueue('notification');
     await this.createQueue('image-processing');
     await this.createQueue('data-export');
-    
-    this.logger.log('Initialized default queues: email, notification, image-processing, data-export');
+
+    this.logger.log(
+      'Initialized default queues: email, notification, image-processing, data-export'
+    );
   }
 
   /**
@@ -74,13 +76,13 @@ export class JobQueueService implements OnModuleInit {
     const queueEvents = new QueueEvents(queueName, {
       connection: this.redisService.getConnection() as any,
     });
-    
+
     this.queueEvents.set(queueName, queueEvents);
-    
+
     queueEvents.on('completed', (jobId) => {
       this.logger.log(`Job ${jobId} completed in queue ${queueName}`);
     });
-    
+
     queueEvents.on('failed', (jobId, failedReason) => {
       this.logger.error(`Job ${jobId} failed in queue ${queueName}: ${failedReason}`);
     });
@@ -93,7 +95,7 @@ export class JobQueueService implements OnModuleInit {
    */
   async addJob(queueName: string, jobData: JobData, delay?: number) {
     const queue = await this.getQueue(queueName);
-    
+
     if (!queue) {
       throw new Error(`Queue ${queueName} not found`);
     }
@@ -143,11 +145,11 @@ export class JobQueueService implements OnModuleInit {
     );
 
     this.workers.set(queueName, worker);
-    
+
     worker.on('completed', (job) => {
       this.logger.log(`Worker completed job ${job.id} in queue ${queueName}`);
     });
-    
+
     worker.on('failed', (job, err) => {
       this.logger.error(`Worker failed job ${job?.id} in queue ${queueName}: ${err.message}`);
     });
@@ -231,19 +233,19 @@ export class JobQueueService implements OnModuleInit {
       await worker.close();
       this.logger.log(`Closed worker for queue ${name}`);
     }
-    
+
     // Close all queue event listeners
     for (const [name, queueEvents] of this.queueEvents) {
       await queueEvents.close();
       this.logger.log(`Closed queue events for queue ${name}`);
     }
-    
+
     // Close all queues
     for (const [name, queue] of this.queues) {
       await queue.close();
       this.logger.log(`Closed queue ${name}`);
     }
-    
+
     this.workers.clear();
     this.queueEvents.clear();
     this.queues.clear();
@@ -254,11 +256,15 @@ export class JobQueueService implements OnModuleInit {
    */
   private convertPriority(priority?: 'low' | 'normal' | 'high' | 'critical'): number {
     switch (priority) {
-      case 'critical': return 1;
-      case 'high': return 2;
-      case 'normal': return 3;
-      case 'low': 
-      default: return 4;
+      case 'critical':
+        return 1;
+      case 'high':
+        return 2;
+      case 'normal':
+        return 3;
+      case 'low':
+      default:
+        return 4;
     }
   }
 }

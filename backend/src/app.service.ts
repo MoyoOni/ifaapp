@@ -8,17 +8,17 @@ export class AppService implements OnModuleInit {
 
   constructor(
     private readonly queueService: QueueService,
-    private readonly cdcSyncService: CdcSyncService,
+    private readonly cdcSyncService: CdcSyncService
   ) {}
 
   async onModuleInit() {
     this.logger.log('Initializing application services...');
-    
+
     // Setup common queue processors
     await this.queueService.setupCommonProcessors();
-    
+
     // CDC sync is a placeholder — no search backend configured yet
-    
+
     this.logger.log('Application services initialized successfully');
   }
 

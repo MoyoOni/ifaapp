@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { TrendingUp, Users, DollarSign, Calendar, Package, AlertTriangle } from 'lucide-react';
 import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
-import { isDemoMode } from '@/shared/config/demo-mode';
+
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface Analytics {
@@ -99,10 +99,7 @@ const AnalyticsDashboardView: React.FC = () => {
         });
         return response.data;
       } catch (error) {
-        if (!isDemoMode) throw error;
-
-        logger.warn('Failed to fetch analytics, using demo data');
-        return demoAnalyticsByPeriod[period];
+        throw error;
       }
     },
   });
@@ -278,3 +275,4 @@ const AnalyticsDashboardView: React.FC = () => {
 };
 
 export default AnalyticsDashboardView;
+

@@ -14,8 +14,6 @@ import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { logger } from '@/shared/utils/logger';
 import { useToast } from '@/shared/components/toast';
-import { isDemoMode } from '@/shared/config/demo-mode';
-import { getUserWallet } from '@/demo';
 import { TransactionType, TransactionStatus, Currency, PaymentPurpose } from '@common';
 import PaymentModal from '../payments/payment-modal';
 import MultiCurrencyBalance from './multi-currency-balance';
@@ -92,14 +90,7 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
         const response = await api.get(`/wallet/${user?.id}/balance`);
         return response.data;
       } catch (error) {
-        if (!isDemoMode) throw error;
-        logger.warn('Failed to fetch wallet balance, using demo data');
-        const demoWallet = user?.id ? getUserWallet(user.id) : null;
-        return {
-          balance: demoWallet?.balance ?? 0,
-          currency: (demoWallet?.currency as Currency) ?? Currency.NGN,
-          locked: false,
-        };
+        throw error;
       }
     },
     enabled: !!user?.id,
@@ -114,10 +105,7 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
         const response = await api.get(`/wallet/${user?.id}/escrows`);
         return response.data || [];
       } catch (error) {
-        if (!isDemoMode) throw error;
-        logger.warn('Failed to fetch escrows, using demo data', error);
-        // Return empty array for demo (no active escrows by default)
-        return [];
+        throw error;
       }
     },
     enabled: !!user?.id
@@ -132,20 +120,7 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
         });
         return response.data;
       } catch (error) {
-        if (!isDemoMode) throw error;
-        logger.warn('Failed to fetch recent transactions, using demo data');
-        const demoWallet = user?.id ? getUserWallet(user.id) : null;
-        const demoTransactions = (demoWallet?.transactions || []).map((tx: any) => ({
-          id: tx.id,
-          type: tx.type === 'CREDIT' ? TransactionType.DEPOSIT : TransactionType.PAYMENT,
-          amount: tx.type === 'CREDIT' ? tx.amount : -Math.abs(tx.amount),
-          currency: (demoWallet?.currency as Currency) ?? Currency.NGN,
-          status: TransactionStatus.COMPLETED,
-          description: tx.description,
-          createdAt: tx.date,
-        }));
-
-        return { transactions: demoTransactions };
+        throw error;
       }
     },
     initialData: { transactions: [] },
@@ -577,3 +552,4 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
 };
 
 export default WalletDashboardView;
+

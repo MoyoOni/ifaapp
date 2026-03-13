@@ -1,5 +1,4 @@
 import { Injectable, NestInterceptor, ExecutionContext, CallHandler, Logger } from '@nestjs/common';
-import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { AuditService } from '../audit.service';
 
@@ -7,17 +6,17 @@ import { AuditService } from '../audit.service';
 export class AuditInterceptor implements NestInterceptor {
   private readonly logger = new Logger(AuditInterceptor.name);
 
-  constructor(private readonly auditService: AuditService) { }
+  constructor(private readonly auditService: AuditService) {}
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  intercept(context: ExecutionContext, next: CallHandler) {
     const request = context.switchToHttp().getRequest();
     const { method, url, body, user, ip, headers } = request;
 
     // Only audit mutations (POST, PATCH, DELETE) by Admins
     // We check for user existence and specific role
     if (['POST', 'PATCH', 'DELETE'].includes(method) && user?.role === 'ADMIN') {
-      return next.handle().pipe(
-        tap(async (data) => {
+      return (next.handle() as any).pipe(
+        tap(async (data: any) => {
           try {
             const action = this.deriveAction(method, url);
             const entityType = this.deriveEntityType(url);

@@ -5,8 +5,7 @@ import { FeatureHeader } from '@/shared/components/feature-header';
 import api from '@/lib/api';
 import { useCart } from '@/shared/contexts/cart-context';
 import { logger } from '@/shared/utils/logger';
-import { isDemoMode } from '@/shared/config/demo-mode';
-import { DEMO_PRODUCTS, DEMO_USERS } from '@/demo';
+
 import { UserRole } from '@common';
 
 interface Vendor {
@@ -77,44 +76,7 @@ const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onSelectProduct }) =>
         const response = await api.get(`/marketplace/products?${params.toString()}`);
         return response.data || [];
       } catch (e) {
-        if (!isDemoMode) throw e;
-        logger.error('Failed to fetch products, using demo data', e);
-        return Object.values(DEMO_PRODUCTS).map((product) => {
-          const vendorUser = DEMO_USERS[product.vendorId as keyof typeof DEMO_USERS];
-          const mappedCategory = product.category?.toLowerCase().includes('tool') ? 'artifacts' : 'services';
-
-          return {
-            id: product.id,
-            vendorId: product.vendorId,
-            name: product.name,
-            category: mappedCategory,
-            type: 'PHYSICAL',
-            description: product.description || 'Authentic spiritual item.',
-            price: product.price,
-            currency: product.currency,
-            stock: product.stock,
-            images: product.images || [],
-            provenance: 'Osun State, Nigeria',
-            verifiedTier: 'COUNCIL_APPROVED',
-            status: product.status,
-            vendor: {
-              id: product.vendorId,
-              businessName: vendorUser?.name || 'Sacred Vendor',
-              user: {
-                name: vendorUser?.name || 'Sacred Vendor',
-                yorubaName: vendorUser?.yorubaName,
-                verified: (vendorUser as any)?.verified ?? true,
-              },
-            },
-            _count: {
-              orders: 12,
-              reviews: 4,
-            },
-          } as Product;
-        }).filter((product) => {
-          if (selectedCategory === 'all') return true;
-          return product.category === selectedCategory;
-        });
+        throw e;
       }
     },
   });
@@ -127,22 +89,7 @@ const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onSelectProduct }) =>
         const response = await api.get('/marketplace/vendors?status=APPROVED');
         return response.data || [];
       } catch (e) {
-        if (!isDemoMode) throw e;
-        logger.error('Failed to fetch vendors, using demo data', e);
-        return Object.values(DEMO_USERS)
-          .filter((user) => user.role === UserRole.VENDOR)
-          .map((user) => ({
-            id: user.id,
-            userId: user.id,
-            businessName: user.name,
-            status: 'APPROVED',
-            user: {
-              id: user.id,
-              name: user.name,
-              yorubaName: user.yorubaName,
-              verified: (user as any).verified ?? true,
-            },
-          }));
+        throw e;
       }
     },
   });

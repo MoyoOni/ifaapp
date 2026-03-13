@@ -2,11 +2,8 @@ import {
   IsString,
   IsNotEmpty,
   IsArray,
-  IsNumber,
   IsEnum,
   IsDateString,
-  Min,
-  Max,
 } from 'class-validator';
 
 export enum RequiredMajority {

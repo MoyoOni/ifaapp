@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '@/modules/user/user.service';
 import { AuditService } from './audit.service';
-import { User } from '@prisma/client';
+import { User } from '../types/prisma-models';
 import { UserRole } from '@common/enums/user-role.enum';
 
 export interface ImpersonationResult {
@@ -16,13 +16,13 @@ export class ImpersonationService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly userService: UserService,
-    private readonly auditService: AuditService,
+    private readonly auditService: AuditService
   ) {}
 
   async initiateImpersonation(
     adminUser: User,
     targetUserId: string,
-    reason: string,
+    reason: string
   ): Promise<ImpersonationResult> {
     // Verify admin user has proper permissions
     if (!this.canImpersonate(adminUser)) {
@@ -86,8 +86,7 @@ export class ImpersonationService {
   }
 
   private isUserAdmin(user: User): boolean {
-    return user.role === UserRole.ADMIN || 
-           user.role === UserRole.ADVISORY_BOARD_MEMBER;
+    return user.role === UserRole.ADMIN || user.role === UserRole.ADVISORY_BOARD_MEMBER;
   }
 
   /**
@@ -100,8 +99,8 @@ export class ImpersonationService {
   /**
    * Get impersonation info from token payload
    */
-  getImpersonationInfo(payload: any): { 
-    isImpersonated: boolean; 
+  getImpersonationInfo(payload: any): {
+    isImpersonated: boolean;
     impersonatedBy?: string;
     impersonatedByEmail?: string;
   } {
@@ -112,7 +111,7 @@ export class ImpersonationService {
         impersonatedByEmail: payload.impersonatedByEmail,
       };
     }
-    
+
     return {
       isImpersonated: false,
     };

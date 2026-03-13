@@ -1,6 +1,5 @@
 import { useApiQuery } from '@/shared/hooks/use-api-query';
 import { DEMO_USERS } from '@/demo';
-import { isDemoMode } from '@/shared/config/demo-mode';
 
 export interface PublicProfileViewProps {
   userId: string;
@@ -50,8 +49,8 @@ export function useProfileQuery(userId: string) {
     // Use demo data only when in demo mode and API fails
     demoData: DEMO_USERS[userId as keyof typeof DEMO_USERS] || undefined,
     queryOptions: {
-      // Only retry when not in demo mode
-      retry: !isDemoMode ? 1 : false
+      // Retry on failure
+      retry: 1
     }
   });
 }

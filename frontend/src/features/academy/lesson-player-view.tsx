@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, CheckCircle, Clock, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
-import { isDemoMode } from '@/shared/config/demo-mode';
 import { getCourseById } from './course-data';
 // import { useAuth } from '@/shared/hooks/use-auth';
 
@@ -83,29 +82,7 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
         const response = await api.get(`/academy/enrollments/${enrollmentId}`);
         return response.data;
       } catch (e) {
-        if (!isDemoMode) throw e;
-
-        if (!isDemoMode) throw e;
-
-
-        logger.error('Failed to fetch enrollment, using demo data', e);
-        // Try to find demo enrollment in sessionStorage
-        if (typeof sessionStorage !== 'undefined') {
-          for (let i = 0; i < sessionStorage.length; i++) {
-            const key = sessionStorage.key(i);
-            if (key?.startsWith('demo-enrollment:')) {
-              try {
-                const cached = JSON.parse(sessionStorage.getItem(key) || '');
-                if (cached.id === enrollmentId) {
-                  return cached as Enrollment;
-                }
-              } catch (parseError) {
-                logger.warn('Failed to parse demo enrollment', parseError);
-              }
-            }
-          }
-        }
-        throw new Error('Enrollment not found');
+        throw e;
       }
     },
     enabled: !!enrollmentId,
@@ -129,62 +106,7 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
         const response = await api.get(`/academy/courses/${enrollment?.courseId}`);
         return response.data;
       } catch (e) {
-        if (!isDemoMode) throw e;
-
-        if (!isDemoMode) throw e;
-
-
-        logger.error('Failed to fetch course, using demo data', e);
-        // Return demo course based on courseId
-        const courseId = enrollment?.courseId;
-        const demoCourse = getCourseById(courseId || '');
-        if (demoCourse) {
-          return {
-            id: demoCourse.id,
-            title: demoCourse.title,
-            instructorId: demoCourse.instructorId,
-            instructor: {
-              name: demoCourse.instructor.name,
-              yorubaName: demoCourse.instructor.yorubaName,
-            },
-            lessons: demoCourse.lessons.map(lesson => ({
-              ...lesson,
-              order: lesson.order - 1, // Adjust to 0-based for player
-            })),
-          } as Course;
-        }
-        // Fallback for old demo courses
-        if (courseId === 'demo-course-1') {
-          return {
-            id: 'demo-course-1',
-            title: 'Foundations of Ifá Divination',
-            instructorId: 'demo-baba-1',
-            instructor: {
-              name: 'Babaláwo Adeyemi',
-              yorubaName: 'Babaláwo Adeyemi',
-            },
-            lessons: [
-              { id: 'demo-lesson-1', courseId: 'demo-course-1', title: 'Origins of Ifá', order: 0, type: 'VIDEO', duration: 18, status: 'PUBLISHED', resources: [] },
-              { id: 'demo-lesson-2', courseId: 'demo-course-1', title: 'Sacred Tools Overview', order: 1, type: 'VIDEO', duration: 22, status: 'PUBLISHED', resources: [] },
-              { id: 'demo-lesson-3', courseId: 'demo-course-1', title: 'Preparing for Divination', order: 2, type: 'READING', duration: 15, status: 'PUBLISHED', resources: [] },
-            ],
-          } as Course;
-        } else if (courseId === 'demo-course-2') {
-          return {
-            id: 'demo-course-2',
-            title: 'Spiritual Protection & Daily Practice',
-            instructorId: 'demo-baba-1',
-            instructor: {
-              name: 'Babaláwo Adeyemi',
-              yorubaName: 'Babaláwo Adeyemi',
-            },
-            lessons: [
-              { id: 'demo-lesson-4', courseId: 'demo-course-2', title: 'Daily Prayer Structure', order: 0, type: 'VIDEO', duration: 20, status: 'PUBLISHED', resources: [] },
-              { id: 'demo-lesson-5', courseId: 'demo-course-2', title: 'Protective Herbs', order: 1, type: 'READING', duration: 12, status: 'PUBLISHED', resources: [] },
-            ],
-          } as Course;
-        }
-        throw new Error('Course not found');
+        throw e;
       }
     },
     enabled: !!enrollment?.courseId,
@@ -198,20 +120,7 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
         const response = await api.get(`/academy/lessons/${currentLessonId}`);
         return response.data;
       } catch (e) {
-        if (!isDemoMode) throw e;
-
-        if (!isDemoMode) throw e;
-
-
-        logger.error('Failed to fetch lesson, using demo data', e);
-        // Return demo lesson from course lessons
-        if (course && currentLessonId) {
-          const lesson = course.lessons.find((l) => l.id === currentLessonId);
-          if (lesson) {
-            return lesson;
-          }
-        }
-        throw new Error('Lesson not found');
+        throw e;
       }
     },
     enabled: !!currentLessonId,
@@ -225,80 +134,19 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
         const response = await api.get(`/academy/enrollments/${enrollmentId}/completions`);
         return response.data || [];
       } catch (e) {
-        if (!isDemoMode) throw e;
-
-        if (!isDemoMode) throw e;
-
-
-        logger.error('Failed to fetch completions, using demo data', e);
-        // Check sessionStorage for demo completions
-        if (typeof sessionStorage !== 'undefined') {
-          const key = `demo-lesson-completions:${enrollmentId}`;
-          const cached = sessionStorage.getItem(key);
-          if (cached) {
-            try {
-              return JSON.parse(cached) as LessonCompletion[];
-            } catch (parseError) {
-              logger.warn('Failed to parse demo completions', parseError);
-            }
-          }
-        }
-        return [];
+        throw e;
       }
     },
     enabled: !!enrollmentId,
   });
 
-  // Complete lesson mutation with demo fallback
+  // Complete lesson mutation
   const completeLessonMutation = useMutation({
     mutationFn: async (lessonId: string) => {
-      try {
-        const response = await api.post(`/academy/enrollments/${enrollmentId}/complete-lesson`, {
-          lessonId,
-        });
-        return response.data;
-      } catch (e) {
-        if (!isDemoMode) throw e;
-
-        if (!isDemoMode) throw e;
-
-
-        logger.warn('Failed to complete lesson, using demo fallback', e);
-        // Create demo completion
-        const completion: LessonCompletion = {
-          id: `demo-completion-${lessonId}-${Date.now()}`,
-          lessonId,
-          completedAt: new Date().toISOString(),
-          lesson: {
-            id: lessonId,
-            title: currentLesson?.title || 'Lesson',
-          },
-        };
-        // Store in sessionStorage
-        if (typeof sessionStorage !== 'undefined') {
-          const key = `demo-lesson-completions:${enrollmentId}`;
-          const existing = sessionStorage.getItem(key);
-          const completions: LessonCompletion[] = existing ? JSON.parse(existing) : [];
-          if (!completions.find((c) => c.lessonId === lessonId)) {
-            completions.push(completion);
-            sessionStorage.setItem(key, JSON.stringify(completions));
-          }
-          // Update enrollment progress
-          if (course && enrollment) {
-            const totalLessons = course.lessons.length;
-            const newProgress = Math.min(100, ((completions.length + 1) / totalLessons) * 100);
-            const enrollmentKey = Object.keys(sessionStorage).find((k) =>
-              k.startsWith('demo-enrollment:') && k.includes(`:${enrollment.studentId}`)
-            );
-            if (enrollmentKey) {
-              const enrollmentData = JSON.parse(sessionStorage.getItem(enrollmentKey) || '{}');
-              enrollmentData.progress = newProgress;
-              sessionStorage.setItem(enrollmentKey, JSON.stringify(enrollmentData));
-            }
-          }
-        }
-        return completion;
-      }
+      const response = await api.post(`/academy/enrollments/${enrollmentId}/complete-lesson`, {
+        lessonId,
+      });
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['academy-lesson-completions', enrollmentId] });
@@ -627,3 +475,4 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
 };
 
 export default LessonPlayerView;
+

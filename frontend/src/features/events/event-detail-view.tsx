@@ -4,8 +4,6 @@ import { ArrowLeft, Calendar, MapPin, Video, Globe, Users, CheckCircle, Loader2 
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { logger } from '@/shared/utils/logger';
-import { isDemoMode } from '@/shared/config/demo-mode';
-import { DEMO_EVENTS, DEMO_USERS } from '@/demo';
 import AddToCalendar from '@/shared/components/add-to-calendar';
 import { useToast } from '@/shared/components/toast';
 
@@ -106,54 +104,7 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ eventSlug, onBack }) 
         const response = await api.get(`/events/${eventSlug}`);
         return response.data;
       } catch (error) {
-        if (!isDemoMode) throw error;
-
-        logger.error('Failed to fetch event, using demo data', error);
-        const demoEvent = Object.values(DEMO_EVENTS).find((item) => item.slug === eventSlug);
-        if (!demoEvent) {
-          return null;
-        }
-
-        const creator = DEMO_USERS[demoEvent.organizerId as keyof typeof DEMO_USERS];
-        const locationType = demoEvent.isVirtual && demoEvent.isPhysical
-          ? 'HYBRID'
-          : demoEvent.isVirtual
-            ? 'VIRTUAL'
-            : 'PHYSICAL';
-
-        const registration = getSessionRegistration(demoEvent.id);
-        return {
-          id: demoEvent.id,
-          title: demoEvent.title,
-          description: demoEvent.description,
-          slug: demoEvent.slug,
-          type: 'EDUCATIONAL',
-          category: undefined,
-          startDate: demoEvent.date,
-          timezone: 'Africa/Lagos',
-          location: demoEvent.location,
-          locationType,
-          virtualLink: demoEvent.isVirtual ? 'https://meet.google.com/demo' : undefined,
-          price: 0,
-          currency: 'NGN',
-          capacity: demoEvent.capacity,
-          requiresRegistration: true,
-          registrationDeadline: undefined,
-          image: undefined,
-          status: 'UPCOMING',
-          published: true,
-          createdAt: demoEvent.date,
-          creator: {
-            id: creator?.id || demoEvent.organizerId,
-            name: creator?.name || 'Event Organizer',
-            yorubaName: creator?.yorubaName,
-            avatar: creator?.avatar,
-          },
-          userRegistration: registration,
-          _count: {
-            registrations: (demoEvent.attendees?.length || 0) + (registration ? 1 : 0),
-          },
-        } as EventDetail;
+        throw error;
       }
     },
   });

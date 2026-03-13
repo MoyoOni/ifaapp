@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import appLogo from '@/assets/logo.png';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Menu,
@@ -185,9 +186,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                 <div className={cn("p-6 pb-4 border-b border-border/50", !showExpanded && "px-3")}>
                     <div className="flex items-center gap-3 justify-between">
                         <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold text-xl brand-font shadow-lg shadow-primary/20 flex-shrink-0">
-                                IA
-                            </div>
+                            <img src={appLogo} alt="Ìlú Àṣẹ" className="w-10 h-10 rounded-xl shadow-lg shadow-primary/20 flex-shrink-0 object-cover" />
                             <AnimatePresence mode="wait">
                                 {showExpanded && (
                                     <motion.div
@@ -284,6 +283,15 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                     </div>
                 )}
 
+                {/* Legal Links Footer */}
+                {showExpanded && (
+                    <div className="px-4 pb-2 flex gap-3 justify-center">
+                        <a href="/terms" className="text-[10px] text-muted-foreground hover:text-highlight transition-colors">Terms</a>
+                        <span className="text-[10px] text-muted-foreground">·</span>
+                        <a href="/privacy" className="text-[10px] text-muted-foreground hover:text-highlight transition-colors">Privacy</a>
+                    </div>
+                )}
+
                 {/* Collapsed User Avatar */}
                 {!showExpanded && (
                     <div className="p-3 border-t border-border/50" data-profile-menu>
@@ -333,9 +341,12 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                         >
                             {/* Mobile Header */}
                             <div className="p-6 border-b border-border flex items-center justify-between bg-primary/5">
-                                <div>
-                                    <h2 className="brand-font text-2xl font-bold text-foreground">Ìlú <span className="text-primary">Àṣẹ</span></h2>
-                                    <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold mt-1">Menu</p>
+                                <div className="flex items-center gap-3">
+                                    <img src={appLogo} alt="Ìlú Àṣẹ" className="w-10 h-10 rounded-xl object-cover" />
+                                    <div>
+                                        <h2 className="brand-font text-2xl font-bold text-foreground">Ìlú <span className="text-primary">Àṣẹ</span></h2>
+                                        <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold mt-1">Menu</p>
+                                    </div>
                                 </div>
                                 <button
                                     onClick={toggleMobileMenu}
@@ -403,6 +414,11 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                                     <LogOut size={20} />
                                     Log Out
                                 </button>
+
+                                <div className="flex gap-4 justify-center pt-2">
+                                    <a href="/terms" className="text-xs text-muted-foreground hover:text-highlight transition-colors">Terms</a>
+                                    <a href="/privacy" className="text-xs text-muted-foreground hover:text-highlight transition-colors">Privacy</a>
+                                </div>
                             </div>
                         </motion.aside>
                     </>
@@ -425,9 +441,12 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                             <Menu size={24} />
                         </motion.div>
                     </button>
-                    <h1 className="text-lg font-bold brand-font text-foreground">
-                        Ìlú <span className="text-primary">Àṣẹ</span>
-                    </h1>
+                    <div className="flex items-center gap-2">
+                        <img src={appLogo} alt="Ìlú Àṣẹ" className="w-8 h-8 rounded-lg object-cover" />
+                        <h1 className="text-lg font-bold brand-font text-foreground">
+                            Ìlú <span className="text-primary">Àṣẹ</span>
+                        </h1>
+                    </div>
                     <div className="relative">
                         <button
                             type="button"

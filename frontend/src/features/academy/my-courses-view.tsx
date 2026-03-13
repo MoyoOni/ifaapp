@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { logger } from '@/shared/utils/logger';
-import { isDemoMode } from '@/shared/config/demo-mode';
+
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
@@ -58,49 +58,7 @@ const MyCoursesView: React.FC<MyCoursesViewProps> = ({ onSelectEnrollment: _onSe
         const response = await api.get('/academy/enrollments');
         return response.data || [];
       } catch (e) {
-        if (!isDemoMode) throw e;
-
-        logger.error('Failed to fetch enrollments, using demo data', e);
-        // Collect demo enrollments from sessionStorage
-        if (typeof sessionStorage !== 'undefined' && user?.id) {
-          const demoEnrollments: Enrollment[] = [];
-          for (let i = 0; i < sessionStorage.length; i++) {
-            const key = sessionStorage.key(i);
-            if (key?.startsWith(`demo-enrollment:`) && key.includes(`:${user.id}`)) {
-              try {
-                const enrollment = JSON.parse(sessionStorage.getItem(key) || '') as Enrollment;
-                // Fetch course details for demo enrollment
-                const courseId = enrollment.courseId;
-                // Use mock course data
-                demoEnrollments.push({
-                  ...enrollment,
-                  course: {
-                    id: courseId,
-                    title: courseId === 'demo-course-1' ? 'Foundations of Ifá Divination' :
-                      courseId === 'demo-course-2' ? 'Spiritual Protection & Daily Practice' :
-                        'Yoruba Cultural Studies',
-                    slug: courseId === 'demo-course-1' ? 'foundations-of-ifa-divination' :
-                      courseId === 'demo-course-2' ? 'spiritual-protection-daily-practice' :
-                        'yoruba-cultural-studies',
-                    thumbnail: 'https://images.unsplash.com/photo-1522992319-0365e5f11656?w=1200',
-                    duration: courseId === 'demo-course-1' ? 6 : courseId === 'demo-course-2' ? 4 : 5,
-                    lessonCount: courseId === 'demo-course-1' ? 8 : courseId === 'demo-course-2' ? 6 : 10,
-                    certificateEnabled: courseId === 'demo-course-1' || courseId === 'demo-course-3',
-                    instructor: {
-                      name: 'Babaláwo Adeyemi',
-                      yorubaName: 'Babaláwo Adeyemi',
-                      verified: true,
-                    },
-                  },
-                });
-              } catch (parseError) {
-                logger.warn('Failed to parse demo enrollment', parseError);
-              }
-            }
-          }
-          return demoEnrollments;
-        }
-        return [];
+        throw e;
       }
     },
     enabled: !!user,

@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 import { PaymentsService } from './payments.service';
 
 /**
@@ -27,7 +27,7 @@ export class WebhookMonitorService {
 
         // In production, you would send alerts here (email, Slack, etc.)
         // For now, just log
-        unverifiedPayments.forEach((payment) => {
+        unverifiedPayments.forEach((payment: any) => {
           this.logger.warn(
             `Unverified payment: ${payment.transactionId} - ${payment.amount} ${payment.currency} - User: ${payment.user.email}`
           );

@@ -1,7 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import { parseApiError, reportApiError } from '@/shared/utils/api-error';
 import { setLogContext } from '@/shared/utils/logger';
-import { isDemoMode } from '@/shared/config/demo-mode';
 
 const REQUEST_ID_HEADER = 'x-request-id';
 
@@ -18,6 +17,8 @@ function generateRequestId(): string {
  * Configured for backend communication with authentication.
  * All rejected responses are normalized: error.userMessage and error.isNetworkError are set.
  * Sends x-request-id for tracing; captures response x-request-id into logger context.
+ * 
+ * PRODUCTION: All API errors are reported to Sentry immediately.
  */
 const api: AxiosInstance = axios.create({
   baseURL: '/api',
@@ -84,12 +85,8 @@ api.interceptors.response.use(
       parsed.userMessage;
     (error as Error & { isNetworkError?: boolean }).isNetworkError = parsed.isNetworkError;
     
-    // In demo mode, we'll log the error but not necessarily report it to Sentry
-    if (isDemoMode) {
-      console.warn(`[Ilé Àṣẹ] Demo Mode: API error at ${originalRequest?.url}`, error);
-    } else {
-      reportApiError(error, { endpoint: originalRequest?.url });
-    }
+    // PRODUCTION: Always report API errors to Sentry
+    reportApiError(error, { endpoint: originalRequest?.url });
 
     return Promise.reject(error);
   }

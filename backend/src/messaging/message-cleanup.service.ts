@@ -42,7 +42,7 @@ export class MessageCleanupService {
       const result = await this.prisma.message.updateMany({
         where: {
           id: {
-            in: expiredMessages.map((m) => m.id),
+            in: expiredMessages.map((m: { id: string }) => m.id),
           },
         },
         data: {

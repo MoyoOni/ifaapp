@@ -150,7 +150,12 @@ export class WalletService {
    * Deposit funds to wallet
    * NOTE: Can be called directly or via payment gateway webhook
    */
-  async depositFunds(userId: string, dto: CreateDepositDto, currentUser?: CurrentUserPayload, idempotencyKey?: string) {
+  async depositFunds(
+    userId: string,
+    dto: CreateDepositDto,
+    currentUser?: CurrentUserPayload,
+    idempotencyKey?: string
+  ) {
     // If currentUser is provided, verify ownership
     if (currentUser && currentUser.id !== userId) {
       throw new ForbiddenException('You can only deposit to your own wallet');
@@ -174,7 +179,7 @@ export class WalletService {
       throw new BadRequestException('Wallet is locked. Please contact support.');
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       const transaction = await tx.transaction.create({
         data: {
           walletId: wallet.id,
@@ -225,7 +230,7 @@ export class WalletService {
       );
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       const updatedWallet = await tx.wallet.update({
         where: { id: wallet.id },
         data: { balance: { decrement: amount } },
@@ -350,7 +355,7 @@ export class WalletService {
       : null;
 
     // All escrow creation steps must be atomic
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       const escrow = await tx.escrow.create({
         data: {
           userId,
@@ -488,7 +493,7 @@ export class WalletService {
     }
 
     // All escrow release steps must be atomic
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       const updatedEscrow = await tx.escrow.update({
         where: { id: escrow.id },
         data: {
@@ -596,7 +601,7 @@ export class WalletService {
     // All cancellation steps must be atomic
     const remainingAmount = escrow.amount;
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       if (remainingAmount > 0) {
         await tx.wallet.update({
           where: { id: escrow.walletId },
@@ -743,7 +748,7 @@ export class WalletService {
         }
 
         // Wallet update, transaction creation, and escrow status update must be atomic
-        await this.prisma.$transaction(async (tx) => {
+        await this.prisma.$transaction(async (tx: any) => {
           await tx.wallet.update({
             where: { id: escrow.walletId },
             data: {

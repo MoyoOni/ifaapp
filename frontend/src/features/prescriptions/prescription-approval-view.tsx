@@ -3,9 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle, XCircle, Loader2, AlertCircle, Clock, Package, Square, CheckSquare } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
-import { logger } from '@/shared/utils/logger';
-import { isDemoMode } from '@/shared/config/demo-mode';
-import { DEMO_GUIDANCE_PLANS, getDemoAppointmentById, getDemoUserById } from '@/demo';
 import { useToast } from '@/shared/components/toast';
 
 interface GuidancePlanItem {
@@ -64,67 +61,6 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
   const queryClient = useQueryClient();
   const [rejectionReason, setRejectionReason] = useState('');
 
-  const buildDemoPlan = (planId: string): GuidancePlan | null => {
-    const demoPlan = DEMO_GUIDANCE_PLANS[planId as keyof typeof DEMO_GUIDANCE_PLANS];
-    if (!demoPlan) {
-      return null;
-    }
-    const appointment = getDemoAppointmentById(demoPlan.appointmentId);
-    const babalawo = getDemoUserById(demoPlan.babalawoId);
-    const steps = demoPlan.steps || [];
-    const items: GuidancePlanItem[] = steps.length > 0
-      ? steps.map((step: string, index: number) => ({
-          name: step,
-          quantity: 1,
-          description: `Step ${index + 1}`,
-          cost: Math.max(1, Math.floor(demoPlan.totalCost / steps.length)),
-        }))
-      : [{
-          name: 'Guidance Materials',
-          quantity: 1,
-          description: 'Demo item',
-          cost: demoPlan.totalCost,
-        }];
-
-    return {
-      id: demoPlan.id,
-      type: demoPlan.type,
-      items,
-      totalCost: demoPlan.totalCost,
-      platformServiceFee: 0,
-      currency: 'NGN',
-      instructions: steps.join('\n'),
-      status: demoPlan.status,
-      appointment: {
-        id: demoPlan.appointmentId,
-        date: appointment?.date || '2026-02-10',
-        time: appointment?.time || '10:00',
-      },
-      babalawo: {
-        id: demoPlan.babalawoId,
-        name: babalawo?.name || 'Babalawo',
-        yorubaName: babalawo?.yorubaName,
-      },
-      createdAt: demoPlan.createdAt,
-    };
-  };
-
-  const getSessionPlan = (planId: string): GuidancePlan | null => {
-    if (typeof sessionStorage === 'undefined') {
-      return null;
-    }
-    const cached = sessionStorage.getItem(`demo-guidance-plan:${planId}`);
-    if (!cached) {
-      return null;
-    }
-    try {
-      return JSON.parse(cached) as GuidancePlan;
-    } catch (error) {
-      logger.warn('Failed to parse demo guidance plan from session', error);
-      return null;
-    }
-  };
-
   const persistSessionPlan = (plan: GuidancePlan) => {
     if (typeof sessionStorage === 'undefined') {
       return;
@@ -140,10 +76,7 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
         const response = await api.get(`/guidance-plans/${guidancePlanId}`);
         return response.data;
       } catch (error) {
-        if (!isDemoMode) throw error;
-
-        logger.warn('Failed to fetch guidance plan, using demo data');
-        return getSessionPlan(guidancePlanId) || buildDemoPlan(guidancePlanId);
+        throw error;
       }
     },
   });
@@ -548,3 +481,4 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
 };
 
 export default GuidancePlanApprovalView;
+

@@ -14,7 +14,7 @@ export class SearchService {
   constructor(
     private prisma: PrismaService,
     @Optional() @InjectQueue('search') private readonly searchQueue?: Queue
-  ) { }
+  ) {}
 
   /**
    * Normalize Yoruba text for search (remove diacritics for fuzzy matching)
@@ -72,7 +72,7 @@ export class SearchService {
           location: true,
         },
       });
-      results.results.push(...babalawos.map((b) => ({ type: 'babalawo', ...b })));
+      results.results.push(...babalawos.map((b: any) => ({ type: 'babalawo', ...b })));
     }
 
     // Search Temples
@@ -97,7 +97,7 @@ export class SearchService {
           verified: true,
         },
       });
-      results.results.push(...temples.map((t) => ({ type: 'temple', ...t })));
+      results.results.push(...temples.map((t: any) => ({ type: 'temple', ...t })));
     }
 
     // Search Products
@@ -124,7 +124,7 @@ export class SearchService {
           },
         },
       });
-      results.results.push(...products.map((p) => ({ ...p, type: 'product' })));
+      results.results.push(...products.map((p: any) => ({ ...p, type: 'product' })));
     }
 
     // Search Courses
@@ -148,7 +148,7 @@ export class SearchService {
           },
         },
       });
-      results.results.push(...courses.map((c) => ({ type: 'course', ...c })));
+      results.results.push(...courses.map((c: any) => ({ type: 'course', ...c })));
     }
 
     // Generate suggestions
@@ -161,8 +161,6 @@ export class SearchService {
    * Get search autocomplete suggestions
    */
   async getSuggestions(query: string, limit: number = 5) {
-    const normalizedQuery = this.normalizeForSearch(query);
-
     // Get suggestions from various sources
     const [babalawos, temples, products] = await Promise.all([
       this.prisma.user.findMany({
@@ -200,9 +198,15 @@ export class SearchService {
     ]);
 
     const suggestions = [
-      ...babalawos.map((b) => ({ text: b.yorubaName || b.name, type: 'babalawo' })),
-      ...temples.map((t) => ({ text: t.yorubaName || t.name, type: 'temple' })),
-      ...products.map((p) => ({ text: p.name, type: 'product' })),
+      ...babalawos.map((b: { name: string; yorubaName: string | null }) => ({
+        text: b.yorubaName || b.name,
+        type: 'babalawo',
+      })),
+      ...temples.map((t: { name: string; yorubaName: string | null }) => ({
+        text: t.yorubaName || t.name,
+        type: 'temple',
+      })),
+      ...products.map((p: { name: string }) => ({ text: p.name, type: 'product' })),
     ].slice(0, limit);
 
     return suggestions;
@@ -252,7 +256,7 @@ export class SearchService {
   /**
    * Handle actual indexing (called by processor)
    */
-  async handleIndexing(entityType: string, entityId: string, data?: any) {
+  async handleIndexing(entityType: string, entityId: string, _data?: any) {
     this.logger.log(`[MOCK-INDEX] Updating index for ${entityType} ${entityId}`);
 
     // In a real implementation, we would transform the data for OpenSearch and send it
@@ -274,7 +278,7 @@ export class SearchService {
   /**
    * Save a search query for a user
    */
-  async saveSearch(userId: string, query: string, filters: any) {
+  async saveSearch(userId: string, query: string, _filters: any) {
     this.logger.log(`Saving search for user ${userId}: ${query}`);
     // In a full implementation, this would save to a SavedSearch table
     return { success: true };

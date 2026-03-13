@@ -44,7 +44,6 @@ const LoginPage: React.FC = () => {
             <LoginForm
                 onSuccess={handleSuccess}
                 onSwitchToRegister={() => navigate('/signup')}
-                onSwitchToQuickAccess={() => navigate('/quick-access')}
             />
         </div>
     );

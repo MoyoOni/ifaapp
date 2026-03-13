@@ -583,7 +583,7 @@ export class EventsService {
       eventTitle: event.title,
       totalAttendees: registrations.length,
       capacity: event.capacity,
-      attendees: registrations.map((reg) => ({
+      attendees: registrations.map((reg: any) => ({
         id: reg.id,
         userId: reg.userId,
         user: reg.user,

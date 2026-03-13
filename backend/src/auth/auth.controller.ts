@@ -1,6 +1,8 @@
 import {
   Controller,
   Post,
+  Get,
+  Query,
   Body,
   UseGuards,
   ValidationPipe,
@@ -8,7 +10,9 @@ import {
   HttpStatus,
   Logger,
   UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
+import { IsString } from 'class-validator';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -25,6 +29,12 @@ import { QuickAccessDto } from './dto/quick-access.dto';
 class ImpersonateUserDto {
   declare userId: string;
   declare reason: string;
+}
+
+// DTO for Google token verification (SPA flow)
+class GoogleTokenDto {
+  @IsString()
+  declare credential: string; // Google ID token from @react-oauth/google
 }
 
 @ApiTags('auth')
@@ -45,6 +55,8 @@ export class AuthController {
     return this.authService.register(dto);
   }
 
+  /** 10 requests per minute to mitigate brute-force (same as register) */
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'User login' })
@@ -52,6 +64,21 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(@Body(ValidationPipe) loginDto: LoginDto) {
     return this.authService.login(loginDto);
+  }
+
+  /**
+   * Google OAuth — verify Google ID token from frontend SPA and return JWT
+   * Frontend sends the credential token from @react-oauth/google useGoogleLogin
+   */
+  @Post('google/token')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Sign in / sign up with Google ID token' })
+  @ApiResponse({ status: 200, description: 'Successfully authenticated with Google' })
+  async googleToken(@Body(ValidationPipe) body: GoogleTokenDto) {
+    if (!body.credential) {
+      throw new BadRequestException('Google credential token is required');
+    }
+    return this.authService.verifyGoogleToken(body.credential);
   }
 
   @Post('impersonate')
@@ -62,16 +89,15 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Successfully initiated impersonation' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
-  async impersonate(
-    @CurrentUser() adminUser: any,
-    @Body() impersonateDto: ImpersonateUserDto,
-  ) {
-    this.logger.log(`Admin ${adminUser.id} initiating impersonation of user ${impersonateDto.userId}`);
+  async impersonate(@CurrentUser() adminUser: any, @Body() impersonateDto: ImpersonateUserDto) {
+    this.logger.log(
+      `Admin ${adminUser.id} initiating impersonation of user ${impersonateDto.userId}`
+    );
 
     return this.authService.initiateImpersonation(
       adminUser,
       impersonateDto.userId,
-      impersonateDto.reason,
+      impersonateDto.reason
     );
   }
 
@@ -90,6 +116,19 @@ export class AuthController {
     this.logger.log(`User ${user.id} ending impersonation session (was impersonating)`);
 
     return { message: 'Impersonation ended successfully' };
+  }
+
+  @Get('verify-email')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify email address via token' })
+  @ApiResponse({ status: 200, description: 'Email verified successfully' })
+  @ApiResponse({ status: 400, description: 'Missing token' })
+  @ApiResponse({ status: 404, description: 'Invalid or expired token' })
+  async verifyEmail(@Query('token') token: string) {
+    if (!token) {
+      throw new BadRequestException('Verification token is required');
+    }
+    return this.authService.verifyEmail(token);
   }
 
   @ApiOperation({ summary: 'Refresh JWT token' })

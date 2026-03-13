@@ -1,5 +1,4 @@
 import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
-import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { Request } from 'express';
 import { MetricsService } from './metrics.service';
@@ -8,14 +7,14 @@ import { MetricsService } from './metrics.service';
 export class MetricsInterceptor implements NestInterceptor {
   constructor(private readonly metrics: MetricsService) {}
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
+  intercept(context: ExecutionContext, next: CallHandler) {
     const http = context.switchToHttp();
     const req = http.getRequest<Request>();
     const method = req.method;
     const path = req.url?.split('?')[0] ?? req.path ?? '';
     const start = Date.now();
 
-    const result = next.handle().pipe(
+    const result = (next.handle() as any).pipe(
       tap({
         next: () => {
           const status = http.getResponse().statusCode;

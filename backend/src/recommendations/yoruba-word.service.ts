@@ -266,7 +266,7 @@ export class YorubaWordService {
       take: limit,
     });
 
-    return history.map((entry) => ({
+    return history.map((entry: any) => ({
       id: entry.word.id,
       word: entry.word.word,
       pronunciation: entry.word.pronunciation,

@@ -8,7 +8,6 @@ import {
   IsEnum,
   IsUrl,
   Min,
-  ArrayMinSize,
 } from 'class-validator';
 import { ProductStatus, ProductType, VerifiedTier } from '@ile-ase/common';
 

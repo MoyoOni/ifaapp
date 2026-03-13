@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import RegisterForm from '@/features/auth/register/register-form';
+import RoleSelectionView from '@/features/auth/role-selection/role-selection-view';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { getDashboardPathForRole } from '@/shared/config/navigation';
 import { UserRole } from '@common';
@@ -8,6 +9,7 @@ import { UserRole } from '@common';
 const SignupPage: React.FC = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
+    const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
 
     // Redirect if already logged in
     React.useEffect(() => {
@@ -16,16 +18,24 @@ const SignupPage: React.FC = () => {
         }
     }, [user, navigate]);
 
+    if (selectedRole) {
+        return (
+            <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
+                <RegisterForm
+                    selectedRole={selectedRole}
+                    onSuccess={() => navigate('/onboarding')}
+                    onSwitchToLogin={() => navigate('/login')}
+                    onBack={() => setSelectedRole(null)}
+                />
+            </div>
+        );
+    }
+
     return (
-        <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
-            <RegisterForm
-                selectedRole={UserRole.CLIENT} // Default to Client for generic signup
-                onSuccess={() => {
-                    navigate('/login');
-                }}
-                onSwitchToLogin={() => navigate('/login')}
-            />
-        </div>
+        <RoleSelectionView
+            onSelectRole={setSelectedRole}
+            onSwitchToLogin={() => navigate('/login')}
+        />
     );
 };
 

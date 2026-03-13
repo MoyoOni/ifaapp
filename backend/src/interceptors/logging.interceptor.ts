@@ -1,5 +1,4 @@
 import { Injectable, NestInterceptor, ExecutionContext, CallHandler, Logger } from '@nestjs/common';
-import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { Request } from 'express';
 
@@ -7,8 +6,7 @@ import { Request } from 'express';
 export class LoggingInterceptor implements NestInterceptor {
   private readonly logger = new Logger(LoggingInterceptor.name);
 
-  // Duplicate rxjs (backend vs root) causes Observable type mismatch; runtime is correct
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  intercept(context: ExecutionContext, next: CallHandler) {
     const http = context.switchToHttp();
     const req = http.getRequest<Request>();
     const requestId = (req as any).requestId as string | undefined;
@@ -23,7 +21,7 @@ export class LoggingInterceptor implements NestInterceptor {
     const userId = user?.id;
     const userRole = user?.role;
 
-    return next.handle().pipe(
+    return (next.handle() as any).pipe(
       tap({
         next: () => {
           const status = http.getResponse().statusCode;

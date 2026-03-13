@@ -4,7 +4,7 @@ import { Search, Calendar, MapPin, Video, Globe, Users, Loader2, Plus } from 'lu
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { logger } from '@/shared/utils/logger';
-import { isDemoMode } from '@/shared/config/demo-mode';
+
 import { DEMO_EVENTS, DEMO_USERS } from '@/demo';
 import { UserRole } from '@common';
 
@@ -86,51 +86,7 @@ const EventsDirectory: React.FC<EventsDirectoryProps> = ({ onCreateEvent, onSele
         // Include circle events that are published (promoted)
         return [...storedDemoEvents, ...apiEvents];
       } catch (e) {
-        if (!isDemoMode) throw e;
-
-        if (!isDemoMode) throw e;
-
-
-        logger.error('Failed to fetch events, using demo data', e);
-        const demoEvents = Object.values(DEMO_EVENTS).map((event) => {
-          const creator = DEMO_USERS[event.organizerId as keyof typeof DEMO_USERS];
-          const locationType = event.isVirtual && event.isPhysical
-            ? 'HYBRID'
-            : event.isVirtual
-              ? 'VIRTUAL'
-              : 'PHYSICAL';
-
-          return {
-            id: event.id,
-            title: event.title,
-            description: event.description,
-            slug: event.slug,
-            type: 'EDUCATIONAL',
-            category: undefined,
-            startDate: event.date,
-            location: event.location,
-            locationType,
-            virtualLink: event.isVirtual ? 'https://meet.google.com/demo' : undefined,
-            price: 0,
-            currency: 'NGN',
-            capacity: event.capacity,
-            image: undefined,
-            status: 'UPCOMING',
-            published: true,
-            createdAt: event.date,
-            creator: {
-              id: creator?.id || event.organizerId,
-              name: creator?.name || 'Event Organizer',
-              yorubaName: creator?.yorubaName,
-              avatar: creator?.avatar,
-            },
-            _count: {
-              registrations: event.attendees?.length || 0,
-            },
-          } as Event;
-        });
-
-        return [...storedDemoEvents, ...demoEvents];
+        throw e;
       }
     },
   });
@@ -369,3 +325,4 @@ const EventsDirectory: React.FC<EventsDirectoryProps> = ({ onCreateEvent, onSele
 };
 
 export default EventsDirectory;
+

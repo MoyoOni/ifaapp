@@ -4,7 +4,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { S3Service } from '../documents/s3.service';
 // import * as PDFDocument from 'pdfkit'; // Will be enabled when pdfkit is installed
 import * as fs from 'fs';
-import * as path from 'path';
 
 /**
  * Certificate Generation Service

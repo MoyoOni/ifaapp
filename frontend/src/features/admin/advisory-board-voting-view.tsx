@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
-import { isDemoMode } from '@/shared/config/demo-mode';
+
 import { useAuth } from '@/shared/hooks/use-auth';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { useToast } from '@/shared/components/toast';
@@ -66,7 +66,7 @@ const AdvisoryBoardVotingView: React.FC = () => {
         const response = await api.get('/admin/advisory-board/votes', { params });
         return response.data;
       } catch (error) {
-        if (!isDemoMode) throw error;
+        throw error;
 
         logger.warn('Failed to fetch advisory votes, using demo data');
         const now = Date.now();

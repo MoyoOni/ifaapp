@@ -21,6 +21,11 @@ export class RegisterDto {
   @IsEnum(UserRole)
   declare role: UserRole;
 
+  @ApiPropertyOptional({ example: '+2348012345678' })
+  @IsString()
+  @IsOptional()
+  declare phone?: string;
+
   @ApiPropertyOptional({ example: 'Olawale' })
   @IsString()
   @IsOptional()

@@ -6,25 +6,25 @@ import { ConfigService } from '@nestjs/config';
 // For now, creating a mock implementation to satisfy the interface
 class MockOpenSearchClient {
   indices = {
-    exists: async (params: any) => ({ body: false }), // Default to not existing
-    create: async (params: any) => ({ body: { acknowledged: true } }),
-    refresh: async (params: any) => ({ body: {} }),
+    exists: async (_params: any) => ({ body: false }), // Default to not existing
+    create: async (_params: any) => ({ body: { acknowledged: true } }),
+    refresh: async (_params: any) => ({ body: {} }),
   };
 
-  index = async (params: any) => ({ body: { _id: params.id || 'mock-id' } });
-  update = async (params: any) => ({ body: { result: 'updated' } });
-  delete = async (params: any) => ({ body: { result: 'deleted' } });
-  search = async (params: any) => ({ 
-    body: { 
-      hits: { 
-        total: { value: 0 }, 
-        hits: [] 
-      } 
-    } 
+  index = async (_params: any) => ({ body: { _id: 'mock-id' } });
+  update = async (_params: any) => ({ body: { result: 'updated' } });
+  delete = async (_params: any) => ({ body: { result: 'deleted' } });
+  search = async (_params: any) => ({
+    body: {
+      hits: {
+        total: { value: 0 },
+        hits: [],
+      },
+    },
   });
-  bulk = async (params: any) => ({ body: { items: [] } });
+  bulk = async (_params: any) => ({ body: { items: [] } });
   cluster = {
-    health: async () => ({ body: { status: 'green' } })
+    health: async () => ({ body: { status: 'green' } }),
   };
   close = () => {};
 }
@@ -40,7 +40,7 @@ export class OpenSearchService implements OnModuleInit {
     // In a real implementation, we would connect to OpenSearch here
     // For now, using a mock client
     this.client = new MockOpenSearchClient();
-    
+
     try {
       // Test connection
       const health = await this.client.cluster.health();
@@ -57,7 +57,7 @@ export class OpenSearchService implements OnModuleInit {
   async createIndex(indexName: string, mapping?: any) {
     try {
       const exists = await this.client.indices.exists({ index: indexName });
-      
+
       if (exists.body) {
         this.logger.log(`Index ${indexName} already exists`);
         return { acknowledged: true, created: false };
@@ -162,7 +162,9 @@ export class OpenSearchService implements OnModuleInit {
       };
 
       const response = await this.client.search(searchQuery);
-      this.logger.log(`Executed search in index ${query.index}, found ${response.body.hits.total.value} results`);
+      this.logger.log(
+        `Executed search in index ${query.index}, found ${response.body.hits.total.value} results`
+      );
 
       return {
         hits: response.body.hits.hits.map((hit: any) => ({
@@ -184,7 +186,7 @@ export class OpenSearchService implements OnModuleInit {
   async bulkIndex(index: string, documents: SearchDocument[]) {
     try {
       const body: any[] = [];
-      documents.forEach(doc => {
+      documents.forEach((doc) => {
         body.push({
           index: {
             _index: index,

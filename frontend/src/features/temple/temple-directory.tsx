@@ -3,9 +3,7 @@ import { Search, MapPin, Users, CheckCircle, Building2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Temple, TempleType, TempleStatus } from '@common';
 import api from '@/lib/api';
-import { DEMO_TEMPLES } from '@/demo';
-import { logger } from '@/shared/utils/logger';
-import { isDemoMode } from '@/shared/config/demo-mode';
+
 import { TempleDirectorySkeleton } from '@/shared/components/skeleton';
 
 interface TempleCardProps {
@@ -122,27 +120,7 @@ const TempleDirectory: React.FC<TempleDirectoryProps> = ({ onSelectTemple }) => 
         });
         return response.data || [];
       } catch (error) {
-        if (!isDemoMode) throw error;
-
-        logger.error('Failed to fetch temples, using demo data', error);
-        return Object.values(DEMO_TEMPLES).map((temple) => {
-          const [city, state] = (temple.location || '').split(',').map((part) => part.trim());
-          const demoTemple = {
-            id: temple.id,
-            name: temple.name,
-            yorubaName: temple.yorubaName,
-            slug: temple.slug,
-            type: 'IFA',
-            status: 'ACTIVE',
-            verified: temple.verified,
-            city: city || '',
-            state: state || '',
-            logo: temple.logo,
-            description: temple.description,
-            babalawoCount: temple.babalawos?.length || 0,
-          } as unknown as Temple;
-          return demoTemple;
-        });
+        throw error;
       }
     },
   });
@@ -277,3 +255,4 @@ const TempleDirectory: React.FC<TempleDirectoryProps> = ({ onSelectTemple }) => 
 };
 
 export default TempleDirectory;
+

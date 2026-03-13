@@ -6,9 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { VerificationStage, UserRole, VendorStatus, AdminSubRole } from '@ile-ase/common';
-import * as bcrypt from 'bcrypt';
-import * as crypto from 'crypto';
+import { VerificationStage, VendorStatus, AdminSubRole } from '@ile-ase/common';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { VerificationService } from '../verification/verification.service';
 import { WalletService } from '../wallet/wallet.service';
@@ -23,16 +21,6 @@ import {
 } from '../notifications/notification.service';
 import { AuditService } from './audit.service';
 import { CreateCircleDto } from '../circles/dto/create-circle.dto';
-
-interface AuditFilters {
-  page: number;
-  limit: number;
-  action?: string;
-  userId?: string;
-  resourceType?: string;
-  startDate?: Date;
-  endDate?: Date;
-}
 
 @Injectable()
 export class AdminService {
@@ -874,7 +862,7 @@ export class AdminService {
 
     // Normalize
     const reports = [
-      ...productReviews.map((r) => ({
+      ...productReviews.map((r: any) => ({
         id: r.id,
         type: 'PRODUCT_REVIEW',
         content: r.content,
@@ -886,7 +874,7 @@ export class AdminService {
         authorName: r.customer.name,
         createdAt: r.createdAt,
       })),
-      ...babalawoReviews.map((r) => ({
+      ...babalawoReviews.map((r: any) => ({
         id: r.id,
         type: 'BABALAWO_REVIEW',
         content: r.content,
@@ -898,7 +886,7 @@ export class AdminService {
         authorName: r.client.name,
         createdAt: r.createdAt,
       })),
-      ...courseReviews.map((r) => ({
+      ...courseReviews.map((r: any) => ({
         id: r.id,
         type: 'COURSE_REVIEW',
         content: r.content,
@@ -1037,11 +1025,12 @@ export class AdminService {
     });
 
     // Format results to match frontend expectations
-    return votes.map((vote) => {
+    return votes.map((vote: any) => {
       const totalVotes = vote.casts.length;
       const yesVotes =
-        vote.options.find((opt) => opt.option.toLowerCase() === 'yes')?.voteCount || 0;
-      const noVotes = vote.options.find((opt) => opt.option.toLowerCase() === 'no')?.voteCount || 0;
+        vote.options.find((opt: any) => opt.option.toLowerCase() === 'yes')?.voteCount || 0;
+      const noVotes =
+        vote.options.find((opt: any) => opt.option.toLowerCase() === 'no')?.voteCount || 0;
       const abstainVotes = totalVotes - yesVotes - noVotes;
 
       return {
@@ -1052,8 +1041,8 @@ export class AdminService {
           abstain: abstainVotes,
         },
         voterCount: totalVotes,
-        voteOptions: vote.options.map((opt) => opt.option),
-        results: vote.options.map((opt) => ({
+        voteOptions: vote.options.map((opt: any) => opt.option),
+        results: vote.options.map((opt: any) => ({
           option: opt.option,
           count: opt.voteCount,
           percentage: totalVotes > 0 ? Math.round((opt.voteCount / totalVotes) * 100) : 0,
@@ -1103,7 +1092,7 @@ export class AdminService {
     }
 
     // Verify the option is valid
-    const validOption = vote.options.find((opt) => opt.option === option);
+    const validOption = vote.options.find((opt: any) => opt.option === option);
     if (!validOption) {
       throw new BadRequestException('Invalid vote option');
     }
@@ -1180,7 +1169,7 @@ export class AdminService {
     }
 
     // Find the winning option
-    const winner = vote.options.reduce((prev, current) =>
+    const winner = vote.options.reduce((prev: any, current: any) =>
       prev.voteCount > current.voteCount ? prev : current
     );
 
@@ -1502,10 +1491,10 @@ export class AdminService {
     entityType: string,
     entityId: string,
     fieldLabel: string,
-    reason: string,
+    reason: string
   ): Promise<void> {
     this.logger.log(`Logging PII reveal for ${entityType}:${entityId} by admin ${adminUserId}`);
-    
+
     // Log the action in the audit trail
     await this.auditService.logAction({
       adminId: adminUserId,
@@ -1542,7 +1531,9 @@ export class AdminService {
     }
 
     if (!reason || reason.trim().length < 10) {
-      throw new BadRequestException('A valid reason with at least 10 characters is required for impersonation');
+      throw new BadRequestException(
+        'A valid reason with at least 10 characters is required for impersonation'
+      );
     }
 
     // Fetch target user details
@@ -1567,7 +1558,7 @@ export class AdminService {
         reason,
         impersonatorId: currentUser.id,
         impersonatorEmail: currentUser.email,
-        timestamp: new Date()
+        timestamp: new Date(),
       },
     });
 
@@ -1577,7 +1568,7 @@ export class AdminService {
       impersonationLogged: true,
       targetUserId,
       reason,
-      impersonationStartedAt: new Date()
+      impersonationStartedAt: new Date(),
     };
   }
 
@@ -1600,7 +1591,9 @@ export class AdminService {
     // Validate admin sub-role
     const validRoles = Object.values(AdminSubRole);
     if (!validRoles.includes(userData.adminSubRole as AdminSubRole)) {
-      throw new BadRequestException(`Invalid admin sub-role. Valid roles are: ${validRoles.join(', ')}`);
+      throw new BadRequestException(
+        `Invalid admin sub-role. Valid roles are: ${validRoles.join(', ')}`
+      );
     }
 
     // Find existing admin user by email
@@ -1626,7 +1619,8 @@ export class AdminService {
         data: {
           email: userData.email,
           name: userData.name,
-          passwordHash: '$2b$10$EPa7knPqKUe9gVDKYr0B7O.HKeVw9dY.WiUeZcUeZcUeZcUeZcUeZcUeZcUeZcUeZcUeZcUeZcUeZcUeZ', // Placeholder bcrypt hash for "temporary_password"
+          passwordHash:
+            '$2b$10$EPa7knPqKUe9gVDKYr0B7O.HKeVw9dY.WiUeZcUeZcUeZcUeZcUeZcUeZcUeZcUeZcUeZcUeZcUeZcUeZ', // Placeholder bcrypt hash for "temporary_password"
           role: 'ADMIN',
           adminSubRole: userData.adminSubRole as AdminSubRole,
           // If sendInvite is true, we could trigger an invitation workflow here
@@ -1648,8 +1642,8 @@ export class AdminService {
         role: adminUser.role,
         adminSubRole: adminUser.adminSubRole,
         updatedBy: currentUser.id,
-        updatedByEmail: currentUser.email
-      }
+        updatedByEmail: currentUser.email,
+      },
     });
 
     return adminUser;
@@ -1726,8 +1720,8 @@ export class AdminService {
         newRole: 'CLIENT',
         newAdminSubRole: null,
         removedBy: currentUser.id,
-        removedByEmail: currentUser.email
-      }
+        removedByEmail: currentUser.email,
+      },
     });
 
     return updatedUser;

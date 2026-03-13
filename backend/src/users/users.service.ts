@@ -23,7 +23,7 @@ export class UsersService {
     private prisma: PrismaService,
     private cacheManager: CacheManagerService,
     private searchService: SearchService
-  ) { }
+  ) {}
 
   async findAll(filters: FindAllFilters = {}) {
     const where: Record<string, unknown> = {};

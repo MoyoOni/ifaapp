@@ -13,26 +13,30 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { FeatureFlagService, FeatureFlag } from '../shared/services/feature-flag.service';
-import { CreateFeatureFlagDto, UpdateFeatureFlagDto, ToggleUserOverrideDto } from './dto/feature-flag.dto';
+import {
+  CreateFeatureFlagDto,
+  UpdateFeatureFlagDto,
+  ToggleUserOverrideDto,
+} from './dto/feature-flag.dto';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 // Simplified decorators and guards to avoid dependency issues
 // In a real implementation, these would be properly implemented
 
 // Placeholder decorator for roles (supports both class and method decoration)
-function Roles(...roles: string[]) {
-  return (target: any, propertyKey?: string, descriptor?: PropertyDescriptor) => {};
+function Roles(..._roles: string[]) {
+  return (_target: any, _propertyKey?: string, _descriptor?: PropertyDescriptor) => {};
 }
 
 // Placeholder guard
 class JwtAuthGuard {
-  canActivate(context: any): boolean {
+  canActivate(_context: any): boolean {
     return true; // Simplified for now
   }
 }
 
 class RolesGuard {
-  canActivate(context: any): boolean {
+  canActivate(_context: any): boolean {
     return true; // Simplified for now
   }
 }
@@ -40,12 +44,12 @@ class RolesGuard {
 // Enums and types that would normally be imported
 enum UserRole {
   ADMIN = 'ADMIN',
-  ADVISORY_BOARD_MEMBER = 'ADVISORY_BOARD_MEMBER'
+  ADVISORY_BOARD_MEMBER = 'ADVISORY_BOARD_MEMBER',
 }
 
 // CurrentUser decorator mock
 function CurrentUser() {
-  return (target: any, propertyKey: string, parameterIndex: number) => {};
+  return (_target: any, _propertyKey: string, _parameterIndex: number) => {};
 }
 
 interface User {
@@ -81,11 +85,11 @@ export class FeatureFlagController {
   async getFeatureFlag(@Param('key') key: string) {
     this.logger.log(`Retrieving feature flag: ${key}`);
     const flag = await this.featureFlagService.getFeatureFlag(key);
-    
+
     if (!flag) {
       throw new NotFoundException('Feature flag not found');
     }
-    
+
     return flag;
   }
 
@@ -95,7 +99,7 @@ export class FeatureFlagController {
   @ApiResponse({ status: 201, description: 'Feature flag created successfully' })
   async createFeatureFlag(
     @CurrentUser() adminUser: User,
-    @Body() createFlagDto: CreateFeatureFlagDto,
+    @Body() createFlagDto: CreateFeatureFlagDto
   ) {
     this.logger.log(`Admin ${adminUser?.id} creating feature flag: ${createFlagDto.key}`);
 
@@ -121,7 +125,7 @@ export class FeatureFlagController {
   async updateFeatureFlag(
     @CurrentUser() adminUser: User,
     @Param('key') key: string,
-    @Body() updateFlagDto: UpdateFeatureFlagDto,
+    @Body() updateFlagDto: UpdateFeatureFlagDto
   ) {
     this.logger.log(`Admin ${adminUser?.id} updating feature flag: ${key}`);
 
@@ -148,10 +152,7 @@ export class FeatureFlagController {
   @ApiOperation({ summary: 'Delete a feature flag' })
   @ApiResponse({ status: 200, description: 'Feature flag deleted successfully' })
   @ApiResponse({ status: 404, description: 'Feature flag not found' })
-  async deleteFeatureFlag(
-    @CurrentUser() adminUser: User,
-    @Param('key') key: string,
-  ) {
+  async deleteFeatureFlag(@CurrentUser() adminUser: User, @Param('key') key: string) {
     this.logger.log(`Admin ${adminUser?.id} deleting feature flag: ${key}`);
 
     const flag = await this.featureFlagService.getFeatureFlag(key);
@@ -171,9 +172,11 @@ export class FeatureFlagController {
     @CurrentUser() adminUser: User,
     @Param('key') key: string,
     @Param('userId') userId: string,
-    @Body() toggleDto: ToggleUserOverrideDto,
+    @Body() toggleDto: ToggleUserOverrideDto
   ) {
-    this.logger.log(`Admin ${adminUser?.id} setting user override for feature ${key} (user: ${userId}): ${toggleDto.enabled}`);
+    this.logger.log(
+      `Admin ${adminUser?.id} setting user override for feature ${key} (user: ${userId}): ${toggleDto.enabled}`
+    );
 
     await this.featureFlagService.setUserFeatureOverride(key, userId, toggleDto.enabled);
     return { message: 'User feature flag override updated successfully' };

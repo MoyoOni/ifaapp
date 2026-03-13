@@ -3,15 +3,6 @@ import { ConfigService } from '@nestjs/config';
 // Placeholder for AWS SDK - in a real implementation, this would be installed
 // import { S3, CloudFront } from 'aws-sdk';
 
-// Define minimal interfaces to satisfy the implementation
-interface S3PutObjectRequest {
-  Bucket: string;
-  Key: string;
-  Body: Buffer | string;
-  ContentType: string;
-  CacheControl: string;
-  Metadata?: Record<string, string>;
-}
 
 @Injectable()
 export class CdnService {
@@ -22,13 +13,16 @@ export class CdnService {
   /**
    * Uploads a file to CDN
    */
-  async uploadFile(fileBuffer: Buffer | string, options: UploadOptions = {}): Promise<MediaUploadResult> {
+  async uploadFile(
+    fileBuffer: Buffer | string,
+    options: UploadOptions = {}
+  ): Promise<MediaUploadResult> {
     // In a real implementation, this would upload to S3/CloudFront
     const key = this.generateKey(options);
     const url = `https://mock-cdn.example.com/${key}`;
-    
+
     this.logger.log(`Uploaded file to CDN: ${url}`);
-    
+
     return {
       url,
     };
@@ -41,9 +35,9 @@ export class CdnService {
     // In a real implementation, this would upload to S3/CloudFront
     const key = this.generateKey(options);
     const url = `https://mock-cdn.example.com/${key}`;
-    
+
     this.logger.log(`Uploaded file stream to CDN: ${url}`);
-    
+
     return {
       url,
     };
@@ -52,7 +46,7 @@ export class CdnService {
   /**
    * Generates a signed URL for temporary access to private files
    */
-  async generateSignedUrl(key: string, expiresIn: number = 3600): Promise<string> {
+  async generateSignedUrl(key: string, _expiresIn: number = 3600): Promise<string> {
     // In a real implementation, this would generate a signed URL from AWS
     this.logger.log(`Generated signed URL for: ${key}`);
     return `https://mock-cdn.example.com/${key}?temp_token=mock_signed_url`;
@@ -76,7 +70,7 @@ export class CdnService {
   /**
    * Gets file information
    */
-  async getFileMetadata(key: string) {
+  async getFileMetadata(_key: string) {
     // In a real implementation, this would fetch from S3
     return {
       contentType: 'application/octet-stream',
@@ -100,9 +94,9 @@ export class CdnService {
   private generateKey(options: UploadOptions): string {
     const timestamp = Date.now();
     const randomSuffix = Math.random().toString(36).substring(2, 10);
-    
+
     let key = options.folder ? `${options.folder}/` : '';
-    
+
     if (options.fileName) {
       const ext = this.getFileExtension(options.fileName);
       key += `${options.fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}_${timestamp}_${randomSuffix}${ext}`;
@@ -118,7 +112,7 @@ export class CdnService {
    */
   private detectContentType(key: string): string {
     const ext = this.getFileExtension(key).toLowerCase();
-    
+
     const mimeTypes: { [key: string]: string } = {
       '.jpg': 'image/jpeg',
       '.jpeg': 'image/jpeg',

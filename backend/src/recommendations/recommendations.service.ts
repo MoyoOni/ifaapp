@@ -17,7 +17,7 @@ export class RecommendationsService {
    * Get personalized recommendations for user
    * Based on user role, interests, past activity, and cultural level
    */
-  async getRecommendations(userId: string, currentUser: CurrentUserPayload) {
+  async getRecommendations(userId: string, _currentUser: CurrentUserPayload) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -127,8 +127,8 @@ export class RecommendationsService {
     // Rule 3: Recommend products based on past purchases
     if (user.ordersPlaced && user.ordersPlaced.length > 0) {
       const purchasedCategories = new Set<string>();
-      user.ordersPlaced.forEach((order) => {
-        order.items.forEach((item) => {
+      user.ordersPlaced.forEach((order: any) => {
+        order.items.forEach((item: any) => {
           if (item.product.category) {
             purchasedCategories.add(item.product.category);
           }
@@ -140,7 +140,9 @@ export class RecommendationsService {
           where: {
             category: { in: Array.from(purchasedCategories) },
             status: 'ACTIVE',
-            id: { notIn: user.ordersPlaced.flatMap((o) => o.items.map((i) => i.productId)) },
+            id: {
+              notIn: user.ordersPlaced.flatMap((o: any) => o.items.map((i: any) => i.productId)),
+            },
           },
           take: 6,
           include: {

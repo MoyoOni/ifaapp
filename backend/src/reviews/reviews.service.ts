@@ -529,7 +529,9 @@ export class ReviewsService {
 
     if (reviews.length === 0) return;
 
-    const averageRating = reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
+    const averageRating =
+      reviews.reduce((sum: number, review: { rating: number }) => sum + review.rating, 0) /
+      reviews.length;
 
     // Note: Product model doesn't have a rating field yet, so we'd need to add it
     // For now, we'll just log it
@@ -550,7 +552,9 @@ export class ReviewsService {
 
     if (reviews.length === 0) return;
 
-    const averageRating = reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
+    const averageRating =
+      reviews.reduce((sum: number, review: { rating: number }) => sum + review.rating, 0) /
+      reviews.length;
 
     // Note: User model doesn't have a rating field yet, so we'd need to add it
     // For now, we'll just log it
@@ -571,7 +575,9 @@ export class ReviewsService {
 
     if (reviews.length === 0) return;
 
-    const averageRating = reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
+    const averageRating =
+      reviews.reduce((sum: number, review: { rating: number }) => sum + review.rating, 0) /
+      reviews.length;
 
     // Note: Course model doesn't have a rating field yet, so we'd need to add it
     // For now, we'll just log it
@@ -599,11 +605,13 @@ export class ReviewsService {
     }
 
     const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-    reviews.forEach((review) => {
+    reviews.forEach((review: { rating: number }) => {
       distribution[review.rating as keyof typeof distribution]++;
     });
 
-    const averageRating = reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
+    const averageRating =
+      reviews.reduce((sum: number, review: { rating: number }) => sum + review.rating, 0) /
+      reviews.length;
 
     return {
       averageRating: parseFloat(averageRating.toFixed(2)),
@@ -641,19 +649,30 @@ export class ReviewsService {
     }
 
     const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-    reviews.forEach((review) => {
-      distribution[review.rating as keyof typeof distribution]++;
-    });
+    reviews.forEach(
+      (review: {
+        rating: number;
+        accuracyRating: number | null;
+        communicationRating: number | null;
+        culturalRespectRating: number | null;
+      }) => {
+        distribution[review.rating as keyof typeof distribution]++;
+      }
+    );
 
-    const averageRating = reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
+    const averageRating =
+      reviews.reduce((sum: number, review: { rating: number }) => sum + review.rating, 0) /
+      reviews.length;
 
-    const accuracyRatings = reviews.filter((r) => r.accuracyRating).map((r) => r.accuracyRating!);
+    const accuracyRatings = reviews
+      .filter((r: { accuracyRating: number | null }) => r.accuracyRating)
+      .map((r: { accuracyRating: number | null }) => r.accuracyRating!);
     const communicationRatings = reviews
-      .filter((r) => r.communicationRating)
-      .map((r) => r.communicationRating!);
+      .filter((r: { communicationRating: number | null }) => r.communicationRating)
+      .map((r: { communicationRating: number | null }) => r.communicationRating!);
     const culturalRespectRatings = reviews
-      .filter((r) => r.culturalRespectRating)
-      .map((r) => r.culturalRespectRating!);
+      .filter((r: { culturalRespectRating: number | null }) => r.culturalRespectRating)
+      .map((r: { culturalRespectRating: number | null }) => r.culturalRespectRating!);
 
     return {
       averageRating: parseFloat(averageRating.toFixed(2)),
@@ -661,14 +680,17 @@ export class ReviewsService {
       averageAccuracy:
         accuracyRatings.length > 0
           ? parseFloat(
-              (accuracyRatings.reduce((a, b) => a + b, 0) / accuracyRatings.length).toFixed(2)
+              (
+                accuracyRatings.reduce((a: number, b: number) => a + b, 0) / accuracyRatings.length
+              ).toFixed(2)
             )
           : 0,
       averageCommunication:
         communicationRatings.length > 0
           ? parseFloat(
               (
-                communicationRatings.reduce((a, b) => a + b, 0) / communicationRatings.length
+                communicationRatings.reduce((a: number, b: number) => a + b, 0) /
+                communicationRatings.length
               ).toFixed(2)
             )
           : 0,
@@ -676,7 +698,8 @@ export class ReviewsService {
         culturalRespectRatings.length > 0
           ? parseFloat(
               (
-                culturalRespectRatings.reduce((a, b) => a + b, 0) / culturalRespectRatings.length
+                culturalRespectRatings.reduce((a: number, b: number) => a + b, 0) /
+                culturalRespectRatings.length
               ).toFixed(2)
             )
           : 0,
@@ -713,19 +736,30 @@ export class ReviewsService {
     }
 
     const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-    reviews.forEach((review) => {
-      distribution[review.rating as keyof typeof distribution]++;
-    });
+    reviews.forEach(
+      (review: {
+        rating: number;
+        contentQualityRating: number | null;
+        instructorRating: number | null;
+        valueRating: number | null;
+      }) => {
+        distribution[review.rating as keyof typeof distribution]++;
+      }
+    );
 
-    const averageRating = reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
+    const averageRating =
+      reviews.reduce((sum: number, review: { rating: number }) => sum + review.rating, 0) /
+      reviews.length;
 
     const contentQualityRatings = reviews
-      .filter((r) => r.contentQualityRating)
-      .map((r) => r.contentQualityRating!);
+      .filter((r: { contentQualityRating: number | null }) => r.contentQualityRating)
+      .map((r: { contentQualityRating: number | null }) => r.contentQualityRating!);
     const instructorRatings = reviews
-      .filter((r) => r.instructorRating)
-      .map((r) => r.instructorRating!);
-    const valueRatings = reviews.filter((r) => r.valueRating).map((r) => r.valueRating!);
+      .filter((r: { instructorRating: number | null }) => r.instructorRating)
+      .map((r: { instructorRating: number | null }) => r.instructorRating!);
+    const valueRatings = reviews
+      .filter((r: { valueRating: number | null }) => r.valueRating)
+      .map((r: { valueRating: number | null }) => r.valueRating!);
 
     return {
       averageRating: parseFloat(averageRating.toFixed(2)),
@@ -734,19 +768,27 @@ export class ReviewsService {
         contentQualityRatings.length > 0
           ? parseFloat(
               (
-                contentQualityRatings.reduce((a, b) => a + b, 0) / contentQualityRatings.length
+                contentQualityRatings.reduce((a: number, b: number) => a + b, 0) /
+                contentQualityRatings.length
               ).toFixed(2)
             )
           : 0,
       averageInstructor:
         instructorRatings.length > 0
           ? parseFloat(
-              (instructorRatings.reduce((a, b) => a + b, 0) / instructorRatings.length).toFixed(2)
+              (
+                instructorRatings.reduce((a: number, b: number) => a + b, 0) /
+                instructorRatings.length
+              ).toFixed(2)
             )
           : 0,
       averageValue:
         valueRatings.length > 0
-          ? parseFloat((valueRatings.reduce((a, b) => a + b, 0) / valueRatings.length).toFixed(2))
+          ? parseFloat(
+              (
+                valueRatings.reduce((a: number, b: number) => a + b, 0) / valueRatings.length
+              ).toFixed(2)
+            )
           : 0,
       ratingDistribution: distribution,
     };

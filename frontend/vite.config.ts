@@ -10,8 +10,12 @@ const __dirname = path.dirname(__filename);
 
 export default defineConfig(({ mode }) => {
   const withAnalyzer = process.env.ANALYZE === '1';
+  // Sanitize base path — Git Bash on Windows can corrupt '/' to a Windows path via MSYS
+  const rawBase = process.env.VITE_BASE_PATH || '/';
+  const base = rawBase.includes('Program Files') || rawBase.includes(':\\') ? '/' : rawBase;
 
   return {
+    base,
     plugins: [
       react(),
       withAnalyzer && visualizer({
@@ -25,12 +29,13 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, './src'),
         '@common': path.resolve(__dirname, '../common/dist'),
       },
+      dedupe: ['react', 'react-dom'],
     },
     server: {
-      port: 5173,
+      port: 8100,
       proxy: {
         '/api': {
-          target: 'http://localhost:3000',
+          target: 'http://localhost:8080',
           changeOrigin: true,
         },
       },

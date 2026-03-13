@@ -62,7 +62,7 @@ export class DatabaseOptimizationController {
       },
     },
   })
-  async getQueryRecommendations(@Query('threshold') threshold?: number) {
+  async getQueryRecommendations(@Query('threshold') _threshold?: number) {
     return this.optimizationService.getQueryRecommendations();
   }
 

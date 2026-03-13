@@ -24,20 +24,22 @@ export interface SyncOperation {
 export class CdcSyncService implements OnModuleInit {
   private readonly logger = new Logger(CdcSyncService.name);
 
-  constructor(
-    private readonly prismaService: PrismaService,
-  ) {}
+  constructor(private readonly prismaService: PrismaService) {}
 
   async onModuleInit() {
     this.logger.log('CDC Sync service initialized (placeholder — no search backend configured)');
   }
 
   async syncRecord(operation: SyncOperation) {
-    this.logger.warn(`syncRecord called but no search backend configured: ${operation.entity} ${operation.entityId}`);
+    this.logger.warn(
+      `syncRecord called but no search backend configured: ${operation.entity} ${operation.entityId}`
+    );
   }
 
   async queueSyncOperation(operation: SyncOperation) {
-    this.logger.warn(`queueSyncOperation called but no queue backend configured: ${operation.entity} ${operation.entityId}`);
+    this.logger.warn(
+      `queueSyncOperation called but no queue backend configured: ${operation.entity} ${operation.entityId}`
+    );
   }
 
   async fullResync(entity: string) {

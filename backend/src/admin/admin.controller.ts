@@ -26,14 +26,6 @@ import { CreateCircleDto } from '../circles/dto/create-circle.dto';
 import { VerificationStage } from '@common/enums/verification-stage.enum';
 import { UserRole } from '@common/enums/user-role.enum';
 import { AdminSubRole } from '@common/enums/admin-sub-role.enum';
-import { CreateAdminUserDto } from './dto/create-admin-user.dto';
-import { UpdateAdminUserDto } from './dto/update-admin-user.dto';
-import { VerifyUserDto } from './dto/verify-user.dto';
-import { LogPiiRevealDto } from './dto/log-pii-reveal.dto';
-import { AdminUserResponseDto } from './dto/admin-user-response.dto';
-import { PagedResponseDto } from '@/shared/dto/paged-response.dto';
-import { AdminSubRoles } from '@/shared/decorators/admin-sub-roles.decorator';
-import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 
 @Controller('admin')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
@@ -41,9 +33,7 @@ import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 export class AdminController {
   private readonly logger = new Logger(AdminController.name);
 
-  constructor(
-    private readonly adminService: AdminService,
-  ) {}
+  constructor(private readonly adminService: AdminService) {}
 
   @Get('stats')
   @Roles(UserRole.ADMIN)
@@ -185,7 +175,7 @@ export class AdminController {
       body.entityType,
       body.entityId,
       body.fieldLabel,
-      body.reason,
+      body.reason
     );
     return { message: 'PII reveal action logged successfully' };
   }
@@ -329,7 +319,7 @@ export class AdminController {
     @Query('action') action?: string,
     @Query('resourceType') resourceType?: string,
     @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
+    @Query('endDate') endDate?: string
   ) {
     const filters = {
       page: Number(page),
@@ -349,7 +339,7 @@ export class AdminController {
   async impersonateUser(
     @CurrentUser() currentUser: CurrentUserPayload,
     @Param('targetUserId') targetUserId: string,
-    @Body('reason') reason: string,
+    @Body('reason') reason: string
   ) {
     return this.adminService.impersonateUser(currentUser, targetUserId, reason);
   }
@@ -359,7 +349,8 @@ export class AdminController {
   @AdminRoles(AdminSubRole.SUPER)
   async createOrUpdateAdmin(
     @CurrentUser() currentUser: CurrentUserPayload,
-    @Body() body: {
+    @Body()
+    body: {
       email: string;
       name: string;
       adminSubRole: string;
@@ -374,7 +365,7 @@ export class AdminController {
   @AdminRoles(AdminSubRole.SUPER)
   async getAdminUsers(
     @CurrentUser() currentUser: CurrentUserPayload,
-    @Query('adminSubRole') adminSubRole?: string,
+    @Query('adminSubRole') adminSubRole?: string
   ) {
     return this.adminService.getAdminUsers(currentUser, { adminSubRole });
   }
@@ -384,7 +375,7 @@ export class AdminController {
   @AdminRoles(AdminSubRole.SUPER)
   async removeAdminPrivileges(
     @CurrentUser() currentUser: CurrentUserPayload,
-    @Param('userId') userId: string,
+    @Param('userId') userId: string
   ) {
     return this.adminService.removeAdminPrivileges(currentUser, userId);
   }

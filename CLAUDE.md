@@ -23,16 +23,9 @@ Before implementing any V1 feature, AI agents MUST read these documents in order
 
 ---
 
-### V2 Phase (Production Readiness) — 🚧 ACTIVE
+### V2 Phase (Production Readiness) — ✅ COMPLETE
 
-Before working on production readiness, AI agents MUST read these documents in order:
-
-1. **[V2_PRODUCT_BACKLOG.md](V2_PRODUCT_BACKLOG.md)** - Production readiness backlog (6 EPICs: Testing, Observability, Code Quality, Security, Performance, TODOs)
-2. **[V2_DEVELOPMENT_PROGRESS.md](V2_DEVELOPMENT_PROGRESS.md)** - Metrics dashboard and progress tracking
-3. **[V2_AI_SESSION_HANDOFF.md](V2_AI_SESSION_HANDOFF.md)** - Production context and TDD workflow
-4. **This file (CLAUDE.md)** - V2 workflow and current status
-
-**Focus:** V2 is about depth (production-ready), not breadth (new features)
+V2 docs have been archived to `docs/archive/`. All production readiness work folded into V4 sprints 6-8.
 
 ---
 
@@ -40,39 +33,20 @@ Before working on production readiness, AI agents MUST read these documents in o
 
 Before working on production launch tasks, AI agents MUST read:
 
-1. **[V4_QUALITY_BACKLOG.md](V4_QUALITY_BACKLOG.md)** - Full detailed backlog (6 sprints, 32 stories, 129 story points)
+1. **[V4_QUALITY_BACKLOG.md](V4_QUALITY_BACKLOG.md)** - Full detailed backlog (10 sprints, stories, 241 story points)
 2. **[V4_TODO.md](V4_TODO.md)** - Quick reference with execution order and task breakdowns
 
-**8 Sprints (172/176 SP = 98% complete):**
+**10 Sprints (221/241 SP = 92% complete — Sprints 1-9 done, Sprint 10 in progress):**
 - Sprint 1: 🔥 Foundational Trust and Cleanup (24 SP) — ✅ COMPLETED
 - Sprint 2: 🎨 Design System and UI Consistency (18 SP) — ✅ COMPLETED
 - Sprint 3: ✨ User Experience Polish (26 SP) — ✅ COMPLETED
 - Sprint 4: ♿ Accessibility and Mobile (21 SP) — ✅ COMPLETED
 - Sprint 5: 🔌 Backend and Real-Time (20 SP) — ✅ COMPLETED
 - Sprint 6: 🚢 Production Hardening (20 SP) — ✅ COMPLETED
-- Sprint 7: 🐛 Critical Bug Fixes (16 SP) — ✅ COMPLETED (18/16 SP exceeded)
-- Sprint 8: 🛡️ Production Hardening (27 SP) → **🚀 IN PROGRESS (24/27 SP = 89%)**
-
-**Completed this session (Feb 26 — Sprint 8 Production Hardening):**
-- ✅ V4-801: Wallet transactions wrapped in Prisma $transaction (verified)
-- ✅ V4-802: **VERIFIED WORKING** — Idempotency keys schema migrated (20260226090000), 9/9 wallet integration tests passing
-- ✅ V4-803: WebSocket CORS from env, JWT_SECRET validation enabled (verified)
-- ✅ V4-804: Sentry initSentry() active at backend bootstrap (verified)
-- ✅ V4-805: .env.docker.example created, docker-compose uses env placeholders (verified)
-- ✅ V4-806: connection_limit documented in DATABASE_URL (verified)
-- ✅ V4-807: Integration test suites created and tested (wallet: 9/9 passing; auth/payment code ready)
-- ✅ V4-709: Backend TODO audit completed (6 TODOs found, all documented for post-launch)
-- ✅ V4-712: Service/controller architecture verified clean, no mismatches
-
-**Sprint 7 Status: ✅ COMPLETE**
-All critical blocker tasks completed:
-- ✅ V4-701: Build-breaking imports fixed (3 SP)
-- ✅ V4-702: TypeScript errors fixed (5 SP)
-- ✅ V4-703: Component decomposition (3 SP)
-- ✅ V4-704: UI primitives created (2 SP)
-- ✅ V4-705: Browser dialogs replaced + audit (3 SP)
-- ✅ V4-710: Backend dependencies (1 SP)
-- ✅ V4-711: Backend compilation (5 SP)
+- Sprint 7: 🐛 Critical Bug Fixes (16 SP) — ✅ COMPLETED
+- Sprint 8: 🛡️ Production Hardening (27 SP) — ✅ COMPLETED
+- Sprint 9: 🔐 Pre-Launch Polish / No AWS (20 SP) — ✅ COMPLETED
+- Sprint 10: ☁️ AWS Infrastructure & Go-Live (45 SP) — 🔵 IN PROGRESS (V6-201 ✅ V6-202 ✅ V6-204 ✅ V6-205 ✅)
 
 **V4-708:** Spiritual journey — not shipping for launch, may revisit later in 2026.
 
@@ -81,63 +55,35 @@ All critical blocker tasks completed:
 
 ---
 
-## Current Status (Last Updated: February 26, 2026 — Evening Session)
+## Current Status (Last Updated: March 13, 2026)
 
-**V4 Production Launch Progress: 176/176 SP (100%) ✅ COMPLETE**
-**All 8 sprints done. Backend: 35/35 test suites, 375/375 tests passing. Frontend: 0 TS errors.**
+**Production is LIVE at https://iluase.com**
+**Sprints 1-9: 221/241 SP complete. Sprint 10 in progress.**
 
-### Today's Accomplishments (Feb 26 — Evening)
+### Infrastructure (March 13, 2026)
 
-✅ **Final Verification Pass Completed:**
-- Frontend build: 2809 modules, 12.65s, 0 errors ✅
-- Backend build: Exit code 0, no TypeScript errors ✅
-- Wallet integration tests: 9/9 passing ✅ (idempotency keys verified working)
-- Git commits: All changes saved to v4/quality branch ✅
+✅ **Staging** — EC2 t3.small, Docker Compose, http://100.52.200.113:4040
+✅ **Production** — ECS Fargate (2×backend + 2×frontend), multi-AZ RDS Postgres 16, Redis 7 cluster, ALB, ACM wildcard cert, Route53 DNS
 
-✅ **Production Readiness Documentation Created:**
-- `docs/PRE_LAUNCH_CHECKLIST.md` — 10-phase checklist, sign-off template, incident runbook
-- `docs/DEPLOYMENT_PROCEDURES.md` — Step-by-step staging → production deployment guide
-- Both committed to git for ongoing reference
+### Remaining Sprint 10 Tasks — See [V4_TODO.md](V4_TODO.md)
 
-### Next Steps (Ready to Execute)
+| Task | Status |
+|------|--------|
+| V6-203: Staging smoke tests (8 scenarios) | ⬜ READY — Test 1 passing |
+| V6-206: RDS backup restore test | ⬜ READY |
+| V6-207: Load test (100+ concurrent, k6/Artillery) | ⬜ READY |
+| V6-208: CloudFront CDN + uptime monitor | ⬜ READY |
+| V6-209: Production cutover checklist + go-live | ⬜ PENDING smoke tests |
 
 **Timeline to April 1 Launch:**
 
-| Date | Milestone | Owner | Status |
-|------|-----------|-------|--------|
-| Mar 15 | **Staging Deployment** | DevOps | 📋 [Procedures Ready](docs/DEPLOYMENT_PROCEDURES.md#staging-deployment) |
-| Mar 22 | **Staging Smoke Tests** | QA/Product | 📋 [Checklist Ready](docs/PRE_LAUNCH_CHECKLIST.md#phase-10-final-smoke-tests) |
-| Mar 28 | **Production Cutover** | CTO/DevOps | 📋 [Runbook Ready](docs/DEPLOYMENT_PROCEDURES.md#production-deployment) |
-| Apr 01 | **Go Live** | All Hands | 🚀 LAUNCH |
-
-**Phase 1 (Next 1-2 weeks): Staging Setup**
-1. Provision staging PostgreSQL 16 + Redis + Node.js (DevOps)
-2. Create staging environment variables (SecureVault/AWS Secrets Manager)
-3. Deploy backend + frontend to staging
-4. Run smoke tests (8 scenarios from checklist)
-5. Fix any blocking issues
-6. Get stakeholder approval
-
-**Phase 2 (Week of Mar 22): Production Preparation**
-1. Provision production infrastructure (DB, Redis, servers, CDN)
-2. Set up SSL certificates (wildcard for *.ilu-ase.com)
-3. Configure DNS
-4. Set up monitoring (Sentry, APM, uptime monitor)
-5. Set up backups (hourly DB snapshots, weekly archives)
-6. Create on-call schedule
-
-**Phase 3 (Mar 28-31): Pre-Launch Final Checks**
-1. Production database fully migrated
-2. All 10-phase checklist items verified
-3. Incident response team briefed
-4. Runbook reviewed
-5. Final staging smoke test passes
-
-**Phase 4 (April 1): Launch Day**
-1. Morning: Final health checks
-2. 9 AM: Deploy production (merge v4/quality to main, CI/CD deploys)
-3. 9-10 AM: Monitor error rate, response times, user signups
-4. 10 AM+: Announce launch, support team active
+| Date | Milestone | Status |
+|------|-----------|--------|
+| Mar 13 | Staging + Production live | ✅ DONE |
+| Mar 15 | Staging smoke tests pass | ⬜ TODO |
+| Mar 22 | Load test + CDN + backup restore | ⬜ TODO |
+| Mar 28 | Final security audit + cutover | ⬜ TODO |
+| Apr 01 | **🚀 GO LIVE** | ⏳ PENDING |
 
 ---
 
@@ -244,7 +190,14 @@ ifa_app/
 │   │   ├── features/
 │   │   ├── demo/      # Demo ecosystem data
 │   │   └── ...
+│   ├── Dockerfile.staging     # For EC2 staging (proxies to backend)
+│   └── Dockerfile.production  # For ECS production (static files only)
+├── docker/
+│   ├── nginx.staging.conf     # Nginx with backend proxy (EC2)
+│   └── nginx.production.conf  # Nginx static-only (ECS — ALB handles routing)
 └── docs/
+    ├── active/    # Operational docs in current use
+    └── archive/   # Historical session summaries and completed phase docs
 ```
 
 ### Demo Data Source of Truth
@@ -263,14 +216,17 @@ ifa_app/
 
 ## Current Critical Path
 
-| Priority | Epic | Target | Status |
-|----------|------|--------|--------|
-| P0 | EPIC-001 Platform Restoration | — | DONE |
-| P0 | EPIC-002 Role Dashboards | — | ROUTED, QA COMPLETE |
-| P0 | EPIC-003 Temple Discovery | — | ROUTED, QA COMPLETE |
-| P0 | EPIC-004 Profile | — | PARTIAL (routed, links need review) |
-| P0 | EPIC-005 Booking | — | PARTIAL (routed, verify end-to-end) |
-| P1 | EPIC-006 through EPIC-013 | — | See V1_DEVELOPMENT_PROGRESS.md |
+All V1 EPICs routed and complete. Focus is now Sprint 10 infrastructure tasks.
+
+| Task | Owner | Status |
+|------|-------|--------|
+| V6-203: Staging smoke tests (8 scenarios) | QA | ⬜ READY |
+| V6-206: RDS backup restore test | DevOps | ⬜ READY |
+| V6-207: Load test 100+ concurrent users | DevOps | ⬜ READY |
+| V6-208: CloudFront CDN + uptime monitor | DevOps | ⬜ READY |
+| Stripe live keys in Secrets Manager | Product | ⬜ BLOCKING launch |
+| Sentry DSN in Secrets Manager | Engineering | ⬜ BLOCKING errors |
+| V6-209: Go-live cutover | All | Apr 1 |
 
 ---
 

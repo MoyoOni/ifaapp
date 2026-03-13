@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { User, MessageSquare, Calendar } from 'lucide-react';
 import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
-import { isDemoMode } from '@/shared/config/demo-mode';
+
 import { getAllDemoUsers } from '@/demo';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
@@ -38,12 +38,7 @@ const ClientList: React.FC<ClientListProps> = ({ babalawoId, onSelectClient, onM
         const payload = response.data as Array<{ client: Client } | Client>;
         return payload.map((item) => ('client' in item ? item : { client: item }));
       } catch (error) {
-        if (!isDemoMode) throw error;
-
-        logger.warn('Failed to fetch babalawo clients, using demo data');
-        return getAllDemoUsers()
-          .filter(u => u.role === 'CLIENT')
-          .map(u => ({ client: u as unknown as Client }));
+        throw error;
       }
     },
     enabled: !!babalawoId,

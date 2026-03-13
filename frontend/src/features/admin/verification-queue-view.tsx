@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle, XCircle, FileText, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
-import { isDemoMode } from '@/shared/config/demo-mode';
+
 import VerificationBadge from '@/shared/components/verification-badge';
 import { getDemoVerifications } from '@/demo';
 
@@ -52,14 +52,6 @@ const VerificationQueueView: React.FC = () => {
         return response.data;
       } catch (e) {
         logger.error('Failed to fetch verifications', e);
-        
-        // In production, we might want to handle errors differently
-        if (isDemoMode) {
-          logger.warn('Using demo data as fallback');
-          return getDemoVerifications();
-        }
-        
-        // Re-throw the error for proper error handling
         throw new Error(`Failed to fetch verification applications: ${e instanceof Error ? e.message : 'Unknown error'}`);
       }
     },
@@ -90,19 +82,7 @@ const VerificationQueueView: React.FC = () => {
         return { ...response.data, success: true };
       } catch (e) {
         logger.error('Failed to process verification decision', e);
-        
-        // In simulation/demo mode, return a success response
-        if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development' || isDemoMode) {
-          logger.warn('Using demo response as fallback');
-          return { 
-            success: true, 
-            status: approved ? 'APPROVED' : 'REJECTED',
-            message: 'Demo mode: Verification processed successfully'
-          };
-        }
-        
-        // In production, throw a proper error
-        throw new Error(`Failed to process verification decision: ${e instanceof Error ? e.message : 'Unknown error'}`);
+        throw e;
       }
     },
     onSuccess: () => {
@@ -365,3 +345,4 @@ const VerificationQueueView: React.FC = () => {
 };
 
 export default VerificationQueueView;
+

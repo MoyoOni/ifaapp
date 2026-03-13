@@ -55,8 +55,8 @@ coverage/
 # Docker
 docker-compose.override.yml
 
-# Prisma
-backend/prisma/migrations/
+# Prisma - NOTE: migrations/ intentionally tracked (production schema history)
+# Do NOT add backend/prisma/migrations/ here
 
 # Temporary files
 tmp/

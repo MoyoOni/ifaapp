@@ -3,9 +3,6 @@ import { useQuery } from '@tanstack/react-query';
 import { Clock, CheckCircle, XCircle, Package, Eye, Loader2, Calendar, Search } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
-import { logger } from '@/shared/utils/logger';
-import { isDemoMode } from '@/shared/config/demo-mode';
-import { DEMO_GUIDANCE_PLANS, getDemoAppointmentById, getDemoUserById } from '@/demo';
 
 interface GuidancePlan {
   id: string;
@@ -55,60 +52,6 @@ const GuidancePlanHistoryView: React.FC<GuidancePlanHistoryViewProps> = ({
 
   const targetUserId = userId || user?.id;
 
-  const buildDemoPlans = (): GuidancePlan[] => {
-    return Object.values(DEMO_GUIDANCE_PLANS).map((plan) => {
-      const appointment = getDemoAppointmentById(plan.appointmentId);
-      const babalawo = getDemoUserById(plan.babalawoId);
-      const client = getDemoUserById(plan.clientId);
-
-      return {
-        id: plan.id,
-        type: plan.type,
-        totalCost: plan.totalCost,
-        platformServiceFee: 0,
-        currency: 'NGN',
-        status: plan.status,
-        appointment: {
-          id: plan.appointmentId,
-          date: appointment?.date || '2026-02-10',
-          time: appointment?.time || '10:00',
-        },
-        babalawo: {
-          id: plan.babalawoId,
-          name: babalawo?.name || 'Babalawo',
-          yorubaName: babalawo?.yorubaName,
-        },
-        client: {
-          id: plan.clientId,
-          name: client?.name || 'Client',
-        },
-        createdAt: plan.createdAt,
-      };
-    });
-  };
-
-  const getSessionPlans = (): GuidancePlan[] => {
-    if (typeof sessionStorage === 'undefined') {
-      return [];
-    }
-    const plans: GuidancePlan[] = [];
-    for (let i = 0; i < sessionStorage.length; i += 1) {
-      const key = sessionStorage.key(i);
-      if (!key || !key.startsWith('demo-guidance-plan:')) {
-        continue;
-      }
-      try {
-        const parsed = JSON.parse(sessionStorage.getItem(key) || '{}') as GuidancePlan;
-        if (parsed?.id) {
-          plans.push(parsed);
-        }
-      } catch (error) {
-        logger.warn('Failed to parse demo guidance plan from session', error);
-      }
-    }
-    return plans;
-  };
-
   const { data: guidancePlans, isLoading } = useQuery<GuidancePlan[]>({
     queryKey: ['guidance-plans', targetUserId, statusFilter],
     queryFn: async () => {
@@ -117,24 +60,7 @@ const GuidancePlanHistoryView: React.FC<GuidancePlanHistoryViewProps> = ({
         const response = await api.get(`/guidance-plans/user/${targetUserId}`, { params });
         return response.data;
       } catch (error) {
-        if (!isDemoMode) throw error;
-
-        logger.warn('Failed to fetch guidance plans, using demo data');
-        const demoPlans = buildDemoPlans();
-        const sessionPlans = getSessionPlans();
-        const merged = [...demoPlans];
-        sessionPlans.forEach((plan) => {
-          if (!merged.some((existing) => existing.id === plan.id)) {
-            merged.push(plan);
-          }
-        });
-        const filtered = statusFilter ? merged.filter((plan) => plan.status === statusFilter) : merged;
-        if (targetUserId) {
-          return filtered.filter(
-            (plan) => plan.client.id === targetUserId || plan.babalawo.id === targetUserId
-          );
-        }
-        return filtered;
+        throw error;
       }
     },
     enabled: !!targetUserId,

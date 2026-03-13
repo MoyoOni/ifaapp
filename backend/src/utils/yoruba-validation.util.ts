@@ -27,10 +27,6 @@ export function validateYorubaName(name: string): { valid: boolean; error?: stri
   // Normalize first
   const normalized = normalizeYorubaText(name);
 
-  // Check for common Yoruba diacritics
-  // Yoruba uses: ẹ, ọ, ṣ, ẹ, ọ, etc.
-  const yorubaDiacritics = /[ẹọṣẹọàáâãäèéêëìíîïòóôõöùúûü]/i;
-
   // Check for invalid characters (only allow letters, spaces, hyphens, apostrophes, and Yoruba diacritics)
   const validPattern = /^[\p{L}\s\-'ẹọṣẹọàáâãäèéêëìíîïòóôõöùúûü]+$/u;
 

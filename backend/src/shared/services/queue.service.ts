@@ -46,7 +46,7 @@ export class QueueService {
     }
 
     const connection = this.getConnectionOptions();
-    
+
     const queue = new Queue(queueName, {
       connection,
       defaultJobOptions: {
@@ -65,9 +65,14 @@ export class QueueService {
   /**
    * Adds a job to the specified queue
    */
-  async addJob(queueName: string, jobName: string, data: QueueJobData, options?: QueueJobOptions): Promise<Job> {
+  async addJob(
+    queueName: string,
+    jobName: string,
+    data: QueueJobData,
+    options?: QueueJobOptions
+  ): Promise<Job> {
     const queue = this.getQueue(queueName);
-    
+
     const bullOptions: any = {};
     if (options) {
       if (options.delay) bullOptions.delay = options.delay;
@@ -77,7 +82,7 @@ export class QueueService {
     }
 
     const job = await queue.add(jobName, data, bullOptions);
-    
+
     this.logger.log(`Added job ${jobName} to queue ${queueName}, jobId: ${job.id}`);
     return job;
   }
@@ -91,14 +96,10 @@ export class QueueService {
     concurrency: number = 1
   ): Promise<Worker> {
     const connection = this.getConnectionOptions();
-    const worker = new Worker(
-      queueName,
-      processor,
-      {
-        connection,
-        concurrency,
-      }
-    );
+    const worker = new Worker(queueName, processor, {
+      connection,
+      concurrency,
+    });
 
     worker.on('completed', (job) => {
       this.logger.log(`Job ${job.id} completed in queue ${queueName}`);
@@ -118,7 +119,7 @@ export class QueueService {
     // Notification processor
     await this.processQueue('notifications', async (job) => {
       const { type, payload } = job.data as QueueJobData;
-      
+
       switch (type) {
         case 'EMAIL_NOTIFICATION':
           // Process email notification
@@ -138,7 +139,7 @@ export class QueueService {
           }
           */
           break;
-          
+
         case 'PUSH_NOTIFICATION':
           // Process push notification
           this.logger.log(`Processing push notification for ${payload.deviceToken}`);
@@ -157,19 +158,19 @@ export class QueueService {
           }
           */
           break;
-          
+
         default:
           this.logger.warn(`Unknown notification type: ${type}`);
           throw new Error(`Unknown notification type: ${type}`);
       }
-      
+
       return { success: true };
     });
 
     // Image processing processor
     await this.processQueue('image-processing', async (job) => {
       const { type, payload } = job.data as QueueJobData;
-      
+
       switch (type) {
         case 'IMAGE_OPTIMIZE':
           this.logger.log(`Optimizing image: ${payload.imageId}`);
@@ -188,7 +189,7 @@ export class QueueService {
           }
           */
           break;
-          
+
         case 'THUMBNAIL_GENERATE':
           this.logger.log(`Generating thumbnail for: ${payload.imageId}`);
           // In a real implementation, this would generate a thumbnail
@@ -206,19 +207,19 @@ export class QueueService {
           }
           */
           break;
-          
+
         default:
           this.logger.warn(`Unknown image processing type: ${type}`);
           throw new Error(`Unknown image processing type: ${type}`);
       }
-      
+
       return { success: true };
     });
 
     // API rate limiting processor
     await this.processQueue('api-rate-limit', async (job) => {
       const { type, payload } = job.data as QueueJobData;
-      
+
       switch (type) {
         case 'RATE_LIMIT_LOG':
           this.logger.log(`Rate limit event for user: ${payload.userId}`);
@@ -238,12 +239,12 @@ export class QueueService {
           }
           */
           break;
-          
+
         default:
           this.logger.warn(`Unknown rate limit type: ${type}`);
           throw new Error(`Unknown rate limit type: ${type}`);
       }
-      
+
       return { success: true };
     });
   }
@@ -271,13 +272,13 @@ export class QueueService {
    */
   async getQueueMetrics(queueName: string) {
     const queue = this.getQueue(queueName);
-    
+
     const waiting = await queue.getWaitingCount();
     const active = await queue.getActiveCount();
     const completed = await queue.getCompletedCount();
     const failed = await queue.getFailedCount();
     const delayed = await queue.getDelayedCount();
-    
+
     return {
       waiting,
       active,

@@ -4,14 +4,14 @@ import { useNavigate } from 'react-router-dom';
 // motion import removed - not currently used
 import api from '@/lib/api';
 import { Button } from '@/shared/components/ui';
-import { isDemoMode } from '@/shared/config/demo-mode';
+
 import { DEMO_USERS, DEMO_TEMPLES } from '@/demo';
 import { logger } from '@/shared/utils/logger';
 // cn import removed - not currently used
 import { seededRandomInt } from '@/shared/utils/seeded-random';
 import { BabalawoDirectorySkeleton } from '@/shared/components/skeleton';
 import { FeatureHeader } from '@/shared/components/feature-header';
-import { Search as SearchIcon } from 'lucide-react';
+import { Search as SearchIcon, Users } from 'lucide-react';
 
 interface Babalawo {
   id: string;
@@ -71,38 +71,7 @@ const BabalawoDiscoveryView: React.FC = () => {
         });
         return response.data || [];
       } catch (error) {
-        if (!isDemoMode) throw error;
-
-        logger.warn('Using demo data for Babalawo discovery');
-        return Object.values(DEMO_USERS)
-          .filter(user => user.role === 'BABALAWO')
-          .map(user => {
-            const temples = Object.values(DEMO_TEMPLES);
-            const temple = temples.find(t => t.babalawos?.includes(user.id)) || temples[0];
-
-            return {
-              id: user.id,
-              name: user.name,
-              yorubaName: (user as any).yorubaName,
-              avatar: user.avatar,
-              verified: (user as any).verified !== undefined ? (user as any).verified : true,
-              bio: user.bio,
-              location: user.location,
-              culturalLevel: (user as any).culturalLevel || 'Babalawo',
-              rating: (user as any).rating || seededRandomInt(`${user.id}-rating`, 4, 5),
-              reviewCount: (user as any).reviews || (user as any).reviewCount || seededRandomInt(`${user.id}-reviews`, 10, 59),
-              specialties: (user as any).services?.map((s: any) => s.title) || ['Spiritual Guidance'],
-              services: (user as any).services || [{ title: 'Spiritual Consultation' }],
-              responseTime: (user as any).responseTime || 'Within a day',
-              yearsOfExperience: (user as any).yearsOfExperience || seededRandomInt(`${user.id}-exp`, 5, 30),
-              temple: {
-                id: temple?.id || 'temple-1',
-                name: temple?.name || 'Sacred Temple',
-                yorubaName: temple?.yorubaName,
-                verified: temple?.verified || true
-              }
-            } as Babalawo;
-          });
+        throw error;
       }
     },
   });
@@ -187,6 +156,16 @@ const BabalawoDiscoveryView: React.FC = () => {
             ))}
           </div>
         </div>
+
+        {filteredBabalawos.length === 0 && (
+          <div className="text-center py-16 bg-card rounded-2xl border border-input">
+            <Users size={48} className="mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-xl font-bold text-foreground mb-2">No Babalawos found</h3>
+            <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+              No practitioners match your current filters. Try adjusting your search or check back as our community grows.
+            </p>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredBabalawos.map((babalawo) => (

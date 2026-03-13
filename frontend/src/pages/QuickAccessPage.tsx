@@ -1,147 +1,160 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Mail, ArrowLeft, Loader2 } from 'lucide-react';
+import { User, ArrowLeft, Loader2, Shield, BookOpen, ShoppingBag, Users } from 'lucide-react';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { DEMO_USERS } from '@/demo';
 import { getDashboardPathForRole } from '@/shared/config/navigation';
 import { logger } from '@/shared/utils/logger';
+import { UserRole } from '@common';
+import appLogo from '@/assets/logo.png';
+
+const ROLE_CONFIG: Record<string, { label: string; icon: React.ReactNode; color: string; bg: string; border: string }> = {
+  [UserRole.CLIENT]: { label: 'Client', icon: <Users size={16} />, color: 'text-blue-700', bg: 'bg-blue-50 hover:bg-blue-100', border: 'border-blue-200' },
+  [UserRole.BABALAWO]: { label: 'Babalawo', icon: <BookOpen size={16} />, color: 'text-purple-700', bg: 'bg-purple-50 hover:bg-purple-100', border: 'border-purple-200' },
+  [UserRole.VENDOR]: { label: 'Vendor', icon: <ShoppingBag size={16} />, color: 'text-emerald-700', bg: 'bg-emerald-50 hover:bg-emerald-100', border: 'border-emerald-200' },
+  [UserRole.ADMIN]: { label: 'Admin', icon: <Shield size={16} />, color: 'text-amber-700', bg: 'bg-amber-50 hover:bg-amber-100', border: 'border-amber-200' },
+};
 
 const QuickAccessPage: React.FC = () => {
   const navigate = useNavigate();
-  const { quickAccess, user, isLoading } = useAuth();
-  const [email, setEmail] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { quickAccess, devLogin, user, isLoading } = useAuth();
+  const [loggingInAs, setLoggingInAs] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
-  // Redirect if user is already logged in
+  // Redirect if user is already logged in on mount
   useEffect(() => {
     if (user && !isLoading) {
       navigate(getDashboardPathForRole(user.role), { replace: true });
     }
   }, [user, isLoading, navigate]);
 
-  const handleQuickAccess = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const goToDashboard = (role: UserRole) => {
+    navigate(getDashboardPathForRole(role), { replace: true });
+  };
+
+  const handleOneClickLogin = async (key: string, demoUser: typeof DEMO_USERS[string]) => {
+    if (loggingInAs) return;
     setError(null);
-    setIsSubmitting(true);
+    setLoggingInAs(key);
 
     try {
-      await quickAccess(email);
-      setSuccess(true);
-      // The user will be automatically redirected by the LoginPage effect
+      if (demoUser.email) {
+        await quickAccess(demoUser.email);
+      } else {
+        devLogin(demoUser.role);
+      }
+      goToDashboard(demoUser.role);
     } catch (err: any) {
-      const errorMessage = err instanceof Error ? err.message : 'Quick access failed. Please try again.';
-      setError(errorMessage);
-      logger.error('Quick Access Error:', err);
-    } finally {
-      setIsSubmitting(false);
+      // If backend quick-access fails, fall back to devLogin
+      logger.warn('Quick access API failed, falling back to dev login:', err.message);
+      try {
+        devLogin(demoUser.role);
+        goToDashboard(demoUser.role);
+      } catch {
+        const errorMessage = err instanceof Error ? err.message : 'Quick access failed. Please try again.';
+        setError(errorMessage);
+        setLoggingInAs(null);
+        logger.error('Quick Access Error:', err);
+      }
     }
   };
 
-  // Handle demo user selection
-  const handleDemoUserSelect = (email: string) => {
-    setEmail(email);
-  };
+  // Group users by role for cleaner display
+  const usersByRole = Object.entries(DEMO_USERS).reduce<Record<string, Array<[string, typeof DEMO_USERS[string]]>>>((acc, [key, user]) => {
+    const role = user.role;
+    if (!acc[role]) acc[role] = [];
+    acc[role].push([key, user]);
+    return acc;
+  }, {});
+
+  // Order roles: Client, Babalawo, Vendor, Admin
+  const roleOrder = [UserRole.CLIENT, UserRole.BABALAWO, UserRole.VENDOR, UserRole.ADMIN];
 
   return (
     <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-[2.5rem] p-8 md:p-10 border border-stone-100 shadow-2xl space-y-8 max-w-md w-full relative overflow-hidden font-sans">
+      <div className="bg-white rounded-[2.5rem] p-8 md:p-10 border border-stone-100 shadow-2xl space-y-6 max-w-lg w-full relative overflow-hidden font-sans">
         {/* Decorative Gold Line */}
         <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-stone-100 via-highlight to-stone-100"></div>
 
-        <div className="text-center space-y-2">
+        <div className="text-center space-y-3">
+          <img src={appLogo} alt="Ìlú Àṣẹ" className="w-16 h-16 mx-auto rounded-2xl shadow-lg" />
           <h2 className="text-3xl font-bold brand-font text-stone-800 tracking-tight">Quick Access</h2>
-          <p className="text-stone-500 font-medium">
-            Access with a demo account
+          <p className="text-stone-500 font-medium text-sm">
+            Click any account to sign in instantly
           </p>
         </div>
 
-        {/* Quick Access Form */}
-        <form onSubmit={handleQuickAccess} className="space-y-6">
-          <div className="space-y-2">
-            <label
-              htmlFor="email"
-              className="text-xs font-bold uppercase text-stone-400 tracking-widest ml-1"
-            >
-              Demo User Email
-            </label>
-            <div className="relative group">
-              <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-stone-400 group-focus-within:text-highlight transition-colors" size={20} />
-              <input
-                id="email"
-                name="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                placeholder="Select or enter demo email"
-                className="w-full bg-stone-50 border border-stone-200 p-4 pl-14 rounded-2xl text-stone-800 outline-none focus:bg-white focus:border-highlight focus:ring-4 focus:ring-highlight/10 transition-all font-medium placeholder:text-stone-300"
-              />
-            </div>
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm font-medium flex items-center justify-center">
+            {error}
           </div>
+        )}
 
-          {/* Error Message */}
-          {error && (
-            <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm font-medium flex items-center justify-center">
-              {error}
-            </div>
-          )}
+        {/* Demo Users by Role */}
+        <div className="space-y-4">
+          {roleOrder.map((role) => {
+            const users = usersByRole[role];
+            if (!users?.length) return null;
+            const config = ROLE_CONFIG[role] || ROLE_CONFIG[UserRole.CLIENT];
 
-          {/* Success Message */}
-          {success && (
-            <div className="bg-green-50 border border-green-100 text-green-600 px-4 py-3 rounded-xl text-sm font-medium flex items-center justify-center">
-              Successfully logged in! Redirecting...
-            </div>
-          )}
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={isSubmitting || !email}
-            className="w-full py-4 bg-highlight text-white rounded-2xl font-bold text-base shadow-lg shadow-highlight/20 hover:shadow-xl hover:bg-yellow-500 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 size={20} className="animate-spin" />
-                <span>Accessing...</span>
-              </>
-            ) : (
-              'Sign In with Demo Account'
-            )}
-          </button>
-        </form>
-
-        {/* Demo User Selection */}
-        <div className="pt-6 border-t border-stone-100">
-          <p className="text-[10px] font-bold uppercase text-stone-300 tracking-widest text-center mb-4">
-            Or Select a Demo User
-          </p>
-          <div className="grid grid-cols-2 gap-3">
-            {Object.entries(DEMO_USERS).map(([key, user]) => (
-              user && user.email ? ( // Properly check that both user and email exist
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => user.email && handleDemoUserSelect(user.email)} // Ensure email exists
-                  className="py-3 px-2 bg-stone-50 hover:bg-stone-100 text-stone-500 hover:text-stone-800 border border-stone-100 rounded-xl text-xs font-bold transition-all truncate"
-                  title={`${user.name} (${user.role})`}
-                >
-                  <div className="flex flex-col items-center">
-                    <User size={14} className="mb-1" />
-                    <span className="truncate">{key.split('-').slice(1).join(' ')}</span>
-                  </div>
-                </button>
-              ) : null
-            ))}
-          </div>
+            return (
+              <div key={role}>
+                <p className="text-[10px] font-bold uppercase text-stone-400 tracking-widest mb-2 ml-1">
+                  {config.label}s
+                </p>
+                <div className="space-y-2">
+                  {users.map(([key, demoUser]) => {
+                    const isLoggingIn = loggingInAs === key;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        disabled={!!loggingInAs}
+                        onClick={() => handleOneClickLogin(key, demoUser)}
+                        className={`w-full flex items-center gap-3 px-4 py-3 ${config.bg} ${config.border} border rounded-xl transition-all text-left disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 hover:shadow-sm`}
+                      >
+                        {demoUser.avatar ? (
+                          <img
+                            src={demoUser.avatar}
+                            alt={demoUser.name}
+                            className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                          />
+                        ) : (
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${config.bg} ${config.color} flex-shrink-0`}>
+                            <User size={20} />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className={`font-bold text-sm ${config.color} truncate`}>
+                            {demoUser.name}
+                          </div>
+                          <div className="text-xs text-stone-400 truncate">
+                            {demoUser.yorubaName && demoUser.yorubaName !== demoUser.name ? `${demoUser.yorubaName} · ` : ''}
+                            {demoUser.location || config.label}
+                          </div>
+                        </div>
+                        <div className="flex-shrink-0">
+                          {isLoggingIn ? (
+                            <Loader2 size={18} className="animate-spin text-stone-400" />
+                          ) : (
+                            <span className={`${config.color}`}>{config.icon}</span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         {/* Back to Login */}
-        <div className="text-center pt-4">
+        <div className="text-center pt-2">
           <button
             onClick={() => navigate('/login')}
-            className="text-stone-400 hover:text-stone-600 font-medium flex items-center justify-center gap-2 text-sm"
+            className="text-stone-400 hover:text-stone-600 font-medium flex items-center justify-center gap-2 text-sm mx-auto"
           >
             <ArrowLeft size={16} />
             Back to Login
