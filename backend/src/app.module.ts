@@ -13,7 +13,7 @@ import { VerificationModule } from './verification/verification.module';
 import { BabalawoClientModule } from './babalawo-client/babalawo-client.module';
 import { MessagingModule } from './messaging/messaging.module';
 import { AppointmentsModule } from './appointments/appointments.module';
-// import { DocumentsModule } from './documents/documents.module';  // Temporarily commented out
+// import { DocumentsModule } from './documents/documents.module';  // DISABLED: file storage (S3/local) not yet configured for production
 import { AdminModule } from './admin/admin.module';
 import { ForumModule } from './forum/forum.module';
 import { MarketplaceModule } from './marketplace/marketplace.module';
@@ -30,24 +30,23 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { CirclesModule } from './circles/circles.module';
 import { EventsModule } from './events/events.module';
 import { ReviewsModule } from './reviews/reviews.module';
-// Production: Demo module removed
-// import { SpiritualJourneyModule } from './spiritual-journey/spiritual-journey.module';
+// import { SpiritualJourneyModule } from './spiritual-journey/spiritual-journey.module';  // DEFERRED: post-launch feature (see SPIRITUAL_JOURNEY_EVALUATION.md)
 import { SearchModule } from './search/search.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { DatabaseModule } from './database/database.module';
 import { EncryptionModule } from './encryption/encryption.module';
 import { SecurityModule } from './security/security.module';
-// import { CacheModule } from './cache/cache.module';  // Temporarily commented out
-// import { ImageModule } from './images/image.module';  // Temporarily commented out
-// import { CertificateModule } from './certificates/certificate.module';  // Temporarily commented out
+// import { CacheModule } from './cache/cache.module';  // DISABLED: Redis cache layer not yet wired to ConfigService — enable post-launch
+// import { ImageModule } from './images/image.module';  // DISABLED: image processing (sharp) not bundled in prod Docker image — enable post-launch
+// import { CertificateModule } from './certificates/certificate.module';  // DISABLED: pdfkit not installed; placeholder PDF generation only — enable post-launch
 import { HealthModule } from './health/health.module';
 import { MetricsModule } from './metrics/metrics.module';
-// import { QueueModule } from './common/queue/queue.module'; // disabled until BullMQ version mismatch is resolved
-// import { TestModule } from './test/test.module';
+// import { QueueModule } from './common/queue/queue.module';  // DISABLED: BullMQ peer dep version mismatch with current NestJS version — enable post-launch
+// import { TestModule } from './test/test.module';  // DISABLED: development-only test helper, never load in production
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { SentryModule } from './sentry/sentry.module';
 
-// import { ScheduleModule } from '@nestjs/schedule';
+// import { ScheduleModule } from '@nestjs/schedule';  // DISABLED: circular Reflector injection issue — enable post-launch after upgrading @nestjs/schedule
 import { DiscoveryModule } from '@nestjs/core';
 import { SharedModule } from './shared/shared.module';
 import { InfrastructureModule } from './shared/infrastructure.module';
@@ -60,7 +59,7 @@ import { InfrastructureModule } from './shared/infrastructure.module';
       load: [infrastructureConfig],
     }),
     DiscoveryModule,
-    // ScheduleModule.forRoot(), // disabled until Reflector issue resolved
+    // ScheduleModule.forRoot(), // DISABLED: see import comment above
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
@@ -74,7 +73,7 @@ import { InfrastructureModule } from './shared/infrastructure.module';
     BabalawoClientModule,
     MessagingModule,
     AppointmentsModule,
-    // DocumentsModule,  // Temporarily commented out
+    // DocumentsModule,  // DISABLED: see import comment above
     AdminModule,
     ForumModule,
     MarketplaceModule,
@@ -93,7 +92,7 @@ import { InfrastructureModule } from './shared/infrastructure.module';
     ReviewsModule,
     HealthModule,
     MetricsModule,
-    // QueueModule, // disabled until BullMQ version mismatch is resolved
+    // QueueModule, // DISABLED: see import comment above
     SearchModule,
     DashboardModule,
     DatabaseModule,

@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
 /**
@@ -5,6 +6,7 @@ import { PrismaClient } from '@prisma/client';
  * Helps identify slow queries and optimize database performance
  */
 export class QueryOptimizer {
+  private readonly logger = new Logger(QueryOptimizer.name);
   private prisma: PrismaClient;
 
   constructor(prisma: PrismaClient) {
@@ -117,7 +119,7 @@ export class QueryOptimizer {
         largestTable: tableSizes[0]?.tablename || 'Unknown',
       };
     } catch (error) {
-      console.error('Error getting database stats:', error);
+      this.logger.error('Error getting database stats', error);
       return {
         tableSizes: [],
         indexUsage: [],

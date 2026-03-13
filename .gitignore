@@ -66,3 +66,7 @@ temp/
 
 # Archived legacy files
 _archive/
+
+# Windows / OS files
+desktop.ini
+docker_check.txt

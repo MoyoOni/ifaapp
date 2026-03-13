@@ -64,7 +64,7 @@ const SettingsPage: React.FC = () => {
           // In real app, this would call delete account API
           logger.info('Account deletion requested');
         } catch (error) {
-          console.error('Failed to delete account:', error);
+          logger.error('Failed to delete account:', error);
         }
       }
     });

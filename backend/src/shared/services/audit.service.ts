@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { PiiMaskingUtil } from '../utils/pii-masking.util';
 
@@ -16,6 +16,8 @@ export interface AuditLogEntry {
 
 @Injectable()
 export class AuditService {
+  private readonly logger = new Logger(AuditService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async logAction(entry: AuditLogEntry): Promise<void> {
@@ -45,7 +47,7 @@ export class AuditService {
         } as any,
       } as any);
     } catch (error) {
-      console.error('Failed to create audit log:', error);
+      this.logger.error('Failed to create audit log', error);
       // Don't throw error as auditing shouldn't break core functionality
     }
   }

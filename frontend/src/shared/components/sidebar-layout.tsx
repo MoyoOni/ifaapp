@@ -56,7 +56,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
             } catch (error) {
                 // In demo mode, return a default value without logging the error
                 if (import.meta.env.VITE_DEMO_MODE === 'true' || import.meta.env.VITE_ENABLE_DEMO_MODE === 'true') {
-                    console.warn('[Ilé Àṣẹ] [user:demo-client-1] Failed to fetch unread notification count, using demo value');
+                    logger.warn('[Ilé Àṣẹ] [user:demo-client-1] Failed to fetch unread notification count, using demo value');
                     return { count: 0 };
                 }
                 

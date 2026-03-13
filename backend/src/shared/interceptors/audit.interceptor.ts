@@ -1,4 +1,4 @@
-import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
+import { CallHandler, ExecutionContext, Injectable, Logger, NestInterceptor } from '@nestjs/common';
 import { tap } from 'rxjs/operators';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
@@ -13,6 +13,8 @@ export interface AuditMetadata {
 
 @Injectable()
 export class AuditInterceptor implements NestInterceptor {
+  private readonly logger = new Logger(AuditInterceptor.name);
+
   constructor(
     private readonly auditService: AuditService,
     private readonly reflector: Reflector
@@ -71,7 +73,7 @@ export class AuditInterceptor implements NestInterceptor {
           await this.auditService.logAction(auditEntry);
         } catch (error) {
           // Fail silently to prevent audit issues from breaking functionality
-          console.error('Audit logging failed:', error);
+          this.logger.error('Audit logging failed', error);
         }
       })
     );

@@ -1,4 +1,4 @@
-import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
+import { CallHandler, ExecutionContext, Injectable, Logger, NestInterceptor } from '@nestjs/common';
 import { throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import * as Sentry from '@sentry/node';
@@ -6,6 +6,8 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class SentryInterceptor implements NestInterceptor {
+  private readonly logger = new Logger(SentryInterceptor.name);
+
   constructor(private configService: ConfigService) {}
 
   intercept(context: ExecutionContext, next: CallHandler) {
@@ -40,7 +42,7 @@ export class SentryInterceptor implements NestInterceptor {
 
           // Capture the exception
           const eventId = Sentry.captureException(error);
-          console.error(`Sentry Event ID: ${eventId}`, error);
+          this.logger.error(`Sentry Event ID: ${eventId}`, error);
         });
 
         return throwError(() => error);

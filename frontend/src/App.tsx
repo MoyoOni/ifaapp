@@ -32,7 +32,7 @@ const EventsPage = React.lazy(() => import('./pages/EventsPage'));
 const EventDetailPage = React.lazy(() => import('./pages/EventDetailPage'));
 const MessagesPage = React.lazy(() =>
   import('./pages/MessagesPage').catch(err => {
-    console.error('Failed to load MessagesPage:', err);
+    logger.error('Failed to load MessagesPage:', err);
     // Return a simple error component if MessagesPage fails to load
     const ErrorComponent: React.FC = () => (
       <div className="min-h-screen bg-stone-50 flex items-center justify-center p-6">
