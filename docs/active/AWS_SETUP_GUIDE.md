@@ -1,8 +1,65 @@
-# AWS Setup Guide — Ilé Àṣẹ (ilu-ase.com)
+# AWS Setup Guide — Ìlú Àṣẹ (iluase.com)
 
-**Application:** Ilé Àṣẹ — NestJS backend + React/Vite frontend
-**Domain:** ilu-ase.com
+**Application:** Ìlú Àṣẹ — NestJS backend + React/Vite frontend
+**Domain:** iluase.com
 **Last Updated:** March 13, 2026
+
+---
+
+## ✅ Production Environment — LIVE (March 13, 2026)
+
+**URL:** https://iluase.com
+
+| Resource | ID / Value |
+|----------|-----------|
+| **ECS Cluster** | `iluase-prod` (Fargate, Container Insights enabled) |
+| **Backend Service** | `iluase-backend` — 2 tasks × 0.5 vCPU / 1 GB RAM |
+| **Frontend Service** | `iluase-frontend` — 2 tasks × 0.25 vCPU / 0.5 GB RAM |
+| **ALB** | `iluase-prod-alb-972942739.us-east-1.elb.amazonaws.com` |
+| **RDS** | `iluase-prod-postgres.c2n2u4k461ge.us-east-1.rds.amazonaws.com` (Postgres 16, `db.t3.small`, multi-AZ, encrypted) |
+| **Redis** | `master.iluase-prod-redis.dt1ypz.use1.cache.amazonaws.com` (Redis 7, 2-node cluster, TLS) |
+| **VPC** | `vpc-0fd759698fd1223c2` (10.0.0.0/16) |
+| **Public Subnets** | `subnet-09c730df276cc2be7` (us-east-1a), `subnet-0a40aadef89acb9df` (us-east-1b) |
+| **Private Subnets** | `subnet-0e9abfd04b5fb760d` (us-east-1a), `subnet-0788046c003a849fb` (us-east-1b) |
+| **ACM Cert** | `arn:aws:acm:us-east-1:091653536932:certificate/44752f18-...` (*.iluase.com wildcard) |
+| **Route53 Hosted Zone** | `Z07007663AAOEO6PNL4GK` (iluase.com) |
+| **ECR Backend** | `091653536932.dkr.ecr.us-east-1.amazonaws.com/iluase/backend` |
+| **ECR Frontend** | `091653536932.dkr.ecr.us-east-1.amazonaws.com/iluase/frontend` |
+| **Secrets** | `iluase/prod/app-secrets` + `iluase/prod/connection-strings` (AWS Secrets Manager) |
+| **CloudWatch Logs** | `/ecs/iluase-prod/backend`, `/ecs/iluase-prod/frontend` (30-day retention) |
+
+**Security Groups:**
+
+| Name | ID | Allows |
+|------|----|--------|
+| ALB | `sg-028639d124c50579f` | 80, 443 from internet |
+| ECS | `sg-0e96017bd5b8b9dde` | 8080, 80 from ALB only |
+| RDS | `sg-0eafe56bfb33f646f` | 5432 from ECS only |
+| Redis | `sg-0e1411febae896c15` | 6379 from ECS only |
+
+**ALB Routing:**
+- `HTTP :80` → redirect to HTTPS
+- `HTTPS :443 /api/*` → backend target group (port 8080)
+- `HTTPS :443 /socket.io/*` → backend target group
+- `HTTPS :443 /*` → frontend target group (port 80)
+
+**Deploy a new version:**
+```bash
+# 1. Build + push images
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 091653536932.dkr.ecr.us-east-1.amazonaws.com
+docker build -f backend/Dockerfile -t 091653536932.dkr.ecr.us-east-1.amazonaws.com/iluase/backend:latest .
+docker build -f frontend/Dockerfile.production -t 091653536932.dkr.ecr.us-east-1.amazonaws.com/iluase/frontend:latest .
+docker push 091653536932.dkr.ecr.us-east-1.amazonaws.com/iluase/backend:latest
+docker push 091653536932.dkr.ecr.us-east-1.amazonaws.com/iluase/frontend:latest
+
+# 2. Force ECS redeploy
+aws ecs update-service --cluster iluase-prod --service iluase-backend --force-new-deployment
+aws ecs update-service --cluster iluase-prod --service iluase-frontend --force-new-deployment
+```
+
+**Migrations** run automatically via `docker-entrypoint.sh` (`prisma migrate deploy`) on every backend container start.
+
+---
 
 ## ✅ Staging Environment — LIVE (March 13, 2026)
 
@@ -30,11 +87,7 @@ Swagger:  http://100.52.200.113:8080/api/docs
 
 ---
 
-This guide walks you through provisioning and configuring AWS infrastructure for two environments:
-- **Staging** (~$50/month) — one EC2 instance, RDS Micro, Redis on-box
-- **Production** (~$200/month) — EC2 Medium, RDS Small Multi-AZ, ElastiCache, ALB, Route53, ACM
-
-Follow Part 1, then Part 2 (staging), then Part 3 (production). Do not skip staging — you will catch problems there before they hit production.
+Both environments are provisioned. The guide below documents the steps taken during initial provisioning for reference or disaster recovery.
 
 ---
 

@@ -135,7 +135,13 @@
       "Bash(python3 -c \"import yaml, sys; yaml.safe_load\\(open\\(''c:/Users/Test/ifa_app/.github/workflows/ci-cd.yml''\\)\\); print\\(''YAML valid''\\)\")",
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(''''name:'''', d.get\\(''''name''''\\)\\); print\\(''''node engine:'''', d.get\\(''''engines'''',{}\\)\\)\")",
       "Bash(aws ec2:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(curl -s --max-time 10 http://100.52.200.113:4040)",
+      "Bash(aws elasticache:*)",
+      "Bash(REDIS_PASS=\"i8LIvuPDipMK98UKDQtph6Mbrd9tGDKt\")",
+      "Bash(__NEW_LINE_79ef5c8290c51ef9__ aws:*)",
+      "Bash(aws ecr:*)",
+      "Bash(docker build:*)"
     ]
   }
 }

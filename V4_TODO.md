@@ -29,8 +29,8 @@
 | Sprint 6 | 🚢 Production and Infrastructure Hardening | 20 | ✅ COMPLETED |
 | Sprint 7 | 🐛 Critical Bug Fixes and Build Stability | 16 | ✅ COMPLETED |
 | Sprint 8 | 🛡️ Production Hardening (P0 Critical Fixes) | 27 | ✅ COMPLETED |
-| Sprint 9 | 🔐 Pre-Launch Polish (No AWS Required) | 20 | ⬜ READY |
-| Sprint 10 | ☁️ AWS Infrastructure & Go-Live | 45 | 🔴 BLOCKED: AWS |
+| Sprint 9 | 🔐 Pre-Launch Polish (No AWS Required) | 20 | ✅ COMPLETED |
+| Sprint 10 | ☁️ AWS Infrastructure & Go-Live | 45 | 🔵 IN PROGRESS (V6-201 ✅ V6-202 ✅ V6-204 ✅ V6-205 ✅) |
 
 ---
 ---
@@ -143,10 +143,7 @@
 
 ---
 
-## 🔐 SPRINT 9 — Pre-Launch Polish (No AWS Required) (20 SP) - ⬜ READY
-
-> All stories in this sprint can be completed locally/in CI without any cloud infrastructure.
-> Prerequisite: Sprint 8 complete. Do this BEFORE provisioning AWS.
+## 🔐 SPRINT 9 — Pre-Launch Polish (No AWS Required) (20 SP) - ✅ COMPLETED
 
 | # | Task | SP | Status |
 |---|------|----|--------|
@@ -163,20 +160,19 @@
 
 ## ☁️ SPRINT 10 — AWS Infrastructure & Go-Live (45 SP) - 🔵 IN PROGRESS
 
-> All stories require AWS infrastructure provisioned.
-> **Staging is live as of March 13, 2026.**
+> **Production is LIVE at https://iluase.com as of March 13, 2026.**
 
 | # | Task | SP | Status |
 |---|------|----|--------|
-| 61 | ✅ **V6-201** Provision staging infrastructure (RDS Postgres 16 + EC2 + S3) | 8 | DONE — EC2: i-07990461d23b46ad4 (100.52.200.113), RDS: ile-ase-staging.c2n2u4k461ge.us-east-1.rds.amazonaws.com |
-| 62 | ✅ **V6-202** Deploy backend + frontend to staging (Docker Compose) | 5 | DONE — All 4 containers healthy at http://100.52.200.113:4040 |
-| 63 | ⬜ **V6-203** Run staging smoke tests — all 8 scenarios pass, get sign-off | 3 | READY |
-| 64 | 🔴 **V6-204** Provision production infrastructure (multi-AZ RDS, Redis, ALB, ECS) | 8 | BLOCKED: AWS |
-| 65 | 🔴 **V6-205** SSL certificates (ACM wildcard) + Route53 DNS for ilu-ase.com | 3 | BLOCKED: AWS |
-| 66 | 🔴 **V6-206** Schedule backup-db.sh (cron) + perform restore test on server | 3 | BLOCKED: AWS |
-| 67 | 🔴 **V6-207** Load test — 100+ concurrent users with k6 or Artillery | 5 | BLOCKED: AWS staging |
-| 68 | 🔴 **V6-208** CDN (CloudFront) + uptime monitor (/api/health) + APM alert rules | 5 | BLOCKED: AWS |
-| 69 | 🔴 **V6-209** Production cutover — final checklist, merge to main, monitor launch day | 5 | BLOCKED: AWS prod |
+| 61 | ✅ **V6-201** Provision staging infrastructure (EC2 + RDS + Docker Compose) | 8 | DONE — EC2: i-07990461d23b46ad4 (100.52.200.113), staging at http://100.52.200.113:4040 |
+| 62 | ✅ **V6-202** Deploy backend + frontend to staging | 5 | DONE — All 4 containers healthy, JWT/onboarding bugs fixed |
+| 63 | ⬜ **V6-203** Run staging smoke tests — all 8 scenarios pass, get sign-off | 3 | READY — Test 1 (registration + onboarding) passing |
+| 64 | ✅ **V6-204** Provision production infrastructure (ECS Fargate, multi-AZ RDS, Redis, ALB) | 8 | DONE — ECS 2×backend + 2×frontend, RDS Postgres 16 multi-AZ, Redis 7 cluster |
+| 65 | ✅ **V6-205** SSL certificates (ACM wildcard) + Route53 DNS for iluase.com | 3 | DONE — https://iluase.com live, HTTP→HTTPS redirect active |
+| 66 | ⬜ **V6-206** Backup restore test (RDS 7-day retention already enabled) | 3 | READY |
+| 67 | ⬜ **V6-207** Load test — 100+ concurrent users with k6 or Artillery | 5 | READY |
+| 68 | ⬜ **V6-208** CloudFront CDN + uptime monitor (/api/health) + APM alert rules | 5 | READY |
+| 69 | ⬜ **V6-209** Production cutover — final checklist, merge to main, monitor launch day | 5 | READY — pending smoke tests + load test |
 
 ---
 
@@ -272,17 +268,17 @@ Before deployment to staging/production, verify all operational items are comple
 | Category | Score | Blocker? | Notes |
 |----------|-------|----------|-------|
 | **Code Quality** | 95% ✅ | ❌ | 0 build errors, 9/9 critical tests passing |
-| **Documentation** | 95% ✅ | ❌ | PRE_LAUNCH_CHECKLIST.md, DEPLOYMENT_PROCEDURES.md complete |
-| **Testing** | 80% 🟡 | ❌ | 49 integration tests, load testing pending |
-| **Infrastructure** | 65% 🟡 | ✅ | Staging live (Mar 13) — Production provisioning TBD |
+| **Documentation** | 95% ✅ | ❌ | Reorganized — active docs in docs/active/, archive in docs/archive/ |
+| **Testing** | 80% 🟡 | ❌ | 49 integration tests, load testing pending (V6-207) |
+| **Infrastructure** | 95% ✅ | ❌ | Staging + Production live — ECS Fargate, multi-AZ RDS, Redis cluster, ALB |
 | **Team Readiness** | 50% 🟡 | ✅ | **BLOCKING** — On-call rotation, ops training TBD |
 | **Security** | 85% ✅ | ❌ | OWASP checklist pending, rate limiting ready |
-| **Monitoring** | 60% 🟡 | ❌ | Sentry ready, APM setup pending |
+| **Monitoring** | 65% 🟡 | ❌ | Sentry ready, CloudWatch logs active, APM + CDN pending |
 | **Payment Safety** | 95% ✅ | ❌ | Idempotency keys tested, Stripe webhooks ready |
-| **Data Management** | 70% 🟡 | ❌ | Backup automation pending, restore test TBD |
-| **Launch Plan** | 50% 🟡 | ✅ | **BLOCKING** — Beta launch window, communication plan TBD |
+| **Data Management** | 75% 🟡 | ❌ | RDS 7-day backups enabled, restore test TBD (V6-206) |
+| **Launch Plan** | 60% 🟡 | ✅ | **BLOCKING** — Smoke tests (V6-203), beta window, communication plan TBD |
 
-**Overall Readiness: 73% → Staging live, next: smoke tests (V6-203)**
+**Overall Readiness: 85% → Production live at https://iluase.com, next: smoke tests (V6-203) + load test (V6-207)**
 
 ---
 
@@ -292,9 +288,10 @@ Before deployment to staging/production, verify all operational items are comple
 |------|------|-----------|-------|--------|
 | Week 1 | Mar 1 | **→ Infrastructure provisioned** | DevOps | ✅ DONE (Mar 13) |
 | Week 2 | Mar 8 | **→ Deploy to staging** | DevOps | ✅ DONE (Mar 13) |
+| Week 2 | Mar 13 | **→ Production live at iluase.com** | DevOps | ✅ DONE (Mar 13) |
 | Week 2 | Mar 15 | **→ Smoke tests pass (8 scenarios)** | QA/Product | ⬜ TODO |
-| Week 3 | Mar 22 | **→ Production infrastructure ready** | DevOps | ⬜ TODO |
-| Week 4 | Mar 28 | **→ Final security audit** | Security | ⬜ TODO |
+| Week 3 | Mar 22 | **→ Load test + CDN + backups** | DevOps | ⬜ TODO |
+| Week 4 | Mar 28 | **→ Final security audit + cutover** | Security | ⬜ TODO |
 | Launch | Apr 1 | **🚀 GO LIVE** | All Hands | ⏳ PENDING |
 
 ---
@@ -334,10 +331,10 @@ Before deployment to staging/production, verify all operational items are comple
 
 ## 🚨 Top 5 Launch Blockers
 
-1. ✅ ~~**Infrastructure not provisioned** → Cannot deploy~~ — Staging live Mar 13
-2. **Staging smoke tests fail** → Cannot go to production
-3. **Backup/restore doesn't work** → Data loss risk, cannot launch
-4. **Incident runbook not reviewed** → Team unprepared for emergencies
-5. **Rate limiting not enforced** → Vulnerable to brute force attacks
+1. ✅ ~~**Infrastructure not provisioned**~~ — Staging + Production live Mar 13
+2. ✅ ~~**Production infra blocked**~~ — ECS/RDS/ALB/SSL all running at iluase.com
+3. **Staging smoke tests (V6-203)** → 8 scenarios must pass before cutover
+4. **Backup restore test (V6-206)** → RDS backups enabled, restore test still TBD
+5. **Incident runbook not reviewed** → Team must rehearse before April 1
 
 All others are "nice-to-have" but these 5 are **MUST-HAVE** before April 1.

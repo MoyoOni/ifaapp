@@ -1,8 +1,8 @@
 # 🚀 Pre-Launch Checklist — Ìlú Àṣẹ Platform
 
-**Target Launch Date:** April 1, 2026  
-**Status:** Sprint 8 Verification (89% complete, all P0/P1 blockers done)  
-**Last Updated:** February 26, 2026
+**Target Launch Date:** April 1, 2026
+**Status:** Production live at https://iluase.com — smoke tests + load test remaining
+**Last Updated:** March 13, 2026
 
 ---
 
@@ -42,28 +42,27 @@ npx prisma db push         # Verify schema is synced
 
 ### Phase 3: Environment Variables ✅
 
-**Before launching, verify these are set in production:**
+**Production secrets are stored in AWS Secrets Manager** — not in `.env` files.
 
-Backend (`.env`):
-```
-DATABASE_URL=postgresql://...?connection_limit=10
-JWT_SECRET=<production-secret-key> ❌ DO NOT use 'change-me-in-production'
-FRONTEND_URL=https://ilu-ase.com
-SENTRY_DSN=https://...@sentry.io/...
-REDIS_URL=redis://...
-STRIPE_SECRET_KEY=sk_live_...
-S3_ACCESS_KEY_ID=...
-S3_SECRET_ACCESS_KEY=...
-S3_BUCKET=...
-S3_REGION=us-east-1
-EMAIL_SERVICE_API_KEY=...
-```
+| Secret | Location |
+|--------|----------|
+| `JWT_SECRET`, `JWT_REFRESH_SECRET`, `ENCRYPTION_KEY` | `iluase/prod/app-secrets` (Secrets Manager) |
+| `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET` | `iluase/prod/app-secrets` (Secrets Manager) |
+| `SENTRY_DSN` | `iluase/prod/app-secrets` (Secrets Manager) |
+| `DATABASE_URL` | `iluase/prod/connection-strings` (Secrets Manager) |
+| `REDIS_URL` | `iluase/prod/connection-strings` (Secrets Manager) |
 
-Frontend (`.env`):
+ECS task definitions pull secrets at launch via `secrets:` array — no plaintext credentials anywhere.
+
+**Still needs updating before go-live:**
+- [ ] Replace `STRIPE_SECRET_KEY=sk_live_REPLACE_ME` with real live key
+- [ ] Replace `SENTRY_DSN=REPLACE_WITH_SENTRY_DSN` with real DSN
+- [ ] Configure `EMAIL_SERVICE_API_KEY` (SendGrid/Mailgun)
+
+Frontend build args (baked in at Docker build time):
 ```
-VITE_API_URL=https://api.ilu-ase.com
-VITE_DEMO_MODE=false  ⚠️ Set to FALSE in production
-VITE_SENTRY_DSN=https://...@sentry.io/...
+VITE_API_URL=https://iluase.com/api  ✅ correct in Dockerfile.production
+VITE_BASE_PATH=/
 ```
 
 **Verification:**

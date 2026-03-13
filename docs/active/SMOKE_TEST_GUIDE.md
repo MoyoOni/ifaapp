@@ -1,20 +1,29 @@
-# 🧪 Quick Smoke Test Guide — Ìlú Àṣẹ Platform
+# 🧪 Smoke Test Guide — Ìlú Àṣẹ Platform
 
 **Purpose:** Manual verification that key user flows work end-to-end before launch
-**Environment:** Staging — http://100.52.200.113:4040
 **Time Required:** 20-30 minutes
 **Last Updated:** March 13, 2026
 
 ---
 
-## 🚀 Quick Start
+## 🌍 Environments
 
-### Staging URLs
+### Production — https://iluase.com ✅ LIVE
+```
+Frontend:  https://iluase.com
+API:       https://iluase.com/api/health
+Swagger:   https://iluase.com/api/docs (disabled in prod)
+```
+
+### Staging — http://100.52.200.113:4040
 ```
 Frontend:  http://100.52.200.113:4040
 Backend:   http://100.52.200.113:8080/api/health
 Swagger:   http://100.52.200.113:8080/api/docs
+SSH:       ssh -i "~\ile-ase-key.pem" ubuntu@100.52.200.113
 ```
+
+> Run smoke tests on **staging** first. Once all 8 pass and are signed off, run the same tests on **production** before go-live (V6-209).
 
 ### Test Account
 ```
@@ -22,7 +31,7 @@ Email: test@example.com
 Password: TestPassword123!
 ```
 
-> **Note:** The staging database starts empty. You will need to register a new account in Test 1 before running subsequent tests. There is no pre-seeded demo data on staging.
+> **Note:** Both databases start empty. Register a new account in Test 1 before running subsequent tests. No pre-seeded demo data on staging or production.
 
 ---
 
