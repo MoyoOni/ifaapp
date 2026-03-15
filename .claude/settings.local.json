@@ -141,7 +141,13 @@
       "Bash(REDIS_PASS=\"i8LIvuPDipMK98UKDQtph6Mbrd9tGDKt\")",
       "Bash(__NEW_LINE_79ef5c8290c51ef9__ aws:*)",
       "Bash(aws ecr:*)",
-      "Bash(docker build:*)"
+      "Bash(docker build:*)",
+      "Bash(MSYS_NO_PATHCONV=1 aws secretsmanager get-secret-value --secret-id iluase/prod/app-secrets --query SecretString --output text)",
+      "Bash(ACCOUNT=091653536932)",
+      "Bash(REGION=us-east-1)",
+      "Bash(MSYS_NO_PATHCONV=1 aws ecr get-login-password --region $REGION)",
+      "Bash(docker login:*)",
+      "Bash(aws cloudfront:*)"
     ]
   }
 }
