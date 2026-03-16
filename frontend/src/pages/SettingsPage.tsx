@@ -1,73 +1,101 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Settings, User, Bell, Shield, Palette, Moon, Sun, Mail, Lock, CreditCard, Trash2, LogOut } from 'lucide-react';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/shared/hooks/use-auth';
-import { logger } from '@/shared/utils/logger';
-import { useModal } from '@/components/common/ModalProvider';
+import api from '@/lib/api';
+
+type SettingsState = {
+  notifications: {
+    email: boolean;
+    push: boolean;
+    sms: boolean;
+    consultationReminders: boolean;
+    communityUpdates: boolean;
+    marketing: boolean;
+  };
+  privacy: {
+    profileVisibility: string;
+    showOnlineStatus: boolean;
+    allowMessaging: boolean;
+  };
+  appearance: {
+    theme: string;
+    language: string;
+  };
+};
+
+const DEFAULT_SETTINGS: SettingsState = {
+  notifications: {
+    email: true,
+    push: true,
+    sms: false,
+    consultationReminders: true,
+    communityUpdates: true,
+    marketing: false,
+  },
+  privacy: {
+    profileVisibility: 'public',
+    showOnlineStatus: true,
+    allowMessaging: true,
+  },
+  appearance: {
+    theme: 'light',
+    language: 'english',
+  },
+};
 
 const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [activeSection, setActiveSection] = useState('account');
+  const [settings, setSettings] = useState<SettingsState>(DEFAULT_SETTINGS);
 
-  // Mock settings data
-  const [settings, setSettings] = useState({
-    notifications: {
-      email: true,
-      push: true,
-      sms: false,
-      consultationReminders: true,
-      communityUpdates: true,
-      marketing: false
+  const { data: userProfile } = useQuery({
+    queryKey: ['user-settings', user?.id],
+    queryFn: async () => {
+      const res = await api.get(`/users/${user!.id}`);
+      return res.data;
     },
-    privacy: {
-      profileVisibility: 'public',
-      showOnlineStatus: true,
-      allowMessaging: true
-    },
-    appearance: {
-      theme: 'light',
-      language: 'english'
-    }
+    enabled: !!user?.id,
   });
+
+  useEffect(() => {
+    if (userProfile?.settings) {
+      setSettings(prev => ({
+        notifications: { ...prev.notifications, ...userProfile.settings.notifications },
+        privacy: { ...prev.privacy, ...userProfile.settings.privacy },
+        appearance: { ...prev.appearance, ...userProfile.settings.appearance },
+      }));
+    }
+  }, [userProfile]);
+
+  const saveSettingsMutation = useMutation({
+    mutationFn: (updated: SettingsState) =>
+      api.patch(`/users/${user!.id}`, { settings: updated }),
+  });
+
+  const updateSettings = (updated: SettingsState) => {
+    setSettings(updated);
+    saveSettingsMutation.mutate(updated);
+  };
 
   const sections = [
     { id: 'account', label: 'Account', icon: User },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'privacy', label: 'Privacy', icon: Shield },
-    { id: 'appearance', label: 'Appearance', icon: Palette }
+    { id: 'appearance', label: 'Appearance', icon: Palette },
   ];
 
-  const { showModal } = useModal();
-
   const handleLogout = () => {
-    showModal({
-      title: 'Confirm Logout',
-      message: 'Are you sure you want to log out?',
-      confirmText: 'Logout',
-      cancelText: 'Cancel',
-      onConfirm: () => {
-        logout();
-        navigate('/login');
-      }
-    });
+    if (window.confirm('Are you sure you want to log out?')) {
+      logout();
+      navigate('/login');
+    }
   };
 
   const handleDeleteAccount = () => {
-    showModal({
-      title: 'Confirm Account Deletion',
-      message: 'This action cannot be undone. Are you sure you want to delete your account?',
-      confirmText: 'Delete Account',
-      cancelText: 'Cancel',
-      onConfirm: async () => {
-        try {
-          // In real app, this would call delete account API
-          logger.info('Account deletion requested');
-        } catch (error) {
-          logger.error('Failed to delete account:', error);
-        }
-      }
-    });
+    window.confirm('This action cannot be undone. Are you sure you want to delete your account?');
   };
 
   return (
@@ -91,6 +119,7 @@ const SettingsPage: React.FC = () => {
                 return (
                   <button
                     key={section.id}
+                    type="button"
                     onClick={() => setActiveSection(section.id)}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
                       activeSection === section.id
@@ -113,6 +142,7 @@ const SettingsPage: React.FC = () => {
               </h3>
               <div className="space-y-3">
                 <button
+                  type="button"
                   onClick={handleLogout}
                   className="w-full flex items-center gap-2 px-3 py-2 text-red-700 hover:bg-red-100 rounded-lg transition-colors"
                 >
@@ -120,6 +150,7 @@ const SettingsPage: React.FC = () => {
                   <span className="font-medium">Log Out</span>
                 </button>
                 <button
+                  type="button"
                   onClick={handleDeleteAccount}
                   className="w-full flex items-center gap-2 px-3 py-2 text-red-700 hover:bg-red-100 rounded-lg transition-colors"
                 >
@@ -136,7 +167,7 @@ const SettingsPage: React.FC = () => {
               {activeSection === 'account' && (
                 <div>
                   <h2 className="text-2xl font-bold text-stone-800 mb-6">Account Settings</h2>
-                  
+
                   <div className="space-y-6">
                     <div className="flex items-center gap-4 p-4 bg-stone-50 rounded-xl">
                       <div className="w-16 h-16 bg-highlight/10 rounded-full flex items-center justify-center">
@@ -150,15 +181,27 @@ const SettingsPage: React.FC = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <button className="flex items-center gap-2 px-4 py-3 bg-stone-100 hover:bg-stone-200 rounded-xl transition-colors">
+                      <button
+                        type="button"
+                        onClick={() => navigate('/profile')}
+                        className="flex items-center gap-2 px-4 py-3 bg-stone-100 hover:bg-stone-200 rounded-xl transition-colors"
+                      >
                         <Mail size={18} className="text-stone-600" />
                         <span className="font-medium text-stone-700">Update Email</span>
                       </button>
-                      <button className="flex items-center gap-2 px-4 py-3 bg-stone-100 hover:bg-stone-200 rounded-xl transition-colors">
+                      <button
+                        type="button"
+                        onClick={() => navigate('/profile')}
+                        className="flex items-center gap-2 px-4 py-3 bg-stone-100 hover:bg-stone-200 rounded-xl transition-colors"
+                      >
                         <Lock size={18} className="text-stone-600" />
                         <span className="font-medium text-stone-700">Change Password</span>
                       </button>
-                      <button className="flex items-center gap-2 px-4 py-3 bg-stone-100 hover:bg-stone-200 rounded-xl transition-colors">
+                      <button
+                        type="button"
+                        onClick={() => navigate('/wallet')}
+                        className="flex items-center gap-2 px-4 py-3 bg-stone-100 hover:bg-stone-200 rounded-xl transition-colors"
+                      >
                         <CreditCard size={18} className="text-stone-600" />
                         <span className="font-medium text-stone-700">Payment Methods</span>
                       </button>
@@ -170,7 +213,7 @@ const SettingsPage: React.FC = () => {
               {activeSection === 'notifications' && (
                 <div>
                   <h2 className="text-2xl font-bold text-stone-800 mb-6">Notification Preferences</h2>
-                  
+
                   <div className="space-y-6">
                     <div>
                       <h3 className="font-bold text-stone-800 mb-4">Communication Channels</h3>
@@ -178,20 +221,20 @@ const SettingsPage: React.FC = () => {
                         {[
                           { key: 'email', label: 'Email Notifications' },
                           { key: 'push', label: 'Push Notifications' },
-                          { key: 'sms', label: 'SMS Notifications' }
+                          { key: 'sms', label: 'SMS Notifications' },
                         ].map(({ key, label }) => (
                           <label key={key} className="flex items-center justify-between p-4 bg-stone-50 rounded-xl">
                             <span className="font-medium text-stone-700">{label}</span>
                             <input
                               type="checkbox"
-                              checked={settings.notifications[key as keyof typeof settings.notifications]}
-                              onChange={(e) => setSettings(prev => ({
-                                ...prev,
-                                notifications: {
-                                  ...prev.notifications,
-                                  [key]: e.target.checked
-                                }
-                              }))}
+                              checked={settings.notifications[key as keyof typeof settings.notifications] as boolean}
+                              onChange={(e) => {
+                                const updated = {
+                                  ...settings,
+                                  notifications: { ...settings.notifications, [key]: e.target.checked },
+                                };
+                                updateSettings(updated);
+                              }}
                               className="w-5 h-5 text-highlight rounded focus:ring-highlight"
                             />
                           </label>
@@ -205,20 +248,20 @@ const SettingsPage: React.FC = () => {
                         {[
                           { key: 'consultationReminders', label: 'Consultation Reminders' },
                           { key: 'communityUpdates', label: 'Community Updates' },
-                          { key: 'marketing', label: 'Marketing & Promotions' }
+                          { key: 'marketing', label: 'Marketing & Promotions' },
                         ].map(({ key, label }) => (
                           <label key={key} className="flex items-center justify-between p-4 bg-stone-50 rounded-xl">
                             <span className="font-medium text-stone-700">{label}</span>
                             <input
                               type="checkbox"
-                              checked={settings.notifications[key as keyof typeof settings.notifications]}
-                              onChange={(e) => setSettings(prev => ({
-                                ...prev,
-                                notifications: {
-                                  ...prev.notifications,
-                                  [key]: e.target.checked
-                                }
-                              }))}
+                              checked={settings.notifications[key as keyof typeof settings.notifications] as boolean}
+                              onChange={(e) => {
+                                const updated = {
+                                  ...settings,
+                                  notifications: { ...settings.notifications, [key]: e.target.checked },
+                                };
+                                updateSettings(updated);
+                              }}
                               className="w-5 h-5 text-highlight rounded focus:ring-highlight"
                             />
                           </label>
@@ -232,7 +275,7 @@ const SettingsPage: React.FC = () => {
               {activeSection === 'privacy' && (
                 <div>
                   <h2 className="text-2xl font-bold text-stone-800 mb-6">Privacy Settings</h2>
-                  
+
                   <div className="space-y-6">
                     <div>
                       <h3 className="font-bold text-stone-800 mb-4">Profile Visibility</h3>
@@ -240,7 +283,7 @@ const SettingsPage: React.FC = () => {
                         {[
                           { value: 'public', label: 'Public - Visible to everyone' },
                           { value: 'community', label: 'Community - Visible to verified members only' },
-                          { value: 'private', label: 'Private - Only visible to you' }
+                          { value: 'private', label: 'Private - Only visible to you' },
                         ].map(({ value, label }) => (
                           <label key={value} className="flex items-center gap-3 p-4 bg-stone-50 rounded-xl cursor-pointer">
                             <input
@@ -248,13 +291,13 @@ const SettingsPage: React.FC = () => {
                               name="profileVisibility"
                               value={value}
                               checked={settings.privacy.profileVisibility === value}
-                              onChange={(e) => setSettings(prev => ({
-                                ...prev,
-                                privacy: {
-                                  ...prev.privacy,
-                                  profileVisibility: e.target.value
-                                }
-                              }))}
+                              onChange={(e) => {
+                                const updated = {
+                                  ...settings,
+                                  privacy: { ...settings.privacy, profileVisibility: e.target.value },
+                                };
+                                updateSettings(updated);
+                              }}
                               className="w-4 h-4 text-highlight focus:ring-highlight"
                             />
                             <span className="font-medium text-stone-700">{label}</span>
@@ -271,29 +314,29 @@ const SettingsPage: React.FC = () => {
                           <input
                             type="checkbox"
                             checked={settings.privacy.showOnlineStatus}
-                            onChange={(e) => setSettings(prev => ({
-                              ...prev,
-                              privacy: {
-                                ...prev.privacy,
-                                showOnlineStatus: e.target.checked
-                              }
-                            }))}
+                            onChange={(e) => {
+                              const updated = {
+                                ...settings,
+                                privacy: { ...settings.privacy, showOnlineStatus: e.target.checked },
+                              };
+                              updateSettings(updated);
+                            }}
                             className="w-5 h-5 text-highlight rounded focus:ring-highlight"
                           />
                         </label>
-                        
+
                         <label className="flex items-center justify-between p-4 bg-stone-50 rounded-xl">
                           <span className="font-medium text-stone-700">Allow direct messaging</span>
                           <input
                             type="checkbox"
                             checked={settings.privacy.allowMessaging}
-                            onChange={(e) => setSettings(prev => ({
-                              ...prev,
-                              privacy: {
-                                ...prev.privacy,
-                                allowMessaging: e.target.checked
-                              }
-                            }))}
+                            onChange={(e) => {
+                              const updated = {
+                                ...settings,
+                                privacy: { ...settings.privacy, allowMessaging: e.target.checked },
+                              };
+                              updateSettings(updated);
+                            }}
                             className="w-5 h-5 text-highlight rounded focus:ring-highlight"
                           />
                         </label>
@@ -306,16 +349,14 @@ const SettingsPage: React.FC = () => {
               {activeSection === 'appearance' && (
                 <div>
                   <h2 className="text-2xl font-bold text-stone-800 mb-6">Appearance</h2>
-                  
+
                   <div className="space-y-6">
                     <div>
                       <h3 className="font-bold text-stone-800 mb-4">Theme</h3>
                       <div className="grid grid-cols-2 gap-4">
                         <button
-                          onClick={() => setSettings(prev => ({
-                            ...prev,
-                            appearance: { ...prev.appearance, theme: 'light' }
-                          }))}
+                          type="button"
+                          onClick={() => updateSettings({ ...settings, appearance: { ...settings.appearance, theme: 'light' } })}
                           className={`p-4 rounded-xl border-2 transition-colors ${
                             settings.appearance.theme === 'light'
                               ? 'border-highlight bg-highlight/5'
@@ -328,12 +369,10 @@ const SettingsPage: React.FC = () => {
                           </div>
                           <div className="bg-white border border-stone-200 rounded-lg w-full h-8"></div>
                         </button>
-                        
+
                         <button
-                          onClick={() => setSettings(prev => ({
-                            ...prev,
-                            appearance: { ...prev.appearance, theme: 'dark' }
-                          }))}
+                          type="button"
+                          onClick={() => updateSettings({ ...settings, appearance: { ...settings.appearance, theme: 'dark' } })}
                           className={`p-4 rounded-xl border-2 transition-colors ${
                             settings.appearance.theme === 'dark'
                               ? 'border-highlight bg-highlight/5'
@@ -352,11 +391,9 @@ const SettingsPage: React.FC = () => {
                     <div>
                       <h3 className="font-bold text-stone-800 mb-4">Language</h3>
                       <select
+                        aria-label="Language preference"
                         value={settings.appearance.language}
-                        onChange={(e) => setSettings(prev => ({
-                          ...prev,
-                          appearance: { ...prev.appearance, language: e.target.value }
-                        }))}
+                        onChange={(e) => updateSettings({ ...settings, appearance: { ...settings.appearance, language: e.target.value } })}
                         className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-highlight focus:border-transparent"
                       >
                         <option value="english">English</option>

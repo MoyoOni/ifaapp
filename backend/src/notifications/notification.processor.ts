@@ -21,7 +21,7 @@ export class NotificationProcessor extends WorkerHost {
     switch (job.name) {
       case 'sendEmail': {
         const { userId, notification } = job.data;
-        return this.emailService.executeSendEmail(userId, notification);
+        return this.emailService.sendNotificationEmail(userId, notification);
       }
 
       case 'sendPush': {
@@ -31,7 +31,7 @@ export class NotificationProcessor extends WorkerHost {
 
       case 'sendPasswordReset': {
         const { email, resetToken, userName } = job.data;
-        return this.emailService.executeSendPasswordReset(email, resetToken, userName);
+        return this.emailService.sendPasswordResetEmail(email, resetToken, userName);
       }
 
       default:

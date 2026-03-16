@@ -3,9 +3,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { X, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
-import { useAuth } from '@/shared/hooks/use-auth';
-import { logger } from '@/shared/utils/logger';
-import { DEMO_FORUM_CATEGORIES } from './forum-demo';
 import { useToast } from '@/shared/components/toast';
 
 interface ForumCategory {
@@ -47,24 +44,6 @@ interface ForumThread {
   };
 }
 
-interface ForumPost {
-  id: string;
-  threadId: string;
-  authorId: string;
-  content: string;
-  status: string;
-  isEdited: boolean;
-  acknowledgeCount: number;
-  createdAt: string;
-  author: {
-    id: string;
-    name: string;
-    yorubaName?: string;
-    avatar?: string;
-    verified: boolean;
-    culturalLevel?: string;
-  };
-}
 
 interface CreateThreadFormProps {
   categoryId?: string;
@@ -86,7 +65,6 @@ const CreateThreadForm: React.FC<CreateThreadFormProps> = ({
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState(categoryId || '');
-  const { user } = useAuth();
   const isCircleSuggestion = searchParams.get('suggest') === 'circle';
 
   // Pre-fill circle suggestion template if applicable
@@ -109,31 +87,6 @@ Why this circle is needed: [Explain why this circle would benefit the community]
 
   const queryClient = useQueryClient();
 
-  const getSessionThreads = (): ForumThread[] => {
-    if (typeof sessionStorage === 'undefined') {
-      return [];
-    }
-    const stored = sessionStorage.getItem('demo-forum-threads');
-    if (!stored) {
-      return [];
-    }
-    try {
-      return JSON.parse(stored) as ForumThread[];
-    } catch (error) {
-      logger.warn('Failed to parse forum threads cache', error);
-      return [];
-    }
-  };
-
-  const storeSessionThread = (thread: ForumThread, post: ForumPost) => {
-    if (typeof sessionStorage === 'undefined') {
-      return;
-    }
-    const existing = getSessionThreads();
-    sessionStorage.setItem('demo-forum-threads', JSON.stringify([thread, ...existing]));
-    sessionStorage.setItem(`demo-forum-posts:${thread.id}`, JSON.stringify([post]));
-  };
-
   // Fetch categories
   const { data: categories = [] } = useQuery<ForumCategory[]>({
     queryKey: ['forum-categories'],
@@ -151,59 +104,11 @@ Why this circle is needed: [Explain why this circle would benefit the community]
   // Create thread mutation
   const createThreadMutation = useMutation({
     mutationFn: async (data: { categoryId: string; title: string; content: string }) => {
-      try {
-        const response = await api.post('/forum/threads', data);
-        return response.data;
-      } catch (error) {
-        logger.error('Failed to create thread, using demo fallback', error);
-        const now = new Date().toISOString();
-        const fallbackCategory = categories.find((category) => category.id === data.categoryId)
-          || (DEMO_FORUM_CATEGORIES as ForumCategory[]).find((category) => category.id === data.categoryId);
-        const authorId = user?.id || 'demo-client-1';
-        const author = {
-          id: authorId,
-          name: user?.name || 'Community Member',
-          yorubaName: (user as any)?.yorubaName,
-          avatar: (user as any)?.avatar,
-          verified: (user as any)?.verified ?? true,
-          culturalLevel: (user as any)?.culturalLevel,
-        };
-        const threadId = `demo-thread-${Date.now()}`;
-        const thread = {
-          id: threadId,
-          categoryId: data.categoryId,
-          authorId,
-          title: data.title,
-          content: data.content,
-          status: 'ACTIVE',
-          isPinned: false,
-          isLocked: false,
-          isApproved: !(fallbackCategory?.isTeachings ?? false),
-          viewCount: 0,
-          postCount: 1,
-          createdAt: now,
-          author,
-          category: {
-            id: fallbackCategory?.id || data.categoryId,
-            name: fallbackCategory?.name || 'Community',
-            slug: fallbackCategory?.slug || 'community',
-            isTeachings: fallbackCategory?.isTeachings ?? false,
-          },
-        };
-        const post = {
-          id: `demo-post-${Date.now()}`,
-          threadId,
-          authorId,
-          content: data.content,
-          status: 'ACTIVE',
-          isEdited: false,
-          acknowledgeCount: 0,
-          createdAt: now,
-          author,
-        };
-        storeSessionThread(thread, post);
-        return thread;
-      }
+      const response = await api.post('/forum/threads', data);
+      return response.data;
+    },
+    onError: () => {
+      error('Failed to create thread. Please try again.');
     },
     onSuccess: (createdThread) => {
       const prependThread = (existing: ForumThread[] | undefined) => {
@@ -257,6 +162,7 @@ Why this circle is needed: [Explain why this circle would benefit the community]
           <h2 className="text-2xl font-bold brand-font text-white">Create New Thread</h2>
           {onCancel && (
             <button
+              type="button"
               onClick={onCancel}
               className="p-2 hover:bg-white/10 rounded-lg transition-colors"
               aria-label="Cancel and close thread creation"
@@ -282,7 +188,7 @@ Why this circle is needed: [Explain why this circle would benefit the community]
             >
               <option value="">Select a category</option>
               {categories
-                .filter((c) => c.isActive)
+                .filter((c) => c.isActive !== false)
                 .map((category) => (
                   <option key={category.id} value={category.id} className="bg-background">
                     {category.icon && `${category.icon} `}

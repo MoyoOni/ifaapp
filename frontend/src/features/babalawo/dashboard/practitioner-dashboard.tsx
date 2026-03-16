@@ -179,7 +179,7 @@ const PractitionerDashboard: React.FC<PractitionerDashboardProps> = ({ userId, i
                             <Users className="w-4 h-4 mr-2" />
                             View Clients
                           </Button>
-                          <Button className="w-full justify-start" onClick={() => navigate('/practitioner/earnings-report')}>
+                          <Button className="w-full justify-start" onClick={() => navigate('/practitioner/earnings')}>
                             <BarChart3 className="w-4 h-4 mr-2" />
                             View Analytics
                           </Button>

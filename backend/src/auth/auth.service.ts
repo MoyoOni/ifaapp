@@ -6,7 +6,6 @@ import {
   Logger,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import sgMail from '@sendgrid/mail';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
@@ -19,6 +18,8 @@ import { JwtPayload } from './strategies/jwt.strategy';
 import { UserRole } from '@common/enums/user-role.enum';
 import { UserService } from '../modules/user/user.service';
 import { ImpersonationService } from '../shared/services/impersonation.service';
+import { SesEmailService } from '../shared/services/ses-email.service';
+import { generateSlug } from '../users/slug.util';
 
 @Injectable()
 export class AuthService {
@@ -30,7 +31,8 @@ export class AuthService {
     private configService: ConfigService,
     private messagingService: MessagingService,
     private readonly userService: UserService,
-    private readonly impersonationService: ImpersonationService
+    private readonly impersonationService: ImpersonationService,
+    private readonly sesEmailService: SesEmailService
   ) {}
 
   async register(dto: RegisterDto) {
@@ -72,6 +74,15 @@ export class AuthService {
         hasOnboarded: true,
       },
     });
+
+    // Auto-assign slug from name (unique personal URL)
+    const baseSlug = generateSlug(user.name);
+    let slug = baseSlug;
+    const slugConflict = await this.prisma.user.findUnique({ where: { slug } });
+    if (slugConflict) {
+      slug = generateSlug(user.name, Date.now().toString(36).slice(-4));
+    }
+    await this.prisma.user.update({ where: { id: user.id }, data: { slug } });
 
     // Generate tokens
     const tokens = await this.generateTokens({
@@ -382,17 +393,8 @@ Aboru Aboye.`;
   private async sendVerificationEmail(email: string, name: string, token: string): Promise<void> {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173';
     const verifyUrl = `${frontendUrl}/verify-email?token=${token}`;
-    const sendGridApiKey = this.configService.get<string>('SENDGRID_API_KEY');
-    const fromEmail = this.configService.get<string>('EMAIL_FROM') || 'noreply@ilu-ase.com';
 
-    if (sendGridApiKey) {
-      sgMail.setApiKey(sendGridApiKey);
-      await sgMail.send({
-        to: email,
-        from: fromEmail,
-        subject: 'Verify your email — Ilé Àṣẹ',
-        html: `
-<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+    const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
   <div style="background:linear-gradient(135deg,#B45309 0%,#92400E 100%);padding:30px;text-align:center;border-radius:10px 10px 0 0;">
     <h1 style="color:#FDFCF0;margin:0;font-size:28px;">Ilé Àṣẹ</h1>
   </div>
@@ -407,13 +409,10 @@ Aboru Aboye.`;
     <p style="font-size:14px;color:#6B7280;">This link expires in 24 hours. If you did not create an account, you can ignore this email.</p>
     <p style="font-size:12px;color:#9CA3AF;">Or copy this link: ${verifyUrl}</p>
   </div>
-</body></html>`,
-      });
-      this.logger.log(`Verification email sent to ${email}`);
-    } else {
-      // Development fallback: log the URL so it can be used without SMTP configured
-      this.logger.log(`[DEV] Email verification URL for ${email}: ${verifyUrl}`);
-    }
+</body></html>`;
+
+    await this.sesEmailService.sendEmail(email, 'Verify your email — Ilé Àṣẹ', html);
+    this.logger.log(`Verification email sent to ${email}`);
   }
 
   private async generateTokens(payload: JwtPayload) {

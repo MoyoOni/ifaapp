@@ -6,6 +6,7 @@ import { PrismaModule } from '@/prisma/prisma.module';
 import { UserModule } from '../modules/user/user.module';
 import { AuditService } from './services/audit.service';
 import { ImpersonationService } from './services/impersonation.service';
+import { SesEmailService } from './services/ses-email.service';
 import { PiiMaskingUtil } from './utils/pii-masking.util';
 import { AuditInterceptor } from './interceptors/audit.interceptor';
 import { JwtAuthGuard } from './guards/auth.guard';
@@ -33,6 +34,7 @@ import { AdminSubRolesGuard } from './guards/admin-sub-roles.guard';
     AuditInterceptor,
     JwtAuthGuard,
     AdminSubRolesGuard,
+    SesEmailService,
   ],
   exports: [
     Reflector,
@@ -43,6 +45,7 @@ import { AdminSubRolesGuard } from './guards/admin-sub-roles.guard';
     JwtModule,
     JwtAuthGuard,
     AdminSubRolesGuard,
+    SesEmailService,
   ],
 })
 export class SharedModule {}

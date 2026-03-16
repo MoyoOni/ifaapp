@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsEnum, IsArray, MinLength, IsNumber, IsUrl } from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsArray, MinLength, IsNumber, IsUrl, Matches } from 'class-validator';
 import { CulturalLevel } from '@ile-ase/common';
 
 export class UpdateUserDto {
@@ -55,4 +55,9 @@ export class UpdateUserDto {
   @IsString({ each: true })
   @IsOptional()
   interests?: string[];
+
+  @IsString()
+  @IsOptional()
+  @Matches(/^[a-z0-9-]{3,30}$/, { message: 'Slug must be 3-30 lowercase letters, numbers, or hyphens' })
+  slug?: string;
 }

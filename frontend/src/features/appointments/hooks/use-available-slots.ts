@@ -48,8 +48,7 @@ export const useAvailableSlots = ({ babalawoId, date }: UseAvailableSlotsOptions
             setError(errorMessage);
             logger.error('Error fetching available slots:', err);
 
-            // Fall back to demo slots if API fails (for demo purposes)
-            setSlots(['9:00 AM', '10:00 AM', '11:00 AM', '2:00 PM', '3:00 PM', '4:00 PM']);
+            setSlots([]);
         } finally {
             setLoading(false);
         }

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { User, MapPin, ArrowRight, LogOut, ChevronRight, Fingerprint } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { User, MapPin, ArrowRight, LogOut, ChevronRight, Fingerprint, Link } from 'lucide-react';
 import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
 import CulturalOnboardingPath from './cultural-onboarding-path';
@@ -36,7 +36,7 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
   // Fall back to auth context when not passed as props (e.g. routed directly to /onboarding)
   const userId = userIdProp ?? authUser?.id;
   const userRole = userRoleProp ?? authUser?.role;
-  const [onboardingStep, setOnboardingStep] = useState<'welcome' | 'role-setup' | 'heritage' | 'form'>('welcome');
+  const [onboardingStep, setOnboardingStep] = useState<'welcome' | 'role-setup' | 'username' | 'heritage' | 'form'>('welcome');
   const [welcomeSlide, setWelcomeSlide] = useState(0);
   const [roleSetupComplete, setRoleSetupComplete] = useState(false);
 
@@ -45,6 +45,24 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
   const [reconnectingWithHeritage, setReconnectingWithHeritage] = useState<boolean | null>(null);
   const [showCulturalOnboarding, setShowCulturalOnboarding] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Username/slug step (babalawo only)
+  const [slugValue, setSlugValue] = useState('');
+  const [slugChecking, setSlugChecking] = useState(false);
+  const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
+
+  const checkSlug = useCallback(async (value: string) => {
+    if (value.length < 3) { setSlugAvailable(null); return; }
+    setSlugChecking(true);
+    try {
+      await api.get(`/public/resolve/${value}`);
+      setSlugAvailable(false); // 200 = already taken
+    } catch {
+      setSlugAvailable(true); // 404 = available
+    } finally {
+      setSlugChecking(false);
+    }
+  }, []);
 
   // Define slides inside to access props
   const slides = [
@@ -111,20 +129,31 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
         hasOnboarded: true,
       });
 
+      // Save chosen slug if babalawo picked one
+      if (userRole === UserRole.BABALAWO && slugValue.length >= 3 && slugAvailable === true) {
+        await api.patch(`/users/${userId}`, { slug: slugValue });
+      }
+
       // Update the user state with the new onboarding status
       const updatedUser = {
         ...response.data,
         hasOnboarded: true
       };
-      
+
       // Update the user in auth context
       setUser(updatedUser);
 
       if (onComplete) {
         onComplete();
       } else {
-        // Navigate to appropriate dashboard after completion
-        navigate(getDashboardPathForRole(updatedUser.role), { replace: true });
+        // Check if a post-auth redirect is pending (e.g. came from babalawo landing page)
+        const postRedirect = sessionStorage.getItem('postOnboardingRedirect');
+        if (postRedirect) {
+          sessionStorage.removeItem('postOnboardingRedirect');
+          navigate(postRedirect, { replace: true });
+        } else {
+          navigate(getDashboardPathForRole(updatedUser.role), { replace: true });
+        }
       }
     } catch (error) {
       logger.error('Onboarding failed:', error);
@@ -198,7 +227,7 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
             </div>
             <button
               type="button"
-              onClick={() => { setRoleSetupComplete(true); setOnboardingStep('heritage'); }}
+              onClick={() => { setRoleSetupComplete(true); setOnboardingStep('username'); }}
               className="w-full py-4 bg-stone-900 text-white rounded-xl font-bold uppercase tracking-widest hover:bg-stone-800 transition-all shadow-lg flex items-center justify-center gap-2"
             >
               I understand <ChevronRight size={16} />
@@ -233,6 +262,71 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
             >
               Skip for now
             </button>
+          </div>
+        )}
+
+        {/* Username Step (Babalawo only) */}
+        {onboardingStep === 'username' && userRole === UserRole.BABALAWO && (
+          <div className="bg-white rounded-[2rem] p-8 md:p-10 border border-stone-100 shadow-xl space-y-6 animate-in slide-in-from-bottom-8 duration-500">
+            <div className="text-center space-y-2">
+              <div className="w-16 h-16 bg-stone-50 rounded-2xl flex items-center justify-center mx-auto text-3xl">🔗</div>
+              <h2 className="text-3xl font-bold brand-font text-stone-800">Your Personal Link</h2>
+              <p className="text-stone-400 text-sm font-bold uppercase tracking-widest">Choose Your Address</p>
+            </div>
+            <p className="text-stone-500 text-center text-sm">
+              Seekers will find you at this address. Share it on social media, business cards, anywhere.
+            </p>
+            <div className="space-y-3">
+              <label className="text-xs font-bold uppercase text-stone-400 tracking-widest flex items-center gap-2">
+                <Link size={14} />
+                Your site name
+              </label>
+              <div className="flex items-center gap-0 border border-stone-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-highlight/50 focus-within:border-highlight bg-stone-50">
+                <input
+                  type="text"
+                  value={slugValue}
+                  onChange={(e) => {
+                    const val = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 30);
+                    setSlugValue(val);
+                    setSlugAvailable(null);
+                    if (val.length >= 3) checkSlug(val);
+                  }}
+                  placeholder="yourname"
+                  className="flex-1 bg-transparent p-4 text-lg font-bold text-stone-800 outline-none placeholder:text-stone-300 min-w-0"
+                  maxLength={30}
+                />
+                <span className="px-4 text-stone-400 font-semibold text-sm whitespace-nowrap">.iluase.com</span>
+              </div>
+              {slugChecking && <p className="text-xs text-stone-400">Checking availability...</p>}
+              {!slugChecking && slugAvailable === true && (
+                <p className="text-xs text-green-600 font-semibold">✓ Available — this address is yours</p>
+              )}
+              {!slugChecking && slugAvailable === false && (
+                <p className="text-xs text-red-500 font-semibold">✗ Already taken — try a different name</p>
+              )}
+              {slugValue.length >= 3 && slugAvailable === true && (
+                <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-sm text-amber-800">
+                  Preview: <strong>{slugValue}.iluase.com</strong>
+                </div>
+              )}
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setOnboardingStep('heritage')}
+                className="flex-1 py-4 bg-stone-100 text-stone-500 rounded-xl font-bold text-sm uppercase tracking-widest hover:bg-stone-200 transition-all"
+              >
+                Skip for now
+              </button>
+              <button
+                type="button"
+                disabled={slugValue.length >= 3 && (slugChecking || slugAvailable === false)}
+                onClick={() => setOnboardingStep('heritage')}
+                className="flex-[2] py-4 bg-stone-900 text-white rounded-xl font-bold uppercase tracking-widest hover:bg-stone-800 transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Continue <ChevronRight size={16} />
+              </button>
+            </div>
           </div>
         )}
 

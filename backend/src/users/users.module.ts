@@ -1,12 +1,13 @@
 import { Module } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
+import { PublicProfileController } from './public-profile.controller';
 import { CacheModule } from '../cache/cache.module';
 import { SearchModule } from '../search/search.module';
 
 @Module({
   imports: [CacheModule, SearchModule],
-  controllers: [UsersController],
+  controllers: [UsersController, PublicProfileController],
   providers: [UsersService],
   exports: [UsersService],
 })

@@ -76,7 +76,11 @@ const PersonalDashboardView: React.FC = () => {
             
             {/* Personal Journey Progress */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-              <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4">
+              <button
+                type="button"
+                onClick={() => navigate('/client/spiritual-journey')}
+                className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 text-left hover:bg-white/30 transition-colors w-full"
+              >
                 <div className="flex items-center gap-3 mb-2">
                   <Award className="text-yellow-300" size={20} />
                   <span className="text-sm font-medium">Spiritual Growth</span>
@@ -85,7 +89,7 @@ const PersonalDashboardView: React.FC = () => {
                 <div className="w-full bg-white/30 rounded-full h-2 mt-2">
                   <div className={`bg-yellow-300 h-2 rounded-full ${userStats.levelProgressClass}`}></div>
                 </div>
-              </div>
+              </button>
               
               <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4">
                 <div className="flex items-center gap-3 mb-2">

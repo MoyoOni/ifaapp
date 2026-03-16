@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { HelpCircle, Search, Mail, Phone, MessageCircle, BookOpen, Users, Shield, ArrowRight, ChevronDown, ChevronUp } from 'lucide-react';
-import { logger } from '@/shared/utils/logger';
 
 const HelpPage: React.FC = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null);
 
@@ -102,6 +103,14 @@ const HelpPage: React.FC = () => {
     }
   ];
 
+  const categoryRoutes: Record<string, string> = {
+    'getting-started': '/client/dashboard',
+    'consultations': '/babalawo',
+    'community': '/temples',
+    'marketplace': '/marketplace',
+    'account': '/settings',
+  };
+
   const filteredFAQs = faqs.filter(faq =>
     faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
     faq.answer.toLowerCase().includes(searchQuery.toLowerCase())
@@ -149,10 +158,7 @@ const HelpPage: React.FC = () => {
                 <div
                   key={category.id}
                   className="bg-white rounded-2xl border border-stone-200 p-6 hover:shadow-md transition-shadow cursor-pointer group"
-                  onClick={() => {
-                    // In real app, this would navigate to category-specific help
-                    logger.info(`Selected category: ${category.id}`);
-                  }}
+                  onClick={() => navigate(categoryRoutes[category.id] ?? '/')}
                 >
                   <div className="w-12 h-12 bg-highlight/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-highlight/20 transition-colors">
                     <IconComponent className="text-highlight" size={24} />

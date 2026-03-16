@@ -15,7 +15,15 @@ const LoginPage: React.FC = () => {
     React.useEffect(() => {
         if (user && !isLoading && !hasRedirected.current) {
             hasRedirected.current = true;
-            
+
+            // If visitor came from a babalawo landing page, send them there directly
+            const postAuth = sessionStorage.getItem('postAuthRedirect');
+            if (postAuth) {
+                sessionStorage.removeItem('postAuthRedirect');
+                navigate(postAuth, { replace: true });
+                return;
+            }
+
             // Check if user needs to complete onboarding first
             if (!user.hasOnboarded) {
                 navigate('/onboarding', { replace: true });

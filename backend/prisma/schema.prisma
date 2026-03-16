@@ -33,6 +33,7 @@ model User {
   emailVerificationToken    String?                  @unique
   emailVerifiedAt           DateTime?
   hasOnboarded              Boolean                  @default(false)
+  slug                      String?                  @unique
   adminSubRole              String? // FINANCE, MODERATOR, COMPLIANCE, SUPPORT, SUPER
   templeId                  String?
   createdAt                 DateTime                 @default(now())
@@ -91,6 +92,7 @@ model User {
   proposedVotes             AdvisoryVote[]           @relation("ProposedVotes")
   templesJoined             Temple[]                 @relation("TempleMembers")
 
+  @@index([slug])
   @@map("users")
 }
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Outlet, useNavigate, useParams } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ErrorBoundary from './shared/components/error-boundary';
@@ -24,6 +24,7 @@ import SettingsPage from './pages/SettingsPage';
 import HelpPage from './pages/HelpPage';
 import VendorDirectoryPage from './pages/VendorDirectoryPage';
 import NotificationsPage from './pages/NotificationsPage';
+import BabalawoLandingPage from './pages/BabalawoLandingPage';
 
 // Lazy Loaded Components
 const BookingPage = React.lazy(() => import('./pages/BookingPage').then(m => ({ default: m.BookingPage })));
@@ -344,10 +345,27 @@ const LoadingSpinner = () => (
   </div>
 );
 
+// Detects *.iluase.com subdomains and routes them through the slug resolver
+const SubdomainRedirect: React.FC = () => {
+  const navigate = useNavigate();
+  useEffect(() => {
+    const parts = window.location.hostname.split('.');
+    // Trigger for *.iluase.com but not www, app, staging, api, or localhost
+    if (
+      parts.length >= 3 &&
+      !['www', 'app', 'staging', 'api'].includes(parts[0])
+    ) {
+      navigate(`/${parts[0]}`, { replace: true });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  return null;
+};
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router basename={import.meta.env.BASE_URL}>
+        <SubdomainRedirect />
         <ErrorBoundary>
           <div className="App bg-background text-foreground"> {/* Apply theme variables globally */}
             <React.Suspense fallback={<LoadingSpinner />}>
@@ -359,12 +377,12 @@ function App() {
                 <Route path="/privacy" element={<PrivacyPage />} />
                 <Route path="/quick-access" element={<QuickAccessPage />} /> {/* Add quick access route */}
                 <Route path="/test-sentry" element={<SentryTestPage />} /> {/* Sentry testing route */}
-                <Route path="/notifications" element={<NotificationsPage />} /> {/* Notification center */}
-                <Route path="/settings" element={<SettingsPage />} /> {/* User settings */}
-                <Route path="/help" element={<HelpPage />} /> {/* Help and support */}
-                <Route path="/vendors" element={<VendorDirectoryPage />} /> {/* Vendor directory */}
                 <Route path="/onboarding" element={<OnboardingView />} />
                 <Route element={<LayoutWrapper />}>
+                  <Route path="/notifications" element={<NotificationsPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/help" element={<HelpPage />} />
+                  <Route path="/vendors" element={<VendorDirectoryPage />} />
                   <Route path="/" element={<HomePage />} />
                   <Route path="/client/dashboard" element={
                     <ErrorBoundary>
@@ -464,6 +482,8 @@ function App() {
                   <Route path="/prescriptions/approve/:id" element={<ErrorBoundary><PrescriptionApprovalPage /></ErrorBoundary>} />
                   <Route path="/prescriptions/history" element={<ErrorBoundary><PrescriptionHistoryPage /></ErrorBoundary>} />
                   <Route path="/yoruba-word/:wordId" element={<ErrorBoundary><YorubaWordDetailPage /></ErrorBoundary>} />
+                  {/* Public profile slug route — must be last before 404 */}
+                  <Route path="/:slug" element={<BabalawoLandingPage />} />
                   <Route path="*" element={<NotFound />} />
                 </Route>
               </Routes>

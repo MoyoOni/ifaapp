@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as Sentry from '@sentry/node';
-import { nodeProfilingIntegration } from '@sentry/profiling-node';
+import { initSentry, captureException, captureMessage as sentryCaptureMessage, setUser as sentrySetUser, addBreadcrumb as sentryAddBreadcrumb } from '../sentry';
 
 @Injectable()
 export class SentryService {
@@ -15,24 +14,7 @@ export class SentryService {
     this.isEnabled = !!dsn && environment !== 'development';
 
     if (this.isEnabled) {
-      Sentry.init({
-        dsn,
-        environment,
-        integrations: [nodeProfilingIntegration()],
-        tracesSampleRate: environment === 'production' ? 0.1 : 1.0,
-        profilesSampleRate: environment === 'production' ? 0.1 : 1.0,
-        beforeSend(event, _hint) {
-          // Filter out sensitive data
-          if (event.request) {
-            delete event.request.cookies;
-            if (event.request.headers) {
-              delete event.request.headers.authorization;
-              delete event.request.headers.cookie;
-            }
-          }
-          return event;
-        },
-      });
+      initSentry();
 
       this.logger.log(`Sentry initialized for ${environment}`);
     } else {
@@ -42,7 +24,7 @@ export class SentryService {
 
   captureException(exception: any, context?: Record<string, any>) {
     if (this.isEnabled) {
-      Sentry.captureException(exception, { extra: context });
+      captureException(exception, context);
     } else {
       this.logger.error('Exception:', exception);
       if (context) {
@@ -51,9 +33,9 @@ export class SentryService {
     }
   }
 
-  captureMessage(message: string, level: Sentry.SeverityLevel = 'info') {
+  captureMessage(message: string, level = 'info') {
     if (this.isEnabled) {
-      Sentry.captureMessage(message, level);
+      sentryCaptureMessage(message, level);
     } else {
       this.logger.log(message);
     }
@@ -61,19 +43,19 @@ export class SentryService {
 
   setUser(user: { id: string; email?: string; role?: string }) {
     if (this.isEnabled) {
-      Sentry.setUser(user);
+      sentrySetUser(user as Record<string, unknown>);
     }
   }
 
   clearUser() {
     if (this.isEnabled) {
-      Sentry.setUser(null);
+      sentrySetUser(null);
     }
   }
 
-  addBreadcrumb(breadcrumb: Sentry.Breadcrumb) {
+  addBreadcrumb(breadcrumb: Record<string, unknown>) {
     if (this.isEnabled) {
-      Sentry.addBreadcrumb(breadcrumb);
+      sentryAddBreadcrumb(breadcrumb);
     }
   }
 }

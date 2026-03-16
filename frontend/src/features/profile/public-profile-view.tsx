@@ -563,18 +563,43 @@ function ConnectCard({
           {isCurrentUser ? 'Profile' : 'Connect'}
         </h3>
       </div>
+      {/* Shareable link banner — shown on babalawo's own profile */}
+      {isCurrentUser && isBabalawo && user.slug && (
+        <div className="mx-4 mb-2 flex items-center gap-2 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 text-xs">
+          <Globe size={12} className="text-amber-600 shrink-0" />
+          <span className="text-amber-800 font-medium truncate">{user.slug}.iluase.com</span>
+          <button
+            type="button"
+            onClick={() => navigator.clipboard.writeText(`https://${user.slug}.iluase.com`).catch(() => {})}
+            className="ml-auto shrink-0 text-amber-600 font-semibold hover:text-amber-800 transition-colors"
+          >
+            Copy
+          </button>
+        </div>
+      )}
       <div className="p-4 grid grid-cols-2 gap-2">
         {isCurrentUser ? (
           <>
             <ActionButton
               label="Edit Profile"
               icon={<User size={14} />}
-              onClick={() => onNavigate('/profile')}
+              onClick={() => onNavigate('/settings')}
             />
             <ActionButton
               label="Share"
               icon={<Share2 size={14} />}
-              onClick={() => { }}
+              onClick={() => {
+                const url = user.slug && user.role === UserRole.BABALAWO
+                  ? `https://${user.slug}.iluase.com`
+                  : user.slug
+                    ? `https://iluase.com/${user.slug}`
+                    : `${window.location.origin}/profile/${user.id}`;
+                if (navigator.share) {
+                  navigator.share({ title: user.name, url }).catch(() => {});
+                } else {
+                  navigator.clipboard.writeText(url).catch(() => {});
+                }
+              }}
             />
           </>
         ) : (
@@ -601,7 +626,18 @@ function ConnectCard({
             <ActionButton
               label="Share"
               icon={<Share2 size={14} />}
-              onClick={() => { }}
+              onClick={() => {
+                const url = user.slug && user.role === UserRole.BABALAWO
+                  ? `https://${user.slug}.iluase.com`
+                  : user.slug
+                    ? `https://iluase.com/${user.slug}`
+                    : `${window.location.origin}/profile/${user.id}`;
+                if (navigator.share) {
+                  navigator.share({ title: user.name, url }).catch(() => {});
+                } else {
+                  navigator.clipboard.writeText(url).catch(() => {});
+                }
+              }}
             />
             <ActionButton
               label="Report"

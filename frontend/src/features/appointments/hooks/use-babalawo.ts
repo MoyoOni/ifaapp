@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
-import { getDemoUserById, type DemoUser } from '@/demo';
 
 interface Babalawo {
   id: string;
@@ -51,14 +50,6 @@ export const useBabalawo = (babalawoId: string | null) => {
         setBabalawo(babalawoData);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
-        const demoBaba = getDemoUserById(babalawoId) as DemoUser | null;
-        setBabalawo({
-          id: demoBaba?.id || babalawoId,
-          name: demoBaba?.name || 'Babalawo',
-          yorubaName: demoBaba?.yorubaName,
-          avatar: demoBaba?.avatar,
-          services: demoBaba?.services || defaultServices,
-        });
       } finally {
         setLoading(false);
       }

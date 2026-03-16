@@ -23,7 +23,16 @@ const SignupPage: React.FC = () => {
             <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
                 <RegisterForm
                     selectedRole={selectedRole}
-                    onSuccess={() => navigate('/onboarding')}
+                    onSuccess={() => {
+                        // If visitor came from a babalawo landing page, preserve redirect
+                        // so onboarding can forward them to the right booking page after completion
+                        const postAuth = sessionStorage.getItem('postAuthRedirect');
+                        if (postAuth) {
+                            sessionStorage.removeItem('postAuthRedirect');
+                            sessionStorage.setItem('postOnboardingRedirect', postAuth);
+                        }
+                        navigate('/onboarding');
+                    }}
                     onSwitchToLogin={() => navigate('/login')}
                     onBack={() => setSelectedRole(null)}
                 />

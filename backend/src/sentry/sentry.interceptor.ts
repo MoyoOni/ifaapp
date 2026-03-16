@@ -1,7 +1,7 @@
 import { CallHandler, ExecutionContext, Injectable, Logger, NestInterceptor } from '@nestjs/common';
 import { throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-import * as Sentry from '@sentry/node';
+import { captureException, withScope } from '../sentry';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
@@ -18,31 +18,19 @@ export class SentryInterceptor implements NestInterceptor {
 
     return (next.handle() as any).pipe(
       catchError((error: any) => {
-        // Capture the error in Sentry
-        Sentry.withScope((scope) => {
-          // Add context based on the request
-          const request = context.switchToHttp().getRequest();
-
-          if (request) {
-            scope.setExtra('url', request.url);
-            scope.setExtra('method', request.method);
-            scope.setExtra('params', request.params);
-            scope.setExtra('query', request.query);
-            scope.setExtra('body', request.body);
-
-            // Add user context if available
-            if (request.user) {
-              scope.setUser({
-                id: request.user.id,
-                email: request.user.email,
-                username: request.user.username,
-              });
-            }
+        const request = context.switchToHttp().getRequest();
+        const ctx: Record<string, unknown> = {};
+        if (request) {
+          ctx['url'] = request.url;
+          ctx['method'] = request.method;
+          if (request.user) ctx['userId'] = request.user.id;
+        }
+        withScope((scope: any) => {
+          if (scope?.setExtra) {
+            Object.entries(ctx).forEach(([k, v]) => scope.setExtra(k, v));
           }
-
-          // Capture the exception
-          const eventId = Sentry.captureException(error);
-          this.logger.error(`Sentry Event ID: ${eventId}`, error);
+          captureException(error);
+          this.logger.error('Captured error in Sentry', error);
         });
 
         return throwError(() => error);

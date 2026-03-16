@@ -25,7 +25,15 @@
     "@types/node": "^20.11.17",
     "concurrently": "^8.2.2"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/context-async-hooks": "^2.6.0",
+    "@opentelemetry/core": "^2.6.0",
+    "@opentelemetry/instrumentation": "^0.211.0",
+    "@opentelemetry/resources": "^2.6.0",
+    "@opentelemetry/sdk-trace-base": "^2.6.0",
+    "@opentelemetry/semantic-conventions": "^1.40.0"
+  },
   "overrides": {
     "react": "^19.2.3",
     "react-dom": "^19.2.3"

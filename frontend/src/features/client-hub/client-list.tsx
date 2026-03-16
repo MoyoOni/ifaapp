@@ -4,7 +4,6 @@ import { User, MessageSquare, Calendar } from 'lucide-react';
 import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
 
-import { getAllDemoUsers } from '@/demo';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface Client {

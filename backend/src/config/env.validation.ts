@@ -41,8 +41,7 @@ const envSchema = z.object({
   AWS_S3_BUCKET_NAME: z.string().optional(),
   AWS_ACCESS_KEY_ID: z.string().optional(),
   AWS_SECRET_ACCESS_KEY: z.string().optional(),
-  SENDGRID_API_KEY: z.string().optional(),
-  EMAIL_FROM: z.string().optional(),
+  SES_FROM_EMAIL: z.string().email().optional(),
   PAYSTACK_SECRET_KEY: z.string().optional(),
   FLUTTERWAVE_PUBLIC_KEY: z.string().optional(),
   FLUTTERWAVE_SECRET_KEY: z.string().optional(),
@@ -72,11 +71,6 @@ export function validateEnv(config: Record<string, unknown>): Env {
   // Additional validation: ENCRYPTION_KEY is required in production
   if (parsed.data.NODE_ENV === 'production' && !parsed.data.ENCRYPTION_KEY) {
     throw new Error('ENCRYPTION_KEY is required in production for secure messaging');
-  }
-
-  // SENTRY_DSN is required in production for error monitoring
-  if (parsed.data.NODE_ENV === 'production' && !parsed.data.SENTRY_DSN) {
-    throw new Error('SENTRY_DSN is required in production for error monitoring');
   }
 
   return parsed.data;
