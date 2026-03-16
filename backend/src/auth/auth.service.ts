@@ -51,13 +51,16 @@ export class AuthService {
     // Generate email verification token (one-use UUID)
     const emailVerificationToken = randomUUID();
 
+    // Prevent self-registration as ADMIN or VENDOR — those roles are assigned by existing admins
+    const safeRole = dto.role === UserRole.ADMIN ? UserRole.CLIENT : dto.role;
+
     // Create user
     const user = await this.prisma.user.create({
       data: {
         email: dto.email,
         name: dto.name,
         passwordHash,
-        role: dto.role,
+        role: safeRole,
         phone: dto.phone ?? null,
         yorubaName: dto.yorubaName,
         culturalLevel: dto.culturalLevel || 'Omo Ilé',

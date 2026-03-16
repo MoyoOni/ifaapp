@@ -18,6 +18,11 @@ export class UsersController {
     return this.usersService.findAll({ role, verified, search });
   }
 
+  @Get('me')
+  async getMe(@CurrentUser() currentUser: CurrentUserPayload) {
+    return this.usersService.findOne(currentUser.id);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);

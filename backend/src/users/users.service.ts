@@ -134,11 +134,14 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
-    // Cache the user profile for 1 hour
-    await this.cacheManager.cacheUserProfile(id, user, 3600);
+    // Strip sensitive fields before caching and returning
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { passwordHash: _ph, emailVerificationToken: _evt, ...safeUser } = user as Record<string, unknown> & typeof user;
 
-    // Return user as is - frontend parses the structure
-    return user;
+    // Cache the user profile for 1 hour
+    await this.cacheManager.cacheUserProfile(id, safeUser, 3600);
+
+    return safeUser;
   }
 
   async update(id: string, dto: UpdateUserDto, currentUser: CurrentUserPayload) {
