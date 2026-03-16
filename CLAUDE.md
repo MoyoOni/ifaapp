@@ -46,7 +46,7 @@ Before working on production launch tasks, AI agents MUST read:
 - Sprint 7: 🐛 Critical Bug Fixes (16 SP) — ✅ COMPLETED
 - Sprint 8: 🛡️ Production Hardening (27 SP) — ✅ COMPLETED
 - Sprint 9: 🔐 Pre-Launch Polish / No AWS (20 SP) — ✅ COMPLETED
-- Sprint 10: ☁️ AWS Infrastructure & Go-Live (45 SP) — 🔵 IN PROGRESS (V6-201 ✅ V6-202 ✅ V6-204 ✅ V6-205 ✅)
+- Sprint 10: ☁️ AWS Infrastructure & Go-Live (45 SP) — 🔵 IN PROGRESS (V6-201 ✅ V6-202 ✅ V6-203 ✅ V6-204 ✅ V6-205 ✅ V6-208 ✅)
 
 **V4-708:** Spiritual journey — not shipping for launch, may revisit later in 2026.
 
@@ -55,33 +55,37 @@ Before working on production launch tasks, AI agents MUST read:
 
 ---
 
-## Current Status (Last Updated: March 13, 2026)
+## Current Status (Last Updated: March 16, 2026)
 
 **Production is LIVE at https://iluase.com**
-**Sprints 1-9: 221/241 SP complete. Sprint 10 in progress.**
+**Sprints 1-9: 221/241 SP complete. Sprint 10: 6/7 tasks done.**
 
-### Infrastructure (March 13, 2026)
+### Infrastructure (March 16, 2026)
 
 ✅ **Staging** — EC2 t3.small, Docker Compose, http://100.52.200.113:4040
-✅ **Production** — ECS Fargate (2×backend + 2×frontend), multi-AZ RDS Postgres 16, Redis 7 cluster, ALB, ACM wildcard cert, Route53 DNS
+✅ **Production** — ECS Fargate (2×backend task def :8 / 2×frontend), multi-AZ RDS Postgres 16, Redis 7 cluster, ALB, ACM wildcard cert, Route53 DNS
+✅ **CloudFront CDN** — Distribution EHB5M2I36BDVR (d1y1pwa2hdbebe.cloudfront.net), iluase.com + www.iluase.com → CloudFront, /api/* uncached, statics CachingOptimized
+✅ **Uptime monitoring** — Route53 health checks (2 active) + CloudWatch alarms both OK, multi-region (us-east-1, us-west-1, eu-west-1, sa-east-1)
+✅ **Security fixes** — passwordHash/emailVerificationToken stripped from user API, /users/me route added, ADMIN self-registration blocked (task def :8, image ses-20260316c)
+✅ **Shareable profile URLs** — slug field on User, GET /public/resolve/:slug (no auth), BabalawoLandingPage, SubdomainRedirect, /:slug route, username onboarding step for babalawo
 
 ### Remaining Sprint 10 Tasks — See [V4_TODO.md](V4_TODO.md)
 
 | Task | Status |
 |------|--------|
-| V6-203: Staging smoke tests (8 scenarios) | ⬜ READY — Test 1 passing |
+| V6-203: Staging smoke tests (8 scenarios) | ✅ DONE — 13 scenarios passed on production |
 | V6-206: RDS backup restore test | ⬜ READY |
 | V6-207: Load test (100+ concurrent, k6/Artillery) | ⬜ READY |
-| V6-208: CloudFront CDN + uptime monitor | ⬜ READY |
-| V6-209: Production cutover checklist + go-live | ⬜ PENDING smoke tests |
+| V6-208: CloudFront CDN + uptime monitor | ✅ DONE — CloudFront live, Route53 health checks + CloudWatch alarms OK |
+| V6-209: Production cutover checklist + go-live | ⬜ PENDING load test (V6-207) + backup restore (V6-206) |
 
 **Timeline to April 1 Launch:**
 
 | Date | Milestone | Status |
 |------|-----------|--------|
 | Mar 13 | Staging + Production live | ✅ DONE |
-| Mar 15 | Staging smoke tests pass | ⬜ TODO |
-| Mar 22 | Load test + CDN + backup restore | ⬜ TODO |
+| Mar 16 | Smoke tests + CloudFront CDN + security fixes | ✅ DONE |
+| Mar 22 | Load test + backup restore | ⬜ TODO |
 | Mar 28 | Final security audit + cutover | ⬜ TODO |
 | Apr 01 | **🚀 GO LIVE** | ⏳ PENDING |
 
