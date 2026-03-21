@@ -81,7 +81,7 @@ const canEdit = user && (user.role === 'ADMIN' || temple?.founderId === user.id)
 
 if (isLoading) {
   return (
-    <div className="min-h-screen bg-stone-50 flex items-center justify-center">
+    <div className="min-h-screen bg-muted/40 flex items-center justify-center">
       <div className="w-12 h-12 border-4 border-highlight border-t-transparent rounded-full animate-spin"></div>
     </div>
   );
@@ -89,7 +89,7 @@ if (isLoading) {
 
 if (!temple) {
   return (
-    <div className="min-h-screen bg-stone-50 text-stone-800 p-6 flex flex-col items-center justify-center">
+    <div className="min-h-screen bg-muted/40 text-stone-800 dark:text-stone-200 p-6 flex flex-col items-center justify-center">
       <Building2 className="w-16 h-16 text-stone-300 mb-4" />
       <p className="text-stone-500 text-lg font-medium">Temple not found.</p>
       <button onClick={onBack} className="mt-4 text-highlight font-bold hover:underline">
@@ -101,16 +101,16 @@ if (!temple) {
 
 if (!canEdit) {
   return (
-    <div className="min-h-screen bg-stone-50 text-stone-800 p-6 flex items-center justify-center">
-      <div className="max-w-md text-center space-y-4 bg-white p-8 rounded-2xl shadow-xl">
-        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto text-red-500">
+    <div className="min-h-screen bg-muted/40 text-stone-800 dark:text-stone-200 p-6 flex items-center justify-center">
+      <div className="max-w-md text-center space-y-4 bg-card p-8 rounded-2xl shadow-xl">
+        <div className="w-16 h-16 bg-red-50 dark:bg-red-950/30 rounded-full flex items-center justify-center mx-auto text-red-500 dark:text-red-400">
           <X size={32} />
         </div>
         <h3 className="text-xl font-bold">Access Denied</h3>
         <p className="text-stone-500">
           You do not have permission to manage this temple.
         </p>
-        <button onClick={onBack} className="w-full py-3 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold rounded-xl transition-colors">
+        <button onClick={onBack} className="w-full py-3 bg-muted/60 hover:bg-muted text-stone-700 dark:text-stone-300 font-bold rounded-xl transition-colors">
           Return
         </button>
       </div>
@@ -127,12 +127,12 @@ const handleInputChange = (field: keyof UpdateTempleDto, value: unknown) => {
 };
 
 return (
-  <div className="min-h-screen bg-stone-50 text-stone-800 p-6">
+  <div className="min-h-screen bg-muted/40 text-stone-800 dark:text-stone-200 p-6">
     <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-2">
-          <h1 className="text-4xl font-bold brand-font text-stone-800 flex items-center gap-3">
+          <h1 className="text-4xl font-bold brand-font text-stone-800 dark:text-stone-200 flex items-center gap-3">
             <Building2 className="w-8 h-8 text-highlight" />
             Manage Temple
           </h1>
@@ -146,7 +146,7 @@ return (
           {onBack && (
             <button
               onClick={onBack}
-              className="px-4 py-2 bg-white border border-stone-200 text-stone-600 rounded-xl font-bold hover:bg-stone-50 transition-colors shadow-sm"
+              className="px-4 py-2 bg-card border border-border text-stone-600 rounded-xl font-bold hover:bg-muted/40 transition-colors shadow-sm"
             >
               Back
             </button>
@@ -178,7 +178,7 @@ return (
               }
             }}
             className={`px-6 py-2 rounded-xl font-bold transition-all shadow-sm ${isEditing
-              ? 'bg-stone-200 text-stone-700 hover:bg-stone-300'
+              ? 'bg-muted text-stone-700 dark:text-stone-300 hover:bg-stone-300'
               : 'bg-highlight text-white hover:bg-yellow-500'
               }`}
           >
@@ -188,10 +188,10 @@ return (
       </div>
 
       {/* Temple Information Form */}
-      <div className="bg-white rounded-[2rem] p-8 md:p-10 border border-stone-100 shadow-xl shadow-stone-200/50 space-y-8">
-        <div className="flex items-center justify-between border-b border-stone-100 pb-6">
-          <h2 className="text-2xl font-bold brand-font text-stone-800">Temple Profile</h2>
-          {isEditing && <span className="text-xs font-bold text-highlight bg-amber-50 px-3 py-1 rounded-full border border-amber-100">Editing Mode Active</span>}
+      <div className="bg-card rounded-[2rem] p-8 md:p-10 border border-border/50 shadow-xl shadow-stone-200/50 space-y-8">
+        <div className="flex items-center justify-between border-b border-border/50 pb-6">
+          <h2 className="text-2xl font-bold brand-font text-stone-800 dark:text-stone-200">Temple Profile</h2>
+          {isEditing && <span className="text-xs font-bold text-highlight bg-amber-50 dark:bg-amber-950/30 px-3 py-1 rounded-full border border-amber-100">Editing Mode Active</span>}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -203,7 +203,7 @@ return (
               value={isEditing ? (formData.name ?? temple.name) : temple.name}
               onChange={(e) => handleInputChange('name', e.target.value)}
               disabled={!isEditing}
-              className="w-full bg-stone-50 border border-stone-200 rounded-xl p-4 text-stone-800 font-bold focus:outline-none focus:ring-2 focus:ring-highlight/50 focus:border-highlight disabled:opacity-70 disabled:bg-white disabled:border-stone-100 transition-all"
+              className="w-full bg-muted/40 border border-border rounded-xl p-4 text-stone-800 dark:text-stone-200 font-bold focus:outline-none focus:ring-2 focus:ring-highlight/50 focus:border-highlight disabled:opacity-70 disabled:bg-card disabled:border-border/50 transition-all"
               placeholder="Temple Name"
             />
           </div>
@@ -216,7 +216,7 @@ return (
               value={isEditing ? (formData.yorubaName ?? temple.yorubaName ?? '') : (temple.yorubaName ?? '')}
               onChange={(e) => handleInputChange('yorubaName', e.target.value)}
               disabled={!isEditing}
-              className="w-full bg-stone-50 border border-stone-200 rounded-xl p-4 text-stone-800 font-bold focus:outline-none focus:ring-2 focus:ring-highlight/50 focus:border-highlight disabled:opacity-70 disabled:bg-white disabled:border-stone-100 transition-all"
+              className="w-full bg-muted/40 border border-border rounded-xl p-4 text-stone-800 dark:text-stone-200 font-bold focus:outline-none focus:ring-2 focus:ring-highlight/50 focus:border-highlight disabled:opacity-70 disabled:bg-card disabled:border-border/50 transition-all"
               placeholder="Yoruba Name"
             />
           </div>
@@ -229,7 +229,7 @@ return (
               onChange={(e) => handleInputChange('description', e.target.value)}
               disabled={!isEditing}
               rows={4}
-              className="w-full bg-stone-50 border border-stone-200 rounded-xl p-4 text-stone-800 font-medium focus:outline-none focus:ring-2 focus:ring-highlight/50 focus:border-highlight disabled:opacity-70 disabled:bg-white disabled:border-stone-100 transition-all resize-none"
+              className="w-full bg-muted/40 border border-border rounded-xl p-4 text-stone-800 dark:text-stone-200 font-medium focus:outline-none focus:ring-2 focus:ring-highlight/50 focus:border-highlight disabled:opacity-70 disabled:bg-card disabled:border-border/50 transition-all resize-none"
               placeholder="Tell us about your temple..."
             />
           </div>
@@ -242,7 +242,7 @@ return (
               onChange={(e) => handleInputChange('history', e.target.value)}
               disabled={!isEditing}
               rows={4}
-              className="w-full bg-stone-50 border border-stone-200 rounded-xl p-4 text-stone-800 font-medium focus:outline-none focus:ring-2 focus:ring-highlight/50 focus:border-highlight disabled:opacity-70 disabled:bg-white disabled:border-stone-100 transition-all resize-none"
+              className="w-full bg-muted/40 border border-border rounded-xl p-4 text-stone-800 dark:text-stone-200 font-medium focus:outline-none focus:ring-2 focus:ring-highlight/50 focus:border-highlight disabled:opacity-70 disabled:bg-card disabled:border-border/50 transition-all resize-none"
               placeholder="Share the history of your house..."
             />
           </div>
@@ -255,12 +255,12 @@ return (
               onChange={(e) => handleInputChange('mission', e.target.value)}
               disabled={!isEditing}
               rows={3}
-              className="w-full bg-stone-50 border border-stone-200 rounded-xl p-4 text-stone-800 font-medium focus:outline-none focus:ring-2 focus:ring-highlight/50 focus:border-highlight disabled:opacity-70 disabled:bg-white disabled:border-stone-100 transition-all resize-none"
+              className="w-full bg-muted/40 border border-border rounded-xl p-4 text-stone-800 dark:text-stone-200 font-medium focus:outline-none focus:ring-2 focus:ring-highlight/50 focus:border-highlight disabled:opacity-70 disabled:bg-card disabled:border-border/50 transition-all resize-none"
               placeholder="What is your mission?"
             />
           </div>
 
-          <div className="md:col-span-2 border-t border-stone-100 my-4"></div>
+          <div className="md:col-span-2 border-t border-border/50 my-4"></div>
 
           {/* Location Fields */}
           <div className="space-y-2">
@@ -270,7 +270,7 @@ return (
               value={isEditing ? (formData.city ?? temple.city ?? '') : (temple.city ?? '')}
               onChange={(e) => handleInputChange('city', e.target.value)}
               disabled={!isEditing}
-              className="w-full bg-stone-50 border border-stone-200 rounded-xl p-4 text-stone-800 font-medium focus:outline-none focus:ring-2 focus:ring-highlight/50 focus:border-highlight disabled:opacity-70 disabled:bg-white disabled:border-stone-100 transition-all"
+              className="w-full bg-muted/40 border border-border rounded-xl p-4 text-stone-800 dark:text-stone-200 font-medium focus:outline-none focus:ring-2 focus:ring-highlight/50 focus:border-highlight disabled:opacity-70 disabled:bg-card disabled:border-border/50 transition-all"
               placeholder="City"
             />
           </div>
@@ -282,7 +282,7 @@ return (
               value={isEditing ? (formData.state ?? temple.state ?? '') : (temple.state ?? '')}
               onChange={(e) => handleInputChange('state', e.target.value)}
               disabled={!isEditing}
-              className="w-full bg-stone-50 border border-stone-200 rounded-xl p-4 text-stone-800 font-medium focus:outline-none focus:ring-2 focus:ring-highlight/50 focus:border-highlight disabled:opacity-70 disabled:bg-white disabled:border-stone-100 transition-all"
+              className="w-full bg-muted/40 border border-border rounded-xl p-4 text-stone-800 dark:text-stone-200 font-medium focus:outline-none focus:ring-2 focus:ring-highlight/50 focus:border-highlight disabled:opacity-70 disabled:bg-card disabled:border-border/50 transition-all"
               placeholder="State"
             />
           </div>
@@ -295,7 +295,7 @@ return (
               value={isEditing ? (formData.phone ?? temple.phone ?? '') : (temple.phone ?? '')}
               onChange={(e) => handleInputChange('phone', e.target.value)}
               disabled={!isEditing}
-              className="w-full bg-stone-50 border border-stone-200 rounded-xl p-4 text-stone-800 font-medium focus:outline-none focus:ring-2 focus:ring-highlight/50 focus:border-highlight disabled:opacity-70 disabled:bg-white disabled:border-stone-100 transition-all"
+              className="w-full bg-muted/40 border border-border rounded-xl p-4 text-stone-800 dark:text-stone-200 font-medium focus:outline-none focus:ring-2 focus:ring-highlight/50 focus:border-highlight disabled:opacity-70 disabled:bg-card disabled:border-border/50 transition-all"
               placeholder="+234..."
             />
           </div>
@@ -307,7 +307,7 @@ return (
               value={isEditing ? (formData.email ?? temple.email ?? '') : (temple.email ?? '')}
               onChange={(e) => handleInputChange('email', e.target.value)}
               disabled={!isEditing}
-              className="w-full bg-stone-50 border border-stone-200 rounded-xl p-4 text-stone-800 font-medium focus:outline-none focus:ring-2 focus:ring-highlight/50 focus:border-highlight disabled:opacity-70 disabled:bg-white disabled:border-stone-100 transition-all"
+              className="w-full bg-muted/40 border border-border rounded-xl p-4 text-stone-800 dark:text-stone-200 font-medium focus:outline-none focus:ring-2 focus:ring-highlight/50 focus:border-highlight disabled:opacity-70 disabled:bg-card disabled:border-border/50 transition-all"
               placeholder="temple@example.com"
             />
           </div>
@@ -319,7 +319,7 @@ return (
               value={isEditing ? (formData.website ?? temple.website ?? '') : (temple.website ?? '')}
               onChange={(e) => handleInputChange('website', e.target.value)}
               disabled={!isEditing}
-              className="w-full bg-stone-50 border border-stone-200 rounded-xl p-4 text-stone-800 font-medium focus:outline-none focus:ring-2 focus:ring-highlight/50 focus:border-highlight disabled:opacity-70 disabled:bg-white disabled:border-stone-100 transition-all"
+              className="w-full bg-muted/40 border border-border rounded-xl p-4 text-stone-800 dark:text-stone-200 font-medium focus:outline-none focus:ring-2 focus:ring-highlight/50 focus:border-highlight disabled:opacity-70 disabled:bg-card disabled:border-border/50 transition-all"
               placeholder="https://..."
             />
           </div>
@@ -327,7 +327,7 @@ return (
 
         {/* Save Button */}
         {isEditing && (
-          <div className="flex justify-end pt-6 border-t border-stone-100 mt-6">
+          <div className="flex justify-end pt-6 border-t border-border/50 mt-6">
             <button
               onClick={handleSave}
               disabled={updateMutation.isPending}
@@ -341,9 +341,9 @@ return (
       </div>
 
       {/* Babalawos Management */}
-      <div className="bg-white rounded-[2rem] p-8 border border-stone-100 shadow-xl shadow-stone-200/40 space-y-8">
+      <div className="bg-card rounded-[2rem] p-8 border border-border/50 shadow-xl shadow-stone-200/40 space-y-8">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold brand-font text-stone-800 flex items-center gap-3">
+          <h2 className="text-2xl font-bold brand-font text-stone-800 dark:text-stone-200 flex items-center gap-3">
             <Users size={24} className="text-highlight" />
             Priests & Initiates ({temple.babalawos?.length || 0})
           </h2>
@@ -355,7 +355,7 @@ return (
             {temple.babalawos.map((babalawo) => (
               <div
                 key={babalawo.id}
-                className="flex items-center justify-between bg-stone-50 rounded-xl p-4 border border-stone-100 hover:border-highlight/30 transition-all group"
+                className="flex items-center justify-between bg-muted/40 rounded-xl p-4 border border-border/50 hover:border-highlight/30 transition-all group"
               >
                 <div className="flex items-center gap-4">
                   {babalawo.avatar ? (
@@ -365,12 +365,12 @@ return (
                       className="w-14 h-14 rounded-full object-cover shadow-sm ring-2 ring-white"
                     />
                   ) : (
-                    <div className="w-14 h-14 rounded-full bg-white border border-stone-100 flex items-center justify-center shadow-sm">
+                    <div className="w-14 h-14 rounded-full bg-card border border-border/50 flex items-center justify-center shadow-sm">
                       <Building2 size={24} className="text-stone-300" />
                     </div>
                   )}
                   <div>
-                    <p className="font-bold text-stone-800">{babalawo.name}</p>
+                    <p className="font-bold text-stone-800 dark:text-stone-200">{babalawo.name}</p>
                     {babalawo.yorubaName && (
                       <p className="text-xs font-bold text-highlight uppercase tracking-wider">{babalawo.yorubaName}</p>
                     )}
@@ -390,7 +390,7 @@ return (
                       }
                     }}
                     disabled={removeBabalawoMutation.isPending}
-                    className="p-3 bg-white text-red-500 rounded-lg hover:bg-red-50 transition-colors shadow-sm opacity-0 group-hover:opacity-100 disabled:opacity-50"
+                    className="p-3 bg-card text-red-500 dark:text-red-400 rounded-lg hover:bg-red-50 dark:bg-red-950/30 transition-colors shadow-sm opacity-0 group-hover:opacity-100 disabled:opacity-50"
                     title="Remove Member"
                   >
                     <Trash2 size={18} />
@@ -400,13 +400,13 @@ return (
             ))}
           </div>
         ) : (
-          <div className="text-center py-12 bg-stone-50 rounded-2xl border border-stone-100 border-dashed">
+          <div className="text-center py-12 bg-muted/40 rounded-2xl border border-border/50 border-dashed">
             <p className="text-stone-400 font-medium">No babalawos assigned to this temple yet.</p>
           </div>
         )}
 
         {/* Note about assigning */}
-        <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex gap-3 text-blue-800">
+        <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900 rounded-xl p-4 flex gap-3 text-blue-800 dark:text-blue-400">
           <div className="mt-0.5"><Users size={18} /></div>
           <div>
             <p className="text-sm font-bold">Manage Membership</p>

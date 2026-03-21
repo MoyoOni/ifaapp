@@ -30,7 +30,7 @@ const ROLE_OPTIONS: RoleOption[] = [
     description: 'Share your gifts as a verified spiritual guide and grow your practice.',
     benefits: ['Accept client consultations', 'Manage your practice', 'Connect with temples'],
     icon: <Star size={28} />,
-    color: 'from-stone-50 to-slate-50 border-stone-200 hover:border-stone-400',
+    color: 'from-stone-50 to-slate-50 border-border hover:border-stone-400',
   },
   {
     role: UserRole.VENDOR,
@@ -50,14 +50,14 @@ interface RoleSelectionViewProps {
 
 const RoleSelectionView: React.FC<RoleSelectionViewProps> = ({ onSelectRole, onSwitchToLogin }) => {
   return (
-    <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center p-4 py-12">
+    <div className="min-h-screen bg-muted/40 flex flex-col items-center justify-center p-4 py-12">
       <div className="w-full max-w-2xl space-y-8">
 
         {/* Header */}
         <div className="text-center space-y-4">
           <img src={appLogo} alt="Ìlú Àṣẹ" className="w-14 h-14 mx-auto rounded-2xl shadow-lg" />
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold brand-font text-stone-900 tracking-tight">
+            <h1 className="text-3xl md:text-4xl font-bold brand-font text-stone-900 dark:text-stone-100 tracking-tight">
               Join Ìlú Àṣẹ
             </h1>
             <p className="text-stone-500 mt-2 text-lg">Who are you joining as?</p>
@@ -74,14 +74,14 @@ const RoleSelectionView: React.FC<RoleSelectionViewProps> = ({ onSelectRole, onS
             >
               <div className="flex items-start gap-4">
                 {/* Icon */}
-                <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-sm text-stone-700 flex-shrink-0 group-hover:scale-105 transition-transform">
+                <div className="w-14 h-14 bg-card rounded-xl flex items-center justify-center shadow-sm text-stone-700 dark:text-stone-300 flex-shrink-0 group-hover:scale-105 transition-transform">
                   {option.icon}
                 </div>
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xl font-bold text-stone-900">{option.label}</span>
+                    <span className="text-xl font-bold text-stone-900 dark:text-stone-100">{option.label}</span>
                     <span className="text-sm text-stone-400 font-medium">{option.yorubaLabel}</span>
                   </div>
                   <p className="text-stone-600 text-sm mb-3 leading-relaxed">{option.description}</p>
@@ -111,7 +111,7 @@ const RoleSelectionView: React.FC<RoleSelectionViewProps> = ({ onSelectRole, onS
             Already have an account?{' '}
             <button
               onClick={onSwitchToLogin}
-              className="text-highlight hover:text-yellow-600 font-semibold transition-colors"
+              className="text-highlight hover:text-yellow-600 dark:text-yellow-400 font-semibold transition-colors"
             >
               Sign in
             </button>

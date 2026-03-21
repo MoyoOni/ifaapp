@@ -61,7 +61,7 @@ const SpiritualJourneyView: React.FC = () => {
             greeting.color
           )}>
             <div className="flex items-center gap-4 mb-4">
-              <div className="bg-white/20 p-3 rounded-2xl">
+              <div className="bg-card/20 p-3 rounded-2xl">
                 <Compass size={32} className="text-white" />
               </div>
               <div>
@@ -86,7 +86,7 @@ const SpiritualJourneyView: React.FC = () => {
                 value={milestones.filter(m => m.completed).length}
                 max={milestones.length}
                 aria-label="Milestone progress"
-                className="w-full h-3 rounded-full [&::-webkit-progress-bar]:rounded-full [&::-webkit-progress-bar]:bg-white/20 [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-white [&::-moz-progress-bar]:rounded-full [&::-moz-progress-bar]:bg-white"
+                className="w-full h-3 rounded-full [&::-webkit-progress-bar]:rounded-full [&::-webkit-progress-bar]:bg-card/20 [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-card [&::-moz-progress-bar]:rounded-full [&::-moz-progress-bar]:bg-card"
               />
             </div>
           </div>
@@ -105,15 +105,15 @@ const SpiritualJourneyView: React.FC = () => {
             className="group bg-card rounded-2xl p-6 border border-border hover:border-amber-300 hover:shadow-lg transition-all text-left"
           >
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 bg-amber-100 rounded-xl group-hover:bg-amber-200 transition-colors">
-                <Search size={24} className="text-amber-700" />
+              <div className="p-3 bg-amber-100 dark:bg-amber-900/30 rounded-xl group-hover:bg-amber-200 dark:bg-amber-800/40 transition-colors">
+                <Search size={24} className="text-amber-700 dark:text-amber-400" />
               </div>
               <h3 className="font-bold text-lg text-foreground">Find My Guide</h3>
             </div>
             <p className="text-muted-foreground mb-4">
               Discover verified Babalawos who can guide your spiritual path
             </p>
-            <div className="flex items-center text-amber-600 font-medium group-hover:gap-2 transition-all">
+            <div className="flex items-center text-amber-600 dark:text-amber-400 font-medium group-hover:gap-2 transition-all">
               Browse Directory <span className="ml-1">→</span>
             </div>
           </button>
@@ -124,15 +124,15 @@ const SpiritualJourneyView: React.FC = () => {
             className="group bg-card rounded-2xl p-6 border border-border hover:border-blue-300 hover:shadow-lg transition-all text-left"
           >
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 bg-blue-100 rounded-xl group-hover:bg-blue-200 transition-colors">
-                <Calendar size={24} className="text-blue-700" />
+              <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl group-hover:bg-blue-200 dark:bg-blue-800/40 transition-colors">
+                <Calendar size={24} className="text-blue-700 dark:text-blue-400" />
               </div>
               <h3 className="font-bold text-lg text-foreground">My Consultations</h3>
             </div>
             <p className="text-muted-foreground mb-4">
               {journeyStats.consultations} scheduled sessions with your guides
             </p>
-            <div className="flex items-center text-blue-600 font-medium group-hover:gap-2 transition-all">
+            <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium group-hover:gap-2 transition-all">
               View Schedule <span className="ml-1">→</span>
             </div>
           </button>
@@ -143,15 +143,15 @@ const SpiritualJourneyView: React.FC = () => {
             className="group bg-card rounded-2xl p-6 border border-border hover:border-green-300 hover:shadow-lg transition-all text-left"
           >
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 bg-green-100 rounded-xl group-hover:bg-green-200 transition-colors">
-                <GraduationCap size={24} className="text-green-700" />
+              <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl group-hover:bg-green-200 dark:bg-green-800/40 transition-colors">
+                <GraduationCap size={24} className="text-green-700 dark:text-green-400" />
               </div>
               <h3 className="font-bold text-lg text-foreground">Learning Path</h3>
             </div>
             <p className="text-muted-foreground mb-4">
               Continue your spiritual education and growth
             </p>
-            <div className="flex items-center text-green-600 font-medium group-hover:gap-2 transition-all">
+            <div className="flex items-center text-green-600 dark:text-green-400 font-medium group-hover:gap-2 transition-all">
               Continue Learning <span className="ml-1">→</span>
             </div>
           </button>
@@ -169,25 +169,25 @@ const SpiritualJourneyView: React.FC = () => {
           >
             <h3 className="text-xl font-bold text-foreground mb-6">Journey Overview</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-4 bg-blue-50 rounded-xl">
-                <Calendar className="w-8 h-8 text-blue-600 mx-auto mb-2" />
+              <div className="text-center p-4 bg-blue-50 dark:bg-blue-950/30 rounded-xl">
+                <Calendar className="w-8 h-8 text-blue-600 dark:text-blue-400 mx-auto mb-2" />
                 <div className="text-2xl font-bold text-foreground">{journeyStats.consultations}</div>
                 <div className="text-sm text-muted-foreground">Consultations</div>
               </div>
-              <div className="text-center p-4 bg-green-50 rounded-xl">
-                <BookOpen className="w-8 h-8 text-green-600 mx-auto mb-2" />
+              <div className="text-center p-4 bg-green-50 dark:bg-green-950/30 rounded-xl">
+                <BookOpen className="w-8 h-8 text-green-600 dark:text-green-400 mx-auto mb-2" />
                 <div className="text-2xl font-bold text-foreground">{journeyStats.guidancePlans}</div>
                 <div className="text-sm text-muted-foreground">Guidance Plans</div>
               </div>
-              <div className="text-center p-4 bg-purple-50 rounded-xl">
-                <Users className="w-8 h-8 text-purple-600 mx-auto mb-2" />
+              <div className="text-center p-4 bg-purple-50 dark:bg-purple-950/30 rounded-xl">
+                <Users className="w-8 h-8 text-purple-600 dark:text-purple-400 mx-auto mb-2" />
                 <div className="text-2xl font-bold text-foreground">
                   {journeyStats.temples + journeyStats.circles}
                 </div>
                 <div className="text-sm text-muted-foreground">Communities</div>
               </div>
-              <div className="text-center p-4 bg-amber-50 rounded-xl">
-                <Wallet className="w-8 h-8 text-amber-600 mx-auto mb-2" />
+              <div className="text-center p-4 bg-amber-50 dark:bg-amber-950/30 rounded-xl">
+                <Wallet className="w-8 h-8 text-amber-600 dark:text-amber-400 mx-auto mb-2" />
                 <div className="text-lg font-bold text-foreground truncate">{journeyStats.walletBalance}</div>
                 <div className="text-sm text-muted-foreground">In Wallet</div>
               </div>
@@ -223,10 +223,10 @@ const SpiritualJourneyView: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <button
               onClick={() => navigate('/circles')}
-              className="flex items-center gap-4 p-4 bg-purple-50 rounded-xl hover:bg-purple-100 transition-colors"
+              className="flex items-center gap-4 p-4 bg-purple-50 dark:bg-purple-950/30 rounded-xl hover:bg-purple-100 dark:bg-purple-900/30 transition-colors"
             >
-              <div className="p-3 bg-purple-200 rounded-lg">
-                <Users size={20} className="text-purple-700" />
+              <div className="p-3 bg-purple-200 dark:bg-purple-800/40 rounded-lg">
+                <Users size={20} className="text-purple-700 dark:text-purple-400" />
               </div>
               <div className="text-left">
                 <h4 className="font-bold text-foreground">Community Circles</h4>
@@ -238,10 +238,10 @@ const SpiritualJourneyView: React.FC = () => {
             
             <button
               onClick={() => navigate('/marketplace')}
-              className="flex items-center gap-4 p-4 bg-amber-50 rounded-xl hover:bg-amber-100 transition-colors"
+              className="flex items-center gap-4 p-4 bg-amber-50 dark:bg-amber-950/30 rounded-xl hover:bg-amber-100 transition-colors"
             >
-              <div className="p-3 bg-amber-200 rounded-lg">
-                <ShoppingBag size={20} className="text-amber-700" />
+              <div className="p-3 bg-amber-200 dark:bg-amber-800/40 rounded-lg">
+                <ShoppingBag size={20} className="text-amber-700 dark:text-amber-400" />
               </div>
               <div className="text-left">
                 <h4 className="font-bold text-foreground">Sacred Marketplace</h4>

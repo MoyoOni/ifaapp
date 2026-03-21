@@ -74,28 +74,28 @@ const AnalyticsDashboard: React.FC = () => {
       {/* Babalawo Analytics */}
       {user?.role === 'BABALAWO' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+          <div className="bg-card/5 border border-white/10 rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <Calendar size={24} className="text-blue-400" />
-              <TrendingUp size={20} className="text-green-400" />
+              <TrendingUp size={20} className="dark:text-green-400 text-green-600" />
             </div>
             <div className="text-3xl font-bold text-white mb-1">{analytics.bookings.total}</div>
             <div className="text-sm text-muted">Total Bookings</div>
           </div>
 
-          <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+          <div className="bg-card/5 border border-white/10 rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <Users size={24} className="text-purple-400" />
-              <TrendingUp size={20} className="text-green-400" />
+              <TrendingUp size={20} className="dark:text-green-400 text-green-600" />
             </div>
             <div className="text-3xl font-bold text-white mb-1">{analytics.clients.total}</div>
             <div className="text-sm text-muted">Total Clients</div>
           </div>
 
-          <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+          <div className="bg-card/5 border border-white/10 rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <DollarSign size={24} className="text-highlight" />
-              <TrendingUp size={20} className="text-green-400" />
+              <TrendingUp size={20} className="dark:text-green-400 text-green-600" />
             </div>
             <div className="text-3xl font-bold text-white mb-1">
               ₦{(analytics.bookings.revenue / 1000).toFixed(0)}k
@@ -103,9 +103,9 @@ const AnalyticsDashboard: React.FC = () => {
             <div className="text-sm text-muted">Total Revenue</div>
           </div>
 
-          <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+          <div className="bg-card/5 border border-white/10 rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <TrendingUp size={24} className="text-green-400" />
+              <TrendingUp size={24} className="dark:text-green-400 text-green-600" />
             </div>
             <div className="text-3xl font-bold text-white mb-1">{analytics.clients.retention}%</div>
             <div className="text-sm text-muted">Client Retention</div>
@@ -116,28 +116,28 @@ const AnalyticsDashboard: React.FC = () => {
       {/* Vendor Analytics */}
       {user?.role === 'VENDOR' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+          <div className="bg-card/5 border border-white/10 rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <Package size={24} className="text-blue-400" />
-              <TrendingUp size={20} className="text-green-400" />
+              <TrendingUp size={20} className="dark:text-green-400 text-green-600" />
             </div>
             <div className="text-3xl font-bold text-white mb-1">{analytics.products.total}</div>
             <div className="text-sm text-muted">Total Products</div>
           </div>
 
-          <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+          <div className="bg-card/5 border border-white/10 rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <Package size={24} className="text-purple-400" />
-              <TrendingUp size={20} className="text-green-400" />
+              <TrendingUp size={20} className="dark:text-green-400 text-green-600" />
             </div>
             <div className="text-3xl font-bold text-white mb-1">{analytics.products.sold}</div>
             <div className="text-sm text-muted">Units Sold</div>
           </div>
 
-          <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+          <div className="bg-card/5 border border-white/10 rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <DollarSign size={24} className="text-highlight" />
-              <TrendingUp size={20} className="text-green-400" />
+              <TrendingUp size={20} className="dark:text-green-400 text-green-600" />
             </div>
             <div className="text-3xl font-bold text-white mb-1">
               ₦{(analytics.products.revenue / 1000).toFixed(0)}k
@@ -145,9 +145,9 @@ const AnalyticsDashboard: React.FC = () => {
             <div className="text-sm text-muted">Product Revenue</div>
           </div>
 
-          <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+          <div className="bg-card/5 border border-white/10 rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <TrendingUp size={24} className="text-green-400" />
+              <TrendingUp size={24} className="dark:text-green-400 text-green-600" />
             </div>
             <div className="text-3xl font-bold text-white mb-1">
               {analytics.products.sold > 0
@@ -160,7 +160,7 @@ const AnalyticsDashboard: React.FC = () => {
       )}
 
       {/* Charts Placeholder */}
-      <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+      <div className="bg-card/5 border border-white/10 rounded-xl p-6">
         <h2 className="text-xl font-bold text-white mb-4">Performance Trends</h2>
         <div className="h-64 flex items-center justify-center text-muted">
           <div className="text-center">
@@ -172,7 +172,7 @@ const AnalyticsDashboard: React.FC = () => {
 
       {/* Export Button */}
       <div className="flex justify-end">
-        <button className="px-6 py-3 border border-white/20 text-white rounded-xl font-bold hover:bg-white/10 transition-colors">
+        <button className="px-6 py-3 border border-white/20 text-white rounded-xl font-bold hover:bg-card/10 transition-colors">
           Export Data
         </button>
       </div>

@@ -152,7 +152,7 @@ const GuidancePlanHistoryView: React.FC<GuidancePlanHistoryViewProps> = ({
       case 'CANCELLED':
         return 'text-red-400 bg-red-400/10 border-red-400/30';
       default:
-        return 'text-muted bg-white/5 border-white/10';
+        return 'text-muted bg-card/5 border-white/10';
     }
   };
 
@@ -180,7 +180,7 @@ const GuidancePlanHistoryView: React.FC<GuidancePlanHistoryViewProps> = ({
                 className={`px-3 py-2 text-sm font-medium transition-colors flex-1 ${
                   viewMode === mode 
                     ? 'bg-highlight text-foreground' 
-                    : 'bg-white/5 text-muted hover:bg-white/10'
+                    : 'bg-card/5 text-muted hover:bg-card/10'
                 }`}
                 aria-label={mode === 'all' ? 'Show all plans' : 
                           mode === 'active' ? 'Show active plans' : 
@@ -197,7 +197,7 @@ const GuidancePlanHistoryView: React.FC<GuidancePlanHistoryViewProps> = ({
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-highlight min-w-[150px]"
+            className="px-4 py-2 bg-card/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-highlight min-w-[150px]"
             aria-label="Filter by status"
           >
             <option value="">All Statuses</option>
@@ -219,7 +219,7 @@ const GuidancePlanHistoryView: React.FC<GuidancePlanHistoryViewProps> = ({
             placeholder="Search plans, babalawo, status..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-highlight"
+            className="w-full pl-10 pr-4 py-2 bg-card/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-highlight"
             aria-label="Search guidance plans"
           />
         </div>
@@ -231,7 +231,7 @@ const GuidancePlanHistoryView: React.FC<GuidancePlanHistoryViewProps> = ({
               type="date"
               value={dateRange.start}
               onChange={(e) => setDateRange({...dateRange, start: e.target.value})}
-              className="w-full pl-10 pr-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-highlight"
+              className="w-full pl-10 pr-3 py-2 bg-card/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-highlight"
               aria-label="Start date"
             />
           </div>
@@ -241,7 +241,7 @@ const GuidancePlanHistoryView: React.FC<GuidancePlanHistoryViewProps> = ({
               type="date"
               value={dateRange.end}
               onChange={(e) => setDateRange({...dateRange, end: e.target.value})}
-              className="w-full pl-10 pr-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-highlight"
+              className="w-full pl-10 pr-3 py-2 bg-card/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-highlight"
               aria-label="End date"
             />
           </div>
@@ -250,7 +250,7 @@ const GuidancePlanHistoryView: React.FC<GuidancePlanHistoryViewProps> = ({
 
       {/* Guidance Plans List */}
       {!filteredGuidancePlans || filteredGuidancePlans.length === 0 ? (
-        <div className="text-center p-6 sm:p-8 bg-white/5 rounded-xl border border-white/10">
+        <div className="text-center p-6 sm:p-8 bg-card/5 rounded-xl border border-white/10">
           <p className="text-muted">No guidance plans found</p>
           <p className="text-sm text-muted/70 mt-1">
             {viewMode === 'archived' 
@@ -271,7 +271,7 @@ const GuidancePlanHistoryView: React.FC<GuidancePlanHistoryViewProps> = ({
                 {plans.map((guidancePlan) => (
                   <div
                     key={guidancePlan.id}
-                    className="bg-white/5 rounded-xl p-4 sm:p-6 border border-white/10 hover:border-highlight/30 transition-colors"
+                    className="bg-card/5 rounded-xl p-4 sm:p-6 border border-white/10 hover:border-highlight/30 transition-colors"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                       <div className="flex-1 space-y-2 min-w-0">
@@ -327,7 +327,7 @@ const GuidancePlanHistoryView: React.FC<GuidancePlanHistoryViewProps> = ({
                       {onViewDetails && (
                         <button
                           onClick={() => onViewDetails(guidancePlan.id)}
-                          className="ml-0 sm:ml-4 p-2 hover:bg-white/10 rounded-lg transition-colors self-start"
+                          className="ml-0 sm:ml-4 p-2 hover:bg-card/10 rounded-lg transition-colors self-start"
                           aria-label={`View details for ${guidancePlan.type} guidance plan`}
                         >
                           <Eye className="w-5 h-5 text-muted" aria-hidden="true" />

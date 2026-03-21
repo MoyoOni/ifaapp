@@ -81,7 +81,7 @@ const YorubaWordDetailView: React.FC<YorubaWordDetailViewProps> = ({ wordId, onB
       )}
 
       {/* Word Display */}
-      <div className="bg-white/5 border border-white/10 rounded-xl p-8 md:p-12 space-y-6">
+      <div className="bg-card/5 border border-white/10 rounded-xl p-8 md:p-12 space-y-6">
         <div className="flex items-center gap-2 mb-4">
           <div className="inline-flex items-center gap-2 bg-highlight/20 text-highlight px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest">
             <Sparkles size={14} />
@@ -111,7 +111,7 @@ const YorubaWordDetailView: React.FC<YorubaWordDetailViewProps> = ({ wordId, onB
         </div>
 
         {/* Example */}
-        <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+        <div className="bg-card/5 rounded-xl p-6 border border-white/10">
           <div className="flex items-center gap-2 mb-3">
             <BookOpen size={20} className="text-highlight" />
             <h3 className="text-lg font-bold text-white">Example Usage</h3>

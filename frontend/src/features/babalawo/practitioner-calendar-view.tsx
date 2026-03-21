@@ -18,11 +18,11 @@ interface Appointment {
 
 const statusClass = (status: string) => {
   switch (status) {
-    case 'completed': return 'bg-green-100 text-green-800 border-green-500';
-    case 'cancelled': return 'bg-red-100 text-red-800 border-red-500';
+    case 'completed': return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 border-green-500';
+    case 'cancelled': return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 border-red-500';
     case 'missed': return 'bg-muted text-foreground border-muted-foreground';
-    case 'confirmed': return 'bg-blue-100 text-blue-800 border-blue-500';
-    default: return 'bg-yellow-50 text-yellow-800 border-yellow-400';
+    case 'confirmed': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-blue-500';
+    default: return 'bg-yellow-50 dark:bg-yellow-950/30 text-yellow-800 dark:text-yellow-200 border-yellow-400';
   }
 };
 
@@ -91,7 +91,7 @@ const PractitionerCalendarView: React.FC = () => {
               </h3>
               <div className="mt-2 text-center">
                 <p className="text-sm text-muted-foreground">{monthApts.length} appointments</p>
-                <p className="text-xs text-green-600">{monthApts.filter(a => a.status === 'completed').length} completed</p>
+                <p className="text-xs text-green-600 dark:text-green-400">{monthApts.filter(a => a.status === 'completed').length} completed</p>
               </div>
             </div>
           );

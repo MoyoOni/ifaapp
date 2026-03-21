@@ -83,20 +83,20 @@ const ClientWalletView: React.FC = () => {
 
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case 'consultation': return 'bg-purple-100 text-purple-800';
-      case 'product': return 'bg-blue-100 text-blue-800';
-      case 'refund': return 'bg-green-100 text-green-800';
-      case 'deposit': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'consultation': return 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200';
+      case 'product': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200';
+      case 'refund': return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200';
+      case 'deposit': return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200';
+      default: return 'bg-muted/60 text-foreground';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'failed': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'completed': return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200';
+      case 'pending': return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200';
+      case 'failed': return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200';
+      default: return 'bg-muted/60 text-foreground';
     }
   };
 
@@ -136,7 +136,7 @@ const ClientWalletView: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold brand-font text-stone-900">
+          <h1 className="text-3xl md:text-4xl font-bold brand-font text-stone-900 dark:text-stone-100">
             My Wallet
           </h1>
           <p className="text-stone-600 text-lg">
@@ -145,7 +145,7 @@ const ClientWalletView: React.FC = () => {
         </div>
         <div className="flex gap-2">
           <button 
-            className="px-4 py-2 bg-stone-100 text-stone-700 font-bold rounded-xl hover:bg-stone-200 transition-colors flex items-center gap-2"
+            className="px-4 py-2 bg-muted/60 text-stone-700 dark:text-stone-300 font-bold rounded-xl hover:bg-muted transition-colors flex items-center gap-2"
             onClick={() => setShowAddFundsModal(true)}
           >
             <CreditCard size={18} /> Add Funds
@@ -158,25 +158,25 @@ const ClientWalletView: React.FC = () => {
 
       {/* Balance Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-100">
+        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-100 dark:border-green-900">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-stone-600 text-sm font-bold uppercase tracking-wider">Current Balance</p>
-              <h3 className="text-3xl font-bold text-stone-900 mt-1">{formatCurrency(totalBalance)}</h3>
+              <h3 className="text-3xl font-bold text-stone-900 dark:text-stone-100 mt-1">{formatCurrency(totalBalance)}</h3>
             </div>
-            <div className="p-3 bg-green-100 rounded-xl text-green-700">
+            <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl text-green-700 dark:text-green-400">
               <Wallet size={28} />
             </div>
           </div>
         </div>
         
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100">
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100 dark:border-blue-900">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-stone-600 text-sm font-bold uppercase tracking-wider">Total Spent</p>
-              <h3 className="text-2xl font-bold text-stone-900 mt-1">{formatCurrency(totalSpent)}</h3>
+              <h3 className="text-2xl font-bold text-stone-900 dark:text-stone-100 mt-1">{formatCurrency(totalSpent)}</h3>
             </div>
-            <div className="p-3 bg-blue-100 rounded-xl text-blue-700">
+            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl text-blue-700 dark:text-blue-400">
               <ArrowUp size={24} />
             </div>
           </div>
@@ -186,9 +186,9 @@ const ClientWalletView: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-stone-600 text-sm font-bold uppercase tracking-wider">Total Received</p>
-              <h3 className="text-2xl font-bold text-stone-900 mt-1">{formatCurrency(totalReceived)}</h3>
+              <h3 className="text-2xl font-bold text-stone-900 dark:text-stone-100 mt-1">{formatCurrency(totalReceived)}</h3>
             </div>
-            <div className="p-3 bg-purple-100 rounded-xl text-purple-700">
+            <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-xl text-purple-700 dark:text-purple-400">
               <ArrowDown size={24} />
             </div>
           </div>
@@ -196,7 +196,7 @@ const ClientWalletView: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm">
+      <div className="bg-card rounded-2xl p-4 border border-border shadow-sm">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex gap-2">
             {(['week', 'month', 'year'] as const).map((range) => (
@@ -206,7 +206,7 @@ const ClientWalletView: React.FC = () => {
                 className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
                   timeRange === range
                     ? 'bg-highlight text-white'
-                    : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                    : 'bg-muted/60 text-stone-700 dark:text-stone-300 hover:bg-muted'
                 }`}
               >
                 {range.charAt(0).toUpperCase() + range.slice(1)}
@@ -217,7 +217,7 @@ const ClientWalletView: React.FC = () => {
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value as any)}
-              className="px-3 py-1 border border-stone-200 rounded-lg focus:ring-2 focus:ring-highlight focus:border-transparent"
+              className="px-3 py-1 border border-border rounded-lg focus:ring-2 focus:ring-highlight focus:border-transparent"
               aria-label="Filter transactions by category"
             >
               <option value="all">All Categories</option>
@@ -231,27 +231,27 @@ const ClientWalletView: React.FC = () => {
       </div>
 
       {/* Transactions History */}
-      <div className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-stone-100">
-          <h2 className="text-xl font-bold text-stone-900">Transaction History</h2>
+      <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+        <div className="p-6 border-b border-border/50">
+          <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100">Transaction History</h2>
           <p className="text-stone-600 mt-1">{filteredTransactions.length} transactions</p>
         </div>
         
-        <div className="divide-y divide-stone-100">
+        <div className="divide-y divide-border/50">
           {filteredTransactions.length > 0 ? (
             filteredTransactions.map((transaction) => (
-              <div key={transaction.id} className="p-6 hover:bg-stone-50 transition-colors">
+              <div key={transaction.id} className="p-6 hover:bg-muted/40 transition-colors">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className={`p-3 rounded-xl ${
                       transaction.type === 'debit' 
-                        ? 'bg-red-100 text-red-700' 
-                        : 'bg-green-100 text-green-700'
+                        ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' 
+                        : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
                     }`}>
                       {transaction.type === 'debit' ? <ArrowUp size={20} /> : <ArrowDown size={20} />}
                     </div>
                     <div>
-                      <h3 className="font-bold text-stone-900">{transaction.description}</h3>
+                      <h3 className="font-bold text-stone-900 dark:text-stone-100">{transaction.description}</h3>
                       <div className="flex items-center gap-2 mt-1">
                         <span className={`px-2 py-1 rounded-full text-xs font-bold ${getCategoryColor(transaction.category)}`}>
                           {transaction.category.charAt(0).toUpperCase() + transaction.category.slice(1)}
@@ -272,7 +272,7 @@ const ClientWalletView: React.FC = () => {
                   
                   <div className="text-right">
                     <p className={`text-lg font-bold ${
-                      transaction.type === 'debit' ? 'text-red-600' : 'text-green-600'
+                      transaction.type === 'debit' ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
                     }`}>
                       {transaction.type === 'debit' ? '-' : '+'}{formatCurrency(transaction.amount)}
                     </p>
@@ -284,7 +284,7 @@ const ClientWalletView: React.FC = () => {
           ) : (
             <div className="p-12 text-center">
               <Wallet size={48} className="mx-auto text-stone-300 mb-4" />
-              <h3 className="text-lg font-bold text-stone-900 mb-2">No transactions found</h3>
+              <h3 className="text-lg font-bold text-stone-900 dark:text-stone-100 mb-2">No transactions found</h3>
               <p className="text-stone-600">
                 {categoryFilter !== 'all' 
                   ? 'Try adjusting your filters' 
@@ -299,23 +299,23 @@ const ClientWalletView: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-6 border border-indigo-100">
           <div className="flex items-start gap-4">
-            <div className="p-3 bg-indigo-100 rounded-xl text-indigo-700">
+            <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl text-indigo-700 dark:text-indigo-400">
               <TrendingUp size={24} />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-stone-900 mb-2">Spending Analysis</h3>
+              <h3 className="text-lg font-bold text-stone-900 dark:text-stone-100 mb-2">Spending Analysis</h3>
               <ul className="space-y-2 text-sm text-stone-600">
                 <li className="flex justify-between">
                   <span>Top Category:</span>
-                  <span className="font-medium text-stone-900">Consultations</span>
+                  <span className="font-medium text-stone-900 dark:text-stone-100">Consultations</span>
                 </li>
                 <li className="flex justify-between">
                   <span>Avg. Transaction:</span>
-                  <span className="font-medium text-stone-900">{formatCurrency(totalSpent / transactions.filter(t => t.type === 'debit').length || 0)}</span>
+                  <span className="font-medium text-stone-900 dark:text-stone-100">{formatCurrency(totalSpent / transactions.filter(t => t.type === 'debit').length || 0)}</span>
                 </li>
                 <li className="flex justify-between">
                   <span>Largest Expense:</span>
-                  <span className="font-medium text-stone-900">{formatCurrency(15000)}</span>
+                  <span className="font-medium text-stone-900 dark:text-stone-100">{formatCurrency(15000)}</span>
                 </li>
               </ul>
             </div>
@@ -324,11 +324,11 @@ const ClientWalletView: React.FC = () => {
         
         <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 border border-amber-100">
           <div className="flex items-start gap-4">
-            <div className="p-3 bg-amber-100 rounded-xl text-amber-700">
+            <div className="p-3 bg-amber-100 dark:bg-amber-900/30 rounded-xl text-amber-700 dark:text-amber-400">
               <Eye size={24} />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-stone-900 mb-2">Security Tips</h3>
+              <h3 className="text-lg font-bold text-stone-900 dark:text-stone-100 mb-2">Security Tips</h3>
               <ul className="space-y-2 text-sm text-stone-600">
                 <li className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -351,12 +351,12 @@ const ClientWalletView: React.FC = () => {
       {/* Add Funds Modal */}
       {showAddFundsModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 relative">
+          <div className="bg-card rounded-2xl max-w-md w-full p-6 relative">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-stone-900">Add Funds to Wallet</h3>
+              <h3 className="text-xl font-bold text-stone-900 dark:text-stone-100">Add Funds to Wallet</h3>
               <button 
                 onClick={() => setShowAddFundsModal(false)}
-                className="text-stone-500 hover:text-stone-700"
+                className="text-stone-500 hover:text-stone-700 dark:text-stone-300"
                 aria-label="Close add funds modal"
                 title="Close"
               >
@@ -366,7 +366,7 @@ const ClientWalletView: React.FC = () => {
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1">Amount (NGN)</label>
+                <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">Amount (NGN)</label>
                 <input
                   type="number"
                   value={amountToAdd}
@@ -377,7 +377,7 @@ const ClientWalletView: React.FC = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1">Payment Method</label>
+                <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">Payment Method</label>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
@@ -411,7 +411,7 @@ const ClientWalletView: React.FC = () => {
               <div className="pt-4 flex gap-3">
                 <button
                   onClick={() => setShowAddFundsModal(false)}
-                  className="flex-1 py-3 border border-stone-300 text-stone-700 rounded-xl font-bold hover:bg-stone-50 transition-colors"
+                  className="flex-1 py-3 border border-stone-300 text-stone-700 dark:text-stone-300 rounded-xl font-bold hover:bg-muted/40 transition-colors"
                 >
                   Cancel
                 </button>

@@ -81,7 +81,7 @@ export const UserListItem: React.FC<{
                 />
                 <div className="flex items-center gap-2 mt-2">
                     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-muted text-foreground uppercase tracking-tighter">{user.role}</span>
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-tighter ${user.verified ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground'}`}>
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-tighter ${user.verified ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-muted text-muted-foreground'}`}>
                         {user.verified ? 'Verified' : 'Pending'}
                     </span>
                 </div>
@@ -113,7 +113,7 @@ export const VerificationListItem: React.FC<{ app: VerificationApplication }> = 
     >
         <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
                     <Shield size={20} className="text-highlight" />
                 </div>
                 <div>

@@ -315,7 +315,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({
                 onChange={(e) => setFormData({ ...formData, locationType: e.target.value as any })}
                 className="text-highlight focus:ring-highlight"
               />
-              <Video size={20} className="text-green-400" />
+              <Video size={20} className="dark:text-green-400 text-green-600" />
               <div className="flex-1">
                 <div className="font-bold text-foreground">Virtual</div>
                 <div className="text-sm text-muted-foreground">Online event via video call</div>

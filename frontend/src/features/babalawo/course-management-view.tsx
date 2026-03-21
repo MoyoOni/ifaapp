@@ -485,7 +485,7 @@ const CourseManagementView: React.FC = () => {
                   {course.status === 'DRAFT' && (
                     <button
                       onClick={() => toggleStatusMutation.mutate({ id: course.id, status: 'PENDING_APPROVAL' })}
-                      className="px-3 py-1.5 text-sm bg-green-500/10 text-green-400 rounded-lg hover:bg-green-500/20 transition-colors flex items-center gap-1"
+                      className="px-3 py-1.5 text-sm bg-green-500/10 dark:text-green-400 text-green-600 rounded-lg hover:bg-green-500/20 transition-colors flex items-center gap-1"
                     >
                       <Eye size={14} /> Publish
                     </button>

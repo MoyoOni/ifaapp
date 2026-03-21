@@ -20,32 +20,32 @@ export interface ErrorAlertProps {
 
 const variantConfig = {
   error: {
-    bg: 'bg-red-50',
-    border: 'border-red-100',
-    text: 'text-red-700',
+    bg: 'bg-red-50 dark:bg-red-950/30',
+    border: 'border-red-100 dark:border-red-800',
+    text: 'text-red-700 dark:text-red-300',
     icon: AlertCircle,
-    iconColor: 'text-red-500',
+    iconColor: 'text-red-500 dark:text-red-400',
   },
   warning: {
-    bg: 'bg-amber-50',
-    border: 'border-amber-100',
-    text: 'text-amber-700',
+    bg: 'bg-amber-50 dark:bg-amber-950/30',
+    border: 'border-amber-100 dark:border-amber-800',
+    text: 'text-amber-700 dark:text-amber-300',
     icon: AlertTriangle,
-    iconColor: 'text-amber-500',
+    iconColor: 'text-amber-500 dark:text-amber-400',
   },
   info: {
-    bg: 'bg-blue-50',
-    border: 'border-blue-100',
-    text: 'text-blue-700',
+    bg: 'bg-blue-50 dark:bg-blue-950/30',
+    border: 'border-blue-100 dark:border-blue-800',
+    text: 'text-blue-700 dark:text-blue-300',
     icon: Info,
-    iconColor: 'text-blue-500',
+    iconColor: 'text-blue-500 dark:text-blue-400',
   },
   success: {
-    bg: 'bg-green-50',
-    border: 'border-green-100',
-    text: 'text-green-700',
+    bg: 'bg-green-50 dark:bg-green-950/30',
+    border: 'border-green-100 dark:border-green-800',
+    text: 'text-green-700 dark:text-green-300',
     icon: CheckCircle,
-    iconColor: 'text-green-500',
+    iconColor: 'text-green-500 dark:text-green-400',
   },
 };
 
@@ -118,7 +118,7 @@ export const FieldError: React.FC<{ message?: string }> = ({ message }) => {
   if (!message) return null;
 
   return (
-    <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+    <p className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
       <AlertCircle size={14} />
       {message}
     </p>

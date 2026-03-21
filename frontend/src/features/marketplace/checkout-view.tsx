@@ -180,15 +180,15 @@ const CheckoutView: React.FC<CheckoutViewProps> = ({ onBack, onSuccess }) => {
 
                         {/* Payment Error Alert */}
                         {paymentError && (
-                            <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex items-start gap-3">
-                                <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
+                            <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-6 flex items-start gap-3">
+                                <AlertCircle className="text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5" size={20} />
                                 <div>
-                                    <p className="font-medium text-red-800">Payment Issue</p>
-                                    <p className="text-sm text-red-600">{paymentError}</p>
+                                    <p className="font-medium text-red-800 dark:text-red-400">Payment Issue</p>
+                                    <p className="text-sm text-red-600 dark:text-red-400">{paymentError}</p>
                                     <button
                                         type="button"
                                         onClick={() => setPaymentError(null)}
-                                        className="text-sm text-red-700 underline mt-2"
+                                        className="text-sm text-red-700 dark:text-red-400 underline mt-2"
                                     >
                                         Dismiss
                                     </button>

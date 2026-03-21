@@ -235,11 +235,11 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
                 )}
 
                 {user.verified ? (
-                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-medium">
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 rounded-full text-xs font-medium">
                     <ShieldCheck size={12} /> Verified
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-medium">
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 rounded-full text-xs font-medium">
                     <ShieldCheck size={12} /> Pending
                   </span>
                 )}
@@ -330,7 +330,7 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
                 type="text"
                 value={editForm.bio}
                 onChange={e => setEditForm(f => ({ ...f, bio: e.target.value }))}
-                className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                 placeholder="Short tagline shown on your profile"
                 maxLength={140}
               />
@@ -375,7 +375,7 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
               <BookOpen size={15} className="text-secondary" />
               <h3 className="font-bold text-foreground text-sm">Services Offered</h3>
             </div>
-            <div className="divide-y divide-stone-100">
+            <div className="divide-y divide-border/50">
               {services.map((service: any) => (
                 <div key={service.id} className="p-5 flex items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
@@ -758,13 +758,13 @@ function ConnectCard({
       </div>
       {/* Shareable link banner — shown on any role's own profile when slug is set */}
       {isCurrentUser && user.slug && (
-        <div className="mx-4 mt-3 flex items-center gap-2 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 text-xs">
-          <Globe size={12} className="text-amber-600 shrink-0" />
-          <span className="text-amber-800 font-medium truncate">iluase.com/@{user.slug}</span>
+        <div className="mx-4 mt-3 flex items-center gap-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-100 rounded-xl px-3 py-2 text-xs">
+          <Globe size={12} className="text-amber-600 dark:text-amber-400 shrink-0" />
+          <span className="text-amber-800 dark:text-amber-400 font-medium truncate">iluase.com/@{user.slug}</span>
           <button
             type="button"
             onClick={() => navigator.clipboard.writeText(shareUrl).catch(() => {})}
-            className="ml-auto shrink-0 text-amber-600 font-semibold hover:text-amber-800 transition-colors"
+            className="ml-auto shrink-0 text-amber-600 dark:text-amber-400 font-semibold hover:text-amber-800 dark:text-amber-400 transition-colors"
           >
             Copy
           </button>

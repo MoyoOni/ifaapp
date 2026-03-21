@@ -116,7 +116,7 @@ const DisputeCenterView: React.FC = () => {
       UNDER_REVIEW: { bg: 'bg-blue-500/20', text: 'text-blue-300', icon: FileText },
       ESCALATED: { bg: 'bg-purple-500/20', text: 'text-purple-300', icon: ArrowUp },
       RESOLVED: { bg: 'bg-green-500/20', text: 'text-green-300', icon: CheckCircle },
-      CLOSED: { bg: 'bg-gray-500/20', text: 'text-gray-300', icon: XCircle },
+      CLOSED: { bg: 'bg-gray-500/20', text: 'text-muted-foreground/50', icon: XCircle },
     };
     const badge = badges[status] || badges.OPEN;
     const Icon = badge.icon;
@@ -133,7 +133,7 @@ const DisputeCenterView: React.FC = () => {
       URGENT: 'bg-red-500/20 text-red-300',
       HIGH: 'bg-orange-500/20 text-orange-300',
       NORMAL: 'bg-blue-500/20 text-blue-300',
-      LOW: 'bg-gray-500/20 text-gray-300',
+      LOW: 'bg-gray-500/20 text-muted-foreground/50',
     };
     return (
       <span className={`${badges[priority] || badges.NORMAL} px-2 py-1 rounded-full text-xs font-medium`}>
@@ -157,7 +157,7 @@ const DisputeCenterView: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-3xl font-bold text-stone-900 flex items-center gap-3">
+      <h2 className="text-3xl font-bold text-stone-900 dark:text-stone-100 flex items-center gap-3">
         <AlertTriangle size={28} /> Dispute Center
       </h2>
 
@@ -168,13 +168,13 @@ const DisputeCenterView: React.FC = () => {
           <input
             type="text"
             placeholder="Search disputes by title, parties, or ID..."
-            className="w-full bg-white border border-stone-200 rounded-xl p-4 pl-12 text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-highlight"
+            className="w-full bg-card border border-border rounded-xl p-4 pl-12 text-stone-900 dark:text-stone-100 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-highlight"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
         <select
-          className="bg-white border border-stone-200 rounded-xl p-4 text-stone-900 focus:outline-none focus:ring-2 focus:ring-highlight"
+          className="bg-card border border-border rounded-xl p-4 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-highlight"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as DisputeFilter)}
           aria-label="Filter by dispute status"
@@ -186,7 +186,7 @@ const DisputeCenterView: React.FC = () => {
           <option value="RESOLVED">Resolved</option>
         </select>
         <select
-          className="bg-white border border-stone-200 rounded-xl p-4 text-stone-900 focus:outline-none focus:ring-2 focus:ring-highlight"
+          className="bg-card border border-border rounded-xl p-4 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-highlight"
           value={routeFilter}
           onChange={(e) => setRouteFilter(e.target.value as DisputeRouteFilter)}
           aria-label="Filter by dispute route"
@@ -210,7 +210,7 @@ const DisputeCenterView: React.FC = () => {
           {filteredDisputes.map((dispute) => (
             <div
               key={dispute.id}
-              className="bg-white border border-stone-200 rounded-xl p-6 hover:border-highlight transition-all cursor-pointer"
+              className="bg-card border border-border rounded-xl p-6 hover:border-highlight transition-all cursor-pointer"
               onClick={() => setSelectedDispute(dispute)}
             >
               <div className="flex items-start justify-between gap-4">
@@ -224,7 +224,7 @@ const DisputeCenterView: React.FC = () => {
                       </span>
                     )}
                   </div>
-                  <h3 className="text-lg font-bold text-stone-900 mb-2">{dispute.title}</h3>
+                  <h3 className="text-lg font-bold text-stone-900 dark:text-stone-100 mb-2">{dispute.title}</h3>
                   <p className="text-sm text-stone-500 line-clamp-2 mb-3">{dispute.description}</p>
                   <div className="flex items-center gap-4 text-sm text-stone-500">
                     <span className="flex items-center gap-1">
@@ -258,7 +258,7 @@ const DisputeCenterView: React.FC = () => {
           <div className="bg-background rounded-xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar relative">
             <button
               onClick={() => setSelectedDispute(null)}
-              className="absolute top-4 right-4 p-2 bg-stone-100 hover:bg-stone-200 rounded-full text-stone-900"
+              className="absolute top-4 right-4 p-2 bg-muted/60 hover:bg-muted rounded-full text-stone-900 dark:text-stone-100"
               aria-label="Close dispute detail"
               title="Close"
             >
@@ -279,18 +279,18 @@ const DisputeCenterView: React.FC = () => {
             <div className="space-y-6 mb-6">
               <div>
                 <h4 className="text-sm font-bold text-stone-500 uppercase tracking-widest mb-2">Description</h4>
-                <p className="text-stone-900">{selectedDispute.description}</p>
+                <p className="text-stone-900 dark:text-stone-100">{selectedDispute.description}</p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <h4 className="text-sm font-bold text-stone-500 uppercase tracking-widest mb-2">Complainant</h4>
-                  <p className="text-stone-900">{selectedDispute.complainant.yorubaName || selectedDispute.complainant.name}</p>
+                  <p className="text-stone-900 dark:text-stone-100">{selectedDispute.complainant.yorubaName || selectedDispute.complainant.name}</p>
                   <p className="text-xs text-stone-500">{selectedDispute.complainant.email}</p>
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-stone-500 uppercase tracking-widest mb-2">Respondent</h4>
-                  <p className="text-stone-900">{selectedDispute.respondent.yorubaName || selectedDispute.respondent.name}</p>
+                  <p className="text-stone-900 dark:text-stone-100">{selectedDispute.respondent.yorubaName || selectedDispute.respondent.name}</p>
                   <p className="text-xs text-stone-500">{selectedDispute.respondent.email}</p>
                 </div>
               </div>
@@ -298,7 +298,7 @@ const DisputeCenterView: React.FC = () => {
               {selectedDispute.escrow && (
                 <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
                   <h4 className="text-sm font-bold text-yellow-400 mb-2">Escrow Information</h4>
-                  <p className="text-stone-900">
+                  <p className="text-stone-900 dark:text-stone-100">
                     Amount: {selectedDispute.escrow.currency} {selectedDispute.escrow.amount.toLocaleString()}
                   </p>
                   <p className="text-sm text-stone-500">Status: {selectedDispute.escrow.status}</p>
@@ -307,8 +307,8 @@ const DisputeCenterView: React.FC = () => {
 
               {selectedDispute.resolution && (
                 <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
-                  <h4 className="text-sm font-bold text-green-400 mb-2">Resolution</h4>
-                  <p className="text-stone-900">{selectedDispute.resolution}</p>
+                  <h4 className="text-sm font-bold dark:text-green-400 text-green-600 mb-2">Resolution</h4>
+                  <p className="text-stone-900 dark:text-stone-100">{selectedDispute.resolution}</p>
                   {selectedDispute.resolutionType && (
                     <p className="text-sm text-stone-500 mt-2">
                       Type: {selectedDispute.resolutionType.replace('_', ' ')}
@@ -325,20 +325,20 @@ const DisputeCenterView: React.FC = () => {
 
             {/* Resolution Form (if not resolved) */}
             {selectedDispute.status !== 'RESOLVED' && selectedDispute.status !== 'CLOSED' && (
-              <div className="space-y-4 pt-6 border-t border-stone-200">
-                <h4 className="text-lg font-bold text-stone-900">Resolution</h4>
+              <div className="space-y-4 pt-6 border-t border-border">
+                <h4 className="text-lg font-bold text-stone-900 dark:text-stone-100">Resolution</h4>
                 <textarea
                   value={resolution}
                   onChange={(e) => setResolution(e.target.value)}
                   rows={4}
                   placeholder="Enter resolution details..."
-                  className="w-full bg-white border border-stone-200 rounded-xl px-4 py-3 text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-highlight resize-none"
+                  className="w-full bg-card border border-border rounded-xl px-4 py-3 text-stone-900 dark:text-stone-100 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-highlight resize-none"
                 />
                 <select
                   value={resolutionType}
                   onChange={(e) => setResolutionType(e.target.value)}
                   aria-label="Resolution type"
-                  className="w-full bg-white border border-stone-200 rounded-xl px-4 py-3 text-stone-900 focus:outline-none focus:ring-2 focus:ring-highlight"
+                  className="w-full bg-card border border-border rounded-xl px-4 py-3 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-highlight"
                 >
                   <option value="REFUND">Full Refund</option>
                   <option value="PARTIAL_REFUND">Partial Refund</option>

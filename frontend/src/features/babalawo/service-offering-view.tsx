@@ -326,8 +326,8 @@ const ServiceOfferingView: React.FC = () => {
                       <h3 className="text-xl font-bold text-foreground">{service.name}</h3>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                         service.isActive 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' 
+                          : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
                       }`}>
                         {service.isActive ? 'Active' : 'Inactive'}
                       </span>
@@ -345,7 +345,7 @@ const ServiceOfferingView: React.FC = () => {
                     </button>
                     <button
                       onClick={() => handleDelete(service.id)}
-                      className="p-2 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-lg"
+                      className="p-2 text-muted-foreground hover:text-red-600 dark:text-red-400 hover:bg-red-50 dark:bg-red-950/30 rounded-lg"
                       title="Delete"
                     >
                       <Trash2 size={18} />

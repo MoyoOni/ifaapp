@@ -150,20 +150,20 @@ const ClientTempleBrowseView: React.FC = () => {
   if (isLoading) {
     return (
       <div className="animate-pulse space-y-6 p-6">
-        <div className="h-8 bg-gray-200 rounded w-1/3" />
+        <div className="h-8 bg-muted rounded w-1/3" />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="border rounded-xl p-6 bg-white shadow-sm">
+            <div key={i} className="border rounded-xl p-6 bg-card shadow-sm">
               <div className="flex items-center gap-4 mb-4">
-                <div className="bg-gray-200 rounded-full h-12 w-12" />
+                <div className="bg-muted rounded-full h-12 w-12" />
                 <div className="flex-1">
-                  <div className="h-4 bg-gray-200 rounded w-48 mb-2" />
-                  <div className="h-3 bg-gray-200 rounded w-32" />
+                  <div className="h-4 bg-muted rounded w-48 mb-2" />
+                  <div className="h-3 bg-muted rounded w-32" />
                 </div>
               </div>
               <div className="space-y-2">
-                <div className="h-3 bg-gray-200 rounded w-full" />
-                <div className="h-3 bg-gray-200 rounded w-4/5" />
+                <div className="h-3 bg-muted rounded w-full" />
+                <div className="h-3 bg-muted rounded w-4/5" />
               </div>
             </div>
           ))}
@@ -174,7 +174,7 @@ const ClientTempleBrowseView: React.FC = () => {
 
   if (isError) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center bg-red-50 rounded-xl border border-red-100">
+      <div className="flex flex-col items-center justify-center py-20 text-center bg-red-50 dark:bg-red-950/30 rounded-xl border border-red-100">
         <AlertCircle size={48} className="text-red-400 mb-4" />
         <p className="text-lg font-medium text-foreground mb-1">Connection error</p>
         <p className="text-muted-foreground text-sm mb-6 max-w-sm">
@@ -283,9 +283,9 @@ const ClientTempleBrowseView: React.FC = () => {
                     )}
                   </div>
                   {temple.rating != null && (
-                    <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded-full flex-shrink-0 ml-2">
-                      <Star size={13} className="text-yellow-500 fill-current" />
-                      <span className="text-sm font-medium text-yellow-700">{temple.rating.toFixed(1)}</span>
+                    <div className="flex items-center gap-1 bg-yellow-50 dark:bg-yellow-950/30 px-2 py-1 rounded-full flex-shrink-0 ml-2">
+                      <Star size={13} className="text-yellow-500 dark:text-yellow-400 fill-current" />
+                      <span className="text-sm font-medium text-yellow-700 dark:text-yellow-400">{temple.rating.toFixed(1)}</span>
                     </div>
                   )}
                 </div>
@@ -313,7 +313,7 @@ const ClientTempleBrowseView: React.FC = () => {
                 {/* Worship Day Badge */}
                 {temple.worshipDay && (
                   <div className="mb-3">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-bold border border-amber-200">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 text-xs font-bold border border-amber-200 dark:border-amber-800">
                       <CalendarDays size={11} />
                       {temple.worshipDay}s
                     </span>
@@ -351,7 +351,7 @@ const ClientTempleBrowseView: React.FC = () => {
                       type="button"
                       onClick={() => unfollowMutation.mutate(temple.id)}
                       disabled={isMutating}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 text-sm font-medium disabled:opacity-60 transition-colors"
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-200 text-sm font-medium disabled:opacity-60 transition-colors"
                     >
                       {unfollowMutation.isPending
                         ? <Loader2 size={14} className="animate-spin" />

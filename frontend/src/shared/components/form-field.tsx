@@ -94,11 +94,11 @@ export const FormField: React.FC<FormFieldProps> = ({
   autoComplete,
 }) => {
   const baseInputClasses = `
-    w-full bg-stone-50 border rounded-xl p-3 text-stone-700
+    w-full bg-muted/40 border rounded-xl p-3 text-stone-700
     placeholder-stone-400 focus:outline-none focus:ring-2
-    focus:ring-highlight focus:bg-white focus:border-transparent
+    focus:ring-highlight focus:bg-card focus:border-transparent
     transition-all disabled:opacity-50 disabled:cursor-not-allowed
-    ${error ? 'border-red-300 bg-red-50' : 'border-stone-200'}
+    ${error ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/20' : 'border-border'}
     ${inputClassName}
   `.trim();
 
@@ -170,7 +170,7 @@ export const FormField: React.FC<FormFieldProps> = ({
     <div className={className}>
       <label htmlFor={name} className="block text-sm font-bold text-stone-600 mb-2">
         {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
+        {required && <span className="text-red-500 dark:text-red-400 ml-1">*</span>}
       </label>
       {renderInput()}
       {error && <FieldError message={error} />}
@@ -201,7 +201,7 @@ export interface SubmitButtonProps {
 
 const buttonVariants = {
   primary: 'bg-highlight text-white hover:bg-amber-600 disabled:bg-stone-300',
-  secondary: 'bg-white text-primary border-2 border-primary hover:bg-primary/5',
+  secondary: 'bg-card text-primary border-2 border-primary hover:bg-primary/5',
   danger: 'bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300',
 };
 

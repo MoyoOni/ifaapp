@@ -68,7 +68,7 @@ const MySeekersView: React.FC = () => {
     return (
       <div className="space-y-6 animate-in fade-in duration-500">
         <h1 className="text-3xl font-bold brand-font text-foreground">My Seekers</h1>
-        <div className="flex flex-col items-center justify-center py-16 text-center bg-red-50 rounded-xl border border-red-100">
+        <div className="flex flex-col items-center justify-center py-16 text-center bg-red-50 dark:bg-red-950/30 rounded-xl border border-red-100">
           <AlertCircle size={48} className="text-red-400 mb-4" />
           <p className="text-lg font-medium text-foreground mb-1">Connection error</p>
           <p className="text-muted-foreground text-sm mb-6 max-w-sm">
@@ -177,7 +177,7 @@ const MySeekersView: React.FC = () => {
                   className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-muted/50 border border-border text-foreground rounded-lg hover:bg-muted text-sm font-medium transition-colors"
                 >
                   {copiedId === client.id ? (
-                    <><Check size={15} className="text-green-600" /> Copied!</>
+                    <><Check size={15} className="text-green-600 dark:text-green-400" /> Copied!</>
                   ) : (
                     <><Calendar size={15} /> Schedule</>
                   )}

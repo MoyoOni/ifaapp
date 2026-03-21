@@ -39,9 +39,9 @@ const MessagesPage = React.lazy(() =>
     logger.error('Failed to load MessagesPage:', err);
     // Return a simple error component if MessagesPage fails to load
     const ErrorComponent: React.FC = () => (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-6">
-        <div className="text-center bg-white p-12 rounded-[2.5rem] shadow-xl border border-stone-100 max-w-md w-full">
-          <h2 className="text-3xl font-bold text-stone-800 mb-2 brand-font">
+      <div className="min-h-screen bg-muted/40 flex items-center justify-center p-6">
+        <div className="text-center bg-card p-12 rounded-[2.5rem] shadow-xl border border-border/50 max-w-md w-full">
+          <h2 className="text-3xl font-bold text-stone-800 dark:text-stone-200 mb-2 brand-font">
             Message Center
           </h2>
           <p className="text-stone-500 mb-8 leading-relaxed">
@@ -163,7 +163,7 @@ const HomePage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 flex items-center justify-center"> {/* Updated background to match new theme */}
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-stone-900 mb-4">Welcome to Ìlú Àṣẹ</h1>
+          <h1 className="text-4xl font-bold text-stone-900 dark:text-stone-100 mb-4">Welcome to Ìlú Àṣẹ</h1>
           <p className="text-stone-600 mb-8">Your gateway to authentic spiritual guidance</p>
           <div className="space-x-4">
             <button
@@ -174,7 +174,7 @@ const HomePage: React.FC = () => {
             </button>
             <button
               onClick={() => navigate('/signup')}
-              className="px-6 py-3 bg-white border border-primary text-primary font-bold rounded-xl hover:bg-primary/5 transition-colors"
+              className="px-6 py-3 bg-card border border-primary text-primary font-bold rounded-xl hover:bg-primary/5 transition-colors"
             >
               Create Account
             </button>

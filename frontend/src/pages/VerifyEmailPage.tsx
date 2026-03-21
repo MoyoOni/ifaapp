@@ -34,11 +34,11 @@ const VerifyEmailPage: React.FC = () => {
   }, [token]);
 
   return (
-    <div className="min-h-screen bg-stone-50 flex items-center justify-center p-6">
-      <div className="bg-white rounded-[2.5rem] p-10 border border-stone-100 shadow-2xl max-w-md w-full text-center space-y-6">
+    <div className="min-h-screen bg-muted/40 flex items-center justify-center p-6">
+      <div className="bg-card rounded-[2.5rem] p-10 border border-border/50 shadow-2xl max-w-md w-full text-center space-y-6">
         <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-input via-highlight to-input rounded-t-[2.5rem]" />
 
-        <h1 className="text-2xl font-bold brand-font text-stone-800">Email Verification</h1>
+        <h1 className="text-2xl font-bold brand-font text-stone-800 dark:text-stone-200">Email Verification</h1>
 
         {status === 'loading' && (
           <div className="flex flex-col items-center gap-4 py-4">
@@ -49,8 +49,8 @@ const VerifyEmailPage: React.FC = () => {
 
         {status === 'success' && (
           <div className="flex flex-col items-center gap-4 py-4">
-            <CheckCircle size={48} className="text-green-500" />
-            <p className="text-stone-700 font-medium">{message}</p>
+            <CheckCircle size={48} className="text-green-500 dark:text-green-400" />
+            <p className="text-stone-700 dark:text-stone-300 font-medium">{message}</p>
             <button
               type="button"
               onClick={() => navigate('/login')}
@@ -72,7 +72,7 @@ const VerifyEmailPage: React.FC = () => {
             <button
               type="button"
               onClick={() => navigate('/login')}
-              className="w-full py-4 bg-stone-100 text-stone-700 rounded-2xl font-bold hover:bg-stone-200 transition-all"
+              className="w-full py-4 bg-muted/60 text-stone-700 dark:text-stone-300 rounded-2xl font-bold hover:bg-muted transition-all"
             >
               Back to Sign In
             </button>

@@ -39,7 +39,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   className = '',
 }) => {
   return (
-    <div className={`text-center py-16 px-4 bg-white rounded-3xl border border-stone-100 border-dashed ${className}`}>
+    <div className={`text-center py-16 px-4 bg-card rounded-3xl border border-border/50 border-dashed ${className}`}>
       <Icon size={64} className="mx-auto mb-4 text-stone-300" />
       <p className="text-xl font-bold text-stone-500 mb-2">{title}</p>
       {description && (

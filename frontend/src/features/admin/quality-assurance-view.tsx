@@ -16,7 +16,7 @@ const QualityAssuranceView: React.FC = () => {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: idx * 0.1 }}
                         whileHover={{ scale: 1.02 }}
-                        className="bg-white rounded-2xl p-6 border border-stone-200 shadow-xl"
+                        className="bg-card rounded-2xl p-6 border border-border shadow-xl"
                     >
                         <div className="flex items-center justify-between mb-4">
                             <div className={`p-3 bg-${item.color}/20 rounded-xl text-${item.color}`}>
@@ -25,7 +25,7 @@ const QualityAssuranceView: React.FC = () => {
                             <span className={`text-sm font-bold ${item.trendColor}`}>{item.trend} vs last month</span>
                         </div>
                         <h3 className="text-stone-400 font-bold text-sm uppercase tracking-widest">{item.label}</h3>
-                        <p className="text-3xl font-bold text-stone-900 mt-1">{item.value}</p>
+                        <p className="text-3xl font-bold text-stone-900 dark:text-stone-100 mt-1">{item.value}</p>
                     </motion.div>
                 ))}
             </div>
@@ -33,9 +33,9 @@ const QualityAssuranceView: React.FC = () => {
             <motion.div
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-white rounded-2xl p-8 border border-stone-200"
+                className="bg-card rounded-2xl p-8 border border-border"
             >
-                <h2 className="text-2xl font-bold text-stone-900 mb-6 flex items-center gap-2">
+                <h2 className="text-2xl font-bold text-stone-900 dark:text-stone-100 mb-6 flex items-center gap-2">
                     <BarChart3 size={24} className="text-highlight" />
                     Quality Metrics Overview
                 </h2>
@@ -49,9 +49,9 @@ const QualityAssuranceView: React.FC = () => {
                         <div key={metric.label} className="space-y-2">
                             <div className="flex justify-between text-sm">
                                 <span className="text-stone-300 font-medium">{metric.label}</span>
-                                <span className="text-stone-900 font-bold">{metric.value}%</span>
+                                <span className="text-stone-900 dark:text-stone-100 font-bold">{metric.value}%</span>
                             </div>
-                            <div className="w-full h-2 bg-stone-100 rounded-full overflow-hidden">
+                            <div className="w-full h-2 bg-muted/60 rounded-full overflow-hidden">
                                 <motion.div
                                     initial={{ width: 0 }}
                                     animate={{ width: `${metric.value}%` }}

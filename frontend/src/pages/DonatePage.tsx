@@ -56,7 +56,7 @@ const DonatePage: React.FC = () => {
             href={KOFI_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-3 w-full py-4 px-6 bg-highlight text-stone-900 font-bold text-base rounded-2xl hover:bg-yellow-400 transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
+            className="flex items-center justify-center gap-3 w-full py-4 px-6 bg-highlight text-stone-900 dark:text-stone-100 font-bold text-base rounded-2xl hover:bg-yellow-400 transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
           >
             <Heart size={20} />
             Support on Ko-fi

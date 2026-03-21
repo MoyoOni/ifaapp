@@ -142,7 +142,7 @@ const VerificationQueueView: React.FC = () => {
           value={stage}
           onChange={(e) => setStage(e.target.value)}
           aria-label="Filter by verification stage"
-          className="px-4 py-2 bg-white border border-stone-200 rounded-lg text-stone-900 focus:outline-none focus:border-highlight"
+          className="px-4 py-2 bg-card border border-border rounded-lg text-stone-900 dark:text-stone-100 focus:outline-none focus:border-highlight"
         >
           <option value="">All Stages</option>
           <option value="LINEAGE">Lineage</option>
@@ -154,7 +154,7 @@ const VerificationQueueView: React.FC = () => {
 
       {/* Applications List */}
       {applications.length === 0 ? (
-        <div className="text-center p-8 bg-white rounded-xl border border-stone-200">
+        <div className="text-center p-8 bg-card rounded-xl border border-border">
           <p className="text-stone-500">No pending verification applications</p>
         </div>
       ) : (
@@ -164,7 +164,7 @@ const VerificationQueueView: React.FC = () => {
             {applications.map((app) => (
               <div
                 key={app.id}
-                className={`bg-white rounded-xl p-6 border border-stone-200 hover:border-highlight/30 transition-colors cursor-pointer ${selectedApp?.id === app.id ? 'border-highlight' : ''
+                className={`bg-card rounded-xl p-6 border border-border hover:border-highlight/30 transition-colors cursor-pointer ${selectedApp?.id === app.id ? 'border-highlight' : ''
                   }`}
                 onClick={() => handleApprove(app)}
               >
@@ -195,7 +195,7 @@ const VerificationQueueView: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-stone-200">
+                <div className="mt-4 pt-4 border-t border-border">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -212,7 +212,7 @@ const VerificationQueueView: React.FC = () => {
 
           {/* Application Detail/Approval Panel */}
           {selectedApp && (
-            <div className="bg-white rounded-xl p-6 border border-stone-200 space-y-6 sticky top-6">
+            <div className="bg-card rounded-xl p-6 border border-border space-y-6 sticky top-6">
               <div>
                 <h3 className="text-xl font-bold mb-2">Review Application</h3>
                 <p className="text-sm text-stone-500">
@@ -224,7 +224,7 @@ const VerificationQueueView: React.FC = () => {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">Lineage</label>
-                  <div className="bg-stone-50 rounded-lg p-4 border border-stone-200">
+                  <div className="bg-muted/40 rounded-lg p-4 border border-border">
                     <p className="text-sm">{selectedApp.lineage}</p>
                   </div>
                 </div>
@@ -252,7 +252,7 @@ const VerificationQueueView: React.FC = () => {
                         href={doc}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 p-3 bg-stone-50 rounded-lg border border-stone-200 hover:border-highlight transition-colors"
+                        className="flex items-center gap-2 p-3 bg-muted/40 rounded-lg border border-border hover:border-highlight transition-colors"
                       >
                         <FileText className="w-4 h-4" />
                         <span className="text-sm">Document {idx + 1}</span>
@@ -267,7 +267,7 @@ const VerificationQueueView: React.FC = () => {
                     {selectedApp.history.map((entry, idx) => (
                       <div
                         key={idx}
-                        className="p-3 bg-stone-50 rounded-lg border border-stone-200 text-sm"
+                        className="p-3 bg-muted/40 rounded-lg border border-border text-sm"
                       >
                         <div className="flex items-center justify-between mb-1">
                           <span className="font-medium">{entry.stage.replace('_', ' ')}</span>
@@ -290,14 +290,14 @@ const VerificationQueueView: React.FC = () => {
               </div>
 
               {/* Approval Actions */}
-              <div className="space-y-4 pt-4 border-t border-stone-200">
+              <div className="space-y-4 pt-4 border-t border-border">
                 <div>
                   <label className="block text-sm font-medium mb-2">Admin Notes</label>
                   <textarea
                     value={approvalNotes}
                     onChange={(e) => setApprovalNotes(e.target.value)}
                     rows={3}
-                    className="w-full px-4 py-2 bg-white border border-stone-200 rounded-lg text-stone-900 focus:outline-none focus:border-highlight"
+                    className="w-full px-4 py-2 bg-card border border-border rounded-lg text-stone-900 dark:text-stone-100 focus:outline-none focus:border-highlight"
                     placeholder="Add notes about your decision..."
                   />
                 </div>

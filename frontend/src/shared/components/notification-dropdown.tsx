@@ -56,7 +56,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ onClose }) 
     switch (type) {
       case 'MESSAGE': return <Mail size={16} className="text-blue-400" />;
       case 'APPOINTMENT': return <Calendar size={16} className="text-purple-400" />;
-      case 'ORDER': return <ShoppingBag size={16} className="text-green-400" />;
+      case 'ORDER': return <ShoppingBag size={16} className="dark:text-green-400 text-green-600" />;
       case 'COMMUNITY': return <Users size={16} className="text-orange-400" />;
       default: return <Info size={16} className="text-muted-foreground" />;
     }

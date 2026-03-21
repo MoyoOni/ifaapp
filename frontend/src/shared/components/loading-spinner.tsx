@@ -83,7 +83,7 @@ export const PageLoading: React.FC<{ message?: string }> = ({ message = 'Loading
  * Card/section loading state
  */
 export const CardLoading: React.FC<{ message?: string }> = ({ message }) => (
-  <div className="bg-white rounded-2xl border border-stone-100 p-8">
+  <div className="bg-card rounded-2xl border border-border/50 p-8">
     <LoadingSpinner size="lg" message={message} />
   </div>
 );

@@ -123,11 +123,11 @@ export const CircleFeedTab: React.FC<CircleFeedTabProps> = ({
                   </div>
                   <p className="text-foreground whitespace-pre-wrap">{post.content}</p>
                   <div className="flex items-center gap-4 mt-3 text-muted-foreground">
-                    <button aria-label={`Like post (${post.likes} likes)`} className="flex items-center gap-1 hover:text-red-500 transition-colors">
+                    <button aria-label={`Like post (${post.likes} likes)`} className="flex items-center gap-1 hover:text-red-500 dark:text-red-400 transition-colors">
                       <Heart size={16} />
                       <span className="text-sm" aria-hidden="true">{post.likes}</span>
                     </button>
-                    <button className="flex items-center gap-1 hover:text-blue-500 transition-colors">
+                    <button className="flex items-center gap-1 hover:text-blue-500 dark:text-blue-400 transition-colors">
                       <MessageCircle size={16} />
                       <span className="text-sm">{post.comments}</span>
                     </button>

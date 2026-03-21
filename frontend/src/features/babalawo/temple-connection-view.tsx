@@ -104,7 +104,7 @@ const TempleConnectionView: React.FC = () => {
 
   if (isError) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center bg-red-50 rounded-xl border border-red-100">
+      <div className="flex flex-col items-center justify-center py-20 text-center bg-red-50 dark:bg-red-950/30 rounded-xl border border-red-100">
         <AlertCircle size={48} className="text-red-400 mb-4" />
         <p className="text-lg font-medium text-foreground mb-1">Connection error</p>
         <p className="text-muted-foreground text-sm mb-6 max-w-sm">
@@ -185,9 +185,9 @@ const TempleConnectionView: React.FC = () => {
                     )}
                   </div>
                   {temple.rating != null && (
-                    <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded-full flex-shrink-0 ml-2">
-                      <Star size={13} className="text-yellow-500 fill-current" />
-                      <span className="text-sm font-medium text-yellow-700">{temple.rating.toFixed(1)}</span>
+                    <div className="flex items-center gap-1 bg-yellow-50 dark:bg-yellow-950/30 px-2 py-1 rounded-full flex-shrink-0 ml-2">
+                      <Star size={13} className="text-yellow-500 dark:text-yellow-400 fill-current" />
+                      <span className="text-sm font-medium text-yellow-700 dark:text-yellow-400">{temple.rating.toFixed(1)}</span>
                     </div>
                   )}
                 </div>
@@ -240,7 +240,7 @@ const TempleConnectionView: React.FC = () => {
                       type="button"
                       onClick={() => unfollowMutation.mutate(temple.id)}
                       disabled={isMutating}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 text-sm font-medium disabled:opacity-60"
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-200 text-sm font-medium disabled:opacity-60"
                     >
                       {unfollowMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Heart size={15} className="fill-current" />}
                       Connected

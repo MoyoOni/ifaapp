@@ -63,7 +63,7 @@ const ClientList: React.FC<ClientListProps> = ({ babalawoId, onSelectClient, onM
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold brand-font text-stone-800">
+        <h2 className="text-2xl font-bold brand-font text-stone-800 dark:text-stone-200">
           My Clients ({clients.length})
         </h2>
       </div>
@@ -73,7 +73,7 @@ const ClientList: React.FC<ClientListProps> = ({ babalawoId, onSelectClient, onM
           <div
             key={client.id}
             onClick={() => onSelectClient?.(client.id)}
-            className={`bg-white backdrop-blur-sm rounded-xl p-6 border border-stone-100 shadow-sm hover:border-highlight/30 hover:shadow-md transition-all ${onSelectClient ? 'cursor-pointer hover:scale-[1.02]' : ''
+            className={`bg-card backdrop-blur-sm rounded-xl p-6 border border-border/50 shadow-sm hover:border-highlight/30 hover:shadow-md transition-all ${onSelectClient ? 'cursor-pointer hover:scale-[1.02]' : ''
               }`}
           >
             <div className="flex items-start gap-4">
@@ -89,7 +89,7 @@ const ClientList: React.FC<ClientListProps> = ({ babalawoId, onSelectClient, onM
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-bold text-stone-900 truncate">{client.name}</h3>
+                <h3 className="text-lg font-bold text-stone-900 dark:text-stone-100 truncate">{client.name}</h3>
                 {client.yorubaName && (
                   <p className="text-stone-500 text-sm truncate">{client.yorubaName}</p>
                 )}
@@ -110,13 +110,13 @@ const ClientList: React.FC<ClientListProps> = ({ babalawoId, onSelectClient, onM
             </div>
 
             {/* Quick Actions */}
-            <div className="flex gap-2 mt-4 pt-4 border-t border-stone-100">
+            <div className="flex gap-2 mt-4 pt-4 border-t border-border/50">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onMessageClient ? onMessageClient(client.id) : onSelectClient?.(client.id);
                 }}
-                className="flex-1 flex items-center justify-center gap-2 bg-stone-50 hover:bg-stone-100 text-stone-700 px-4 py-2 rounded-lg text-sm font-medium transition-all border border-stone-200 shadow-sm"
+                className="flex-1 flex items-center justify-center gap-2 bg-muted/40 hover:bg-muted/60 text-stone-700 dark:text-stone-300 px-4 py-2 rounded-lg text-sm font-medium transition-all border border-border shadow-sm"
               >
                 <MessageSquare size={16} />
                 Message
@@ -126,7 +126,7 @@ const ClientList: React.FC<ClientListProps> = ({ babalawoId, onSelectClient, onM
                   e.stopPropagation();
                   // Navigate to appointment booking
                 }}
-                className="flex-1 flex items-center justify-center gap-2 bg-stone-50 hover:bg-stone-100 text-stone-700 px-4 py-2 rounded-lg text-sm font-medium transition-all border border-stone-200 shadow-sm"
+                className="flex-1 flex items-center justify-center gap-2 bg-muted/40 hover:bg-muted/60 text-stone-700 dark:text-stone-300 px-4 py-2 rounded-lg text-sm font-medium transition-all border border-border shadow-sm"
               >
                 <Calendar size={16} />
                 Schedule

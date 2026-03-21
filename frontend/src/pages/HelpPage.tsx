@@ -117,7 +117,7 @@ const HelpPage: React.FC = () => {
   );
 
   return (
-    <div className="bg-stone-50">
+    <div className="bg-muted/40">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Header */}
         <div className="text-center mb-12">
@@ -126,7 +126,7 @@ const HelpPage: React.FC = () => {
             <span className="font-bold text-highlight uppercase tracking-wider">Help Center</span>
           </div>
           
-          <h1 className="text-4xl font-bold text-stone-800 brand-font mb-4">
+          <h1 className="text-4xl font-bold text-stone-800 dark:text-stone-200 brand-font mb-4">
             How can we help you?
           </h1>
           <p className="text-xl text-stone-600 max-w-2xl mx-auto">
@@ -143,27 +143,27 @@ const HelpPage: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search for help topics..."
-              className="w-full pl-12 pr-4 py-4 bg-white border border-stone-200 rounded-2xl focus:ring-2 focus:ring-highlight focus:border-transparent shadow-sm"
+              className="w-full pl-12 pr-4 py-4 bg-card border border-border rounded-2xl focus:ring-2 focus:ring-highlight focus:border-transparent shadow-sm"
             />
           </div>
         </div>
 
         {/* Help Categories */}
         <div className="mb-16">
-          <h2 className="text-2xl font-bold text-stone-800 mb-8 text-center">Browse Help Topics</h2>
+          <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200 mb-8 text-center">Browse Help Topics</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {helpCategories.map((category) => {
               const IconComponent = category.icon;
               return (
                 <div
                   key={category.id}
-                  className="bg-white rounded-2xl border border-stone-200 p-6 hover:shadow-md transition-shadow cursor-pointer group"
+                  className="bg-card rounded-2xl border border-border p-6 hover:shadow-md transition-shadow cursor-pointer group"
                   onClick={() => navigate(categoryRoutes[category.id] ?? '/')}
                 >
                   <div className="w-12 h-12 bg-highlight/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-highlight/20 transition-colors">
                     <IconComponent className="text-highlight" size={24} />
                   </div>
-                  <h3 className="font-bold text-lg text-stone-800 mb-2">{category.title}</h3>
+                  <h3 className="font-bold text-lg text-stone-800 dark:text-stone-200 mb-2">{category.title}</h3>
                   <p className="text-stone-600 text-sm mb-4">{category.description}</p>
                   <ul className="space-y-1">
                     {category.items.slice(0, 3).map((item, index) => (
@@ -173,7 +173,7 @@ const HelpPage: React.FC = () => {
                       </li>
                     ))}
                   </ul>
-                  <div className="mt-4 pt-4 border-t border-stone-100 flex items-center justify-between text-sm font-bold text-highlight group-hover:text-yellow-700 transition-colors">
+                  <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between text-sm font-bold text-highlight group-hover:text-yellow-700 dark:text-yellow-400 transition-colors">
                     <span>Explore topics</span>
                     <ArrowRight size={16} />
                   </div>
@@ -185,7 +185,7 @@ const HelpPage: React.FC = () => {
 
         {/* FAQ Section */}
         <div className="mb-16">
-          <h2 className="text-2xl font-bold text-stone-800 mb-8 text-center">
+          <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200 mb-8 text-center">
             Frequently Asked Questions
           </h2>
           
@@ -199,13 +199,13 @@ const HelpPage: React.FC = () => {
               {filteredFAQs.map((faq) => (
                 <div
                   key={faq.id}
-                  className="bg-white rounded-2xl border border-stone-200 overflow-hidden"
+                  className="bg-card rounded-2xl border border-border overflow-hidden"
                 >
                   <button
                     onClick={() => setExpandedFAQ(expandedFAQ === faq.id ? null : faq.id)}
-                    className="w-full px-6 py-5 text-left flex items-center justify-between hover:bg-stone-50 transition-colors"
+                    className="w-full px-6 py-5 text-left flex items-center justify-between hover:bg-muted/40 transition-colors"
                   >
-                    <h3 className="font-bold text-stone-800 pr-4">{faq.question}</h3>
+                    <h3 className="font-bold text-stone-800 dark:text-stone-200 pr-4">{faq.question}</h3>
                     {expandedFAQ === faq.id ? (
                       <ChevronUp className="text-stone-400 flex-shrink-0" size={20} />
                     ) : (
@@ -214,7 +214,7 @@ const HelpPage: React.FC = () => {
                   </button>
                   
                   {expandedFAQ === faq.id && (
-                    <div className="px-6 pb-5 pt-2 border-t border-stone-100">
+                    <div className="px-6 pb-5 pt-2 border-t border-border/50">
                       <p className="text-stone-600">{faq.answer}</p>
                     </div>
                   )}
@@ -230,11 +230,11 @@ const HelpPage: React.FC = () => {
           <p className="mb-6 opacity-90">Our support team is here to assist you</p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="flex items-center gap-2 px-6 py-3 bg-white text-highlight font-bold rounded-xl hover:bg-stone-100 transition-colors">
+            <button className="flex items-center gap-2 px-6 py-3 bg-card text-highlight font-bold rounded-xl hover:bg-muted/60 transition-colors">
               <Mail size={18} />
               Email Support
             </button>
-            <button className="flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-sm font-bold rounded-xl border border-white/20 hover:bg-white/20 transition-colors">
+            <button className="flex items-center gap-2 px-6 py-3 bg-card/10 backdrop-blur-sm font-bold rounded-xl border border-white/20 hover:bg-card/20 transition-colors">
               <Phone size={18} />
               Call Us
             </button>

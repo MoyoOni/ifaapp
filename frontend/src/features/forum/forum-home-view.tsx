@@ -143,20 +143,20 @@ const ForumHomeView: React.FC<ForumHomeViewProps> = ({ onSelectThread, onCreateT
 
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-end justify-between gap-6">
           <div className="space-y-2">
-            <span className="inline-block px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-bold text-emerald-100 uppercase tracking-widest border border-white/20">
+            <span className="inline-block px-3 py-1 rounded-full bg-card/20 backdrop-blur-md text-xs font-bold text-emerald-100 dark:text-emerald-200 uppercase tracking-widest border border-white/20">
               Communal Square
             </span>
             <h1 className="text-4xl md:text-5xl font-bold brand-font leading-tight">
               Ẹgbẹ Community
             </h1>
-            <p className="text-emerald-100 max-w-lg text-lg">
+            <p className="text-emerald-100 dark:text-emerald-200 max-w-lg text-lg">
               Discussions, teachings, and wisdom sharing. Connect with fellow seekers and elders.
             </p>
           </div>
 
           <button
             onClick={() => setShowCreateForm(true)}
-            className="px-6 py-3 bg-white text-emerald-700 rounded-xl font-bold hover:bg-emerald-50 transition-colors shadow-lg flex items-center gap-2"
+            className="px-6 py-3 bg-card text-emerald-700 dark:text-emerald-400 rounded-xl font-bold hover:bg-emerald-50 transition-colors shadow-lg flex items-center gap-2"
           >
             <Plus size={20} />
             Start Discussion
@@ -168,7 +168,7 @@ const ForumHomeView: React.FC<ForumHomeViewProps> = ({ onSelectThread, onCreateT
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Categories Sidebar/List */}
         <div className="lg:w-1/4 space-y-4">
-          <div className="bg-white rounded-2xl p-4 border border-emerald-100 shadow-sm">
+          <div className="bg-card rounded-2xl p-4 border border-emerald-100 shadow-sm">
             <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-wider mb-3 px-2">
               Topics
             </h3>
@@ -176,8 +176,8 @@ const ForumHomeView: React.FC<ForumHomeViewProps> = ({ onSelectThread, onCreateT
               <button
                 onClick={() => setSelectedCategory(null)}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-bold transition-colors ${selectedCategory === null
-                  ? 'bg-emerald-100 text-emerald-800'
-                  : 'text-emerald-500 hover:bg-emerald-50 hover:text-emerald-800'
+                  ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200'
+                  : 'text-emerald-500 hover:bg-emerald-50 hover:text-emerald-800 dark:text-emerald-200'
                   }`}
               >
                 <span>All Discussions</span>
@@ -188,8 +188,8 @@ const ForumHomeView: React.FC<ForumHomeViewProps> = ({ onSelectThread, onCreateT
                   key={category.id}
                   onClick={() => setSelectedCategory(category.id)}
                   className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-bold transition-colors ${selectedCategory === category.id
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'text-emerald-500 hover:bg-emerald-50 hover:text-emerald-800'
+                    ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700'
+                    : 'text-emerald-500 hover:bg-emerald-50 hover:text-emerald-800 dark:text-emerald-200'
                     }`}
                 >
                   <div className="flex items-center gap-2">
@@ -202,7 +202,7 @@ const ForumHomeView: React.FC<ForumHomeViewProps> = ({ onSelectThread, onCreateT
                     <span>{category.name}</span>
                   </div>
                   {category.threadCount > 0 && (
-                    <span className="text-xs bg-emerald-100 text-emerald-500 px-1.5 py-0.5 rounded-full">
+                    <span className="text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-500 dark:text-emerald-400 px-1.5 py-0.5 rounded-full">
                       {category.threadCount}
                     </span>
                   )}
@@ -222,7 +222,7 @@ const ForumHomeView: React.FC<ForumHomeViewProps> = ({ onSelectThread, onCreateT
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search conversations..."
-              className="w-full pl-12 pr-4 py-3 bg-white border border-emerald-200 rounded-xl text-emerald-700 shadow-sm focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 outline-none"
+              className="w-full pl-12 pr-4 py-3 bg-card border border-emerald-200 rounded-xl text-emerald-700 dark:text-emerald-400 shadow-sm focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 outline-none"
             />
           </div>
 
@@ -230,19 +230,19 @@ const ForumHomeView: React.FC<ForumHomeViewProps> = ({ onSelectThread, onCreateT
           {threadsLoading ? (
             <div className="space-y-4">
               {[1, 2, 3].map(i => (
-                <div key={i} className="h-32 bg-emerald-100 rounded-2xl animate-pulse"></div>
+                <div key={i} className="h-32 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl animate-pulse"></div>
               ))}
             </div>
           ) : filteredThreads.length === 0 ? (
             <div className="text-center py-20 bg-emerald-50 rounded-3xl border border-emerald-100">
-              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Plus size={32} className="text-emerald-400" />
               </div>
-              <h3 className="text-xl font-bold text-emerald-600">Quiet in the square.</h3>
-              <p className="text-emerald-500 mb-6">Be the first to speak on this topic.</p>
+              <h3 className="text-xl font-bold text-emerald-600 dark:text-emerald-400">Quiet in the square.</h3>
+              <p className="text-emerald-500 dark:text-emerald-400 mb-6">Be the first to speak on this topic.</p>
               <button
                 onClick={() => setShowCreateForm(true)}
-                className="text-emerald-700 font-bold hover:underline"
+                className="text-emerald-700 dark:text-emerald-400 font-bold hover:underline"
               >
                 Start a thread
               </button>
@@ -253,7 +253,7 @@ const ForumHomeView: React.FC<ForumHomeViewProps> = ({ onSelectThread, onCreateT
                 <div
                   key={thread.id}
                   onClick={() => onSelectThread?.(thread.id)}
-                  className="group bg-white p-6 rounded-2xl border border-emerald-100 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all cursor-pointer relative overflow-hidden"
+                  className="group bg-card p-6 rounded-2xl border border-emerald-100 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all cursor-pointer relative overflow-hidden"
                 >
                   {/* Left border for pinned/locked */}
                   {(thread.isPinned || thread.isLocked) && (
@@ -262,28 +262,28 @@ const ForumHomeView: React.FC<ForumHomeViewProps> = ({ onSelectThread, onCreateT
 
                   <div className="flex items-start gap-4">
                     {/* Avatar */}
-                    <div className="shrink-0 w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center font-bold text-emerald-400">
+                    <div className="shrink-0 w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center font-bold text-emerald-400">
                       {thread.author.name[0].toUpperCase()}
                     </div>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        {thread.isPinned && <Pin size={12} className="text-emerald-500 fill-current" />}
+                        {thread.isPinned && <Pin size={12} className="text-emerald-500 dark:text-emerald-400 fill-current" />}
                         {thread.isLocked && <Lock size={12} className="text-emerald-400" />}
-                        <h3 className="text-lg font-bold text-emerald-900 group-hover:text-emerald-600 transition-colors truncate">
+                        <h3 className="text-lg font-bold text-emerald-900 dark:text-emerald-100 group-hover:text-emerald-600 dark:text-emerald-400 transition-colors truncate">
                           {thread.title}
                         </h3>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-600 font-medium">
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-medium">
                           {thread.category.name}
                         </span>
                       </div>
 
-                      <p className="text-emerald-600 text-sm line-clamp-2 mb-3">
+                      <p className="text-emerald-600 dark:text-emerald-400 text-sm line-clamp-2 mb-3">
                         {thread.content}
                       </p>
 
                       <div className="flex items-center gap-4 text-xs text-emerald-400 font-medium">
-                        <span className="text-emerald-600 font-bold">
+                        <span className="text-emerald-600 dark:text-emerald-400 font-bold">
                           {thread.author.yorubaName || thread.author.name}
                         </span>
                         <span>• {new Date(thread.createdAt).toLocaleDateString()}</span>

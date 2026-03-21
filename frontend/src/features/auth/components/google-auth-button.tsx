@@ -70,7 +70,7 @@ const GoogleLoginButton: React.FC<GoogleAuthButtonProps> = ({ onSuccess, onError
       type="button"
       onClick={() => login()}
       disabled={isLoading}
-      className="w-full flex items-center justify-center gap-3 py-3.5 px-4 bg-white border border-stone-200 rounded-2xl text-stone-700 font-semibold hover:bg-stone-50 hover:border-stone-300 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+      className="w-full flex items-center justify-center gap-3 py-3.5 px-4 bg-card border border-border rounded-2xl text-stone-700 dark:text-stone-300 font-semibold hover:bg-muted/40 hover:border-stone-300 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
     >
       {isLoading ? <Loader2 size={20} className="animate-spin text-stone-400" /> : <GoogleSVG />}
       <span>{label}</span>

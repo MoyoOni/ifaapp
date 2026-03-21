@@ -39,7 +39,7 @@ const FraudAlertsView: React.FC = () => {
 
       {/* Placeholder */}
       {alerts.length === 0 ? (
-        <div className="text-center p-12 bg-white rounded-xl border border-stone-200">
+        <div className="text-center p-12 bg-card rounded-xl border border-border">
           <Shield className="w-16 h-16 mx-auto mb-4 text-stone-400 opacity-50" />
           <h3 className="text-lg font-semibold mb-2">No Fraud Alerts</h3>
           <p className="text-sm text-stone-500 max-w-md mx-auto">
@@ -75,7 +75,7 @@ const FraudAlertsView: React.FC = () => {
           {alerts.map((alert: any) => (
             <div
               key={alert.id}
-              className="bg-white rounded-xl p-6 border border-red-500/30 hover:border-red-500/50 transition-colors"
+              className="bg-card rounded-xl p-6 border border-red-500/30 hover:border-red-500/50 transition-colors"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
@@ -101,7 +101,7 @@ const FraudAlertsView: React.FC = () => {
                 <button className="px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg font-medium hover:bg-red-500/30 transition-colors">
                   Review
                 </button>
-                <button className="px-4 py-2 bg-stone-100 text-stone-900 border border-stone-200 rounded-lg font-medium hover:bg-stone-200 transition-colors">
+                <button className="px-4 py-2 bg-muted/60 text-stone-900 dark:text-stone-100 border border-border rounded-lg font-medium hover:bg-muted transition-colors">
                   Dismiss
                 </button>
               </div>

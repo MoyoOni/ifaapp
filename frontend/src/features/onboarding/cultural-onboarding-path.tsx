@@ -76,14 +76,14 @@ const CulturalOnboardingPath: React.FC<CulturalOnboardingPathProps> = ({ onConti
   ];
 
   return (
-    <div className="bg-white rounded-[3rem] p-10 md:p-12 border border-stone-100 shadow-2xl space-y-6">
+    <div className="bg-card rounded-[3rem] p-10 md:p-12 border border-border/50 shadow-2xl space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-2xl font-bold brand-font text-foreground">
           Welcome to Your Cultural Journey
         </h3>
         <button
           onClick={onContinue}
-          className="p-2 hover:bg-stone-100 rounded-lg transition-colors"
+          className="p-2 hover:bg-muted/60 rounded-lg transition-colors"
         >
           <X size={20} />
         </button>
@@ -94,7 +94,7 @@ const CulturalOnboardingPath: React.FC<CulturalOnboardingPathProps> = ({ onConti
       </p>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-stone-200">
+      <div className="flex gap-2 border-b border-border">
         <button
           onClick={() => setActiveTab('glossary')}
           className={`px-4 py-2 font-medium text-sm transition-colors ${
@@ -150,7 +150,7 @@ const CulturalOnboardingPath: React.FC<CulturalOnboardingPathProps> = ({ onConti
               {glossaryTerms.map((term, index) => (
                 <div
                   key={index}
-                  className="bg-stone-50 rounded-xl p-4 border border-stone-100 hover:border-highlight/30 transition-colors"
+                  className="bg-muted/40 rounded-xl p-4 border border-border/50 hover:border-highlight/30 transition-colors"
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div>
@@ -169,7 +169,7 @@ const CulturalOnboardingPath: React.FC<CulturalOnboardingPathProps> = ({ onConti
         {activeTab === 'video' && (
           <div className="space-y-4">
             <h4 className="text-lg font-bold text-foreground">What to Expect in a Divination</h4>
-            <div className="bg-stone-50 rounded-xl p-8 border border-stone-100 text-center">
+            <div className="bg-muted/40 rounded-xl p-8 border border-border/50 text-center">
               <Play className="w-16 h-16 text-highlight mx-auto mb-4" />
               <p className="text-muted mb-4">
                 Video guide coming soon. This will explain the divination process, what to expect,
@@ -185,11 +185,11 @@ const CulturalOnboardingPath: React.FC<CulturalOnboardingPathProps> = ({ onConti
         {activeTab === 'course' && (
           <div className="space-y-4">
             <h4 className="text-lg font-bold text-foreground">Introduction to Ifá/Isese</h4>
-            <div className="bg-stone-50 rounded-xl p-6 border border-stone-100 space-y-4">
+            <div className="bg-muted/40 rounded-xl p-6 border border-border/50 space-y-4">
               <p className="text-foreground">
                 We recommend starting with our beginner Academy course: <strong>"Introduction to Ifá/Isese"</strong>
               </p>
-              <div className="bg-white rounded-lg p-4 border border-stone-200">
+              <div className="bg-card rounded-lg p-4 border border-border">
                 <h5 className="font-bold text-foreground mb-2">Course Topics:</h5>
                 <ul className="space-y-1 text-sm text-muted list-disc list-inside">
                   <li>Understanding the basics of Ifá and Isese</li>
@@ -211,7 +211,7 @@ const CulturalOnboardingPath: React.FC<CulturalOnboardingPathProps> = ({ onConti
         {activeTab === 'guide' && (
           <div className="space-y-4">
             <h4 className="text-lg font-bold text-foreground">Cultural Context Guide</h4>
-            <div className="bg-stone-50 rounded-xl p-6 border border-stone-100 space-y-4">
+            <div className="bg-muted/40 rounded-xl p-6 border border-border/50 space-y-4">
               <div className="space-y-3">
                 <h5 className="font-bold text-foreground">Respect and Reverence</h5>
                 <p className="text-sm text-muted">

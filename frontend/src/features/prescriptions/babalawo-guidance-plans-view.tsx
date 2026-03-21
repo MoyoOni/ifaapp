@@ -143,17 +143,17 @@ const BabalawoGuidancePlansView: React.FC<BabalawoGuidancePlansViewProps> = ({
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'PENDING':
-        return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+        return 'text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200 dark:border-yellow-800';
       case 'APPROVED':
-        return 'text-green-600 bg-green-50 border-green-200';
+        return 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800';
       case 'IN_PROGRESS':
-        return 'text-blue-600 bg-blue-50 border-blue-200';
+        return 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800';
       case 'COMPLETED':
-        return 'text-emerald-600 bg-emerald-50 border-emerald-200';
+        return 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800';
       case 'CANCELLED':
-        return 'text-red-600 bg-red-50 border-red-200';
+        return 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800';
       default:
-        return 'text-stone-600 bg-stone-50 border-stone-200';
+        return 'text-muted-foreground bg-muted/40 border-border';
     }
   };
 
@@ -180,7 +180,7 @@ const BabalawoGuidancePlansView: React.FC<BabalawoGuidancePlansViewProps> = ({
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-stone-800">Guidance Plans</h2>
+          <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200">Guidance Plans</h2>
           <p className="text-stone-500 text-sm mt-1">
             Manage and track your client guidance plans
           </p>
@@ -189,15 +189,15 @@ const BabalawoGuidancePlansView: React.FC<BabalawoGuidancePlansViewProps> = ({
         {/* Quick Stats */}
         <div className="flex gap-3">
           {actionCounts.approved > 0 && (
-            <div className="px-4 py-2 bg-green-50 border border-green-200 rounded-lg">
-              <span className="text-sm font-medium text-green-700">
+            <div className="px-4 py-2 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg">
+              <span className="text-sm font-medium text-green-700 dark:text-green-400">
                 {actionCounts.approved} awaiting start
               </span>
             </div>
           )}
           {actionCounts.inProgress > 0 && (
-            <div className="px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
-              <span className="text-sm font-medium text-blue-700">
+            <div className="px-4 py-2 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <span className="text-sm font-medium text-blue-700 dark:text-blue-400">
                 {actionCounts.inProgress} in progress
               </span>
             </div>
@@ -213,7 +213,7 @@ const BabalawoGuidancePlansView: React.FC<BabalawoGuidancePlansViewProps> = ({
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
             statusFilter === ''
               ? 'bg-stone-800 text-white'
-              : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+              : 'bg-muted/60 text-stone-600 hover:bg-muted'
           }`}
         >
           All
@@ -226,7 +226,7 @@ const BabalawoGuidancePlansView: React.FC<BabalawoGuidancePlansViewProps> = ({
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               statusFilter === status
                 ? 'bg-stone-800 text-white'
-                : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                : 'bg-muted/60 text-stone-600 hover:bg-muted'
             }`}
           >
             {status.replace('_', ' ')}
@@ -236,7 +236,7 @@ const BabalawoGuidancePlansView: React.FC<BabalawoGuidancePlansViewProps> = ({
 
       {/* Guidance Plans List */}
       {!guidancePlans || guidancePlans.length === 0 ? (
-        <div className="text-center p-12 bg-stone-50 rounded-xl border border-stone-200">
+        <div className="text-center p-12 bg-muted/40 rounded-xl border border-border">
           <Package className="w-12 h-12 text-stone-300 mx-auto mb-4" />
           <p className="text-stone-500 font-medium">No guidance plans found</p>
           <p className="text-stone-400 text-sm mt-1">
@@ -248,14 +248,14 @@ const BabalawoGuidancePlansView: React.FC<BabalawoGuidancePlansViewProps> = ({
           {guidancePlans.map((plan) => (
             <div
               key={plan.id}
-              className="bg-white rounded-xl border border-stone-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+              className="bg-card rounded-xl border border-border overflow-hidden shadow-sm hover:shadow-md transition-shadow"
             >
               {/* Main Row */}
               <div className="p-5">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold text-stone-800">
+                      <h3 className="text-lg font-semibold text-stone-800 dark:text-stone-200">
                         {plan.type} Guidance Plan
                       </h3>
                       <div
@@ -326,7 +326,7 @@ const BabalawoGuidancePlansView: React.FC<BabalawoGuidancePlansViewProps> = ({
                       <button
                         type="button"
                         onClick={() => onViewDetails(plan.id)}
-                        className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition-colors"
+                        className="p-2 text-stone-400 hover:text-stone-600 hover:bg-muted/60 rounded-lg transition-colors"
                       >
                         <Eye className="w-5 h-5" />
                       </button>
@@ -337,7 +337,7 @@ const BabalawoGuidancePlansView: React.FC<BabalawoGuidancePlansViewProps> = ({
                       onClick={() =>
                         setExpandedPlan(expandedPlan === plan.id ? null : plan.id)
                       }
-                      className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition-colors"
+                      className="p-2 text-stone-400 hover:text-stone-600 hover:bg-muted/60 rounded-lg transition-colors"
                     >
                       {expandedPlan === plan.id ? (
                         <ChevronUp className="w-5 h-5" />
@@ -351,7 +351,7 @@ const BabalawoGuidancePlansView: React.FC<BabalawoGuidancePlansViewProps> = ({
 
               {/* Expanded Details */}
               {expandedPlan === plan.id && (
-                <div className="border-t border-stone-200 bg-stone-50 p-5 space-y-4">
+                <div className="border-t border-border bg-muted/40 p-5 space-y-4">
                   {/* Client Info */}
                   <div>
                     <h4 className="text-sm font-medium text-stone-500 mb-2">Client</h4>
@@ -368,7 +368,7 @@ const BabalawoGuidancePlansView: React.FC<BabalawoGuidancePlansViewProps> = ({
                       {plan.items.map((item, idx) => (
                         <div
                           key={idx}
-                          className="flex items-center justify-between bg-white p-3 rounded-lg border border-stone-200"
+                          className="flex items-center justify-between bg-card p-3 rounded-lg border border-border"
                         >
                           <div>
                             <p className="font-medium">{item.name}</p>
@@ -395,14 +395,14 @@ const BabalawoGuidancePlansView: React.FC<BabalawoGuidancePlansViewProps> = ({
                       <h4 className="text-sm font-medium text-stone-500 mb-2">
                         Instructions
                       </h4>
-                      <div className="bg-white p-3 rounded-lg border border-stone-200">
+                      <div className="bg-card p-3 rounded-lg border border-border">
                         <p className="text-sm whitespace-pre-wrap">{plan.instructions}</p>
                       </div>
                     </div>
                   )}
 
                   {/* Cost Breakdown */}
-                  <div className="bg-white p-4 rounded-lg border border-stone-200">
+                  <div className="bg-card p-4 rounded-lg border border-border">
                     <div className="flex justify-between text-sm mb-2">
                       <span className="text-stone-500">Items Total</span>
                       <span>{formatCurrency(plan.totalCost, plan.currency)}</span>
@@ -413,7 +413,7 @@ const BabalawoGuidancePlansView: React.FC<BabalawoGuidancePlansViewProps> = ({
                         {formatCurrency(plan.platformServiceFee, plan.currency)}
                       </span>
                     </div>
-                    <div className="flex justify-between font-medium pt-2 border-t border-stone-200">
+                    <div className="flex justify-between font-medium pt-2 border-t border-border">
                       <span>Total</span>
                       <span className="text-highlight">
                         {formatCurrency(
@@ -426,11 +426,11 @@ const BabalawoGuidancePlansView: React.FC<BabalawoGuidancePlansViewProps> = ({
 
                   {/* Escrow Status */}
                   {plan.escrow && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                      <p className="text-sm text-blue-700">
+                    <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                      <p className="text-sm text-blue-700 dark:text-blue-400">
                         <strong>Escrow Status:</strong> {plan.escrow.status}
                         {plan.status === 'IN_PROGRESS' && (
-                          <span className="block mt-1 text-blue-600">
+                          <span className="block mt-1 text-blue-600 dark:text-blue-400">
                             50% released when you started. Remaining 50% will be released upon
                             completion.
                           </span>

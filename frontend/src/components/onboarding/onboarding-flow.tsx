@@ -219,7 +219,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, className }
                 >
                   <div 
                     className={cn(
-                      "bg-white w-4 h-4 rounded-full shadow-md transform transition-transform",
+                      "bg-card w-4 h-4 rounded-full shadow-md transform transition-transform",
                       notificationsEnabled ? "translate-x-6" : ""
                     )}
                   />
@@ -240,7 +240,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, className }
                 >
                   <div 
                     className={cn(
-                      "bg-white w-4 h-4 rounded-full shadow-md transform transition-transform",
+                      "bg-card w-4 h-4 rounded-full shadow-md transform transition-transform",
                       newsletterEnabled ? "translate-x-6" : ""
                     )}
                   />

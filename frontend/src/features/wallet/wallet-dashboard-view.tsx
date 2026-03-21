@@ -136,8 +136,8 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
   const formatDate = (d: string) => new Date(d).toLocaleDateString();
 
   const getTransactionIcon = (type: TransactionType) => {
-    if (type === TransactionType.DEPOSIT) return <ArrowDownCircle className="w-5 h-5 text-green-500" />;
-    if (type === TransactionType.WITHDRAWAL) return <ArrowUpCircle className="w-5 h-5 text-red-500" />;
+    if (type === TransactionType.DEPOSIT) return <ArrowDownCircle className="w-5 h-5 text-green-500 dark:text-green-400" />;
+    if (type === TransactionType.WITHDRAWAL) return <ArrowUpCircle className="w-5 h-5 text-red-500 dark:text-red-400" />;
     return <DollarSign className="w-5 h-5 text-stone-400" />;
   };
 
@@ -157,7 +157,7 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
     <div className="space-y-8 p-6 pb-24">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-bold brand-font text-stone-800">My Wallet</h1>
+          <h1 className="text-4xl font-bold brand-font text-stone-800 dark:text-stone-200">My Wallet</h1>
           <p className="text-stone-500">Manage your funds</p>
         </div>
         <div className="flex gap-3">
@@ -173,7 +173,7 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
           </button>
           <button
             onClick={() => setShowWithdrawModal(true)}
-            className="px-6 py-3 bg-white text-stone-600 border border-stone-200 rounded-xl font-bold hover:bg-stone-50 transition-all flex items-center gap-2"
+            className="px-6 py-3 bg-card text-stone-600 border border-border rounded-xl font-bold hover:bg-muted/40 transition-all flex items-center gap-2"
           >
             <ArrowUpCircle className="w-5 h-5" />
             Withdraw
@@ -184,7 +184,7 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
       {/* Balance Cards */}
       < div className="grid grid-cols-1 md:grid-cols-3 gap-6" >
         {/* Total Balance */}
-        < div className="bg-white rounded-2xl p-6 border border-stone-100 shadow-xl shadow-stone-200/50 space-y-4 relative overflow-hidden" >
+        < div className="bg-card rounded-2xl p-6 border border-border/50 shadow-xl shadow-stone-200/50 space-y-4 relative overflow-hidden" >
           <div className="absolute top-0 right-0 w-32 h-32 bg-highlight/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
           <div className="flex items-center justify-between relative z-10">
             <div className="flex items-center gap-2 text-stone-500">
@@ -192,21 +192,21 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
               <span className="text-sm font-bold uppercase tracking-wider">Total Balance</span>
             </div>
             {walletBalance?.locked && (
-              <Lock className="w-4 h-4 text-amber-500" />
+              <Lock className="w-4 h-4 text-amber-500 dark:text-amber-400" />
             )}
           </div>
           <div className="relative z-10">
-            <p className="text-4xl font-extrabold text-stone-800 brand-font">
+            <p className="text-4xl font-extrabold text-stone-800 dark:text-stone-200 brand-font">
               {formatCurrency(walletBalance?.balance || 0, walletBalance?.currency)}
             </p>
             {walletBalance?.locked && (
-              <p className="text-xs font-bold text-amber-500 mt-1">⚠️ Wallet is locked</p>
+              <p className="text-xs font-bold text-amber-500 dark:text-amber-400 mt-1">⚠️ Wallet is locked</p>
             )}
           </div>
         </div >
 
         {/* Available Balance */}
-        < div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-100 shadow-sm space-y-4 text-green-900" >
+        < div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-100 dark:border-green-900 shadow-sm space-y-4 text-green-900 dark:text-green-100" >
           <div className="flex items-center gap-2 opacity-70">
             <TrendingUp className="w-5 h-5" />
             <span className="text-sm font-bold uppercase tracking-wider">Available</span>
@@ -222,7 +222,7 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
         {/* Escrowed Amount */}
         {
           escrowedAmount > 0 ? (
-            <div className="bg-amber-50 rounded-2xl p-6 border border-amber-100 shadow-sm space-y-4 text-amber-900">
+            <div className="bg-amber-50 dark:bg-amber-950/30 rounded-2xl p-6 border border-amber-100 shadow-sm space-y-4 text-amber-900 dark:text-amber-100">
               <div className="flex items-center gap-2 opacity-70">
                 <Lock className="w-5 h-5" />
                 <span className="text-sm font-bold uppercase tracking-wider">In Escrow</span>
@@ -235,7 +235,7 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
               </div>
             </div>
           ) : (
-            <div className="bg-stone-100 rounded-2xl p-6 border border-stone-200 border-dashed flex flex-col items-center justify-center text-stone-400 space-y-2">
+            <div className="bg-muted/60 rounded-2xl p-6 border border-border border-dashed flex flex-col items-center justify-center text-stone-400 space-y-2">
               <CheckCircle size={32} className="opacity-50" />
               <span className="text-sm font-bold">No active escrows</span>
             </div>
@@ -246,7 +246,7 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
       {/* Multi-Currency Balance Display */}
       {
         walletBalance && user?.id && (
-          <div className="bg-white rounded-2xl p-6 border border-stone-100 shadow-sm">
+          <div className="bg-card rounded-2xl p-6 border border-border/50 shadow-sm">
             <MultiCurrencyBalance
               userId={user.id}
               baseBalance={walletBalance.balance}
@@ -258,13 +258,13 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Recent Transactions */}
-        <div className="bg-white rounded-2xl p-6 border border-stone-100 shadow-sm space-y-6">
+        <div className="bg-card rounded-2xl p-6 border border-border/50 shadow-sm space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold brand-font text-stone-800">Recent Activity</h2>
+            <h2 className="text-xl font-bold brand-font text-stone-800 dark:text-stone-200">Recent Activity</h2>
             {onViewTransactions && (
               <button
                 onClick={onViewTransactions}
-                className="text-highlight hover:text-yellow-600 text-sm font-bold uppercase tracking-wide"
+                className="text-highlight hover:text-yellow-600 dark:text-yellow-400 text-sm font-bold uppercase tracking-wide"
               >
                 View All
               </button>
@@ -274,7 +274,7 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
           {transactionsLoading ? (
             <SkeletonTable rows={3} />
           ) : transactionsData?.transactions.length === 0 ? (
-            <div className="text-center py-12 bg-stone-50 rounded-xl border border-stone-100 border-dashed">
+            <div className="text-center py-12 bg-muted/40 rounded-xl border border-border/50 border-dashed">
               <p className="text-stone-400 font-medium">No transactions yet</p>
             </div>
           ) : (
@@ -282,14 +282,14 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
               {transactionsData?.transactions.map((transaction: Transaction) => (
                 <div
                   key={transaction.id}
-                  className="flex items-center justify-between p-4 bg-stone-50 rounded-xl border border-stone-100 hover:border-highlight/30 transition-all group"
+                  className="flex items-center justify-between p-4 bg-muted/40 rounded-xl border border-border/50 hover:border-highlight/30 transition-all group"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm border border-stone-100 group-hover:scale-110 transition-transform">
+                    <div className="w-10 h-10 rounded-full bg-card flex items-center justify-center shadow-sm border border-border/50 group-hover:scale-110 transition-transform">
                       {getTransactionIcon(transaction.type)}
                     </div>
                     <div>
-                      <p className="font-bold text-stone-800">{transaction.description || transaction.type}</p>
+                      <p className="font-bold text-stone-800 dark:text-stone-200">{transaction.description || transaction.type}</p>
                       <p className="text-xs text-stone-400 font-bold uppercase">
                         {formatDate(transaction.createdAt)}
                       </p>
@@ -297,7 +297,7 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
                   </div>
                   <div className="text-right">
                     <p
-                      className={`font-bold text-lg ${transaction.amount > 0 ? 'text-emerald-600' : 'text-red-500'
+                      className={`font-bold text-lg ${transaction.amount > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'
                         }`}
                     >
                       {transaction.amount > 0 ? '+' : ''}
@@ -315,8 +315,8 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
 
         {/* Active Escrows */}
         {escrows.length > 0 && (
-          <div className="bg-white rounded-2xl p-6 border border-stone-100 shadow-sm space-y-6">
-            <h2 className="text-xl font-bold brand-font text-stone-800">Escrow Management</h2>
+          <div className="bg-card rounded-2xl p-6 border border-border/50 shadow-sm space-y-6">
+            <h2 className="text-xl font-bold brand-font text-stone-800 dark:text-stone-200">Escrow Management</h2>
             <div className="space-y-4">
               {escrows.map((escrow) => {
                 // Calculate released amount for multi-tier escrows
@@ -336,22 +336,22 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
                   <div
                     key={escrow.id}
                     className={`p-5 rounded-2xl border ${isDisputed
-                      ? 'border-red-200 bg-red-50'
+                      ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/20'
                       : isPartiallyReleased
-                        ? 'border-amber-200 bg-amber-50'
-                        : 'border-blue-100 bg-blue-50'
+                        ? 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20'
+                        : 'border-blue-100 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/20'
                       }`}
                   >
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-bold text-stone-700 capitalize text-sm">{escrow.type.replace('_', ' ')}</p>
+                          <p className="font-bold text-stone-700 dark:text-stone-300 capitalize text-sm">{escrow.type.replace('_', ' ')}</p>
                           <p className="text-xs text-stone-400 font-medium">
                             Created {formatDate(escrow.createdAt)}
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-lg font-black text-stone-800">
+                          <p className="text-lg font-black text-stone-800 dark:text-stone-200">
                             {formatCurrency(escrow.amount, escrow.currency)}
                           </p>
                           <p className="text-[10px] font-black uppercase tracking-wider text-stone-400">{escrow.status}</p>
@@ -360,7 +360,7 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
 
                       {/* Multi-tier Release Status */}
                       {escrow.releaseTiers && (
-                        <div className="bg-white/50 border border-black/5 rounded-xl p-4 space-y-3">
+                        <div className="bg-card/50 border border-black/5 rounded-xl p-4 space-y-3">
 
                           {/* Visual Progress Bar */}
                           <div className="space-y-1.5">
@@ -372,7 +372,7 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
                               value={releasedAmount}
                               max={escrow.amount}
                               aria-label="Escrow release progress"
-                              className="w-full h-2 rounded-full [&::-webkit-progress-bar]:rounded-full [&::-webkit-progress-bar]:bg-stone-200 [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-green-400 [&::-moz-progress-bar]:rounded-full [&::-moz-progress-bar]:bg-green-400"
+                              className="w-full h-2 rounded-full [&::-webkit-progress-bar]:rounded-full [&::-webkit-progress-bar]:bg-muted [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-green-400 [&::-moz-progress-bar]:rounded-full [&::-moz-progress-bar]:bg-green-400"
                             />
                           </div>
 
@@ -385,7 +385,7 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
                                   type="button"
                                   onClick={() => handleReleaseEscrow(escrow.id, 'TIER_1', 'Tier 1')}
                                   disabled={releasingEscrowId === escrow.id}
-                                  className="flex-1 px-3 py-2 bg-white border border-green-200 text-green-700 rounded-lg text-xs font-bold hover:bg-green-50 transition-colors shadow-sm"
+                                  className="flex-1 px-3 py-2 bg-card border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 rounded-lg text-xs font-bold hover:bg-green-50 dark:bg-green-950/30 transition-colors shadow-sm"
                                 >
                                   {releasingEscrowId === escrow.id ? 'Releasing...' : `Release Tier 1`}
                                 </button>
@@ -396,7 +396,7 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
                                   type="button"
                                   onClick={() => handleReleaseEscrow(escrow.id, 'TIER_2', 'Tier 2')}
                                   disabled={releasingEscrowId === escrow.id}
-                                  className="flex-1 px-3 py-2 bg-white border border-blue-200 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-50 transition-colors shadow-sm"
+                                  className="flex-1 px-3 py-2 bg-card border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400 rounded-lg text-xs font-bold hover:bg-blue-50 dark:bg-blue-950/30 transition-colors shadow-sm"
                                 >
                                   {releasingEscrowId === escrow.id ? 'Releasing...' : `Release Tier 2`}
                                 </button>
@@ -418,8 +418,8 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
       {
         showDepositModal && (
           <div className="fixed inset-0 bg-stone-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-[2rem] p-8 max-w-md w-full shadow-2xl space-y-6 animate-in zoom-in-95">
-              <h3 className="text-2xl font-bold text-stone-800 brand-font text-center">Add Funds</h3>
+            <div className="bg-card rounded-[2rem] p-8 max-w-md w-full shadow-2xl space-y-6 animate-in zoom-in-95">
+              <h3 className="text-2xl font-bold text-stone-800 dark:text-stone-200 brand-font text-center">Add Funds</h3>
               <form onSubmit={(e) => {
                 e.preventDefault();
                 const amount = parseFloat(depositAmount);
@@ -439,7 +439,7 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
                       min="0.01"
                       value={depositAmount}
                       onChange={(e) => setDepositAmount(e.target.value)}
-                      className="w-full pl-10 pr-4 py-4 bg-stone-50 border border-stone-200 rounded-xl text-3xl font-bold text-center text-stone-800 focus:outline-none focus:ring-2 focus:ring-highlight/50 focus:border-highlight transition-all"
+                      className="w-full pl-10 pr-4 py-4 bg-muted/40 border border-border rounded-xl text-3xl font-bold text-center text-stone-800 dark:text-stone-200 focus:outline-none focus:ring-2 focus:ring-highlight/50 focus:border-highlight transition-all"
                       placeholder="0.00"
                       required
                       autoFocus
@@ -453,7 +453,7 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
                       setShowDepositModal(false);
                       setDepositAmount('');
                     }}
-                    className="px-6 py-4 bg-stone-100 text-stone-600 rounded-xl font-bold hover:bg-stone-200 transition-colors"
+                    className="px-6 py-4 bg-muted/60 text-stone-600 rounded-xl font-bold hover:bg-muted transition-colors"
                   >
                     Cancel
                   </button>
@@ -474,8 +474,8 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
       {
         showWithdrawModal && (
           <div className="fixed inset-0 bg-stone-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-[2rem] p-8 max-w-md w-full shadow-2xl space-y-6 animate-in zoom-in-95">
-              <h3 className="text-2xl font-bold text-stone-800 brand-font text-center">Withdraw Funds</h3>
+            <div className="bg-card rounded-[2rem] p-8 max-w-md w-full shadow-2xl space-y-6 animate-in zoom-in-95">
+              <h3 className="text-2xl font-bold text-stone-800 dark:text-stone-200 brand-font text-center">Withdraw Funds</h3>
               <form onSubmit={(e) => {
                 e.preventDefault();
                 handleWithdrawal();
@@ -490,15 +490,15 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
                     <input
                       type="number"
                       placeholder="0.00"
-                      className="w-full pl-10 pr-4 py-4 bg-stone-50 border border-stone-200 rounded-xl text-3xl font-bold text-center text-stone-800 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all"
+                      className="w-full pl-10 pr-4 py-4 bg-muted/40 border border-border rounded-xl text-3xl font-bold text-center text-stone-800 dark:text-stone-200 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all"
                       required
                     />
                   </div>
                 </div>
 
-                <div className="space-y-4 pt-2 border-t border-stone-100">
+                <div className="space-y-4 pt-2 border-t border-border/50">
                   <h4 className="font-bold text-sm text-center">Destination Account</h4>
-                  <select className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-sm font-medium" aria-label="Select destination bank account">
+                  <select className="w-full px-4 py-3 bg-muted/40 border border-border rounded-xl text-sm font-medium" aria-label="Select destination bank account">
                     <option>GTBank - *9920</option>
                     <option>Access Bank - *2210</option>
                     <option>Add New Bank Account...</option>
@@ -509,7 +509,7 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowWithdrawModal(false)}
-                    className="px-6 py-4 bg-stone-100 text-stone-600 rounded-xl font-bold hover:bg-stone-200 transition-colors"
+                    className="px-6 py-4 bg-muted/60 text-stone-600 rounded-xl font-bold hover:bg-muted transition-colors"
                   >
                     Cancel
                   </button>

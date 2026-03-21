@@ -61,27 +61,27 @@ export default function SentryTestPage() {
     const sentryConfigured = !!import.meta.env.VITE_SENTRY_DSN;
 
     return (
-        <div className="min-h-screen bg-gray-50 p-8">
+        <div className="min-h-screen bg-muted/40 p-8">
             <div className="max-w-4xl mx-auto">
-                <div className="bg-white rounded-lg shadow-lg p-6">
+                <div className="bg-card rounded-lg shadow-lg p-6">
                     <h1 className="text-3xl font-bold mb-2">Sentry Test Page</h1>
-                    <p className="text-gray-600 mb-6">
+                    <p className="text-muted-foreground mb-6">
                         Use these buttons to test Sentry error tracking
                     </p>
 
                     {/* Configuration Status */}
-                    <div className={`p-4 rounded-lg mb-6 ${sentryConfigured ? 'bg-green-50 border border-green-200' : 'bg-yellow-50 border border-yellow-200'}`}>
+                    <div className={`p-4 rounded-lg mb-6 ${sentryConfigured ? 'bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800' : 'bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200'}`}>
                         <h2 className="font-semibold mb-2">
                             {sentryConfigured ? '✅ Sentry Configured' : '⚠️ Sentry Not Configured'}
                         </h2>
-                        <p className="text-sm text-gray-700">
+                        <p className="text-sm text-foreground/90">
                             {sentryConfigured
                                 ? 'VITE_SENTRY_DSN is set. Errors will be sent to Sentry.'
                                 : 'VITE_SENTRY_DSN is not set. Errors will only appear in console.'}
                         </p>
                         {!sentryConfigured && (
-                            <p className="text-sm text-gray-600 mt-2">
-                                Add <code className="bg-gray-200 px-1 rounded">VITE_SENTRY_DSN</code> to your .env file to enable Sentry.
+                            <p className="text-sm text-muted-foreground mt-2">
+                                Add <code className="bg-muted px-1 rounded">VITE_SENTRY_DSN</code> to your .env file to enable Sentry.
                             </p>
                         )}
                     </div>
@@ -96,7 +96,7 @@ export default function SentryTestPage() {
                             >
                                 Throw Uncaught Error
                             </button>
-                            <p className="text-sm text-gray-600 mt-1">
+                            <p className="text-sm text-muted-foreground mt-1">
                                 Throws an error that will be caught by Sentry's global error handler
                             </p>
                         </div>
@@ -109,7 +109,7 @@ export default function SentryTestPage() {
                             >
                                 Manually Capture Error
                             </button>
-                            <p className="text-sm text-gray-600 mt-1">
+                            <p className="text-sm text-muted-foreground mt-1">
                                 Catches error and manually sends to Sentry with custom context
                             </p>
                         </div>
@@ -122,7 +122,7 @@ export default function SentryTestPage() {
                             >
                                 Throw Async Error
                             </button>
-                            <p className="text-sm text-gray-600 mt-1">
+                            <p className="text-sm text-muted-foreground mt-1">
                                 Tests error handling in async/promise context
                             </p>
                         </div>
@@ -135,7 +135,7 @@ export default function SentryTestPage() {
                             >
                                 Simulate Network Error
                             </button>
-                            <p className="text-sm text-gray-600 mt-1">
+                            <p className="text-sm text-muted-foreground mt-1">
                                 Tests error capture for failed API requests
                             </p>
                         </div>
@@ -143,17 +143,17 @@ export default function SentryTestPage() {
 
                     {/* Status */}
                     {lastError && (
-                        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
                             <h3 className="font-semibold mb-1">Last Action:</h3>
                             <p className="text-sm">{lastError}</p>
                             {sentryConfigured && (
-                                <p className="text-sm text-gray-600 mt-2">
+                                <p className="text-sm text-muted-foreground mt-2">
                                     Check your Sentry dashboard at{' '}
                                     <a
                                         href="https://sentry.io"
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="text-blue-600 hover:underline"
+                                        className="text-blue-600 dark:text-blue-400 hover:underline"
                                     >
                                         sentry.io
                                     </a>
@@ -163,9 +163,9 @@ export default function SentryTestPage() {
                     )}
 
                     {/* Instructions */}
-                    <div className="mt-8 p-4 bg-gray-50 rounded-lg">
+                    <div className="mt-8 p-4 bg-muted/40 rounded-lg">
                         <h3 className="font-semibold mb-2">How to Use:</h3>
-                        <ol className="list-decimal list-inside space-y-1 text-sm text-gray-700">
+                        <ol className="list-decimal list-inside space-y-1 text-sm text-foreground/90">
                             <li>Ensure Sentry is configured (VITE_SENTRY_DSN set)</li>
                             <li>Click any test button above</li>
                             <li>Open Sentry dashboard (sentry.io)</li>
@@ -175,23 +175,23 @@ export default function SentryTestPage() {
                     </div>
 
                     {/* Backend Tests */}
-                    <div className="mt-8 p-4 bg-gray-50 rounded-lg">
+                    <div className="mt-8 p-4 bg-muted/40 rounded-lg">
                         <h3 className="font-semibold mb-2">Backend Test Endpoints:</h3>
-                        <p className="text-sm text-gray-700 mb-2">
+                        <p className="text-sm text-foreground/90 mb-2">
                             Test backend Sentry integration using these endpoints:
                         </p>
-                        <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
+                        <ul className="list-disc list-inside space-y-1 text-sm text-foreground/90">
                             <li>
-                                <code className="bg-gray-200 px-1 rounded">GET /api/test/sentry/error</code> - Uncaught error
+                                <code className="bg-muted px-1 rounded">GET /api/test/sentry/error</code> - Uncaught error
                             </li>
                             <li>
-                                <code className="bg-gray-200 px-1 rounded">GET /api/test/sentry/http-exception</code> - HTTP exception
+                                <code className="bg-muted px-1 rounded">GET /api/test/sentry/http-exception</code> - HTTP exception
                             </li>
                             <li>
-                                <code className="bg-gray-200 px-1 rounded">POST /api/test/sentry/manual-capture</code> - Manual capture
+                                <code className="bg-muted px-1 rounded">POST /api/test/sentry/manual-capture</code> - Manual capture
                             </li>
                             <li>
-                                <code className="bg-gray-200 px-1 rounded">GET /api/test/health</code> - Check Sentry config
+                                <code className="bg-muted px-1 rounded">GET /api/test/health</code> - Check Sentry config
                             </li>
                         </ul>
                     </div>

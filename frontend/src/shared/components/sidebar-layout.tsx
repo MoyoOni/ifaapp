@@ -349,7 +349,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                         <span className="text-[10px] text-muted-foreground">·</span>
                         <a href="/privacy" className="text-[10px] text-muted-foreground hover:text-highlight transition-colors">Privacy</a>
                         <span className="text-[10px] text-muted-foreground">·</span>
-                        <a href="/donate" className="text-[10px] text-highlight font-semibold hover:text-yellow-600 transition-colors">♥ Support Us</a>
+                        <a href="/donate" className="text-[10px] text-highlight font-semibold hover:text-yellow-600 dark:text-yellow-400 transition-colors">♥ Support Us</a>
                     </div>
                 )}
 

@@ -133,7 +133,7 @@ const MaskedValue: React.FC<MaskedValueProps> = ({
     <div className={`flex items-center gap-2 ${className}`}>
       <ConfirmationDialog />
       <PromptDialog />
-      <span className={`truncate ${isSensitive && isVisible ? 'text-red-600 font-medium' : ''}`}>
+      <span className={`truncate ${isSensitive && isVisible ? 'text-red-600 dark:text-red-400 font-medium' : ''}`}>
         {getMaskedValue(value)}
       </span>
       
@@ -141,7 +141,7 @@ const MaskedValue: React.FC<MaskedValueProps> = ({
         type="button"
         onClick={toggleVisibility}
         disabled={revealing}
-        className={`p-1 rounded hover:bg-stone-200 disabled:opacity-50 ${
+        className={`p-1 rounded hover:bg-muted disabled:opacity-50 ${
           isSensitive && isVisible ? 'bg-red-100 text-red-600' : ''
         }`}
         aria-label={isVisible ? 'Hide' : 'Show'}
@@ -149,7 +149,7 @@ const MaskedValue: React.FC<MaskedValueProps> = ({
         {revealing ? (
           <span className="w-4 h-4 border-2 border-stone-400 border-t-transparent rounded-full animate-spin"></span>
         ) : isVisible ? (
-          <EyeOff size={14} className={isSensitive ? "text-red-500" : "text-stone-500"} />
+          <EyeOff size={14} className={isSensitive ? "text-red-500 dark:text-red-400" : "text-stone-500"} />
         ) : (
           <Eye size={14} className={isSensitive ? "text-red-400" : "text-stone-400"} />
         )}
@@ -158,7 +158,7 @@ const MaskedValue: React.FC<MaskedValueProps> = ({
       {isSensitive && isVisible && (
         <AlertTriangle 
           size={14} 
-          className="text-red-500 flex-shrink-0" 
+          className="text-red-500 dark:text-red-400 flex-shrink-0" 
         />
       )}
       

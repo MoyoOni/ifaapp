@@ -9,10 +9,10 @@ import { UserRole } from '@common';
 import appLogo from '@/assets/logo.png';
 
 const ROLE_CONFIG: Record<string, { label: string; icon: React.ReactNode; color: string; bg: string; border: string }> = {
-  [UserRole.CLIENT]: { label: 'Client', icon: <Users size={16} />, color: 'text-blue-700', bg: 'bg-blue-50 hover:bg-blue-100', border: 'border-blue-200' },
-  [UserRole.BABALAWO]: { label: 'Babalawo', icon: <BookOpen size={16} />, color: 'text-purple-700', bg: 'bg-purple-50 hover:bg-purple-100', border: 'border-purple-200' },
-  [UserRole.VENDOR]: { label: 'Vendor', icon: <ShoppingBag size={16} />, color: 'text-emerald-700', bg: 'bg-emerald-50 hover:bg-emerald-100', border: 'border-emerald-200' },
-  [UserRole.ADMIN]: { label: 'Admin', icon: <Shield size={16} />, color: 'text-amber-700', bg: 'bg-amber-50 hover:bg-amber-100', border: 'border-amber-200' },
+  [UserRole.CLIENT]: { label: 'Client', icon: <Users size={16} />, color: 'text-blue-700 dark:text-blue-300', bg: 'bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-900/40', border: 'border-blue-200 dark:border-blue-800' },
+  [UserRole.BABALAWO]: { label: 'Babalawo', icon: <BookOpen size={16} />, color: 'text-purple-700 dark:text-purple-300', bg: 'bg-purple-50 dark:bg-purple-950/30 hover:bg-purple-100 dark:hover:bg-purple-900/40', border: 'border-purple-200 dark:border-purple-800' },
+  [UserRole.VENDOR]: { label: 'Vendor', icon: <ShoppingBag size={16} />, color: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-50 dark:bg-emerald-950/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/40', border: 'border-emerald-200 dark:border-emerald-800' },
+  [UserRole.ADMIN]: { label: 'Admin', icon: <Shield size={16} />, color: 'text-amber-700 dark:text-amber-300', bg: 'bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-900/40', border: 'border-amber-200 dark:border-amber-800' },
 };
 
 const QuickAccessPage: React.FC = () => {
@@ -71,14 +71,14 @@ const QuickAccessPage: React.FC = () => {
   const roleOrder = [UserRole.CLIENT, UserRole.BABALAWO, UserRole.VENDOR, UserRole.ADMIN];
 
   return (
-    <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-[2.5rem] p-8 md:p-10 border border-stone-100 shadow-2xl space-y-6 max-w-lg w-full relative overflow-hidden font-sans">
+    <div className="min-h-screen bg-muted/40 flex items-center justify-center p-4">
+      <div className="bg-card rounded-[2.5rem] p-8 md:p-10 border border-border/50 shadow-2xl space-y-6 max-w-lg w-full relative overflow-hidden font-sans">
         {/* Decorative Gold Line */}
         <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-stone-100 via-highlight to-stone-100"></div>
 
         <div className="text-center space-y-3">
           <img src={appLogo} alt="Ìlú Àṣẹ" className="w-16 h-16 mx-auto rounded-2xl shadow-lg" />
-          <h2 className="text-3xl font-bold brand-font text-stone-800 tracking-tight">Quick Access</h2>
+          <h2 className="text-3xl font-bold brand-font text-stone-800 dark:text-stone-200 tracking-tight">Quick Access</h2>
           <p className="text-stone-500 font-medium text-sm">
             Click any account to sign in instantly
           </p>
@@ -86,7 +86,7 @@ const QuickAccessPage: React.FC = () => {
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm font-medium flex items-center justify-center">
+          <div className="bg-red-50 dark:bg-red-950/30 border border-red-100 text-red-600 dark:text-red-400 px-4 py-3 rounded-xl text-sm font-medium flex items-center justify-center">
             {error}
           </div>
         )}

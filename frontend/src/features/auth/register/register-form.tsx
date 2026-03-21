@@ -57,13 +57,13 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, on
 
   if (registeredEmail) {
     return (
-      <div className="bg-white rounded-[2.5rem] p-8 md:p-10 border border-stone-100 shadow-2xl space-y-6 max-w-md w-full relative overflow-hidden font-sans text-center">
+      <div className="bg-card rounded-[2.5rem] p-8 md:p-10 border border-border/50 shadow-2xl space-y-6 max-w-md w-full relative overflow-hidden font-sans text-center">
         <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-input via-highlight to-input" />
-        <CheckCircle size={48} className="text-green-500 mx-auto" />
-        <h2 className="text-2xl font-bold brand-font text-stone-800">Check your email</h2>
+        <CheckCircle size={48} className="text-green-500 dark:text-green-400 mx-auto" />
+        <h2 className="text-2xl font-bold brand-font text-stone-800 dark:text-stone-200">Check your email</h2>
         <p className="text-stone-500 text-sm leading-relaxed">
           We sent a verification link to{' '}
-          <span className="font-semibold text-stone-700">{registeredEmail}</span>.
+          <span className="font-semibold text-stone-700 dark:text-stone-300">{registeredEmail}</span>.
           Click the link to verify your address, then continue.
         </p>
         <button
@@ -78,7 +78,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, on
           <button
             type="button"
             onClick={() => setRegisteredEmail(null)}
-            className="text-highlight hover:text-yellow-600 font-medium"
+            className="text-highlight hover:text-yellow-600 dark:text-yellow-400 font-medium"
           >
             go back
           </button>.
@@ -88,7 +88,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, on
   }
 
   return (
-    <div className="bg-white rounded-[2.5rem] p-8 md:p-10 border border-stone-100 shadow-2xl space-y-6 max-w-md w-full relative overflow-hidden font-sans">
+    <div className="bg-card rounded-[2.5rem] p-8 md:p-10 border border-border/50 shadow-2xl space-y-6 max-w-md w-full relative overflow-hidden font-sans">
       <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-input via-highlight to-input" />
 
       {/* Header */}
@@ -97,7 +97,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, on
           <button
             type="button"
             onClick={onBack}
-            className="mt-1 p-1.5 rounded-xl hover:bg-stone-100 text-stone-400 hover:text-stone-700 transition-colors flex-shrink-0"
+            className="mt-1 p-1.5 rounded-xl hover:bg-muted/60 text-stone-400 hover:text-stone-700 dark:text-stone-300 transition-colors flex-shrink-0"
             aria-label="Back to role selection"
           >
             <ArrowLeft size={18} aria-hidden="true" />
@@ -105,7 +105,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, on
         )}
         <div className="flex-1 text-center">
           <img src={appLogo} alt="Ilu Ase" className="w-12 h-12 mx-auto rounded-2xl shadow-lg mb-3" />
-          <h2 className="text-2xl font-bold brand-font text-stone-800">Create Account</h2>
+          <h2 className="text-2xl font-bold brand-font text-stone-800 dark:text-stone-200">Create Account</h2>
           <p className="text-sm text-stone-500 mt-1">
             Joining as a{' '}
             <span className="text-highlight font-bold">{ROLE_LABELS[selectedRole] ?? selectedRole}</span>
@@ -121,9 +121,9 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, on
       />
 
       <div className="flex items-center gap-3">
-        <div className="flex-1 h-px bg-stone-100" />
+        <div className="flex-1 h-px bg-muted/60" />
         <span className="text-xs text-stone-300 font-semibold uppercase tracking-widest">or</span>
-        <div className="flex-1 h-px bg-stone-100" />
+        <div className="flex-1 h-px bg-muted/60" />
       </div>
 
       {/* Form */}
@@ -138,7 +138,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, on
             required
             minLength={2}
             placeholder="Full name"
-            className="w-full bg-stone-50 border border-stone-200 p-4 pl-12 rounded-2xl text-stone-800 outline-none focus:bg-white focus:border-highlight focus:ring-4 focus:ring-highlight/10 transition-all font-medium placeholder:text-stone-300"
+            className="w-full bg-muted/40 border border-border p-4 pl-12 rounded-2xl text-stone-800 dark:text-stone-200 outline-none focus:bg-card focus:border-highlight focus:ring-4 focus:ring-highlight/10 transition-all font-medium placeholder:text-stone-300"
           />
         </div>
 
@@ -151,7 +151,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, on
             onChange={(e) => setEmail(e.target.value)}
             required
             placeholder="Email address"
-            className="w-full bg-stone-50 border border-stone-200 p-4 pl-12 rounded-2xl text-stone-800 outline-none focus:bg-white focus:border-highlight focus:ring-4 focus:ring-highlight/10 transition-all font-medium placeholder:text-stone-300"
+            className="w-full bg-muted/40 border border-border p-4 pl-12 rounded-2xl text-stone-800 dark:text-stone-200 outline-none focus:bg-card focus:border-highlight focus:ring-4 focus:ring-highlight/10 transition-all font-medium placeholder:text-stone-300"
           />
         </div>
 
@@ -163,7 +163,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, on
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             placeholder="Phone number (optional) — e.g. 08012345678"
-            className="w-full bg-stone-50 border border-stone-200 p-4 pl-12 rounded-2xl text-stone-800 outline-none focus:bg-white focus:border-highlight focus:ring-4 focus:ring-highlight/10 transition-all font-medium placeholder:text-stone-300"
+            className="w-full bg-muted/40 border border-border p-4 pl-12 rounded-2xl text-stone-800 dark:text-stone-200 outline-none focus:bg-card focus:border-highlight focus:ring-4 focus:ring-highlight/10 transition-all font-medium placeholder:text-stone-300"
           />
         </div>
 
@@ -179,7 +179,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, on
               minLength={8}
               autoComplete="new-password"
               placeholder="Password"
-              className="w-full bg-stone-50 border border-stone-200 p-4 pl-12 rounded-2xl text-stone-800 outline-none focus:bg-white focus:border-highlight focus:ring-4 focus:ring-highlight/10 transition-all font-medium placeholder:text-stone-300"
+              className="w-full bg-muted/40 border border-border p-4 pl-12 rounded-2xl text-stone-800 dark:text-stone-200 outline-none focus:bg-card focus:border-highlight focus:ring-4 focus:ring-highlight/10 transition-all font-medium placeholder:text-stone-300"
             />
           </div>
           <div className="relative group">
@@ -192,13 +192,13 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, on
               minLength={8}
               autoComplete="new-password"
               placeholder="Confirm"
-              className="w-full bg-stone-50 border border-stone-200 p-4 pl-12 rounded-2xl text-stone-800 outline-none focus:bg-white focus:border-highlight focus:ring-4 focus:ring-highlight/10 transition-all font-medium placeholder:text-stone-300"
+              className="w-full bg-muted/40 border border-border p-4 pl-12 rounded-2xl text-stone-800 dark:text-stone-200 outline-none focus:bg-card focus:border-highlight focus:ring-4 focus:ring-highlight/10 transition-all font-medium placeholder:text-stone-300"
             />
           </div>
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm font-medium text-center">
+          <div className="bg-red-50 dark:bg-red-950/30 border border-red-100 text-red-600 dark:text-red-400 px-4 py-3 rounded-xl text-sm font-medium text-center">
             {error}
           </div>
         )}
@@ -227,7 +227,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, on
       {onSwitchToLogin && (
         <p className="text-center text-stone-400 text-sm">
           Already have an account?{' '}
-          <button type="button" onClick={onSwitchToLogin} className="text-highlight hover:text-yellow-600 font-bold transition-colors">
+          <button type="button" onClick={onSwitchToLogin} className="text-highlight hover:text-yellow-600 dark:text-yellow-400 font-bold transition-colors">
             Sign in
           </button>
         </p>

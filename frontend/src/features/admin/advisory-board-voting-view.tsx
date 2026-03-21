@@ -172,8 +172,8 @@ const AdvisoryBoardVotingView: React.FC = () => {
       case 'REJECTED': return 'text-red-400 bg-red-400/10';
       case 'ACTIVE': return 'text-blue-400 bg-blue-400/10';
       case 'PENDING': return 'text-yellow-400 bg-yellow-400/10';
-      case 'CLOSED': return 'text-gray-400 bg-gray-400/10';
-      default: return 'text-gray-400 bg-gray-400/10';
+      case 'CLOSED': return 'text-muted-foreground/70 bg-gray-400/10';
+      default: return 'text-muted-foreground/70 bg-gray-400/10';
     }
   };
 
@@ -257,7 +257,7 @@ const AdvisoryBoardVotingView: React.FC = () => {
                   type="text"
                   value={newVote.title}
                   onChange={(e) => setNewVote({ ...newVote, title: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-highlight"
+                  className="w-full bg-card/5 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-highlight"
                   placeholder="Enter vote title"
                 />
               </div>
@@ -270,7 +270,7 @@ const AdvisoryBoardVotingView: React.FC = () => {
                   value={newVote.description}
                   onChange={(e) => setNewVote({ ...newVote, description: e.target.value })}
                   rows={4}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-highlight"
+                  className="w-full bg-card/5 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-highlight"
                   placeholder="Describe the proposal..."
                 />
               </div>
@@ -286,7 +286,7 @@ const AdvisoryBoardVotingView: React.FC = () => {
                         type="text"
                         value={option}
                         onChange={(e) => handleOptionChange(index, e.target.value)}
-                        className="flex-1 bg-white/5 border border-white/10 rounded-lg p-2 text-white focus:outline-none focus:ring-2 focus:ring-highlight"
+                        className="flex-1 bg-card/5 border border-white/10 rounded-lg p-2 text-white focus:outline-none focus:ring-2 focus:ring-highlight"
                         placeholder={`Option ${index + 1}`}
                       />
                       {newVote.voteOptions.length > 2 && (
@@ -322,7 +322,7 @@ const AdvisoryBoardVotingView: React.FC = () => {
                     value={newVote.deadline}
                     onChange={(e) => setNewVote({ ...newVote, deadline: e.target.value })}
                     aria-label="Set voting deadline"
-                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-highlight"
+                    className="w-full bg-card/5 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-highlight"
                   />
                 </div>
 
@@ -337,7 +337,7 @@ const AdvisoryBoardVotingView: React.FC = () => {
                       requiredMajority: e.target.value as 'SIMPLE' | 'SUPER' | 'UNANIMOUS'
                     })}
                     aria-label="Select required majority type"
-                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-highlight"
+                    className="w-full bg-card/5 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-highlight"
                   >
                     <option value="SIMPLE" className="bg-background">Simple Majority (50%)</option>
                     <option value="SUPER" className="bg-background">Super Majority (75%)</option>
@@ -379,7 +379,7 @@ const AdvisoryBoardVotingView: React.FC = () => {
                 return (
                   <div
                     key={vote.id}
-                    className="bg-white/5 border border-white/10 rounded-xl p-6 hover:border-highlight transition-colors"
+                    className="bg-card/5 border border-white/10 rounded-xl p-6 hover:border-highlight transition-colors"
                   >
                     <div className="flex flex-wrap justify-between items-start gap-4 mb-4">
                       <div>
@@ -448,7 +448,7 @@ const AdvisoryBoardVotingView: React.FC = () => {
                                   disabled={!canVote(vote)}
                                   className={`px-4 py-1 rounded-lg text-sm font-medium ${canVote(vote)
                                     ? 'bg-highlight text-foreground hover:bg-highlight/80'
-                                    : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                                    : 'bg-gray-600 text-muted-foreground/70 cursor-not-allowed'
                                     }`}
                                 >
                                   Vote
@@ -464,7 +464,7 @@ const AdvisoryBoardVotingView: React.FC = () => {
                       <div className="flex flex-wrap gap-6 text-sm">
                         <div>
                           <p className="text-muted">Yes</p>
-                          <p className="text-green-400 font-bold">{vote.votes.yes} ({yesPercentage}%)</p>
+                          <p className="dark:text-green-400 text-green-600 font-bold">{vote.votes.yes} ({yesPercentage}%)</p>
                         </div>
                         <div>
                           <p className="text-muted">No</p>

@@ -32,12 +32,12 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
   };
 
   return (
-    <div className="bg-white rounded-[2.5rem] p-10 md:p-12 border border-stone-100 shadow-2xl space-y-7 max-w-md w-full relative overflow-hidden font-sans">
+    <div className="bg-card rounded-[2.5rem] p-10 md:p-12 border border-border/50 shadow-2xl space-y-7 max-w-md w-full relative overflow-hidden font-sans">
       <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-input via-highlight to-input" />
 
       {/* Loading overlay */}
       {isSubmitting && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[2.5rem] bg-white/90 backdrop-blur-[2px]">
+        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[2.5rem] bg-card/90 backdrop-blur-[2px]">
           <div className="flex flex-col items-center gap-3">
             <Loader2 size={32} className="animate-spin text-highlight" />
             <span className="text-sm font-bold text-stone-600">Signing in...</span>
@@ -48,7 +48,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
       {/* Header */}
       <div className="text-center space-y-3">
         <img src={appLogo} alt="Ilu Ase" className="w-16 h-16 mx-auto rounded-2xl shadow-lg" />
-        <h2 className="text-3xl font-bold brand-font text-stone-800 tracking-tight">Welcome Back</h2>
+        <h2 className="text-3xl font-bold brand-font text-stone-800 dark:text-stone-200 tracking-tight">Welcome Back</h2>
         <p className="text-stone-500 text-base font-medium">Enter your details to access your sanctuary</p>
       </div>
 
@@ -60,9 +60,9 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
       />
 
       <div className="flex items-center gap-3">
-        <div className="flex-1 h-px bg-stone-100" />
+        <div className="flex-1 h-px bg-muted/60" />
         <span className="text-xs text-stone-300 font-semibold uppercase tracking-widest">or</span>
-        <div className="flex-1 h-px bg-stone-100" />
+        <div className="flex-1 h-px bg-muted/60" />
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -82,7 +82,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
               required
               autoComplete="username"
               placeholder="name@example.com or 08012345678"
-              className="w-full bg-stone-50 border border-stone-200 p-4 pl-14 rounded-2xl text-stone-800 outline-none focus:bg-white focus:border-highlight focus:ring-4 focus:ring-highlight/10 transition-all font-medium placeholder:text-stone-300"
+              className="w-full bg-muted/40 border border-border p-4 pl-14 rounded-2xl text-stone-800 dark:text-stone-200 outline-none focus:bg-card focus:border-highlight focus:ring-4 focus:ring-highlight/10 transition-all font-medium placeholder:text-stone-300"
             />
           </div>
         </div>
@@ -93,7 +93,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
             <label htmlFor="password" className="text-xs font-bold uppercase text-stone-400 tracking-widest">
               Password
             </label>
-            <button type="button" className="text-xs font-semibold text-highlight hover:text-yellow-600 transition-colors">
+            <button type="button" className="text-xs font-semibold text-highlight hover:text-yellow-600 dark:text-yellow-400 transition-colors">
               Forgot password?
             </button>
           </div>
@@ -109,13 +109,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
               minLength={6}
               autoComplete="current-password"
               placeholder="Enter your password"
-              className="w-full bg-stone-50 border border-stone-200 p-4 pl-14 rounded-2xl text-stone-800 outline-none focus:bg-white focus:border-highlight focus:ring-4 focus:ring-highlight/10 transition-all font-medium placeholder:text-stone-300"
+              className="w-full bg-muted/40 border border-border p-4 pl-14 rounded-2xl text-stone-800 dark:text-stone-200 outline-none focus:bg-card focus:border-highlight focus:ring-4 focus:ring-highlight/10 transition-all font-medium placeholder:text-stone-300"
             />
           </div>
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm font-medium text-center">
+          <div className="bg-red-50 dark:bg-red-950/30 border border-red-100 text-red-600 dark:text-red-400 px-4 py-3 rounded-xl text-sm font-medium text-center">
             {error}
           </div>
         )}
@@ -136,7 +136,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
           <button
             type="button"
             onClick={onSwitchToRegister}
-            className="text-highlight hover:text-yellow-600 font-bold transition-colors"
+            className="text-highlight hover:text-yellow-600 dark:text-yellow-400 font-bold transition-colors"
           >
             Start your journey
           </button>

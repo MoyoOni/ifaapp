@@ -13,7 +13,7 @@ export const Badge: React.FC<BadgeProps> = ({
 }) => {
     const variantStyles = {
         default: 'bg-highlight text-foreground',
-        secondary: 'bg-white/10 text-white',
+        secondary: 'bg-card/10 text-white',
         destructive: 'bg-red-500 text-white',
         outline: 'border border-white/20 text-white',
     };

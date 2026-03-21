@@ -35,10 +35,10 @@ const ConsultationList: React.FC<ConsultationListProps> = ({ clientId }) => {
 
   if (error) {
     return (
-      <div className="bg-amber-50 border border-amber-100 rounded-2xl p-6 text-center">
-        <AlertCircle className="text-amber-500 mx-auto" size={48} />
-        <h3 className="font-bold text-lg text-amber-800 mt-2">Error Loading Consultations</h3>
-        <p className="text-amber-600 mt-1">{error}</p>
+      <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-100 rounded-2xl p-6 text-center">
+        <AlertCircle className="text-amber-500 dark:text-amber-400 mx-auto" size={48} />
+        <h3 className="font-bold text-lg text-amber-800 dark:text-amber-400 mt-2">Error Loading Consultations</h3>
+        <p className="text-amber-600 dark:text-amber-400 mt-1">{error}</p>
         <button 
           onClick={() => { void refetch(); }}
           className="mt-4 px-4 py-2 bg-highlight text-white rounded-lg hover:bg-yellow-500 transition-colors"
@@ -51,9 +51,9 @@ const ConsultationList: React.FC<ConsultationListProps> = ({ clientId }) => {
 
   if (!appointments || appointments.length === 0) {
     return (
-      <div className="bg-stone-50 rounded-2xl p-8 text-center border border-stone-100">
+      <div className="bg-muted/40 rounded-2xl p-8 text-center border border-border/50">
         <Calendar className="text-stone-400 mx-auto" size={48} />
-        <h3 className="font-bold text-lg text-stone-800 mt-2">No Consultations Yet</h3>
+        <h3 className="font-bold text-lg text-stone-800 dark:text-stone-200 mt-2">No Consultations Yet</h3>
         <p className="text-stone-500 mt-1">Book your first consultation with a Babalawo to get started</p>
         <button 
           onClick={() => navigate('/babalawo')}
@@ -71,43 +71,43 @@ const ConsultationList: React.FC<ConsultationListProps> = ({ clientId }) => {
         return { 
           icon: ClockIcon, 
           text: 'Pending Confirmation', 
-          color: 'text-amber-600 bg-amber-100/50',
-          border: 'border-amber-200'
+          color: 'text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30/50 dark:bg-amber-900/20',
+          border: 'border-amber-200 dark:border-amber-800'
         };
       case 'CONFIRMED':
         return { 
           icon: CheckCircle, 
           text: 'Confirmed', 
-          color: 'text-green-600 bg-green-100/50',
-          border: 'border-green-200'
+          color: 'text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30/50 dark:bg-green-900/20',
+          border: 'border-green-200 dark:border-green-800'
         };
       case 'COMPLETED':
         return { 
           icon: CheckCircle, 
           text: 'Completed', 
-          color: 'text-blue-600 bg-blue-100/50',
-          border: 'border-blue-200'
+          color: 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30/50 dark:bg-blue-900/20',
+          border: 'border-blue-200 dark:border-blue-800'
         };
       case 'CANCELLED':
         return { 
           icon: XCircle, 
           text: 'Cancelled', 
-          color: 'text-red-600 bg-red-100/50',
-          border: 'border-red-200'
+          color: 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30/50 dark:bg-red-900/20',
+          border: 'border-red-200 dark:border-red-800'
         };
       case 'DECLINED':
         return { 
           icon: XCircle, 
           text: 'Declined', 
-          color: 'text-red-600 bg-red-100/50',
-          border: 'border-red-200'
+          color: 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30/50 dark:bg-red-900/20',
+          border: 'border-red-200 dark:border-red-800'
         };
       default:
         return { 
           icon: ClockIcon, 
           text: status.replace('_', ' '), 
-          color: 'text-stone-600 bg-stone-100/50',
-          border: 'border-stone-200'
+          color: 'text-muted-foreground bg-muted/60',
+          border: 'border-border'
         };
     }
   };
@@ -137,7 +137,7 @@ const ConsultationList: React.FC<ConsultationListProps> = ({ clientId }) => {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold brand-font text-stone-800">My Consultations</h2>
+        <h2 className="text-xl font-bold brand-font text-stone-800 dark:text-stone-200">My Consultations</h2>
         <span className="bg-highlight/10 text-highlight px-3 py-1 rounded-full text-sm font-bold">
           {appointments.length} {appointments.length === 1 ? 'session' : 'sessions'}
         </span>
@@ -162,12 +162,12 @@ const ConsultationList: React.FC<ConsultationListProps> = ({ clientId }) => {
           return (
             <div 
               key={appointment.id} 
-              className={`bg-white rounded-2xl border-2 p-5 transition-all hover:shadow-md ${statusConfig.border}`}
+              className={`bg-card rounded-2xl border-2 p-5 transition-all hover:shadow-md ${statusConfig.border}`}
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-bold text-lg text-stone-800">{appointment.topic}</h3>
+                    <h3 className="font-bold text-lg text-stone-800 dark:text-stone-200">{appointment.topic}</h3>
                     <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-0.5 rounded-full font-bold ${statusConfig.color}`}>
                       <StatusIcon size={12} />
                       {statusConfig.text}
@@ -213,11 +213,11 @@ const ConsultationList: React.FC<ConsultationListProps> = ({ clientId }) => {
               </div>
               
               {appointment.status === 'CONFIRMED' && (
-                <div className="mt-4 pt-4 border-t border-stone-100 flex gap-3">
+                <div className="mt-4 pt-4 border-t border-border/50 flex gap-3">
                   <button className="flex-1 py-2.5 bg-highlight text-white rounded-xl text-sm font-bold hover:bg-yellow-500 transition-colors">
                     Join Session
                   </button>
-                  <button className="px-4 py-2.5 bg-white border border-stone-200 rounded-xl text-sm font-bold hover:bg-stone-50 transition-colors">
+                  <button className="px-4 py-2.5 bg-card border border-border rounded-xl text-sm font-bold hover:bg-muted/40 transition-colors">
                     Message
                   </button>
                 </div>

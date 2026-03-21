@@ -60,10 +60,10 @@ const BabalawoLandingPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-amber-50 flex items-center justify-center">
+      <div className="min-h-screen bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="w-12 h-12 border-4 border-amber-700 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-amber-800 font-semibold">Loading profile...</p>
+          <p className="text-amber-800 dark:text-amber-400 font-semibold">Loading profile...</p>
         </div>
       </div>
     );
@@ -71,10 +71,10 @@ const BabalawoLandingPage: React.FC = () => {
 
   if (isError || !data) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
+      <div className="min-h-screen bg-muted/40 flex items-center justify-center">
         <div className="text-center space-y-4 max-w-sm">
           <div className="text-6xl">🔍</div>
-          <h1 className="text-2xl font-bold text-stone-800">Profile not found</h1>
+          <h1 className="text-2xl font-bold text-stone-800 dark:text-stone-200">Profile not found</h1>
           <p className="text-stone-500">This link may be incorrect or the account may no longer exist.</p>
           <a href="https://iluase.com" className="inline-block mt-4 px-6 py-3 bg-amber-700 text-white rounded-xl font-semibold hover:bg-amber-800 transition-colors">
             Visit Ìlú Àṣẹ
@@ -90,10 +90,10 @@ const BabalawoLandingPage: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-b from-amber-50 to-stone-100">
       {/* Minimal top bar */}
       <div className="px-6 py-4 flex justify-between items-center max-w-2xl mx-auto">
-        <a href="https://iluase.com" className="text-amber-800 font-bold text-sm tracking-wider uppercase opacity-70 hover:opacity-100 transition-opacity">
+        <a href="https://iluase.com" className="text-amber-800 dark:text-amber-400 font-bold text-sm tracking-wider uppercase opacity-70 hover:opacity-100 transition-opacity">
           Ìlú Àṣẹ
         </a>
-        <a href="https://iluase.com/login" className="text-sm text-stone-500 hover:text-stone-700 transition-colors">
+        <a href="https://iluase.com/login" className="text-sm text-stone-500 hover:text-stone-700 dark:text-stone-300 transition-colors">
           Sign in
         </a>
       </div>
@@ -109,29 +109,29 @@ const BabalawoLandingPage: React.FC = () => {
               className="w-36 h-36 rounded-full object-cover mx-auto border-4 border-white shadow-xl"
             />
           ) : (
-            <div className="w-36 h-36 rounded-full bg-amber-200 flex items-center justify-center mx-auto border-4 border-white shadow-xl text-4xl font-bold text-amber-800">
+            <div className="w-36 h-36 rounded-full bg-amber-200 dark:bg-amber-800/40 flex items-center justify-center mx-auto border-4 border-white shadow-xl text-4xl font-bold text-amber-800 dark:text-amber-400">
               {data.name.charAt(0).toUpperCase()}
             </div>
           )}
           {data.verified && (
-            <div className="absolute bottom-1 right-1 bg-white rounded-full p-0.5 shadow">
-              <CheckCircle size={20} className="text-green-500 fill-green-100" />
+            <div className="absolute bottom-1 right-1 bg-card rounded-full p-0.5 shadow">
+              <CheckCircle size={20} className="text-green-500 dark:text-green-400 fill-green-100" />
             </div>
           )}
         </div>
 
         {/* Name */}
         <div className="space-y-1">
-          <h1 className="text-4xl font-bold text-stone-900">{data.name}</h1>
+          <h1 className="text-4xl font-bold text-stone-900 dark:text-stone-100">{data.name}</h1>
           {data.yorubaName && (
-            <p className="text-xl text-amber-700 font-semibold italic">{data.yorubaName}</p>
+            <p className="text-xl text-amber-700 dark:text-amber-400 font-semibold italic">{data.yorubaName}</p>
           )}
           <div className="flex items-center justify-center gap-4 text-sm text-stone-500 mt-2 flex-wrap">
-            <span className="px-3 py-1 bg-amber-100 text-amber-800 rounded-full font-semibold text-xs uppercase tracking-wider">
+            <span className="px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400 rounded-full font-semibold text-xs uppercase tracking-wider">
               Babalawo
             </span>
             {data.verified && (
-              <span className="flex items-center gap-1 text-green-600 font-semibold text-xs">
+              <span className="flex items-center gap-1 text-green-600 dark:text-green-400 font-semibold text-xs">
                 <CheckCircle size={12} /> Verified Practitioner
               </span>
             )}
@@ -166,22 +166,22 @@ const BabalawoLandingPage: React.FC = () => {
 
       {/* Divider */}
       <div className="max-w-2xl mx-auto px-6">
-        <div className="border-t border-stone-200" />
+        <div className="border-t border-border" />
       </div>
 
       {/* Trust section */}
       <div className="max-w-2xl mx-auto px-6 py-10">
         <div className="grid grid-cols-3 gap-4 text-center">
           <div className="space-y-1">
-            <div className="text-2xl font-bold text-stone-800">🌿</div>
+            <div className="text-2xl font-bold text-stone-800 dark:text-stone-200">🌿</div>
             <p className="text-xs text-stone-500 font-semibold">Traditional Ifá Practice</p>
           </div>
           <div className="space-y-1">
-            <div className="text-2xl font-bold text-stone-800">🤝</div>
+            <div className="text-2xl font-bold text-stone-800 dark:text-stone-200">🤝</div>
             <p className="text-xs text-stone-500 font-semibold">Private Consultations</p>
           </div>
           <div className="space-y-1">
-            <div className="text-2xl font-bold text-stone-800">⭐</div>
+            <div className="text-2xl font-bold text-stone-800 dark:text-stone-200">⭐</div>
             <p className="text-xs text-stone-500 font-semibold">Verified by Community</p>
           </div>
         </div>
@@ -191,7 +191,7 @@ const BabalawoLandingPage: React.FC = () => {
       <div className="text-center pb-10 px-6">
         <p className="text-xs text-stone-400">
           Powered by{' '}
-          <a href="https://iluase.com" className="text-amber-700 font-semibold hover:underline">
+          <a href="https://iluase.com" className="text-amber-700 dark:text-amber-400 font-semibold hover:underline">
             Ìlú Àṣẹ
           </a>{' '}
           — Digital Sanctuary for the Ifá Spiritual Community

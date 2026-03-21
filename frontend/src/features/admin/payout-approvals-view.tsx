@@ -126,7 +126,7 @@ const PayoutApprovalsView: React.FC = () => {
             value={threshold}
             onChange={(e) => setThreshold(parseInt(e.target.value))}
             aria-label="Withdrawal threshold filter"
-            className="px-4 py-2 bg-white border border-stone-200 rounded-lg text-stone-900 focus:outline-none focus:border-highlight"
+            className="px-4 py-2 bg-card border border-border rounded-lg text-stone-900 dark:text-stone-100 focus:outline-none focus:border-highlight"
           >
             <option value="100">₦100+</option>
             <option value="250">₦250+</option>
@@ -138,7 +138,7 @@ const PayoutApprovalsView: React.FC = () => {
 
       {/* Withdrawals List */}
       {withdrawals.length === 0 ? (
-        <div className="text-center p-8 bg-white rounded-xl border border-stone-200">
+        <div className="text-center p-8 bg-card rounded-xl border border-border">
           <p className="text-stone-500">No pending withdrawals above ₦{threshold.toLocaleString()}</p>
         </div>
       ) : (
@@ -148,7 +148,7 @@ const PayoutApprovalsView: React.FC = () => {
             {withdrawals.map((withdrawal) => (
               <div
                 key={withdrawal.id}
-                className={`bg-white rounded-xl p-6 border border-stone-200 hover:border-highlight/30 transition-colors cursor-pointer ${
+                className={`bg-card rounded-xl p-6 border border-border hover:border-highlight/30 transition-colors cursor-pointer ${
                   selectedWithdrawal?.id === withdrawal.id ? 'border-highlight' : ''
                 }`}
                 onClick={() => setSelectedWithdrawal(withdrawal)}
@@ -170,7 +170,7 @@ const PayoutApprovalsView: React.FC = () => {
 
                 {/* Bank Details */}
                 {withdrawal.bankAccount && (
-                  <div className="mb-4 p-3 bg-stone-50 rounded-lg border border-stone-200 text-sm">
+                  <div className="mb-4 p-3 bg-muted/40 rounded-lg border border-border text-sm">
                     <div className="space-y-1">
                       <div>
                         <span className="text-stone-500">Bank:</span>{' '}
@@ -251,7 +251,7 @@ const PayoutApprovalsView: React.FC = () => {
 
           {/* Approval Panel */}
           {selectedWithdrawal && (
-            <div className="bg-white rounded-xl p-6 border border-stone-200 space-y-6 sticky top-6">
+            <div className="bg-card rounded-xl p-6 border border-border space-y-6 sticky top-6">
               {/* PII Disclosure Notice */}
               <div className="flex items-start gap-2 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-sm text-yellow-300">
                 <AlertTriangle size={16} className="shrink-0 mt-0.5" />
@@ -277,7 +277,7 @@ const PayoutApprovalsView: React.FC = () => {
                 {selectedWithdrawal.bankAccount && (
                   <div>
                     <label className="block text-sm font-medium mb-2">Bank Details</label>
-                    <div className="bg-stone-50 rounded-lg p-4 border border-stone-200 space-y-2 text-sm">
+                    <div className="bg-muted/40 rounded-lg p-4 border border-border space-y-2 text-sm">
                       <div>
                         <span className="text-stone-500">Bank Name:</span>{' '}
                         <span className="font-medium">{selectedWithdrawal.bankName || 'N/A'}</span>
@@ -317,14 +317,14 @@ const PayoutApprovalsView: React.FC = () => {
 
               {/* Approval Actions */}
               {selectedWithdrawal.status === 'PENDING' && (
-                <div className="space-y-4 pt-4 border-t border-stone-200">
+                <div className="space-y-4 pt-4 border-t border-border">
                   <div>
                     <label className="block text-sm font-medium mb-2">Admin Notes</label>
                     <textarea
                       value={approvalNotes}
                       onChange={(e) => setApprovalNotes(e.target.value)}
                       rows={3}
-                      className="w-full px-4 py-2 bg-white border border-stone-200 rounded-lg text-stone-900 focus:outline-none focus:border-highlight"
+                      className="w-full px-4 py-2 bg-card border border-border rounded-lg text-stone-900 dark:text-stone-100 focus:outline-none focus:border-highlight"
                       placeholder="Add notes about your decision..."
                     />
                   </div>

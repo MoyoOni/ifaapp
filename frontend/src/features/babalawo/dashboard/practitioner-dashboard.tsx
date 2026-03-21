@@ -77,7 +77,7 @@ const PractitionerDashboard: React.FC<PractitionerDashboardProps> = ({ userId, i
             case 'seekers':
                 return (
                     <div className="space-y-6">
-                        <h2 className="text-2xl font-bold text-stone-900 flex items-center gap-2">
+                        <h2 className="text-2xl font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
                             <Users size={24} /> My Seekers
                         </h2>
                         <ClientList
@@ -89,8 +89,8 @@ const PractitionerDashboard: React.FC<PractitionerDashboardProps> = ({ userId, i
                 );
             case 'services':
                 return (
-                    <div className="bg-white rounded-2xl p-8 border border-stone-200 shadow-sm text-center space-y-4">
-                        <div className="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mx-auto text-stone-400">
+                    <div className="bg-card rounded-2xl p-8 border border-border shadow-sm text-center space-y-4">
+                        <div className="w-16 h-16 bg-muted/60 rounded-full flex items-center justify-center mx-auto text-stone-400">
                             <BookOpen size={32} />
                         </div>
                         <h3 className="text-xl font-bold brand-font">Service Offerings</h3>
@@ -100,8 +100,8 @@ const PractitionerDashboard: React.FC<PractitionerDashboardProps> = ({ userId, i
                 );
             case 'temple':
                 return (
-                    <div className="bg-white rounded-2xl p-8 border border-stone-200 shadow-sm text-center space-y-4">
-                        <div className="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mx-auto text-stone-400">
+                    <div className="bg-card rounded-2xl p-8 border border-border shadow-sm text-center space-y-4">
+                        <div className="w-16 h-16 bg-muted/60 rounded-full flex items-center justify-center mx-auto text-stone-400">
                             <Building2 size={32} />
                         </div>
                         <h3 className="text-xl font-bold brand-font">Temple Connection</h3>
@@ -204,7 +204,7 @@ const PractitionerDashboard: React.FC<PractitionerDashboardProps> = ({ userId, i
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl md:text-4xl font-bold brand-font text-stone-900">
+                    <h1 className="text-3xl md:text-4xl font-bold brand-font text-stone-900 dark:text-stone-100">
                         {initialTab === 'overview' ? 'Practice Center' : initialTab.charAt(0).toUpperCase() + initialTab.slice(1)}
                     </h1>
                     <p className="text-stone-600 text-lg">
@@ -214,7 +214,7 @@ const PractitionerDashboard: React.FC<PractitionerDashboardProps> = ({ userId, i
                     </p>
                 </div>
                 <div className="flex gap-3">
-                    <button onClick={() => navigate('/practitioner/consultations')} className="px-4 py-2 bg-white border border-stone-300 text-stone-800 font-bold rounded-xl shadow-sm hover:bg-stone-50 transition-colors flex items-center gap-2">
+                    <button onClick={() => navigate('/practitioner/consultations')} className="px-4 py-2 bg-card border border-stone-300 text-stone-800 dark:text-stone-200 font-bold rounded-xl shadow-sm hover:bg-muted/40 transition-colors flex items-center gap-2">
                         <Calendar size={18} /> Calendar
                     </button>
                     <button onClick={() => navigate('/practitioner/invite-client')} className="px-4 py-2 bg-highlight text-white font-bold rounded-xl shadow-lg hover:bg-yellow-600 transition-colors flex items-center gap-2">

@@ -40,7 +40,7 @@ const EventsPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-muted/40">
       <div className="container mx-auto px-4 py-8">
         <EventsDirectory
           onCreateEvent={handleCreateEvent}

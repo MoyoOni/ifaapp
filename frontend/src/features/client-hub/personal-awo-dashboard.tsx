@@ -205,11 +205,11 @@ const PersonalAwoDashboard: React.FC<PersonalAwoDashboardProps> = ({
 
             {/* Grace Period Warning */}
             {personalAwo.inGracePeriod && (
-              <div className="mt-6 bg-amber-50 border border-amber-100 rounded-xl p-4 flex gap-3 text-amber-800 animate-pulse">
+              <div className="mt-6 bg-amber-50 dark:bg-amber-950/30 border border-amber-100 rounded-xl p-4 flex gap-3 text-amber-800 dark:text-amber-400 animate-pulse">
                 <AlertCircle className="shrink-0" />
                 <div className="text-sm">
                   <p className="font-bold">Renewal Needed</p>
-                  <p className="text-amber-700/80">Your mentorship period is ending. Please renew soon to maintain connection.</p>
+                  <p className="text-amber-700 dark:text-amber-400/80">Your mentorship period is ending. Please renew soon to maintain connection.</p>
                 </div>
               </div>
             )}
@@ -238,11 +238,11 @@ const PersonalAwoDashboard: React.FC<PersonalAwoDashboardProps> = ({
               onClick={onMessage}
               className="bg-card p-5 rounded-3xl border border-border shadow-sm hover:shadow-md hover:border-blue-400/30 hover:-translate-y-1 transition-all text-left group flex items-start gap-4"
             >
-              <div className="bg-blue-50 p-3 rounded-2xl text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-colors">
+              <div className="bg-blue-50 dark:bg-blue-950/30 p-3 rounded-2xl text-blue-500 dark:text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-colors">
                 <MessageSquare size={24} />
               </div>
               <div>
-                <h4 className="font-bold text-foreground text-lg group-hover:text-blue-500 transition-colors">Message</h4>
+                <h4 className="font-bold text-foreground text-lg group-hover:text-blue-500 dark:text-blue-400 transition-colors">Message</h4>
                 <p className="text-muted-foreground text-sm mt-1">Chat privately with your guide</p>
               </div>
             </button>
@@ -251,11 +251,11 @@ const PersonalAwoDashboard: React.FC<PersonalAwoDashboardProps> = ({
               onClick={onViewDocuments}
               className="bg-card p-5 rounded-3xl border border-border shadow-sm hover:shadow-md hover:border-purple-400/30 hover:-translate-y-1 transition-all text-left group flex items-start gap-4"
             >
-              <div className="bg-purple-50 p-3 rounded-2xl text-purple-500 group-hover:bg-purple-500 group-hover:text-white transition-colors">
+              <div className="bg-purple-50 dark:bg-purple-950/30 p-3 rounded-2xl text-purple-500 dark:text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-colors">
                 <FileText size={24} />
               </div>
               <div>
-                <h4 className="font-bold text-foreground text-lg group-hover:text-purple-500 transition-colors">My Archives</h4>
+                <h4 className="font-bold text-foreground text-lg group-hover:text-purple-500 dark:text-purple-400 transition-colors">My Archives</h4>
                 <p className="text-muted-foreground text-sm mt-1">Review past readings & documents</p>
               </div>
             </button>

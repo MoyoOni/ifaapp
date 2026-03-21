@@ -95,8 +95,8 @@ const MessageInbox: React.FC<MessageInboxProps> = ({ userId, onSelectConversatio
 
       {/* Demo Mode Banner - we determine this dynamically based on the conversation IDs */}
       {(conversations.length > 0 && conversations.some(conv => conv.id.startsWith('demo-') || conv.id.startsWith('seed-'))) && (
-        <div className="bg-amber-50 border-b border-amber-200 px-6 py-2">
-          <p className="text-xs text-amber-700 text-center">
+        <div className="bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-800 px-6 py-2">
+          <p className="text-xs text-amber-700 dark:text-amber-400 text-center">
             Demo mode — Showing sample conversations. Messages are stored in your browser session.
           </p>
         </div>

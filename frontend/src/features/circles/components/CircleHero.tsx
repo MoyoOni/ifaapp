@@ -97,7 +97,7 @@ export const CircleHero: React.FC<CircleHeroProps> = ({
                       <Globe size={14} className="text-primary" />
                     )}
                     {circle.privacy === 'PRIVATE' && (
-                      <Lock size={14} className="text-amber-600" />
+                      <Lock size={14} className="text-amber-600 dark:text-amber-400" />
                     )}
                     {circle.privacy === 'INVITE_ONLY' && (
                       <UserPlus size={14} className="text-orange-600" />
@@ -134,7 +134,7 @@ export const CircleHero: React.FC<CircleHeroProps> = ({
                     type="button"
                     onClick={onLeave}
                     disabled={isLeaving || isCreator}
-                    className="flex items-center gap-2 px-4 py-2.5 border border-red-200 text-red-600 rounded-xl hover:bg-red-50 transition-colors disabled:opacity-50 font-medium"
+                    className="flex items-center gap-2 px-4 py-2.5 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-50 dark:bg-red-950/30 transition-colors disabled:opacity-50 font-medium"
                   >
                     {isLeaving ? (
                       <Loader2 size={16} className="animate-spin" />

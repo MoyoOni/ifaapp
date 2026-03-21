@@ -79,14 +79,14 @@ const PersonalDashboardView: React.FC = () => {
         >
           <div className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-3xl p-8 text-white shadow-xl">
             <div className="flex items-center gap-4 mb-4">
-              <div className="bg-white/20 p-3 rounded-2xl">
+              <div className="bg-card/20 p-3 rounded-2xl">
                 <User size={32} className="text-white" />
               </div>
               <div>
                 <h1 className="text-3xl font-bold">
                   {greeting.text}, {user?.name?.split(' ')[0] || 'Seeker'}
                 </h1>
-                <p className="text-emerald-100 flex items-center gap-2">
+                <p className="text-emerald-100 dark:text-emerald-200 flex items-center gap-2">
                   {greeting.icon} Your Personal Spiritual Journey Dashboard
                 </p>
               </div>
@@ -97,34 +97,34 @@ const PersonalDashboardView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => navigate('/client/spiritual-journey')}
-                className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 text-left hover:bg-white/30 transition-colors w-full"
+                className="bg-card/20 backdrop-blur-sm rounded-2xl p-4 text-left hover:bg-card/30 transition-colors w-full"
               >
                 <div className="flex items-center gap-3 mb-2">
                   <Award className="text-yellow-300" size={20} />
                   <span className="text-sm font-medium">Spiritual Growth</span>
                 </div>
                 <div className="text-2xl font-bold">Level {userStats.level}</div>
-                <div className="w-full bg-white/30 rounded-full h-2 mt-2">
+                <div className="w-full bg-card/30 rounded-full h-2 mt-2">
                   <div className={`bg-yellow-300 h-2 rounded-full ${userStats.levelProgressClass}`}></div>
                 </div>
               </button>
               
-              <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4">
+              <div className="bg-card/20 backdrop-blur-sm rounded-2xl p-4">
                 <div className="flex items-center gap-3 mb-2">
                   <Heart className="text-rose-400" size={20} />
                   <span className="text-sm font-medium">Community Connections</span>
                 </div>
                 <div className="text-2xl font-bold">{stats.temples + stats.circles}</div>
-                <p className="text-xs text-emerald-100 mt-1">Temples & Circles</p>
+                <p className="text-xs text-emerald-100 dark:text-emerald-200 mt-1">Temples & Circles</p>
               </div>
               
-              <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4">
+              <div className="bg-card/20 backdrop-blur-sm rounded-2xl p-4">
                 <div className="flex items-center gap-3 mb-2">
                   <Star className="text-blue-300" size={20} />
                   <span className="text-sm font-medium">Learning Progress</span>
                 </div>
                 <div className="text-2xl font-bold">{userStats.learningProgress}%</div>
-                <p className="text-xs text-emerald-100 mt-1">Academy Courses</p>
+                <p className="text-xs text-emerald-100 dark:text-emerald-200 mt-1">Academy Courses</p>
               </div>
             </div>
           </div>
@@ -139,15 +139,15 @@ const PersonalDashboardView: React.FC = () => {
         >
           <button
             onClick={() => navigate('/client/consultations')}
-            className="bg-white p-6 rounded-2xl border border-emerald-100 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all text-left group"
+            className="bg-card p-6 rounded-2xl border border-emerald-100 dark:border-emerald-900/50 shadow-sm hover:shadow-md hover:border-emerald-200 dark:hover:border-emerald-800 transition-all text-left group"
           >
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-emerald-600 text-sm font-bold uppercase tracking-wider">My Consultations</p>
-                <h3 className="text-3xl font-bold text-emerald-800 mt-1">{stats.consultations}</h3>
-                <p className="text-emerald-400 text-sm mt-1">This month</p>
+                <p className="text-emerald-600 dark:text-emerald-400 text-sm font-bold uppercase tracking-wider">My Consultations</p>
+                <h3 className="text-3xl font-bold text-emerald-800 dark:text-emerald-200 mt-1">{stats.consultations}</h3>
+                <p className="text-emerald-400 dark:text-emerald-300 text-sm mt-1">This month</p>
               </div>
-              <div className="bg-emerald-100 p-3 rounded-xl text-emerald-700 group-hover:bg-emerald-200 transition-colors">
+              <div className="bg-emerald-100 p-3 rounded-xl text-emerald-700 dark:text-emerald-400 group-hover:bg-emerald-200 transition-colors">
                 <Calendar size={24} />
               </div>
             </div>
@@ -155,15 +155,15 @@ const PersonalDashboardView: React.FC = () => {
 
           <button
             onClick={() => navigate('/guidance-plans')}
-            className="bg-white p-6 rounded-2xl border border-teal-100 shadow-sm hover:shadow-md hover:border-teal-200 transition-all text-left group"
+            className="bg-card p-6 rounded-2xl border border-teal-100 dark:border-teal-900/50 shadow-sm hover:shadow-md hover:border-teal-200 dark:hover:border-teal-800 transition-all text-left group"
           >
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-teal-600 text-sm font-bold uppercase tracking-wider">Guidance Plans</p>
-                <h3 className="text-3xl font-bold text-teal-800 mt-1">{stats.guidancePlans}</h3>
-                <p className="text-teal-400 text-sm mt-1">Active plans</p>
+                <p className="text-teal-600 dark:text-teal-400 text-sm font-bold uppercase tracking-wider">Guidance Plans</p>
+                <h3 className="text-3xl font-bold text-teal-800 dark:text-teal-200 mt-1">{stats.guidancePlans}</h3>
+                <p className="text-teal-400 dark:text-teal-300 text-sm mt-1">Active plans</p>
               </div>
-              <div className="bg-teal-100 p-3 rounded-xl text-teal-700 group-hover:bg-teal-200 transition-colors">
+              <div className="bg-teal-100 p-3 rounded-xl text-teal-700 dark:text-teal-400 group-hover:bg-teal-200 transition-colors">
                 <FileText size={24} />
               </div>
             </div>
@@ -171,15 +171,15 @@ const PersonalDashboardView: React.FC = () => {
 
           <button
             onClick={() => navigate('/messages')}
-            className="bg-white p-6 rounded-2xl border border-amber-100 shadow-sm hover:shadow-md hover:border-amber-200 transition-all text-left group"
+            className="bg-card p-6 rounded-2xl border border-amber-100 shadow-sm hover:shadow-md hover:border-amber-200 dark:border-amber-800 transition-all text-left group"
           >
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-amber-600 text-sm font-bold uppercase tracking-wider">Unread Messages</p>
-                <h3 className="text-3xl font-bold text-amber-800 mt-1">{stats.unreadMessages}</h3>
-                <p className="text-amber-400 text-sm mt-1">From community</p>
+                <p className="text-amber-600 dark:text-amber-400 text-sm font-bold uppercase tracking-wider">Unread Messages</p>
+                <h3 className="text-3xl font-bold text-amber-800 dark:text-amber-400 mt-1">{stats.unreadMessages}</h3>
+                <p className="text-amber-400 dark:text-amber-300 text-sm mt-1">From community</p>
               </div>
-              <div className="bg-amber-100 p-3 rounded-xl text-amber-700 group-hover:bg-amber-200 transition-colors">
+              <div className="bg-amber-100 dark:bg-amber-900/30 p-3 rounded-xl text-amber-700 dark:text-amber-400 group-hover:bg-amber-200 transition-colors">
                 <MessageCircle size={24} />
               </div>
             </div>
@@ -195,13 +195,13 @@ const PersonalDashboardView: React.FC = () => {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
-              className="bg-white rounded-2xl p-6 border border-emerald-100 shadow-sm"
+              className="bg-card rounded-2xl p-6 border border-emerald-100 dark:border-emerald-900/50 shadow-sm"
             >
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-emerald-900">My Spiritual Activities</h2>
+                <h2 className="text-2xl font-bold text-emerald-900 dark:text-emerald-100">My Spiritual Activities</h2>
                 <button 
                   onClick={() => navigate('/client/consultations')}
-                  className="text-sm font-bold text-emerald-700 hover:underline"
+                  className="text-sm font-bold text-emerald-700 dark:text-emerald-400 hover:underline"
                 >
                   View All
                 </button>
@@ -213,12 +213,12 @@ const PersonalDashboardView: React.FC = () => {
                   className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white p-5 rounded-2xl hover:shadow-lg transition-all text-left group"
                 >
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="bg-white/20 p-2 rounded-xl">
+                    <div className="bg-card/20 p-2 rounded-xl">
                       <Users size={20} />
                     </div>
                     <span className="font-bold">Find Babalawo</span>
                   </div>
-                  <p className="text-emerald-100 text-sm">Connect with verified spiritual guides for personalized consultations</p>
+                  <p className="text-emerald-100 dark:text-emerald-200 text-sm">Connect with verified spiritual guides for personalized consultations</p>
                 </button>
                 
                 <button
@@ -226,12 +226,12 @@ const PersonalDashboardView: React.FC = () => {
                   className="bg-gradient-to-br from-green-500 to-emerald-600 text-white p-5 rounded-2xl hover:shadow-lg transition-all text-left group"
                 >
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="bg-white/20 p-2 rounded-xl">
+                    <div className="bg-card/20 p-2 rounded-xl">
                       <BookOpen size={20} />
                     </div>
                     <span className="font-bold">Continue Learning</span>
                   </div>
-                  <p className="text-green-100 text-sm">Advance your spiritual knowledge through courses and studies</p>
+                  <p className="text-green-100 dark:text-green-200 text-sm">Advance your spiritual knowledge through courses and studies</p>
                 </button>
                 
                 <button
@@ -239,12 +239,12 @@ const PersonalDashboardView: React.FC = () => {
                   className="bg-gradient-to-br from-amber-500 to-orange-500 text-white p-5 rounded-2xl hover:shadow-lg transition-all text-left group"
                 >
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="bg-white/20 p-2 rounded-xl">
+                    <div className="bg-card/20 p-2 rounded-xl">
                       <Calendar size={20} />
                     </div>
                     <span className="font-bold">Join Events</span>
                   </div>
-                  <p className="text-amber-100 text-sm">Participate in community gatherings and spiritual ceremonies</p>
+                  <p className="text-amber-100 dark:text-amber-200 text-sm">Participate in community gatherings and spiritual ceremonies</p>
                 </button>
                 
                 <button
@@ -252,12 +252,12 @@ const PersonalDashboardView: React.FC = () => {
                   className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white p-5 rounded-2xl hover:shadow-lg transition-all text-left group"
                 >
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="bg-white/20 p-2 rounded-xl">
+                    <div className="bg-card/20 p-2 rounded-xl">
                       <TrendingUp size={20} />
                     </div>
                     <span className="font-bold">Shop Sacred Items</span>
                   </div>
-                  <p className="text-blue-100 text-sm">Discover authentic spiritual tools and ceremonial items</p>
+                  <p className="text-blue-100 dark:text-blue-200 text-sm">Discover authentic spiritual tools and ceremonial items</p>
                 </button>
 
                 <button
@@ -265,12 +265,12 @@ const PersonalDashboardView: React.FC = () => {
                   className="bg-gradient-to-br from-amber-500 to-yellow-600 text-white p-5 rounded-2xl hover:shadow-lg transition-all text-left group md:col-span-2"
                 >
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="bg-white/20 p-2 rounded-xl">
+                    <div className="bg-card/20 p-2 rounded-xl">
                       <Building2 size={20} />
                     </div>
                     <span className="font-bold">Explore Temples</span>
                   </div>
-                  <p className="text-amber-100 text-sm">Find and connect with Ilé Ifá congregations near you — 199 registered temples</p>
+                  <p className="text-amber-100 dark:text-amber-200 text-sm">Find and connect with Ilé Ifá congregations near you — 199 registered temples</p>
                 </button>
               </div>
             </motion.div>
@@ -280,34 +280,34 @@ const PersonalDashboardView: React.FC = () => {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3 }}
-              className="bg-white rounded-2xl p-6 border border-emerald-100 shadow-sm"
+              className="bg-card rounded-2xl p-6 border border-emerald-100 dark:border-emerald-900/50 shadow-sm"
             >
-              <h2 className="text-2xl font-bold text-emerald-900 mb-6">Recent Activity</h2>
+              <h2 className="text-2xl font-bold text-emerald-900 dark:text-emerald-100 mb-6">Recent Activity</h2>
               <div className="space-y-4">
                 {dashboard?.recentConsultations && dashboard.recentConsultations.length > 0 ? (
                   dashboard.recentConsultations.slice(0, 3).map((apt) => (
-                    <div key={apt.id} className="flex items-center gap-4 p-4 bg-emerald-50 rounded-xl">
-                      <div className="bg-emerald-100 p-3 rounded-xl">
-                        <Calendar className="text-emerald-700" size={20} />
+                    <div key={apt.id} className="flex items-center gap-4 p-4 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl">
+                      <div className="bg-emerald-100 dark:bg-emerald-900/30 p-3 rounded-xl">
+                        <Calendar className="text-emerald-700 dark:text-emerald-400" size={20} />
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-bold text-emerald-900">{apt.babalawoName}</h3>
-                        <p className="text-emerald-600 text-sm">{new Date(apt.scheduledDate).toLocaleDateString()}</p>
+                        <h3 className="font-bold text-emerald-900 dark:text-emerald-100">{apt.babalawoName}</h3>
+                        <p className="text-emerald-600 dark:text-emerald-400 text-sm">{new Date(apt.scheduledDate).toLocaleDateString()}</p>
                       </div>
                       <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        apt.status === 'COMPLETED' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                        apt.status === 'COMPLETED' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
                       }`}>
                         {apt.status}
                       </span>
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-8 text-emerald-600">
+                  <div className="text-center py-8 text-emerald-600 dark:text-emerald-400">
                     <Calendar size={32} className="mx-auto mb-2 opacity-50" />
                     <p>No recent consultations</p>
                     <button 
                       onClick={() => navigate('/babalawo')}
-                      className="mt-2 text-emerald-700 font-bold hover:underline"
+                      className="mt-2 text-emerald-700 dark:text-emerald-400 font-bold hover:underline"
                     >
                       Book your first consultation
                     </button>
@@ -324,13 +324,13 @@ const PersonalDashboardView: React.FC = () => {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
-              className="bg-white rounded-2xl p-6 border border-emerald-100 shadow-sm"
+              className="bg-card rounded-2xl p-6 border border-emerald-100 dark:border-emerald-900/50 shadow-sm"
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-xl text-emerald-900">My Communities</h3>
+                <h3 className="font-bold text-xl text-emerald-900 dark:text-emerald-100">My Communities</h3>
                 <button
                   onClick={() => navigate('/temples')}
-                  className="text-xs font-bold text-emerald-700 hover:underline"
+                  className="text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:underline"
                 >
                   View All
                 </button>
@@ -342,24 +342,24 @@ const PersonalDashboardView: React.FC = () => {
                     <div
                       key={temp.id}
                       onClick={() => navigate(`/temples/${temp.slug || temp.id}`)}
-                      className="flex items-center gap-3 p-3 rounded-xl hover:bg-emerald-50 transition-colors cursor-pointer"
+                      className="flex items-center gap-3 p-3 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors cursor-pointer"
                     >
-                      <div className="bg-emerald-100 p-2 rounded-xl text-emerald-700">
+                      <div className="bg-emerald-100 dark:bg-emerald-900/30 p-2 rounded-xl text-emerald-700 dark:text-emerald-400">
                         <MapPin size={16} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-bold text-emerald-900 truncate">{temp.name}</h4>
-                        <p className="text-xs text-emerald-600 truncate">{temp.location}</p>
+                        <h4 className="font-bold text-emerald-900 dark:text-emerald-100 truncate">{temp.name}</h4>
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400 truncate">{temp.location}</p>
                       </div>
                     </div>
                   ))
                 ) : (
                   <div className="text-center py-2">
-                    <p className="text-emerald-600 text-sm mb-2">Not yet part of any temples.</p>
+                    <p className="text-emerald-600 dark:text-emerald-400 text-sm mb-2">Not yet part of any temples.</p>
                     <button
                       type="button"
                       onClick={() => navigate('/client/temples')}
-                      className="text-sm font-bold text-amber-700 hover:underline"
+                      className="text-sm font-bold text-amber-700 dark:text-amber-400 hover:underline"
                     >
                       Find a Temple
                     </button>
@@ -371,19 +371,19 @@ const PersonalDashboardView: React.FC = () => {
                     <div
                       key={circle.id}
                       onClick={() => navigate(`/circles/${circle.slug || circle.id}`)}
-                      className="flex items-center gap-3 p-3 rounded-xl hover:bg-emerald-50 transition-colors cursor-pointer"
+                      className="flex items-center gap-3 p-3 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors cursor-pointer"
                     >
-                      <div className="bg-teal-100 p-2 rounded-xl text-teal-700">
+                      <div className="bg-teal-100 dark:bg-teal-900/30 p-2 rounded-xl text-teal-700 dark:text-teal-400">
                         <Users size={16} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-bold text-emerald-900 truncate">{circle.name}</h4>
-                        <p className="text-xs text-teal-600">{circle.memberCount} members</p>
+                        <h4 className="font-bold text-emerald-900 dark:text-emerald-100 truncate">{circle.name}</h4>
+                        <p className="text-xs text-teal-600 dark:text-teal-400">{circle.memberCount} members</p>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <p className="text-teal-600 text-sm text-center py-4">Not yet part of any circles.</p>
+                  <p className="text-teal-600 dark:text-teal-400 text-sm text-center py-4">Not yet part of any circles.</p>
                 )}
               </div>
               
@@ -391,14 +391,14 @@ const PersonalDashboardView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => navigate('/client/temples')}
-                  className="flex-1 py-2.5 bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold rounded-xl transition-colors text-sm"
+                  className="flex-1 py-2.5 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 text-amber-800 dark:text-amber-400 font-bold rounded-xl transition-colors text-sm"
                 >
                   Find a Temple
                 </button>
                 <button
                   type="button"
                   onClick={() => navigate('/circles')}
-                  className="flex-1 py-2.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold rounded-xl transition-colors text-sm"
+                  className="flex-1 py-2.5 bg-emerald-100 dark:bg-emerald-900/30 hover:bg-emerald-200 dark:hover:bg-emerald-900/50 text-emerald-800 dark:text-emerald-200 font-bold rounded-xl transition-colors text-sm"
                 >
                   Join a Circle
                 </button>
@@ -410,24 +410,24 @@ const PersonalDashboardView: React.FC = () => {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3 }}
-              className="bg-white rounded-2xl p-6 border border-emerald-100 shadow-sm"
+              className="bg-card rounded-2xl p-6 border border-emerald-100 dark:border-emerald-900/50 shadow-sm"
             >
-              <h3 className="font-bold text-xl text-emerald-900 mb-4">Quick Actions</h3>
+              <h3 className="font-bold text-xl text-emerald-900 dark:text-emerald-100 mb-4">Quick Actions</h3>
               <div className="space-y-3">
                 <button
                   onClick={() => navigate('/forum')}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-emerald-50 transition-colors text-left"
+                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors text-left"
                 >
-                  <MessageCircle size={18} className="text-amber-600" />
-                  <span className="font-medium text-emerald-800">Visit Forum</span>
+                  <MessageCircle size={18} className="text-amber-600 dark:text-amber-400" />
+                  <span className="font-medium text-emerald-800 dark:text-emerald-200">Visit Forum</span>
                 </button>
                 
                 <button
                   onClick={() => navigate('/profile')}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-emerald-50 transition-colors text-left"
+                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors text-left"
                 >
-                  <User size={18} className="text-blue-600" />
-                  <span className="font-medium text-emerald-800">Edit Profile</span>
+                  <User size={18} className="text-blue-600 dark:text-blue-400" />
+                  <span className="font-medium text-emerald-800 dark:text-emerald-200">Edit Profile</span>
                 </button>
               </div>
             </motion.div>

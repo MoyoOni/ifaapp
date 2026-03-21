@@ -35,12 +35,12 @@ const BabalawoProfileModal: React.FC<BabalawoProfileModalProps> = ({
   if (!babalawo || babalawo.role !== UserRole.BABALAWO) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-        <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center">
+        <div className="bg-card rounded-2xl p-8 max-w-md w-full text-center">
           <p className="text-stone-500">Practitioner not found.</p>
           <button
             type="button"
             onClick={onClose}
-            className="mt-4 px-6 py-2 bg-stone-200 rounded-lg font-bold text-stone-700 hover:bg-stone-300"
+            className="mt-4 px-6 py-2 bg-muted rounded-lg font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-300"
           >
             Close
           </button>
@@ -61,12 +61,12 @@ const BabalawoProfileModal: React.FC<BabalawoProfileModalProps> = ({
       />
 
       {/* Modal Content */}
-      <div className="relative bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
+      <div className="relative bg-card rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
         {/* Close Button */}
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-600 z-10 transition-colors"
+          className="absolute top-4 right-4 p-2 rounded-full bg-muted/60 hover:bg-muted text-stone-600 z-10 transition-colors"
           aria-label="Close modal"
         >
           <X size={20} />
@@ -96,7 +96,7 @@ const BabalawoProfileModal: React.FC<BabalawoProfileModalProps> = ({
                   {babalawo.experienceYears || 20}+ years
                 </span>
               </div>
-              <h2 className="text-2xl font-bold brand-font text-stone-900 truncate">
+              <h2 className="text-2xl font-bold brand-font text-stone-900 dark:text-stone-100 truncate">
                 {babalawo.name}
               </h2>
               {babalawo.yorubaName && (
@@ -112,7 +112,7 @@ const BabalawoProfileModal: React.FC<BabalawoProfileModalProps> = ({
                   </span>
                 )}
                 <span className="flex items-center gap-1">
-                  <Star size={14} className="text-yellow-500 fill-yellow-500" />
+                  <Star size={14} className="text-yellow-500 dark:text-yellow-400 fill-yellow-500" />
                   {babalawo.rating || 5.0} ({babalawo.reviewCount || 0} reviews)
                 </span>
               </div>
@@ -138,7 +138,7 @@ const BabalawoProfileModal: React.FC<BabalawoProfileModalProps> = ({
               {babalawo.specialization.map((spec: any, idx: any) => (
                 <span
                   key={idx}
-                  className="px-3 py-1 bg-stone-100 text-stone-700 rounded-full text-sm font-medium"
+                  className="px-3 py-1 bg-muted/60 text-stone-700 dark:text-stone-300 rounded-full text-sm font-medium"
                 >
                   {spec}
                 </span>
@@ -158,10 +158,10 @@ const BabalawoProfileModal: React.FC<BabalawoProfileModalProps> = ({
               {babalawo.services.slice(0, 3).map((service: any) => (
                 <div
                   key={service.id}
-                  className="flex items-center justify-between p-4 bg-stone-50 rounded-xl"
+                  className="flex items-center justify-between p-4 bg-muted/40 rounded-xl"
                 >
                   <div>
-                    <span className="font-bold text-stone-800">{service.title}</span>
+                    <span className="font-bold text-stone-800 dark:text-stone-200">{service.title}</span>
                     <span className="text-stone-500 text-sm ml-2">• {service.duration}</span>
                   </div>
                   <span className="font-bold text-secondary">
@@ -187,7 +187,7 @@ const BabalawoProfileModal: React.FC<BabalawoProfileModalProps> = ({
         )}
 
         {/* Action Buttons */}
-        <div className="px-8 py-6 bg-stone-50 rounded-b-3xl flex flex-wrap gap-4">
+        <div className="px-8 py-6 bg-muted/40 rounded-b-3xl flex flex-wrap gap-4">
           <button
             type="button"
             onClick={() => onRequestConsultation?.(babalawoId)}
@@ -199,7 +199,7 @@ const BabalawoProfileModal: React.FC<BabalawoProfileModalProps> = ({
           <button
             type="button"
             onClick={() => onMessage?.(babalawoId)}
-            className="px-6 py-4 bg-white border-2 border-stone-200 text-stone-700 rounded-xl font-bold hover:bg-stone-100 transition-colors"
+            className="px-6 py-4 bg-card border-2 border-border text-stone-700 dark:text-stone-300 rounded-xl font-bold hover:bg-muted/60 transition-colors"
             aria-label="Message this practitioner"
           >
             <MessageSquare size={20} />
@@ -211,7 +211,7 @@ const BabalawoProfileModal: React.FC<BabalawoProfileModalProps> = ({
                 onViewProfile(babalawoId);
                 onClose();
               }}
-              className="px-6 py-4 bg-white border-2 border-stone-200 text-stone-700 rounded-xl font-bold hover:bg-stone-100 transition-colors"
+              className="px-6 py-4 bg-card border-2 border-border text-stone-700 dark:text-stone-300 rounded-xl font-bold hover:bg-muted/60 transition-colors"
             >
               View full profile
             </button>

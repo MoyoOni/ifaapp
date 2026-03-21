@@ -93,10 +93,10 @@ export const BookingConfirmation: React.FC = () => {
   if (error) {
     return (
       <div className="max-w-md mx-auto p-6 space-y-4">
-        <div className="p-4 text-sm text-red-700 bg-red-100 rounded-lg" role="alert">{error}</div>
+        <div className="p-4 text-sm text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/30 rounded-lg" role="alert">{error}</div>
         <div className="flex gap-3">
           <button onClick={() => navigate('/client/consultations')} className="px-4 py-2 font-semibold text-white bg-primary rounded-lg hover:bg-primary/90">View My Consultations</button>
-          <button onClick={() => navigate('/babalawo')} className="px-4 py-2 font-semibold text-stone-700 bg-stone-200 rounded-lg hover:bg-stone-300">Find a Babalawo</button>
+          <button onClick={() => navigate('/babalawo')} className="px-4 py-2 font-semibold text-stone-700 dark:text-stone-300 bg-muted rounded-lg hover:bg-stone-300">Find a Babalawo</button>
         </div>
       </div>
     );
@@ -105,11 +105,11 @@ export const BookingConfirmation: React.FC = () => {
 
   return (
     <div className="confirmation-page space-y-6">
-      <div className="p-4 my-4 text-sm text-green-700 bg-green-100 rounded-lg" role="alert">
+      <div className="p-4 my-4 text-sm text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30 rounded-lg" role="alert">
         ✓ Consultation Booked Successfully!
       </div>
 
-      <div className="p-4 bg-white rounded-lg shadow">
+      <div className="p-4 bg-card rounded-lg shadow">
         <h3 className="text-lg font-semibold">Confirmation Code</h3>
         <div className="flex items-center space-x-4">
           <code className="text-lg font-bold">{appointment.confirmationCode}</code>
@@ -119,13 +119,13 @@ export const BookingConfirmation: React.FC = () => {
         </div>
       </div>
 
-      <div className="p-4 bg-white rounded-lg shadow">
+      <div className="p-4 bg-card rounded-lg shadow">
         <h3 className="text-lg font-semibold">Consultation Details</h3>
         <div className="flex items-center space-x-4">
           <img src={appointment.babalawo.avatar} alt={appointment.babalawo.name} className="w-16 h-16 rounded-full" />
           <div>
             <p className="font-bold">{appointment.babalawo.name}</p>
-            <p className="text-sm text-gray-500">{appointment.babalawo.specialty}</p>
+            <p className="text-sm text-muted-foreground">{appointment.babalawo.specialty}</p>
           </div>
         </div>
         <div className="mt-4 space-y-2">
@@ -136,14 +136,14 @@ export const BookingConfirmation: React.FC = () => {
         </div>
       </div>
 
-      <div className="p-4 bg-white rounded-lg shadow">
+      <div className="p-4 bg-card rounded-lg shadow">
         <h3 className="text-lg font-semibold">Cost Breakdown</h3>
         <div><span>Consultation Fee:</span> <span>₦{Number(appointment.price || 0).toLocaleString()}</span></div>
         <div><span>Escrow Held:</span> <span>₦{Number(appointment.price || 0).toLocaleString()}</span></div>
-        <p className="text-sm text-gray-500">Payment will be released to the babalawo after the consultation is completed.</p>
+        <p className="text-sm text-muted-foreground">Payment will be released to the babalawo after the consultation is completed.</p>
       </div>
       
-      <div className="p-4 bg-white rounded-lg shadow">
+      <div className="p-4 bg-card rounded-lg shadow">
         <h3 className="text-lg font-semibold">What Happens Next</h3>
         <ol className="list-decimal list-inside">
             <li>{appointment.babalawo.name} will confirm within 24 hours</li>
@@ -156,7 +156,7 @@ export const BookingConfirmation: React.FC = () => {
 
       <div className="flex space-x-4">
         <button onClick={() => navigate('/client/consultations')} className="px-4 py-2 font-semibold text-white bg-blue-500 rounded-lg hover:bg-blue-700">View My Consultations</button>
-        <button onClick={() => navigate('/babalawo')} className="px-4 py-2 font-semibold text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300">Schedule Another</button>
+        <button onClick={() => navigate('/babalawo')} className="px-4 py-2 font-semibold text-foreground/90 bg-muted rounded-lg hover:bg-muted">Schedule Another</button>
       </div>
     </div>
   );

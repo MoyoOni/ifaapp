@@ -126,7 +126,7 @@ const VendorProductListView: React.FC<VendorProductListViewProps> = ({
                                             ₦{product.price.toLocaleString()}
                                         </td>
                                         <td className="p-4">
-                                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${product.stock && product.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${product.stock && product.stock > 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'}`}>
                                                 {product.stock || 0} in stock
                                             </span>
                                         </td>
@@ -143,7 +143,7 @@ const VendorProductListView: React.FC<VendorProductListViewProps> = ({
                                                 </button>
                                                 <button
                                                     type="button"
-                                                    className="p-2 hover:bg-red-50 hover:text-red-500 rounded-lg transition-colors"
+                                                    className="p-2 hover:bg-red-50 dark:bg-red-950/30 hover:text-red-500 dark:text-red-400 rounded-lg transition-colors"
                                                     title="Delete Product"
                                                     aria-label="Delete product"
                                                 >

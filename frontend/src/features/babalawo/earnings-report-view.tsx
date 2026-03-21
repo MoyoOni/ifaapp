@@ -18,9 +18,9 @@ const formatCurrency = (amount: number) =>
 
 const getStatusColor = (status: string) => {
   switch (status) {
-    case 'paid': return 'bg-green-100 text-green-800';
-    case 'pending': return 'bg-yellow-100 text-yellow-800';
-    case 'refunded': return 'bg-red-100 text-red-800';
+    case 'paid': return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200';
+    case 'pending': return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200';
+    case 'refunded': return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200';
     default: return 'bg-muted text-foreground';
   }
 };
@@ -97,7 +97,7 @@ const EarningsReportView: React.FC = () => {
               <p className="text-muted-foreground text-sm font-bold uppercase tracking-wider">Total Earnings</p>
               <h3 className="text-2xl font-bold text-foreground mt-1">{formatCurrency(totalEarnings)}</h3>
             </div>
-            <div className="bg-green-100 p-3 rounded-xl text-green-700"><DollarSign size={24} /></div>
+            <div className="bg-green-100 dark:bg-green-900/30 p-3 rounded-xl text-green-700 dark:text-green-400"><DollarSign size={24} /></div>
           </div>
         </div>
 
@@ -107,7 +107,7 @@ const EarningsReportView: React.FC = () => {
               <p className="text-muted-foreground text-sm font-bold uppercase tracking-wider">Sessions</p>
               <h3 className="text-2xl font-bold text-foreground mt-1">{transactions.length}</h3>
             </div>
-            <div className="bg-blue-100 p-3 rounded-xl text-blue-700"><Calendar size={24} /></div>
+            <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-xl text-blue-700 dark:text-blue-400"><Calendar size={24} /></div>
           </div>
         </div>
 
@@ -117,7 +117,7 @@ const EarningsReportView: React.FC = () => {
               <p className="text-muted-foreground text-sm font-bold uppercase tracking-wider">Avg Per Session</p>
               <h3 className="text-2xl font-bold text-foreground mt-1">{formatCurrency(avgPerSession)}</h3>
             </div>
-            <div className="bg-purple-100 p-3 rounded-xl text-purple-700"><TrendingUp size={24} /></div>
+            <div className="bg-purple-100 dark:bg-purple-900/30 p-3 rounded-xl text-purple-700 dark:text-purple-400"><TrendingUp size={24} /></div>
           </div>
         </div>
 
@@ -129,7 +129,7 @@ const EarningsReportView: React.FC = () => {
                 {formatCurrency(transactions.filter(t => t.status === 'pending').reduce((s, t) => s + t.amount, 0))}
               </h3>
             </div>
-            <div className="bg-orange-100 p-3 rounded-xl text-orange-700"><BarChart size={24} /></div>
+            <div className="bg-orange-100 dark:bg-orange-900/30 p-3 rounded-xl text-orange-700 dark:text-orange-300"><BarChart size={24} /></div>
           </div>
         </div>
       </div>

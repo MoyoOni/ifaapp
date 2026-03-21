@@ -98,7 +98,7 @@ const PaymentVerificationView: React.FC = () => {
         </div>
       ) : payments.length === 0 ? (
         <div className="bg-card rounded-2xl p-12 border border-border text-center">
-          <CheckCircle className="mx-auto mb-4 text-green-500" size={48} />
+          <CheckCircle className="mx-auto mb-4 text-green-500 dark:text-green-400" size={48} />
           <h2 className="text-lg font-bold text-foreground mb-2">All Payments Verified</h2>
           <p className="text-muted-foreground text-sm">No unverified payments in the last {hours} hours.</p>
         </div>
@@ -131,7 +131,7 @@ const PaymentVerificationView: React.FC = () => {
                 <button
                   onClick={() => verifyMutation.mutate(payment.id)}
                   disabled={verifyMutation.isPending}
-                  className="px-3 py-1.5 text-sm bg-green-500/10 text-green-400 rounded-lg hover:bg-green-500/20 transition-colors flex items-center gap-1 disabled:opacity-50"
+                  className="px-3 py-1.5 text-sm bg-green-500/10 dark:text-green-400 text-green-600 rounded-lg hover:bg-green-500/20 transition-colors flex items-center gap-1 disabled:opacity-50"
                 >
                   <CheckCircle size={14} /> Verify
                 </button>

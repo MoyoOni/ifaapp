@@ -23,8 +23,8 @@ export const DevRoleSwitcher = () => {
                     {isAuthenticated && <span className="text-xs font-bold uppercase">{currentRole}</span>}
                 </button>
             ) : (
-                <div className="bg-white rounded-2xl shadow-2xl p-4 border border-stone-200 w-64 animate-in slide-in-from-bottom-5">
-                    <div className="flex items-center justify-between mb-4 pb-2 border-b border-stone-100">
+                <div className="bg-card rounded-2xl shadow-2xl p-4 border border-border w-64 animate-in slide-in-from-bottom-5">
+                    <div className="flex items-center justify-between mb-4 pb-2 border-b border-border/50">
                         <h3 className="font-bold text-foreground text-sm uppercase tracking-wide">Dev Mode</h3>
                         <button
                             onClick={() => setIsOpen(false)}
@@ -41,7 +41,7 @@ export const DevRoleSwitcher = () => {
                             onClick={() => devLogin(UserRole.ADMIN)}
                             className={`w-full flex items-center justify-between p-2 rounded-lg text-xs font-bold transition-colors ${currentRole === UserRole.ADMIN
                                 ? 'bg-background text-white'
-                                : 'bg-stone-50 text-foreground hover:bg-amber-50'
+                                : 'bg-muted/40 text-foreground hover:bg-amber-50 dark:hover:bg-amber-950/30'
                                 }`}
                         >
                             <div className="flex items-center gap-2">
@@ -55,7 +55,7 @@ export const DevRoleSwitcher = () => {
                             onClick={() => devLogin(UserRole.BABALAWO)}
                             className={`w-full flex items-center justify-between p-2 rounded-lg text-xs font-bold transition-colors ${currentRole === UserRole.BABALAWO
                                 ? 'bg-background text-white'
-                                : 'bg-stone-50 text-foreground hover:bg-amber-50'
+                                : 'bg-muted/40 text-foreground hover:bg-amber-50 dark:hover:bg-amber-950/30'
                                 }`}
                         >
                             <div className="flex items-center gap-2">
@@ -69,7 +69,7 @@ export const DevRoleSwitcher = () => {
                             onClick={() => devLogin(UserRole.CLIENT)}
                             className={`w-full flex items-center justify-between p-2 rounded-lg text-xs font-bold transition-colors ${currentRole === UserRole.CLIENT
                                 ? 'bg-background text-white'
-                                : 'bg-stone-50 text-foreground hover:bg-amber-50'
+                                : 'bg-muted/40 text-foreground hover:bg-amber-50 dark:hover:bg-amber-950/30'
                                 }`}
                         >
                             <div className="flex items-center gap-2">
@@ -83,7 +83,7 @@ export const DevRoleSwitcher = () => {
                             onClick={() => devLogin(UserRole.VENDOR)}
                             className={`w-full flex items-center justify-between p-2 rounded-lg text-xs font-bold transition-colors ${currentRole === UserRole.VENDOR
                                 ? 'bg-background text-white'
-                                : 'bg-stone-50 text-foreground hover:bg-amber-50'
+                                : 'bg-muted/40 text-foreground hover:bg-amber-50 dark:hover:bg-amber-950/30'
                                 }`}
                         >
                             <div className="flex items-center gap-2">
@@ -93,10 +93,10 @@ export const DevRoleSwitcher = () => {
                             {currentRole === UserRole.VENDOR && <Check size={14} />}
                         </button>
 
-                        <div className="pt-2 mt-2 border-t border-stone-100">
+                        <div className="pt-2 mt-2 border-t border-border/50">
                             <button
                                 onClick={logout}
-                                className="w-full py-2 text-center text-red-500 hover:bg-red-50 rounded-lg text-xs font-bold transition-colors"
+                                className="w-full py-2 text-center text-red-500 dark:text-red-400 hover:bg-red-50 dark:bg-red-950/30 rounded-lg text-xs font-bold transition-colors"
                             >
                                 LOGOUT / RESET
                             </button>

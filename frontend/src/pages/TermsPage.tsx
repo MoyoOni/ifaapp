@@ -4,7 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <section className="space-y-2">
-    <h2 className="text-lg font-bold text-stone-800">{title}</h2>
+    <h2 className="text-lg font-bold text-stone-800 dark:text-stone-200">{title}</h2>
     <div className="text-stone-600 text-sm leading-relaxed space-y-2">{children}</div>
   </section>
 );
@@ -13,18 +13,18 @@ const TermsPage: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-stone-50 py-10 px-4">
-      <div className="max-w-2xl mx-auto bg-white rounded-3xl border border-stone-100 shadow-sm p-8 md:p-12 space-y-8">
+    <div className="min-h-screen bg-muted/40 py-10 px-4">
+      <div className="max-w-2xl mx-auto bg-card rounded-3xl border border-border/50 shadow-sm p-8 md:p-12 space-y-8">
         {/* Header */}
         <div>
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-stone-400 hover:text-stone-700 text-sm mb-6 transition-colors"
+            className="flex items-center gap-2 text-stone-400 hover:text-stone-700 dark:text-stone-300 text-sm mb-6 transition-colors"
           >
             <ArrowLeft size={16} /> Back
           </button>
-          <h1 className="text-3xl font-bold brand-font text-stone-900">Terms of Service</h1>
+          <h1 className="text-3xl font-bold brand-font text-stone-900 dark:text-stone-100">Terms of Service</h1>
           <p className="text-stone-400 text-sm mt-1">
             Effective date: March 11, 2026 · Last updated: March 11, 2026
           </p>
@@ -144,7 +144,7 @@ const TermsPage: React.FC = () => {
           </p>
         </Section>
 
-        <div className="pt-4 border-t border-stone-100 text-xs text-stone-400 text-center">
+        <div className="pt-4 border-t border-border/50 text-xs text-stone-400 text-center">
           © {new Date().getFullYear()} Ilé Àṣẹ · Digital Sanctuary for Ifá/Isese ·{' '}
           <a href="/privacy" className="hover:text-highlight transition-colors">
             Privacy Policy

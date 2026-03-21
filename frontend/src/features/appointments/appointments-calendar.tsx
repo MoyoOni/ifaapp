@@ -41,9 +41,9 @@ const statusColor = (status: string) => {
   switch (status.toLowerCase()) {
     case 'confirmed': return 'border-primary/30 bg-primary/5';
     case 'pending':
-    case 'requested': return 'border-yellow-400/30 bg-yellow-50';
-    case 'completed': return 'border-green-400/30 bg-green-50';
-    case 'cancelled': return 'border-red-400/30 bg-red-50';
+    case 'requested': return 'border-yellow-400/30 bg-yellow-50 dark:bg-yellow-950/20';
+    case 'completed': return 'border-green-400/30 bg-green-50 dark:bg-green-950/20';
+    case 'cancelled': return 'border-red-400/30 bg-red-50 dark:bg-red-950/20';
     default: return 'border-input bg-card';
   }
 };
@@ -174,7 +174,7 @@ const AppointmentsCalendar: React.FC<AppointmentsCalendarProps> = ({ userId, use
     return (
       <div className="min-h-screen bg-background p-6">
         <div className="max-w-7xl mx-auto text-center py-12">
-          <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <AlertTriangle className="w-16 h-16 text-red-500 dark:text-red-400 mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-2">Error Loading Appointments</h2>
           <p className="text-muted-foreground mb-6">We couldn&apos;t load your appointments. Please try again.</p>
           <button type="button" onClick={() => window.location.reload()} className="px-4 py-2 bg-highlight text-white rounded-xl font-medium">
@@ -297,12 +297,12 @@ const AppointmentsCalendar: React.FC<AppointmentsCalendarProps> = ({ userId, use
       {selectedAppt && (
         <div className="fixed inset-0 z-50 flex justify-end" onClick={() => setSelectedAppt(null)}>
           <div
-            className="w-full max-w-md bg-white h-full shadow-2xl overflow-y-auto p-6 flex flex-col gap-6"
+            className="w-full max-w-md bg-card h-full shadow-2xl overflow-y-auto p-6 flex flex-col gap-6"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-stone-900">Appointment Details</h2>
-              <button type="button" aria-label="Close" onClick={() => { setSelectedAppt(null); setShowDeclineInput(false); setDeclineReason(''); }} className="p-2 hover:bg-stone-100 rounded-full">
+              <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100">Appointment Details</h2>
+              <button type="button" aria-label="Close" onClick={() => { setSelectedAppt(null); setShowDeclineInput(false); setDeclineReason(''); }} className="p-2 hover:bg-muted/60 rounded-full">
                 <X size={20} />
               </button>
             </div>
@@ -310,24 +310,24 @@ const AppointmentsCalendar: React.FC<AppointmentsCalendarProps> = ({ userId, use
             <div className="space-y-3">
               <div>
                 <p className="text-xs text-stone-400 uppercase tracking-wider">Client</p>
-                <p className="text-base font-semibold text-stone-900">{getDisplayName(selectedAppt)}</p>
+                <p className="text-base font-semibold text-stone-900 dark:text-stone-100">{getDisplayName(selectedAppt)}</p>
               </div>
               <div>
                 <p className="text-xs text-stone-400 uppercase tracking-wider">Date & Time</p>
-                <p className="text-base text-stone-800">
+                <p className="text-base text-stone-800 dark:text-stone-200">
                   {(() => { const { date, time } = formatDateTime(selectedAppt); return `${date} at ${time}`; })()}
                 </p>
               </div>
               {selectedAppt.topic && (
                 <div>
                   <p className="text-xs text-stone-400 uppercase tracking-wider">Topic</p>
-                  <p className="text-base text-stone-800">{selectedAppt.topic}</p>
+                  <p className="text-base text-stone-800 dark:text-stone-200">{selectedAppt.topic}</p>
                 </div>
               )}
               {selectedAppt.preferredMethod && (
                 <div>
                   <p className="text-xs text-stone-400 uppercase tracking-wider">Method</p>
-                  <p className="text-base text-stone-800">{selectedAppt.preferredMethod}</p>
+                  <p className="text-base text-stone-800 dark:text-stone-200">{selectedAppt.preferredMethod}</p>
                 </div>
               )}
               {selectedAppt.notes && (
@@ -339,10 +339,10 @@ const AppointmentsCalendar: React.FC<AppointmentsCalendarProps> = ({ userId, use
               <div>
                 <p className="text-xs text-stone-400 uppercase tracking-wider">Status</p>
                 <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
-                  selectedAppt.status === 'CONFIRMED' ? 'bg-blue-100 text-blue-800' :
-                  selectedAppt.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
-                  selectedAppt.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
-                  'bg-yellow-100 text-yellow-800'
+                  selectedAppt.status === 'CONFIRMED' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200' :
+                  selectedAppt.status === 'COMPLETED' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' :
+                  selectedAppt.status === 'CANCELLED' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200' :
+                  'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
                 }`}>
                   {selectedAppt.status.charAt(0) + selectedAppt.status.slice(1).toLowerCase()}
                 </span>
@@ -364,14 +364,14 @@ const AppointmentsCalendar: React.FC<AppointmentsCalendarProps> = ({ userId, use
                     </Button>
 
                     {!showDeclineInput ? (
-                      <Button variant="outline" className="w-full text-red-600 border-red-300" onClick={() => setShowDeclineInput(true)}>
+                      <Button variant="outline" className="w-full text-red-600 dark:text-red-400 border-red-300" onClick={() => setShowDeclineInput(true)}>
                         <XCircle size={16} className="mr-2" />
                         Decline
                       </Button>
                     ) : (
                       <div className="space-y-2">
                         <textarea
-                          className="w-full p-3 border border-stone-200 rounded-xl text-sm resize-none"
+                          className="w-full p-3 border border-border rounded-xl text-sm resize-none"
                           rows={3}
                           placeholder="Reason for declining (optional)"
                           value={declineReason}

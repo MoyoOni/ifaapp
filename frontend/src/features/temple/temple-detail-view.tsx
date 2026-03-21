@@ -211,11 +211,11 @@ const TempleDetailView: React.FC<TempleDetailViewProps> = ({
             <div className="flex-1 min-w-0 pb-1">
               <div className="flex flex-wrap items-center gap-2 mb-2">
                 {temple.verified && (
-                  <span className="inline-flex items-center gap-1.5 bg-highlight text-stone-900 text-xs font-bold px-3 py-1 rounded-full">
+                  <span className="inline-flex items-center gap-1.5 bg-highlight text-stone-900 dark:text-stone-100 text-xs font-bold px-3 py-1 rounded-full">
                     <CheckCircle size={11} /> Verified
                   </span>
                 )}
-                <span className="text-xs font-bold uppercase tracking-wider bg-white/10 text-white/80 px-3 py-1 rounded-full">
+                <span className="text-xs font-bold uppercase tracking-wider bg-card/10 text-white/80 px-3 py-1 rounded-full">
                   {temple.type?.replace(/_/g, ' ')}
                 </span>
               </div>
@@ -227,7 +227,7 @@ const TempleDetailView: React.FC<TempleDetailViewProps> = ({
                 onClick={() => temple.isFollowing ? unfollowMutation.mutate() : followMutation.mutate()}
                 disabled={followMutation.isPending || unfollowMutation.isPending}
                 className={`flex-shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg disabled:opacity-50 ${
-                  temple.isFollowing ? 'bg-highlight text-stone-900 hover:bg-yellow-400' : 'bg-white text-stone-900 hover:bg-stone-100'
+                  temple.isFollowing ? 'bg-highlight text-stone-900 dark:text-stone-100 hover:bg-yellow-400' : 'bg-card text-stone-900 dark:text-stone-100 hover:bg-muted/60'
                 }`}>
                 {temple.isFollowing ? <HeartOff size={18} /> : <Heart size={18} />}
                 {temple.isFollowing ? 'Following' : 'Follow'}
@@ -263,7 +263,7 @@ const TempleDetailView: React.FC<TempleDetailViewProps> = ({
             </div>
           )}
           {temple.worshipDay && (
-            <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 text-sm font-bold px-3 py-1 rounded-full border border-amber-200">
+            <span className="inline-flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 text-sm font-bold px-3 py-1 rounded-full border border-amber-200 dark:border-amber-800">
               <CalendarDays size={14} /> {temple.worshipDay}s
             </span>
           )}
@@ -391,59 +391,59 @@ const TempleDetailView: React.FC<TempleDetailViewProps> = ({
               )}
               {temple.phone && (
                 <div className="flex items-start gap-3 bg-muted/50 rounded-2xl p-4">
-                  <div className="w-9 h-9 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Phone size={17} className="text-green-700" />
+                  <div className="w-9 h-9 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Phone size={17} className="text-green-700 dark:text-green-400" />
                   </div>
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Phone</p>
-                    <a href={`tel:${temple.phone}`} className="text-green-700 font-bold text-sm hover:underline">{temple.phone}</a>
+                    <a href={`tel:${temple.phone}`} className="text-green-700 dark:text-green-400 font-bold text-sm hover:underline">{temple.phone}</a>
                   </div>
                 </div>
               )}
               {temple.email && (
                 <div className="flex items-start gap-3 bg-muted/50 rounded-2xl p-4">
-                  <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Mail size={17} className="text-blue-700" />
+                  <div className="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Mail size={17} className="text-blue-700 dark:text-blue-400" />
                   </div>
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Email</p>
-                    <a href={`mailto:${temple.email}`} className="text-blue-700 font-bold text-sm hover:underline break-all">{temple.email}</a>
+                    <a href={`mailto:${temple.email}`} className="text-blue-700 dark:text-blue-400 font-bold text-sm hover:underline break-all">{temple.email}</a>
                   </div>
                 </div>
               )}
               {temple.website && (
                 <div className="flex items-start gap-3 bg-muted/50 rounded-2xl p-4">
-                  <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Globe size={17} className="text-amber-700" />
+                  <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Globe size={17} className="text-amber-700 dark:text-amber-400" />
                   </div>
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Website</p>
                     <a href={temple.website} target="_blank" rel="noopener noreferrer"
-                      className="text-amber-700 font-bold text-sm hover:underline break-all">
+                      className="text-amber-700 dark:text-amber-400 font-bold text-sm hover:underline break-all">
                       {temple.website.replace(/^https?:\/\//, '')}
                     </a>
                   </div>
                 </div>
               )}
               {temple.socialLinks?.leadPriest && (
-                <div className="flex items-start gap-3 bg-amber-50 rounded-2xl p-4 border border-amber-100">
-                  <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Users size={17} className="text-amber-700" />
+                <div className="flex items-start gap-3 bg-amber-50 dark:bg-amber-950/30 rounded-2xl p-4 border border-amber-100">
+                  <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Users size={17} className="text-amber-700 dark:text-amber-400" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-amber-600 mb-1">Lead Priest</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-1">Lead Priest</p>
                     <p className="text-foreground font-bold text-sm">{temple.socialLinks.leadPriest}</p>
                   </div>
                 </div>
               )}
               {temple.socialLinks?.registrationNumber && (
                 <div className="flex items-start gap-3 bg-emerald-50 rounded-2xl p-4 border border-emerald-100">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Award size={17} className="text-emerald-700" />
+                  <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Award size={17} className="text-emerald-700 dark:text-emerald-400" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-emerald-600 mb-1">Official Registration</p>
-                    <p className="text-emerald-800 font-bold text-sm">{temple.socialLinks.registrationNumber}</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-1">Official Registration</p>
+                    <p className="text-emerald-800 dark:text-emerald-200 font-bold text-sm">{temple.socialLinks.registrationNumber}</p>
                   </div>
                 </div>
               )}
@@ -584,7 +584,7 @@ const TempleEventsList: React.FC<{ templeId: string; onSelectEvent?: (eventId: s
         <div
           key={event.id}
           onClick={() => onSelectEvent?.(event.slug)}
-          className="bg-muted/50 hover:bg-amber-50 border border-border/60 hover:border-amber-200 transition-all rounded-2xl overflow-hidden cursor-pointer group shadow-sm"
+          className="bg-muted/50 hover:bg-amber-50 dark:bg-amber-950/30 border border-border/60 hover:border-amber-200 dark:border-amber-800 transition-all rounded-2xl overflow-hidden cursor-pointer group shadow-sm"
         >
           {event.image ? (
             <img src={event.image} alt={event.title} className="w-full h-40 object-cover" />
@@ -594,8 +594,8 @@ const TempleEventsList: React.FC<{ templeId: string; onSelectEvent?: (eventId: s
             </div>
           )}
           <div className="p-5">
-            <div className="flex items-center gap-2 text-amber-700 text-xs uppercase tracking-wider font-bold mb-2">
-              <span className="bg-amber-100 px-2 py-1 rounded-lg">{event.type}</span>
+            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 text-xs uppercase tracking-wider font-bold mb-2">
+              <span className="bg-amber-100 dark:bg-amber-900/30 px-2 py-1 rounded-lg">{event.type}</span>
               <span>•</span>
               <span>{new Date(event.startDate).toLocaleDateString()}</span>
             </div>

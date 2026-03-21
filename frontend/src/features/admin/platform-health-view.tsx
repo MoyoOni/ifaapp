@@ -14,7 +14,7 @@ const PlatformHealthView: React.FC = () => {
                     <motion.div
                         key={item.label}
                         whileHover={{ scale: 1.05 }}
-                        className="bg-white p-5 rounded-2xl border border-stone-200"
+                        className="bg-card p-5 rounded-2xl border border-border"
                     >
                         <div className="flex items-center gap-3 mb-3">
                             <div className={`p-2 rounded-lg ${item.bg} ${item.color}`}>
@@ -22,14 +22,14 @@ const PlatformHealthView: React.FC = () => {
                             </div>
                             <span className="text-xs font-bold text-stone-400 uppercase tracking-widest">{item.label}</span>
                         </div>
-                        <p className="text-2xl font-bold text-stone-900">{item.value}</p>
+                        <p className="text-2xl font-bold text-stone-900 dark:text-stone-100">{item.value}</p>
                     </motion.div>
                 ))}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white rounded-2xl p-6 border border-stone-200">
-                    <h2 className="text-xl font-bold text-stone-900 mb-6 flex items-center gap-2">
+                <div className="bg-card rounded-2xl p-6 border border-border">
+                    <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100 mb-6 flex items-center gap-2">
                         <Activity size={20} className="text-highlight" />
                         Infrastructure Status
                     </h2>
@@ -41,7 +41,7 @@ const PlatformHealthView: React.FC = () => {
                             { name: 'Redis Cache Layer', status: 'Healthy', color: 'bg-green-500' },
                             { name: 'Auth Service (Clerk)', status: 'Operational', color: 'bg-green-500' }
                         ].map(shard => (
-                            <div key={shard.name} className="flex items-center justify-between p-3 bg-stone-50 rounded-xl border border-stone-100">
+                            <div key={shard.name} className="flex items-center justify-between p-3 bg-muted/40 rounded-xl border border-border/50">
                                 <span className="text-sm text-stone-300">{shard.name}</span>
                                 <div className="flex items-center gap-2">
                                     <span className="text-xs font-bold text-stone-500 uppercase">{shard.status}</span>
@@ -59,25 +59,25 @@ const PlatformHealthView: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="bg-white rounded-2xl p-6 border border-stone-200">
-                    <h2 className="text-xl font-bold text-stone-900 mb-6 flex items-center gap-2">
+                <div className="bg-card rounded-2xl p-6 border border-border">
+                    <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100 mb-6 flex items-center gap-2">
                         <Shield size={20} className="text-highlight" />
                         Security Posture
                     </h2>
                     <div className="space-y-4">
                         <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-bold text-stone-900">SSL Certificates</p>
+                                <p className="text-sm font-bold text-stone-900 dark:text-stone-100">SSL Certificates</p>
                                 <p className="text-xs text-stone-400 mt-1">Renewed 12 days ago • Valid for 11 months</p>
                             </div>
-                            <Shield size={24} className="text-green-500" />
+                            <Shield size={24} className="text-green-500 dark:text-green-400" />
                         </div>
                         <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-bold text-stone-900">WAF Policies</p>
+                                <p className="text-sm font-bold text-stone-900 dark:text-stone-100">WAF Policies</p>
                                 <p className="text-xs text-stone-400 mt-1">Filtering 2.4k malicious requests/month</p>
                             </div>
-                            <Activity size={24} className="text-blue-500" />
+                            <Activity size={24} className="text-blue-500 dark:text-blue-400" />
                         </div>
                     </div>
                 </div>

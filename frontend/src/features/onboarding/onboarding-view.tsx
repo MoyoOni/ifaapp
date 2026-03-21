@@ -164,15 +164,15 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center p-6 relative">
+    <div className="min-h-screen bg-muted/40 flex flex-col items-center justify-center p-6 relative">
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] pointer-events-none"></div>
 
       <div className="max-w-lg w-full space-y-8 relative z-10 animate-in fade-in zoom-in-95 duration-700">
 
         {/* Welcome Slides */}
         {onboardingStep === 'welcome' && (
-          <div className="bg-white rounded-[2rem] p-10 border border-stone-100 shadow-xl text-center space-y-8 animate-in slide-in-from-bottom-8 duration-500">
-            <div className="w-24 h-24 bg-stone-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner relative group">
+          <div className="bg-card rounded-[2rem] p-10 border border-border/50 shadow-xl text-center space-y-8 animate-in slide-in-from-bottom-8 duration-500">
+            <div className="w-24 h-24 bg-muted/40 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner relative group">
               {slides[welcomeSlide].icon}
               <div className="absolute -bottom-3 left-1/2 -translate-x-1/2">
                 <NarratorControl
@@ -183,14 +183,14 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
               </div>
             </div>
             <div className="space-y-4">
-              <h2 className="text-4xl font-bold brand-font text-stone-900 leading-none">{slides[welcomeSlide].title}</h2>
+              <h2 className="text-4xl font-bold brand-font text-stone-900 dark:text-stone-100 leading-none">{slides[welcomeSlide].title}</h2>
               <h3 className="text-xl text-highlight font-bold">{slides[welcomeSlide].subtitle}</h3>
               <p className="text-stone-500 leading-relaxed font-light text-lg">{slides[welcomeSlide].desc}</p>
             </div>
 
             <div className="flex items-center justify-center gap-2 pt-4">
               {slides.map((_, i) => (
-                <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === welcomeSlide ? 'w-8 bg-highlight' : 'w-2 bg-stone-200'}`} />
+                <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === welcomeSlide ? 'w-8 bg-highlight' : 'w-2 bg-muted'}`} />
               ))}
             </div>
 
@@ -206,21 +206,21 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
 
         {/* Role-Specific Setup Step (Babalawo & Vendor only) */}
         {onboardingStep === 'role-setup' && userRole === UserRole.BABALAWO && (
-          <div className="bg-white rounded-[2rem] p-8 md:p-10 border border-stone-100 shadow-xl space-y-6 animate-in slide-in-from-bottom-8 duration-500">
+          <div className="bg-card rounded-[2rem] p-8 md:p-10 border border-border/50 shadow-xl space-y-6 animate-in slide-in-from-bottom-8 duration-500">
             <div className="text-center space-y-2">
-              <div className="w-16 h-16 bg-stone-50 rounded-2xl flex items-center justify-center mx-auto text-3xl">🌿</div>
-              <h2 className="text-3xl font-bold brand-font text-stone-800">Your Practice</h2>
+              <div className="w-16 h-16 bg-muted/40 rounded-2xl flex items-center justify-center mx-auto text-3xl">🌿</div>
+              <h2 className="text-3xl font-bold brand-font text-stone-800 dark:text-stone-200">Your Practice</h2>
               <p className="text-stone-400 text-sm font-bold uppercase tracking-widest">Babalawo Setup</p>
             </div>
-            <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5 space-y-3">
-              <p className="text-amber-800 font-bold text-sm">Verification Required</p>
-              <p className="text-amber-700 text-sm leading-relaxed">
+            <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-100 rounded-2xl p-5 space-y-3">
+              <p className="text-amber-800 dark:text-amber-400 font-bold text-sm">Verification Required</p>
+              <p className="text-amber-700 dark:text-amber-400 text-sm leading-relaxed">
                 To accept clients, your profile will need to be reviewed by our admin team. After completing setup, you can upload credentials from your profile.
               </p>
-              <ul className="space-y-1.5 text-sm text-amber-700">
+              <ul className="space-y-1.5 text-sm text-amber-700 dark:text-amber-400">
                 {['Certificate of initiation or training', 'Reference from a recognized temple', 'Brief biography of your practice'].map((item) => (
                   <li key={item} className="flex items-start gap-2">
-                    <span className="text-amber-500 mt-0.5">•</span>{item}
+                    <span className="text-amber-500 dark:text-amber-400 mt-0.5">•</span>{item}
                   </li>
                 ))}
               </ul>
@@ -236,10 +236,10 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
         )}
 
         {onboardingStep === 'role-setup' && userRole === UserRole.VENDOR && (
-          <div className="bg-white rounded-[2rem] p-8 md:p-10 border border-stone-100 shadow-xl space-y-6 animate-in slide-in-from-bottom-8 duration-500">
+          <div className="bg-card rounded-[2rem] p-8 md:p-10 border border-border/50 shadow-xl space-y-6 animate-in slide-in-from-bottom-8 duration-500">
             <div className="text-center space-y-2">
-              <div className="w-16 h-16 bg-stone-50 rounded-2xl flex items-center justify-center mx-auto text-3xl">🛍️</div>
-              <h2 className="text-3xl font-bold brand-font text-stone-800">Your Shop</h2>
+              <div className="w-16 h-16 bg-muted/40 rounded-2xl flex items-center justify-center mx-auto text-3xl">🛍️</div>
+              <h2 className="text-3xl font-bold brand-font text-stone-800 dark:text-stone-200">Your Shop</h2>
               <p className="text-stone-400 text-sm font-bold uppercase tracking-widest">Vendor Setup</p>
             </div>
             <p className="text-stone-500 text-center">What category of items will you primarily sell?</p>
@@ -249,7 +249,7 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
                   key={cat}
                   type="button"
                   onClick={() => { setRoleSetupComplete(true); setOnboardingStep('form'); }}
-                  className="py-3 px-4 bg-stone-50 border border-stone-200 rounded-xl text-sm font-semibold text-stone-700 hover:bg-stone-100 hover:border-stone-400 transition-all text-left"
+                  className="py-3 px-4 bg-muted/40 border border-border rounded-xl text-sm font-semibold text-stone-700 dark:text-stone-300 hover:bg-muted/60 hover:border-stone-400 transition-all text-left"
                 >
                   {cat}
                 </button>
@@ -267,10 +267,10 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
 
         {/* Username Step (Babalawo only) */}
         {onboardingStep === 'username' && userRole === UserRole.BABALAWO && (
-          <div className="bg-white rounded-[2rem] p-8 md:p-10 border border-stone-100 shadow-xl space-y-6 animate-in slide-in-from-bottom-8 duration-500">
+          <div className="bg-card rounded-[2rem] p-8 md:p-10 border border-border/50 shadow-xl space-y-6 animate-in slide-in-from-bottom-8 duration-500">
             <div className="text-center space-y-2">
-              <div className="w-16 h-16 bg-stone-50 rounded-2xl flex items-center justify-center mx-auto text-3xl">🔗</div>
-              <h2 className="text-3xl font-bold brand-font text-stone-800">Your Personal Link</h2>
+              <div className="w-16 h-16 bg-muted/40 rounded-2xl flex items-center justify-center mx-auto text-3xl">🔗</div>
+              <h2 className="text-3xl font-bold brand-font text-stone-800 dark:text-stone-200">Your Personal Link</h2>
               <p className="text-stone-400 text-sm font-bold uppercase tracking-widest">Choose Your Address</p>
             </div>
             <p className="text-stone-500 text-center text-sm">
@@ -281,7 +281,7 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
                 <Link size={14} />
                 Your site name
               </label>
-              <div className="flex items-center gap-0 border border-stone-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-highlight/50 focus-within:border-highlight bg-stone-50">
+              <div className="flex items-center gap-0 border border-border rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-highlight/50 focus-within:border-highlight bg-muted/40">
                 <input
                   type="text"
                   value={slugValue}
@@ -292,20 +292,20 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
                     if (val.length >= 3) checkSlug(val);
                   }}
                   placeholder="yourname"
-                  className="flex-1 bg-transparent p-4 text-lg font-bold text-stone-800 outline-none placeholder:text-stone-300 min-w-0"
+                  className="flex-1 bg-transparent p-4 text-lg font-bold text-stone-800 dark:text-stone-200 outline-none placeholder:text-stone-300 min-w-0"
                   maxLength={30}
                 />
                 <span className="px-4 text-stone-400 font-semibold text-sm whitespace-nowrap">.iluase.com</span>
               </div>
               {slugChecking && <p className="text-xs text-stone-400">Checking availability...</p>}
               {!slugChecking && slugAvailable === true && (
-                <p className="text-xs text-green-600 font-semibold">✓ Available — this address is yours</p>
+                <p className="text-xs text-green-600 dark:text-green-400 font-semibold">✓ Available — this address is yours</p>
               )}
               {!slugChecking && slugAvailable === false && (
-                <p className="text-xs text-red-500 font-semibold">✗ Already taken — try a different name</p>
+                <p className="text-xs text-red-500 dark:text-red-400 font-semibold">✗ Already taken — try a different name</p>
               )}
               {slugValue.length >= 3 && slugAvailable === true && (
-                <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-sm text-amber-800">
+                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-100 rounded-xl p-3 text-sm text-amber-800 dark:text-amber-400">
                   Preview: <strong>{slugValue}.iluase.com</strong>
                 </div>
               )}
@@ -314,7 +314,7 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
               <button
                 type="button"
                 onClick={() => setOnboardingStep('heritage')}
-                className="flex-1 py-4 bg-stone-100 text-stone-500 rounded-xl font-bold text-sm uppercase tracking-widest hover:bg-stone-200 transition-all"
+                className="flex-1 py-4 bg-muted/60 text-stone-500 rounded-xl font-bold text-sm uppercase tracking-widest hover:bg-muted transition-all"
               >
                 Skip for now
               </button>
@@ -332,15 +332,15 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
 
         {/* Heritage Reconnection Question */}
         {onboardingStep === 'heritage' && (
-          <div className="bg-white rounded-[2rem] p-8 md:p-10 border border-stone-100 shadow-xl shadow-stone-200/40 space-y-8 animate-in slide-in-from-bottom-8 duration-500">
+          <div className="bg-card rounded-[2rem] p-8 md:p-10 border border-border/50 shadow-xl shadow-stone-200/40 space-y-8 animate-in slide-in-from-bottom-8 duration-500">
             {/* Header for Heritage Step */}
             <div className="text-center space-y-2 mb-6">
-              <h2 className="text-3xl font-bold brand-font text-stone-800">E kaabo, Initiate.</h2>
+              <h2 className="text-3xl font-bold brand-font text-stone-800 dark:text-stone-200">E kaabo, Initiate.</h2>
               <p className="text-stone-400 text-sm font-bold uppercase tracking-widest">Setup Step 1 of 2</p>
             </div>
 
             <div className="text-center space-y-4">
-              <h3 className="text-2xl font-bold brand-font text-stone-800">
+              <h3 className="text-2xl font-bold brand-font text-stone-800 dark:text-stone-200">
                 Are you reconnecting with your heritage?
               </h3>
               <p className="text-stone-500 text-lg">
@@ -366,7 +366,7 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
                   setReconnectingWithHeritage(false);
                   setOnboardingStep(userRole === UserRole.CLIENT ? 'discover-temples' : 'form');
                 }}
-                className="py-5 px-6 bg-stone-100 text-stone-600 rounded-xl font-bold text-lg hover:bg-stone-200 transition-all"
+                className="py-5 px-6 bg-muted/60 text-stone-600 rounded-xl font-bold text-lg hover:bg-muted transition-all"
               >
                 I'm familiar
                 <span className="block text-xs font-normal opacity-60 mt-1">I know the tradition</span>
@@ -377,7 +377,7 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
 
         {/* Cultural Onboarding Path */}
         {showCulturalOnboarding && reconnectingWithHeritage && (
-          <div className="bg-white rounded-[2rem] overflow-hidden border border-stone-100 shadow-2xl animate-in zoom-in-95 duration-500">
+          <div className="bg-card rounded-[2rem] overflow-hidden border border-border/50 shadow-2xl animate-in zoom-in-95 duration-500">
             <CulturalOnboardingPath
               onContinue={() => {
                 setShowCulturalOnboarding(false);
@@ -389,12 +389,12 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
 
         {/* Discover Temples Step (CLIENT only) */}
         {onboardingStep === 'discover-temples' && (
-          <div className="bg-white rounded-[2rem] p-8 md:p-10 border border-stone-100 shadow-xl space-y-6 animate-in slide-in-from-bottom-8 duration-500 text-center">
-            <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto">
-              <Building2 size={36} className="text-amber-600" />
+          <div className="bg-card rounded-[2rem] p-8 md:p-10 border border-border/50 shadow-xl space-y-6 animate-in slide-in-from-bottom-8 duration-500 text-center">
+            <div className="w-20 h-20 bg-amber-50 dark:bg-amber-950/30 rounded-full flex items-center justify-center mx-auto">
+              <Building2 size={36} className="text-amber-600 dark:text-amber-400" />
             </div>
             <div className="space-y-3">
-              <h2 className="text-3xl font-bold brand-font text-stone-900">Find Your Spiritual Home</h2>
+              <h2 className="text-3xl font-bold brand-font text-stone-900 dark:text-stone-100">Find Your Spiritual Home</h2>
               <p className="text-stone-500 text-lg leading-relaxed">
                 199 Ilé Ìjúbà and Ilé Ifá congregations are registered on our platform. Find one near you and become part of the community.
               </p>
@@ -421,9 +421,9 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
 
         {/* Main Onboarding Form */}
         {onboardingStep === 'form' && !showCulturalOnboarding && (
-          <div className="bg-white rounded-[2rem] p-8 md:p-10 border border-stone-100 shadow-xl shadow-stone-200/40 space-y-8 animate-in slide-in-from-bottom-8 duration-500">
+          <div className="bg-card rounded-[2rem] p-8 md:p-10 border border-border/50 shadow-xl shadow-stone-200/40 space-y-8 animate-in slide-in-from-bottom-8 duration-500">
             <div className="text-center space-y-2 mb-2">
-              <h2 className="text-3xl font-bold brand-font text-stone-800">Final Steps</h2>
+              <h2 className="text-3xl font-bold brand-font text-stone-800 dark:text-stone-200">Final Steps</h2>
               <p className="text-stone-400 text-sm font-bold uppercase tracking-widest">Setup Step 2 of 2</p>
             </div>
 
@@ -441,7 +441,7 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
                     value={yorubaName}
                     onChange={(e) => setYorubaName(e.target.value)}
                     placeholder="Enter your Yoruba name"
-                    className="w-full bg-stone-50 border-stone-200 border p-5 pl-14 rounded-xl text-lg font-bold text-stone-800 outline-none focus:ring-2 focus:ring-highlight/50 focus:border-highlight transition-all placeholder:text-stone-300"
+                    className="w-full bg-muted/40 border-border border p-5 pl-14 rounded-xl text-lg font-bold text-stone-800 dark:text-stone-200 outline-none focus:ring-2 focus:ring-highlight/50 focus:border-highlight transition-all placeholder:text-stone-300"
                     maxLength={100}
                   />
                   <YorubaInputHelper fieldName="Yoruba name" />
@@ -461,7 +461,7 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder="e.g., Lagos, Nigeria"
-                    className="w-full bg-stone-50 border-stone-200 border p-5 pl-14 rounded-xl text-lg font-bold text-stone-800 outline-none focus:ring-2 focus:ring-highlight/50 focus:border-highlight transition-all placeholder:text-stone-300"
+                    className="w-full bg-muted/40 border-border border p-5 pl-14 rounded-xl text-lg font-bold text-stone-800 dark:text-stone-200 outline-none focus:ring-2 focus:ring-highlight/50 focus:border-highlight transition-all placeholder:text-stone-300"
                     maxLength={200}
                   />
                 </div>

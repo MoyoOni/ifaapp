@@ -61,7 +61,7 @@ const NarratorControl: React.FC<NarratorControlProps> = ({
     if (!src || hasError) return null; // content-visibility: hidden if no audio
 
     return (
-        <div className={`flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/20 transition-all ${className}`}>
+        <div className={`flex items-center gap-2 bg-card/10 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/20 transition-all ${className}`}>
             <audio
                 ref={audioRef}
                 src={src}
@@ -80,7 +80,7 @@ const NarratorControl: React.FC<NarratorControlProps> = ({
                 {isPlaying ? <Pause size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" />}
             </button>
 
-            <div className="w-16 h-1 bg-white/20 rounded-full overflow-hidden mx-1">
+            <div className="w-16 h-1 bg-card/20 rounded-full overflow-hidden mx-1">
                 {/* Visualizer placeholder - simple animation when playing */}
                 {isPlaying && (
                     <div className="h-full bg-highlight animate-pulse w-full origin-left" />

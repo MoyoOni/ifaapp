@@ -127,7 +127,7 @@ const VendorDirectoryPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="bg-stone-50 flex items-center justify-center py-24">
+      <div className="bg-muted/40 flex items-center justify-center py-24">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-highlight mx-auto mb-4"></div>
           <p className="text-stone-600">Loading sacred merchants...</p>
@@ -137,7 +137,7 @@ const VendorDirectoryPage: React.FC = () => {
   }
 
   return (
-    <div className="bg-stone-50">
+    <div className="bg-muted/40">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Header */}
         <div className="mb-8">
@@ -146,7 +146,7 @@ const VendorDirectoryPage: React.FC = () => {
             <span className="font-bold text-highlight uppercase tracking-wider">Sacred Merchants</span>
           </div>
           
-          <h1 className="text-4xl font-bold text-stone-800 brand-font mb-4">
+          <h1 className="text-4xl font-bold text-stone-800 dark:text-stone-200 brand-font mb-4">
             Curators of Authentic Spiritual Goods
           </h1>
           <p className="text-xl text-stone-600 max-w-3xl">
@@ -156,7 +156,7 @@ const VendorDirectoryPage: React.FC = () => {
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-6 mb-8">
+        <div className="bg-card rounded-2xl border border-border shadow-sm p-6 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Search */}
             <div className="md:col-span-2 relative">
@@ -166,7 +166,7 @@ const VendorDirectoryPage: React.FC = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search vendors, specialties, or locations..."
-                className="w-full pl-12 pr-4 py-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-highlight focus:border-transparent"
+                className="w-full pl-12 pr-4 py-3 bg-muted/40 border border-border rounded-xl focus:ring-2 focus:ring-highlight focus:border-transparent"
               />
             </div>
 
@@ -174,7 +174,7 @@ const VendorDirectoryPage: React.FC = () => {
             <select
               value={selectedSpecialty}
               onChange={(e) => setSelectedSpecialty(e.target.value)}
-              className="px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-highlight focus:border-transparent"
+              className="px-4 py-3 bg-muted/40 border border-border rounded-xl focus:ring-2 focus:ring-highlight focus:border-transparent"
             >
               {allSpecialties.map(specialty => (
                 <option key={specialty} value={specialty}>
@@ -192,7 +192,7 @@ const VendorDirectoryPage: React.FC = () => {
                 onChange={(e) => setShowVerifiedOnly(e.target.checked)}
                 className="w-5 h-5 text-highlight rounded focus:ring-highlight border-stone-300"
               />
-              <label htmlFor="verified-filter" className="text-stone-700 font-medium">
+              <label htmlFor="verified-filter" className="text-stone-700 dark:text-stone-300 font-medium">
                 Verified Only
               </label>
             </div>
@@ -202,16 +202,16 @@ const VendorDirectoryPage: React.FC = () => {
         {/* Results Count */}
         <div className="mb-6">
           <p className="text-stone-600">
-            Showing <span className="font-bold text-stone-800">{filteredVendors.length}</span> of{' '}
-            <span className="font-bold text-stone-800">{vendors.length}</span> merchants
+            Showing <span className="font-bold text-stone-800 dark:text-stone-200">{filteredVendors.length}</span> of{' '}
+            <span className="font-bold text-stone-800 dark:text-stone-200">{vendors.length}</span> merchants
           </p>
         </div>
 
         {/* Vendor Grid */}
         {filteredVendors.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-12 text-center">
+          <div className="bg-card rounded-2xl border border-border shadow-sm p-12 text-center">
             <ShoppingCart size={48} className="mx-auto text-stone-300 mb-4" />
-            <h3 className="text-xl font-bold text-stone-800 mb-2">No merchants found</h3>
+            <h3 className="text-xl font-bold text-stone-800 dark:text-stone-200 mb-2">No merchants found</h3>
             <p className="text-stone-600">Try adjusting your search or filter criteria</p>
           </div>
         ) : (
@@ -219,7 +219,7 @@ const VendorDirectoryPage: React.FC = () => {
             {filteredVendors.map((vendor) => (
               <div
                 key={vendor.id}
-                className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+                className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden hover:shadow-md transition-shadow"
               >
                 {/* Vendor Header */}
                 <div className="p-6 pb-4">
@@ -231,11 +231,11 @@ const VendorDirectoryPage: React.FC = () => {
                         </span>
                       </div>
                       <div>
-                        <h3 className="font-bold text-lg text-stone-800">{vendor.shopName}</h3>
+                        <h3 className="font-bold text-lg text-stone-800 dark:text-stone-200">{vendor.shopName}</h3>
                         <div className="flex items-center gap-2 mt-1">
                           <div className="flex items-center gap-1">
-                            <Star className="text-yellow-500 fill-current" size={16} />
-                            <span className="text-sm font-bold text-stone-700">{vendor.rating}</span>
+                            <Star className="text-yellow-500 dark:text-yellow-400 fill-current" size={16} />
+                            <span className="text-sm font-bold text-stone-700 dark:text-stone-300">{vendor.rating}</span>
                           </div>
                           <span className="text-stone-400">•</span>
                           <span className="text-sm text-stone-500">{vendor.reviewCount} reviews</span>
@@ -243,8 +243,8 @@ const VendorDirectoryPage: React.FC = () => {
                             <>
                               <span className="text-stone-400">•</span>
                               <div className="flex items-center gap-1">
-                                <CheckCircle className="text-green-500" size={16} />
-                                <span className="text-xs font-bold text-green-600 uppercase">Verified</span>
+                                <CheckCircle className="text-green-500 dark:text-green-400" size={16} />
+                                <span className="text-xs font-bold text-green-600 dark:text-green-400 uppercase">Verified</span>
                               </div>
                             </>
                           )}
@@ -265,13 +265,13 @@ const VendorDirectoryPage: React.FC = () => {
                     {vendor.specialties.slice(0, 3).map((specialty) => (
                       <span
                         key={specialty}
-                        className="px-2 py-1 bg-stone-100 text-stone-700 text-xs font-bold rounded-full"
+                        className="px-2 py-1 bg-muted/60 text-stone-700 dark:text-stone-300 text-xs font-bold rounded-full"
                       >
                         {specialty}
                       </span>
                     ))}
                     {vendor.specialties.length > 3 && (
-                      <span className="px-2 py-1 bg-stone-100 text-stone-500 text-xs font-bold rounded-full">
+                      <span className="px-2 py-1 bg-muted/60 text-stone-500 text-xs font-bold rounded-full">
                         +{vendor.specialties.length - 3} more
                       </span>
                     )}
@@ -279,14 +279,14 @@ const VendorDirectoryPage: React.FC = () => {
                 </div>
 
                 {/* Vendor Footer */}
-                <div className="px-6 py-4 bg-stone-50 border-t border-stone-100">
+                <div className="px-6 py-4 bg-muted/40 border-t border-border/50">
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-sm text-stone-600">
                       {vendor.productCount} {vendor.productCount === 1 ? 'product' : 'products'}
                     </span>
                     <button
                       onClick={() => handleViewVendor(vendor)}
-                      className="text-sm font-bold text-highlight hover:text-yellow-700 transition-colors"
+                      className="text-sm font-bold text-highlight hover:text-yellow-700 dark:text-yellow-400 transition-colors"
                     >
                       View Profile
                     </button>

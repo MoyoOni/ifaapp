@@ -126,33 +126,33 @@ const PrescriptionHistoryView: React.FC = () => {
       case 'approved':
         return { 
           icon: CheckCircle, 
-          color: 'text-green-600', 
-          bgColor: 'bg-green-50',
-          borderColor: 'border-green-200',
+          color: 'text-green-600 dark:text-green-400', 
+          bgColor: 'bg-green-50 dark:bg-green-950/30',
+          borderColor: 'border-green-200 dark:border-green-800',
           label: 'Approved'
         };
       case 'pending':
         return { 
           icon: Clock, 
-          color: 'text-yellow-600', 
-          bgColor: 'bg-yellow-50',
-          borderColor: 'border-yellow-200',
+          color: 'text-yellow-600 dark:text-yellow-400', 
+          bgColor: 'bg-yellow-50 dark:bg-yellow-950/30',
+          borderColor: 'border-yellow-200 dark:border-yellow-800',
           label: 'Pending Review'
         };
       case 'rejected':
         return { 
           icon: XCircle, 
-          color: 'text-red-600', 
-          bgColor: 'bg-red-50',
-          borderColor: 'border-red-200',
+          color: 'text-red-600 dark:text-red-400', 
+          bgColor: 'bg-red-50 dark:bg-red-950/30',
+          borderColor: 'border-red-200 dark:border-red-800',
           label: 'Rejected'
         };
       default:
         return { 
           icon: FileText, 
           color: 'text-stone-600', 
-          bgColor: 'bg-stone-50',
-          borderColor: 'border-stone-200',
+          bgColor: 'bg-muted/40',
+          borderColor: 'border-border',
           label: 'Unknown'
         };
     }
@@ -180,7 +180,7 @@ const PrescriptionHistoryView: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
+      <div className="min-h-screen bg-muted/40 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-highlight mx-auto mb-4"></div>
           <p className="text-stone-600">Loading prescription history...</p>
@@ -190,7 +190,7 @@ const PrescriptionHistoryView: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-muted/40">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Header */}
         <div className="mb-8">
@@ -199,7 +199,7 @@ const PrescriptionHistoryView: React.FC = () => {
             <span className="font-bold text-highlight uppercase tracking-wider">Prescriptions</span>
           </div>
           
-          <h1 className="text-4xl font-bold text-stone-800 brand-font mb-4">
+          <h1 className="text-4xl font-bold text-stone-800 dark:text-stone-200 brand-font mb-4">
             Prescription History
           </h1>
           <p className="text-xl text-stone-600">
@@ -208,7 +208,7 @@ const PrescriptionHistoryView: React.FC = () => {
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-6 mb-8">
+        <div className="bg-card rounded-2xl border border-border shadow-sm p-6 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Search */}
             <div className="md:col-span-2 relative">
@@ -218,7 +218,7 @@ const PrescriptionHistoryView: React.FC = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search prescriptions, babalawos, or descriptions..."
-                className="w-full pl-12 pr-4 py-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-highlight focus:border-transparent"
+                className="w-full pl-12 pr-4 py-3 bg-muted/40 border border-border rounded-xl focus:ring-2 focus:ring-highlight focus:border-transparent"
               />
             </div>
 
@@ -226,7 +226,7 @@ const PrescriptionHistoryView: React.FC = () => {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-highlight focus:border-transparent"
+              className="px-4 py-3 bg-muted/40 border border-border rounded-xl focus:ring-2 focus:ring-highlight focus:border-transparent"
             >
               <option value="all">All Statuses</option>
               <option value="approved">Approved</option>
@@ -238,7 +238,7 @@ const PrescriptionHistoryView: React.FC = () => {
             <select
               value={timeFilter}
               onChange={(e) => setTimeFilter(e.target.value)}
-              className="px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-highlight focus:border-transparent"
+              className="px-4 py-3 bg-muted/40 border border-border rounded-xl focus:ring-2 focus:ring-highlight focus:border-transparent"
             >
               <option value="all">All Time</option>
               <option value="week">Last Week</option>
@@ -251,16 +251,16 @@ const PrescriptionHistoryView: React.FC = () => {
         {/* Results Count */}
         <div className="mb-6">
           <p className="text-stone-600">
-            Showing <span className="font-bold text-stone-800">{filteredPrescriptions.length}</span> of{' '}
-            <span className="font-bold text-stone-800">{prescriptions.length}</span> prescriptions
+            Showing <span className="font-bold text-stone-800 dark:text-stone-200">{filteredPrescriptions.length}</span> of{' '}
+            <span className="font-bold text-stone-800 dark:text-stone-200">{prescriptions.length}</span> prescriptions
           </p>
         </div>
 
         {/* Prescriptions List */}
         {filteredPrescriptions.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-12 text-center">
+          <div className="bg-card rounded-2xl border border-border shadow-sm p-12 text-center">
             <FileText size={48} className="mx-auto text-stone-300 mb-4" />
-            <h3 className="text-xl font-bold text-stone-800 mb-2">No prescriptions found</h3>
+            <h3 className="text-xl font-bold text-stone-800 dark:text-stone-200 mb-2">No prescriptions found</h3>
             <p className="text-stone-600">Try adjusting your search or filter criteria</p>
           </div>
         ) : (
@@ -272,14 +272,14 @@ const PrescriptionHistoryView: React.FC = () => {
               return (
                 <div
                   key={prescription.id}
-                  className={`bg-white rounded-2xl border ${statusInfo.borderColor} shadow-sm overflow-hidden hover:shadow-md transition-shadow`}
+                  className={`bg-card rounded-2xl border ${statusInfo.borderColor} shadow-sm overflow-hidden hover:shadow-md transition-shadow`}
                 >
                   <div className="p-6">
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4">
                       <div className="flex-1">
                         <div className="flex items-start justify-between gap-4">
                           <div>
-                            <h3 className="text-xl font-bold text-stone-800 mb-2">
+                            <h3 className="text-xl font-bold text-stone-800 dark:text-stone-200 mb-2">
                               {prescription.title}
                             </h3>
                             <p className="text-stone-600 mb-3 line-clamp-2">
@@ -323,14 +323,14 @@ const PrescriptionHistoryView: React.FC = () => {
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleViewPrescription(prescription.id)}
-                            className="p-2 bg-stone-100 hover:bg-stone-200 rounded-xl transition-colors"
+                            className="p-2 bg-muted/60 hover:bg-muted rounded-xl transition-colors"
                             title="View details"
                           >
                             <Eye size={18} className="text-stone-600" />
                           </button>
                           <button
                             onClick={() => handleDownloadPrescription(prescription.id)}
-                            className="p-2 bg-stone-100 hover:bg-stone-200 rounded-xl transition-colors"
+                            className="p-2 bg-muted/60 hover:bg-muted rounded-xl transition-colors"
                             title="Download PDF"
                           >
                             <Download size={18} className="text-stone-600" />
@@ -340,8 +340,8 @@ const PrescriptionHistoryView: React.FC = () => {
                     </div>
                     
                     {prescription.status === 'rejected' && (
-                      <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl">
-                        <p className="text-sm text-red-700">
+                      <div className="mt-4 p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl">
+                        <p className="text-sm text-red-700 dark:text-red-400">
                           <span className="font-bold">Note:</span> This prescription was rejected. 
                           Please contact your Babalawo for clarification or request a revision.
                         </p>
@@ -356,31 +356,31 @@ const PrescriptionHistoryView: React.FC = () => {
 
         {/* Summary Stats */}
         <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-6 text-center">
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-              <CheckCircle className="text-green-600" size={24} />
+          <div className="bg-card rounded-2xl border border-border shadow-sm p-6 text-center">
+            <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+              <CheckCircle className="text-green-600 dark:text-green-400" size={24} />
             </div>
-            <h3 className="text-2xl font-bold text-stone-800">
+            <h3 className="text-2xl font-bold text-stone-800 dark:text-stone-200">
               {prescriptions.filter(p => p.status === 'approved').length}
             </h3>
             <p className="text-stone-600">Approved</p>
           </div>
           
-          <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-6 text-center">
-            <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-3">
-              <Clock className="text-yellow-600" size={24} />
+          <div className="bg-card rounded-2xl border border-border shadow-sm p-6 text-center">
+            <div className="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Clock className="text-yellow-600 dark:text-yellow-400" size={24} />
             </div>
-            <h3 className="text-2xl font-bold text-stone-800">
+            <h3 className="text-2xl font-bold text-stone-800 dark:text-stone-200">
               {prescriptions.filter(p => p.status === 'pending').length}
             </h3>
             <p className="text-stone-600">Pending</p>
           </div>
           
-          <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-6 text-center">
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-              <FileText className="text-blue-600" size={24} />
+          <div className="bg-card rounded-2xl border border-border shadow-sm p-6 text-center">
+            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+              <FileText className="text-blue-600 dark:text-blue-400" size={24} />
             </div>
-            <h3 className="text-2xl font-bold text-stone-800">{prescriptions.length}</h3>
+            <h3 className="text-2xl font-bold text-stone-800 dark:text-stone-200">{prescriptions.length}</h3>
             <p className="text-stone-600">Total</p>
           </div>
         </div>

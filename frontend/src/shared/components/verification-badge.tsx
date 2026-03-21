@@ -22,7 +22,7 @@ const VerificationBadge: React.FC<VerificationBadgeProps> = ({
 }) => {
   if (!verified) {
     return (
-      <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-600 ${className}`}>
+      <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-muted/60 text-muted-foreground ${className}`}>
         <Shield size={14} />
         Unverified
       </span>
@@ -33,8 +33,8 @@ const VerificationBadge: React.FC<VerificationBadgeProps> = ({
     [VerificationTier.JUNIOR]: {
       icon: Shield,
       label: 'Junior Babalawo',
-      color: 'bg-blue-100 text-blue-700',
-      iconColor: 'text-blue-600',
+      color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
+      iconColor: 'text-blue-600 dark:text-blue-400',
     },
     [VerificationTier.SENIOR]: {
       icon: Award,
@@ -53,8 +53,8 @@ const VerificationBadge: React.FC<VerificationBadgeProps> = ({
   const config = tier ? tierConfig[tier] : {
     icon: Shield,
     label: 'Verified',
-    color: 'bg-green-100 text-green-700',
-    iconColor: 'text-green-600',
+    color: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
+    iconColor: 'text-green-600 dark:text-green-400',
   };
 
   const Icon = config.icon;

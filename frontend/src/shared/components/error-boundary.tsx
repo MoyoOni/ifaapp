@@ -45,17 +45,17 @@ class ErrorBoundary extends Component<Props, State> {
                                this.state.errorMessage?.includes('Cannot resolve module');
 
       return (
-        <div className="flex flex-col items-center justify-center min-h-[60vh] p-4 bg-stone-50 dark:bg-stone-900">
+        <div className="flex flex-col items-center justify-center min-h-[60vh] p-4 bg-muted/40 dark:bg-stone-900">
           <div className="text-center max-w-md">
             <div className="mb-6">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-red-500 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+            <h2 className="text-2xl font-bold text-foreground dark:text-white mb-2">
               {isModuleLoadError ? 'Page Loading Issue' : 'Something went wrong'}
             </h2>
-            <p className="text-gray-600 dark:text-gray-300 mb-6">
+            <p className="text-muted-foreground dark:text-muted-foreground/50 mb-6">
               {isModuleLoadError 
                 ? 'There was an issue loading the page. This may be due to a network connectivity issue or a temporary server problem.' 
                 : 'We apologize for the inconvenience. Our team has been notified of the issue.'}

@@ -166,7 +166,7 @@ Why this circle is needed: [Explain why this circle would benefit the community]
             <button
               type="button"
               onClick={onCancel}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              className="p-2 hover:bg-card/10 rounded-lg transition-colors"
               aria-label="Cancel and close thread creation"
               title="Close"
             >
@@ -186,7 +186,7 @@ Why this circle is needed: [Explain why this circle would benefit the community]
               onChange={(e) => setSelectedCategoryId(e.target.value)}
               required
               aria-label="Select forum category for new thread"
-              className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:ring-2 focus:ring-highlight"
+              className="w-full bg-card/5 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:ring-2 focus:ring-highlight"
             >
               <option value="">Select a category</option>
               {categories
@@ -216,7 +216,7 @@ Why this circle is needed: [Explain why this circle would benefit the community]
               placeholder="Enter thread title..."
               required
               maxLength={200}
-              className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white placeholder-muted focus:outline-none focus:ring-2 focus:ring-highlight"
+              className="w-full bg-card/5 border border-white/10 rounded-xl p-4 text-white placeholder-muted focus:outline-none focus:ring-2 focus:ring-highlight"
             />
           </div>
 
@@ -231,7 +231,7 @@ Why this circle is needed: [Explain why this circle would benefit the community]
               placeholder="Share your thoughts... (Yoruba diacritics supported: Àṣẹ, Babaláwo)"
               required
               rows={8}
-              className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white placeholder-muted focus:outline-none focus:ring-2 focus:ring-highlight resize-none custom-scrollbar"
+              className="w-full bg-card/5 border border-white/10 rounded-xl p-4 text-white placeholder-muted focus:outline-none focus:ring-2 focus:ring-highlight resize-none custom-scrollbar"
             />
           </div>
 
@@ -251,7 +251,7 @@ Why this circle is needed: [Explain why this circle would benefit the community]
               <button
                 type="button"
                 onClick={onCancel}
-                className="px-6 py-3 border border-white/20 text-white rounded-xl font-bold hover:bg-white/10 transition-colors"
+                className="px-6 py-3 border border-white/20 text-white rounded-xl font-bold hover:bg-card/10 transition-colors"
               >
                 Cancel
               </button>

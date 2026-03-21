@@ -186,7 +186,7 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
           <button
             type="button"
             onClick={onRejected}
-            className="mt-4 px-4 py-2 bg-white/10 text-highlight rounded-lg hover:bg-white/20 transition-colors"
+            className="mt-4 px-4 py-2 bg-card/10 text-highlight rounded-lg hover:bg-card/20 transition-colors"
           >
             Back to History
           </button>
@@ -250,7 +250,7 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
       </div>
 
       {/* Appointment Info */}
-      <div className="bg-white/5 rounded-lg p-4">
+      <div className="bg-card/5 rounded-lg p-4">
         <p className="text-sm text-muted mb-1">From Divination Session</p>
         <p className="font-medium">
           {new Date(guidancePlan.appointment.date).toLocaleDateString()} at{' '}
@@ -276,7 +276,7 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
             value={progressPercent}
             max={100}
             aria-label="Guidance plan progress"
-            className="w-full h-2 mb-4 rounded-full [&::-webkit-progress-bar]:rounded-full [&::-webkit-progress-bar]:bg-white/10 [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-highlight [&::-moz-progress-bar]:rounded-full [&::-moz-progress-bar]:bg-highlight"
+            className="w-full h-2 mb-4 rounded-full [&::-webkit-progress-bar]:rounded-full [&::-webkit-progress-bar]:bg-card/10 [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-highlight [&::-moz-progress-bar]:rounded-full [&::-moz-progress-bar]:bg-highlight"
           />
         )}
 
@@ -284,7 +284,7 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
           {guidancePlan.items.map((item, index) => (
             <div
               key={index}
-              className={`bg-white/5 rounded-lg p-4 border transition-colors ${
+              className={`bg-card/5 rounded-lg p-4 border transition-colors ${
                 item.completed ? 'border-green-500/30 bg-green-500/5' : 'border-white/10'
               }`}
             >
@@ -298,7 +298,7 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
                     className="mt-1 flex-shrink-0 text-muted hover:text-highlight transition-colors disabled:opacity-50"
                   >
                     {item.completed ? (
-                      <CheckSquare className="w-5 h-5 text-green-400" />
+                      <CheckSquare className="w-5 h-5 dark:text-green-400 text-green-600" />
                     ) : (
                       <Square className="w-5 h-5" />
                     )}
@@ -315,7 +315,7 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
                         <p className="text-sm text-muted mt-1">{item.description}</p>
                       )}
                       {item.completed && item.completedAt && (
-                        <p className="text-xs text-green-400 mt-1">
+                        <p className="text-xs dark:text-green-400 text-green-600 mt-1">
                           Completed {new Date(item.completedAt).toLocaleDateString()}
                         </p>
                       )}
@@ -337,7 +337,7 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
 
         {/* Cost Breakdown */}
         <div className="mt-4 space-y-2">
-          <div className="p-4 bg-white/5 border border-white/10 rounded-lg">
+          <div className="p-4 bg-card/5 border border-white/10 rounded-lg">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-muted">Items Subtotal:</span>
               <span className="font-medium">
@@ -372,7 +372,7 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
       {guidancePlan.instructions && (
         <div>
           <h3 className="text-lg font-semibold mb-2">Instructions</h3>
-          <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+          <div className="bg-card/5 rounded-lg p-4 border border-white/10">
             <p className="text-sm whitespace-pre-wrap">{guidancePlan.instructions}</p>
           </div>
         </div>
@@ -402,7 +402,7 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
               rows={3}
-              className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-highlight"
+              className="w-full px-4 py-2 bg-card/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-highlight"
               placeholder="Optional: Provide a reason for rejection..."
             />
           </div>

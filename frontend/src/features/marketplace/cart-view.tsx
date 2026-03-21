@@ -150,7 +150,7 @@ const CartView: React.FC<CartViewProps> = ({ onBack, onCheckout }) => {
                 {/* Remove Button */}
                 <button
                   onClick={() => removeItem(item.productId)}
-                  className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+                  className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-red-500 dark:text-red-400 hover:bg-red-50 dark:bg-red-950/30 rounded-full transition-all"
                   title="Remove item"
                 >
                   <Trash2 size={18} />

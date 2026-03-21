@@ -136,11 +136,11 @@ const SettingsPage: React.FC = () => {
   };
 
   return (
-    <div className="bg-stone-50">
+    <div className="bg-muted/40">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-stone-800 brand-font flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-stone-800 dark:text-stone-200 brand-font flex items-center gap-3">
             <Settings className="text-highlight" size={32} />
             Settings
           </h1>
@@ -150,7 +150,7 @@ const SettingsPage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar Navigation */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-2">
+            <div className="bg-card rounded-2xl border border-border shadow-sm p-2">
               {sections.map((section) => {
                 const IconComponent = section.icon;
                 return (
@@ -161,7 +161,7 @@ const SettingsPage: React.FC = () => {
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
                       activeSection === section.id
                         ? 'bg-highlight text-white'
-                        : 'hover:bg-stone-100 text-stone-700'
+                        : 'hover:bg-muted/60 text-stone-700 dark:text-stone-300'
                     }`}
                   >
                     <IconComponent size={18} />
@@ -172,8 +172,8 @@ const SettingsPage: React.FC = () => {
             </div>
 
             {/* Danger Zone */}
-            <div className="mt-6 bg-red-50 rounded-2xl border border-red-200 p-4">
-              <h3 className="font-bold text-red-800 mb-3 flex items-center gap-2">
+            <div className="mt-6 bg-red-50 dark:bg-red-950/30 rounded-2xl border border-red-200 dark:border-red-800 p-4">
+              <h3 className="font-bold text-red-800 dark:text-red-400 mb-3 flex items-center gap-2">
                 <Shield size={18} />
                 Danger Zone
               </h3>
@@ -181,7 +181,7 @@ const SettingsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-red-700 hover:bg-red-100 rounded-lg transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-red-700 dark:text-red-400 hover:bg-red-100 dark:bg-red-900/30 rounded-lg transition-colors"
                 >
                   <LogOut size={16} />
                   <span className="font-medium">Log Out</span>
@@ -189,7 +189,7 @@ const SettingsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleDeleteAccount}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-red-700 hover:bg-red-100 rounded-lg transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-red-700 dark:text-red-400 hover:bg-red-100 dark:bg-red-900/30 rounded-lg transition-colors"
                 >
                   <Trash2 size={16} />
                   <span className="font-medium">Delete Account</span>
@@ -200,28 +200,28 @@ const SettingsPage: React.FC = () => {
 
           {/* Main Content */}
           <div className="lg:col-span-3">
-            <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-8">
+            <div className="bg-card rounded-2xl border border-border shadow-sm p-8">
               {activeSection === 'account' && (
                 <div>
-                  <h2 className="text-2xl font-bold text-stone-800 mb-6">Account Settings</h2>
+                  <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200 mb-6">Account Settings</h2>
 
                   <div className="space-y-6">
-                    <div className="flex items-center gap-4 p-4 bg-stone-50 rounded-xl">
+                    <div className="flex items-center gap-4 p-4 bg-muted/40 rounded-xl">
                       <div className="w-16 h-16 bg-highlight/10 rounded-full flex items-center justify-center">
                         <User className="text-highlight" size={24} />
                       </div>
                       <div>
-                        <h3 className="font-bold text-stone-800">{user?.name}</h3>
+                        <h3 className="font-bold text-stone-800 dark:text-stone-200">{user?.name}</h3>
                         <p className="text-stone-600">{user?.email}</p>
                         <p className="text-sm text-stone-500 capitalize">{user?.role?.toLowerCase()}</p>
                       </div>
                     </div>
 
                     {/* Username / Shareable Link */}
-                    <div className="p-4 bg-stone-50 rounded-xl">
+                    <div className="p-4 bg-muted/40 rounded-xl">
                       <div className="flex items-center gap-2 mb-3">
                         <AtSign size={16} className="text-stone-600" />
-                        <h3 className="font-bold text-stone-800">Username (shareable link)</h3>
+                        <h3 className="font-bold text-stone-800 dark:text-stone-200">Username (shareable link)</h3>
                       </div>
                       {!slugEditing ? (
                         <div className="flex items-center justify-between">
@@ -256,13 +256,13 @@ const SettingsPage: React.FC = () => {
                               className="flex-1 px-3 py-2 border border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-highlight focus:border-highlight"
                             />
                             {slugChecking && <Loader2 size={16} className="animate-spin text-stone-400" />}
-                            {!slugChecking && slugAvailable === true && <Check size={16} className="text-green-500" />}
-                            {!slugChecking && slugAvailable === false && <X size={16} className="text-red-500" />}
+                            {!slugChecking && slugAvailable === true && <Check size={16} className="text-green-500 dark:text-green-400" />}
+                            {!slugChecking && slugAvailable === false && <X size={16} className="text-red-500 dark:text-red-400" />}
                           </div>
                           <p className="text-xs text-stone-400">
                             3–30 characters · lowercase letters, numbers, hyphens only
-                            {slugAvailable === false && <span className="text-red-500 ml-2">Username taken</span>}
-                            {slugAvailable === true && <span className="text-green-600 ml-2">Available!</span>}
+                            {slugAvailable === false && <span className="text-red-500 dark:text-red-400 ml-2">Username taken</span>}
+                            {slugAvailable === true && <span className="text-green-600 dark:text-green-400 ml-2">Available!</span>}
                           </p>
                           <div className="flex gap-2">
                             <button
@@ -276,7 +276,7 @@ const SettingsPage: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => setSlugEditing(false)}
-                              className="px-4 py-2 bg-stone-200 text-stone-700 rounded-lg text-sm font-medium"
+                              className="px-4 py-2 bg-muted text-stone-700 dark:text-stone-300 rounded-lg text-sm font-medium"
                             >
                               Cancel
                             </button>
@@ -289,26 +289,26 @@ const SettingsPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => navigate('/profile')}
-                        className="flex items-center gap-2 px-4 py-3 bg-stone-100 hover:bg-stone-200 rounded-xl transition-colors"
+                        className="flex items-center gap-2 px-4 py-3 bg-muted/60 hover:bg-muted rounded-xl transition-colors"
                       >
                         <Mail size={18} className="text-stone-600" />
-                        <span className="font-medium text-stone-700">Update Email</span>
+                        <span className="font-medium text-stone-700 dark:text-stone-300">Update Email</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => navigate('/profile')}
-                        className="flex items-center gap-2 px-4 py-3 bg-stone-100 hover:bg-stone-200 rounded-xl transition-colors"
+                        className="flex items-center gap-2 px-4 py-3 bg-muted/60 hover:bg-muted rounded-xl transition-colors"
                       >
                         <Lock size={18} className="text-stone-600" />
-                        <span className="font-medium text-stone-700">Change Password</span>
+                        <span className="font-medium text-stone-700 dark:text-stone-300">Change Password</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => navigate('/wallet')}
-                        className="flex items-center gap-2 px-4 py-3 bg-stone-100 hover:bg-stone-200 rounded-xl transition-colors"
+                        className="flex items-center gap-2 px-4 py-3 bg-muted/60 hover:bg-muted rounded-xl transition-colors"
                       >
                         <CreditCard size={18} className="text-stone-600" />
-                        <span className="font-medium text-stone-700">Payment Methods</span>
+                        <span className="font-medium text-stone-700 dark:text-stone-300">Payment Methods</span>
                       </button>
                     </div>
                   </div>
@@ -317,19 +317,19 @@ const SettingsPage: React.FC = () => {
 
               {activeSection === 'notifications' && (
                 <div>
-                  <h2 className="text-2xl font-bold text-stone-800 mb-6">Notification Preferences</h2>
+                  <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200 mb-6">Notification Preferences</h2>
 
                   <div className="space-y-6">
                     <div>
-                      <h3 className="font-bold text-stone-800 mb-4">Communication Channels</h3>
+                      <h3 className="font-bold text-stone-800 dark:text-stone-200 mb-4">Communication Channels</h3>
                       <div className="space-y-3">
                         {[
                           { key: 'email', label: 'Email Notifications' },
                           { key: 'push', label: 'Push Notifications' },
                           { key: 'sms', label: 'SMS Notifications' },
                         ].map(({ key, label }) => (
-                          <label key={key} className="flex items-center justify-between p-4 bg-stone-50 rounded-xl">
-                            <span className="font-medium text-stone-700">{label}</span>
+                          <label key={key} className="flex items-center justify-between p-4 bg-muted/40 rounded-xl">
+                            <span className="font-medium text-stone-700 dark:text-stone-300">{label}</span>
                             <input
                               type="checkbox"
                               checked={settings.notifications[key as keyof typeof settings.notifications] as boolean}
@@ -348,15 +348,15 @@ const SettingsPage: React.FC = () => {
                     </div>
 
                     <div>
-                      <h3 className="font-bold text-stone-800 mb-4">Notification Types</h3>
+                      <h3 className="font-bold text-stone-800 dark:text-stone-200 mb-4">Notification Types</h3>
                       <div className="space-y-3">
                         {[
                           { key: 'consultationReminders', label: 'Consultation Reminders' },
                           { key: 'communityUpdates', label: 'Community Updates' },
                           { key: 'marketing', label: 'Marketing & Promotions' },
                         ].map(({ key, label }) => (
-                          <label key={key} className="flex items-center justify-between p-4 bg-stone-50 rounded-xl">
-                            <span className="font-medium text-stone-700">{label}</span>
+                          <label key={key} className="flex items-center justify-between p-4 bg-muted/40 rounded-xl">
+                            <span className="font-medium text-stone-700 dark:text-stone-300">{label}</span>
                             <input
                               type="checkbox"
                               checked={settings.notifications[key as keyof typeof settings.notifications] as boolean}
@@ -379,18 +379,18 @@ const SettingsPage: React.FC = () => {
 
               {activeSection === 'privacy' && (
                 <div>
-                  <h2 className="text-2xl font-bold text-stone-800 mb-6">Privacy Settings</h2>
+                  <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200 mb-6">Privacy Settings</h2>
 
                   <div className="space-y-6">
                     <div>
-                      <h3 className="font-bold text-stone-800 mb-4">Profile Visibility</h3>
+                      <h3 className="font-bold text-stone-800 dark:text-stone-200 mb-4">Profile Visibility</h3>
                       <div className="space-y-3">
                         {[
                           { value: 'public', label: 'Public - Visible to everyone' },
                           { value: 'community', label: 'Community - Visible to verified members only' },
                           { value: 'private', label: 'Private - Only visible to you' },
                         ].map(({ value, label }) => (
-                          <label key={value} className="flex items-center gap-3 p-4 bg-stone-50 rounded-xl cursor-pointer">
+                          <label key={value} className="flex items-center gap-3 p-4 bg-muted/40 rounded-xl cursor-pointer">
                             <input
                               type="radio"
                               name="profileVisibility"
@@ -405,17 +405,17 @@ const SettingsPage: React.FC = () => {
                               }}
                               className="w-4 h-4 text-highlight focus:ring-highlight"
                             />
-                            <span className="font-medium text-stone-700">{label}</span>
+                            <span className="font-medium text-stone-700 dark:text-stone-300">{label}</span>
                           </label>
                         ))}
                       </div>
                     </div>
 
                     <div>
-                      <h3 className="font-bold text-stone-800 mb-4">Activity Settings</h3>
+                      <h3 className="font-bold text-stone-800 dark:text-stone-200 mb-4">Activity Settings</h3>
                       <div className="space-y-3">
-                        <label className="flex items-center justify-between p-4 bg-stone-50 rounded-xl">
-                          <span className="font-medium text-stone-700">Show online status</span>
+                        <label className="flex items-center justify-between p-4 bg-muted/40 rounded-xl">
+                          <span className="font-medium text-stone-700 dark:text-stone-300">Show online status</span>
                           <input
                             type="checkbox"
                             checked={settings.privacy.showOnlineStatus}
@@ -430,8 +430,8 @@ const SettingsPage: React.FC = () => {
                           />
                         </label>
 
-                        <label className="flex items-center justify-between p-4 bg-stone-50 rounded-xl">
-                          <span className="font-medium text-stone-700">Allow direct messaging</span>
+                        <label className="flex items-center justify-between p-4 bg-muted/40 rounded-xl">
+                          <span className="font-medium text-stone-700 dark:text-stone-300">Allow direct messaging</span>
                           <input
                             type="checkbox"
                             checked={settings.privacy.allowMessaging}
@@ -453,11 +453,11 @@ const SettingsPage: React.FC = () => {
 
               {activeSection === 'appearance' && (
                 <div>
-                  <h2 className="text-2xl font-bold text-stone-800 mb-6">Appearance</h2>
+                  <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200 mb-6">Appearance</h2>
 
                   <div className="space-y-6">
                     <div>
-                      <h3 className="font-bold text-stone-800 mb-4">Theme</h3>
+                      <h3 className="font-bold text-stone-800 dark:text-stone-200 mb-4">Theme</h3>
                       <div className="grid grid-cols-2 gap-4">
                         <button
                           type="button"
@@ -465,14 +465,14 @@ const SettingsPage: React.FC = () => {
                           className={`p-4 rounded-xl border-2 transition-colors ${
                             settings.appearance.theme === 'light'
                               ? 'border-highlight bg-highlight/5'
-                              : 'border-stone-200 hover:border-stone-300'
+                              : 'border-border hover:border-stone-300'
                           }`}
                         >
                           <div className="flex items-center gap-2 mb-2">
-                            <Sun size={20} className="text-amber-500" />
-                            <span className="font-bold text-stone-800">Light</span>
+                            <Sun size={20} className="text-amber-500 dark:text-amber-400" />
+                            <span className="font-bold text-stone-800 dark:text-stone-200">Light</span>
                           </div>
-                          <div className="bg-white border border-stone-200 rounded-lg w-full h-8"></div>
+                          <div className="bg-card border border-border rounded-lg w-full h-8"></div>
                         </button>
 
                         <button
@@ -481,12 +481,12 @@ const SettingsPage: React.FC = () => {
                           className={`p-4 rounded-xl border-2 transition-colors ${
                             settings.appearance.theme === 'dark'
                               ? 'border-highlight bg-highlight/5'
-                              : 'border-stone-200 hover:border-stone-300'
+                              : 'border-border hover:border-stone-300'
                           }`}
                         >
                           <div className="flex items-center gap-2 mb-2">
-                            <Moon size={20} className="text-indigo-500" />
-                            <span className="font-bold text-stone-800">Dark</span>
+                            <Moon size={20} className="text-indigo-500 dark:text-indigo-400" />
+                            <span className="font-bold text-stone-800 dark:text-stone-200">Dark</span>
                           </div>
                           <div className="bg-stone-800 border border-stone-700 rounded-lg w-full h-8"></div>
                         </button>
@@ -494,12 +494,12 @@ const SettingsPage: React.FC = () => {
                     </div>
 
                     <div>
-                      <h3 className="font-bold text-stone-800 mb-4">Language</h3>
+                      <h3 className="font-bold text-stone-800 dark:text-stone-200 mb-4">Language</h3>
                       <select
                         aria-label="Language preference"
                         value={settings.appearance.language}
                         onChange={(e) => updateSettings({ ...settings, appearance: { ...settings.appearance, language: e.target.value } })}
-                        className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-highlight focus:border-transparent"
+                        className="w-full px-4 py-3 bg-muted/40 border border-border rounded-xl focus:ring-2 focus:ring-highlight focus:border-transparent"
                       >
                         <option value="english">English</option>
                         <option value="yoruba">Yoruba</option>

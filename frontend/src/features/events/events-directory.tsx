@@ -121,11 +121,11 @@ const EventsDirectory: React.FC<EventsDirectoryProps> = ({ onCreateEvent, onSele
   const getLocationIcon = (locationType: string) => {
     switch (locationType) {
       case 'VIRTUAL':
-        return <Video size={14} className="text-emerald-500" />;
+        return <Video size={14} className="text-emerald-500 dark:text-emerald-400" />;
       case 'HYBRID':
-        return <Globe size={14} className="text-purple-500" />;
+        return <Globe size={14} className="text-purple-500 dark:text-purple-400" />;
       default:
-        return <MapPin size={14} className="text-blue-500" />;
+        return <MapPin size={14} className="text-blue-500 dark:text-blue-400" />;
     }
   };
 

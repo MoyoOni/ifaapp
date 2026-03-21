@@ -187,7 +187,7 @@ const TempleManagementView: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   {temple.verified ? (
-                    <span className="flex items-center gap-1 text-xs text-green-400 bg-green-500/10 px-2 py-1 rounded-full">
+                    <span className="flex items-center gap-1 text-xs dark:text-green-400 text-green-600 bg-green-500/10 px-2 py-1 rounded-full">
                       <CheckCircle size={12} /> Verified
                     </span>
                   ) : temple.status === 'REJECTED' ? (

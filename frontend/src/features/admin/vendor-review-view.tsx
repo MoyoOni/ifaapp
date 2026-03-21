@@ -122,12 +122,12 @@ const VendorReviewView: React.FC = () => {
   }
   
   return (
-    <div className="min-h-screen bg-stone-50 text-stone-800 p-6">
+    <div className="min-h-screen bg-muted/40 text-stone-800 dark:text-stone-200 p-6">
       <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-stone-900 flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-stone-900 dark:text-stone-100 flex items-center gap-3">
               <Store className="text-primary" size={36} />
               Vendor Review Center
             </h1>
@@ -137,28 +137,28 @@ const VendorReviewView: React.FC = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white rounded-xl p-6 border border-stone-200 shadow-sm">
-            <div className="text-2xl font-bold text-stone-900">{vendors.filter(v => v.status === 'PENDING').length}</div>
+          <div className="bg-card rounded-xl p-6 border border-border shadow-sm">
+            <div className="text-2xl font-bold text-stone-900 dark:text-stone-100">{vendors.filter(v => v.status === 'PENDING').length}</div>
             <div className="text-sm text-stone-500">Pending Reviews</div>
           </div>
-          <div className="bg-white rounded-xl p-6 border border-stone-200 shadow-sm">
-            <div className="text-2xl font-bold text-green-600">{vendors.filter(v => v.status === 'APPROVED').length}</div>
+          <div className="bg-card rounded-xl p-6 border border-border shadow-sm">
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">{vendors.filter(v => v.status === 'APPROVED').length}</div>
             <div className="text-sm text-stone-500">Approved</div>
           </div>
-          <div className="bg-white rounded-xl p-6 border border-stone-200 shadow-sm">
-            <div className="text-2xl font-bold text-red-600">{vendors.filter(v => v.status === 'REJECTED').length}</div>
+          <div className="bg-card rounded-xl p-6 border border-border shadow-sm">
+            <div className="text-2xl font-bold text-red-600 dark:text-red-400">{vendors.filter(v => v.status === 'REJECTED').length}</div>
             <div className="text-sm text-stone-500">Rejected</div>
           </div>
-          <div className="bg-white rounded-xl p-6 border border-stone-200 shadow-sm">
-            <div className="text-2xl font-bold text-yellow-600">{vendors.filter(v => v.status === 'SUSPENDED').length}</div>
+          <div className="bg-card rounded-xl p-6 border border-border shadow-sm">
+            <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{vendors.filter(v => v.status === 'SUSPENDED').length}</div>
             <div className="text-sm text-stone-500">Suspended</div>
           </div>
         </div>
 
         {/* Vendors Table */}
-        <div className="overflow-x-auto rounded-xl border border-stone-200 bg-white shadow-sm">
+        <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
           <table className="min-w-full divide-y divide-stone-200">
-            <thead className="bg-stone-50">
+            <thead className="bg-muted/40">
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Vendor</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Business</th>
@@ -167,24 +167,24 @@ const VendorReviewView: React.FC = () => {
                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-stone-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-stone-200">
+            <tbody className="bg-card divide-y divide-stone-200">
               {vendors.map((vendor) => (
-                <tr key={vendor.id} className="hover:bg-stone-50">
+                <tr key={vendor.id} className="hover:bg-muted/40">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-10 w-10">
-                        <div className="h-10 w-10 rounded-full bg-stone-200 flex items-center justify-center">
+                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
                           <User size={20} className="text-stone-500" />
                         </div>
                       </div>
                       <div className="ml-4">
-                        <div className="text-sm font-medium text-stone-900">{vendor.user.name}</div>
+                        <div className="text-sm font-medium text-stone-900 dark:text-stone-100">{vendor.user.name}</div>
                         <div className="text-sm text-stone-500">{vendor.user.yorubaName || 'No Yoruba name'}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-stone-900">{vendor.businessName}</div>
+                    <div className="text-sm text-stone-900 dark:text-stone-100">{vendor.businessName}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-500">{vendor.user.email}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -194,7 +194,7 @@ const VendorReviewView: React.FC = () => {
                     <div className="flex justify-end gap-2">
                       <button
                         onClick={() => setSelectedVendor(vendor)}
-                        className="p-2 text-stone-500 hover:text-stone-700 rounded-lg hover:bg-stone-100 transition-colors"
+                        className="p-2 text-stone-500 hover:text-stone-700 dark:text-stone-300 rounded-lg hover:bg-muted/60 transition-colors"
                         title="Review Application"
                       >
                         <FileText size={16} />
@@ -211,26 +211,26 @@ const VendorReviewView: React.FC = () => {
       {/* Review Dialog */}
       {selectedVendor && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-card rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-stone-900">Review Application</h2>
-                <button onClick={() => setSelectedVendor(null)} className="p-2 hover:bg-stone-100 rounded-lg" aria-label="Close vendor review" title="Close">
+                <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100">Review Application</h2>
+                <button onClick={() => setSelectedVendor(null)} className="p-2 hover:bg-muted/60 rounded-lg" aria-label="Close vendor review" title="Close">
                   <XCircle size={20} />
                 </button>
               </div>
 
               <div className="space-y-6">
                 <div>
-                  <h3 className="font-bold text-stone-900 mb-2">{selectedVendor.businessName}</h3>
+                  <h3 className="font-bold text-stone-900 dark:text-stone-100 mb-2">{selectedVendor.businessName}</h3>
                   <p className="text-stone-600">{selectedVendor.description || 'No description provided'}</p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-stone-700 mb-1">Business License</label>
+                    <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">Business License</label>
                     {selectedVendor.businessLicense ? (
-                      <div className="flex items-center text-sm text-stone-900">
+                      <div className="flex items-center text-sm text-stone-900 dark:text-stone-100">
                         <FileText size={14} className="mr-1" /> Document Uploaded
                       </div>
                     ) : (
@@ -238,9 +238,9 @@ const VendorReviewView: React.FC = () => {
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-stone-700 mb-1">Tax ID</label>
+                    <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">Tax ID</label>
                     {selectedVendor.taxId ? (
-                      <div className="text-sm text-stone-900">Provided</div>
+                      <div className="text-sm text-stone-900 dark:text-stone-100">Provided</div>
                     ) : (
                       <p className="text-sm text-stone-500">Not provided</p>
                     )}
@@ -248,9 +248,9 @@ const VendorReviewView: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-stone-700 mb-1">Cultural Authenticity Proof</label>
+                  <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">Cultural Authenticity Proof</label>
                   {selectedVendor.artisanHeritageProof ? (
-                    <div className="flex items-center text-sm text-stone-900">
+                    <div className="flex items-center text-sm text-stone-900 dark:text-stone-100">
                       <FileText size={14} className="mr-1" /> Artisan Heritage Document
                     </div>
                   ) : (
@@ -259,25 +259,25 @@ const VendorReviewView: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-stone-700 mb-1">Yoruba Proficiency</label>
-                  <p className="text-sm text-stone-900">
+                  <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">Yoruba Proficiency</label>
+                  <p className="text-sm text-stone-900 dark:text-stone-100">
                     {selectedVendor.yorubaProficiencyLevel || 'Not specified'} 
                     {selectedVendor.yorubaProficiencyProof && ' • Proof provided'}
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-stone-700 mb-1">Verification Status</label>
+                  <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">Verification Status</label>
                   <div className="flex items-center">
                     <VerificationBadge verified={selectedVendor.user.verified} />
-                    <span className="ml-2 text-sm text-stone-900">
+                    <span className="ml-2 text-sm text-stone-900 dark:text-stone-100">
                       {selectedVendor.user.verified ? 'Verified' : 'Not verified'}
                     </span>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-stone-700 mb-1">Cultural Authenticity Notes</label>
+                  <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">Cultural Authenticity Notes</label>
                   <textarea
                     value={reviewNotes}
                     onChange={(e) => setReviewNotes(e.target.value)}
@@ -287,8 +287,8 @@ const VendorReviewView: React.FC = () => {
                 </div>
 
                 {selectedVendor.status === VendorStatus.REJECTED && (
-                  <div className="bg-red-50 p-4 rounded-lg">
-                    <p className="text-sm font-medium text-red-800">Rejection Reason: {selectedVendor.rejectionReason}</p>
+                  <div className="bg-red-50 dark:bg-red-950/30 p-4 rounded-lg">
+                    <p className="text-sm font-medium text-red-800 dark:text-red-400">Rejection Reason: {selectedVendor.rejectionReason}</p>
                   </div>
                 )}
 

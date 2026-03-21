@@ -111,24 +111,24 @@ const NotificationCenter: React.FC = () => {
       case 'APPOINTMENT':
         return <Calendar size={20} className="text-purple-400" />;
       case 'ORDER':
-        return <ShoppingBag size={20} className="text-green-400" />;
+        return <ShoppingBag size={20} className="dark:text-green-400 text-green-600" />;
       case 'COMMUNITY':
         return <Users size={20} className="text-orange-400" />;
       default:
-        return <Info size={20} className="text-gray-400" />;
+        return <Info size={20} className="text-muted-foreground/70" />;
     }
   };
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
       case 'SUCCESS':
-        return <CheckCircle size={20} className="text-green-400" />;
+        return <CheckCircle size={20} className="dark:text-green-400 text-green-600" />;
       case 'WARNING':
         return <AlertTriangle size={20} className="text-yellow-400" />;
       case 'ERROR':
         return <XCircle size={20} className="text-red-400" />;
       case 'URGENT':
-        return <AlertCircle size={20} className="text-red-500" />;
+        return <AlertCircle size={20} className="text-red-500 dark:text-red-400" />;
       default:
         return <Info size={20} className="text-blue-400" />;
     }

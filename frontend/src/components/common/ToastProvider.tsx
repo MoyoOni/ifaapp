@@ -60,14 +60,14 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onClose }) => {
   const getTypeStyles = () => {
     switch (toast.type) {
       case 'success':
-        return 'bg-green-100 border-green-300 text-green-700';
+        return 'bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300';
       case 'error':
-        return 'bg-red-100 border-red-300 text-red-700';
+        return 'bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-700 dark:text-red-300';
       case 'warning':
-        return 'bg-yellow-100 border-yellow-300 text-yellow-700';
+        return 'bg-yellow-100 dark:bg-yellow-900/30 border-yellow-300 dark:border-yellow-700 text-yellow-700 dark:text-yellow-300';
       case 'info':
       default:
-        return 'bg-blue-100 border-blue-300 text-blue-700';
+        return 'bg-blue-100 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300';
     }
   };
 

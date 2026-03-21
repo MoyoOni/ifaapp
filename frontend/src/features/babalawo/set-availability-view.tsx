@@ -9,7 +9,7 @@ const SetAvailabilityView: React.FC = () => {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold brand-font text-stone-900">
+          <h1 className="text-3xl md:text-4xl font-bold brand-font text-stone-900 dark:text-stone-100">
             Set Availability
           </h1>
           <p className="text-stone-600 text-lg">

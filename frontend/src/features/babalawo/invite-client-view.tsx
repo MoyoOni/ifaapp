@@ -110,7 +110,7 @@ const InviteClientView: React.FC = () => {
                 </div>
 
                 {addedIds.has(result.id) ? (
-                  <span className="flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm font-medium">
+                  <span className="flex items-center gap-1 px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg text-sm font-medium">
                     <Check size={14} /> Added
                   </span>
                 ) : (

@@ -20,16 +20,16 @@ const MessagesPage: React.FC = () => {
   // If no user logged in
   if (!user?.id) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-muted/40 flex items-center justify-center p-6">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="text-center bg-white p-12 rounded-[2.5rem] shadow-xl border border-stone-100 max-w-md w-full"
+          className="text-center bg-card p-12 rounded-[2.5rem] shadow-xl border border-border/50 max-w-md w-full"
         >
-          <div className="w-20 h-20 bg-stone-50 rounded-full flex items-center justify-center mx-auto mb-6">
+          <div className="w-20 h-20 bg-muted/40 rounded-full flex items-center justify-center mx-auto mb-6">
             <MessageSquare size={40} className="text-stone-300" />
           </div>
-          <h2 className="text-3xl font-bold text-stone-800 mb-2 brand-font">Secure Sanctuary</h2>
+          <h2 className="text-3xl font-bold text-stone-800 dark:text-stone-200 mb-2 brand-font">Secure Sanctuary</h2>
           <p className="text-stone-500 mb-8 leading-relaxed">Please sign in to access your private encrypted communications.</p>
           <button
             onClick={() => navigate('/login')}
@@ -43,7 +43,7 @@ const MessagesPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50/50">
+    <div className="min-h-screen bg-muted/40/50">
       <div className="container mx-auto px-4 py-8 lg:py-12">
         <div className="max-w-5xl mx-auto">
           {/* Header Section */}
@@ -56,7 +56,7 @@ const MessagesPage: React.FC = () => {
             {otherUserId && (
               <button
                 onClick={() => navigate('/messages')}
-                className="mt-3 p-2 hover:bg-white/50 rounded-xl transition-colors text-blue-400 hover:text-blue-800 inline-flex items-center gap-2 text-sm"
+                className="mt-3 p-2 hover:bg-card/50 rounded-xl transition-colors text-blue-400 hover:text-blue-800 dark:text-blue-400 inline-flex items-center gap-2 text-sm"
                 aria-label="Back to messages"
               >
                 <ArrowLeft size={16} />
@@ -66,7 +66,7 @@ const MessagesPage: React.FC = () => {
           </FeatureHeader>
 
           {/* Main Interface Content */}
-          <div className="bg-white/40 backdrop-blur-md rounded-[2.5rem] border border-white shadow-2xl overflow-hidden min-h-[700px] flex flex-col relative transition-all duration-500">
+          <div className="bg-card/40 backdrop-blur-md rounded-[2.5rem] border border-white shadow-2xl overflow-hidden min-h-[700px] flex flex-col relative transition-all duration-500">
             <AnimatePresence mode="wait" initial={false}>
               {!otherUserId ? (
                 <motion.div

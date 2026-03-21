@@ -93,7 +93,7 @@ const AnalyticsDashboardView: React.FC = () => {
               onClick={() => setPeriod(p)}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${period === p
                   ? 'bg-highlight text-white'
-                  : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
+                  : 'bg-muted/60 text-stone-500 hover:bg-muted'
                 }`}
             >
               {p === '7d' ? '7 Days' : p === '30d' ? '30 Days' : '90 Days'}
@@ -104,19 +104,19 @@ const AnalyticsDashboardView: React.FC = () => {
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl p-6 border border-stone-200">
+        <div className="bg-card rounded-xl p-6 border border-border">
           <div className="flex items-center justify-between mb-2">
             <Users className="w-5 h-5 text-blue-400" />
-            <TrendingUp className="w-4 h-4 text-green-400" />
+            <TrendingUp className="w-4 h-4 dark:text-green-400 text-green-600" />
           </div>
           <div className="text-2xl font-bold mb-1">{analytics.userGrowth}</div>
           <div className="text-sm text-stone-500">New Users ({period})</div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-stone-200">
+        <div className="bg-card rounded-xl p-6 border border-border">
           <div className="flex items-center justify-between mb-2">
-            <DollarSign className="w-5 h-5 text-green-400" />
-            <TrendingUp className="w-4 h-4 text-green-400" />
+            <DollarSign className="w-5 h-5 dark:text-green-400 text-green-600" />
+            <TrendingUp className="w-4 h-4 dark:text-green-400 text-green-600" />
           </div>
           <div className="text-2xl font-bold mb-1">
             {formatCurrency(analytics.transactionVolume.total)}
@@ -126,10 +126,10 @@ const AnalyticsDashboardView: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-stone-200">
+        <div className="bg-card rounded-xl p-6 border border-border">
           <div className="flex items-center justify-between mb-2">
             <DollarSign className="w-5 h-5 text-highlight" />
-            <TrendingUp className="w-4 h-4 text-green-400" />
+            <TrendingUp className="w-4 h-4 dark:text-green-400 text-green-600" />
           </div>
           <div className="text-2xl font-bold mb-1">
             {formatCurrency(analytics.totalRevenue.total)}
@@ -139,7 +139,7 @@ const AnalyticsDashboardView: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-stone-200">
+        <div className="bg-card rounded-xl p-6 border border-border">
           <div className="flex items-center justify-between mb-2">
             <AlertTriangle className="w-5 h-5 text-red-400" />
           </div>
@@ -149,7 +149,7 @@ const AnalyticsDashboardView: React.FC = () => {
       </div>
 
       {/* Appointment Stats */}
-      <div className="bg-white rounded-xl p-6 border border-stone-200">
+      <div className="bg-card rounded-xl p-6 border border-border">
         <div className="flex items-center gap-2 mb-4">
           <Calendar className="w-5 h-5 text-orange-400" />
           <h3 className="text-lg font-semibold">Appointment Statistics</h3>
@@ -157,7 +157,7 @@ const AnalyticsDashboardView: React.FC = () => {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           {analytics.appointmentStats.map((stat) => (
-            <div key={stat.status} className="bg-stone-50 rounded-lg p-4 border border-stone-200">
+            <div key={stat.status} className="bg-muted/40 rounded-lg p-4 border border-border">
               <div className="text-xl font-bold mb-1">{stat._count}</div>
               <div className="text-sm text-stone-500 capitalize">
                 {stat.status.replace('_', ' ')}
@@ -168,7 +168,7 @@ const AnalyticsDashboardView: React.FC = () => {
       </div>
 
       {/* Prescription Stats */}
-      <div className="bg-white rounded-xl p-6 border border-stone-200">
+      <div className="bg-card rounded-xl p-6 border border-border">
         <div className="flex items-center gap-2 mb-4">
           <Package className="w-5 h-5 text-purple-400" />
           <h3 className="text-lg font-semibold">Guidance Plan Statistics</h3>
@@ -176,7 +176,7 @@ const AnalyticsDashboardView: React.FC = () => {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
           {analytics.prescriptionStats.map((stat) => (
-            <div key={stat.status} className="bg-stone-50 rounded-lg p-4 border border-stone-200">
+            <div key={stat.status} className="bg-muted/40 rounded-lg p-4 border border-border">
               <div className="text-xl font-bold mb-1">{stat._count}</div>
               <div className="text-sm text-stone-500 capitalize">
                 {stat.status.replace('_', ' ')}
@@ -187,7 +187,7 @@ const AnalyticsDashboardView: React.FC = () => {
       </div>
 
       {/* Transaction Volume Details */}
-      <div className="bg-white rounded-xl p-6 border border-stone-200">
+      <div className="bg-card rounded-xl p-6 border border-border">
         <h3 className="text-lg font-semibold mb-4">Transaction Details</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
@@ -202,10 +202,10 @@ const AnalyticsDashboardView: React.FC = () => {
           </div>
         </div>
         {analytics.transactionVolume.count > 0 && (
-          <div className="mt-4 pt-4 border-t border-stone-200">
+          <div className="mt-4 pt-4 border-t border-border">
             <div className="text-sm text-stone-500">
               Average Transaction:{' '}
-              <span className="font-medium text-stone-900">
+              <span className="font-medium text-stone-900 dark:text-stone-100">
                 {formatCurrency(
                   analytics.transactionVolume.total / analytics.transactionVolume.count
                 )}

@@ -172,7 +172,7 @@ const AcademyView: React.FC<AcademyViewProps> = ({ onSelectCourse }) => {
             <AcademySkeleton />
           ) : coursesError ? (
             <div className="text-center py-16">
-              <div className="mx-auto w-24 h-24 rounded-full bg-red-50 flex items-center justify-center mb-4">
+              <div className="mx-auto w-24 h-24 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center mb-4">
                 <AlertCircle className="text-red-400" size={40} />
               </div>
               <h3 className="text-xl font-bold text-foreground mb-2">Could not load courses</h3>

@@ -55,7 +55,7 @@ const CircleDirectory: React.FC<CircleDirectoryProps> = ({ onSelectCircle, onCre
   const getPrivacyIcon = (privacy: string) => {
     switch (privacy) {
       case 'PRIVATE':
-        return <Lock size={14} className="text-amber-600" />;
+        return <Lock size={14} className="text-amber-600 dark:text-amber-400" />;
       case 'INVITE_ONLY':
         return <UserPlus size={14} className="text-orange-600" />;
       default:
@@ -112,7 +112,7 @@ const CircleDirectory: React.FC<CircleDirectoryProps> = ({ onSelectCircle, onCre
                 const forumUrl = '/forum?category=circle-suggestions&suggest=circle';
                 window.location.href = forumUrl;
               }}
-              className="px-4 py-2 bg-white text-rose-700 border border-rose-200 rounded-xl font-bold hover:bg-rose-50 transition-colors flex items-center gap-2 text-sm"
+              className="px-4 py-2 bg-card text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 rounded-xl font-bold hover:bg-rose-50 dark:bg-rose-950/20 dark:hover:bg-rose-950/30 transition-colors flex items-center gap-2 text-sm"
             >
               <Lightbulb size={16} />
               Suggest Circle

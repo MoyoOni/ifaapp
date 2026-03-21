@@ -115,20 +115,20 @@ const ContentModerationDashboard: React.FC = () => {
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'high': return 'bg-red-100 text-red-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'low': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'high': return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200';
+      case 'medium': return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200';
+      case 'low': return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200';
+      default: return 'bg-muted/60 text-foreground';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-blue-100 text-blue-800';
-      case 'reviewed': return 'bg-purple-100 text-purple-800';
-      case 'resolved': return 'bg-green-100 text-green-800';
-      case 'dismissed': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'pending': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200';
+      case 'reviewed': return 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200';
+      case 'resolved': return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200';
+      case 'dismissed': return 'bg-muted/60 text-foreground';
+      default: return 'bg-muted/60 text-foreground';
     }
   };
 
@@ -192,7 +192,7 @@ const ContentModerationDashboard: React.FC = () => {
                 </h3>
               </div>
               <div className="p-2 bg-green-500/20 rounded-lg">
-                <Check className="w-6 h-6 text-green-400" />
+                <Check className="w-6 h-6 dark:text-green-400 text-green-600" />
               </div>
             </div>
           </div>
@@ -281,7 +281,7 @@ const ContentModerationDashboard: React.FC = () => {
               <div className="divide-y divide-white/10">
                 {filteredReports.length > 0 ? (
                   filteredReports.map((report) => (
-                    <div key={report.id} className="p-4 hover:bg-white/5 transition-colors">
+                    <div key={report.id} className="p-4 hover:bg-card/5 transition-colors">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
@@ -392,7 +392,7 @@ const ContentModerationDashboard: React.FC = () => {
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" className="sr-only peer" defaultChecked aria-label="Auto-flag suspicious content" />
-                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-highlight"></div>
+                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-highlight"></div>
                   </label>
                 </div>
                 
@@ -403,7 +403,7 @@ const ContentModerationDashboard: React.FC = () => {
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" className="sr-only peer" defaultChecked aria-label="Notify reporters on resolution" />
-                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-highlight"></div>
+                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-highlight"></div>
                   </label>
                 </div>
                 
@@ -414,7 +414,7 @@ const ContentModerationDashboard: React.FC = () => {
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" className="sr-only peer" aria-label="Escalate high-severity reports" />
-                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-highlight"></div>
+                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-card after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-highlight"></div>
                   </label>
                 </div>
               </div>
@@ -432,7 +432,7 @@ const ContentModerationDashboard: React.FC = () => {
                 <h2 className="text-2xl font-bold text-white">Review Report</h2>
                 <button
                   onClick={() => setSelectedReport(null)}
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                  className="p-2 hover:bg-card/10 rounded-lg transition-colors"
                   aria-label="Close review"
                   title="Close review"
                 >
@@ -482,7 +482,7 @@ const ContentModerationDashboard: React.FC = () => {
                 <div className="flex gap-3 pt-4">
                   <button
                     onClick={() => handleReviewReport(selectedReport.id, 'approve')}
-                    className="flex-1 py-3 bg-green-500/20 text-green-400 font-bold rounded-lg hover:bg-green-500/30 transition-colors flex items-center justify-center gap-2"
+                    className="flex-1 py-3 bg-green-500/20 dark:text-green-400 text-green-600 font-bold rounded-lg hover:bg-green-500/30 transition-colors flex items-center justify-center gap-2"
                   >
                     <Check size={18} /> Approve Report
                   </button>

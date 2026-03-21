@@ -57,7 +57,7 @@ const YorubaInputHelper: React.FC<YorubaInputHelperProps> = ({ fieldName = 'Yoru
             {diacritics.map((diacritic, index) => (
               <div
                 key={index}
-                className="bg-white/5 rounded p-2 border border-white/10"
+                className="bg-card/5 rounded p-2 border border-white/10"
               >
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-blue-300 text-lg">{diacritic.char}</span>

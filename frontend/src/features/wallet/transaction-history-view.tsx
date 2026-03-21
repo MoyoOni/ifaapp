@@ -129,7 +129,7 @@ const TransactionHistoryView: React.FC<TransactionHistoryViewProps> = ({ onBack 
   const getTransactionIcon = (type: TransactionType) => {
     switch (type) {
       case TransactionType.DEPOSIT:
-        return <ArrowDownCircle className="w-5 h-5 text-green-400" />;
+        return <ArrowDownCircle className="w-5 h-5 dark:text-green-400 text-green-600" />;
       case TransactionType.WITHDRAWAL:
         return <ArrowUpCircle className="w-5 h-5 text-red-400" />;
       case TransactionType.ESCROW_HOLD:
@@ -141,7 +141,7 @@ const TransactionHistoryView: React.FC<TransactionHistoryViewProps> = ({ onBack 
       case TransactionType.REFUND:
         return <ArrowDownCircle className="w-5 h-5 text-orange-400" />;
       default:
-        return <DollarSign className="w-5 h-5 text-gray-400" />;
+        return <DollarSign className="w-5 h-5 text-muted-foreground/70" />;
     }
   };
 
@@ -154,9 +154,9 @@ const TransactionHistoryView: React.FC<TransactionHistoryViewProps> = ({ onBack 
       case TransactionStatus.FAILED:
         return 'text-red-400';
       case TransactionStatus.CANCELLED:
-        return 'text-gray-400';
+        return 'text-muted-foreground/70';
       default:
-        return 'text-gray-400';
+        return 'text-muted-foreground/70';
     }
   };
 
@@ -281,7 +281,7 @@ const TransactionHistoryView: React.FC<TransactionHistoryViewProps> = ({ onBack 
                     </div>
                     <div className="text-right space-y-1">
                       <p
-                        className={`font-bold text-lg ${transaction.amount > 0 ? 'text-green-400' : 'text-red-400'
+                        className={`font-bold text-lg ${transaction.amount > 0 ? 'dark:text-green-400 text-green-600' : 'text-red-400'
                           }`}
                       >
                         {transaction.amount > 0 ? '+' : ''}

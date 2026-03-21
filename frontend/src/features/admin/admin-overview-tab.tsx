@@ -77,11 +77,11 @@ const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
 
     const statCards = [
         { label: 'Total Users', value: stats?.totalUsers ?? 0, icon: Users, color: 'text-primary border-primary/30' },
-        { label: 'Verified Babalawos', value: stats?.verifiedBabalawos ?? 0, icon: Shield, color: 'text-green-600 border-green-200' },
-        { label: 'Pending Verifications', value: stats?.pendingVerifications ?? 0, icon: CheckCircle, color: 'text-amber-600 border-amber-200' },
-        { label: 'Active Relationships', value: stats?.activeRelationships ?? 0, icon: LinkIcon, color: 'text-purple-600 border-purple-200' },
-        { label: 'Total Appointments', value: stats?.totalAppointments ?? 0, icon: Calendar, color: 'text-orange-600 border-orange-200' },
-        { label: 'Total Messages', value: stats?.totalMessages ?? 0, icon: MessageSquare, color: 'text-pink-600 border-pink-200' },
+        { label: 'Verified Babalawos', value: stats?.verifiedBabalawos ?? 0, icon: Shield, color: 'text-green-600 dark:text-green-400 border-green-200 dark:border-green-800' },
+        { label: 'Pending Verifications', value: stats?.pendingVerifications ?? 0, icon: CheckCircle, color: 'text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800' },
+        { label: 'Active Relationships', value: stats?.activeRelationships ?? 0, icon: LinkIcon, color: 'text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-800' },
+        { label: 'Total Appointments', value: stats?.totalAppointments ?? 0, icon: Calendar, color: 'text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-800' },
+        { label: 'Total Messages', value: stats?.totalMessages ?? 0, icon: MessageSquare, color: 'text-pink-600 dark:text-pink-400 border-pink-200 dark:border-pink-800' },
     ];
 
     return (
@@ -177,7 +177,7 @@ const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
                             <div className="text-center pt-2">
                                 <button
                                     onClick={() => setShowAllVerifications(!showAllVerifications)}
-                                    className="text-highlight hover:text-yellow-600 text-xs font-bold uppercase tracking-widest bg-muted px-4 py-2 rounded-full border border-border hover:border-highlight/30 transition-all"
+                                    className="text-highlight hover:text-yellow-600 dark:text-yellow-400 text-xs font-bold uppercase tracking-widest bg-muted px-4 py-2 rounded-full border border-border hover:border-highlight/30 transition-all"
                                 >
                                     {showAllVerifications ? 'Show Less' : `+${verifications.length - 5} More Applications`}
                                 </button>
@@ -217,7 +217,7 @@ const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
                             <div className="text-center pt-4">
                                 <button
                                     onClick={() => setShowAllUsers(!showAllUsers)}
-                                    className="text-highlight hover:text-yellow-600 text-xs font-bold uppercase tracking-widest bg-muted px-4 py-2 rounded-full border border-border hover:border-highlight/30 transition-all"
+                                    className="text-highlight hover:text-yellow-600 dark:text-yellow-400 text-xs font-bold uppercase tracking-widest bg-muted px-4 py-2 rounded-full border border-border hover:border-highlight/30 transition-all"
                                 >
                                     {showAllUsers ? 'Show Less' : `+${users.length - 10} More Users`}
                                 </button>

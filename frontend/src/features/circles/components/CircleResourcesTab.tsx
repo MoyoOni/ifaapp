@@ -27,7 +27,7 @@ export const CircleResourcesTab: React.FC<CircleResourcesTabProps> = ({
       case 'VIDEO':
         return 'bg-purple-100 text-purple-600';
       default:
-        return 'bg-stone-200 text-stone-600';
+        return 'bg-muted text-stone-600';
     }
   };
 
@@ -42,7 +42,7 @@ export const CircleResourcesTab: React.FC<CircleResourcesTabProps> = ({
         )}
       </div>
       {!resources || resources.length === 0 ? (
-        <div className="text-center py-12 border-2 border-dashed border-stone-200 rounded-xl">
+        <div className="text-center py-12 border-2 border-dashed border-border rounded-xl">
           <FileText size={48} className="mx-auto mb-4 text-stone-300" />
           <p className="text-stone-500 font-medium">No resources shared yet</p>
           <p className="text-stone-400 text-sm">Resources will appear here when added</p>
@@ -55,7 +55,7 @@ export const CircleResourcesTab: React.FC<CircleResourcesTabProps> = ({
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.05 }}
-              className="flex items-center gap-4 p-4 bg-stone-50 rounded-xl hover:bg-stone-100 transition-colors cursor-pointer group"
+              className="flex items-center gap-4 p-4 bg-muted/40 rounded-xl hover:bg-muted/60 transition-colors cursor-pointer group"
             >
               <div
                 className={`w-10 h-10 rounded-lg flex items-center justify-center ${getResourceColor(
@@ -72,7 +72,7 @@ export const CircleResourcesTab: React.FC<CircleResourcesTabProps> = ({
                   Added {new Date(resource.addedAt).toLocaleDateString()}
                 </p>
               </div>
-              <span className="px-2 py-1 bg-stone-200 text-stone-600 text-xs rounded font-medium uppercase">
+              <span className="px-2 py-1 bg-muted text-stone-600 text-xs rounded font-medium uppercase">
                 {resource.type}
               </span>
             </motion.div>

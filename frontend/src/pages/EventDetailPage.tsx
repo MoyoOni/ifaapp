@@ -16,7 +16,7 @@ const EventDetailPage: React.FC = () => {
 
   if (!slug) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
+      <div className="min-h-screen bg-muted/40 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-stone-600 mb-2">Event Not Found</h2>
           <p className="text-stone-500 mb-6">The event you're looking for doesn't exist.</p>
@@ -32,7 +32,7 @@ const EventDetailPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-muted/40">
       <div className="container mx-auto px-4 py-8">
         <EventDetailView
           eventSlug={slug}
