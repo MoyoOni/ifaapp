@@ -190,19 +190,19 @@ const AdvisoryBoardVotingView: React.FC = () => {
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <Flag className="w-8 h-8 text-highlight" />
-          <h1 className="text-3xl font-bold text-white">Advisory Board Voting</h1>
+          <h1 className="text-3xl font-bold text-foreground">Advisory Board Voting</h1>
         </div>
-        <p className="text-muted">
+        <p className="text-muted-foreground">
           Participate in important decisions for the Ifá community
         </p>
       </div>
 
-      <div className="bg-background-light/10 backdrop-blur-sm border border-white/10 rounded-xl overflow-hidden">
-        <div className="flex border-b border-white/10">
+      <div className="bg-background-light/10 backdrop-blur-sm border border-border rounded-xl overflow-hidden">
+        <div className="flex border-b border-border">
           <button
             className={`flex-1 py-4 px-6 text-center font-medium ${activeTab === 'active'
               ? 'text-highlight border-b-2 border-highlight'
-              : 'text-muted hover:text-white'
+              : 'text-muted-foreground hover:text-foreground'
               }`}
             onClick={() => setActiveTab('active')}
           >
@@ -211,7 +211,7 @@ const AdvisoryBoardVotingView: React.FC = () => {
           <button
             className={`flex-1 py-4 px-6 text-center font-medium ${activeTab === 'closed'
               ? 'text-highlight border-b-2 border-highlight'
-              : 'text-muted hover:text-white'
+              : 'text-muted-foreground hover:text-foreground'
               }`}
             onClick={() => setActiveTab('closed')}
           >
@@ -221,7 +221,7 @@ const AdvisoryBoardVotingView: React.FC = () => {
             <button
               className={`flex-1 py-4 px-6 text-center font-medium ${activeTab === 'create'
                 ? 'text-highlight border-b-2 border-highlight'
-                : 'text-muted hover:text-white'
+                : 'text-muted-foreground hover:text-foreground'
                 }`}
               onClick={() => setActiveTab('create')}
             >
@@ -232,7 +232,7 @@ const AdvisoryBoardVotingView: React.FC = () => {
 
         <div className="p-6">
           {activeTab === 'active' && votes.length === 0 && (
-            <div className="text-center py-12 text-muted">
+            <div className="text-center py-12 text-muted-foreground">
               <Vote className="w-16 h-16 mx-auto mb-4 opacity-50" />
               <p className="text-xl">No active votes</p>
               <p className="text-sm">Check back later for new proposals</p>
@@ -240,7 +240,7 @@ const AdvisoryBoardVotingView: React.FC = () => {
           )}
 
           {activeTab === 'closed' && votes.length === 0 && (
-            <div className="text-center py-12 text-muted">
+            <div className="text-center py-12 text-muted-foreground">
               <BarChart3 className="w-16 h-16 mx-auto mb-4 opacity-50" />
               <p className="text-xl">No closed votes</p>
               <p className="text-sm">No voting history available yet</p>
@@ -250,33 +250,33 @@ const AdvisoryBoardVotingView: React.FC = () => {
           {activeTab === 'create' && user?.role === 'ADVISORY_BOARD_MEMBER' && (
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-muted mb-2">
+                <label className="block text-sm font-medium text-muted-foreground mb-2">
                   Vote Title *
                 </label>
                 <input
                   type="text"
                   value={newVote.title}
                   onChange={(e) => setNewVote({ ...newVote, title: e.target.value })}
-                  className="w-full bg-card/5 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-highlight"
+                  className="w-full bg-muted/50 border border-border rounded-lg p-3 text-foreground focus:outline-none focus:ring-2 focus:ring-highlight"
                   placeholder="Enter vote title"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-muted mb-2">
+                <label className="block text-sm font-medium text-muted-foreground mb-2">
                   Description *
                 </label>
                 <textarea
                   value={newVote.description}
                   onChange={(e) => setNewVote({ ...newVote, description: e.target.value })}
                   rows={4}
-                  className="w-full bg-card/5 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-highlight"
+                  className="w-full bg-muted/50 border border-border rounded-lg p-3 text-foreground focus:outline-none focus:ring-2 focus:ring-highlight"
                   placeholder="Describe the proposal..."
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-muted mb-2">
+                <label className="block text-sm font-medium text-muted-foreground mb-2">
                   Voting Options *
                 </label>
                 <div className="space-y-3">
@@ -286,7 +286,7 @@ const AdvisoryBoardVotingView: React.FC = () => {
                         type="text"
                         value={option}
                         onChange={(e) => handleOptionChange(index, e.target.value)}
-                        className="flex-1 bg-card/5 border border-white/10 rounded-lg p-2 text-white focus:outline-none focus:ring-2 focus:ring-highlight"
+                        className="flex-1 bg-muted/50 border border-border rounded-lg p-2 text-foreground focus:outline-none focus:ring-2 focus:ring-highlight"
                         placeholder={`Option ${index + 1}`}
                       />
                       {newVote.voteOptions.length > 2 && (
@@ -314,7 +314,7 @@ const AdvisoryBoardVotingView: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-muted mb-2">
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
                     Deadline *
                   </label>
                   <input
@@ -322,12 +322,12 @@ const AdvisoryBoardVotingView: React.FC = () => {
                     value={newVote.deadline}
                     onChange={(e) => setNewVote({ ...newVote, deadline: e.target.value })}
                     aria-label="Set voting deadline"
-                    className="w-full bg-card/5 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-highlight"
+                    className="w-full bg-muted/50 border border-border rounded-lg p-3 text-foreground focus:outline-none focus:ring-2 focus:ring-highlight"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-muted mb-2">
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
                     Required Majority
                   </label>
                   <select
@@ -337,7 +337,7 @@ const AdvisoryBoardVotingView: React.FC = () => {
                       requiredMajority: e.target.value as 'SIMPLE' | 'SUPER' | 'UNANIMOUS'
                     })}
                     aria-label="Select required majority type"
-                    className="w-full bg-card/5 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-highlight"
+                    className="w-full bg-muted/50 border border-border rounded-lg p-3 text-foreground focus:outline-none focus:ring-2 focus:ring-highlight"
                   >
                     <option value="SIMPLE" className="bg-background">Simple Majority (50%)</option>
                     <option value="SUPER" className="bg-background">Super Majority (75%)</option>
@@ -379,20 +379,20 @@ const AdvisoryBoardVotingView: React.FC = () => {
                 return (
                   <div
                     key={vote.id}
-                    className="bg-card/5 border border-white/10 rounded-xl p-6 hover:border-highlight transition-colors"
+                    className="bg-muted/50 border border-border rounded-xl p-6 hover:border-highlight transition-colors"
                   >
                     <div className="flex flex-wrap justify-between items-start gap-4 mb-4">
                       <div>
-                        <h3 className="text-xl font-bold text-white">{vote.title}</h3>
-                        <p className="text-muted mt-1">{vote.description}</p>
+                        <h3 className="text-xl font-bold text-foreground">{vote.title}</h3>
+                        <p className="text-muted-foreground mt-1">{vote.description}</p>
 
                         <div className="flex flex-wrap items-center gap-4 mt-3 text-sm">
-                          <div className="flex items-center gap-1 text-muted">
+                          <div className="flex items-center gap-1 text-muted-foreground">
                             <Users size={16} />
                             <span>{vote.voterCount} voters</span>
                           </div>
 
-                          <div className="flex items-center gap-1 text-muted">
+                          <div className="flex items-center gap-1 text-muted-foreground">
                             <Calendar size={16} />
                             <span>
                               {new Date(vote.createdAt).toLocaleDateString()} -{' '}
@@ -407,14 +407,14 @@ const AdvisoryBoardVotingView: React.FC = () => {
                       </div>
 
                       <div className="text-right">
-                        <p className="text-muted text-sm">Proposed by</p>
-                        <p className="text-white font-medium">{vote.proposer.name}</p>
-                        <p className="text-xs text-muted">{vote.proposer.role}</p>
+                        <p className="text-muted-foreground text-sm">Proposed by</p>
+                        <p className="text-foreground font-medium">{vote.proposer.name}</p>
+                        <p className="text-xs text-muted-foreground">{vote.proposer.role}</p>
                       </div>
                     </div>
 
                     <div className="mt-6">
-                      <h4 className="font-medium text-white mb-3">Voting Options</h4>
+                      <h4 className="font-medium text-foreground mb-3">Voting Options</h4>
 
                       <div className="space-y-3">
                         {vote.voteOptions.map((option, index) => {
@@ -423,7 +423,7 @@ const AdvisoryBoardVotingView: React.FC = () => {
 
                           return (
                             <div key={index} className="flex items-center justify-between">
-                              <span className="text-muted">{option}</span>
+                              <span className="text-muted-foreground">{option}</span>
 
                               {vote.results ? (
                                 <div className="flex items-center gap-3">
@@ -433,7 +433,7 @@ const AdvisoryBoardVotingView: React.FC = () => {
                                     aria-label={`${option} vote percentage`}
                                     className="w-32 h-2 rounded-full [&::-webkit-progress-bar]:rounded-full [&::-webkit-progress-bar]:bg-background/20 [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-highlight [&::-moz-progress-bar]:rounded-full [&::-moz-progress-bar]:bg-highlight"
                                   />
-                                  <span className="text-white font-medium w-10">{percentage}%</span>
+                                  <span className="text-foreground font-medium w-10">{percentage}%</span>
                                 </div>
                               ) : (
                                 <button
@@ -460,23 +460,23 @@ const AdvisoryBoardVotingView: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="mt-6 pt-4 border-t border-white/10">
+                    <div className="mt-6 pt-4 border-t border-border">
                       <div className="flex flex-wrap gap-6 text-sm">
                         <div>
-                          <p className="text-muted">Yes</p>
+                          <p className="text-muted-foreground">Yes</p>
                           <p className="dark:text-green-400 text-green-600 font-bold">{vote.votes.yes} ({yesPercentage}%)</p>
                         </div>
                         <div>
-                          <p className="text-muted">No</p>
+                          <p className="text-muted-foreground">No</p>
                           <p className="text-red-400 font-bold">{vote.votes.no} ({noPercentage}%)</p>
                         </div>
                         <div>
-                          <p className="text-muted">Abstain</p>
+                          <p className="text-muted-foreground">Abstain</p>
                           <p className="text-yellow-400 font-bold">{vote.votes.abstain} ({abstainPercentage}%)</p>
                         </div>
                         <div>
-                          <p className="text-muted">Total</p>
-                          <p className="text-white font-bold">{totalVotes} votes</p>
+                          <p className="text-muted-foreground">Total</p>
+                          <p className="text-foreground font-bold">{totalVotes} votes</p>
                         </div>
                       </div>
                     </div>

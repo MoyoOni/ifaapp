@@ -33,7 +33,7 @@ const YorubaInputHelper: React.FC<YorubaInputHelperProps> = ({ fieldName = 'Yoru
       <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center gap-2 text-xs text-muted hover:text-highlight transition-colors"
+        className="flex items-center gap-2 text-xs text-muted-foreground hover:text-highlight transition-colors"
       >
         <Info className="w-3 h-3" />
         <span>How to type Yoruba diacritics</span>
@@ -57,7 +57,7 @@ const YorubaInputHelper: React.FC<YorubaInputHelperProps> = ({ fieldName = 'Yoru
             {diacritics.map((diacritic, index) => (
               <div
                 key={index}
-                className="bg-card/5 rounded p-2 border border-white/10"
+                className="bg-muted/50 rounded p-2 border border-border"
               >
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-blue-300 text-lg">{diacritic.char}</span>

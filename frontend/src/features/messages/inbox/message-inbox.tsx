@@ -58,7 +58,7 @@ const MessageInbox: React.FC<MessageInboxProps> = ({ userId, onSelectConversatio
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* 1. Inbox Controls */}
-      <div className="p-6 border-b border-border/60 bg-card/50">
+      <div className="p-6 border-b border-border/60 bg-muted/500">
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="relative w-full md:w-96 group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-highlight transition-colors" size={18} />

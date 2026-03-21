@@ -78,7 +78,7 @@ const AseAcknowledgmentButton: React.FC<AseAcknowledgmentButtonProps> = ({
       className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
         isAcknowledged
           ? 'bg-highlight/20 text-highlight border border-highlight/30'
-          : 'bg-card/5 text-muted border border-white/10 hover:border-highlight/30 hover:text-highlight'
+          : 'bg-muted/50 text-muted-foreground border border-border hover:border-highlight/30 hover:text-highlight'
       } ${isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${!userId ? 'opacity-50' : ''}`}
       title={isAcknowledged ? 'Remove Àṣẹ acknowledgment' : 'Acknowledge with Àṣẹ'}
     >

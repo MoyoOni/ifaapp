@@ -152,7 +152,7 @@ const GuidancePlanHistoryView: React.FC<GuidancePlanHistoryViewProps> = ({
       case 'CANCELLED':
         return 'text-red-400 bg-red-400/10 border-red-400/30';
       default:
-        return 'text-muted bg-card/5 border-white/10';
+        return 'text-muted-foreground bg-muted/50 border-border';
     }
   };
 
@@ -172,7 +172,7 @@ const GuidancePlanHistoryView: React.FC<GuidancePlanHistoryViewProps> = ({
         
         <div className="flex flex-col sm:flex-row gap-3">
           {/* View Mode Selector */}
-          <div className="flex border border-white/10 rounded-lg overflow-hidden">
+          <div className="flex border border-border rounded-lg overflow-hidden">
             {(['all', 'active', 'archived'] as const).map(mode => (
               <button
                 key={mode}
@@ -180,7 +180,7 @@ const GuidancePlanHistoryView: React.FC<GuidancePlanHistoryViewProps> = ({
                 className={`px-3 py-2 text-sm font-medium transition-colors flex-1 ${
                   viewMode === mode 
                     ? 'bg-highlight text-foreground' 
-                    : 'bg-card/5 text-muted hover:bg-card/10'
+                    : 'bg-muted/50 text-muted-foreground hover:bg-card/10'
                 }`}
                 aria-label={mode === 'all' ? 'Show all plans' : 
                           mode === 'active' ? 'Show active plans' : 
@@ -197,7 +197,7 @@ const GuidancePlanHistoryView: React.FC<GuidancePlanHistoryViewProps> = ({
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 bg-card/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-highlight min-w-[150px]"
+            className="px-4 py-2 bg-muted/50 border border-border rounded-lg text-white focus:outline-none focus:border-highlight min-w-[150px]"
             aria-label="Filter by status"
           >
             <option value="">All Statuses</option>
@@ -213,35 +213,35 @@ const GuidancePlanHistoryView: React.FC<GuidancePlanHistoryViewProps> = ({
       {/* Search and Date Range Filters */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted w-4 h-4" aria-hidden="true" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" aria-hidden="true" />
           <input
             type="text"
             placeholder="Search plans, babalawo, status..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-card/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-highlight"
+            className="w-full pl-10 pr-4 py-2 bg-muted/50 border border-border rounded-lg text-white focus:outline-none focus:border-highlight"
             aria-label="Search guidance plans"
           />
         </div>
         
         <div className="grid grid-cols-2 gap-3">
           <div className="relative">
-            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted w-4 h-4" aria-hidden="true" />
+            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" aria-hidden="true" />
             <input
               type="date"
               value={dateRange.start}
               onChange={(e) => setDateRange({...dateRange, start: e.target.value})}
-              className="w-full pl-10 pr-3 py-2 bg-card/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-highlight"
+              className="w-full pl-10 pr-3 py-2 bg-muted/50 border border-border rounded-lg text-white focus:outline-none focus:border-highlight"
               aria-label="Start date"
             />
           </div>
           <div className="relative">
-            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted w-4 h-4" aria-hidden="true" />
+            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" aria-hidden="true" />
             <input
               type="date"
               value={dateRange.end}
               onChange={(e) => setDateRange({...dateRange, end: e.target.value})}
-              className="w-full pl-10 pr-3 py-2 bg-card/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-highlight"
+              className="w-full pl-10 pr-3 py-2 bg-muted/50 border border-border rounded-lg text-white focus:outline-none focus:border-highlight"
               aria-label="End date"
             />
           </div>
@@ -250,8 +250,8 @@ const GuidancePlanHistoryView: React.FC<GuidancePlanHistoryViewProps> = ({
 
       {/* Guidance Plans List */}
       {!filteredGuidancePlans || filteredGuidancePlans.length === 0 ? (
-        <div className="text-center p-6 sm:p-8 bg-card/5 rounded-xl border border-white/10">
-          <p className="text-muted">No guidance plans found</p>
+        <div className="text-center p-6 sm:p-8 bg-muted/50 rounded-xl border border-border">
+          <p className="text-muted-foreground">No guidance plans found</p>
           <p className="text-sm text-muted/70 mt-1">
             {viewMode === 'archived' 
               ? 'No archived plans match your filters' 
@@ -262,7 +262,7 @@ const GuidancePlanHistoryView: React.FC<GuidancePlanHistoryViewProps> = ({
         <div className="space-y-6">
           {groupedByDate && Object.entries(groupedByDate).map(([date, plans]) => (
             <div key={date} className="space-y-4">
-              <h3 className="text-lg font-bold text-muted border-b border-white/10 pb-2 flex items-center gap-2">
+              <h3 className="text-lg font-bold text-muted-foreground border-b border-border pb-2 flex items-center gap-2">
                 <Calendar className="w-4 h-4" aria-hidden="true" />
                 {new Date(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
               </h3>
@@ -271,7 +271,7 @@ const GuidancePlanHistoryView: React.FC<GuidancePlanHistoryViewProps> = ({
                 {plans.map((guidancePlan) => (
                   <div
                     key={guidancePlan.id}
-                    className="bg-card/5 rounded-xl p-4 sm:p-6 border border-white/10 hover:border-highlight/30 transition-colors"
+                    className="bg-muted/50 rounded-xl p-4 sm:p-6 border border-border hover:border-highlight/30 transition-colors"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                       <div className="flex-1 space-y-2 min-w-0">
@@ -293,30 +293,30 @@ const GuidancePlanHistoryView: React.FC<GuidancePlanHistoryViewProps> = ({
 
                         <div className="grid grid-cols-1 gap-3 text-sm">
                           <div>
-                            <p className="text-muted">Babalawo</p>
+                            <p className="text-muted-foreground">Babalawo</p>
                             <p className="font-medium break-words max-w-full">
                               {guidancePlan.babalawo.yorubaName || guidancePlan.babalawo.name}
                             </p>
                           </div>
                           <div>
-                            <p className="text-muted">Session Date</p>
+                            <p className="text-muted-foreground">Session Date</p>
                             <p className="font-medium break-words max-w-full">
                               {new Date(guidancePlan.appointment.date).toLocaleDateString()} at{' '}
                               {guidancePlan.appointment.time}
                             </p>
                           </div>
                           <div>
-                            <p className="text-muted">Total Amount</p>
+                            <p className="text-muted-foreground">Total Amount</p>
                             <p className="font-medium text-highlight break-words max-w-full">
                               {formatCurrency(guidancePlan.totalCost + guidancePlan.platformServiceFee, guidancePlan.currency)}
                             </p>
-                            <p className="text-xs text-muted mt-0.5 break-words max-w-full">
+                            <p className="text-xs text-muted-foreground mt-0.5 break-words max-w-full">
                               Items: {formatCurrency(guidancePlan.totalCost, guidancePlan.currency)} + 
                               Fee: {formatCurrency(guidancePlan.platformServiceFee, guidancePlan.currency)}
                             </p>
                           </div>
                           <div>
-                            <p className="text-muted">Created</p>
+                            <p className="text-muted-foreground">Created</p>
                             <p className="font-medium break-words max-w-full">
                               {new Date(guidancePlan.createdAt).toLocaleDateString()}
                             </p>
@@ -330,7 +330,7 @@ const GuidancePlanHistoryView: React.FC<GuidancePlanHistoryViewProps> = ({
                           className="ml-0 sm:ml-4 p-2 hover:bg-card/10 rounded-lg transition-colors self-start"
                           aria-label={`View details for ${guidancePlan.type} guidance plan`}
                         >
-                          <Eye className="w-5 h-5 text-muted" aria-hidden="true" />
+                          <Eye className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
                         </button>
                       )}
                     </div>

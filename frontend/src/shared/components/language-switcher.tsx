@@ -12,7 +12,7 @@ export const LanguageSwitcher: React.FC = () => {
         flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all border 
         ${language === 'yo'
                     ? 'bg-highlight/10 text-highlight border-highlight'
-                    : 'bg-card/5 text-muted border-white/10 hover:border-white/20 hover:text-white'}
+                    : 'bg-muted/50 text-muted-foreground border-border hover:border-border hover:text-foreground'}
       `}
             title="Toggle Language / Yi Ede Pada"
         >

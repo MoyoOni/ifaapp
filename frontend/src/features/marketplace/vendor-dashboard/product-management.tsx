@@ -138,7 +138,7 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ vendorId, activeT
 
       {productsData.length === 0 && !productsLoading && (
         <div className="text-center py-12 border-2 border-dashed border-border rounded-xl">
-          <Package className="w-12 h-12 text-muted mx-auto mb-4" />
+          <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-medium text-foreground mb-2">No products yet</h3>
           <p className="text-muted-foreground mb-4">Get started by adding your first product</p>
           <Button 

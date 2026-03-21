@@ -188,14 +188,14 @@ const GuidancePlanCreationForm: React.FC<GuidancePlanCreationFormProps> = ({
   }
 
   return (
-    <div className="bg-background border border-white/10 rounded-xl p-6 space-y-6">
+    <div className="bg-background border border-border rounded-xl p-6 space-y-6">
       {/* Cultural Disclaimer */}
       <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
         <div className="flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
           <div className="space-y-1">
             <p className="font-medium text-yellow-400">Cultural Integrity Notice</p>
-            <p className="text-sm text-muted">
+            <p className="text-sm text-muted-foreground">
               Akose/Ebo are sacred guidance plans—not products. They are spiritual remedies
               prescribed after divination and should be treated with respect and reverence.
             </p>
@@ -210,7 +210,7 @@ const GuidancePlanCreationForm: React.FC<GuidancePlanCreationFormProps> = ({
             <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
             <div>
               <p className="font-medium text-red-400">Cannot Create Guidance Plan</p>
-              <p className="text-sm text-muted mt-1">{error}</p>
+              <p className="text-sm text-muted-foreground mt-1">{error}</p>
             </div>
           </div>
         </div>
@@ -276,10 +276,10 @@ const GuidancePlanCreationForm: React.FC<GuidancePlanCreationFormProps> = ({
             {items.map((item, index) => (
               <div
                 key={index}
-                className="bg-card/5 rounded-lg p-4 border border-white/10 space-y-3"
+                className="bg-muted/50 rounded-lg p-4 border border-border space-y-3"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted">
+                  <span className="text-sm font-medium text-muted-foreground">
                     Item {index + 1}
                   </span>
                   {items.length > 1 && (
@@ -296,33 +296,33 @@ const GuidancePlanCreationForm: React.FC<GuidancePlanCreationFormProps> = ({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs text-muted mb-1">Name *</label>
+                    <label className="block text-xs text-muted-foreground mb-1">Name *</label>
                     <input
                       type="text"
                       value={item.name}
                       onChange={(e) => updateItem(index, 'name', e.target.value)}
                       disabled={!canCreate}
-                      className="w-full px-3 py-2 bg-card/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-highlight disabled:opacity-50"
+                      className="w-full px-3 py-2 bg-muted/50 border border-border rounded-lg text-white focus:outline-none focus:border-highlight disabled:opacity-50"
                       placeholder="Item name"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs text-muted mb-1">Quantity *</label>
+                    <label className="block text-xs text-muted-foreground mb-1">Quantity *</label>
                     <input
                       type="number"
                       min="1"
                       value={item.quantity}
                       onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 1)}
                       disabled={!canCreate}
-                      className="w-full px-3 py-2 bg-card/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-highlight disabled:opacity-50"
+                      className="w-full px-3 py-2 bg-muted/50 border border-border rounded-lg text-white focus:outline-none focus:border-highlight disabled:opacity-50"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs text-muted mb-1">Cost (NGN) *</label>
+                    <label className="block text-xs text-muted-foreground mb-1">Cost (NGN) *</label>
                     <input
                       type="number"
                       min="0"
@@ -330,25 +330,25 @@ const GuidancePlanCreationForm: React.FC<GuidancePlanCreationFormProps> = ({
                       value={item.cost}
                       onChange={(e) => updateItem(index, 'cost', parseFloat(e.target.value) || 0)}
                       disabled={!canCreate}
-                      className="w-full px-3 py-2 bg-card/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-highlight disabled:opacity-50"
+                      className="w-full px-3 py-2 bg-muted/50 border border-border rounded-lg text-white focus:outline-none focus:border-highlight disabled:opacity-50"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs text-muted mb-1">Description</label>
+                    <label className="block text-xs text-muted-foreground mb-1">Description</label>
                     <input
                       type="text"
                       value={item.description || ''}
                       onChange={(e) => updateItem(index, 'description', e.target.value)}
                       disabled={!canCreate}
-                      className="w-full px-3 py-2 bg-card/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-highlight disabled:opacity-50"
+                      className="w-full px-3 py-2 bg-muted/50 border border-border rounded-lg text-white focus:outline-none focus:border-highlight disabled:opacity-50"
                       placeholder="Optional description"
                     />
                   </div>
                 </div>
 
-                <div className="text-right text-sm text-muted">
+                <div className="text-right text-sm text-muted-foreground">
                   Subtotal: ₦{(item.cost * item.quantity).toFixed(2)}
                 </div>
               </div>
@@ -373,7 +373,7 @@ const GuidancePlanCreationForm: React.FC<GuidancePlanCreationFormProps> = ({
             onChange={(e) => setInstructions(e.target.value)}
             disabled={!canCreate}
             rows={4}
-            className="w-full px-4 py-2 bg-card/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-highlight disabled:opacity-50"
+            className="w-full px-4 py-2 bg-muted/50 border border-border rounded-lg text-white focus:outline-none focus:border-highlight disabled:opacity-50"
             placeholder="Provide instructions on how to use or prepare the guidance plan items..."
           />
         </div>
@@ -386,7 +386,7 @@ const GuidancePlanCreationForm: React.FC<GuidancePlanCreationFormProps> = ({
             onChange={(e) => setNotes(e.target.value)}
             disabled={!canCreate}
             rows={2}
-            className="w-full px-4 py-2 bg-card/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-highlight disabled:opacity-50"
+            className="w-full px-4 py-2 bg-muted/50 border border-border rounded-lg text-white focus:outline-none focus:border-highlight disabled:opacity-50"
             placeholder="Private notes (not visible to client)..."
           />
         </div>

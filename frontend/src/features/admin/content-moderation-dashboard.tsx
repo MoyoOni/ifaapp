@@ -144,21 +144,21 @@ const ContentModerationDashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-white p-6">
+    <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="space-y-2">
           <h1 className="text-4xl font-bold brand-font text-highlight">Content Moderation</h1>
-          <p className="text-muted text-lg">Review reports and manage platform content</p>
+          <p className="text-muted-foreground text-lg">Review reports and manage platform content</p>
         </div>
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-card rounded-xl p-4 border border-white/10">
+          <div className="bg-card rounded-xl p-4 border border-border">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-muted text-sm uppercase tracking-wider">Pending Reports</p>
-                <h3 className="text-2xl font-bold text-white mt-1">
+                <p className="text-muted-foreground text-sm uppercase tracking-wider">Pending Reports</p>
+                <h3 className="text-2xl font-bold text-foreground mt-1">
                   {reports.filter(r => r.status === 'pending').length}
                 </h3>
               </div>
@@ -168,11 +168,11 @@ const ContentModerationDashboard: React.FC = () => {
             </div>
           </div>
           
-          <div className="bg-card rounded-xl p-4 border border-white/10">
+          <div className="bg-card rounded-xl p-4 border border-border">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-muted text-sm uppercase tracking-wider">High Severity</p>
-                <h3 className="text-2xl font-bold text-white mt-1">
+                <p className="text-muted-foreground text-sm uppercase tracking-wider">High Severity</p>
+                <h3 className="text-2xl font-bold text-foreground mt-1">
                   {reports.filter(r => r.severity === 'high').length}
                 </h3>
               </div>
@@ -182,11 +182,11 @@ const ContentModerationDashboard: React.FC = () => {
             </div>
           </div>
           
-          <div className="bg-card rounded-xl p-4 border border-white/10">
+          <div className="bg-card rounded-xl p-4 border border-border">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-muted text-sm uppercase tracking-wider">Resolved Today</p>
-                <h3 className="text-2xl font-bold text-white mt-1">
+                <p className="text-muted-foreground text-sm uppercase tracking-wider">Resolved Today</p>
+                <h3 className="text-2xl font-bold text-foreground mt-1">
                   {reports.filter(r => r.status === 'resolved' && 
                     new Date(r.reviewedAt || 0).toDateString() === new Date().toDateString()).length}
                 </h3>
@@ -197,11 +197,11 @@ const ContentModerationDashboard: React.FC = () => {
             </div>
           </div>
           
-          <div className="bg-card rounded-xl p-4 border border-white/10">
+          <div className="bg-card rounded-xl p-4 border border-border">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-muted text-sm uppercase tracking-wider">Avg Response Time</p>
-                <h3 className="text-2xl font-bold text-white mt-1">2.4h</h3>
+                <p className="text-muted-foreground text-sm uppercase tracking-wider">Avg Response Time</p>
+                <h3 className="text-2xl font-bold text-foreground mt-1">2.4h</h3>
               </div>
               <div className="p-2 bg-purple-500/20 rounded-lg">
                 <Clock className="w-6 h-6 text-purple-400" />
@@ -211,7 +211,7 @@ const ContentModerationDashboard: React.FC = () => {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex gap-2 border-b border-white/10">
+        <div className="flex gap-2 border-b border-border">
           {(['reports', 'actions', 'settings'] as const).map((tab) => (
             <button
               key={tab}
@@ -219,7 +219,7 @@ const ContentModerationDashboard: React.FC = () => {
               className={`px-4 py-3 font-medium transition-colors border-b-2 ${
                 activeTab === tab
                   ? 'border-highlight text-highlight'
-                  : 'border-transparent text-muted hover:text-white'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -231,16 +231,16 @@ const ContentModerationDashboard: React.FC = () => {
         {activeTab === 'reports' && (
           <div className="space-y-6">
             {/* Filters */}
-            <div className="bg-card rounded-xl p-4 border border-white/10">
+            <div className="bg-card rounded-xl p-4 border border-border">
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted" size={20} />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={20} />
                   <input
                     type="text"
                     placeholder="Search reports..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-background border border-white/10 rounded-lg text-white placeholder:text-muted focus:ring-2 focus:ring-highlight focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-highlight focus:border-transparent"
                   />
                 </div>
                 <div className="flex gap-2">
@@ -248,7 +248,7 @@ const ContentModerationDashboard: React.FC = () => {
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value as any)}
                     aria-label="Filter by status"
-                    className="px-3 py-2 bg-background border border-white/10 rounded-lg text-white focus:ring-2 focus:ring-highlight"
+                    className="px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:ring-2 focus:ring-highlight"
                   >
                     <option value="all">All Status</option>
                     <option value="pending">Pending</option>
@@ -260,7 +260,7 @@ const ContentModerationDashboard: React.FC = () => {
                     value={severityFilter}
                     onChange={(e) => setSeverityFilter(e.target.value as any)}
                     aria-label="Filter by severity"
-                    className="px-3 py-2 bg-background border border-white/10 rounded-lg text-white focus:ring-2 focus:ring-highlight"
+                    className="px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:ring-2 focus:ring-highlight"
                   >
                     <option value="all">All Severity</option>
                     <option value="high">High</option>
@@ -272,16 +272,16 @@ const ContentModerationDashboard: React.FC = () => {
             </div>
 
             {/* Reports List */}
-            <div className="bg-card rounded-xl border border-white/10 overflow-hidden">
-              <div className="p-4 border-b border-white/10">
-                <h2 className="text-xl font-bold text-white">Content Reports</h2>
-                <p className="text-muted">{filteredReports.length} reports found</p>
+            <div className="bg-card rounded-xl border border-border overflow-hidden">
+              <div className="p-4 border-b border-border">
+                <h2 className="text-xl font-bold text-foreground">Content Reports</h2>
+                <p className="text-muted-foreground">{filteredReports.length} reports found</p>
               </div>
               
               <div className="divide-y divide-white/10">
                 {filteredReports.length > 0 ? (
                   filteredReports.map((report) => (
-                    <div key={report.id} className="p-4 hover:bg-card/5 transition-colors">
+                    <div key={report.id} className="p-4 hover:bg-muted/50 transition-colors">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
@@ -291,23 +291,23 @@ const ContentModerationDashboard: React.FC = () => {
                             <span className={`px-2 py-1 rounded-full text-xs font-bold ${getStatusColor(report.status)}`}>
                               {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
                             </span>
-                            <span className="text-muted text-sm">
+                            <span className="text-muted-foreground text-sm">
                               Reported by {report.reporterName}
                             </span>
                           </div>
                           
                           <div className="mb-3">
-                            <p className="text-white font-medium mb-1">
+                            <p className="text-foreground font-medium mb-1">
                               {report.targetType.charAt(0).toUpperCase() + report.targetType.slice(1)} Report
                             </p>
-                            <p className="text-muted text-sm mb-2">"{report.contentPreview}"</p>
+                            <p className="text-muted-foreground text-sm mb-2">"{report.contentPreview}"</p>
                             <p className="text-sm">
-                              <span className="text-muted">Reason:</span>
-                              <span className="text-white ml-2 font-medium">{report.reason}</span>
+                              <span className="text-muted-foreground">Reason:</span>
+                              <span className="text-foreground ml-2 font-medium">{report.reason}</span>
                             </p>
                           </div>
                           
-                          <div className="flex items-center gap-4 text-xs text-muted">
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
                             <span>Reported: {report.createdAt.toLocaleString()}</span>
                             {report.reviewedAt && (
                               <span>Reviewed: {report.reviewedAt.toLocaleString()}</span>
@@ -329,9 +329,9 @@ const ContentModerationDashboard: React.FC = () => {
                   ))
                 ) : (
                   <div className="p-12 text-center">
-                    <MessageSquare size={48} className="mx-auto text-muted mb-4" />
-                    <h3 className="text-lg font-bold text-white mb-2">No reports found</h3>
-                    <p className="text-muted">
+                    <MessageSquare size={48} className="mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-bold text-foreground mb-2">No reports found</h3>
+                    <p className="text-muted-foreground">
                       {searchTerm || statusFilter !== 'all' || severityFilter !== 'all'
                         ? 'Try adjusting your filters'
                         : 'No content reports at this time'}
@@ -346,10 +346,10 @@ const ContentModerationDashboard: React.FC = () => {
         {/* Actions Tab */}
         {activeTab === 'actions' && (
           <div className="space-y-6">
-            <div className="bg-card rounded-xl border border-white/10 overflow-hidden">
-              <div className="p-4 border-b border-white/10">
-                <h2 className="text-xl font-bold text-white">Recent Moderator Actions</h2>
-                <p className="text-muted">{moderatorActions.length} actions taken</p>
+            <div className="bg-card rounded-xl border border-border overflow-hidden">
+              <div className="p-4 border-b border-border">
+                <h2 className="text-xl font-bold text-foreground">Recent Moderator Actions</h2>
+                <p className="text-muted-foreground">{moderatorActions.length} actions taken</p>
               </div>
               
               <div className="divide-y divide-white/10">
@@ -358,17 +358,17 @@ const ContentModerationDashboard: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="font-bold text-white">{action.moderatorName}</span>
-                          <span className="text-muted">took action</span>
+                          <span className="font-bold text-foreground">{action.moderatorName}</span>
+                          <span className="text-muted-foreground">took action</span>
                           <span className="px-2 py-1 bg-highlight/20 text-highlight rounded text-xs font-bold">
                             {action.action.toUpperCase()}
                           </span>
                         </div>
-                        <p className="text-muted text-sm">
+                        <p className="text-muted-foreground text-sm">
                           {action.targetType} {action.targetId} - {action.reason}
                         </p>
                       </div>
-                      <span className="text-muted text-sm">
+                      <span className="text-muted-foreground text-sm">
                         {action.timestamp.toLocaleString()}
                       </span>
                     </div>
@@ -382,13 +382,13 @@ const ContentModerationDashboard: React.FC = () => {
         {/* Settings Tab */}
         {activeTab === 'settings' && (
           <div className="space-y-6">
-            <div className="bg-card rounded-xl p-6 border border-white/10">
-              <h2 className="text-xl font-bold text-white mb-4">Moderation Settings</h2>
+            <div className="bg-card rounded-xl p-6 border border-border">
+              <h2 className="text-xl font-bold text-foreground mb-4">Moderation Settings</h2>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-medium text-white">Auto-flag suspicious content</h3>
-                    <p className="text-muted text-sm">Automatically flag content matching known violation patterns</p>
+                    <h3 className="font-medium text-foreground">Auto-flag suspicious content</h3>
+                    <p className="text-muted-foreground text-sm">Automatically flag content matching known violation patterns</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" className="sr-only peer" defaultChecked aria-label="Auto-flag suspicious content" />
@@ -398,8 +398,8 @@ const ContentModerationDashboard: React.FC = () => {
                 
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-medium text-white">Notify reporters on resolution</h3>
-                    <p className="text-muted text-sm">Send notifications when reports are resolved</p>
+                    <h3 className="font-medium text-foreground">Notify reporters on resolution</h3>
+                    <p className="text-muted-foreground text-sm">Send notifications when reports are resolved</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" className="sr-only peer" defaultChecked aria-label="Notify reporters on resolution" />
@@ -409,8 +409,8 @@ const ContentModerationDashboard: React.FC = () => {
                 
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-medium text-white">Escalate high-severity reports</h3>
-                    <p className="text-muted text-sm">Automatically escalate high-severity reports to senior moderators</p>
+                    <h3 className="font-medium text-foreground">Escalate high-severity reports</h3>
+                    <p className="text-muted-foreground text-sm">Automatically escalate high-severity reports to senior moderators</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" className="sr-only peer" aria-label="Escalate high-severity reports" />
@@ -426,10 +426,10 @@ const ContentModerationDashboard: React.FC = () => {
       {/* Report Detail Modal */}
       {selectedReport && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-card rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-white/10">
+          <div className="bg-card rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-border">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold text-white">Review Report</h2>
+                <h2 className="text-2xl font-bold text-foreground">Review Report</h2>
                 <button
                   onClick={() => setSelectedReport(null)}
                   className="p-2 hover:bg-card/10 rounded-lg transition-colors"
@@ -442,24 +442,24 @@ const ContentModerationDashboard: React.FC = () => {
               
               <div className="space-y-4">
                 <div>
-                  <h3 className="font-bold text-white mb-2">Report Details</h3>
+                  <h3 className="font-bold text-foreground mb-2">Report Details</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div>
-                      <span className="text-muted">Reporter:</span>
-                      <span className="text-white ml-2">{selectedReport.reporterName}</span>
+                      <span className="text-muted-foreground">Reporter:</span>
+                      <span className="text-foreground ml-2">{selectedReport.reporterName}</span>
                     </div>
                     <div>
-                      <span className="text-muted">Type:</span>
-                      <span className="text-white ml-2 capitalize">{selectedReport.targetType}</span>
+                      <span className="text-muted-foreground">Type:</span>
+                      <span className="text-foreground ml-2 capitalize">{selectedReport.targetType}</span>
                     </div>
                     <div>
-                      <span className="text-muted">Severity:</span>
+                      <span className="text-muted-foreground">Severity:</span>
                       <span className={`ml-2 px-2 py-1 rounded text-xs font-bold ${getSeverityColor(selectedReport.severity)}`}>
                         {selectedReport.severity.toUpperCase()}
                       </span>
                     </div>
                     <div>
-                      <span className="text-muted">Status:</span>
+                      <span className="text-muted-foreground">Status:</span>
                       <span className={`ml-2 px-2 py-1 rounded text-xs font-bold ${getStatusColor(selectedReport.status)}`}>
                         {selectedReport.status.charAt(0).toUpperCase() + selectedReport.status.slice(1)}
                       </span>
@@ -468,15 +468,15 @@ const ContentModerationDashboard: React.FC = () => {
                 </div>
                 
                 <div>
-                  <h3 className="font-bold text-white mb-2">Content Preview</h3>
+                  <h3 className="font-bold text-foreground mb-2">Content Preview</h3>
                   <div className="bg-background p-4 rounded-lg">
-                    <p className="text-white">{selectedReport.contentPreview}</p>
+                    <p className="text-foreground">{selectedReport.contentPreview}</p>
                   </div>
                 </div>
                 
                 <div>
-                  <h3 className="font-bold text-white mb-2">Violation Reason</h3>
-                  <p className="text-white">{selectedReport.reason}</p>
+                  <h3 className="font-bold text-foreground mb-2">Violation Reason</h3>
+                  <p className="text-foreground">{selectedReport.reason}</p>
                 </div>
                 
                 <div className="flex gap-3 pt-4">
@@ -494,8 +494,8 @@ const ContentModerationDashboard: React.FC = () => {
                   </button>
                 </div>
                 
-                <div className="border-t border-white/10 pt-4">
-                  <h3 className="font-bold text-white mb-3">Take Action</h3>
+                <div className="border-t border-border pt-4">
+                  <h3 className="font-bold text-foreground mb-3">Take Action</h3>
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleTakeAction(selectedReport.targetId, 'remove')}

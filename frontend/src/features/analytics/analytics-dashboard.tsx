@@ -55,7 +55,7 @@ const AnalyticsDashboard: React.FC = () => {
 
   if (!analytics) {
     return (
-      <div className="text-center py-12 text-muted">
+      <div className="text-center py-12 text-muted-foreground">
         <BarChart3 size={64} className="mx-auto mb-4 opacity-50" />
         <p className="text-xl">Analytics not available</p>
       </div>
@@ -67,32 +67,32 @@ const AnalyticsDashboard: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-bold brand-font text-white mb-2">Analytics Dashboard</h1>
-          <p className="text-muted">Track your performance and growth</p>
+          <p className="text-muted-foreground">Track your performance and growth</p>
         </div>
       </div>
 
       {/* Babalawo Analytics */}
       {user?.role === 'BABALAWO' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-card/5 border border-white/10 rounded-xl p-6">
+          <div className="bg-muted/50 border border-border rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <Calendar size={24} className="text-blue-400" />
               <TrendingUp size={20} className="dark:text-green-400 text-green-600" />
             </div>
             <div className="text-3xl font-bold text-white mb-1">{analytics.bookings.total}</div>
-            <div className="text-sm text-muted">Total Bookings</div>
+            <div className="text-sm text-muted-foreground">Total Bookings</div>
           </div>
 
-          <div className="bg-card/5 border border-white/10 rounded-xl p-6">
+          <div className="bg-muted/50 border border-border rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <Users size={24} className="text-purple-400" />
               <TrendingUp size={20} className="dark:text-green-400 text-green-600" />
             </div>
             <div className="text-3xl font-bold text-white mb-1">{analytics.clients.total}</div>
-            <div className="text-sm text-muted">Total Clients</div>
+            <div className="text-sm text-muted-foreground">Total Clients</div>
           </div>
 
-          <div className="bg-card/5 border border-white/10 rounded-xl p-6">
+          <div className="bg-muted/50 border border-border rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <DollarSign size={24} className="text-highlight" />
               <TrendingUp size={20} className="dark:text-green-400 text-green-600" />
@@ -100,15 +100,15 @@ const AnalyticsDashboard: React.FC = () => {
             <div className="text-3xl font-bold text-white mb-1">
               ₦{(analytics.bookings.revenue / 1000).toFixed(0)}k
             </div>
-            <div className="text-sm text-muted">Total Revenue</div>
+            <div className="text-sm text-muted-foreground">Total Revenue</div>
           </div>
 
-          <div className="bg-card/5 border border-white/10 rounded-xl p-6">
+          <div className="bg-muted/50 border border-border rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <TrendingUp size={24} className="dark:text-green-400 text-green-600" />
             </div>
             <div className="text-3xl font-bold text-white mb-1">{analytics.clients.retention}%</div>
-            <div className="text-sm text-muted">Client Retention</div>
+            <div className="text-sm text-muted-foreground">Client Retention</div>
           </div>
         </div>
       )}
@@ -116,25 +116,25 @@ const AnalyticsDashboard: React.FC = () => {
       {/* Vendor Analytics */}
       {user?.role === 'VENDOR' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-card/5 border border-white/10 rounded-xl p-6">
+          <div className="bg-muted/50 border border-border rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <Package size={24} className="text-blue-400" />
               <TrendingUp size={20} className="dark:text-green-400 text-green-600" />
             </div>
             <div className="text-3xl font-bold text-white mb-1">{analytics.products.total}</div>
-            <div className="text-sm text-muted">Total Products</div>
+            <div className="text-sm text-muted-foreground">Total Products</div>
           </div>
 
-          <div className="bg-card/5 border border-white/10 rounded-xl p-6">
+          <div className="bg-muted/50 border border-border rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <Package size={24} className="text-purple-400" />
               <TrendingUp size={20} className="dark:text-green-400 text-green-600" />
             </div>
             <div className="text-3xl font-bold text-white mb-1">{analytics.products.sold}</div>
-            <div className="text-sm text-muted">Units Sold</div>
+            <div className="text-sm text-muted-foreground">Units Sold</div>
           </div>
 
-          <div className="bg-card/5 border border-white/10 rounded-xl p-6">
+          <div className="bg-muted/50 border border-border rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <DollarSign size={24} className="text-highlight" />
               <TrendingUp size={20} className="dark:text-green-400 text-green-600" />
@@ -142,10 +142,10 @@ const AnalyticsDashboard: React.FC = () => {
             <div className="text-3xl font-bold text-white mb-1">
               ₦{(analytics.products.revenue / 1000).toFixed(0)}k
             </div>
-            <div className="text-sm text-muted">Product Revenue</div>
+            <div className="text-sm text-muted-foreground">Product Revenue</div>
           </div>
 
-          <div className="bg-card/5 border border-white/10 rounded-xl p-6">
+          <div className="bg-muted/50 border border-border rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <TrendingUp size={24} className="dark:text-green-400 text-green-600" />
             </div>
@@ -154,15 +154,15 @@ const AnalyticsDashboard: React.FC = () => {
                 ? ((analytics.products.sold / analytics.products.total) * 100).toFixed(0)
                 : 0}%
             </div>
-            <div className="text-sm text-muted">Sales Rate</div>
+            <div className="text-sm text-muted-foreground">Sales Rate</div>
           </div>
         </div>
       )}
 
       {/* Charts Placeholder */}
-      <div className="bg-card/5 border border-white/10 rounded-xl p-6">
+      <div className="bg-muted/50 border border-border rounded-xl p-6">
         <h2 className="text-xl font-bold text-white mb-4">Performance Trends</h2>
-        <div className="h-64 flex items-center justify-center text-muted">
+        <div className="h-64 flex items-center justify-center text-muted-foreground">
           <div className="text-center">
             <BarChart3 size={48} className="mx-auto mb-4 opacity-50" />
             <p>Charts and visualizations coming soon</p>
@@ -172,7 +172,7 @@ const AnalyticsDashboard: React.FC = () => {
 
       {/* Export Button */}
       <div className="flex justify-end">
-        <button className="px-6 py-3 border border-white/20 text-white rounded-xl font-bold hover:bg-card/10 transition-colors">
+        <button className="px-6 py-3 border border-border text-foreground rounded-xl font-bold hover:bg-muted transition-colors">
           Export Data
         </button>
       </div>

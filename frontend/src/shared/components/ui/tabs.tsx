@@ -41,7 +41,7 @@ interface TabsListProps {
 export const TabsList: React.FC<TabsListProps> = ({ className = '', children }) => {
   return (
     <div
-      className={`inline-flex items-center justify-center rounded-lg bg-card/5 p-1 ${className}`}
+      className={`inline-flex items-center justify-center rounded-lg bg-muted/50 p-1 ${className}`}
       role="tablist"
     >
       {children}
@@ -66,7 +66,7 @@ export const TabsTrigger: React.FC<TabsTriggerProps> = ({ value, className = '',
       className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-highlight disabled:pointer-events-none disabled:opacity-50 ${
         isSelected
           ? 'bg-highlight text-foreground shadow-sm'
-          : 'text-white/60 hover:text-white/80 hover:bg-card/10'
+          : 'text-muted-foreground hover:text-foreground hover:bg-muted'
       } ${className}`}
       onClick={() => onValueChange(value)}
     >

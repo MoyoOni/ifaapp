@@ -30,7 +30,7 @@ const LowDataModeToggle: React.FC = () => {
       className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
         lowDataMode
           ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
-          : 'bg-card/5 text-muted border border-white/10 hover:border-white/20'
+          : 'bg-muted/50 text-muted-foreground border border-border hover:border-primary'
       }`}
       title={lowDataMode ? 'Disable Low Data Mode' : 'Enable Low Data Mode'}
     >

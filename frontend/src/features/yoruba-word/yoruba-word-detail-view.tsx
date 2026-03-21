@@ -43,7 +43,7 @@ const YorubaWordDetailView: React.FC<YorubaWordDetailViewProps> = ({ wordId, onB
 
   if (!word) {
     return (
-      <div className="text-center py-12 text-muted">
+      <div className="text-center py-12 text-muted-foreground">
         <p className="text-xl mb-2">Word not found</p>
         {onBack && (
           <button
@@ -73,7 +73,7 @@ const YorubaWordDetailView: React.FC<YorubaWordDetailViewProps> = ({ wordId, onB
       {onBack && (
         <button
           onClick={onBack}
-          className="flex items-center gap-2 text-muted hover:text-white transition-colors"
+          className="flex items-center gap-2 text-muted-foreground hover:text-white transition-colors"
         >
           <ArrowLeft size={20} />
           Back
@@ -81,14 +81,14 @@ const YorubaWordDetailView: React.FC<YorubaWordDetailViewProps> = ({ wordId, onB
       )}
 
       {/* Word Display */}
-      <div className="bg-card/5 border border-white/10 rounded-xl p-8 md:p-12 space-y-6">
+      <div className="bg-muted/50 border border-border rounded-xl p-8 md:p-12 space-y-6">
         <div className="flex items-center gap-2 mb-4">
           <div className="inline-flex items-center gap-2 bg-highlight/20 text-highlight px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest">
             <Sparkles size={14} />
             {word.category}
           </div>
           {word.date && (
-            <div className="flex items-center gap-2 text-muted text-sm">
+            <div className="flex items-center gap-2 text-muted-foreground text-sm">
               <Calendar size={16} />
               {formatDate(word.date)}
             </div>
@@ -99,7 +99,7 @@ const YorubaWordDetailView: React.FC<YorubaWordDetailViewProps> = ({ wordId, onB
           <h1 className="text-6xl md:text-8xl font-bold text-highlight mb-4">
             {word.word}
           </h1>
-          <p className="text-2xl text-muted italic mb-6">
+          <p className="text-2xl text-muted-foreground italic mb-6">
             {word.pronunciation}
           </p>
         </div>
@@ -111,7 +111,7 @@ const YorubaWordDetailView: React.FC<YorubaWordDetailViewProps> = ({ wordId, onB
         </div>
 
         {/* Example */}
-        <div className="bg-card/5 rounded-xl p-6 border border-white/10">
+        <div className="bg-muted/50 rounded-xl p-6 border border-border">
           <div className="flex items-center gap-2 mb-3">
             <BookOpen size={20} className="text-highlight" />
             <h3 className="text-lg font-bold text-white">Example Usage</h3>
@@ -129,7 +129,7 @@ const YorubaWordDetailView: React.FC<YorubaWordDetailViewProps> = ({ wordId, onB
 
         {/* Stats */}
         {word.viewCount > 0 && (
-          <div className="pt-6 border-t border-white/10 text-sm text-muted">
+          <div className="pt-6 border-t border-border text-sm text-muted-foreground">
             Viewed {word.viewCount} {word.viewCount === 1 ? 'time' : 'times'}
           </div>
         )}

@@ -56,7 +56,7 @@ const MessagesPage: React.FC = () => {
             {otherUserId && (
               <button
                 onClick={() => navigate('/messages')}
-                className="mt-3 p-2 hover:bg-card/50 rounded-xl transition-colors text-blue-400 hover:text-blue-800 dark:text-blue-400 inline-flex items-center gap-2 text-sm"
+                className="mt-3 p-2 hover:bg-muted/500 rounded-xl transition-colors text-blue-400 hover:text-blue-800 dark:text-blue-400 inline-flex items-center gap-2 text-sm"
                 aria-label="Back to messages"
               >
                 <ArrowLeft size={16} />

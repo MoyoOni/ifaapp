@@ -159,8 +159,8 @@ Why this circle is needed: [Explain why this circle would benefit the community]
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-background border border-white/10 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar">
-        <div className="sticky top-0 bg-background border-b border-white/10 p-6 flex items-center justify-between">
+      <div className="bg-background border border-border rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <div className="sticky top-0 bg-background border-b border-border p-6 flex items-center justify-between">
           <h2 className="text-2xl font-bold brand-font text-white">Create New Thread</h2>
           {onCancel && (
             <button
@@ -170,7 +170,7 @@ Why this circle is needed: [Explain why this circle would benefit the community]
               aria-label="Cancel and close thread creation"
               title="Close"
             >
-              <X size={24} className="text-muted" />
+              <X size={24} className="text-muted-foreground" />
             </button>
           )}
         </div>
@@ -178,7 +178,7 @@ Why this circle is needed: [Explain why this circle would benefit the community]
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Category Selection */}
           <div className="space-y-2">
-            <label className="text-sm font-bold text-muted uppercase tracking-widest">
+            <label className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
               Category
             </label>
             <select
@@ -186,7 +186,7 @@ Why this circle is needed: [Explain why this circle would benefit the community]
               onChange={(e) => setSelectedCategoryId(e.target.value)}
               required
               aria-label="Select forum category for new thread"
-              className="w-full bg-card/5 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:ring-2 focus:ring-highlight"
+              className="w-full bg-muted/50 border border-border rounded-xl p-4 text-white focus:outline-none focus:ring-2 focus:ring-highlight"
             >
               <option value="">Select a category</option>
               {categories
@@ -200,13 +200,13 @@ Why this circle is needed: [Explain why this circle would benefit the community]
                 ))}
             </select>
             {selectedCategory?.description && (
-              <p className="text-xs text-muted mt-1">{selectedCategory.description}</p>
+              <p className="text-xs text-muted-foreground mt-1">{selectedCategory.description}</p>
             )}
           </div>
 
           {/* Title */}
           <div className="space-y-2">
-            <label className="text-sm font-bold text-muted uppercase tracking-widest">
+            <label className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
               Thread Title
             </label>
             <input
@@ -216,13 +216,13 @@ Why this circle is needed: [Explain why this circle would benefit the community]
               placeholder="Enter thread title..."
               required
               maxLength={200}
-              className="w-full bg-card/5 border border-white/10 rounded-xl p-4 text-white placeholder-muted focus:outline-none focus:ring-2 focus:ring-highlight"
+              className="w-full bg-muted/50 border border-border rounded-xl p-4 text-white placeholder-muted focus:outline-none focus:ring-2 focus:ring-highlight"
             />
           </div>
 
           {/* Content */}
           <div className="space-y-2">
-            <label className="text-sm font-bold text-muted uppercase tracking-widest">
+            <label className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
               Initial Post
             </label>
             <textarea
@@ -231,7 +231,7 @@ Why this circle is needed: [Explain why this circle would benefit the community]
               placeholder="Share your thoughts... (Yoruba diacritics supported: Àṣẹ, Babaláwo)"
               required
               rows={8}
-              className="w-full bg-card/5 border border-white/10 rounded-xl p-4 text-white placeholder-muted focus:outline-none focus:ring-2 focus:ring-highlight resize-none custom-scrollbar"
+              className="w-full bg-muted/50 border border-border rounded-xl p-4 text-white placeholder-muted focus:outline-none focus:ring-2 focus:ring-highlight resize-none custom-scrollbar"
             />
           </div>
 
@@ -246,12 +246,12 @@ Why this circle is needed: [Explain why this circle would benefit the community]
           )}
 
           {/* Submit Buttons */}
-          <div className="flex items-center justify-end gap-4 pt-4 border-t border-white/10">
+          <div className="flex items-center justify-end gap-4 pt-4 border-t border-border">
             {onCancel && (
               <button
                 type="button"
                 onClick={onCancel}
-                className="px-6 py-3 border border-white/20 text-white rounded-xl font-bold hover:bg-card/10 transition-colors"
+                className="px-6 py-3 border border-border text-foreground rounded-xl font-bold hover:bg-muted transition-colors"
               >
                 Cancel
               </button>

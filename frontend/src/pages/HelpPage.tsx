@@ -234,7 +234,7 @@ const HelpPage: React.FC = () => {
               <Mail size={18} />
               Email Support
             </button>
-            <button className="flex items-center gap-2 px-6 py-3 bg-card/10 backdrop-blur-sm font-bold rounded-xl border border-white/20 hover:bg-card/20 transition-colors">
+            <button className="flex items-center gap-2 px-6 py-3 bg-muted font-bold rounded-xl border border-border hover:bg-muted/80 transition-colors">
               <Phone size={18} />
               Call Us
             </button>

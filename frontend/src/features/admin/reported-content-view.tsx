@@ -127,7 +127,7 @@ const ReportedContentView: React.FC = () => {
             </div>
           ) : (
             <div className="text-center py-12">
-              <Flag className="w-12 h-12 text-muted mx-auto mb-4" />
+              <Flag className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-[1.25rem] font-[700] text-foreground mb-2">No reports</h3>
               <p className="text-[0.875rem] text-muted-foreground">There are no reported content to review</p>
             </div>

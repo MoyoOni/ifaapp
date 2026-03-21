@@ -17,10 +17,10 @@ export const Button: React.FC<ButtonProps> = ({
 
     const variantStyles = {
         default: 'bg-highlight text-foreground hover:bg-highlight/90',
-        secondary: 'bg-card/10 text-white hover:bg-card/20',
+        secondary: 'bg-muted text-muted-foreground hover:bg-muted/80',
         destructive: 'bg-red-500 text-white hover:bg-red-500/90',
-        outline: 'border border-white/20 bg-transparent hover:bg-card/10',
-        ghost: 'hover:bg-card/10',
+        outline: 'border border-border bg-transparent hover:bg-muted text-foreground',
+        ghost: 'hover:bg-muted text-foreground',
     };
 
     const sizeStyles = {

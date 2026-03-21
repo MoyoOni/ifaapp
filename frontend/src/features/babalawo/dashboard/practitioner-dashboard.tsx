@@ -161,7 +161,7 @@ const PractitionerDashboard: React.FC<PractitionerDashboardProps> = ({ userId, i
                           </div>
                         ) : (
                           <div className="text-center py-8">
-                            <Calendar className="w-12 h-12 text-muted mx-auto mb-3" />
+                            <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
                             <p className="text-[0.875rem] text-muted-foreground">No recent appointments</p>
                           </div>
                         )}

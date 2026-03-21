@@ -28,7 +28,7 @@ export const DevRoleSwitcher = () => {
                         <h3 className="font-bold text-foreground text-sm uppercase tracking-wide">Dev Mode</h3>
                         <button
                             onClick={() => setIsOpen(false)}
-                            className="text-muted hover:text-highlight text-xs"
+                            className="text-muted-foreground hover:text-highlight text-xs"
                         >
                             <X size={16} />
                         </button>

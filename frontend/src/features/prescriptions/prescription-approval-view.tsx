@@ -181,7 +181,7 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
   if (!guidancePlan) {
     return (
       <div className="text-center p-8">
-        <p className="text-muted">Guidance plan not found</p>
+        <p className="text-muted-foreground">Guidance plan not found</p>
         {onRejected && (
           <button
             type="button"
@@ -223,12 +223,12 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
   };
 
   return (
-    <div className="bg-background border border-white/10 rounded-xl p-6 space-y-6">
+    <div className="bg-background border border-border rounded-xl p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-highlight">Guidance Plan Review</h2>
-          <p className="text-sm text-muted mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             From {guidancePlan.babalawo.yorubaName || guidancePlan.babalawo.name}
           </p>
         </div>
@@ -241,7 +241,7 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
           <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
           <div className="space-y-1">
             <p className="font-medium text-yellow-400">Sacred Guidance Plan</p>
-            <p className="text-sm text-muted">
+            <p className="text-sm text-muted-foreground">
               Akose/Ebo are sacred guidance plans—not products. They are spiritual remedies
               prescribed after divination and should be treated with respect and reverence.
             </p>
@@ -250,8 +250,8 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
       </div>
 
       {/* Appointment Info */}
-      <div className="bg-card/5 rounded-lg p-4">
-        <p className="text-sm text-muted mb-1">From Divination Session</p>
+      <div className="bg-muted/50 rounded-lg p-4">
+        <p className="text-sm text-muted-foreground mb-1">From Divination Session</p>
         <p className="font-medium">
           {new Date(guidancePlan.appointment.date).toLocaleDateString()} at{' '}
           {guidancePlan.appointment.time}
@@ -264,7 +264,7 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
           <h3 className="text-lg font-semibold">Guidance Plan Items</h3>
           {canTrackCompletion && (
             <div className="flex items-center gap-2 text-sm">
-              <span className="text-muted">{completedItems}/{totalItems} completed</span>
+              <span className="text-muted-foreground">{completedItems}/{totalItems} completed</span>
               <span className="text-highlight font-medium">{progressPercent}%</span>
             </div>
           )}
@@ -284,8 +284,8 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
           {guidancePlan.items.map((item, index) => (
             <div
               key={index}
-              className={`bg-card/5 rounded-lg p-4 border transition-colors ${
-                item.completed ? 'border-green-500/30 bg-green-500/5' : 'border-white/10'
+              className={`bg-muted/50 rounded-lg p-4 border transition-colors ${
+                item.completed ? 'border-green-500/30 bg-green-500/5' : 'border-border'
               }`}
             >
               <div className="flex items-start gap-3">
@@ -295,7 +295,7 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
                     type="button"
                     onClick={() => handleToggleItemCompletion(index, !!item.completed)}
                     disabled={itemCompletionMutation.isPending}
-                    className="mt-1 flex-shrink-0 text-muted hover:text-highlight transition-colors disabled:opacity-50"
+                    className="mt-1 flex-shrink-0 text-muted-foreground hover:text-highlight transition-colors disabled:opacity-50"
                   >
                     {item.completed ? (
                       <CheckSquare className="w-5 h-5 dark:text-green-400 text-green-600" />
@@ -308,11 +308,11 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className={`font-medium ${item.completed ? 'line-through text-muted' : ''}`}>
+                      <p className={`font-medium ${item.completed ? 'line-through text-muted-foreground' : ''}`}>
                         {item.name}
                       </p>
                       {item.description && (
-                        <p className="text-sm text-muted mt-1">{item.description}</p>
+                        <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
                       )}
                       {item.completed && item.completedAt && (
                         <p className="text-xs dark:text-green-400 text-green-600 mt-1">
@@ -324,7 +324,7 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
                       <p className="font-medium">
                         {formatCurrency(item.cost * item.quantity, guidancePlan.currency)}
                       </p>
-                      <p className="text-xs text-muted">
+                      <p className="text-xs text-muted-foreground">
                         {item.quantity} × {formatCurrency(item.cost, guidancePlan.currency)}
                       </p>
                     </div>
@@ -337,17 +337,17 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
 
         {/* Cost Breakdown */}
         <div className="mt-4 space-y-2">
-          <div className="p-4 bg-card/5 border border-white/10 rounded-lg">
+          <div className="p-4 bg-muted/50 border border-border rounded-lg">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-muted">Items Subtotal:</span>
+              <span className="text-sm text-muted-foreground">Items Subtotal:</span>
               <span className="font-medium">
                 {formatCurrency(guidancePlan.totalCost, guidancePlan.currency)}
               </span>
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-sm text-muted">Platform Service Fee:</span>
-                <p className="text-xs text-muted mt-0.5">
+                <span className="text-sm text-muted-foreground">Platform Service Fee:</span>
+                <p className="text-xs text-muted-foreground mt-0.5">
                   (Fixed fee - not a commission on sacred items)
                 </p>
               </div>
@@ -372,7 +372,7 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
       {guidancePlan.instructions && (
         <div>
           <h3 className="text-lg font-semibold mb-2">Instructions</h3>
-          <div className="bg-card/5 rounded-lg p-4 border border-white/10">
+          <div className="bg-muted/50 rounded-lg p-4 border border-border">
             <p className="text-sm whitespace-pre-wrap">{guidancePlan.instructions}</p>
           </div>
         </div>
@@ -402,7 +402,7 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
               rows={3}
-              className="w-full px-4 py-2 bg-card/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-highlight"
+              className="w-full px-4 py-2 bg-muted/50 border border-border rounded-lg text-white focus:outline-none focus:border-highlight"
               placeholder="Optional: Provide a reason for rejection..."
             />
           </div>

@@ -103,7 +103,7 @@ const VendorDashboardView: React.FC<VendorDashboardViewProps> = ({ initialTab = 
           
           <div className="bg-card border border-border rounded-xl p-6">
             <div className="max-w-2xl mx-auto text-center">
-              <MessageCircle className="w-16 h-16 text-muted mx-auto mb-4" />
+              <MessageCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-xl font-bold text-foreground mb-2">Need Help?</h3>
               <p className="text-muted-foreground mb-6">
                 Contact our support team for assistance with your vendor account

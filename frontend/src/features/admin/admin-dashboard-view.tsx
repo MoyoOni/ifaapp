@@ -266,7 +266,7 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ initialTab }) =
         )}
 
         {/* Tabs */}
-        <div className="flex gap-2 border-b border-white/10 overflow-x-auto">
+        <div className="flex gap-2 border-b border-border overflow-x-auto">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (

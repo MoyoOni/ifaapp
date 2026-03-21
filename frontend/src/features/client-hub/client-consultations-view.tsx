@@ -88,7 +88,7 @@ const ClientConsultationsView: React.FC = () => {
           </div>
         ) : (
           <div className="text-center py-12">
-            <Calendar className="w-16 h-16 text-muted mx-auto mb-4" />
+            <Calendar className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-[1.25rem] font-[700] text-foreground mb-2">No consultations scheduled</h3>
             <p className="text-[0.875rem] text-muted-foreground mb-6">Your upcoming sessions will appear here</p>
             <Button onClick={() => window.location.href = '/babalawo'}>

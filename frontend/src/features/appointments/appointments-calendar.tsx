@@ -285,7 +285,7 @@ const AppointmentsCalendar: React.FC<AppointmentsCalendarProps> = ({ userId, use
               </div>
             ) : (
               <div className="text-center py-8">
-                <Calendar className="w-12 h-12 text-muted mx-auto mb-4" />
+                <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-[0.875rem] text-muted-foreground">No upcoming appointments</p>
               </div>
             )}

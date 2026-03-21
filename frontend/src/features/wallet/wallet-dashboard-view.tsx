@@ -360,7 +360,7 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
 
                       {/* Multi-tier Release Status */}
                       {escrow.releaseTiers && (
-                        <div className="bg-card/50 border border-black/5 rounded-xl p-4 space-y-3">
+                        <div className="bg-muted/500 border border-black/5 rounded-xl p-4 space-y-3">
 
                           {/* Visual Progress Bar */}
                           <div className="space-y-1.5">

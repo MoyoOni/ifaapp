@@ -89,7 +89,7 @@ const CulturalOnboardingPath: React.FC<CulturalOnboardingPathProps> = ({ onConti
         </button>
       </div>
 
-      <p className="text-muted">
+      <p className="text-muted-foreground">
         We're here to support you as you reconnect with your heritage. Explore these resources to get started.
       </p>
 
@@ -100,7 +100,7 @@ const CulturalOnboardingPath: React.FC<CulturalOnboardingPathProps> = ({ onConti
           className={`px-4 py-2 font-medium text-sm transition-colors ${
             activeTab === 'glossary'
               ? 'text-highlight border-b-2 border-highlight'
-              : 'text-muted hover:text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           <BookOpen className="w-4 h-4 inline mr-2" />
@@ -111,7 +111,7 @@ const CulturalOnboardingPath: React.FC<CulturalOnboardingPathProps> = ({ onConti
           className={`px-4 py-2 font-medium text-sm transition-colors ${
             activeTab === 'video'
               ? 'text-highlight border-b-2 border-highlight'
-              : 'text-muted hover:text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           <Play className="w-4 h-4 inline mr-2" />
@@ -122,7 +122,7 @@ const CulturalOnboardingPath: React.FC<CulturalOnboardingPathProps> = ({ onConti
           className={`px-4 py-2 font-medium text-sm transition-colors ${
             activeTab === 'course'
               ? 'text-highlight border-b-2 border-highlight'
-              : 'text-muted hover:text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           <GraduationCap className="w-4 h-4 inline mr-2" />
@@ -133,7 +133,7 @@ const CulturalOnboardingPath: React.FC<CulturalOnboardingPathProps> = ({ onConti
           className={`px-4 py-2 font-medium text-sm transition-colors ${
             activeTab === 'guide'
               ? 'text-highlight border-b-2 border-highlight'
-              : 'text-muted hover:text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           <Info className="w-4 h-4 inline mr-2" />
@@ -155,11 +155,11 @@ const CulturalOnboardingPath: React.FC<CulturalOnboardingPathProps> = ({ onConti
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <h5 className="font-bold text-foreground text-lg">{term.term}</h5>
-                      <p className="text-sm text-muted italic">{term.pronunciation}</p>
+                      <p className="text-sm text-muted-foreground italic">{term.pronunciation}</p>
                     </div>
                   </div>
                   <p className="text-sm text-foreground mb-2">{term.definition}</p>
-                  <p className="text-xs text-muted italic">Example: {term.example}</p>
+                  <p className="text-xs text-muted-foreground italic">Example: {term.example}</p>
                 </div>
               ))}
             </div>
@@ -171,11 +171,11 @@ const CulturalOnboardingPath: React.FC<CulturalOnboardingPathProps> = ({ onConti
             <h4 className="text-lg font-bold text-foreground">What to Expect in a Divination</h4>
             <div className="bg-muted/40 rounded-xl p-8 border border-border/50 text-center">
               <Play className="w-16 h-16 text-highlight mx-auto mb-4" />
-              <p className="text-muted mb-4">
+              <p className="text-muted-foreground mb-4">
                 Video guide coming soon. This will explain the divination process, what to expect,
                 and how to prepare for your first session with a Babaláwo.
               </p>
-              <p className="text-sm text-muted">
+              <p className="text-sm text-muted-foreground">
                 In the meantime, you can explore the Academy course below for detailed information.
               </p>
             </div>
@@ -191,7 +191,7 @@ const CulturalOnboardingPath: React.FC<CulturalOnboardingPathProps> = ({ onConti
               </p>
               <div className="bg-card rounded-lg p-4 border border-border">
                 <h5 className="font-bold text-foreground mb-2">Course Topics:</h5>
-                <ul className="space-y-1 text-sm text-muted list-disc list-inside">
+                <ul className="space-y-1 text-sm text-muted-foreground list-disc list-inside">
                   <li>Understanding the basics of Ifá and Isese</li>
                   <li>The role of Babaláwo and Iyanifa</li>
                   <li>What to expect in a divination session</li>
@@ -214,14 +214,14 @@ const CulturalOnboardingPath: React.FC<CulturalOnboardingPathProps> = ({ onConti
             <div className="bg-muted/40 rounded-xl p-6 border border-border/50 space-y-4">
               <div className="space-y-3">
                 <h5 className="font-bold text-foreground">Respect and Reverence</h5>
-                <p className="text-sm text-muted">
+                <p className="text-sm text-muted-foreground">
                   Ifá and Isese are sacred traditions with deep cultural and spiritual significance.
                   Approach with respect, openness, and a willingness to learn.
                 </p>
               </div>
               <div className="space-y-3">
                 <h5 className="font-bold text-foreground">What Makes This Different</h5>
-                <p className="text-sm text-muted">
+                <p className="text-sm text-muted-foreground">
                   Unlike casual consultations, Ifá divination is a spiritual practice that connects you
                   with ancestral wisdom. The guidance you receive is not just advice—it's a sacred
                   message from the Odù.
@@ -229,14 +229,14 @@ const CulturalOnboardingPath: React.FC<CulturalOnboardingPathProps> = ({ onConti
               </div>
               <div className="space-y-3">
                 <h5 className="font-bold text-foreground">Your Role as a Seeker</h5>
-                <p className="text-sm text-muted">
+                <p className="text-sm text-muted-foreground">
                   As a client (Mọyọ̀), you are on a journey of spiritual growth. Be patient, ask
                   questions respectfully, and honor the guidance you receive.
                 </p>
               </div>
               <div className="space-y-3">
                 <h5 className="font-bold text-foreground">Building Relationships</h5>
-                <p className="text-sm text-muted">
+                <p className="text-sm text-muted-foreground">
                   The relationship with your Personal Awo is sacred and long-term. It's built on
                   trust, respect, and mutual commitment to your spiritual growth.
                 </p>
