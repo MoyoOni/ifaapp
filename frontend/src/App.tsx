@@ -161,7 +161,7 @@ const HomePage: React.FC = () => {
   // Show landing page for non-authenticated users
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 flex items-center justify-center"> {/* Updated background to match new theme */}
+      <div className="min-h-screen bg-background flex items-center justify-center"> {/* Updated background to match new theme */}
         <div className="text-center">
           <h1 className="text-4xl font-bold text-stone-900 dark:text-stone-100 mb-4">Welcome to Ìlú Àṣẹ</h1>
           <p className="text-stone-600 mb-8">Your gateway to authentic spiritual guidance</p>

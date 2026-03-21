@@ -87,7 +87,7 @@ const BabalawoLandingPage: React.FC = () => {
   if (data.type !== 'babalawo') return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50 to-stone-100">
+    <div className="min-h-screen bg-background">
       {/* Minimal top bar */}
       <div className="px-6 py-4 flex justify-between items-center max-w-2xl mx-auto">
         <a href="https://iluase.com" className="text-amber-800 dark:text-amber-400 font-bold text-sm tracking-wider uppercase opacity-70 hover:opacity-100 transition-opacity">

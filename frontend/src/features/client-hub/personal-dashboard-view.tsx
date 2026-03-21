@@ -28,7 +28,7 @@ const PersonalDashboardView: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <LoadingSpinner size="lg" variant="primary" />
       </div>
     );
@@ -36,7 +36,7 @@ const PersonalDashboardView: React.FC = () => {
 
   if (isError) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <p className="text-stone-600 mb-4">Could not load your dashboard. Please try again.</p>
           <button
@@ -69,7 +69,7 @@ const PersonalDashboardView: React.FC = () => {
   const greeting = getGreeting();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Personal Header */}
         <motion.div 
