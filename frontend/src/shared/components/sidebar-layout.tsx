@@ -14,15 +14,6 @@ import {
     Settings,
     HelpCircle,
     Search as SearchIcon,
-    LayoutDashboard,
-    Building2,
-    Users,
-    Calendar as CalendarIcon,
-    ShoppingBag,
-    Package,
-    Shield,
-    CheckCircle,
-    Wallet
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../hooks/use-auth';
@@ -208,7 +199,6 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
     };
 
     return (
-        <>
         <div className="min-h-screen bg-background flex font-sans text-foreground">
 
             {/* Desktop Sidebar (Left) - Collapsible */}
@@ -571,79 +561,5 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
             <SearchModal open={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
         </div>
 
-        {/* Mobile Bottom Tab Bar — visible only on mobile (lg:hidden) */}
-        {(() => {
-            const role = user?.role;
-            type BottomTab = { id: string; label: string; icon: React.ElementType; path: string };
-            let tabs: BottomTab[];
-
-            if (role === 'BABALAWO') {
-                tabs = [
-                    { id: 'home', label: 'Home', icon: LayoutDashboard, path: '/practitioner/dashboard' },
-                    { id: 'temples', label: 'Temples', icon: Building2, path: '/practitioner/temple-connection' },
-                    { id: 'seekers', label: 'Seekers', icon: Users, path: '/practitioner/my-seekers' },
-                    { id: 'calendar', label: 'Calendar', icon: CalendarIcon, path: '/practitioner/consultations' },
-                ];
-            } else if (role === 'VENDOR') {
-                tabs = [
-                    { id: 'home', label: 'Home', icon: LayoutDashboard, path: '/vendor/dashboard' },
-                    { id: 'market', label: 'Market', icon: ShoppingBag, path: '/marketplace' },
-                    { id: 'inventory', label: 'Inventory', icon: Package, path: '/vendor/products' },
-                    { id: 'messages', label: 'Messages', icon: MessageSquare, path: '/messages' },
-                ];
-            } else if (role === 'ADMIN' || role === 'ADVISORY_BOARD_MEMBER') {
-                tabs = [
-                    { id: 'home', label: 'Overview', icon: Shield, path: '/admin' },
-                    { id: 'verify', label: 'Verify', icon: CheckCircle, path: '/admin/verification' },
-                    { id: 'finance', label: 'Finance', icon: Wallet, path: '/admin/withdrawals' },
-                    { id: 'messages', label: 'Messages', icon: MessageSquare, path: '/messages' },
-                ];
-            } else {
-                // CLIENT (default)
-                tabs = [
-                    { id: 'home', label: 'Home', icon: LayoutDashboard, path: '/client/dashboard' },
-                    { id: 'temples', label: 'Temples', icon: Building2, path: '/client/temples' },
-                    { id: 'find-guide', label: 'Find Guide', icon: SearchIcon, path: '/babalawo' },
-                    { id: 'circles', label: 'Circles', icon: Users, path: '/circles' },
-                ];
-            }
-
-            return (
-                <nav className="fixed bottom-0 left-0 right-0 z-30 lg:hidden bg-card border-t border-border pb-safe-area-bottom">
-                    <div className="flex items-stretch">
-                        {tabs.map((tab) => {
-                            const isActive = tab.path === '/admin'
-                                ? location.pathname === '/admin'
-                                : location.pathname.startsWith(tab.path);
-                            const Icon = tab.icon;
-                            return (
-                                <button
-                                    key={tab.id}
-                                    type="button"
-                                    onClick={() => handleNavClick(tab.path)}
-                                    className={cn(
-                                        "flex-1 flex flex-col items-center justify-center gap-0.5 py-2 px-1 transition-colors min-w-0",
-                                        isActive ? "text-primary" : "text-muted-foreground"
-                                    )}
-                                >
-                                    <Icon size={22} className={isActive ? "text-primary" : "text-muted-foreground"} />
-                                    <span className="text-[10px] font-bold truncate w-full text-center leading-tight">{tab.label}</span>
-                                    {isActive && <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-primary" />}
-                                </button>
-                            );
-                        })}
-                        <button
-                            type="button"
-                            onClick={toggleMobileMenu}
-                            className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 px-1 text-muted-foreground transition-colors min-w-0"
-                        >
-                            <Menu size={22} />
-                            <span className="text-[10px] font-bold">More</span>
-                        </button>
-                    </div>
-                </nav>
-            );
-        })()}
-        </>
     );
 };

@@ -353,4 +353,3 @@ html {
 }
 
 /* Remove the old dark mode adjustments as we now define proper CSS variables */
-.pb-safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
