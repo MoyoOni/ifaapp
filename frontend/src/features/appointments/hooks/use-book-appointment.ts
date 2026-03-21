@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import api from '@/lib/api';
-import { logger } from '@/shared/utils/logger';
-import { getDemoUserById } from '@/demo';
 
 interface BookingFormData {
   babalawoId: string;
@@ -47,31 +45,9 @@ export const useBookAppointment = () => {
       const response = await api.post('/appointments', data);
       return response.data;
     } catch (err) {
-      logger.warn('Booking failed, using demo fallback:', err);
-
-      const demoBabalawo = getDemoUserById(data.babalawoId);
-      const demoClient = getDemoUserById(data.clientId);
-      const confirmationCode = `DEMO-${Date.now().toString(36).slice(-6).toUpperCase()}`;
-
-      setError(null);
-      return {
-        id: `demo-apt-${Date.now()}`,
-        confirmationCode,
-        babalawo: {
-          id: demoBabalawo?.id || data.babalawoId,
-          name: demoBabalawo?.name || 'Demo Babalawo',
-          avatar: demoBabalawo?.avatar,
-        },
-        client: {
-          id: demoClient?.id || data.clientId,
-          name: demoClient?.name || 'Demo Client',
-        },
-        date: data.date,
-        time: data.time,
-        topic: data.topic,
-        price: data.price || 0,
-        status: 'CONFIRMED',
-      };
+      const errorMessage = err instanceof Error ? err.message : 'Failed to book appointment';
+      setError(errorMessage);
+      return null;
     } finally {
       setLoading(false);
     }

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings, User, Bell, Shield, Palette, Moon, Sun, Mail, Lock, CreditCard, Trash2, LogOut } from 'lucide-react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { Settings, User, Bell, Shield, Palette, Moon, Sun, Mail, Lock, CreditCard, Trash2, LogOut, AtSign, Check, X, Loader2 } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/shared/hooks/use-auth';
+import { useToast } from '@/shared/components/toast';
 import api from '@/lib/api';
 
 type SettingsState = {
@@ -45,11 +46,19 @@ const DEFAULT_SETTINGS: SettingsState = {
   },
 };
 
+const slugRegex = /^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/;
+
 const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const queryClient = useQueryClient();
+  const toast = useToast();
   const [activeSection, setActiveSection] = useState('account');
   const [settings, setSettings] = useState<SettingsState>(DEFAULT_SETTINGS);
+  const [slugInput, setSlugInput] = useState('');
+  const [slugEditing, setSlugEditing] = useState(false);
+  const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
+  const [slugChecking, setSlugChecking] = useState(false);
 
   const { data: userProfile } = useQuery({
     queryKey: ['user-settings', user?.id],
@@ -74,6 +83,34 @@ const SettingsPage: React.FC = () => {
     mutationFn: (updated: SettingsState) =>
       api.patch(`/users/${user!.id}`, { settings: updated }),
   });
+
+  const saveSlugMutation = useMutation({
+    mutationFn: (slug: string) => api.patch(`/users/${user!.id}`, { slug }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['user-settings', user?.id] });
+      toast.success('Username saved!');
+      setSlugEditing(false);
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || 'Failed to save username');
+    },
+  });
+
+  const checkSlugAvailability = async (slug: string) => {
+    if (!slugRegex.test(slug)) { setSlugAvailable(null); return; }
+    setSlugChecking(true);
+    try {
+      await api.get(`/public/resolve/${slug}`);
+      // 200 = username taken
+      setSlugAvailable(false);
+    } catch (err: any) {
+      // 404 = username available
+      setSlugAvailable(err?.response?.status === 404);
+    } finally {
+      setSlugChecking(false);
+    }
+  };
 
   const updateSettings = (updated: SettingsState) => {
     setSettings(updated);
@@ -178,6 +215,74 @@ const SettingsPage: React.FC = () => {
                         <p className="text-stone-600">{user?.email}</p>
                         <p className="text-sm text-stone-500 capitalize">{user?.role?.toLowerCase()}</p>
                       </div>
+                    </div>
+
+                    {/* Username / Shareable Link */}
+                    <div className="p-4 bg-stone-50 rounded-xl">
+                      <div className="flex items-center gap-2 mb-3">
+                        <AtSign size={16} className="text-stone-600" />
+                        <h3 className="font-bold text-stone-800">Username (shareable link)</h3>
+                      </div>
+                      {!slugEditing ? (
+                        <div className="flex items-center justify-between">
+                          <p className="text-stone-600 text-sm">
+                            {userProfile?.slug
+                              ? <span>iluase.com/<strong>@{userProfile.slug}</strong></span>
+                              : <span className="text-stone-400 italic">No username set yet</span>}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => { setSlugInput(userProfile?.slug || ''); setSlugEditing(true); setSlugAvailable(null); }}
+                            className="text-sm text-highlight font-medium hover:underline"
+                          >
+                            {userProfile?.slug ? 'Change' : 'Set username'}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-stone-500 text-sm">iluase.com/@</span>
+                            <input
+                              type="text"
+                              value={slugInput}
+                              onChange={(e) => {
+                                const v = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+                                setSlugInput(v);
+                                setSlugAvailable(null);
+                              }}
+                              onBlur={() => slugInput && checkSlugAvailability(slugInput)}
+                              placeholder="your-username"
+                              maxLength={30}
+                              className="flex-1 px-3 py-2 border border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-highlight focus:border-highlight"
+                            />
+                            {slugChecking && <Loader2 size={16} className="animate-spin text-stone-400" />}
+                            {!slugChecking && slugAvailable === true && <Check size={16} className="text-green-500" />}
+                            {!slugChecking && slugAvailable === false && <X size={16} className="text-red-500" />}
+                          </div>
+                          <p className="text-xs text-stone-400">
+                            3–30 characters · lowercase letters, numbers, hyphens only
+                            {slugAvailable === false && <span className="text-red-500 ml-2">Username taken</span>}
+                            {slugAvailable === true && <span className="text-green-600 ml-2">Available!</span>}
+                          </p>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              disabled={!slugRegex.test(slugInput) || slugAvailable === false || saveSlugMutation.isPending}
+                              onClick={() => saveSlugMutation.mutate(slugInput)}
+                              className="px-4 py-2 bg-highlight text-white rounded-lg text-sm font-medium disabled:opacity-50"
+                            >
+                              {saveSlugMutation.isPending ? 'Saving...' : 'Save'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setSlugEditing(false)}
+                              className="px-4 py-2 bg-stone-200 text-stone-700 rounded-lg text-sm font-medium"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

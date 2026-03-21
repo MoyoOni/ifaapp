@@ -4,6 +4,7 @@ import { ArrowLeft, CheckCircle, Clock, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
 import { getCourseById } from './course-data';
+import { useToast } from '@/shared/components/toast';
 // import { useAuth } from '@/shared/hooks/use-auth';
 
 interface Lesson {
@@ -73,6 +74,7 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const queryClient = useQueryClient();
+  const toast = useToast();
 
   // Fetch enrollment with demo fallback
   const { data: enrollment, isLoading: enrollmentLoading } = useQuery<Enrollment>({
@@ -152,6 +154,10 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
       queryClient.invalidateQueries({ queryKey: ['academy-lesson-completions', enrollmentId] });
       queryClient.invalidateQueries({ queryKey: ['academy-enrollment', enrollmentId] });
       queryClient.invalidateQueries({ queryKey: ['academy-my-enrollments'] });
+      toast.success('Lesson completed!');
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to mark lesson complete — ${err.message}`);
     },
   });
 
@@ -179,14 +185,14 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
 
   if (enrollmentLoading || !enrollment || !course) {
     return (
-      <div className="min-h-screen bg-background text-white p-6 flex items-center justify-center">
+      <div className="min-h-screen bg-background p-6 flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-highlight border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background text-white p-6">
+    <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -194,14 +200,15 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
             {onBack && (
               <button
                 onClick={onBack}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                aria-label="Go back"
+                className="p-2 hover:bg-muted rounded-lg transition-colors"
               >
                 <ArrowLeft size={24} />
               </button>
             )}
             <div>
-              <h1 className="text-[1.5rem] font-[700] brand-font text-white">{course.title}</h1>
-              <p className="text-sm text-muted">
+              <h1 className="text-[1.5rem] font-[700] brand-font text-foreground">{course.title}</h1>
+              <p className="text-sm text-muted-foreground">
                 By {course.instructor.yorubaName || course.instructor.name}
               </p>
             </div>
@@ -209,14 +216,14 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
 
           {/* Progress */}
           <div className="text-right">
-            <div className="text-sm text-muted mb-1">Progress</div>
+            <div className="text-sm text-muted-foreground mb-1">Progress</div>
             <div className="text-[1.5rem] font-[700] text-highlight">{Math.round(enrollment.progress)}%</div>
-            <div className="w-32 bg-white/10 rounded-full h-2 mt-2">
-              <div
-                className="bg-highlight h-2 rounded-full transition-all"
-                style={{ width: `${enrollment.progress}%` }}
-              ></div>
-            </div>
+            <progress
+              value={enrollment.progress}
+              max={100}
+              aria-label="Course progress"
+              className="w-32 h-2 mt-2 rounded-full [&::-webkit-progress-bar]:rounded-full [&::-webkit-progress-bar]:bg-muted [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-highlight [&::-moz-progress-bar]:rounded-full [&::-moz-progress-bar]:bg-highlight"
+            />
           </div>
         </div>
 
@@ -228,7 +235,7 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
                 {/* Lesson Title */}
                 <div>
                   <h2 className="text-[1.875rem] font-[700] mb-2">{currentLesson.title}</h2>
-                  <div className="flex items-center gap-4 text-sm text-muted">
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
                     <span className="capitalize">{currentLesson.type.toLowerCase()}</span>
                     {currentLesson.duration && (
                       <>
@@ -265,7 +272,7 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
 
                 {/* Audio Player */}
                 {currentLesson.type === 'AUDIO' && currentLesson.audioUrl && (
-                  <div className="bg-white/5 border border-white/10 rounded-xl p-8">
+                  <div className="bg-card border border-border rounded-xl p-8">
                     <audio
                       ref={audioRef}
                       src={currentLesson.audioUrl}
@@ -277,17 +284,17 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
 
                 {/* Text Content */}
                 {currentLesson.content && (
-                  <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-                    <div className="prose prose-invert max-w-none">
-                      <div className="whitespace-pre-wrap text-muted">{currentLesson.content}</div>
+                  <div className="bg-card border border-border rounded-xl p-6">
+                    <div className="prose max-w-none">
+                      <div className="whitespace-pre-wrap text-foreground">{currentLesson.content}</div>
                     </div>
                   </div>
                 )}
 
                 {/* Resources */}
                 {currentLesson.resources && currentLesson.resources.length > 0 && (
-                  <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-                    <h3 className="text-[1.125rem] font-[700] mb-4">Resources</h3>
+                  <div className="bg-card border border-border rounded-xl p-6">
+                    <h3 className="text-[1.125rem] font-[700] mb-4 text-foreground">Resources</h3>
                     <div className="space-y-2">
                       {currentLesson.resources.map((resource, index) => (
                         <a
@@ -295,7 +302,7 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
                           href={resource}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="block p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
+                          className="block p-3 bg-background rounded-lg hover:bg-muted transition-colors text-foreground"
                         >
                           Resource {index + 1} →
                         </a>
@@ -326,7 +333,7 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
                 )}
 
                 {/* Navigation Buttons */}
-                <div className="flex items-center justify-between pt-4 border-t border-white/10">
+                <div className="flex items-center justify-between pt-4 border-t border-border">
                   <button
                     onClick={() => {
                       const currentIndex = course.lessons.findIndex((l) => l.id === currentLessonId);
@@ -335,7 +342,7 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
                       }
                     }}
                     disabled={course.lessons.findIndex((l) => l.id === currentLessonId) === 0}
-                    className="px-6 py-3 border border-white/20 text-white rounded-xl font-[700] hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-6 py-3 border border-border text-foreground rounded-xl font-[700] hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     ← Previous
                   </button>
@@ -351,7 +358,7 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
                       course.lessons.findIndex((l) => l.id === currentLessonId) ===
                       course.lessons.length - 1
                     }
-                    className="px-6 py-3 border border-white/20 text-white rounded-xl font-[700] hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-6 py-3 border border-border text-foreground rounded-xl font-[700] hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Next →
                   </button>
@@ -362,20 +369,20 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
 
           {/* Sidebar - Lesson List & Notes */}
           <div className="lg:col-span-1">
-            <div className="bg-white/5 border border-white/10 rounded-xl p-4 sticky top-6">
+            <div className="bg-card border border-border rounded-xl p-4 sticky top-6">
 
               {/* Sidebar Tabs */}
-              <div className="flex gap-2 mb-4 border-b border-white/10 pb-2">
+              <div className="flex gap-2 mb-4 border-b border-border pb-2">
                 <button
                   onClick={() => setSidebarTab('lessons')}
-                  className={`flex-1 pb-2 text-sm font-bold transition-colors relative ${sidebarTab === 'lessons' ? 'text-highlight' : 'text-muted hover:text-white'}`}
+                  className={`flex-1 pb-2 text-sm font-bold transition-colors relative ${sidebarTab === 'lessons' ? 'text-highlight' : 'text-muted-foreground hover:text-foreground'}`}
                 >
                   Lessons
                   {sidebarTab === 'lessons' && <div className="absolute bottom-[-9px] left-0 w-full h-0.5 bg-highlight rounded-full"></div>}
                 </button>
                 <button
                   onClick={() => setSidebarTab('notes')}
-                  className={`flex-1 pb-2 text-sm font-bold transition-colors relative ${sidebarTab === 'notes' ? 'text-highlight' : 'text-muted hover:text-white'}`}
+                  className={`flex-1 pb-2 text-sm font-bold transition-colors relative ${sidebarTab === 'notes' ? 'text-highlight' : 'text-muted-foreground hover:text-foreground'}`}
                 >
                   My Notes
                   {sidebarTab === 'notes' && <div className="absolute bottom-[-9px] left-0 w-full h-0.5 bg-highlight rounded-full"></div>}
@@ -395,7 +402,7 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
                           onClick={() => handleLessonSelect(lesson)}
                           className={`w-full text-left p-3 rounded-lg border transition-all ${isCurrent
                             ? 'border-highlight bg-highlight/10 text-highlight'
-                            : 'border-white/10 bg-white/5 hover:border-white/20'
+                            : 'border-border bg-muted/50 hover:border-border'
                             }`}
                         >
                           <div className="flex items-center gap-2 mb-1">
@@ -405,7 +412,7 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
                               <CheckCircle size={14} className="text-highlight flex-shrink-0" />
                             )}
                           </div>
-                          <div className="text-xs text-muted flex items-center gap-2">
+                          <div className="text-xs text-muted-foreground flex items-center gap-2">
                             <span className="capitalize">{lesson.type.toLowerCase()}</span>
                             {lesson.duration && (
                               <>
@@ -420,25 +427,25 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
                   </div>
 
                   {/* Completion Summary */}
-                  <div className="mt-6 pt-6 border-t border-white/10">
-                    <div className="text-sm text-muted mb-2">Course Progress</div>
+                  <div className="mt-6 pt-6 border-t border-border">
+                    <div className="text-sm text-muted-foreground mb-2">Course Progress</div>
                     <div className="text-2xl font-bold text-highlight mb-2">
                       {Math.round(enrollment.progress)}%
                     </div>
-                    <div className="w-full bg-white/10 rounded-full h-2">
-                      <div
-                        className="bg-highlight h-2 rounded-full transition-all"
-                        style={{ width: `${enrollment.progress}%` }}
-                      ></div>
-                    </div>
-                    <div className="text-xs text-muted mt-2">
+                    <progress
+                      value={enrollment.progress}
+                      max={100}
+                      aria-label="Course progress"
+                      className="w-full h-2 rounded-full [&::-webkit-progress-bar]:rounded-full [&::-webkit-progress-bar]:bg-muted [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-highlight [&::-moz-progress-bar]:rounded-full [&::-moz-progress-bar]:bg-highlight"
+                    />
+                    <div className="text-xs text-muted-foreground mt-2">
                       {completedLessons.length} of {course.lessons.length} lessons completed
                     </div>
                   </div>
 
                   {/* Certificate */}
                   {enrollment.status === 'COMPLETED' && enrollment.certificate && (
-                    <div className="mt-6 pt-6 border-t border-white/10">
+                    <div className="mt-6 pt-6 border-t border-border">
                       <a
                         href={enrollment.certificate.certificateUrl}
                         target="_blank"
@@ -459,9 +466,9 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
                       localStorage.setItem(`notes-${course.id}`, e.target.value);
                     }}
                     placeholder="Write your reflections here..."
-                    className="w-full h-full bg-white/5 border border-white/10 rounded-xl p-4 text-white placeholder:text-white/20 resize-none focus:outline-none focus:border-highlight/50"
+                    className="w-full h-full bg-background border border-border rounded-xl p-4 text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:border-highlight/50"
                   />
-                  <p className="text-xs text-muted mt-2 text-center">
+                  <p className="text-xs text-muted-foreground mt-2 text-center">
                     Notes are saved locally on your device.
                   </p>
                 </div>

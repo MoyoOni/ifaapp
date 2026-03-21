@@ -275,7 +275,7 @@ const ThreadView: React.FC<ThreadViewProps> = ({ threadId, onBack }) => {
 
   if (threadLoading || postsLoading) {
     return (
-      <div className="min-h-screen bg-background text-white p-6 flex items-center justify-center">
+      <div className="min-h-screen bg-background p-6 flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-highlight border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
@@ -283,16 +283,16 @@ const ThreadView: React.FC<ThreadViewProps> = ({ threadId, onBack }) => {
 
   if (!thread) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-stone-50 to-stone-100 p-6">
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted p-6">
         <div className="max-w-2xl mx-auto text-center py-20">
           {/* Cultural illustration */}
           <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-highlight/10 flex items-center justify-center">
             <BookOpen size={40} className="text-highlight" />
           </div>
-          <h2 className="text-2xl font-bold brand-font text-stone-800 mb-3">
+          <h2 className="text-2xl font-bold brand-font text-foreground mb-3">
             This Wisdom is Being Prepared
           </h2>
-          <p className="text-stone-500 mb-8 max-w-md mx-auto">
+          <p className="text-muted-foreground mb-8 max-w-md mx-auto">
             The thread you seek is not yet ready for viewing. Like all sacred knowledge,
             it must be gathered with care and intention.
           </p>
@@ -314,7 +314,7 @@ const ThreadView: React.FC<ThreadViewProps> = ({ threadId, onBack }) => {
   const canReply = !thread.isLocked && (!isTeachingsCategory || user?.role === UserRole.ADMIN);
 
   return (
-    <div className="min-h-screen bg-stone-50 text-stone-800 p-6">
+    <div className="min-h-screen bg-background text-foreground p-6">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
@@ -322,7 +322,9 @@ const ThreadView: React.FC<ThreadViewProps> = ({ threadId, onBack }) => {
             {onBack && (
               <button
                 onClick={onBack}
-                className="p-2 hover:bg-stone-200 rounded-lg transition-colors flex-shrink-0"
+                className="p-2 hover:bg-muted rounded-lg transition-colors flex-shrink-0"
+                aria-label="Go back"
+                title="Go back"
               >
                 <ArrowLeft size={24} />
               </button>
@@ -332,10 +334,10 @@ const ThreadView: React.FC<ThreadViewProps> = ({ threadId, onBack }) => {
                 {thread.isPinned && (
                   <Pin size={20} className="text-highlight fill-highlight" />
                 )}
-                {thread.isLocked && <Lock size={20} className="text-muted" />}
-                <h1 className="text-3xl font-bold brand-font text-stone-900">{thread.title}</h1>
+                {thread.isLocked && <Lock size={20} className="text-muted-foreground" />}
+                <h1 className="text-3xl font-bold brand-font text-foreground">{thread.title}</h1>
               </div>
-              <div className="flex items-center gap-4 text-sm text-stone-500">
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <span>By {thread.author.yorubaName || thread.author.name}</span>
                 {thread.author.verified && <span className="text-highlight">✓ Verified</span>}
                 <span>• {thread.category.name}</span>
@@ -351,27 +353,27 @@ const ThreadView: React.FC<ThreadViewProps> = ({ threadId, onBack }) => {
               <button
                 onClick={() => moderateThreadMutation.mutate(thread.isLocked ? 'unlock' : 'lock')}
                 disabled={moderateThreadMutation.isPending}
-                className="p-2 hover:bg-stone-200 rounded-lg transition-colors disabled:opacity-50"
+                className="p-2 hover:bg-muted rounded-lg transition-colors disabled:opacity-50"
                 title={thread.isLocked ? 'Unlock thread' : 'Lock thread'}
               >
-                <Lock size={18} className={thread.isLocked ? 'text-highlight' : 'text-muted'} />
+                <Lock size={18} className={thread.isLocked ? 'text-highlight' : 'text-muted-foreground'} />
               </button>
               <button
                 onClick={() => moderateThreadMutation.mutate(thread.isPinned ? 'unpin' : 'pin')}
                 disabled={moderateThreadMutation.isPending}
-                className="p-2 hover:bg-stone-200 rounded-lg transition-colors disabled:opacity-50"
+                className="p-2 hover:bg-muted rounded-lg transition-colors disabled:opacity-50"
                 title={thread.isPinned ? 'Unpin thread' : 'Pin thread'}
               >
                 <Pin
                   size={18}
-                  className={thread.isPinned ? 'text-highlight fill-highlight' : 'text-muted'}
+                  className={thread.isPinned ? 'text-highlight fill-highlight' : 'text-muted-foreground'}
                 />
               </button>
               {!thread.isApproved && (
                 <button
                   onClick={() => moderateThreadMutation.mutate('approve')}
                   disabled={moderateThreadMutation.isPending}
-                  className="p-2 hover:bg-stone-200 rounded-lg transition-colors disabled:opacity-50"
+                  className="p-2 hover:bg-muted rounded-lg transition-colors disabled:opacity-50"
                   title="Approve thread"
                 >
                   <Shield size={18} className="text-highlight" />
@@ -399,7 +401,7 @@ const ThreadView: React.FC<ThreadViewProps> = ({ threadId, onBack }) => {
         </div>
 
         {/* Thread Content (First Post) */}
-        <div className="bg-white border border-stone-100 shadow-sm rounded-xl p-6 space-y-4">
+        <div className="bg-card border border-border/60 shadow-sm rounded-xl p-6 space-y-4">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-full bg-highlight/20 flex items-center justify-center text-highlight font-bold flex-shrink-0">
               {(thread.author.yorubaName || thread.author.name)[0].toUpperCase()}
@@ -413,13 +415,13 @@ const ThreadView: React.FC<ThreadViewProps> = ({ threadId, onBack }) => {
                   </span>
                 )}
                 {thread.author.culturalLevel && (
-                  <span className="text-xs text-muted">{thread.author.culturalLevel}</span>
+                  <span className="text-xs text-muted-foreground">{thread.author.culturalLevel}</span>
                 )}
               </div>
-              <div className="text-muted text-sm">
+              <div className="text-muted-foreground text-sm">
                 {new Date(thread.createdAt).toLocaleString()}
               </div>
-              <div className="text-stone-700 whitespace-pre-wrap">{thread.content}</div>
+              <div className="text-foreground whitespace-pre-wrap">{thread.content}</div>
             </div>
           </div>
         </div>
@@ -431,7 +433,7 @@ const ThreadView: React.FC<ThreadViewProps> = ({ threadId, onBack }) => {
           {posts.map((post) => (
             <div
               key={post.id}
-              className="bg-white border border-stone-100 shadow-sm rounded-xl p-6 space-y-4"
+              className="bg-card border border-border/60 shadow-sm rounded-xl p-6 space-y-4"
             >
               <div className="flex items-start gap-4">
                 <div className="w-10 h-10 rounded-full bg-highlight/20 flex items-center justify-center text-highlight font-bold text-sm flex-shrink-0">
@@ -448,13 +450,13 @@ const ThreadView: React.FC<ThreadViewProps> = ({ threadId, onBack }) => {
                       </span>
                     )}
                     {post.isEdited && (
-                      <span className="text-xs text-muted italic">(edited)</span>
+                      <span className="text-xs text-muted-foreground italic">(edited)</span>
                     )}
                   </div>
-                  <div className="text-stone-400 text-xs">
+                  <div className="text-muted-foreground text-xs">
                     {new Date(post.createdAt).toLocaleString()}
                   </div>
-                  <div className="text-stone-700 text-sm whitespace-pre-wrap">{post.content}</div>
+                  <div className="text-foreground text-sm whitespace-pre-wrap">{post.content}</div>
 
                   {/* Àṣẹ Acknowledgment Button */}
                   <div className="flex items-center gap-3 pt-3">
@@ -475,9 +477,9 @@ const ThreadView: React.FC<ThreadViewProps> = ({ threadId, onBack }) => {
 
         {/* Reply Form */}
         {canReply && (
-          <form onSubmit={handleSubmitReply} className="bg-white border border-stone-100 shadow-sm rounded-xl p-6 space-y-4">
+          <form onSubmit={handleSubmitReply} className="bg-card border border-border/60 shadow-sm rounded-xl p-6 space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-bold text-muted uppercase tracking-widest">
+              <label className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
                 Your Reply
               </label>
               <textarea
@@ -485,7 +487,7 @@ const ThreadView: React.FC<ThreadViewProps> = ({ threadId, onBack }) => {
                 onChange={(e) => setReplyText(e.target.value)}
                 placeholder="Share your thoughts... (Yoruba diacritics supported: Àṣẹ, Babaláwo)"
                 rows={4}
-                className="w-full bg-stone-50 border border-stone-200 rounded-xl p-4 text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-highlight resize-none"
+                className="w-full bg-background border border-border rounded-xl p-4 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-highlight resize-none"
               />
             </div>
             <button

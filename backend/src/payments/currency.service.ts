@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { RedisCacheService } from '../cache/redis-cache.service';
 import { Currency } from '@ile-ase/common';
 
 /**
@@ -10,12 +11,13 @@ import { Currency } from '@ile-ase/common';
 @Injectable()
 export class CurrencyService {
   private readonly logger = new Logger(CurrencyService.name);
-  private readonly cacheTTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+  private readonly redisTTL = 24 * 60 * 60; // 24 hours in seconds
   private readonly feePercentage = 0.015; // 1.5% fee for cross-border transactions
 
   constructor(
     private configService: ConfigService,
-    private prisma: PrismaService
+    private prisma: PrismaService,
+    private redis: RedisCacheService
   ) {}
 
   /**
@@ -30,69 +32,65 @@ export class CurrencyService {
       };
     }
 
-    // TODO: Implement Redis cache for production
+    const redisKey = `exchange_rate:${from}_${to}`;
+    const dbKey = `${from}_${to}`;
 
-    // Check if we have a cache table in Prisma
-    // For MVP, we'll use a simple approach with a cache table
+    // L1: Redis (fast in-memory)
+    const redisHit = await this.redis.get<{ rate: number; cachedAt: string }>(redisKey);
+    if (redisHit) {
+      return { rate: redisHit.rate, cachedAt: new Date(redisHit.cachedAt) };
+    }
+
+    // L2: DB cache table
     try {
-      const cacheKey = `${from}_${to}`;
-      // Use a simpler approach without typed raw queries for now
       const cached = (await this.prisma.$queryRawUnsafe(
         `SELECT rate, cached_at FROM currency_cache WHERE cache_key = $1 AND cached_at > NOW() - INTERVAL '24 hours' LIMIT 1`,
-        cacheKey
+        dbKey
       )) as any[];
 
       if (cached && cached.length > 0) {
-        return {
-          rate: cached[0].rate,
-          cachedAt: cached[0].cached_at,
-        };
+        const result = { rate: cached[0].rate, cachedAt: cached[0].cached_at };
+        // Backfill Redis so the next request is faster
+        await this.redis.set(redisKey, result, this.redisTTL);
+        return result;
       }
 
-      // Fetch live rate from external provider
+      // Cache miss — fetch live rate
       const rate = await this.fetchLiveRate(from, to);
+      const cachedAt = new Date();
 
-      // Cache the rate
+      // Write to DB cache
       try {
         await this.prisma.$queryRawUnsafe(
           `INSERT INTO currency_cache (cache_key, rate, cached_at) VALUES ($1, $2, NOW())
-                     ON CONFLICT (cache_key) DO UPDATE SET rate = EXCLUDED.rate, cached_at = EXCLUDED.cached_at`,
-          cacheKey,
+           ON CONFLICT (cache_key) DO UPDATE SET rate = EXCLUDED.rate, cached_at = EXCLUDED.cached_at`,
+          dbKey,
           rate
         );
       } catch (error) {
-        // Handle case where currency_cache table doesn't exist yet
-        this.logger.warn(`Could not cache rate: ${(error as any).message}`);
+        this.logger.warn(`Could not write DB cache: ${(error as any).message}`);
       }
 
-      return {
-        rate,
-        cachedAt: new Date(),
-      };
+      // Write to Redis
+      await this.redis.set(redisKey, { rate, cachedAt }, this.redisTTL);
+
+      return { rate, cachedAt };
     } catch (error) {
       this.logger.error(`Failed to get exchange rate: ${(error as any).message}`);
 
       if (includeExpired) {
-        const cacheKey = `${from}_${to}`;
         const expiredCache = (await this.prisma.$queryRawUnsafe(
           `SELECT rate, cached_at FROM currency_cache WHERE cache_key = $1 ORDER BY cached_at DESC LIMIT 1`,
-          cacheKey
+          dbKey
         )) as any[];
 
         if (expiredCache && expiredCache.length > 0) {
-          return {
-            rate: expiredCache[0].rate,
-            cachedAt: expiredCache[0].cached_at,
-          };
+          return { rate: expiredCache[0].rate, cachedAt: expiredCache[0].cached_at };
         }
       }
 
-      // Fallback to fetching live rate
       const rate = await this.fetchLiveRate(from, to);
-      return {
-        rate,
-        cachedAt: null,
-      };
+      return { rate, cachedAt: null };
     }
   }
 

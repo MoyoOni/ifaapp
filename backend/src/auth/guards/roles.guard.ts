@@ -43,6 +43,9 @@ export class RolesGuard implements CanActivate {
       // SUPER admin always bypasses sub-role restrictions
       if (user.adminSubRole === AdminSubRole.SUPER) return true;
 
+      // Admins with no sub-role assigned (bootstrap/legacy admins) get full access
+      if (!user.adminSubRole) return true;
+
       const hasSubRole = requiredSubRoles.includes(user.adminSubRole as AdminSubRole);
       return hasSubRole;
     }

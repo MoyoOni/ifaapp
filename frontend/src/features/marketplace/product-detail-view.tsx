@@ -159,7 +159,7 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ productId, onBack
 
   if (productLoading) {
     return (
-      <div className="min-h-screen bg-background text-white p-6 flex items-center justify-center">
+      <div className="min-h-screen bg-background p-6 flex items-center justify-center">
         <LoadingSpinner size="lg" variant="highlight" />
       </div>
     );
@@ -167,9 +167,9 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ productId, onBack
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-background text-white p-6">
+      <div className="min-h-screen bg-background p-6">
         <div className="max-w-4xl mx-auto text-center py-12">
-          <p className="text-muted">Product not found.</p>
+          <p className="text-muted-foreground">Product not found.</p>
           {onBack && (
             <button
               onClick={onBack}
@@ -190,13 +190,13 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ productId, onBack
       : 0;
 
   return (
-    <div className="min-h-screen bg-background text-white p-6">
+    <div className="min-h-screen bg-background p-6">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Back Button */}
         {onBack && (
           <button
             onClick={onBack}
-            className="flex items-center gap-2 text-muted hover:text-white transition-colors"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft size={20} />
             Back to Marketplace
@@ -207,7 +207,7 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ productId, onBack
           {/* Product Images */}
           <div className="space-y-4">
             {/* Main Image */}
-            <div className="relative h-96 bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+            <div className="relative h-96 bg-muted/50 border border-border rounded-xl overflow-hidden">
               {product.images && product.images.length > 0 ? (
                 <img
                   src={product.images[selectedImageIndex]}
@@ -215,7 +215,7 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ productId, onBack
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-muted">
+                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                   <Package size={64} />
                 </div>
               )}
@@ -230,7 +230,7 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ productId, onBack
                     onClick={() => setSelectedImageIndex(index)}
                     className={`flex-shrink-0 w-20 h-20 rounded-lg border-2 overflow-hidden ${selectedImageIndex === index
                       ? 'border-highlight'
-                      : 'border-white/10 hover:border-white/20'
+                      : 'border-border hover:border-muted-foreground'
                       }`}
                   >
                     <img src={image} alt={`${product.name} ${index + 1}`} className="w-full h-full object-cover" />
@@ -244,8 +244,8 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ productId, onBack
           <div className="space-y-6">
             {/* Title and Vendor */}
             <div>
-              <h1 className="text-3xl font-bold brand-font text-white mb-2">{product.name}</h1>
-              <div className="flex items-center gap-2 text-muted mb-4">
+              <h1 className="text-3xl font-bold brand-font text-foreground mb-2">{product.name}</h1>
+              <div className="flex items-center gap-2 text-muted-foreground mb-4">
                 <Store size={16} />
                 <span>{product.vendor.businessName}</span>
                 {product.vendor.user.verified && (
@@ -275,11 +275,11 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ productId, onBack
                     <Star
                       key={i}
                       size={20}
-                      className={i < Math.round(averageRating) ? 'fill-highlight text-highlight' : 'text-muted'}
+                      className={i < Math.round(averageRating) ? 'fill-highlight text-highlight' : 'text-muted-foreground'}
                     />
                   ))}
                 </div>
-                <span className="text-muted">
+                <span className="text-muted-foreground">
                   {averageRating.toFixed(1)} ({product.reviews.length} review{product.reviews.length !== 1 ? 's' : ''})
                 </span>
               </div>
@@ -299,14 +299,16 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ productId, onBack
             {/* Quantity Selector */}
             {product.type === 'PHYSICAL' && (product.stock !== undefined && product.stock !== null) && product.stock > 0 && (
               <div className="flex items-center gap-4">
-                <label className="text-sm font-bold text-muted uppercase tracking-widest">
+                <label className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
                   Quantity
                 </label>
-                <div className="flex items-center gap-2 border border-white/10 rounded-lg">
+                <div className="flex items-center gap-2 border border-border rounded-lg">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
                     disabled={quantity <= 1}
-                    className="p-2 hover:bg-white/10 transition-colors disabled:opacity-50"
+                    className="p-2 hover:bg-muted transition-colors disabled:opacity-50"
+                    aria-label="Decrease quantity"
+                    title="Decrease quantity"
                   >
                     <Minus size={16} />
                   </button>
@@ -314,7 +316,9 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ productId, onBack
                   <button
                     onClick={() => setQuantity(Math.min(maxQuantity, quantity + 1))}
                     disabled={quantity >= maxQuantity}
-                    className="p-2 hover:bg-white/10 transition-colors disabled:opacity-50"
+                    className="p-2 hover:bg-muted transition-colors disabled:opacity-50"
+                    aria-label="Increase quantity"
+                    title="Increase quantity"
                   >
                     <Plus size={16} />
                   </button>
@@ -352,7 +356,7 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ productId, onBack
                     navigate(`/messages/${product.vendor.user.id}`);
                   }
                 }}
-                className="px-6 py-4 bg-white/10 text-white rounded-xl font-bold hover:bg-white/20 transition-colors flex items-center gap-2"
+                className="px-6 py-4 bg-muted text-foreground rounded-xl font-bold hover:bg-muted/80 transition-colors flex items-center gap-2"
               >
                 <MessageSquare className="w-5 h-5" />
                 Message Vendor
@@ -360,42 +364,42 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ productId, onBack
             </div>
 
             {/* Product Details */}
-            <div className="bg-white/5 border border-white/10 rounded-xl p-6 space-y-4">
-              <h3 className="text-lg font-bold">Description</h3>
-              <p className="text-muted whitespace-pre-wrap">
+            <div className="bg-muted/50 border border-border rounded-xl p-6 space-y-4">
+              <h3 className="text-lg font-bold text-foreground">Description</h3>
+              <p className="text-muted-foreground whitespace-pre-wrap">
                 {product.longDescription || product.description}
               </p>
 
               {product.provenance && (
                 <div>
-                  <h4 className="text-sm font-bold text-muted uppercase tracking-widest mb-2">
+                  <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-2">
                     Provenance
                   </h4>
-                  <p className="text-muted">{product.provenance}</p>
+                  <p className="text-muted-foreground">{product.provenance}</p>
                 </div>
               )}
 
               {product.usageProtocol && (
                 <div>
-                  <h4 className="text-sm font-bold text-muted uppercase tracking-widest mb-2">
+                  <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-2">
                     Usage Protocol
                   </h4>
-                  <p className="text-muted whitespace-pre-wrap">{product.usageProtocol}</p>
+                  <p className="text-muted-foreground whitespace-pre-wrap">{product.usageProtocol}</p>
                 </div>
               )}
 
               <div>
-                <h4 className="text-sm font-bold text-muted uppercase tracking-widest mb-2">
+                <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-2">
                   Product Type
                 </h4>
-                <p className="text-muted capitalize">{product.type.toLowerCase()}</p>
+                <p className="text-muted-foreground capitalize">{product.type.toLowerCase()}</p>
               </div>
 
               <div>
-                <h4 className="text-sm font-bold text-muted uppercase tracking-widest mb-2">
+                <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-2">
                   Category
                 </h4>
-                <p className="text-muted capitalize">{product.category}</p>
+                <p className="text-muted-foreground capitalize">{product.category}</p>
               </div>
             </div>
           </div>
@@ -403,11 +407,11 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ productId, onBack
 
         {/* Reviews Section */}
         {product.reviews.length > 0 && (
-          <div className="mt-12 pt-8 border-t border-white/10">
-            <h2 className="text-2xl font-bold mb-6">Reviews ({product.reviews.length})</h2>
+          <div className="mt-12 pt-8 border-t border-border">
+            <h2 className="text-2xl font-bold text-foreground mb-6">Reviews ({product.reviews.length})</h2>
             <div className="space-y-6">
               {product.reviews.map((review) => (
-                <div key={review.id} className="bg-white/5 border border-white/10 rounded-xl p-6">
+                <div key={review.id} className="bg-muted/50 border border-border rounded-xl p-6">
                   <div className="flex items-start gap-4">
                     <div className="w-10 h-10 rounded-full bg-highlight/20 flex items-center justify-center text-highlight font-bold flex-shrink-0">
                       {(review.customer.yorubaName || review.customer.name)[0].toUpperCase()}
@@ -425,16 +429,16 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ productId, onBack
                             <Star
                               key={i}
                               size={14}
-                              className={i < review.rating ? 'fill-highlight text-highlight' : 'text-muted'}
+                              className={i < review.rating ? 'fill-highlight text-highlight' : 'text-muted-foreground'}
                             />
                           ))}
                         </div>
                       </div>
-                      <div className="text-xs text-muted">
+                      <div className="text-xs text-muted-foreground">
                         {new Date(review.createdAt).toLocaleDateString()}
                       </div>
                       {review.title && <h4 className="font-bold">{review.title}</h4>}
-                      {review.content && <p className="text-muted whitespace-pre-wrap">{review.content}</p>}
+                      {review.content && <p className="text-muted-foreground whitespace-pre-wrap">{review.content}</p>}
                     </div>
                   </div>
                 </div>

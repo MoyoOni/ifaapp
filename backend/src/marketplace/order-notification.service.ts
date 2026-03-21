@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { SesEmailService } from '../shared/services/ses-email.service';
 import { OrderStatus } from '@ile-ase/common';
 
 interface OrderWithRelations {
@@ -34,48 +35,53 @@ interface OrderWithRelations {
 
 /**
  * Order Notification Service
- * Sends notifications for order status changes and tracking updates
- * NOTE: In production, this would integrate with email service (SendGrid, AWS SES, etc.)
+ * Sends email notifications for order status changes and tracking updates via AWS SES.
  */
 @Injectable()
 export class OrderNotificationService {
   private readonly logger = new Logger(OrderNotificationService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private sesEmail: SesEmailService
+  ) {}
 
   /**
    * Notify customer and vendor when order is created
    */
   async notifyOrderCreated(order: OrderWithRelations): Promise<void> {
-    this.logger.log(`Sending order creation notification for order ${order.id}`);
+    const itemList = order.items.map((i) => `${i.quantity}× ${i.product.name}`).join(', ');
 
-    // TODO: In production, send email notifications
-    // For now, log the notification
-    this.logger.log(`Order Created Notification:
-      - Order ID: ${order.id}
-      - Customer: ${order.customer.name} (${order.customer.email})
-      - Vendor: ${order.vendor.user.name} (${order.vendor.user.email})
-      - Total: ${order.currency} ${order.totalAmount}
-      - Items: ${order.items.map((i) => `${i.quantity}x ${i.product.name}`).join(', ')}
-    `);
+    await Promise.all([
+      this.sesEmail.sendEmail(
+        order.customer.email,
+        `Order Confirmation – Ilé Àṣẹ #${order.id.slice(0, 8).toUpperCase()}`,
+        `<p>Dear ${order.customer.name},</p>
+         <p>Your order has been received and is being processed.</p>
+         <p><strong>Items:</strong> ${itemList}</p>
+         <p><strong>Total:</strong> ${order.currency} ${order.totalAmount}</p>
+         <p>We will notify you when your order ships.</p>
+         <p>— The Ilé Àṣẹ Team</p>`
+      ),
+      this.sesEmail.sendEmail(
+        order.vendor.user.email,
+        `New Order Received – #${order.id.slice(0, 8).toUpperCase()}`,
+        `<p>Dear ${order.vendor.user.name},</p>
+         <p>You have received a new order from ${order.customer.name}.</p>
+         <p><strong>Items:</strong> ${itemList}</p>
+         <p><strong>Total:</strong> ${order.currency} ${order.totalAmount}</p>
+         <p>Please prepare the order for shipping.</p>
+         <p>— The Ilé Àṣẹ Team</p>`
+      ),
+    ]);
 
-    // In production, would call email service:
-    // await this.emailService.send({
-    //   to: order.customer.email,
-    //   subject: 'Order Confirmation - Ilé Àṣẹ',
-    //   template: 'order-created',
-    //   data: { order }
-    // });
+    this.logger.log(`Order created notifications sent for order ${order.id}`);
   }
 
   /**
    * Notify customer and vendor when order status changes
    */
   async notifyOrderStatusChange(order: OrderWithRelations, previousStatus: string): Promise<void> {
-    this.logger.log(
-      `Sending order status change notification for order ${order.id}: ${previousStatus} → ${order.status}`
-    );
-
     const statusMessages: Record<string, { customer: string; vendor: string }> = {
       [OrderStatus.PAID]: {
         customer: 'Your order has been paid and is being processed.',
@@ -100,42 +106,56 @@ export class OrderNotificationService {
       return;
     }
 
-    // TODO: In production, send email notifications
-    this.logger.log(`Order Status Change Notification:
-      - Order ID: ${order.id}
-      - Status: ${previousStatus} → ${order.status}
-      - Customer: ${order.customer.name} - ${message.customer}
-      - Vendor: ${order.vendor.user.name} - ${message.vendor}
-    `);
+    await Promise.all([
+      this.sesEmail.sendEmail(
+        order.customer.email,
+        `Order Update – #${order.id.slice(0, 8).toUpperCase()}`,
+        `<p>Dear ${order.customer.name},</p><p>${message.customer}</p><p>— The Ilé Àṣẹ Team</p>`
+      ),
+      this.sesEmail.sendEmail(
+        order.vendor.user.email,
+        `Order Update – #${order.id.slice(0, 8).toUpperCase()}`,
+        `<p>Dear ${order.vendor.user.name},</p><p>${message.vendor}</p><p>— The Ilé Àṣẹ Team</p>`
+      ),
+    ]);
+
+    this.logger.log(
+      `Order status change notifications sent for order ${order.id}: ${previousStatus} → ${order.status}`
+    );
   }
 
   /**
    * Notify customer when tracking information is added
    */
   async notifyTrackingAdded(order: OrderWithRelations): Promise<void> {
-    this.logger.log(`Sending tracking notification for order ${order.id}`);
+    const trackingLine = order.trackingUrl
+      ? `<p><strong>Track your package:</strong> <a href="${order.trackingUrl}">${order.trackingNumber}</a> (${order.carrier})</p>`
+      : `<p><strong>Tracking number:</strong> ${order.trackingNumber} via ${order.carrier}</p>`;
 
-    // TODO: In production, send email with tracking link
-    this.logger.log(`Tracking Added Notification:
-      - Order ID: ${order.id}
-      - Customer: ${order.customer.name} (${order.customer.email})
-      - Tracking Number: ${order.trackingNumber}
-      - Carrier: ${order.carrier}
-      - Tracking URL: ${order.trackingUrl || 'N/A'}
-    `);
+    await this.sesEmail.sendEmail(
+      order.customer.email,
+      `Your Order Has Shipped – #${order.id.slice(0, 8).toUpperCase()}`,
+      `<p>Dear ${order.customer.name},</p>
+       <p>Your order is on its way!</p>
+       ${trackingLine}
+       <p>— The Ilé Àṣẹ Team</p>`
+    );
+
+    this.logger.log(`Tracking notification sent for order ${order.id}`);
   }
 
   /**
-   * Notify customer when order is about to be delivered (optional)
+   * Notify customer when order is about to be delivered
    */
   async notifyDeliveryUpcoming(order: OrderWithRelations): Promise<void> {
-    this.logger.log(`Sending delivery upcoming notification for order ${order.id}`);
+    await this.sesEmail.sendEmail(
+      order.customer.email,
+      `Your Order Is Almost There – #${order.id.slice(0, 8).toUpperCase()}`,
+      `<p>Dear ${order.customer.name},</p>
+       <p>Your order is expected to arrive soon. Please ensure someone is available to receive it.</p>
+       <p>— The Ilé Àṣẹ Team</p>`
+    );
 
-    // TODO: In production, send email notification
-    this.logger.log(`Delivery Upcoming Notification:
-      - Order ID: ${order.id}
-      - Customer: ${order.customer.name} (${order.customer.email})
-      - Expected delivery soon
-    `);
+    this.logger.log(`Delivery upcoming notification sent for order ${order.id}`);
   }
 }

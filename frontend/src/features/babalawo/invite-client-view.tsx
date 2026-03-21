@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Search, UserPlus, Check, Loader2, User } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
+import { useToast } from '@/shared/components/toast';
 
 interface SearchUser {
   id: string;
@@ -17,6 +18,7 @@ const InviteClientView: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
 
@@ -37,6 +39,10 @@ const InviteClientView: React.FC = () => {
     onSuccess: (_data, clientId) => {
       setAddedIds(prev => new Set([...prev, clientId]));
       queryClient.invalidateQueries({ queryKey: ['babalawo-clients'] });
+      toast.success('Seeker added');
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to add seeker — ${err.message}`);
     },
   });
 
@@ -44,8 +50,8 @@ const InviteClientView: React.FC = () => {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold brand-font text-stone-900">Find & Add Seeker</h1>
-          <p className="text-stone-600 text-lg mt-1">Search for an existing user and add them as your seeker</p>
+          <h1 className="text-3xl md:text-4xl font-bold brand-font text-foreground">Find & Add Seeker</h1>
+          <p className="text-muted-foreground text-lg mt-1">Search for an existing user and add them as your seeker</p>
         </div>
         <button
           type="button"
@@ -59,20 +65,20 @@ const InviteClientView: React.FC = () => {
       {/* Search Input */}
       <div className="max-w-xl">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
           <input
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder="Search by name or email (min. 3 characters)..."
-            className="w-full pl-10 pr-4 py-3 border border-stone-300 rounded-xl focus:ring-2 focus:ring-highlight focus:border-highlight text-sm"
+            className="w-full pl-10 pr-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-highlight focus:border-highlight text-sm bg-muted/50 text-foreground"
           />
           {searching && (
-            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 animate-spin" size={16} />
+            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground animate-spin" size={16} />
           )}
         </div>
         {searchQuery.trim().length > 0 && searchQuery.trim().length < 3 && (
-          <p className="mt-1 text-xs text-stone-400">Type at least 3 characters to search</p>
+          <p className="mt-1 text-xs text-muted-foreground">Type at least 3 characters to search</p>
         )}
       </div>
 
@@ -80,14 +86,14 @@ const InviteClientView: React.FC = () => {
       {searchQuery.trim().length >= 3 && (
         <div className="max-w-xl space-y-3">
           {results.length === 0 && !searching ? (
-            <div className="text-center py-12 bg-stone-50 rounded-xl border border-stone-200">
-              <User size={40} className="mx-auto text-stone-300 mb-3" />
-              <p className="text-stone-500 font-medium">No users found</p>
-              <p className="text-stone-400 text-sm mt-1">Try a different name or email</p>
+            <div className="text-center py-12 bg-muted/50 rounded-xl border border-border">
+              <User size={40} className="mx-auto text-muted-foreground mb-3" />
+              <p className="text-muted-foreground font-medium">No users found</p>
+              <p className="text-muted-foreground text-sm mt-1">Try a different name or email</p>
             </div>
           ) : (
             results.map(result => (
-              <div key={result.id} className="flex items-center justify-between p-4 bg-white border border-stone-200 rounded-xl shadow-sm">
+              <div key={result.id} className="flex items-center justify-between p-4 bg-card border border-border rounded-xl shadow-sm">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary flex-shrink-0">
                     {result.avatar ? (
@@ -97,9 +103,9 @@ const InviteClientView: React.FC = () => {
                     )}
                   </div>
                   <div>
-                    <p className="font-semibold text-stone-900">{result.name}</p>
-                    {result.yorubaName && <p className="text-xs text-stone-400 italic">{result.yorubaName}</p>}
-                    <p className="text-sm text-stone-500">{result.email}</p>
+                    <p className="font-semibold text-foreground">{result.name}</p>
+                    {result.yorubaName && <p className="text-xs text-muted-foreground italic">{result.yorubaName}</p>}
+                    <p className="text-sm text-muted-foreground">{result.email}</p>
                   </div>
                 </div>
 
@@ -133,7 +139,7 @@ const InviteClientView: React.FC = () => {
           <button
             type="button"
             onClick={() => navigate('/practitioner/my-seekers')}
-            className="w-full py-3 bg-stone-800 text-white font-bold rounded-xl hover:bg-stone-700 transition-colors"
+            className="w-full py-3 bg-foreground text-background font-bold rounded-xl hover:opacity-90 transition-colors"
           >
             View My Seekers ({addedIds.size} added)
           </button>

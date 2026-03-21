@@ -2,9 +2,24 @@ import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
     Users, Shield, CheckCircle, MessageSquare, Calendar,
-    Link as LinkIcon
+    Link as LinkIcon, Activity, Clock
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { StatCard, UserListItem, VerificationListItem, AdminUser, VerificationApplication } from './admin-shared-components';
+import { SkeletonStat, SkeletonTable } from '@/shared/components/skeleton';
+import api from '@/lib/api';
+import { useAuth } from '@/shared/hooks/use-auth';
+
+function formatRelativeTime(dateStr: string): string {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+}
 
 interface PlatformStats {
     totalUsers: number;
@@ -40,22 +55,41 @@ const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
 }) => {
     const [showAllVerifications, setShowAllVerifications] = useState(false);
     const [showAllUsers, setShowAllUsers] = useState(false);
+    const { user } = useAuth();
+
+    // Fetch recent audit logs for SUPER admins
+    const { data: auditLogs, isLoading: auditLoading } = useQuery<Array<{
+        id: string;
+        userId: string;
+        action: string;
+        resourceType: string;
+        resourceId?: string;
+        createdAt: string;
+    }>>({
+        queryKey: ['admin-audit-logs-recent'],
+        queryFn: async () => {
+            const res = await api.get('/admin/audit-logs', { params: { limit: 5 } });
+            return res.data;
+        },
+        enabled: user?.adminSubRole === 'SUPER',
+        staleTime: 60000,
+    });
 
     const statCards = [
-        { label: 'Total Users', value: stats?.totalUsers || 0, icon: Users, color: 'bg-primary/20 text-primary/60 border-primary/30' },
-        { label: 'Verified Babalawos', value: stats?.verifiedBabalawos || 0, icon: Shield, color: 'bg-green-500/20 text-green-300 border-green-500/30' },
-        { label: 'Pending Verifications', value: stats?.pendingVerifications || 0, icon: CheckCircle, color: 'bg-highlight/20 text-highlight border-highlight/30' },
-        { label: 'Active Relationships', value: stats?.activeRelationships || 0, icon: LinkIcon, color: 'bg-purple-500/20 text-purple-300 border-purple-500/30' },
-        { label: 'Total Appointments', value: stats?.totalAppointments || 0, icon: Calendar, color: 'bg-orange-500/20 text-orange-300 border-orange-500/30' },
-        { label: 'Total Messages', value: stats?.totalMessages || 0, icon: MessageSquare, color: 'bg-pink-500/20 text-pink-300 border-pink-500/30' },
+        { label: 'Total Users', value: stats?.totalUsers ?? 0, icon: Users, color: 'text-primary border-primary/30' },
+        { label: 'Verified Babalawos', value: stats?.verifiedBabalawos ?? 0, icon: Shield, color: 'text-green-600 border-green-200' },
+        { label: 'Pending Verifications', value: stats?.pendingVerifications ?? 0, icon: CheckCircle, color: 'text-amber-600 border-amber-200' },
+        { label: 'Active Relationships', value: stats?.activeRelationships ?? 0, icon: LinkIcon, color: 'text-purple-600 border-purple-200' },
+        { label: 'Total Appointments', value: stats?.totalAppointments ?? 0, icon: Calendar, color: 'text-orange-600 border-orange-200' },
+        { label: 'Total Messages', value: stats?.totalMessages ?? 0, icon: MessageSquare, color: 'text-pink-600 border-pink-200' },
     ];
 
     return (
         <>
             {/* Statistics Cards */}
             {statsLoading ? (
-                <div className="flex items-center justify-center py-12">
-                    <div className="w-12 h-12 border-4 border-highlight border-t-transparent rounded-full animate-spin" />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {Array.from({ length: 6 }).map((_, i) => <SkeletonStat key={i} />)}
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -65,15 +99,61 @@ const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
                 </div>
             )}
 
+            {/* Recent Admin Activity (SUPER admin only) */}
+            {user?.adminSubRole === 'SUPER' && (
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.15 }}
+                    className="bg-card rounded-2xl p-6 border border-border space-y-4 shadow-sm"
+                >
+                    <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                        <Activity size={20} className="text-highlight" />
+                        Recent Admin Activity
+                    </h2>
+
+                    {auditLoading ? (
+                        <SkeletonTable rows={3} />
+                    ) : !auditLogs?.length ? (
+                        <p className="text-muted-foreground text-center py-6">No recent admin activity.</p>
+                    ) : (
+                        <div className="space-y-2">
+                            {auditLogs.map((log) => (
+                                <div
+                                    key={log.id}
+                                    className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 border border-border/60"
+                                >
+                                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                                        <Activity size={14} className="text-primary" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-foreground truncate">
+                                            {log.action.replace(/_/g, ' ')}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {log.resourceType}{log.resourceId ? ` · ${log.resourceId.slice(0, 8)}…` : ''}
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-1 text-xs text-muted-foreground flex-shrink-0">
+                                        <Clock size={12} />
+                                        {formatRelativeTime(log.createdAt)}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </motion.div>
+            )}
+
             {/* Pending Verifications */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 space-y-6 shadow-xl"
+                className="bg-card rounded-2xl p-6 border border-border space-y-6 shadow-sm"
             >
                 <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                    <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
                         <Shield size={20} className="text-highlight" />
                         Verification Queue ({verifications.length})
                     </h2>
@@ -83,11 +163,9 @@ const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
                 </div>
 
                 {verificationsLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                        <div className="w-8 h-8 border-4 border-highlight border-t-transparent rounded-full animate-spin" />
-                    </div>
+                    <SkeletonTable rows={3} />
                 ) : verifications.length === 0 ? (
-                    <p className="text-muted text-center py-8">No pending verifications.</p>
+                    <p className="text-muted-foreground text-center py-8">No pending verifications.</p>
                 ) : (
                     <div className="space-y-3">
                         <AnimatePresence>
@@ -99,7 +177,7 @@ const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
                             <div className="text-center pt-2">
                                 <button
                                     onClick={() => setShowAllVerifications(!showAllVerifications)}
-                                    className="text-highlight hover:text-yellow-600 text-xs font-bold uppercase tracking-widest bg-white/5 px-4 py-2 rounded-full border border-white/5 hover:border-highlight/30 transition-all"
+                                    className="text-highlight hover:text-yellow-600 text-xs font-bold uppercase tracking-widest bg-muted px-4 py-2 rounded-full border border-border hover:border-highlight/30 transition-all"
                                 >
                                     {showAllVerifications ? 'Show Less' : `+${verifications.length - 5} More Applications`}
                                 </button>
@@ -114,10 +192,10 @@ const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 space-y-6 shadow-xl"
+                className="bg-card rounded-2xl p-6 border border-border space-y-6 shadow-sm"
             >
                 <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                    <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
                         <Users size={20} className="text-highlight" />
                         Recent User Activity ({users.length})
                     </h2>
@@ -127,9 +205,7 @@ const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
                 </div>
 
                 {usersLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                        <div className="w-8 h-8 border-4 border-highlight border-t-transparent rounded-full animate-spin" />
-                    </div>
+                    <SkeletonTable rows={5} />
                 ) : (
                     <div className="space-y-2">
                         <AnimatePresence>
@@ -141,7 +217,7 @@ const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
                             <div className="text-center pt-4">
                                 <button
                                     onClick={() => setShowAllUsers(!showAllUsers)}
-                                    className="text-highlight hover:text-yellow-600 text-xs font-bold uppercase tracking-widest bg-white/5 px-4 py-2 rounded-full border border-white/5 hover:border-highlight/30 transition-all"
+                                    className="text-highlight hover:text-yellow-600 text-xs font-bold uppercase tracking-widest bg-muted px-4 py-2 rounded-full border border-border hover:border-highlight/30 transition-all"
                                 >
                                     {showAllUsers ? 'Show Less' : `+${users.length - 10} More Users`}
                                 </button>

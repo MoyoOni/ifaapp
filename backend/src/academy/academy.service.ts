@@ -14,6 +14,7 @@ import { UpdateEnrollmentDto } from './dto/update-enrollment.dto';
 import { CompleteLessonDto } from './dto/complete-lesson.dto';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { CourseStatus, LessonType, EnrollmentStatus, CourseLevel } from '@ile-ase/common';
+import { CertificateService } from '../certificates/certificate.service';
 
 /**
  * Academy Service
@@ -22,7 +23,10 @@ import { CourseStatus, LessonType, EnrollmentStatus, CourseLevel } from '@ile-as
  */
 @Injectable()
 export class AcademyService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private certificateService: CertificateService
+  ) {}
 
   // ==================== Courses ====================
 
@@ -547,16 +551,7 @@ export class AcademyService {
 
       // Generate certificate if enabled
       if (enrollment.course.certificateEnabled) {
-        // In a real implementation, you would generate a PDF certificate here
-        // For now, we'll create a placeholder certificate URL
-        const certificateUrl = `https://s3.example.com/certificates/${enrollmentId}.pdf`; // TODO: Generate actual certificate
-
-        await this.prisma.courseCertificate.create({
-          data: {
-            enrollmentId: enrollment.id,
-            certificateUrl,
-          },
-        });
+        await this.certificateService.generateCertificate(enrollmentId);
       }
     }
 

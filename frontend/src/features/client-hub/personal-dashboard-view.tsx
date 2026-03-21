@@ -1,18 +1,19 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  User, 
-  Calendar, 
-  FileText, 
-  MessageCircle, 
+import {
+  User,
+  Calendar,
+  FileText,
+  MessageCircle,
   Users,
   MapPin,
   TrendingUp,
   Award,
   BookOpen,
   Heart,
-  Star
+  Star,
+  Building2
 } from 'lucide-react';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { useClientDashboard } from '@/shared/hooks/dashboard';
@@ -22,13 +23,30 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 const PersonalDashboardView: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data: dashboard, isLoading } = useClientDashboard();
+  const { data: dashboard, isLoading, isError, refetch } = useClientDashboard();
   const userStats = useUserStats();
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center">
         <LoadingSpinner size="lg" variant="primary" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-stone-600 mb-4">Could not load your dashboard. Please try again.</p>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="px-4 py-2 bg-primary text-white rounded-xl font-medium hover:opacity-90"
+          >
+            Try Again
+          </button>
+        </div>
       </div>
     );
   }
@@ -241,6 +259,19 @@ const PersonalDashboardView: React.FC = () => {
                   </div>
                   <p className="text-blue-100 text-sm">Discover authentic spiritual tools and ceremonial items</p>
                 </button>
+
+                <button
+                  onClick={() => navigate('/client/temples')}
+                  className="bg-gradient-to-br from-amber-500 to-yellow-600 text-white p-5 rounded-2xl hover:shadow-lg transition-all text-left group md:col-span-2"
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="bg-white/20 p-2 rounded-xl">
+                      <Building2 size={20} />
+                    </div>
+                    <span className="font-bold">Explore Temples</span>
+                  </div>
+                  <p className="text-amber-100 text-sm">Find and connect with Ilé Ifá congregations near you — 199 registered temples</p>
+                </button>
               </div>
             </motion.div>
 
@@ -323,7 +354,16 @@ const PersonalDashboardView: React.FC = () => {
                     </div>
                   ))
                 ) : (
-                  <p className="text-emerald-600 text-sm text-center py-4">Not yet part of any temples.</p>
+                  <div className="text-center py-2">
+                    <p className="text-emerald-600 text-sm mb-2">Not yet part of any temples.</p>
+                    <button
+                      type="button"
+                      onClick={() => navigate('/client/temples')}
+                      className="text-sm font-bold text-amber-700 hover:underline"
+                    >
+                      Find a Temple
+                    </button>
+                  </div>
                 )}
                 
                 {dashboard?.communities?.circles && dashboard.communities.circles.length > 0 ? (
@@ -347,12 +387,22 @@ const PersonalDashboardView: React.FC = () => {
                 )}
               </div>
               
-              <button
-                onClick={() => navigate('/circles')}
-                className="w-full mt-4 py-2.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold rounded-xl transition-colors"
-              >
-                Join a Circle
-              </button>
+              <div className="flex gap-2 mt-4">
+                <button
+                  type="button"
+                  onClick={() => navigate('/client/temples')}
+                  className="flex-1 py-2.5 bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold rounded-xl transition-colors text-sm"
+                >
+                  Find a Temple
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate('/circles')}
+                  className="flex-1 py-2.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold rounded-xl transition-colors text-sm"
+                >
+                  Join a Circle
+                </button>
+              </div>
             </motion.div>
 
             {/* Quick Actions */}

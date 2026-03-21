@@ -44,15 +44,15 @@ export const StatCard: React.FC<{
         whileHover={{ scale: 1.02, translateY: -5 }}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`bg-white/5 backdrop-blur-sm rounded-2xl p-6 border ${color} shadow-lg transition-shadow hover:shadow-xl`}
+        className={`bg-card rounded-2xl p-6 border shadow-sm hover:shadow-md transition-shadow ${color}`}
     >
         <div className="flex items-center justify-between">
-            <div className="p-3 rounded-xl bg-white/10">
-                <Icon size={24} className="opacity-90" />
+            <div className="p-3 rounded-xl bg-muted">
+                <Icon size={24} className="opacity-80" />
             </div>
             <span className="text-3xl font-extrabold tracking-tight">{value.toLocaleString()}</span>
         </div>
-        <p className="text-sm font-bold text-stone-400 mt-4 uppercase tracking-widest">{label}</p>
+        <p className="text-sm font-bold text-muted-foreground mt-4 uppercase tracking-widest">{label}</p>
     </motion.div>
 );
 
@@ -64,36 +64,36 @@ export const UserListItem: React.FC<{
         initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
         whileHover={{ x: 5 }}
-        className="flex items-center justify-between bg-white/5 rounded-xl p-4 border border-white/10 hover:border-highlight/50 transition-all group"
+        className="flex items-center justify-between bg-muted/50 rounded-xl p-4 border border-border hover:border-highlight/50 transition-all group"
     >
         <div className="flex items-center gap-4">
             <div className="w-10 h-10 rounded-full bg-highlight/20 flex items-center justify-center text-highlight font-bold">
                 {user.name.charAt(0)}
             </div>
             <div>
-                <p className="font-bold text-white group-hover:text-highlight transition-colors">{user.name}</p>
+                <p className="font-bold text-foreground group-hover:text-highlight transition-colors">{user.name}</p>
                 <MaskedValue
                     value={user.email}
                     entityType="USER"
                     entityId={user.id}
                     label="Email"
-                    className="text-stone-400 group-hover:text-stone-300"
+                    className="text-muted-foreground group-hover:text-foreground"
                 />
                 <div className="flex items-center gap-2 mt-2">
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/10 uppercase tracking-tighter">{user.role}</span>
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-tighter ${user.verified ? 'bg-green-500/20 text-green-400' : 'bg-stone-500/20 text-stone-400'}`}>
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-muted text-foreground uppercase tracking-tighter">{user.role}</span>
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-tighter ${user.verified ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground'}`}>
                         {user.verified ? 'Verified' : 'Pending'}
                     </span>
                 </div>
             </div>
         </div>
         <div className="text-right">
-            <p className="text-xs text-stone-500 font-medium">Joined</p>
-            <p className="text-xs text-white/50">{new Date(user.createdAt).toLocaleDateString()}</p>
+            <p className="text-xs text-muted-foreground font-medium">Joined</p>
+            <p className="text-xs text-muted-foreground">{new Date(user.createdAt).toLocaleDateString()}</p>
             {onImpersonate && (
                 <button
                     onClick={() => onImpersonate(user.id)}
-                    className="mt-2 p-1.5 rounded-lg bg-white/10 hover:bg-highlight/20 text-stone-400 hover:text-highlight transition-all flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider ml-auto"
+                    className="mt-2 p-1.5 rounded-lg bg-muted hover:bg-highlight/20 text-muted-foreground hover:text-highlight transition-all flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider ml-auto"
                     title="Impersonate User"
                 >
                     <LogIn size={14} />
@@ -109,21 +109,21 @@ export const VerificationListItem: React.FC<{ app: VerificationApplication }> = 
         initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
         whileHover={{ x: 5 }}
-        className="bg-white/5 rounded-xl p-4 border border-white/10 hover:border-highlight/50 transition-all group"
+        className="bg-muted/50 rounded-xl p-4 border border-border hover:border-highlight/50 transition-all group"
     >
         <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
                     <Shield size={20} className="text-highlight" />
                 </div>
                 <div>
-                    <h3 className="font-bold text-white group-hover:text-highlight transition-colors">{app.user.name}</h3>
-                    <p className="text-xs text-muted font-medium">{app.user.email}</p>
+                    <h3 className="font-bold text-foreground group-hover:text-highlight transition-colors">{app.user.name}</h3>
+                    <p className="text-xs text-muted-foreground font-medium">{app.user.email}</p>
                 </div>
             </div>
             <div className="text-right space-y-1">
                 <VerificationBadge verified={false} tier={app.tier as VerificationTier} />
-                <p className="text-[10px] text-muted font-bold uppercase tracking-wider opacity-60">Stage: {app.currentStage}</p>
+                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Stage: {app.currentStage}</p>
             </div>
         </div>
     </motion.div>

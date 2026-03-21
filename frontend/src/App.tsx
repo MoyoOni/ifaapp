@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Outlet, useNavigate, useParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Outlet, useNavigate, useParams, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ErrorBoundary from './shared/components/error-boundary';
+import { AdminErrorPage, PractitionerErrorPage, VendorErrorPage, ClientErrorPage } from './shared/components/route-error-pages';
 import NotFound from './pages/not-found';
 import { SidebarLayout } from './shared/components/sidebar-layout';
 import { useAuth } from './shared/hooks/use-auth';
@@ -9,6 +10,7 @@ import { getDashboardPathForRole } from './shared/config/navigation';
 import { ProtectedRoute, AdminRoute } from './shared/components/protected-route';
 import { UserRole } from '@common';
 import { logger } from '@/shared/utils/logger';
+import OfflineIndicator from './shared/components/offline-indicator';
 import SpiritualJourneyView from './features/client-hub/spiritual-journey-view';
 import CircleDirectory from './features/circles/circle-directory'; // Import CircleDirectory
 import CircleDetailView from './features/circles/circle-detail-view'; // Import CircleDetailView
@@ -19,6 +21,7 @@ import QuickAccessPage from './pages/QuickAccessPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
+import DonatePage from './pages/DonatePage';
 import SentryTestPage from './pages/SentryTestPage';
 import SettingsPage from './pages/SettingsPage';
 import HelpPage from './pages/HelpPage';
@@ -94,11 +97,20 @@ const VendorOrderListView = React.lazy(() => import('./features/marketplace/vend
 const MySeekersView = React.lazy(() => import('./features/babalawo/my-seekers-view'));
 const ServiceOfferingView = React.lazy(() => import('./features/babalawo/service-offering-view'));
 const TempleConnectionView = React.lazy(() => import('./features/babalawo/temple-connection-view'));
+const CourseManagementView = React.lazy(() => import('./features/babalawo/course-management-view'));
+const ClientTempleBrowseView = React.lazy(() => import('./features/client-hub/client-temple-browse-view'));
 const BabalawoDiscoveryView = React.lazy(() => import('./features/babalawo/discovery/babalawo-discovery-view'));
 const OnboardingView = React.lazy(() => import('./features/onboarding/onboarding-view'));
 
-// Initialize React Query client
-const queryClient = new QueryClient();
+// Initialize React Query client with cache strategy
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 2 * 60 * 1000, // 2 minutes default
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const LayoutWrapper: React.FC = () => (
   <SidebarLayout>
@@ -368,6 +380,7 @@ function App() {
         <SubdomainRedirect />
         <ErrorBoundary>
           <div className="App bg-background text-foreground"> {/* Apply theme variables globally */}
+            <OfflineIndicator />
             <React.Suspense fallback={<LoadingSpinner />}>
               <Routes>
                 <Route path="/login" element={<LoginPage />} />
@@ -375,6 +388,7 @@ function App() {
                 <Route path="/verify-email" element={<VerifyEmailPage />} />
                 <Route path="/terms" element={<TermsPage />} />
                 <Route path="/privacy" element={<PrivacyPage />} />
+                <Route path="/donate" element={<DonatePage />} />
                 <Route path="/quick-access" element={<QuickAccessPage />} /> {/* Add quick access route */}
                 <Route path="/test-sentry" element={<SentryTestPage />} /> {/* Sentry testing route */}
                 <Route path="/onboarding" element={<OnboardingView />} />
@@ -385,40 +399,43 @@ function App() {
                   <Route path="/vendors" element={<VendorDirectoryPage />} />
                   <Route path="/" element={<HomePage />} />
                   <Route path="/client/dashboard" element={
-                    <ErrorBoundary>
+                    <ErrorBoundary fallback={<ClientErrorPage />}>
                       <ProtectedRoute allowedRoles={[UserRole.CLIENT, UserRole.ADMIN]}>
                         <PersonalDashboardView />
                       </ProtectedRoute>
                     </ErrorBoundary>
                   } />
                   <Route path="/client/spiritual-journey" element={
-                    <ErrorBoundary>
+                    <ErrorBoundary fallback={<ClientErrorPage />}>
                       <ProtectedRoute allowedRoles={[UserRole.CLIENT, UserRole.ADMIN]}>
                         <SpiritualJourneyView />
                       </ProtectedRoute>
                     </ErrorBoundary>
                   } />
                   <Route path="/personal-dashboard" element={
-                    <ErrorBoundary>
+                    <ErrorBoundary fallback={<ClientErrorPage />}>
                       <ProtectedRoute allowedRoles={[UserRole.CLIENT, UserRole.ADMIN]}>
                         <PersonalDashboardView />
                       </ProtectedRoute>
                     </ErrorBoundary>
                   } />
-                  <Route path="/client/consultations" element={<ErrorBoundary><ProtectedRoute allowedRoles={['CLIENT'] as UserRole[]}><ClientConsultationsView /></ProtectedRoute></ErrorBoundary>} />
-                  <Route path="/practitioner/dashboard" element={<ErrorBoundary><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><PractitionerDashboard /></ProtectedRoute></ErrorBoundary>} />
-                  <Route path="/vendor/dashboard" element={<ErrorBoundary><ProtectedRoute allowedRoles={['VENDOR'] as UserRole[]}><VendorDashboardView /></ProtectedRoute></ErrorBoundary>} />
-                  <Route path="/admin" element={<ErrorBoundary><AdminRoute><AdminDashboardView /></AdminRoute></ErrorBoundary>} />
-                  <Route path="/admin/users" element={<ErrorBoundary><AdminRoute><AdminDashboardView initialTab="users" /></AdminRoute></ErrorBoundary>} />
-                  <Route path="/admin/vendors" element={<ErrorBoundary><AdminRoute><VendorReviewView /></AdminRoute></ErrorBoundary>} />
-                  <Route path="/admin/verification" element={<ErrorBoundary><AdminRoute><AdminDashboardView initialTab="verification" /></AdminRoute></ErrorBoundary>} />
-                  <Route path="/admin/quality" element={<ErrorBoundary><AdminRoute><AdminDashboardView initialTab="quality" /></AdminRoute></ErrorBoundary>} />
-                  <Route path="/admin/health" element={<ErrorBoundary><AdminRoute><AdminDashboardView initialTab="health" /></AdminRoute></ErrorBoundary>} />
-                  <Route path="/admin/advisory-board" element={<ErrorBoundary><AdminRoute><AdvisoryBoardVotingView /></AdminRoute></ErrorBoundary>} />
-                  <Route path="/admin/temples" element={<ErrorBoundary><AdminRoute><AdminDashboardView initialTab="temples" /></AdminRoute></ErrorBoundary>} />
-                  <Route path="/admin/withdrawals" element={<ErrorBoundary><AdminRoute><AdminDashboardView initialTab="withdrawals" /></AdminRoute></ErrorBoundary>} />
-                  <Route path="/admin/fraud" element={<ErrorBoundary><AdminRoute><AdminDashboardView initialTab="fraud" /></AdminRoute></ErrorBoundary>} />
-                  <Route path="/admin/content" element={<ErrorBoundary><AdminRoute><AdminDashboardView initialTab="content" /></AdminRoute></ErrorBoundary>} />
+                  <Route path="/client/consultations" element={<ErrorBoundary fallback={<ClientErrorPage />}><ProtectedRoute allowedRoles={['CLIENT'] as UserRole[]}><ClientConsultationsView /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="/client/temples" element={<ErrorBoundary fallback={<ClientErrorPage />}><ProtectedRoute allowedRoles={['CLIENT'] as UserRole[]}><ClientTempleBrowseView /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="/practitioner/dashboard" element={<ErrorBoundary fallback={<PractitionerErrorPage />}><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><PractitionerDashboard /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="/vendor/dashboard" element={<ErrorBoundary fallback={<VendorErrorPage />}><ProtectedRoute allowedRoles={['VENDOR'] as UserRole[]}><VendorDashboardView /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="/admin/dashboard" element={<Navigate to="/admin" replace />} />
+                  <Route path="/practitioner/earnings-report" element={<Navigate to="/practitioner/earnings" replace />} />
+                  <Route path="/admin" element={<ErrorBoundary fallback={<AdminErrorPage />}><AdminRoute><AdminDashboardView /></AdminRoute></ErrorBoundary>} />
+                  <Route path="/admin/users" element={<ErrorBoundary fallback={<AdminErrorPage />}><AdminRoute><AdminDashboardView initialTab="users" /></AdminRoute></ErrorBoundary>} />
+                  <Route path="/admin/vendors" element={<ErrorBoundary fallback={<AdminErrorPage />}><AdminRoute><VendorReviewView /></AdminRoute></ErrorBoundary>} />
+                  <Route path="/admin/verification" element={<ErrorBoundary fallback={<AdminErrorPage />}><AdminRoute><AdminDashboardView initialTab="verification" /></AdminRoute></ErrorBoundary>} />
+                  <Route path="/admin/quality" element={<ErrorBoundary fallback={<AdminErrorPage />}><AdminRoute><AdminDashboardView initialTab="quality" /></AdminRoute></ErrorBoundary>} />
+                  <Route path="/admin/health" element={<ErrorBoundary fallback={<AdminErrorPage />}><AdminRoute><AdminDashboardView initialTab="health" /></AdminRoute></ErrorBoundary>} />
+                  <Route path="/admin/advisory-board" element={<ErrorBoundary fallback={<AdminErrorPage />}><AdminRoute><AdvisoryBoardVotingView /></AdminRoute></ErrorBoundary>} />
+                  <Route path="/admin/temples" element={<ErrorBoundary fallback={<AdminErrorPage />}><AdminRoute><AdminDashboardView initialTab="temples" /></AdminRoute></ErrorBoundary>} />
+                  <Route path="/admin/withdrawals" element={<ErrorBoundary fallback={<AdminErrorPage />}><AdminRoute><AdminDashboardView initialTab="withdrawals" /></AdminRoute></ErrorBoundary>} />
+                  <Route path="/admin/fraud" element={<ErrorBoundary fallback={<AdminErrorPage />}><AdminRoute><AdminDashboardView initialTab="fraud" /></AdminRoute></ErrorBoundary>} />
+                  <Route path="/admin/content" element={<ErrorBoundary fallback={<AdminErrorPage />}><AdminRoute><AdminDashboardView initialTab="content" /></AdminRoute></ErrorBoundary>} />
                   <Route path="/temples" element={<ErrorBoundary><TempleDirectoryPage /></ErrorBoundary>} />
                   <Route path="/temples/:slug" element={<ErrorBoundary><TempleDetailPage /></ErrorBoundary>} />
                   <Route path="/babalawo" element={<ErrorBoundary><BabalawoDiscoveryView /></ErrorBoundary>} />
@@ -431,27 +448,28 @@ function App() {
                   <Route path="/academy/my-courses" element={<ErrorBoundary><MyCoursesPage /></ErrorBoundary>} />
                   <Route path="/academy/learn/:enrollmentId" element={<ErrorBoundary><LessonPlayerPage /></ErrorBoundary>} />
                   <Route path="/consultations" element={<ErrorBoundary><ClientConsultationsPage /></ErrorBoundary>} />
-                  <Route path="/practitioner/consultations" element={<ErrorBoundary><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><PractitionerConsultationsPage /></ProtectedRoute></ErrorBoundary>} />
-                  <Route path="/practitioner/calendar" element={<ErrorBoundary><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><PractitionerCalendarView /></ProtectedRoute></ErrorBoundary>} />
-                  <Route path="/practitioner/availability" element={<ErrorBoundary><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><SetAvailabilityView /></ProtectedRoute></ErrorBoundary>} />
-                  <Route path="/practitioner/earnings" element={<ErrorBoundary><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><EarningsReportView /></ProtectedRoute></ErrorBoundary>} />
-                  <Route path="/practitioner/seekers" element={<ErrorBoundary><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><PractitionerDashboard initialTab="seekers" /></ProtectedRoute></ErrorBoundary>} />
-                  <Route path="/practitioner/clients" element={<ErrorBoundary><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><PractitionerDashboard initialTab="seekers" /></ProtectedRoute></ErrorBoundary>} />
-                  <Route path="/practitioner/clients/invite" element={<ErrorBoundary><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><InviteClientView /></ProtectedRoute></ErrorBoundary>} />
-                  <Route path="/practitioner/services" element={<ErrorBoundary><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><PractitionerDashboard initialTab="services" /></ProtectedRoute></ErrorBoundary>} />
-                  <Route path="/practitioner/temple" element={<ErrorBoundary><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><PractitionerDashboard initialTab="temple" /></ProtectedRoute></ErrorBoundary>} />
-                  <Route path="/practitioner/my-seekers" element={<ErrorBoundary><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><MySeekersView /></ProtectedRoute></ErrorBoundary>} />
-                  <Route path="/practitioner/service-offering" element={<ErrorBoundary><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><ServiceOfferingView /></ProtectedRoute></ErrorBoundary>} />
-                  <Route path="/practitioner/temple-connection" element={<ErrorBoundary><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><TempleConnectionView /></ProtectedRoute></ErrorBoundary>} />
-                  <Route path="/vendor/orders" element={<ErrorBoundary><ProtectedRoute allowedRoles={['VENDOR'] as UserRole[]}><VendorOrderListView /></ProtectedRoute></ErrorBoundary>} />
-                  <Route path="/vendor/orders/:orderId" element={<ErrorBoundary><ProtectedRoute allowedRoles={['VENDOR'] as UserRole[]}><VendorOrderListView /></ProtectedRoute></ErrorBoundary>} />
-                  <Route path="/vendor/products" element={<ErrorBoundary><ProtectedRoute allowedRoles={['VENDOR'] as UserRole[]}><VendorProductListView /></ProtectedRoute></ErrorBoundary>} />
-                  <Route path="/vendor/products/add" element={<ErrorBoundary><ProtectedRoute allowedRoles={['VENDOR'] as UserRole[]}><VendorProductListView mode="create" /></ProtectedRoute></ErrorBoundary>} />
-                  <Route path="/vendor/products/new" element={<ErrorBoundary><ProtectedRoute allowedRoles={['VENDOR'] as UserRole[]}><VendorProductListView mode="create" /></ProtectedRoute></ErrorBoundary>} />
-                  <Route path="/vendor/products/edit/:productId" element={<ErrorBoundary><ProtectedRoute allowedRoles={['VENDOR'] as UserRole[]}><VendorProductListView mode="edit" /></ProtectedRoute></ErrorBoundary>} />
-                  <Route path="/vendor/workshop" element={<ErrorBoundary><ProtectedRoute allowedRoles={['VENDOR'] as UserRole[]}><VendorDashboardView initialTab="inventory" /></ProtectedRoute></ErrorBoundary>} />
-                  <Route path="/vendor/insights" element={<ErrorBoundary><ProtectedRoute allowedRoles={['VENDOR'] as UserRole[]}><VendorDashboardView initialTab="revenue" /></ProtectedRoute></ErrorBoundary>} />
-                  <Route path="/vendor/support" element={<ErrorBoundary><ProtectedRoute allowedRoles={['VENDOR'] as UserRole[]}><VendorDashboardView initialTab="support" /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="/practitioner/consultations" element={<ErrorBoundary fallback={<PractitionerErrorPage />}><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><PractitionerConsultationsPage /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="/practitioner/calendar" element={<ErrorBoundary fallback={<PractitionerErrorPage />}><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><PractitionerCalendarView /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="/practitioner/availability" element={<ErrorBoundary fallback={<PractitionerErrorPage />}><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><SetAvailabilityView /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="/practitioner/earnings" element={<ErrorBoundary fallback={<PractitionerErrorPage />}><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><EarningsReportView /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="/practitioner/seekers" element={<ErrorBoundary fallback={<PractitionerErrorPage />}><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><PractitionerDashboard initialTab="seekers" /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="/practitioner/clients" element={<ErrorBoundary fallback={<PractitionerErrorPage />}><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><PractitionerDashboard initialTab="seekers" /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="/practitioner/clients/invite" element={<ErrorBoundary fallback={<PractitionerErrorPage />}><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><InviteClientView /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="/practitioner/services" element={<ErrorBoundary fallback={<PractitionerErrorPage />}><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><PractitionerDashboard initialTab="services" /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="/practitioner/temple" element={<ErrorBoundary fallback={<PractitionerErrorPage />}><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><PractitionerDashboard initialTab="temple" /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="/practitioner/my-seekers" element={<ErrorBoundary fallback={<PractitionerErrorPage />}><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><MySeekersView /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="/practitioner/service-offering" element={<ErrorBoundary fallback={<PractitionerErrorPage />}><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><ServiceOfferingView /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="/practitioner/temple-connection" element={<ErrorBoundary fallback={<PractitionerErrorPage />}><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><TempleConnectionView /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="/practitioner/courses" element={<ErrorBoundary fallback={<PractitionerErrorPage />}><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><CourseManagementView /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="/vendor/orders" element={<ErrorBoundary fallback={<VendorErrorPage />}><ProtectedRoute allowedRoles={['VENDOR'] as UserRole[]}><VendorOrderListView /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="/vendor/orders/:orderId" element={<ErrorBoundary fallback={<VendorErrorPage />}><ProtectedRoute allowedRoles={['VENDOR'] as UserRole[]}><VendorOrderListView /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="/vendor/products" element={<ErrorBoundary fallback={<VendorErrorPage />}><ProtectedRoute allowedRoles={['VENDOR'] as UserRole[]}><VendorProductListView /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="/vendor/products/add" element={<ErrorBoundary fallback={<VendorErrorPage />}><ProtectedRoute allowedRoles={['VENDOR'] as UserRole[]}><VendorProductListView mode="create" /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="/vendor/products/new" element={<ErrorBoundary fallback={<VendorErrorPage />}><ProtectedRoute allowedRoles={['VENDOR'] as UserRole[]}><VendorProductListView mode="create" /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="/vendor/products/edit/:productId" element={<ErrorBoundary fallback={<VendorErrorPage />}><ProtectedRoute allowedRoles={['VENDOR'] as UserRole[]}><VendorProductListView mode="edit" /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="/vendor/workshop" element={<ErrorBoundary fallback={<VendorErrorPage />}><ProtectedRoute allowedRoles={['VENDOR'] as UserRole[]}><VendorDashboardView initialTab="inventory" /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="/vendor/insights" element={<ErrorBoundary fallback={<VendorErrorPage />}><ProtectedRoute allowedRoles={['VENDOR'] as UserRole[]}><VendorDashboardView initialTab="revenue" /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="/vendor/support" element={<ErrorBoundary fallback={<VendorErrorPage />}><ProtectedRoute allowedRoles={['VENDOR'] as UserRole[]}><VendorDashboardView initialTab="support" /></ProtectedRoute></ErrorBoundary>} />
                   <Route path="/booking/:babalawoId" element={<ErrorBoundary><BookingPage /></ErrorBoundary>} />
                   <Route path="/booking/:appointmentId/confirmation" element={<ErrorBoundary><BookingConfirmation /></ErrorBoundary>} />
                   <Route path="/profile" element={<ErrorBoundary><ProfilePage /></ErrorBoundary>} />

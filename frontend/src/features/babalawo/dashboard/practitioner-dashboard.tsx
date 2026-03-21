@@ -183,6 +183,10 @@ const PractitionerDashboard: React.FC<PractitionerDashboardProps> = ({ userId, i
                             <BarChart3 className="w-4 h-4 mr-2" />
                             View Analytics
                           </Button>
+                          <Button className="w-full justify-start" onClick={() => navigate('/practitioner/courses')}>
+                            <BookOpen className="w-4 h-4 mr-2" />
+                            My Courses
+                          </Button>
                           <Button className="w-full justify-start" onClick={() => navigate('/profile')}>
                             <User className="w-4 h-4 mr-2" />
                             Edit Profile

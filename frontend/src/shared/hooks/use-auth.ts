@@ -251,6 +251,7 @@ export function useAuth(): AuthState & {
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
         localStorage.setItem('userId', userResponse.id);
+        localStorage.setItem('impersonationStartedAt', new Date().toISOString());
 
         setTokenCheck(true);
         setUser(userResponse);

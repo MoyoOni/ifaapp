@@ -106,6 +106,7 @@ const CircleManagementView: React.FC = () => {
         return [];
       }
     },
+    staleTime: 10 * 60 * 1000, // Static-ish data: 10 minutes
   });
 
   // Fetch all circles
@@ -120,6 +121,7 @@ const CircleManagementView: React.FC = () => {
         return [];
       }
     },
+    staleTime: 10 * 60 * 1000,
   });
 
   const pendingSuggestions = suggestions.filter(s => s.status === 'PENDING');
@@ -266,7 +268,7 @@ const CircleManagementView: React.FC = () => {
             <div className="p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-bold text-foreground">Create Circle from Suggestion</h3>
-                <button title="Close" onClick={() => { setShowCreateForm(false); setSelectedSuggestion(null); }}>
+                <button title="Close" aria-label="Close" onClick={() => { setShowCreateForm(false); setSelectedSuggestion(null); }}>
                   <X size={20} className="text-muted-foreground" />
                 </button>
               </div>

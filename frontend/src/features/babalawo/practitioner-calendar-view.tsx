@@ -20,7 +20,7 @@ const statusClass = (status: string) => {
   switch (status) {
     case 'completed': return 'bg-green-100 text-green-800 border-green-500';
     case 'cancelled': return 'bg-red-100 text-red-800 border-red-500';
-    case 'missed': return 'bg-stone-200 text-stone-800 border-stone-400';
+    case 'missed': return 'bg-muted text-foreground border-muted-foreground';
     case 'confirmed': return 'bg-blue-100 text-blue-800 border-blue-500';
     default: return 'bg-yellow-50 text-yellow-800 border-yellow-400';
   }
@@ -83,14 +83,14 @@ const PractitionerCalendarView: React.FC = () => {
           return (
             <div
               key={i}
-              className="border rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+              className="border border-border rounded-lg p-4 bg-card shadow-sm hover:shadow-md transition-shadow cursor-pointer"
               onClick={() => { setCurrentDate(new Date(year, i, 1)); setView('month'); }}
             >
-              <h3 className="font-semibold text-center text-stone-800">
+              <h3 className="font-semibold text-center text-foreground">
                 {monthStart.toLocaleString('default', { month: 'short' })}
               </h3>
               <div className="mt-2 text-center">
-                <p className="text-sm text-stone-500">{monthApts.length} appointments</p>
+                <p className="text-sm text-muted-foreground">{monthApts.length} appointments</p>
                 <p className="text-xs text-green-600">{monthApts.filter(a => a.status === 'completed').length} completed</p>
               </div>
             </div>
@@ -125,7 +125,7 @@ const PractitionerCalendarView: React.FC = () => {
           <thead>
             <tr>
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                <th key={d} className="border p-2 text-left text-stone-500 font-normal text-sm">{d}</th>
+                <th key={d} className="border border-border p-2 text-left text-muted-foreground font-normal text-sm">{d}</th>
               ))}
             </tr>
           </thead>
@@ -135,7 +135,7 @@ const PractitionerCalendarView: React.FC = () => {
                 {week.map((day, di) => {
                   const dayApts = appointments.filter(a => sameDay(a.date, day.date));
                   return (
-                    <td key={di} className={`border p-2 ${!day.isCurrentMonth ? 'bg-stone-50 text-stone-300' : 'bg-white'}`}>
+                    <td key={di} className={`border border-border p-2 ${!day.isCurrentMonth ? 'bg-muted/30 text-muted-foreground/50' : 'bg-card'}`}>
                       <div className="flex flex-col h-24 p-1">
                         <div className="text-right font-medium text-sm">{day.date.getDate()}</div>
                         <div className="flex-1 overflow-y-auto text-xs space-y-1 mt-1 max-h-16">
@@ -144,7 +144,7 @@ const PractitionerCalendarView: React.FC = () => {
                               {apt.time} {apt.clientName}
                             </div>
                           ))}
-                          {dayApts.length > 2 && <div className="text-stone-400">+{dayApts.length - 2} more</div>}
+                          {dayApts.length > 2 && <div className="text-muted-foreground">+{dayApts.length - 2} more</div>}
                         </div>
                       </div>
                     </td>
@@ -165,7 +165,7 @@ const PractitionerCalendarView: React.FC = () => {
 
     return (
       <div className="mt-6 space-y-4">
-        <h2 className="text-xl font-semibold text-stone-900">
+        <h2 className="text-xl font-semibold text-foreground">
           {currentDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
         </h2>
         {dayApts.length > 0 ? (
@@ -176,11 +176,11 @@ const PractitionerCalendarView: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <Clock size={16} />
                     <span className="font-medium">{apt.time}</span>
-                    <span className="text-stone-400">•</span>
+                    <span className="text-muted-foreground">•</span>
                     <span className="font-medium">{apt.duration} min</span>
                   </div>
                   <h3 className="font-bold text-lg mt-1">{apt.clientName}</h3>
-                  <p className="text-stone-600">{apt.topic}</p>
+                  <p className="text-muted-foreground">{apt.topic}</p>
                 </div>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusClass(apt.status)}`}>
                   {apt.status.charAt(0).toUpperCase() + apt.status.slice(1)}
@@ -189,9 +189,9 @@ const PractitionerCalendarView: React.FC = () => {
             </div>
           ))
         ) : (
-          <div className="text-center py-12 bg-stone-50 rounded-lg">
-            <Calendar size={48} className="mx-auto text-stone-300 mb-4" />
-            <p className="text-stone-500">No appointments scheduled for this day.</p>
+          <div className="text-center py-12 bg-muted/50 rounded-lg">
+            <Calendar size={48} className="mx-auto text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">No appointments scheduled for this day.</p>
           </div>
         )}
       </div>
@@ -210,7 +210,7 @@ const PractitionerCalendarView: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <AlertCircle size={48} className="text-red-400 mb-4" />
-        <p className="text-lg font-medium text-stone-700 mb-4">Failed to load appointments</p>
+        <p className="text-lg font-medium text-foreground mb-4">Failed to load appointments</p>
         <button type="button" onClick={() => window.location.reload()} className="px-4 py-2 bg-highlight text-white rounded-xl font-medium">
           Refresh
         </button>
@@ -222,8 +222,8 @@ const PractitionerCalendarView: React.FC = () => {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold brand-font text-stone-900">Practice Centre</h1>
-          <p className="text-stone-600 text-lg mt-1">Manage your appointments and schedule</p>
+          <h1 className="text-3xl md:text-4xl font-bold brand-font text-foreground">Practice Centre</h1>
+          <p className="text-muted-foreground text-lg mt-1">Manage your appointments and schedule</p>
         </div>
         <button
           type="button"
@@ -234,17 +234,17 @@ const PractitionerCalendarView: React.FC = () => {
         </button>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-xl border shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-4 bg-card p-4 rounded-xl border border-border shadow-sm">
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => navigateDate('prev')} className="p-2 rounded-lg hover:bg-stone-100">
+          <button type="button" aria-label="Previous" onClick={() => navigateDate('prev')} className="p-2 rounded-lg hover:bg-muted">
             <ChevronLeft size={20} />
           </button>
-          <h2 className="text-xl font-bold min-w-[200px] text-center text-stone-900">
+          <h2 className="text-xl font-bold min-w-[200px] text-center text-foreground">
             {view === 'year'
               ? currentDate.getFullYear()
               : currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
           </h2>
-          <button type="button" onClick={() => navigateDate('next')} className="p-2 rounded-lg hover:bg-stone-100">
+          <button type="button" aria-label="Next" onClick={() => navigateDate('next')} className="p-2 rounded-lg hover:bg-muted">
             <ChevronRight size={20} />
           </button>
         </div>
@@ -261,7 +261,7 @@ const PractitionerCalendarView: React.FC = () => {
               type="button"
               onClick={() => setView(key)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
-                view === key ? 'bg-highlight text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                view === key ? 'bg-highlight text-white' : 'bg-muted text-foreground hover:bg-muted/80'
               }`}
             >
               <Icon size={18} /> {label}

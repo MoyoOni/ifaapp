@@ -93,8 +93,8 @@ const MultiCurrencyBalance: React.FC<MultiCurrencyBalanceProps> = ({
 
   if (isLoading) {
     return (
-      <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-        <div className="flex items-center gap-2 text-muted">
+      <div className="bg-muted/50 rounded-xl p-4 border border-border">
+        <div className="flex items-center gap-2 text-muted-foreground">
           <RefreshCw className="w-4 h-4 animate-spin" />
           <span className="text-sm">Loading currency conversions...</span>
         </div>
@@ -111,18 +111,20 @@ const MultiCurrencyBalance: React.FC<MultiCurrencyBalanceProps> = ({
   );
 
   return (
-    <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 space-y-3">
+    <div className="bg-muted/50 rounded-xl p-4 border border-border space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Globe className="w-5 h-5 text-highlight" />
-          <span className="text-sm font-medium text-white">Multi-Currency View</span>
+          <span className="text-sm font-medium text-foreground">Multi-Currency View</span>
         </div>
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="p-1 hover:bg-white/10 rounded transition-colors"
+          className="p-1 hover:bg-muted rounded transition-colors"
+          aria-label={isExpanded ? 'Collapse currencies' : 'Expand currencies'}
+          title={isExpanded ? 'Collapse currencies' : 'Expand currencies'}
         >
           <ChevronDown
-            className={`w-4 h-4 text-muted transition-transform ${isExpanded ? 'rotate-180' : ''
+            className={`w-4 h-4 text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''
               }`}
           />
         </button>
@@ -131,11 +133,11 @@ const MultiCurrencyBalance: React.FC<MultiCurrencyBalanceProps> = ({
       {/* Base Currency Display */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-muted">Base Currency</span>
+          <span className="text-xs text-muted-foreground">Base Currency</span>
           <span className="text-xs text-highlight font-medium">{baseCurrency}</span>
         </div>
         <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-bold text-white">
+          <span className="text-2xl font-bold text-foreground">
             {formatCurrency(
               baseBalance,
               baseCurrency,
@@ -147,16 +149,16 @@ const MultiCurrencyBalance: React.FC<MultiCurrencyBalanceProps> = ({
 
       {/* Other Currencies (Collapsed) */}
       {!isExpanded && otherCurrencies.length > 0 && (
-        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/10">
+        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border">
           {otherCurrencies.slice(0, 2).map((conversion) => (
             <div key={conversion.currency} className="space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-muted">{conversion.currency}</span>
-                <span className="text-xs text-muted">
+                <span className="text-xs text-muted-foreground">{conversion.currency}</span>
+                <span className="text-xs text-muted-foreground">
                   1 {baseCurrency} = {conversion.rate.toFixed(4)} {conversion.currency}
                 </span>
               </div>
-              <p className="text-sm font-medium text-white">
+              <p className="text-sm font-medium text-foreground">
                 {formatCurrency(conversion.balance, conversion.currency, conversion.symbol)}
               </p>
             </div>
@@ -166,17 +168,17 @@ const MultiCurrencyBalance: React.FC<MultiCurrencyBalanceProps> = ({
 
       {/* Expanded View */}
       {isExpanded && (
-        <div className="space-y-3 pt-2 border-t border-white/10">
+        <div className="space-y-3 pt-2 border-t border-border">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-muted uppercase">
+            <span className="text-xs font-medium text-muted-foreground uppercase">
               All Currencies
             </span>
             <button
               onClick={() => refetch()}
-              className="p-1 hover:bg-white/10 rounded transition-colors"
+              className="p-1 hover:bg-muted rounded transition-colors"
               title="Refresh rates"
             >
-              <RefreshCw className="w-3 h-3 text-muted" />
+              <RefreshCw className="w-3 h-3 text-muted-foreground" />
             </button>
           </div>
           <div className="grid grid-cols-1 gap-3">
@@ -185,25 +187,25 @@ const MultiCurrencyBalance: React.FC<MultiCurrencyBalanceProps> = ({
                 key={conversion.currency}
                 className={`p-3 rounded-lg border transition-colors ${selectedCurrency === conversion.currency
                     ? 'bg-highlight/20 border-highlight/30'
-                    : 'bg-white/5 border-white/10 hover:border-white/20'
+                    : 'bg-muted/50 border-border hover:border-muted-foreground'
                   }`}
                 onClick={() => setSelectedCurrency(conversion.currency)}
               >
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-white">{conversion.currency}</span>
-                    <span className="text-xs text-muted">
+                    <span className="font-bold text-foreground">{conversion.currency}</span>
+                    <span className="text-xs text-muted-foreground">
                       {conversion.symbol}
                     </span>
                   </div>
-                  <span className="text-xs text-muted">
+                  <span className="text-xs text-muted-foreground">
                     1 {baseCurrency} = {conversion.rate.toFixed(4)}
                   </span>
                 </div>
                 <p className="text-lg font-bold text-highlight">
                   {formatCurrency(conversion.balance, conversion.currency, conversion.symbol)}
                 </p>
-                <p className="text-xs text-muted mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   ≈ {formatCurrency(
                     baseBalance,
                     baseCurrency,
@@ -213,8 +215,8 @@ const MultiCurrencyBalance: React.FC<MultiCurrencyBalanceProps> = ({
               </div>
             ))}
           </div>
-          <div className="pt-2 border-t border-white/10">
-            <p className="text-xs text-muted text-center">
+          <div className="pt-2 border-t border-border">
+            <p className="text-xs text-muted-foreground text-center">
               Exchange rates updated every 24 hours. Rates are approximate and may vary.
             </p>
           </div>

@@ -21,23 +21,23 @@ export const CircleMembersTab: React.FC<CircleMembersTabProps> = ({ circle }) =>
           <p className="text-stone-500">No members yet</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {circle.members?.map((member, index) => (
             <motion.div
               key={member.id}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: index * 0.03 }}
-              className="p-4 bg-stone-50 rounded-xl text-center hover:bg-stone-100 transition-colors cursor-pointer"
+              className="p-4 bg-muted/50 rounded-xl text-center hover:bg-muted transition-colors cursor-pointer"
             >
               {member.user.avatar ? (
                 <img
                   src={member.user.avatar}
                   alt={member.user.name}
-                  className="w-16 h-16 rounded-full object-cover mx-auto mb-3 border-2 border-white shadow-md"
+                  className="w-16 h-16 rounded-full object-cover mx-auto mb-3 border-2 border-card shadow-md"
                 />
               ) : (
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3 border-2 border-white shadow-md">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3 border-2 border-card shadow-md">
                   <span className="text-primary font-bold text-xl">
                     {(member.user.yorubaName || member.user.name)
                       .charAt(0)

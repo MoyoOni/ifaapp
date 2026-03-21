@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Bell, Check, CheckCheck, Trash2, Loader2, AlertCircle, Info, CheckCircle, AlertTriangle, XCircle, Mail, Calendar, ShoppingBag, Users } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
+import { SkeletonTable } from '@/shared/components/skeleton';
+import { useToast } from '@/shared/components/toast';
 
 interface Notification {
   id: string;
@@ -23,6 +25,7 @@ interface Notification {
 const NotificationCenter: React.FC = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [filter, setFilter] = useState<'all' | 'unread' | 'messages' | 'appointments' | 'orders' | 'community'>('all');
 
   // Fetch notifications
@@ -78,6 +81,10 @@ const NotificationCenter: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
       queryClient.invalidateQueries({ queryKey: ['notifications-count-by-type'] });
+      toast.success('All marked as read');
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to mark as read — ${err.message}`);
     },
   });
 
@@ -90,6 +97,10 @@ const NotificationCenter: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
       queryClient.invalidateQueries({ queryKey: ['notifications-count-by-type'] });
+      toast.success('Notification deleted');
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to delete notification — ${err.message}`);
     },
   });
 
@@ -154,11 +165,7 @@ const NotificationCenter: React.FC = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-highlight" />
-      </div>
-    );
+    return <SkeletonTable rows={5} />;
   }
 
   return (

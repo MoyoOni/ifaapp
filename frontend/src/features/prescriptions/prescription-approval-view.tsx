@@ -272,12 +272,12 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
 
         {/* Progress Bar */}
         {canTrackCompletion && (
-          <div className="mb-4 bg-white/10 rounded-full h-2 overflow-hidden">
-            <div
-              className="bg-highlight h-full transition-all duration-500"
-              style={{ width: `${progressPercent}%` } as React.CSSProperties}
-            />
-          </div>
+          <progress
+            value={progressPercent}
+            max={100}
+            aria-label="Guidance plan progress"
+            className="w-full h-2 mb-4 rounded-full [&::-webkit-progress-bar]:rounded-full [&::-webkit-progress-bar]:bg-white/10 [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-highlight [&::-moz-progress-bar]:rounded-full [&::-moz-progress-bar]:bg-highlight"
+          />
         )}
 
         <div className="space-y-3">

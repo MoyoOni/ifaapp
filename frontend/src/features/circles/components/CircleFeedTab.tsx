@@ -47,7 +47,7 @@ export const CircleFeedTab: React.FC<CircleFeedTabProps> = ({
     <div className="space-y-6">
       {/* New Post Input */}
       {isMember && (
-        <div className="flex gap-4 pb-6 border-b border-stone-100">
+        <div className="flex gap-4 pb-6 border-b border-border">
           <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
             <span className="text-primary font-bold">{userInitial}</span>
           </div>
@@ -56,7 +56,7 @@ export const CircleFeedTab: React.FC<CircleFeedTabProps> = ({
               value={newPost}
               onChange={(e) => onPostChange(e.target.value)}
               placeholder="Share something with the circle..."
-              className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:bg-white transition-all"
+              className="w-full p-3 bg-muted/50 border border-border rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:bg-card transition-all"
               rows={3}
             />
             <div className="flex justify-end mt-2">
@@ -93,7 +93,7 @@ export const CircleFeedTab: React.FC<CircleFeedTabProps> = ({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
               className={`p-4 rounded-xl ${
-                post.isPinned ? 'bg-highlight/5 border border-highlight/20' : 'bg-stone-50'
+                post.isPinned ? 'bg-highlight/5 border border-highlight/20' : 'bg-muted/50'
               }`}
             >
               {post.isPinned && (
@@ -119,13 +119,13 @@ export const CircleFeedTab: React.FC<CircleFeedTabProps> = ({
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="font-semibold text-foreground">{post.authorName}</span>
-                    <span className="text-xs text-stone-400">{formatDate(post.createdAt)}</span>
+                    <span className="text-xs text-muted-foreground">{formatDate(post.createdAt)}</span>
                   </div>
-                  <p className="text-stone-700 whitespace-pre-wrap">{post.content}</p>
-                  <div className="flex items-center gap-4 mt-3 text-stone-500">
-                    <button className="flex items-center gap-1 hover:text-red-500 transition-colors">
+                  <p className="text-foreground whitespace-pre-wrap">{post.content}</p>
+                  <div className="flex items-center gap-4 mt-3 text-muted-foreground">
+                    <button aria-label={`Like post (${post.likes} likes)`} className="flex items-center gap-1 hover:text-red-500 transition-colors">
                       <Heart size={16} />
-                      <span className="text-sm">{post.likes}</span>
+                      <span className="text-sm" aria-hidden="true">{post.likes}</span>
                     </button>
                     <button className="flex items-center gap-1 hover:text-blue-500 transition-colors">
                       <MessageCircle size={16} />

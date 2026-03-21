@@ -1,11 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
-import { UserRole } from '@common';
+import { CheckCircle, XCircle, Loader2, AlertTriangle } from 'lucide-react';
 import api from '@/lib/api';
-import { logger } from '@/shared/utils/logger';
-
-import { getDemoUserById, type DemoUser } from '@/demo';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface WithdrawalRequest {
@@ -41,85 +37,38 @@ const PayoutApprovalsView: React.FC = () => {
   const [selectedWithdrawal, setSelectedWithdrawal] = useState<WithdrawalRequest | null>(null);
   const [approvalNotes, setApprovalNotes] = useState('');
   const [threshold, setThreshold] = useState(500);
+  const loggedPiiRef = useRef<Set<string>>(new Set());
+
+  // Log PII reveal when detail panel opens with sensitive data
+  useEffect(() => {
+    if (!selectedWithdrawal) return;
+    const key = selectedWithdrawal.id;
+    if (loggedPiiRef.current.has(key)) return;
+    loggedPiiRef.current.add(key);
+
+    const fields: Array<{ fieldLabel: string }> = [];
+    if (selectedWithdrawal.bankAccount) fields.push({ fieldLabel: 'bankAccount' });
+    if (selectedWithdrawal.accountName) fields.push({ fieldLabel: 'accountName' });
+    if (selectedWithdrawal.user?.email) fields.push({ fieldLabel: 'email' });
+
+    for (const field of fields) {
+      api.post('/admin/log-pii-reveal', {
+        entityType: 'WithdrawalRequest',
+        entityId: selectedWithdrawal.id,
+        fieldLabel: field.fieldLabel,
+        reason: 'Payout approval review',
+      }).catch(() => { /* non-blocking */ });
+    }
+  }, [selectedWithdrawal]);
 
   // Fetch pending withdrawals
   const { data: withdrawals = [], isLoading } = useQuery<WithdrawalRequest[]>({
     queryKey: ['admin-withdrawals', threshold],
     queryFn: async () => {
-      try {
-        const response = await api.get('/admin/withdrawals/pending', {
-          params: { threshold },
-        });
-        return response.data;
-      } catch (error) {
-        throw error;
-
-        logger.warn('Failed to fetch withdrawals, using demo data');
-        const demoBaba1 = getDemoUserById('demo-baba-1') || ({ id: 'demo-baba-1', name: 'Babalawo', role: UserRole.BABALAWO } as DemoUser);
-        const demoBaba2 = getDemoUserById('demo-baba-2') || ({ id: 'demo-baba-2', name: 'Babalawo', role: UserRole.BABALAWO } as DemoUser);
-        const demoVendor1 = getDemoUserById('demo-vendor-1') || ({ id: 'demo-vendor-1', name: 'Vendor', role: UserRole.VENDOR } as DemoUser);
-
-        const demoWithdrawals: WithdrawalRequest[] = [
-          {
-            id: 'wd-001',
-            userId: demoBaba1.id,
-            escrowId: 'escrow-001',
-            amount: 1200,
-            currency: 'USD',
-            bankAccount: '1234567890',
-            bankName: 'Zenith Bank',
-            accountName: 'Baba Femi Sowande',
-            status: 'PENDING',
-            createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-            user: {
-              id: demoBaba1.id,
-              name: demoBaba1.name,
-              email: demoBaba1.email || 'ifatunde@example.com',
-            },
-            escrow: {
-              id: 'escrow-001',
-              type: 'CONSULTATION',
-              amount: 1200,
-            },
-          },
-          {
-            id: 'wd-002',
-            userId: demoVendor1.id,
-            escrowId: null,
-            amount: 600,
-            currency: 'USD',
-            bankAccount: '9876543210',
-            bankName: 'GTBank',
-            accountName: 'Iya Omitonade',
-            status: 'PENDING',
-            createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-            user: {
-              id: demoVendor1.id,
-              name: demoVendor1.name,
-              email: demoVendor1.email || 'yeye@example.com',
-            },
-          },
-          {
-            id: 'wd-003',
-            userId: demoBaba2.id,
-            escrowId: null,
-            amount: 300,
-            currency: 'USD',
-            bankAccount: '5556667777',
-            bankName: 'Access Bank',
-            accountName: 'Iya Funmilayo',
-            status: 'PENDING',
-            createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-            user: {
-              id: demoBaba2.id,
-              name: demoBaba2.name,
-              email: demoBaba2.email || 'funmi@example.com',
-            },
-          },
-        ];
-
-        return demoWithdrawals.filter((item) => item.amount >= threshold);
-      }
+      const response = await api.get('/admin/withdrawals/pending', {
+        params: { threshold },
+      });
+      return response.data;
     },
   });
 
@@ -165,31 +114,32 @@ const PayoutApprovalsView: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-highlight">Payout Approvals</h2>
-          <p className="text-sm text-muted mt-1">
+          <p className="text-sm text-stone-500 mt-1">
             Review withdrawal requests requiring manual approval
           </p>
         </div>
 
         {/* Threshold Filter */}
         <div className="flex items-center gap-3">
-          <label className="text-sm text-muted">Threshold:</label>
+          <label className="text-sm text-stone-500">Threshold:</label>
           <select
             value={threshold}
             onChange={(e) => setThreshold(parseInt(e.target.value))}
-            className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-highlight"
+            aria-label="Withdrawal threshold filter"
+            className="px-4 py-2 bg-white border border-stone-200 rounded-lg text-stone-900 focus:outline-none focus:border-highlight"
           >
-            <option value="100">$100+</option>
-            <option value="250">$250+</option>
-            <option value="500">$500+</option>
-            <option value="1000">$1,000+</option>
+            <option value="100">₦100+</option>
+            <option value="250">₦250+</option>
+            <option value="500">₦500+</option>
+            <option value="1000">₦1,000+</option>
           </select>
         </div>
       </div>
 
       {/* Withdrawals List */}
       {withdrawals.length === 0 ? (
-        <div className="text-center p-8 bg-white/5 rounded-xl border border-white/10">
-          <p className="text-muted">No pending withdrawals above ${threshold}</p>
+        <div className="text-center p-8 bg-white rounded-xl border border-stone-200">
+          <p className="text-stone-500">No pending withdrawals above ₦{threshold.toLocaleString()}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -198,7 +148,7 @@ const PayoutApprovalsView: React.FC = () => {
             {withdrawals.map((withdrawal) => (
               <div
                 key={withdrawal.id}
-                className={`bg-white/5 rounded-xl p-6 border border-white/10 hover:border-highlight/30 transition-colors cursor-pointer ${
+                className={`bg-white rounded-xl p-6 border border-stone-200 hover:border-highlight/30 transition-colors cursor-pointer ${
                   selectedWithdrawal?.id === withdrawal.id ? 'border-highlight' : ''
                 }`}
                 onClick={() => setSelectedWithdrawal(withdrawal)}
@@ -206,13 +156,13 @@ const PayoutApprovalsView: React.FC = () => {
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <h3 className="font-semibold text-lg">{withdrawal.user.name}</h3>
-                    <p className="text-sm text-muted">{withdrawal.user.email}</p>
+                    <p className="text-sm text-stone-500">{withdrawal.user.email}</p>
                   </div>
                   <div className="text-right">
                     <div className="text-xl font-bold text-highlight">
                       {formatCurrency(withdrawal.amount, withdrawal.currency)}
                     </div>
-                    <div className="text-xs text-muted mt-1">
+                    <div className="text-xs text-stone-500 mt-1">
                       {new Date(withdrawal.createdAt).toLocaleDateString()}
                     </div>
                   </div>
@@ -220,18 +170,18 @@ const PayoutApprovalsView: React.FC = () => {
 
                 {/* Bank Details */}
                 {withdrawal.bankAccount && (
-                  <div className="mb-4 p-3 bg-white/5 rounded-lg border border-white/10 text-sm">
+                  <div className="mb-4 p-3 bg-stone-50 rounded-lg border border-stone-200 text-sm">
                     <div className="space-y-1">
                       <div>
-                        <span className="text-muted">Bank:</span>{' '}
+                        <span className="text-stone-500">Bank:</span>{' '}
                         <span className="font-medium">{withdrawal.bankName || 'N/A'}</span>
                       </div>
                       <div>
-                        <span className="text-muted">Account:</span>{' '}
+                        <span className="text-stone-500">Account:</span>{' '}
                         <span className="font-medium">{withdrawal.accountName || 'N/A'}</span>
                       </div>
                       <div>
-                        <span className="text-muted">Account Number:</span>{' '}
+                        <span className="text-stone-500">Account Number:</span>{' '}
                         <span className="font-medium font-mono">
                           {withdrawal.bankAccount.slice(-4).padStart(withdrawal.bankAccount.length, '*')}
                         </span>
@@ -301,10 +251,16 @@ const PayoutApprovalsView: React.FC = () => {
 
           {/* Approval Panel */}
           {selectedWithdrawal && (
-            <div className="bg-white/5 rounded-xl p-6 border border-white/10 space-y-6 sticky top-6">
+            <div className="bg-white rounded-xl p-6 border border-stone-200 space-y-6 sticky top-6">
+              {/* PII Disclosure Notice */}
+              <div className="flex items-start gap-2 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-sm text-yellow-300">
+                <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+                <span>Viewing sensitive data — this access is logged.</span>
+              </div>
+
               <div>
                 <h3 className="text-xl font-bold mb-2">Review Withdrawal</h3>
-                <p className="text-sm text-muted">
+                <p className="text-sm text-stone-500">
                   {formatCurrency(selectedWithdrawal.amount, selectedWithdrawal.currency)}
                 </p>
               </div>
@@ -321,17 +277,17 @@ const PayoutApprovalsView: React.FC = () => {
                 {selectedWithdrawal.bankAccount && (
                   <div>
                     <label className="block text-sm font-medium mb-2">Bank Details</label>
-                    <div className="bg-white/5 rounded-lg p-4 border border-white/10 space-y-2 text-sm">
+                    <div className="bg-stone-50 rounded-lg p-4 border border-stone-200 space-y-2 text-sm">
                       <div>
-                        <span className="text-muted">Bank Name:</span>{' '}
+                        <span className="text-stone-500">Bank Name:</span>{' '}
                         <span className="font-medium">{selectedWithdrawal.bankName || 'N/A'}</span>
                       </div>
                       <div>
-                        <span className="text-muted">Account Name:</span>{' '}
+                        <span className="text-stone-500">Account Name:</span>{' '}
                         <span className="font-medium">{selectedWithdrawal.accountName || 'N/A'}</span>
                       </div>
                       <div>
-                        <span className="text-muted">Account Number:</span>{' '}
+                        <span className="text-stone-500">Account Number:</span>{' '}
                         <span className="font-medium font-mono">{selectedWithdrawal.bankAccount}</span>
                       </div>
                     </div>
@@ -361,14 +317,14 @@ const PayoutApprovalsView: React.FC = () => {
 
               {/* Approval Actions */}
               {selectedWithdrawal.status === 'PENDING' && (
-                <div className="space-y-4 pt-4 border-t border-white/10">
+                <div className="space-y-4 pt-4 border-t border-stone-200">
                   <div>
                     <label className="block text-sm font-medium mb-2">Admin Notes</label>
                     <textarea
                       value={approvalNotes}
                       onChange={(e) => setApprovalNotes(e.target.value)}
                       rows={3}
-                      className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-highlight"
+                      className="w-full px-4 py-2 bg-white border border-stone-200 rounded-lg text-stone-900 focus:outline-none focus:border-highlight"
                       placeholder="Add notes about your decision..."
                     />
                   </div>

@@ -152,7 +152,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-background border border-white/10 rounded-xl p-6 max-w-md w-full space-y-6">
+      <div className="bg-card border border-border rounded-xl p-6 max-w-md w-full space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <h3 className="text-2xl font-bold text-highlight flex items-center gap-2">
@@ -161,7 +161,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           </h3>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            className="p-2 hover:bg-muted rounded-lg transition-colors"
             disabled={isProcessing}
             aria-label="Close payment modal"
             title="Close"
@@ -184,15 +184,15 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
               </button>
             </div>
           )}
-          <div className="bg-white/5 rounded-lg p-4 space-y-3">
+          <div className="bg-muted/50 rounded-lg p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-muted">Purpose</span>
+              <span className="text-muted-foreground">Purpose</span>
               <span className="font-medium">{getPurposeLabel(purpose)}</span>
             </div>
 
             {/* Currency Selection */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-muted">
+              <label className="block text-sm font-medium text-muted-foreground">
                 Payment Currency
               </label>
               <select
@@ -200,7 +200,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                 onChange={(e) => setSelectedCurrency(e.target.value as Currency)}
                 disabled={isProcessing}
                 aria-label="Select payment currency"
-                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-highlight disabled:opacity-50"
+                className="w-full px-4 py-2 bg-muted/50 border border-border rounded-lg text-foreground focus:outline-none focus:border-highlight disabled:opacity-50"
               >
                 <option value={Currency.NGN}>₦ NGN (Nigerian Naira)</option>
                 <option value={Currency.USD}>$ USD (US Dollar)</option>
@@ -211,23 +211,23 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             </div>
 
             {/* Amount Display */}
-            <div className="space-y-2 pt-2 border-t border-white/10">
+            <div className="space-y-2 pt-2 border-t border-border">
               {selectedCurrency !== currency && convertedAmount && conversionRate ? (
                 <>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted">Original Amount</span>
-                    <span className="text-muted line-through">
+                    <span className="text-muted-foreground">Original Amount</span>
+                    <span className="text-muted-foreground line-through">
                       {formatCurrency(amount, currency)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted">Exchange Rate</span>
-                    <span className="text-muted">
+                    <span className="text-muted-foreground">Exchange Rate</span>
+                    <span className="text-muted-foreground">
                       1 {currency} = {conversionRate.toFixed(4)} {selectedCurrency}
                     </span>
                   </div>
                   <div className="flex items-center justify-between pt-2">
-                    <span className="text-muted">Amount to Pay</span>
+                    <span className="text-muted-foreground">Amount to Pay</span>
                     <span className="text-2xl font-bold text-highlight">
                       {formatCurrency(convertedAmount, selectedCurrency)}
                     </span>
@@ -235,7 +235,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                 </>
               ) : (
                 <div className="flex items-center justify-between">
-                  <span className="text-muted">Amount</span>
+                  <span className="text-muted-foreground">Amount</span>
                   <span className="text-2xl font-bold text-highlight">
                     {formatCurrency(amount, currency)}
                   </span>
@@ -292,7 +292,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           <button
             onClick={onClose}
             disabled={isProcessing}
-            className="flex-1 px-4 py-3 bg-white/10 text-white rounded-lg font-medium hover:bg-white/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 px-4 py-3 bg-muted text-foreground rounded-lg font-medium hover:bg-muted/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancel
           </button>

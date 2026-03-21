@@ -1,5 +1,5 @@
-import { useApiQuery } from '@/shared/hooks/use-api-query';
-import { DEMO_USERS } from '@/demo';
+import { useQuery } from '@tanstack/react-query';
+import api from '@/lib/api';
 
 export interface PublicProfileViewProps {
   userId: string;
@@ -21,6 +21,7 @@ interface UserProfile {
   location?: string;
   gender?: string;
   culturalLevel?: string;
+  slug?: string;
   createdAt?: string;
   verified?: boolean;
   rating?: number;
@@ -31,26 +32,26 @@ interface UserProfile {
   phone?: string;
   interests?: string[];
   friends?: string[];
-  communities?: any[]; // Added for real community data
-  posts?: any[]; // Added for real posts data
-  productsCount?: number; // Added for vendor stats
-  vendorRating?: number; // Added for vendor stats
-  salesCount?: number; // Added for vendor stats
-  sessionsCount?: number; // Added for client stats
-  guidancePlansCount?: number; // Added for client stats
-  yearsActive?: number; // Added for client stats
-  [key: string]: any; // Allow additional properties
+  communities?: any[];
+  posts?: any[];
+  productsCount?: number;
+  vendorRating?: number;
+  salesCount?: number;
+  sessionsCount?: number;
+  guidancePlansCount?: number;
+  yearsActive?: number;
+  [key: string]: any;
 }
 
 export function useProfileQuery(userId: string) {
-  return useApiQuery<UserProfile>({
-    endpoint: `/users/${userId}/profile`,
+  return useQuery<UserProfile>({
     queryKey: ['profile', userId],
-    // Use demo data only when in demo mode and API fails
-    demoData: DEMO_USERS[userId as keyof typeof DEMO_USERS] || undefined,
-    queryOptions: {
-      // Retry on failure
-      retry: 1
-    }
+    queryFn: async () => {
+      const response = await api.get(`/users/${userId}/profile`);
+      return response.data;
+    },
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
   });
 }

@@ -8,9 +8,10 @@ import { PaystackApiService } from './paystack-api.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { WalletModule } from '../wallet/wallet.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { CacheModule } from '../cache/cache.module';
 
 @Module({
-  imports: [PrismaModule, forwardRef(() => WalletModule), NotificationsModule],
+  imports: [PrismaModule, forwardRef(() => WalletModule), NotificationsModule, CacheModule],
   providers: [
     PaymentsService,
     PaystackApiService,

@@ -13,6 +13,7 @@ import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { logger } from '@/shared/utils/logger';
 import { TransactionType, TransactionStatus, Currency } from '@common';
+import { SkeletonTable } from '@/shared/components/skeleton';
 
 interface Transaction {
   id: string;
@@ -164,7 +165,7 @@ const TransactionHistoryView: React.FC<TransactionHistoryViewProps> = ({ onBack 
     : 0;
 
   return (
-    <div className="min-h-screen bg-background text-white p-6">
+    <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -173,7 +174,9 @@ const TransactionHistoryView: React.FC<TransactionHistoryViewProps> = ({ onBack 
               {onBack && (
                 <button
                   onClick={onBack}
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                  className="p-2 hover:bg-muted rounded-lg transition-colors"
+                  aria-label="Go back"
+                  title="Go back"
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </button>
@@ -182,14 +185,14 @@ const TransactionHistoryView: React.FC<TransactionHistoryViewProps> = ({ onBack 
                 Transaction History
               </h1>
             </div>
-            <p className="text-muted text-lg">
+            <p className="text-muted-foreground text-lg">
               {transactionsData?.total || 0} total transactions
             </p>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10 space-y-4">
+        <div className="bg-card rounded-xl p-6 border border-border space-y-4">
           <div className="flex items-center gap-2 text-highlight mb-4">
             <Filter className="w-5 h-5" />
             <h2 className="text-xl font-bold">Filters</h2>
@@ -204,7 +207,8 @@ const TransactionHistoryView: React.FC<TransactionHistoryViewProps> = ({ onBack 
                   setSelectedType(e.target.value as TransactionType | 'ALL');
                   setPage(0);
                 }}
-                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-highlight"
+                aria-label="Filter by transaction type"
+                className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:border-highlight"
               >
                 <option value="ALL">All Types</option>
                 {Object.values(TransactionType).map((type) => (
@@ -224,7 +228,8 @@ const TransactionHistoryView: React.FC<TransactionHistoryViewProps> = ({ onBack 
                   setSelectedStatus(e.target.value as TransactionStatus | 'ALL');
                   setPage(0);
                 }}
-                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-highlight"
+                aria-label="Filter by transaction status"
+                className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:border-highlight"
               >
                 <option value="ALL">All Statuses</option>
                 {Object.values(TransactionStatus).map((status) => (
@@ -238,15 +243,13 @@ const TransactionHistoryView: React.FC<TransactionHistoryViewProps> = ({ onBack 
         </div>
 
         {/* Transactions List */}
-        <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10 space-y-4">
+        <div className="bg-card rounded-xl p-6 border border-border space-y-4">
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-highlight" />
-            </div>
+            <SkeletonTable rows={5} />
           ) : transactionsData?.transactions.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-muted text-lg">No transactions found</p>
-              <p className="text-muted text-sm mt-2">
+              <p className="text-muted-foreground text-lg">No transactions found</p>
+              <p className="text-muted-foreground text-sm mt-2">
                 Try adjusting your filters
               </p>
             </div>
@@ -256,7 +259,7 @@ const TransactionHistoryView: React.FC<TransactionHistoryViewProps> = ({ onBack 
                 {transactionsData?.transactions.map((transaction) => (
                   <div
                     key={transaction.id}
-                    className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/5 hover:border-white/10 transition-colors"
+                    className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border border-border/60 hover:border-border transition-colors"
                   >
                     <div className="flex items-center gap-4 flex-1">
                       {getTransactionIcon(transaction.type)}
@@ -265,11 +268,11 @@ const TransactionHistoryView: React.FC<TransactionHistoryViewProps> = ({ onBack 
                           {transaction.description || transaction.type.replace('_', ' ')}
                         </p>
                         <div className="flex items-center gap-3 mt-1">
-                          <p className="text-sm text-muted">
+                          <p className="text-sm text-muted-foreground">
                             {formatDate(transaction.createdAt)}
                           </p>
                           {transaction.reference && (
-                            <span className="text-xs text-muted">
+                            <span className="text-xs text-muted-foreground">
                               Ref: {transaction.reference.substring(0, 8)}...
                             </span>
                           )}
@@ -294,21 +297,21 @@ const TransactionHistoryView: React.FC<TransactionHistoryViewProps> = ({ onBack 
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-between pt-4 border-t border-white/10">
+                <div className="flex items-center justify-between pt-4 border-t border-border">
                   <button
                     onClick={() => setPage((p) => Math.max(0, p - 1))}
                     disabled={page === 0}
-                    className="px-4 py-2 bg-white/10 text-white rounded-lg font-medium hover:bg-white/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 bg-muted text-foreground rounded-lg font-medium hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Previous
                   </button>
-                  <p className="text-muted">
+                  <p className="text-muted-foreground">
                     Page {page + 1} of {totalPages}
                   </p>
                   <button
                     onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                     disabled={page >= totalPages - 1}
-                    className="px-4 py-2 bg-white/10 text-white rounded-lg font-medium hover:bg-white/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 bg-muted text-foreground rounded-lg font-medium hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Next
                   </button>

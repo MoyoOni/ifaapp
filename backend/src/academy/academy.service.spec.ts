@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AcademyService } from './academy.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { CertificateService } from '../certificates/certificate.service';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
 
 jest.mock('@ile-ase/common', () => {
@@ -46,11 +47,17 @@ describe('AcademyService', () => {
         verified: true,
     };
 
+    const mockCertificateService = {
+        issueCertificate: jest.fn(),
+        getCertificate: jest.fn(),
+    };
+
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 AcademyService,
                 { provide: PrismaService, useValue: mockPrismaService },
+                { provide: CertificateService, useValue: mockCertificateService },
             ],
         }).compile();
 

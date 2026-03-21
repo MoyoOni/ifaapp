@@ -17,20 +17,17 @@ const mockPaystackApi = {
 };
 
 jest.mock('flutterwave-node-v3', () => {
-  return {
-    __esModule: true,
-    default: jest.fn().mockImplementation(() => ({
-      Payment: {
-        initialize: jest.fn(),
-      },
-      Transaction: {
-        verify: jest.fn(),
-      },
-      Refund: {
-        create: jest.fn(),
-      },
-    })),
-  };
+  return jest.fn().mockImplementation(() => ({
+    Payment: {
+      initialize: jest.fn(),
+    },
+    Transaction: {
+      verify: jest.fn(),
+    },
+    Refund: {
+      create: jest.fn(),
+    },
+  }));
 });
 
 describe('PaymentsService', () => {

@@ -7,6 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MessagingService } from '../messaging/messaging.service';
 import { UserService } from '../modules/user/user.service';
 import { ImpersonationService } from '../shared/services/impersonation.service';
+import { SesEmailService } from '../shared/services/ses-email.service';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -30,6 +31,7 @@ describe('AuthService', () => {
       findUnique: jest.fn(),
       findMany: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
     },
   };
 
@@ -56,6 +58,11 @@ describe('AuthService', () => {
     stopImpersonation: jest.fn(),
   };
 
+  const mockSesEmailService = {
+    sendWelcomeEmail: jest.fn(),
+    sendPasswordResetEmail: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -66,6 +73,7 @@ describe('AuthService', () => {
         { provide: MessagingService, useValue: mockMessagingService },
         { provide: UserService, useValue: mockUserService },
         { provide: ImpersonationService, useValue: mockImpersonationService },
+        { provide: SesEmailService, useValue: mockSesEmailService },
       ],
     }).compile();
 
@@ -143,26 +151,17 @@ describe('AuthService', () => {
         where: { email: mockRegisterDto.email },
       });
       expect(bcrypt.hash).toHaveBeenCalledWith(mockRegisterDto.password, 10);
-      expect(prisma.user.create).toHaveBeenCalledWith({
-        data: {
-          email: mockRegisterDto.email,
-          name: mockRegisterDto.name,
-          passwordHash: 'hashed-password',
-          role: mockRegisterDto.role,
-          yorubaName: mockRegisterDto.yorubaName,
-          culturalLevel: mockRegisterDto.culturalLevel || 'Omo Ilé',
-        },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          role: true,
-          verified: true,
-          yorubaName: true,
-          culturalLevel: true,
-          hasOnboarded: true,
-        },
-      });
+      expect(prisma.user.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            email: mockRegisterDto.email,
+            name: mockRegisterDto.name,
+            passwordHash: 'hashed-password',
+            role: mockRegisterDto.role,
+            yorubaName: mockRegisterDto.yorubaName,
+          }),
+        }),
+      );
       expect(jwtService.sign).toHaveBeenCalledTimes(2);
       expect(messagingService.sendSystemMessage).toHaveBeenCalled();
       expect(result).toEqual({

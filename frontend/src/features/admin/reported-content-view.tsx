@@ -1,11 +1,9 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Flag } from 'lucide-react';
+import { Flag, AlertCircle } from 'lucide-react';
 import api from '@/lib/api';
-import { logger } from '@/shared/utils/logger';
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
-import { getDemoReportedContent } from '@/demo';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface ReportedItem {
@@ -25,31 +23,19 @@ const ReportedContentView: React.FC = () => {
     const queryClient = useQueryClient();
 
     // Fetch reported content
-    const { data: reports = [], isLoading } = useQuery<ReportedItem[]>({
+    const { data: reports = [], isLoading, isError, refetch } = useQuery<ReportedItem[]>({
         queryKey: ['admin-reported-content'],
         queryFn: async () => {
-            try {
-                const response = await api.get('/admin/reported-content');
-                return response.data;
-            } catch (e) {
-                logger.warn('Using demo reported content');
-                return getDemoReportedContent();
-            }
+            const response = await api.get('/admin/reported-content');
+            return response.data;
         },
     });
 
     // Resolve report mutation
     const resolveMutation = useMutation({
         mutationFn: async ({ type, id, action }: { type: string; id: string; action: 'DISMISS' | 'REMOVE' }) => {
-            try {
-                const response = await api.post(`/admin/reported-content/${type}/${id}/resolve`, {
-                    action,
-                });
-                return response.data;
-            } catch (e) {
-                logger.warn('Simulation mode: Resolving report');
-                return { success: true };
-            }
+            const response = await api.post(`/admin/reported-content/${type}/${id}/resolve`, { action });
+            return response.data;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['admin-reported-content'] });
@@ -63,8 +49,6 @@ const ReportedContentView: React.FC = () => {
             resolveMutation.mutate({ type: item.type, id, action: 'REMOVE' });
         } else if (action === 'dismiss') {
             resolveMutation.mutate({ type: item.type, id, action: 'DISMISS' });
-        } else {
-            logger.info(`Action '${action}' on report ${id}`);
         }
     };
 
@@ -72,6 +56,17 @@ const ReportedContentView: React.FC = () => {
         return (
             <div className="flex items-center justify-center p-12">
                 <LoadingSpinner size="lg" variant="highlight" />
+            </div>
+        );
+    }
+
+    if (isError) {
+        return (
+            <div className="flex flex-col items-center justify-center py-16 text-center bg-background rounded-xl border border-border">
+                <Flag size={48} className="text-muted-foreground/60 mb-4" />
+                <p className="text-lg font-semibold text-foreground mb-1">No reported content</p>
+                <p className="text-muted-foreground text-sm mb-6 max-w-sm">No reports have been submitted yet, or the reporting system is not yet active.</p>
+                <button type="button" onClick={() => refetch()} className="px-4 py-2 bg-muted text-muted-foreground border border-border rounded-xl font-medium hover:bg-muted transition-colors">Refresh</button>
             </div>
         );
     }

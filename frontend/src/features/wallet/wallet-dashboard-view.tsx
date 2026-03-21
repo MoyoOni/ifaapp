@@ -13,6 +13,7 @@ import {
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { logger } from '@/shared/utils/logger';
+import { SkeletonTable } from '@/shared/components/skeleton';
 import { useToast } from '@/shared/components/toast';
 import { TransactionType, TransactionStatus, Currency, PaymentPurpose } from '@common';
 import PaymentModal from '../payments/payment-modal';
@@ -271,9 +272,7 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
           </div>
 
           {transactionsLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-8 h-8 animate-spin text-highlight" />
-            </div>
+            <SkeletonTable rows={3} />
           ) : transactionsData?.transactions.length === 0 ? (
             <div className="text-center py-12 bg-stone-50 rounded-xl border border-stone-100 border-dashed">
               <p className="text-stone-400 font-medium">No transactions yet</p>
@@ -369,12 +368,12 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
                               <span>Completion</span>
                               <span>{((releasedAmount / escrow.amount) * 100).toFixed(0)}%</span>
                             </div>
-                            <div className="w-full h-2 bg-stone-200 rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-gradient-to-r from-green-400 to-blue-500 transition-all duration-500"
-                                style={{ width: `${(releasedAmount / escrow.amount) * 100}%` } as React.CSSProperties}
-                              />
-                            </div>
+                            <progress
+                              value={releasedAmount}
+                              max={escrow.amount}
+                              aria-label="Escrow release progress"
+                              className="w-full h-2 rounded-full [&::-webkit-progress-bar]:rounded-full [&::-webkit-progress-bar]:bg-stone-200 [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-green-400 [&::-moz-progress-bar]:rounded-full [&::-moz-progress-bar]:bg-green-400"
+                            />
                           </div>
 
                           {/* Release Control Buttons */}

@@ -1,9 +1,6 @@
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-// import { createClient, RedisClientType } from 'redis';
-
-// Type definitions for Redis client (will be properly typed when redis is installed)
-type RedisClientType = any;
+import { createClient, RedisClientType } from 'redis';
 
 /**
  * Redis Cache Service
@@ -18,22 +15,20 @@ export class RedisCacheService implements OnModuleInit, OnModuleDestroy {
   constructor(private configService: ConfigService) {}
 
   async onModuleInit() {
-    // await this.connect();
-    this.logger.log('Redis cache service initialized (Redis dependency not yet installed)');
+    await this.connect();
   }
 
   async onModuleDestroy() {
-    // await this.disconnect();
+    await this.disconnect();
   }
 
   /**
    * Connect to Redis server
    */
   private async connect(): Promise<void> {
-    /* Implementation will be enabled when redis package is installed
     try {
       const redisUrl = this.configService.get<string>('REDIS_URL') || 'redis://localhost:6379';
-      
+
       this.client = createClient({
         url: redisUrl,
         socket: {
@@ -43,8 +38,8 @@ export class RedisCacheService implements OnModuleInit, OnModuleDestroy {
               return false;
             }
             return Math.min(retries * 50, 2000);
-          }
-        }
+          },
+        },
       });
 
       this.client.on('error', (err: any) => {
@@ -62,16 +57,12 @@ export class RedisCacheService implements OnModuleInit, OnModuleDestroy {
       this.logger.error('Failed to connect to Redis:', error);
       this.isConnected = false;
     }
-    */
-    this.logger.warn('Redis caching not available - install redis package to enable');
-    this.isConnected = false;
   }
 
   /**
    * Disconnect from Redis server
    */
   private async disconnect(): Promise<void> {
-    /* Implementation will be enabled when redis package is installed
     if (this.client && this.isConnected) {
       try {
         await this.client.quit();
@@ -82,14 +73,13 @@ export class RedisCacheService implements OnModuleInit, OnModuleDestroy {
         this.isConnected = false;
       }
     }
-    */
   }
 
   /**
    * Check if Redis is connected and available
    */
   isAvailable(): boolean {
-    return false; // Redis not available until package is installed
+    return this.isConnected && this.client !== null;
   }
 
   /**

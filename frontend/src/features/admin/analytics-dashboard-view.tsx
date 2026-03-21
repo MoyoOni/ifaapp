@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { TrendingUp, Users, DollarSign, Calendar, Package, AlertTriangle } from 'lucide-react';
 import api from '@/lib/api';
-import { logger } from '@/shared/utils/logger';
-
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface Analytics {
@@ -34,60 +32,6 @@ interface Analytics {
  */
 const AnalyticsDashboardView: React.FC = () => {
   const [period, setPeriod] = useState<'7d' | '30d' | '90d'>('30d');
-
-  const demoAnalyticsByPeriod: Record<'7d' | '30d' | '90d', Analytics> = {
-    '7d': {
-      period: '7d',
-      userGrowth: 18,
-      transactionVolume: { total: 420000, count: 36 },
-      totalRevenue: { total: 125000, count: 12 },
-      appointmentStats: [
-        { status: 'UPCOMING', _count: 6 },
-        { status: 'COMPLETED', _count: 9 },
-        { status: 'CANCELLED', _count: 2 },
-      ],
-      prescriptionStats: [
-        { status: 'PENDING', _count: 3 },
-        { status: 'APPROVED', _count: 2 },
-        { status: 'COMPLETED', _count: 1 },
-      ],
-      disputeCount: 1,
-    },
-    '30d': {
-      period: '30d',
-      userGrowth: 72,
-      transactionVolume: { total: 1650000, count: 148 },
-      totalRevenue: { total: 620000, count: 58 },
-      appointmentStats: [
-        { status: 'UPCOMING', _count: 14 },
-        { status: 'COMPLETED', _count: 38 },
-        { status: 'CANCELLED', _count: 4 },
-      ],
-      prescriptionStats: [
-        { status: 'PENDING', _count: 8 },
-        { status: 'APPROVED', _count: 5 },
-        { status: 'COMPLETED', _count: 6 },
-      ],
-      disputeCount: 3,
-    },
-    '90d': {
-      period: '90d',
-      userGrowth: 214,
-      transactionVolume: { total: 5820000, count: 492 },
-      totalRevenue: { total: 2100000, count: 180 },
-      appointmentStats: [
-        { status: 'UPCOMING', _count: 22 },
-        { status: 'COMPLETED', _count: 124 },
-        { status: 'CANCELLED', _count: 12 },
-      ],
-      prescriptionStats: [
-        { status: 'PENDING', _count: 18 },
-        { status: 'APPROVED', _count: 14 },
-        { status: 'COMPLETED', _count: 22 },
-      ],
-      disputeCount: 7,
-    },
-  };
 
   // Fetch analytics
   const { data: analytics, isLoading } = useQuery<Analytics>({
@@ -122,7 +66,7 @@ const AnalyticsDashboardView: React.FC = () => {
   if (!analytics) {
     return (
       <div className="text-center p-8">
-        <p className="text-muted">No analytics data available</p>
+        <p className="text-stone-500">No analytics data available</p>
       </div>
     );
   }
@@ -136,7 +80,7 @@ const AnalyticsDashboardView: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-highlight">Analytics Dashboard</h2>
-          <p className="text-sm text-muted mt-1">
+          <p className="text-sm text-stone-500 mt-1">
             Platform metrics and performance indicators
           </p>
         </div>
@@ -149,7 +93,7 @@ const AnalyticsDashboardView: React.FC = () => {
               onClick={() => setPeriod(p)}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${period === p
                   ? 'bg-highlight text-white'
-                  : 'bg-white/5 text-muted hover:bg-white/10'
+                  : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
                 }`}
             >
               {p === '7d' ? '7 Days' : p === '30d' ? '30 Days' : '90 Days'}
@@ -160,16 +104,16 @@ const AnalyticsDashboardView: React.FC = () => {
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+        <div className="bg-white rounded-xl p-6 border border-stone-200">
           <div className="flex items-center justify-between mb-2">
             <Users className="w-5 h-5 text-blue-400" />
             <TrendingUp className="w-4 h-4 text-green-400" />
           </div>
           <div className="text-2xl font-bold mb-1">{analytics.userGrowth}</div>
-          <div className="text-sm text-muted">New Users ({period})</div>
+          <div className="text-sm text-stone-500">New Users ({period})</div>
         </div>
 
-        <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+        <div className="bg-white rounded-xl p-6 border border-stone-200">
           <div className="flex items-center justify-between mb-2">
             <DollarSign className="w-5 h-5 text-green-400" />
             <TrendingUp className="w-4 h-4 text-green-400" />
@@ -177,12 +121,12 @@ const AnalyticsDashboardView: React.FC = () => {
           <div className="text-2xl font-bold mb-1">
             {formatCurrency(analytics.transactionVolume.total)}
           </div>
-          <div className="text-sm text-muted">
+          <div className="text-sm text-stone-500">
             Transaction Volume ({analytics.transactionVolume.count} transactions)
           </div>
         </div>
 
-        <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+        <div className="bg-white rounded-xl p-6 border border-stone-200">
           <div className="flex items-center justify-between mb-2">
             <DollarSign className="w-5 h-5 text-highlight" />
             <TrendingUp className="w-4 h-4 text-green-400" />
@@ -190,32 +134,32 @@ const AnalyticsDashboardView: React.FC = () => {
           <div className="text-2xl font-bold mb-1">
             {formatCurrency(analytics.totalRevenue.total)}
           </div>
-          <div className="text-sm text-muted">
+          <div className="text-sm text-stone-500">
             Total Revenue ({analytics.totalRevenue.count} releases)
           </div>
         </div>
 
-        <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+        <div className="bg-white rounded-xl p-6 border border-stone-200">
           <div className="flex items-center justify-between mb-2">
             <AlertTriangle className="w-5 h-5 text-red-400" />
           </div>
           <div className="text-2xl font-bold mb-1">{analytics.disputeCount}</div>
-          <div className="text-sm text-muted">Disputes ({period})</div>
+          <div className="text-sm text-stone-500">Disputes ({period})</div>
         </div>
       </div>
 
       {/* Appointment Stats */}
-      <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+      <div className="bg-white rounded-xl p-6 border border-stone-200">
         <div className="flex items-center gap-2 mb-4">
           <Calendar className="w-5 h-5 text-orange-400" />
           <h3 className="text-lg font-semibold">Appointment Statistics</h3>
-          <span className="ml-auto text-sm text-muted">Total: {totalAppointments}</span>
+          <span className="ml-auto text-sm text-stone-500">Total: {totalAppointments}</span>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           {analytics.appointmentStats.map((stat) => (
-            <div key={stat.status} className="bg-white/5 rounded-lg p-4 border border-white/10">
+            <div key={stat.status} className="bg-stone-50 rounded-lg p-4 border border-stone-200">
               <div className="text-xl font-bold mb-1">{stat._count}</div>
-              <div className="text-sm text-muted capitalize">
+              <div className="text-sm text-stone-500 capitalize">
                 {stat.status.replace('_', ' ')}
               </div>
             </div>
@@ -224,17 +168,17 @@ const AnalyticsDashboardView: React.FC = () => {
       </div>
 
       {/* Prescription Stats */}
-      <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+      <div className="bg-white rounded-xl p-6 border border-stone-200">
         <div className="flex items-center gap-2 mb-4">
           <Package className="w-5 h-5 text-purple-400" />
           <h3 className="text-lg font-semibold">Guidance Plan Statistics</h3>
-          <span className="ml-auto text-sm text-muted">Total: {totalPrescriptions}</span>
+          <span className="ml-auto text-sm text-stone-500">Total: {totalPrescriptions}</span>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
           {analytics.prescriptionStats.map((stat) => (
-            <div key={stat.status} className="bg-white/5 rounded-lg p-4 border border-white/10">
+            <div key={stat.status} className="bg-stone-50 rounded-lg p-4 border border-stone-200">
               <div className="text-xl font-bold mb-1">{stat._count}</div>
-              <div className="text-sm text-muted capitalize">
+              <div className="text-sm text-stone-500 capitalize">
                 {stat.status.replace('_', ' ')}
               </div>
             </div>
@@ -243,25 +187,25 @@ const AnalyticsDashboardView: React.FC = () => {
       </div>
 
       {/* Transaction Volume Details */}
-      <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+      <div className="bg-white rounded-xl p-6 border border-stone-200">
         <h3 className="text-lg font-semibold mb-4">Transaction Details</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <div className="text-sm text-muted mb-2">Total Volume</div>
+            <div className="text-sm text-stone-500 mb-2">Total Volume</div>
             <div className="text-2xl font-bold text-highlight">
               {formatCurrency(analytics.transactionVolume.total)}
             </div>
           </div>
           <div>
-            <div className="text-sm text-muted mb-2">Transaction Count</div>
+            <div className="text-sm text-stone-500 mb-2">Transaction Count</div>
             <div className="text-2xl font-bold">{analytics.transactionVolume.count}</div>
           </div>
         </div>
         {analytics.transactionVolume.count > 0 && (
-          <div className="mt-4 pt-4 border-t border-white/10">
-            <div className="text-sm text-muted">
+          <div className="mt-4 pt-4 border-t border-stone-200">
+            <div className="text-sm text-stone-500">
               Average Transaction:{' '}
-              <span className="font-medium text-white">
+              <span className="font-medium text-stone-900">
                 {formatCurrency(
                   analytics.transactionVolume.total / analytics.transactionVolume.count
                 )}

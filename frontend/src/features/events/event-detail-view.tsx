@@ -67,7 +67,7 @@ interface EventDetailViewProps {
 const EventDetailView: React.FC<EventDetailViewProps> = ({ eventSlug, onBack }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { success } = useToast();
+  const { success, error: showError } = useToast();
 
   const getSessionRegistration = (eventId: string) => {
     if (typeof sessionStorage === 'undefined') {
@@ -139,8 +139,8 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ eventSlug, onBack }) 
       queryClient.invalidateQueries({ queryKey: ['events'] });
       success('Successfully registered for event!');
     },
-    onError: (error: any) => {
-      error(error.response?.data?.message || 'Failed to register for event');
+    onError: (err: any) => {
+      showError(err.response?.data?.message || 'Failed to register for event');
     },
   });
 
@@ -168,6 +168,9 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ eventSlug, onBack }) 
       queryClient.invalidateQueries({ queryKey: ['event', eventSlug] });
       queryClient.invalidateQueries({ queryKey: ['events'] });
       success('Registration cancelled');
+    },
+    onError: (err: any) => {
+      showError(err?.response?.data?.message || 'Failed to cancel registration');
     },
   });
 
@@ -206,7 +209,7 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ eventSlug, onBack }) 
 
   if (!event) {
     return (
-      <div className="text-center py-12 text-muted">
+      <div className="text-center py-12 text-muted-foreground">
         <p className="text-xl mb-2">Event not found</p>
         {onBack && (
           <button
@@ -226,7 +229,7 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ eventSlug, onBack }) 
       {onBack && (
         <button
           onClick={onBack}
-          className="flex items-center gap-2 text-muted hover:text-white transition-colors"
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft size={20} />
           Back
@@ -246,7 +249,7 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ eventSlug, onBack }) 
       )}
 
       {/* Event Info */}
-      <div className="bg-white/5 border border-white/10 rounded-xl p-6 space-y-6">
+      <div className="bg-card border border-border rounded-xl p-6 space-y-6">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
@@ -254,25 +257,25 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ eventSlug, onBack }) 
                 {event.type}
               </span>
               {event.category && (
-                <span className="px-3 py-1 bg-white/10 text-muted rounded-full text-sm">
+                <span className="px-3 py-1 bg-muted/50 text-muted-foreground rounded-full text-sm">
                   {event.category}
                 </span>
               )}
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2">{event.title}</h1>
-            <p className="text-muted">Created by {event.creator.yorubaName || event.creator.name}</p>
+            <h1 className="text-3xl font-bold text-foreground mb-2">{event.title}</h1>
+            <p className="text-muted-foreground">Created by {event.creator.yorubaName || event.creator.name}</p>
           </div>
           <div className="text-right">
             <div className="text-3xl font-bold text-highlight mb-1">
               {formatPrice(event.price, event.currency)}
             </div>
             {event.capacity && (
-              <div className="text-sm text-muted">
+              <div className="text-sm text-muted-foreground">
                 {event._count?.registrations || 0} / {event.capacity} registered
               </div>
             )}
             {!event.capacity && (
-              <div className="text-sm text-muted">
+              <div className="text-sm text-muted-foreground">
                 {event._count?.registrations || 0} registered
               </div>
             )}
@@ -281,22 +284,22 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ eventSlug, onBack }) 
 
         {event.description && (
           <div>
-            <h2 className="text-lg font-bold text-white mb-2">Description</h2>
-            <p className="text-muted whitespace-pre-wrap">{event.description}</p>
+            <h2 className="text-lg font-bold text-foreground mb-2">Description</h2>
+            <p className="text-muted-foreground whitespace-pre-wrap">{event.description}</p>
           </div>
         )}
 
         {/* Event Details */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-white/10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-border">
           <div className="flex items-center gap-3">
             <Calendar size={20} className="text-highlight" />
             <div>
-              <div className="text-sm text-muted">Start Date</div>
-              <div className="font-bold text-white">{formatDate(event.startDate)}</div>
+              <div className="text-sm text-muted-foreground">Start Date</div>
+              <div className="font-bold text-foreground">{formatDate(event.startDate)}</div>
               {event.endDate && (
                 <>
-                  <div className="text-sm text-muted mt-1">End Date</div>
-                  <div className="font-bold text-white">{formatDate(event.endDate)}</div>
+                  <div className="text-sm text-muted-foreground mt-1">End Date</div>
+                  <div className="font-bold text-foreground">{formatDate(event.endDate)}</div>
                 </>
               )}
               <div className="mt-2">
@@ -317,8 +320,8 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ eventSlug, onBack }) 
             {event.locationType === 'HYBRID' && <Globe size={20} className="text-purple-400" />}
             {event.locationType === 'PHYSICAL' && <MapPin size={20} className="text-blue-400" />}
             <div>
-              <div className="text-sm text-muted">Location</div>
-              <div className="font-bold text-white">
+              <div className="text-sm text-muted-foreground">Location</div>
+              <div className="font-bold text-foreground">
                 {event.locationType === 'VIRTUAL'
                   ? 'Virtual Event'
                   : event.locationType === 'HYBRID'
@@ -342,8 +345,8 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ eventSlug, onBack }) 
             <div className="flex items-center gap-3">
               <Users size={20} className="text-highlight" />
               <div>
-                <div className="text-sm text-muted">Temple</div>
-                <div className="font-bold text-white">{event.temple.name}</div>
+                <div className="text-sm text-muted-foreground">Temple</div>
+                <div className="font-bold text-foreground">{event.temple.name}</div>
               </div>
             </div>
           )}
@@ -352,8 +355,8 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ eventSlug, onBack }) 
             <div className="flex items-center gap-3">
               <Users size={20} className="text-highlight" />
               <div>
-                <div className="text-sm text-muted">Circle</div>
-                <div className="font-bold text-white">{event.circle.name}</div>
+                <div className="text-sm text-muted-foreground">Circle</div>
+                <div className="font-bold text-foreground">{event.circle.name}</div>
               </div>
             </div>
           )}
@@ -366,7 +369,7 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ eventSlug, onBack }) 
               <CheckCircle size={20} />
               <span className="font-bold">You are registered for this event</span>
             </div>
-            <p className="text-sm text-muted mt-2">
+            <p className="text-sm text-muted-foreground mt-2">
               Registered on {new Date(event.userRegistration!.registeredAt).toLocaleDateString()}
             </p>
             {event.status === 'UPCOMING' && (
@@ -432,8 +435,8 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ eventSlug, onBack }) 
           </div>
         )}
         {!isRegistered && canRegister && isRegistrationClosed && (
-          <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-            <p className="text-muted text-sm">
+          <div className="bg-muted/50 border border-border rounded-lg p-4">
+            <p className="text-muted-foreground text-sm">
               Registration is closed for this event.
             </p>
           </div>

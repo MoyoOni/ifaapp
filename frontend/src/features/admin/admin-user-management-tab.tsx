@@ -46,9 +46,10 @@ const AdminUserManagementTab: React.FC<AdminUserManagementTabProps> = ({
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="" className="text-[0.875rem]">All Roles</SelectItem>
-                            <SelectItem value="client" className="text-[0.875rem]">Client</SelectItem>
-                            <SelectItem value="babalawo" className="text-[0.875rem]">Babalawo</SelectItem>
-                            <SelectItem value="admin" className="text-[0.875rem]">Admin</SelectItem>
+                            <SelectItem value="CLIENT" className="text-[0.875rem]">Client</SelectItem>
+                            <SelectItem value="BABALAWO" className="text-[0.875rem]">Babalawo</SelectItem>
+                            <SelectItem value="VENDOR" className="text-[0.875rem]">Vendor</SelectItem>
+                            <SelectItem value="ADMIN" className="text-[0.875rem]">Admin</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -83,11 +84,13 @@ const AdminUserManagementTab: React.FC<AdminUserManagementTabProps> = ({
                                         </td>
                                         <td className="py-4">
                                             <span className={`px-2 py-1 rounded-full text-[0.75rem] font-[700] ${
-                                                user.role === 'client' 
-                                                    ? 'bg-primary text-primary-foreground' 
-                                                    : user.role === 'babalawo'
+                                                user.role === 'CLIENT'
+                                                    ? 'bg-primary text-primary-foreground'
+                                                    : user.role === 'BABALAWO'
                                                         ? 'bg-secondary text-secondary-foreground'
-                                                        : 'bg-destructive text-destructive-foreground'
+                                                        : user.role === 'VENDOR'
+                                                            ? 'bg-blue-500/20 text-blue-700'
+                                                            : 'bg-destructive text-destructive-foreground'
                                             }`}>
                                                 {user.role}
                                             </span>

@@ -4,6 +4,7 @@ import { X, Loader2, MapPin, Video, Globe, DollarSign, Users } from 'lucide-reac
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { logger } from '@/shared/utils/logger';
+import { useToast } from '@/shared/components/toast';
 
 interface EventCreationFormProps {
   onSuccess?: () => void;
@@ -24,6 +25,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({
 }) => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const toast = useToast();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -103,7 +105,11 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({
         return oldData;
       });
       queryClient.invalidateQueries({ queryKey: ['events'] });
+      toast.success('Event created');
       if (onSuccess) onSuccess();
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to create event — ${err.message}`);
     },
   });
 
@@ -141,13 +147,15 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({
   };
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-xl p-8 space-y-6">
+    <div className="bg-card border border-border rounded-xl p-8 space-y-6">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-white">Create Event</h2>
+        <h2 className="text-2xl font-bold text-foreground">Create Event</h2>
         {onCancel && (
           <button
             onClick={onCancel}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            className="p-2 hover:bg-muted rounded-lg transition-colors"
+            aria-label="Close form"
+            title="Close form"
           >
             <X size={20} />
           </button>
@@ -157,7 +165,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Event Title */}
         <div>
-          <label className="block text-sm font-bold text-muted uppercase tracking-widest mb-2">
+          <label className="block text-sm font-bold text-muted-foreground uppercase tracking-widest mb-2">
             Event Title *
           </label>
           <input
@@ -168,13 +176,13 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({
             minLength={5}
             maxLength={200}
             placeholder="e.g., Ifá Divination Workshop, Odù Study Circle"
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-muted focus:outline-none focus:ring-2 focus:ring-highlight"
+            className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-highlight"
           />
         </div>
 
         {/* Description */}
         <div>
-          <label className="block text-sm font-bold text-muted uppercase tracking-widest mb-2">
+          <label className="block text-sm font-bold text-muted-foreground uppercase tracking-widest mb-2">
             Description
           </label>
           <textarea
@@ -183,20 +191,21 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({
             rows={4}
             maxLength={5000}
             placeholder="Describe the event, what participants will learn, what to bring, etc."
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-muted focus:outline-none focus:ring-2 focus:ring-highlight resize-none"
+            className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-highlight resize-none"
           />
         </div>
 
         {/* Event Type */}
         <div>
-          <label className="block text-sm font-bold text-muted uppercase tracking-widest mb-2">
+          <label className="block text-sm font-bold text-muted-foreground uppercase tracking-widest mb-2">
             Event Type *
           </label>
           <select
             value={formData.type}
             onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
             required
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-highlight"
+            aria-label="Event type"
+            className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-highlight"
           >
             <option value="RITUAL">Ritual</option>
             <option value="EDUCATIONAL">Educational</option>
@@ -208,7 +217,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({
 
         {/* Category */}
         <div>
-          <label className="block text-sm font-bold text-muted uppercase tracking-widest mb-2">
+          <label className="block text-sm font-bold text-muted-foreground uppercase tracking-widest mb-2">
             Category (Optional)
           </label>
           <input
@@ -216,14 +225,14 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({
             value={formData.category}
             onChange={(e) => setFormData({ ...formData, category: e.target.value })}
             placeholder="e.g., Beginner, Advanced, All Levels"
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-muted focus:outline-none focus:ring-2 focus:ring-highlight"
+            className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-highlight"
           />
         </div>
 
         {/* Date & Time */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-bold text-muted uppercase tracking-widest mb-2">
+            <label className="block text-sm font-bold text-muted-foreground uppercase tracking-widest mb-2">
               Start Date *
             </label>
             <input
@@ -232,11 +241,12 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({
               onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
               required
               min={new Date().toISOString().split('T')[0]}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-highlight"
+              aria-label="Start date"
+              className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-highlight"
             />
           </div>
           <div>
-            <label className="block text-sm font-bold text-muted uppercase tracking-widest mb-2">
+            <label className="block text-sm font-bold text-muted-foreground uppercase tracking-widest mb-2">
               Start Time *
             </label>
             <input
@@ -244,11 +254,12 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({
               value={formData.startTime}
               onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
               required
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-highlight"
+              aria-label="Start time"
+              className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-highlight"
             />
           </div>
           <div>
-            <label className="block text-sm font-bold text-muted uppercase tracking-widest mb-2">
+            <label className="block text-sm font-bold text-muted-foreground uppercase tracking-widest mb-2">
               End Date (Optional)
             </label>
             <input
@@ -256,29 +267,31 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({
               value={formData.endDate}
               onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
               min={formData.startDate || new Date().toISOString().split('T')[0]}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-highlight"
+              aria-label="End date"
+              className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-highlight"
             />
           </div>
           <div>
-            <label className="block text-sm font-bold text-muted uppercase tracking-widest mb-2">
+            <label className="block text-sm font-bold text-muted-foreground uppercase tracking-widest mb-2">
               End Time (Optional)
             </label>
             <input
               type="time"
               value={formData.endTime}
               onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-highlight"
+              aria-label="End time"
+              className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-highlight"
             />
           </div>
         </div>
 
         {/* Location Type */}
         <div>
-          <label className="block text-sm font-bold text-muted uppercase tracking-widest mb-2">
+          <label className="block text-sm font-bold text-muted-foreground uppercase tracking-widest mb-2">
             Location Type *
           </label>
           <div className="space-y-2">
-            <label className="flex items-center gap-3 p-4 bg-white/5 border border-white/10 rounded-xl cursor-pointer hover:border-highlight transition-all">
+            <label className="flex items-center gap-3 p-4 bg-muted/50 border border-border rounded-xl cursor-pointer hover:border-highlight transition-all">
               <input
                 type="radio"
                 name="locationType"
@@ -289,11 +302,11 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({
               />
               <MapPin size={20} className="text-blue-400" />
               <div className="flex-1">
-                <div className="font-bold text-white">Physical</div>
-                <div className="text-sm text-muted">In-person event at a location</div>
+                <div className="font-bold text-foreground">Physical</div>
+                <div className="text-sm text-muted-foreground">In-person event at a location</div>
               </div>
             </label>
-            <label className="flex items-center gap-3 p-4 bg-white/5 border border-white/10 rounded-xl cursor-pointer hover:border-highlight transition-all">
+            <label className="flex items-center gap-3 p-4 bg-muted/50 border border-border rounded-xl cursor-pointer hover:border-highlight transition-all">
               <input
                 type="radio"
                 name="locationType"
@@ -304,11 +317,11 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({
               />
               <Video size={20} className="text-green-400" />
               <div className="flex-1">
-                <div className="font-bold text-white">Virtual</div>
-                <div className="text-sm text-muted">Online event via video call</div>
+                <div className="font-bold text-foreground">Virtual</div>
+                <div className="text-sm text-muted-foreground">Online event via video call</div>
               </div>
             </label>
-            <label className="flex items-center gap-3 p-4 bg-white/5 border border-white/10 rounded-xl cursor-pointer hover:border-highlight transition-all">
+            <label className="flex items-center gap-3 p-4 bg-muted/50 border border-border rounded-xl cursor-pointer hover:border-highlight transition-all">
               <input
                 type="radio"
                 name="locationType"
@@ -319,8 +332,8 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({
               />
               <Globe size={20} className="text-purple-400" />
               <div className="flex-1">
-                <div className="font-bold text-white">Hybrid</div>
-                <div className="text-sm text-muted">Both in-person and online</div>
+                <div className="font-bold text-foreground">Hybrid</div>
+                <div className="text-sm text-muted-foreground">Both in-person and online</div>
               </div>
             </label>
           </div>
@@ -329,7 +342,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({
         {/* Location */}
         {formData.locationType !== 'VIRTUAL' && (
           <div>
-            <label className="block text-sm font-bold text-muted uppercase tracking-widest mb-2">
+            <label className="block text-sm font-bold text-muted-foreground uppercase tracking-widest mb-2">
               Physical Location
             </label>
             <input
@@ -337,7 +350,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({
               value={formData.location}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
               placeholder="e.g., Ilé Ifá, 123 Main St, Lagos, Nigeria"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-muted focus:outline-none focus:ring-2 focus:ring-highlight"
+              className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-highlight"
             />
           </div>
         )}
@@ -345,7 +358,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({
         {/* Virtual Link */}
         {(formData.locationType === 'VIRTUAL' || formData.locationType === 'HYBRID') && (
           <div>
-            <label className="block text-sm font-bold text-muted uppercase tracking-widest mb-2">
+            <label className="block text-sm font-bold text-muted-foreground uppercase tracking-widest mb-2">
               Virtual Meeting Link
             </label>
             <input
@@ -353,7 +366,7 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({
               value={formData.virtualLink}
               onChange={(e) => setFormData({ ...formData, virtualLink: e.target.value })}
               placeholder="https://meet.google.com/..."
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-muted focus:outline-none focus:ring-2 focus:ring-highlight"
+              className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-highlight"
             />
           </div>
         )}
@@ -361,11 +374,11 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({
         {/* Pricing */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-bold text-muted uppercase tracking-widest mb-2">
+            <label className="block text-sm font-bold text-muted-foreground uppercase tracking-widest mb-2">
               Price *
             </label>
             <div className="relative">
-              <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" size={20} />
+              <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
               <input
                 type="number"
                 value={formData.price}
@@ -373,19 +386,21 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({
                 required
                 min={0}
                 step="0.01"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pl-12 text-white focus:outline-none focus:ring-2 focus:ring-highlight"
+                aria-label="Event price"
+                className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 pl-12 text-foreground focus:outline-none focus:ring-2 focus:ring-highlight"
               />
             </div>
-            <p className="text-xs text-muted mt-1">Set to 0 for free events</p>
+            <p className="text-xs text-muted-foreground mt-1">Set to 0 for free events</p>
           </div>
           <div>
-            <label className="block text-sm font-bold text-muted uppercase tracking-widest mb-2">
+            <label className="block text-sm font-bold text-muted-foreground uppercase tracking-widest mb-2">
               Currency *
             </label>
             <select
               value={formData.currency}
               onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-highlight"
+              aria-label="Currency"
+              className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-highlight"
             >
               <option value="NGN">NGN (₦)</option>
               <option value="USD">USD ($)</option>
@@ -398,39 +413,38 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({
 
         {/* Capacity */}
         <div>
-          <label className="block text-sm font-bold text-muted uppercase tracking-widest mb-2">
+          <label className="block text-sm font-bold text-muted-foreground uppercase tracking-widest mb-2">
             Capacity (Optional)
           </label>
           <div className="relative">
-            <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" size={20} />
+            <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
             <input
               type="number"
               value={formData.capacity}
               onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
               min={1}
               placeholder="Leave empty for unlimited"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pl-12 text-white placeholder-muted focus:outline-none focus:ring-2 focus:ring-highlight"
+              className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 pl-12 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-highlight"
             />
           </div>
         </div>
 
         {/* Registration Deadline */}
         <div>
-          <label className="block text-sm font-bold text-muted uppercase tracking-widest mb-2">
+          <label className="block text-sm font-bold text-muted-foreground uppercase tracking-widest mb-2">
             Registration Deadline (Optional)
           </label>
           <input
             type="datetime-local"
             value={formData.registrationDeadline}
             onChange={(e) => setFormData({ ...formData, registrationDeadline: e.target.value })}
-            min={formData.startDate ? `${formData.startDate}T${formData.startTime || '00:00'}` : undefined}
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-highlight"
+            min={formData.startDate ? `${formData.startDate}T${formData.startTime || '00:00'}` : undefined}              aria-label="Registration deadline"            className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-highlight"
           />
         </div>
 
         {/* Image URL */}
         <div>
-          <label className="block text-sm font-bold text-muted uppercase tracking-widest mb-2">
+          <label className="block text-sm font-bold text-muted-foreground uppercase tracking-widest mb-2">
             Event Image URL (Optional)
           </label>
           <input
@@ -438,17 +452,17 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({
             value={formData.image}
             onChange={(e) => setFormData({ ...formData, image: e.target.value })}
             placeholder="https://..."
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-muted focus:outline-none focus:ring-2 focus:ring-highlight"
+            className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-highlight"
           />
         </div>
 
         {/* Actions */}
-        <div className="flex gap-4 pt-4 border-t border-white/10">
+        <div className="flex gap-4 pt-4 border-t border-border">
           {onCancel && (
             <button
               type="button"
               onClick={onCancel}
-              className="flex-1 px-6 py-3 border border-white/20 text-white rounded-xl font-bold hover:bg-white/10 transition-colors"
+              className="flex-1 px-6 py-3 border border-border text-foreground rounded-xl font-bold hover:bg-muted transition-colors"
             >
               Cancel
             </button>

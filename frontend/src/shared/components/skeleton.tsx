@@ -12,9 +12,8 @@ interface SkeletonTextProps {
 
 export const Skeleton: React.FC<SkeletonProps> = ({ className = '', children }) => {
   return (
-    <div 
-      className={`animate-pulse rounded-md bg-muted ${className}`}
-      style={{ minHeight: '1rem' }}
+    <div
+      className={`animate-pulse rounded-md bg-muted min-h-4 ${className}`}
     >
       {children}
     </div>
@@ -29,12 +28,13 @@ export const SkeletonCircle: React.FC<{ className?: string }> = ({ className = '
   );
 };
 
+const SKELETON_TEXT_WIDTHS = ['w-3/4', 'w-4/5', 'w-2/3', 'w-5/6', 'w-3/5'] as const;
+
 export const SkeletonText: React.FC<SkeletonTextProps> = ({ lines = 1, className = '' }) => {
   const textLines = Array.from({ length: lines }).map((_, idx) => (
-    <div 
-      key={idx} 
-      className={`animate-pulse rounded-md bg-muted mb-2 last:mb-0 ${className}`}
-      style={{ height: '1rem', width: `${Math.floor(Math.random() * 40) + 60}%` }}
+    <div
+      key={idx}
+      className={`animate-pulse rounded-md bg-muted h-4 mb-2 last:mb-0 ${SKELETON_TEXT_WIDTHS[idx % SKELETON_TEXT_WIDTHS.length]} ${className}`}
     />
   ));
 
@@ -434,3 +434,29 @@ export const AdminDashboardSkeleton: React.FC = () => {
     </div>
   );
 };
+
+/** Reusable card skeleton for list items */
+export const SkeletonCard: React.FC = () => (
+  <div className="animate-pulse bg-muted rounded-xl p-4 space-y-3">
+    <div className="h-4 bg-muted-foreground/20 rounded w-3/4" />
+    <div className="h-3 bg-muted-foreground/20 rounded w-1/2" />
+    <div className="h-3 bg-muted-foreground/20 rounded w-2/3" />
+  </div>
+);
+
+/** Reusable stat card skeleton */
+export const SkeletonStat: React.FC = () => (
+  <div className="animate-pulse bg-muted rounded-xl p-4">
+    <div className="h-8 bg-muted-foreground/20 rounded w-20 mb-2" />
+    <div className="h-3 bg-muted-foreground/20 rounded w-16" />
+  </div>
+);
+
+/** Reusable table skeleton */
+export const SkeletonTable: React.FC<{ rows?: number }> = ({ rows = 5 }) => (
+  <div className="space-y-2">
+    {Array.from({ length: rows }).map((_, i) => (
+      <div key={i} className="animate-pulse h-12 bg-muted rounded-lg" />
+    ))}
+  </div>
+);

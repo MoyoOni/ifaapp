@@ -42,7 +42,7 @@ export const CircleHero: React.FC<CircleHeroProps> = ({
       {onBack && (
         <button
           onClick={onBack}
-          className="flex items-center gap-2 text-stone-500 hover:text-primary transition-colors font-medium"
+          className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors font-medium"
         >
           <ArrowLeft size={20} />
           Back to Circles
@@ -53,7 +53,7 @@ export const CircleHero: React.FC<CircleHeroProps> = ({
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative rounded-3xl overflow-hidden bg-white border border-stone-200 shadow-xl"
+        className="relative rounded-3xl overflow-hidden bg-card border border-border shadow-xl"
       >
         {/* Banner Image */}
         {circle.banner ? (
@@ -77,10 +77,10 @@ export const CircleHero: React.FC<CircleHeroProps> = ({
               <img
                 src={circle.avatar}
                 alt={circle.name}
-                className="w-24 h-24 md:w-32 md:h-32 rounded-2xl object-cover border-4 border-white shadow-xl"
+                className="w-24 h-24 md:w-32 md:h-32 rounded-2xl object-cover border-4 border-card shadow-xl"
               />
             ) : (
-              <div className="w-24 h-24 md:w-32 md:h-32 rounded-2xl bg-primary/20 flex items-center justify-center border-4 border-white shadow-xl">
+              <div className="w-24 h-24 md:w-32 md:h-32 rounded-2xl bg-primary/20 flex items-center justify-center border-4 border-card shadow-xl">
                 <Users size={40} className="text-primary" />
               </div>
             )}
@@ -91,7 +91,7 @@ export const CircleHero: React.FC<CircleHeroProps> = ({
                 <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-1">
                   {circle.name}
                 </h1>
-                <div className="flex items-center gap-3 text-sm text-stone-500">
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
                   <span className="flex items-center gap-1">
                     {circle.privacy === 'PUBLIC' && (
                       <Globe size={14} className="text-primary" />
@@ -122,14 +122,16 @@ export const CircleHero: React.FC<CircleHeroProps> = ({
               <div className="flex items-center gap-2">
                 {isAdmin && (
                   <button
-                    className="p-2.5 bg-stone-100 hover:bg-stone-200 rounded-xl transition-colors"
+                    className="p-2.5 bg-muted hover:bg-muted rounded-xl transition-colors"
                     title="Circle Settings"
+                    aria-label="Circle Settings"
                   >
-                    <Settings size={20} className="text-stone-600" />
+                    <Settings size={20} className="text-muted-foreground" />
                   </button>
                 )}
                 {isMember ? (
                   <button
+                    type="button"
                     onClick={onLeave}
                     disabled={isLeaving || isCreator}
                     className="flex items-center gap-2 px-4 py-2.5 border border-red-200 text-red-600 rounded-xl hover:bg-red-50 transition-colors disabled:opacity-50 font-medium"
@@ -143,6 +145,7 @@ export const CircleHero: React.FC<CircleHeroProps> = ({
                   </button>
                 ) : (
                   <button
+                    type="button"
                     onClick={onJoin}
                     disabled={isJoining}
                     className="flex items-center gap-2 px-6 py-2.5 bg-primary text-white rounded-xl font-bold hover:bg-green-800 transition-colors disabled:opacity-50 shadow-lg shadow-primary/20"
@@ -166,7 +169,7 @@ export const CircleHero: React.FC<CircleHeroProps> = ({
 
           {/* Description */}
           {circle.description && (
-            <p className="mt-4 text-stone-600 max-w-3xl">{circle.description}</p>
+            <p className="mt-4 text-muted-foreground max-w-3xl">{circle.description}</p>
           )}
 
           {/* Topics */}

@@ -187,6 +187,7 @@ const TempleDirectory: React.FC<TempleDirectoryProps> = ({ onSelectTemple }) => 
             <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value as TempleType | 'ALL')}
+              aria-label="Filter by temple type"
               className="px-4 py-3 rounded-xl bg-white border border-emerald-200 text-sm font-bold text-emerald-600 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-300/20 outline-none cursor-pointer"
             >
               <option value="ALL">All Types</option>

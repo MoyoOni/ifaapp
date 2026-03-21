@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Search, BookOpen, GraduationCap, Play, Clock, CheckCircle, Users, Filter } from 'lucide-react';
+import { Search, BookOpen, GraduationCap, Play, Clock, CheckCircle, Users, Filter, AlertCircle } from 'lucide-react';
 import { FeatureHeader } from '@/shared/components/feature-header';
 import { PageTransition } from '@/components/common/page-transition';
 import { Button } from '@/shared/components/ui/button';
@@ -9,7 +9,6 @@ import { Input } from '@/shared/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
 import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
-import { getAllCourses } from './course-data';
 import { AcademySkeleton } from '@/shared/components/skeleton';
 
 interface Course {
@@ -44,9 +43,6 @@ interface AcademyViewProps {
   onSelectCourse?: (courseId: string) => void;
 }
 
-// Import courses from course-data.ts
-const courses: Course[] = getAllCourses();
-
 /**
  * Academy View Component
  * Course catalog and learning dashboard
@@ -59,7 +55,7 @@ const AcademyView: React.FC<AcademyViewProps> = ({ onSelectCourse }) => {
   const navigate = useNavigate(); // Add navigate hook
 
   // Fetch courses
-  const { data: courses = [], isLoading: coursesLoading } = useQuery<Course[]>({
+  const { data: courses = [], isLoading: coursesLoading, isError: coursesError } = useQuery<Course[]>({
     queryKey: ['academy-courses', selectedCategory, selectedLevel, searchQuery],
     queryFn: async () => {
       try {
@@ -73,6 +69,7 @@ const AcademyView: React.FC<AcademyViewProps> = ({ onSelectCourse }) => {
         throw e;
       }
     },
+    staleTime: 10 * 60 * 1000, // Course catalog: 10 minutes
   });
 
   const categories = [
@@ -173,6 +170,19 @@ const AcademyView: React.FC<AcademyViewProps> = ({ onSelectCourse }) => {
           {/* Courses Grid */}
           {coursesLoading ? (
             <AcademySkeleton />
+          ) : coursesError ? (
+            <div className="text-center py-16">
+              <div className="mx-auto w-24 h-24 rounded-full bg-red-50 flex items-center justify-center mb-4">
+                <AlertCircle className="text-red-400" size={40} />
+              </div>
+              <h3 className="text-xl font-bold text-foreground mb-2">Could not load courses</h3>
+              <p className="text-muted-foreground max-w-md mx-auto mb-6">
+                There was a problem connecting to the server. Check your connection and try again.
+              </p>
+              <Button variant="outline" onClick={() => window.location.reload()}>
+                Refresh Page
+              </Button>
+            </div>
           ) : filteredCourses.length === 0 ? (
             <div className="text-center py-12">
               <div className="mx-auto w-24 h-24 rounded-full bg-muted flex items-center justify-center mb-4">

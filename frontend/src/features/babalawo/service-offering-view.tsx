@@ -104,8 +104,8 @@ const ServiceOfferingView: React.FC = () => {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold brand-font text-stone-900">Service Offerings</h1>
-          <p className="text-stone-600 text-lg mt-1">
+          <h1 className="text-3xl md:text-4xl font-bold brand-font text-foreground">Service Offerings</h1>
+          <p className="text-muted-foreground text-lg mt-1">
             Manage your spiritual services and offerings
           </p>
         </div>
@@ -119,62 +119,64 @@ const ServiceOfferingView: React.FC = () => {
 
       {/* Add New Service Form */}
       {showAddForm && (
-        <div className="border rounded-xl p-6 bg-white shadow-sm">
+        <div className="border rounded-xl p-6 bg-card shadow-sm">
           <h3 className="text-xl font-semibold mb-4">Add New Service</h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Service Name</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Service Name</label>
               <input
                 type="text"
                 value={newService.name}
                 onChange={(e) => setNewService({...newService, name: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-highlight focus:border-highlight"
+                className="w-full px-3 py-2 border border-border rounded-lg focus:ring-highlight focus:border-highlight"
                 placeholder="Enter service name"
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Category</label>
               <input
                 type="text"
                 value={newService.category}
                 onChange={(e) => setNewService({...newService, category: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-highlight focus:border-highlight"
+                className="w-full px-3 py-2 border border-border rounded-lg focus:ring-highlight focus:border-highlight"
                 placeholder="e.g., Consultation, Healing, Education"
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Duration (minutes)</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Duration (minutes)</label>
               <input
                 type="number"
                 value={newService.duration}
                 onChange={(e) => setNewService({...newService, duration: parseInt(e.target.value) || 30})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-highlight focus:border-highlight"
+                className="w-full px-3 py-2 border border-border rounded-lg focus:ring-highlight focus:border-highlight"
                 min="15"
                 step="15"
+                aria-label="Service duration in minutes"
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Price (₦)</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Price (₦)</label>
               <input
                 type="number"
                 value={newService.price}
                 onChange={(e) => setNewService({...newService, price: parseInt(e.target.value) || 5000})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-highlight focus:border-highlight"
+                className="w-full px-3 py-2 border border-border rounded-lg focus:ring-highlight focus:border-highlight"
                 min="1000"
                 step="1000"
+                aria-label="Service price in Naira"
               />
             </div>
             
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Description</label>
               <textarea
                 value={newService.description}
                 onChange={(e) => setNewService({...newService, description: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-highlight focus:border-highlight"
+                className="w-full px-3 py-2 border border-border rounded-lg focus:ring-highlight focus:border-highlight"
                 rows={3}
                 placeholder="Describe your service..."
               />
@@ -186,9 +188,9 @@ const ServiceOfferingView: React.FC = () => {
                 id="isActiveNew"
                 checked={newService.isActive}
                 onChange={(e) => setNewService({...newService, isActive: e.target.checked})}
-                className="h-4 w-4 text-highlight focus:ring-highlight border-gray-300 rounded"
+                className="h-4 w-4 text-highlight focus:ring-highlight border-border rounded"
               />
-              <label htmlFor="isActiveNew" className="ml-2 block text-sm text-gray-700">
+              <label htmlFor="isActiveNew" className="ml-2 block text-sm text-foreground">
                 Active Service
               </label>
             </div>
@@ -197,7 +199,7 @@ const ServiceOfferingView: React.FC = () => {
           <div className="flex justify-end gap-2">
             <button
               onClick={handleCancel}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+              className="px-4 py-2 border border-border rounded-lg text-foreground hover:bg-background flex items-center gap-2"
             >
               <X size={16} /> Cancel
             </button>
@@ -206,7 +208,7 @@ const ServiceOfferingView: React.FC = () => {
               disabled={!newService.name || !newService.description}
               className={`px-4 py-2 rounded-lg text-white flex items-center gap-2 ${
                 !newService.name || !newService.description 
-                  ? 'bg-gray-400 cursor-not-allowed' 
+                  ? 'bg-muted-foreground cursor-not-allowed' 
                   : 'bg-highlight hover:bg-yellow-600'
               }`}
             >
@@ -219,7 +221,7 @@ const ServiceOfferingView: React.FC = () => {
       {/* Services List */}
       <div className="space-y-6">
         {services.map((service) => (
-          <div key={service.id} className="border rounded-xl p-6 bg-white shadow-sm">
+          <div key={service.id} className="border rounded-xl p-6 bg-card shadow-sm">
             {editingId === service.id ? (
               // Edit Mode
               <div>
@@ -227,56 +229,62 @@ const ServiceOfferingView: React.FC = () => {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Service Name</label>
+                    <label className="block text-sm font-medium text-foreground mb-1">Service Name</label>
                     <input
                       type="text"
                       value={service.name}
                       onChange={(e) => updateServiceField(service.id, 'name', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-highlight focus:border-highlight"
+                      className="w-full px-3 py-2 border border-border rounded-lg focus:ring-highlight focus:border-highlight"
+                      aria-label="Service name"
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                    <label className="block text-sm font-medium text-foreground mb-1">Category</label>
                     <input
                       type="text"
                       value={service.category}
                       onChange={(e) => updateServiceField(service.id, 'category', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-highlight focus:border-highlight"
+                      className="w-full px-3 py-2 border border-border rounded-lg focus:ring-highlight focus:border-highlight"
+                      aria-label="Service category"
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Duration (minutes)</label>
+                    <label className="block text-sm font-medium text-foreground mb-1">Duration (minutes)</label>
                     <input
                       type="number"
                       value={service.duration}
                       onChange={(e) => updateServiceField(service.id, 'duration', parseInt(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-highlight focus:border-highlight"
+                      className="w-full px-3 py-2 border border-border rounded-lg focus:ring-highlight focus:border-highlight"
                       min="15"
                       step="15"
+                      aria-label="Service duration in minutes"
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Price (₦)</label>
+                    <label className="block text-sm font-medium text-foreground mb-1">Price (₦)</label>
                     <input
                       type="number"
                       value={service.price}
                       onChange={(e) => updateServiceField(service.id, 'price', parseInt(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-highlight focus:border-highlight"
+                      className="w-full px-3 py-2 border border-border rounded-lg focus:ring-highlight focus:border-highlight"
                       min="1000"
                       step="1000"
+                      aria-label="Service price in Naira"
                     />
                   </div>
                   
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <label className="block text-sm font-medium text-foreground mb-1">Description</label>
                     <textarea
                       value={service.description}
                       onChange={(e) => updateServiceField(service.id, 'description', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-highlight focus:border-highlight"
+                      className="w-full px-3 py-2 border border-border rounded-lg focus:ring-highlight focus:border-highlight"
                       rows={3}
+                      aria-label="Service description"
+                      placeholder="Describe your service..."
                     />
                   </div>
                   
@@ -286,9 +294,9 @@ const ServiceOfferingView: React.FC = () => {
                       id={`isActive-${service.id}`}
                       checked={service.isActive}
                       onChange={(e) => updateServiceField(service.id, 'isActive', e.target.checked)}
-                      className="h-4 w-4 text-highlight focus:ring-highlight border-gray-300 rounded"
+                      className="h-4 w-4 text-highlight focus:ring-highlight border-border rounded"
                     />
-                    <label htmlFor={`isActive-${service.id}`} className="ml-2 block text-sm text-gray-700">
+                    <label htmlFor={`isActive-${service.id}`} className="ml-2 block text-sm text-foreground">
                       Active Service
                     </label>
                   </div>
@@ -297,7 +305,7 @@ const ServiceOfferingView: React.FC = () => {
                 <div className="flex justify-end gap-2">
                   <button
                     onClick={() => setEditingId(null)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                    className="px-4 py-2 border border-border rounded-lg text-foreground hover:bg-background flex items-center gap-2"
                   >
                     <X size={16} /> Cancel
                   </button>
@@ -315,7 +323,7 @@ const ServiceOfferingView: React.FC = () => {
                 <div className="flex justify-between items-start">
                   <div>
                     <div className="flex items-center gap-3">
-                      <h3 className="text-xl font-bold text-gray-900">{service.name}</h3>
+                      <h3 className="text-xl font-bold text-foreground">{service.name}</h3>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                         service.isActive 
                           ? 'bg-green-100 text-green-800' 
@@ -324,19 +332,20 @@ const ServiceOfferingView: React.FC = () => {
                         {service.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </div>
-                    <p className="text-gray-600 mt-1">{service.category}</p>
+                    <p className="text-muted-foreground mt-1">{service.category}</p>
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleEdit(service.id)}
-                      className="p-2 text-gray-500 hover:text-highlight hover:bg-gray-100 rounded-lg"
+                      className="p-2 text-muted-foreground hover:text-highlight hover:bg-muted rounded-lg"
                       title="Edit"
+                      aria-label="Edit service"
                     >
                       <Edit size={18} />
                     </button>
                     <button
                       onClick={() => handleDelete(service.id)}
-                      className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                      className="p-2 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-lg"
                       title="Delete"
                     >
                       <Trash2 size={18} />
@@ -344,23 +353,23 @@ const ServiceOfferingView: React.FC = () => {
                   </div>
                 </div>
                 
-                <p className="mt-4 text-gray-700">{service.description}</p>
+                <p className="mt-4 text-foreground">{service.description}</p>
                 
-                <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-100">
+                <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-border/60">
                   <div className="text-center">
-                    <p className="text-sm text-gray-500">Duration</p>
+                    <p className="text-sm text-muted-foreground">Duration</p>
                     <p className="font-semibold">{service.duration} min</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-sm text-gray-500">Price</p>
+                    <p className="text-sm text-muted-foreground">Price</p>
                     <p className="font-semibold">{getServicePrice(service.price)}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-sm text-gray-500">Sessions/Day</p>
+                    <p className="text-sm text-muted-foreground">Sessions/Day</p>
                     <p className="font-semibold">{service.maxSessionsPerDay || 'Unlimited'}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-sm text-gray-500">Status</p>
+                    <p className="text-sm text-muted-foreground">Status</p>
                     <p className={`font-semibold ${
                       service.isActive ? 'text-green-600' : 'text-red-600'
                     }`}>

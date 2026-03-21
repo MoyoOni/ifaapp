@@ -4,6 +4,8 @@ import { useSearchParams } from 'react-router-dom';
 import { X, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/shared/components/toast';
+import { logger } from '@/shared/utils/logger';
+import { DEMO_FORUM_CATEGORIES } from './forum-demo';
 
 interface ForumCategory {
   id: string;

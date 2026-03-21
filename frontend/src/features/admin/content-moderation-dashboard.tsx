@@ -247,6 +247,7 @@ const ContentModerationDashboard: React.FC = () => {
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value as any)}
+                    aria-label="Filter by status"
                     className="px-3 py-2 bg-background border border-white/10 rounded-lg text-white focus:ring-2 focus:ring-highlight"
                   >
                     <option value="all">All Status</option>
@@ -258,6 +259,7 @@ const ContentModerationDashboard: React.FC = () => {
                   <select
                     value={severityFilter}
                     onChange={(e) => setSeverityFilter(e.target.value as any)}
+                    aria-label="Filter by severity"
                     className="px-3 py-2 bg-background border border-white/10 rounded-lg text-white focus:ring-2 focus:ring-highlight"
                   >
                     <option value="all">All Severity</option>
@@ -389,7 +391,7 @@ const ContentModerationDashboard: React.FC = () => {
                     <p className="text-muted text-sm">Automatically flag content matching known violation patterns</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" defaultChecked />
+                    <input type="checkbox" className="sr-only peer" defaultChecked aria-label="Auto-flag suspicious content" />
                     <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-highlight"></div>
                   </label>
                 </div>
@@ -400,7 +402,7 @@ const ContentModerationDashboard: React.FC = () => {
                     <p className="text-muted text-sm">Send notifications when reports are resolved</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" defaultChecked />
+                    <input type="checkbox" className="sr-only peer" defaultChecked aria-label="Notify reporters on resolution" />
                     <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-highlight"></div>
                   </label>
                 </div>
@@ -411,7 +413,7 @@ const ContentModerationDashboard: React.FC = () => {
                     <p className="text-muted text-sm">Automatically escalate high-severity reports to senior moderators</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" />
+                    <input type="checkbox" className="sr-only peer" aria-label="Escalate high-severity reports" />
                     <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-highlight"></div>
                   </label>
                 </div>
@@ -431,6 +433,8 @@ const ContentModerationDashboard: React.FC = () => {
                 <button
                   onClick={() => setSelectedReport(null)}
                   className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                  aria-label="Close review"
+                  title="Close review"
                 >
                   <X size={20} />
                 </button>
@@ -439,7 +443,7 @@ const ContentModerationDashboard: React.FC = () => {
               <div className="space-y-4">
                 <div>
                   <h3 className="font-bold text-white mb-2">Report Details</h3>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div>
                       <span className="text-muted">Reporter:</span>
                       <span className="text-white ml-2">{selectedReport.reporterName}</span>

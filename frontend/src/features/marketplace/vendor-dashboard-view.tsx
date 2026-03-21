@@ -70,7 +70,7 @@ const VendorDashboardView: React.FC<VendorDashboardViewProps> = ({ initialTab = 
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4 lg:w-fit">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:w-fit">
           <TabsTrigger value="inventory" className="flex items-center gap-2">
             <Package className="w-4 h-4" />
             Inventory

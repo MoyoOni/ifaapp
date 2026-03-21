@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { User, MapPin, ArrowRight, LogOut, ChevronRight, Fingerprint, Link } from 'lucide-react';
+import { User, MapPin, ArrowRight, LogOut, ChevronRight, Fingerprint, Link, Building2 } from 'lucide-react';
 import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
 import CulturalOnboardingPath from './cultural-onboarding-path';
@@ -36,7 +36,7 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
   // Fall back to auth context when not passed as props (e.g. routed directly to /onboarding)
   const userId = userIdProp ?? authUser?.id;
   const userRole = userRoleProp ?? authUser?.role;
-  const [onboardingStep, setOnboardingStep] = useState<'welcome' | 'role-setup' | 'username' | 'heritage' | 'form'>('welcome');
+  const [onboardingStep, setOnboardingStep] = useState<'welcome' | 'role-setup' | 'username' | 'heritage' | 'discover-temples' | 'form'>('welcome');
   const [welcomeSlide, setWelcomeSlide] = useState(0);
   const [roleSetupComplete, setRoleSetupComplete] = useState(false);
 
@@ -364,7 +364,7 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
                 type="button"
                 onClick={() => {
                   setReconnectingWithHeritage(false);
-                  setOnboardingStep('form');
+                  setOnboardingStep(userRole === UserRole.CLIENT ? 'discover-temples' : 'form');
                 }}
                 className="py-5 px-6 bg-stone-100 text-stone-600 rounded-xl font-bold text-lg hover:bg-stone-200 transition-all"
               >
@@ -381,9 +381,41 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
             <CulturalOnboardingPath
               onContinue={() => {
                 setShowCulturalOnboarding(false);
-                setOnboardingStep('form');
+                setOnboardingStep(userRole === UserRole.CLIENT ? 'discover-temples' : 'form');
               }}
             />
+          </div>
+        )}
+
+        {/* Discover Temples Step (CLIENT only) */}
+        {onboardingStep === 'discover-temples' && (
+          <div className="bg-white rounded-[2rem] p-8 md:p-10 border border-stone-100 shadow-xl space-y-6 animate-in slide-in-from-bottom-8 duration-500 text-center">
+            <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto">
+              <Building2 size={36} className="text-amber-600" />
+            </div>
+            <div className="space-y-3">
+              <h2 className="text-3xl font-bold brand-font text-stone-900">Find Your Spiritual Home</h2>
+              <p className="text-stone-500 text-lg leading-relaxed">
+                199 Ilé Ìjúbà and Ilé Ifá congregations are registered on our platform. Find one near you and become part of the community.
+              </p>
+            </div>
+            <div className="flex flex-col gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => { navigate('/client/temples'); if (onComplete) onComplete(); }}
+                className="w-full py-4 bg-amber-500 text-white rounded-xl font-bold text-lg hover:bg-amber-600 transition-all shadow-lg flex items-center justify-center gap-2"
+              >
+                <Building2 size={20} />
+                Explore Temples
+              </button>
+              <button
+                type="button"
+                onClick={() => setOnboardingStep('form')}
+                className="w-full py-3 text-stone-400 text-sm font-semibold hover:text-stone-600 transition-colors"
+              >
+                Skip for now
+              </button>
+            </div>
           </div>
         )}
 

@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config';
 
 jest.mock('@sentry/profiling-node', () => ({
   nodeProfilingIntegration: () => ({}),
-}));
+}), { virtual: true });
 jest.mock('@sentry/node', () => ({
   init: jest.fn(),
   captureException: jest.fn(),
@@ -13,7 +13,7 @@ jest.mock('@sentry/node', () => ({
   setTag: jest.fn(),
   setContext: jest.fn(),
   addBreadcrumb: jest.fn(),
-}));
+}), { virtual: true });
 
 describe('SentryService', () => {
     let service: SentryService;

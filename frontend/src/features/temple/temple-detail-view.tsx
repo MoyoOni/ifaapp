@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { MapPin, Phone, Mail, Globe, Users, Calendar, CheckCircle, Building2, ArrowLeft, Settings, Heart, HeartOff } from 'lucide-react';
+import { MapPin, Phone, Mail, Globe, Users, Calendar, CheckCircle, Building2, ArrowLeft, Settings, Heart, HeartOff, CalendarDays, Instagram, Youtube, Facebook, Award } from 'lucide-react';
 import { VerificationTier } from '@common';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
@@ -60,12 +60,22 @@ const TempleDetailView: React.FC<TempleDetailViewProps> = ({
         }
         return data;
       } catch (error) {
-        if (!isDemoMode) throw error;
-
         logger.error('Temple API fetch failed, using demo data', error);
         const demoTemple = Object.values(DEMO_TEMPLES).find((temple) => temple.slug === templeSlug);
         if (!demoTemple) {
-          return null;
+          // Also check the real-temple browse fallback slugs
+          const REAL_TEMPLE_FALLBACKS: Record<string, any> = {
+            'ioa-national-hq-abeokuta-1': { id: 'demo-1', name: 'Ìjọ Òrúnmìlà Adúláwọ National HQ', slug: 'ioa-national-hq-abeokuta-1', type: 'ILE_IFA', verified: true, city: 'Abẹòkúta', state: 'Ogun', country: 'Nigeria', address: '1, Ijo Orunmila Street, Agbeloba, Abẹòkúta', website: 'https://ijoorunmilaadulawo.com', email: 'info@ijoorunmilaadulawo.com', worshipDay: 'Sunday', description: 'National HQ and governing body of IOA worldwide. CAC/IT/NO 446.', socialLinks: { facebook: 'Ijo Orunmila Adulawo Worldwide', youtube: 'Ijo Orunmila Adulawo National', leadPriest: 'Supreme Leader Chief Ifagbemi Ifajobi', registrationNumber: 'CAC/IT/NO 446' }, babalawos: [], _count: { followers: 0 } },
+            'ifadiwura-temple-uk-london-1': { id: 'demo-2', name: 'Ifadiwura Temple UK', slug: 'ifadiwura-temple-uk-london-1', type: 'ILE_IFA', verified: true, city: 'London', state: 'London', country: 'UK', address: '26 Lorn Road, London, SW9 0AD', website: 'https://ifadiwuratempleukituk.org', email: 'ifadiwuratempleuk@gmail.com', worshipDay: 'Sunday', description: 'Officially registered Ifá temple in London. Company No. 14261437.', socialLinks: { instagram: '@ifadiwuratempleuk', registrationNumber: 'Company No. 14261437' }, babalawos: [], _count: { followers: 0 } },
+            'the-256-ifa-temple-lagos-1': { id: 'demo-3', name: 'The 256 Ifá Temple', slug: 'the-256-ifa-temple-lagos-1', type: 'ILE_IFA', verified: true, city: 'Lagos', state: 'Lagos', country: 'Nigeria', address: 'Lekki / Ajah, Lagos', website: 'https://the256ifa.com', email: 'admin@the256ifa.com', worshipDay: 'Sunday', description: 'Contemporary Ifá temple with strong digital presence.', socialLinks: { instagram: '@the256ifatemple', youtube: 'The 256 Ifá Temple' }, babalawos: [], _count: { followers: 0 } },
+            'ijo-orunmila-adulawo-somolu-1': { id: 'demo-4', name: 'Ìjọ Òrúnmìlà Adúláwọ (Solution Temple)', slug: 'ijo-orunmila-adulawo-somolu-1', type: 'ILE_IFA', verified: false, city: 'Ṣómólú', state: 'Lagos', country: 'Nigeria', address: '96, Apata Street, off Oguntolu Street, Ṣómólú, Lagos', phone: '+234 813 014 3617', website: 'https://ijoorunmilaadulawo.com', worshipDay: 'Sunday', description: 'Solution Temple — IOA Somolu Parish. Over 55 years in operation.', socialLinks: { leadPriest: 'Odofin Adesegun Adetayo', facebook: 'Ijo Orunmila Adulawo Worldwide' }, babalawos: [], _count: { followers: 0 } },
+            'ijo-orunmila-ogbe-alara-abeokuta-1': { id: 'demo-5', name: 'Ìjọ Òrúnmìlà Ogbè Alárá', slug: 'ijo-orunmila-ogbe-alara-abeokuta-1', type: 'ILE_IFA', verified: false, city: 'Abẹòkúta', state: 'Ogun', country: 'Nigeria', address: 'Abeokuta, Ogun State', phone: '+234 803 381 0540', worshipDay: 'Sunday', description: 'Independent Ifá congregation known for cultural preservation.', socialLinks: { facebook: 'Ogbe Alara Ifa Temple', youtube: 'Ifa Quotes & Tales', leadPriest: 'Oluwo Ifagbemi Adewale' }, babalawos: [], _count: { followers: 0 } },
+            'ile-ifa-agbaye-odogbolu-1': { id: 'demo-6', name: 'Ile Ifa Agbaye', slug: 'ile-ifa-agbaye-odogbolu-1', type: 'ILE_IFA', verified: false, city: 'Odogbolu', state: 'Ogun', country: 'Nigeria', address: 'Odogbolu, Ogun State', worshipDay: 'Sunday', description: 'International Ifá institution with branches in Nigeria and UK.', socialLinks: { facebook: 'Ile Ifa Agbaye Official', instagram: '@ileifaagbaye', leadPriest: 'Oluwo Ifasola Ifamapami' }, babalawos: [], _count: { followers: 0 } },
+          };
+          const realFallback = REAL_TEMPLE_FALLBACKS[templeSlug];
+          if (realFallback) return realFallback;
+          if (isDemoMode) return null;
+          throw error;
         }
 
         const [city, state] = (demoTemple.location || '').split(',').map((part) => part.trim());
@@ -144,417 +154,359 @@ const TempleDetailView: React.FC<TempleDetailViewProps> = ({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background text-white flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-highlight border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-highlight border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   if (!temple) {
     return (
-      <div className="min-h-screen bg-background text-white p-6">
-        <div className="max-w-7xl mx-auto">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-2 text-muted hover:text-white mb-6"
-          >
-            <ArrowLeft size={20} />
-            Back to Temples
-          </button>
-          <p className="text-muted">Temple not found.</p>
-        </div>
+      <div className="min-h-screen bg-background p-6">
+        <button onClick={onBack} type="button" className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 font-semibold">
+          <ArrowLeft size={20} /> Back to Temples
+        </button>
+        <p className="text-muted-foreground">Temple not found.</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background text-white">
-      {/* Hero Section */}
-      <div className="relative">
+    <div className="min-h-screen bg-background">
+
+      {/* ── Hero ── */}
+      <div className="relative h-72 md:h-96 overflow-hidden">
         {temple.bannerImage ? (
-          <img
-            src={temple.bannerImage}
-            alt={temple.name}
-            className="w-full h-64 md:h-96 object-cover"
-          />
+          <img src={temple.bannerImage} alt={temple.name} className="w-full h-full object-cover" />
         ) : (
-          <div className="w-full h-64 md:h-96 bg-gradient-to-br from-highlight/20 to-muted/20 flex items-center justify-center">
-            <Building2 size={64} className="text-highlight/50" />
-          </div>
+          <div className="w-full h-full bg-gradient-to-br from-stone-900 via-stone-800 to-primary/80" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-foreground to-transparent"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-stone-900 via-stone-900/50 to-transparent" />
 
-        <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-center gap-4 mb-4">
-              <button
-                onClick={onBack}
-                className="flex items-center gap-2 text-white/80 hover:text-white backdrop-blur-sm bg-black/20 rounded-lg px-4 py-2"
-              >
-                <ArrowLeft size={20} />
-                Back to Temples
-              </button>
-              {(showManageButton || (user && (user.role === 'ADMIN' || temple?.founderId === user.id))) && onManage && (
-                <button
-                  onClick={onManage}
-                  className="flex items-center gap-2 text-white/80 hover:text-white backdrop-blur-sm bg-highlight/20 border border-highlight/30 rounded-lg px-4 py-2"
-                >
-                  <Settings size={18} />
-                  Manage Temple
-                </button>
-              )}
-            </div>
+        {/* Top nav */}
+        <div className="absolute top-4 left-4 right-4 flex items-center justify-between">
+          <button onClick={onBack} type="button"
+            className="flex items-center gap-2 text-white/90 hover:text-white bg-black/30 backdrop-blur-sm rounded-full px-4 py-2 text-sm font-semibold transition-all">
+            <ArrowLeft size={16} /> Back to Temples
+          </button>
+          {(showManageButton || (user && (user.role === 'ADMIN' || temple?.founderId === user.id))) && onManage && (
+            <button onClick={onManage} type="button"
+              className="flex items-center gap-2 text-white/90 bg-black/30 backdrop-blur-sm rounded-full px-4 py-2 text-sm font-semibold hover:bg-black/40 transition-all">
+              <Settings size={16} /> Manage
+            </button>
+          )}
+        </div>
 
-            <div className="flex items-start gap-6">
-              {temple.logo ? (
-                <img
-                  src={temple.logo}
-                  alt={temple.name}
-                  className="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover border-4 border-white/20 shadow-lg"
-                />
-              ) : (
-                <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-highlight/20 flex items-center justify-center border-4 border-white/20 shadow-lg">
-                  <Building2 size={48} className="text-highlight" />
-                </div>
-              )}
-
-              <div className="flex-1">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <h1 className="text-4xl md:text-5xl font-bold brand-font text-white mb-2">
-                      {temple.name}
-                    </h1>
-                    {temple.yorubaName && (
-                      <p className="text-highlight text-xl md:text-2xl">{temple.yorubaName}</p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3">
-                    {temple.verified && (
-                      <div className="flex items-center gap-2 bg-highlight/20 backdrop-blur-sm rounded-lg px-4 py-2 border border-highlight/30">
-                        <CheckCircle size={24} className="text-highlight" />
-                        <span className="font-semibold text-highlight">Verified Temple</span>
-                      </div>
-                    )}
-                    {user && (
-                      <button
-                        onClick={() => {
-                          if (temple.isFollowing) {
-                            unfollowMutation.mutate();
-                          } else {
-                            followMutation.mutate();
-                          }
-                        }}
-                        disabled={followMutation.isPending || unfollowMutation.isPending}
-                        className={`flex items-center gap-2 backdrop-blur-sm rounded-lg px-4 py-2 border transition-all ${temple.isFollowing
-                          ? 'bg-highlight/20 border-highlight/30 text-highlight hover:bg-highlight/30'
-                          : 'bg-white/10 border-white/20 text-white hover:bg-white/20'
-                          } disabled:opacity-50`}
-                      >
-                        {temple.isFollowing ? (
-                          <>
-                            <HeartOff size={20} />
-                            <span>Unfollow</span>
-                          </>
-                        ) : (
-                          <>
-                            <Heart size={20} />
-                            <span>Follow</span>
-                          </>
-                        )}
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Quick Info */}
-                <div className="flex flex-wrap items-center gap-4 text-white/80 text-sm md:text-base">
-                  {temple.city && temple.state && (
-                    <div className="flex items-center gap-2">
-                      <MapPin size={18} />
-                      <span>{temple.city}, {temple.state}</span>
-                    </div>
-                  )}
-                  {temple.foundedYear && (
-                    <div className="flex items-center gap-2">
-                      <Calendar size={18} />
-                      <span>Founded {temple.foundedYear}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2">
-                    <Users size={18} />
-                    <span>{temple.babalawoCount || temple._count?.babalawos || 0} Babalawo{temple.babalawoCount !== 1 ? 's' : ''}</span>
-                  </div>
-                  {temple._count?.followers !== undefined && (
-                    <div className="flex items-center gap-2">
-                      <Heart size={18} />
-                      <span>{temple._count.followers} Follower{temple._count.followers !== 1 ? 's' : ''}</span>
-                    </div>
-                  )}
-                  <span className="text-xs uppercase tracking-wider bg-white/10 px-3 py-1 rounded-full">
-                    {temple.type.replace('_', ' ')}
-                  </span>
-                </div>
+        {/* Temple identity */}
+        <div className="absolute bottom-0 left-0 right-0 px-6 md:px-10 pb-6">
+          <div className="max-w-7xl mx-auto flex items-end gap-5">
+            {temple.logo ? (
+              <img src={temple.logo} alt={temple.name}
+                className="w-20 h-20 md:w-28 md:h-28 rounded-2xl object-cover border-4 border-white/20 shadow-2xl flex-shrink-0" />
+            ) : (
+              <div className="w-20 h-20 md:w-28 md:h-28 rounded-2xl bg-primary/30 backdrop-blur-sm flex items-center justify-center border-4 border-white/20 shadow-2xl flex-shrink-0">
+                <Building2 size={40} className="text-highlight" />
               </div>
+            )}
+            <div className="flex-1 min-w-0 pb-1">
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                {temple.verified && (
+                  <span className="inline-flex items-center gap-1.5 bg-highlight text-stone-900 text-xs font-bold px-3 py-1 rounded-full">
+                    <CheckCircle size={11} /> Verified
+                  </span>
+                )}
+                <span className="text-xs font-bold uppercase tracking-wider bg-white/10 text-white/80 px-3 py-1 rounded-full">
+                  {temple.type?.replace(/_/g, ' ')}
+                </span>
+              </div>
+              <h1 className="text-3xl md:text-5xl font-bold brand-font text-white leading-tight">{temple.name}</h1>
+              {temple.yorubaName && <p className="text-highlight text-lg font-semibold mt-1">{temple.yorubaName}</p>}
             </div>
+            {user && (
+              <button type="button"
+                onClick={() => temple.isFollowing ? unfollowMutation.mutate() : followMutation.mutate()}
+                disabled={followMutation.isPending || unfollowMutation.isPending}
+                className={`flex-shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg disabled:opacity-50 ${
+                  temple.isFollowing ? 'bg-highlight text-stone-900 hover:bg-yellow-400' : 'bg-white text-stone-900 hover:bg-stone-100'
+                }`}>
+                {temple.isFollowing ? <HeartOff size={18} /> : <Heart size={18} />}
+                {temple.isFollowing ? 'Following' : 'Follow'}
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto p-6 md:p-12 space-y-12">
-        {/* About Section */}
+      {/* ── Quick Stats Bar ── */}
+      <div className="bg-card border-b border-border shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 md:px-10 py-3 flex flex-wrap gap-5 items-center">
+          {temple.city && temple.state && (
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <MapPin size={15} className="text-primary" />
+              <span className="text-sm font-semibold">{temple.city}, {temple.state}</span>
+            </div>
+          )}
+          {temple.foundedYear && (
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <Calendar size={15} className="text-primary" />
+              <span className="text-sm font-semibold">Est. {temple.foundedYear}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-1.5 text-muted-foreground">
+            <Users size={15} className="text-primary" />
+            <span className="text-sm font-semibold">{temple.babalawoCount || temple._count?.babalawos || 0} Babalawos</span>
+          </div>
+          {temple._count?.followers !== undefined && (
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <Heart size={15} className="text-primary" />
+              <span className="text-sm font-semibold">{temple._count.followers} Followers</span>
+            </div>
+          )}
+          {temple.worshipDay && (
+            <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 text-sm font-bold px-3 py-1 rounded-full border border-amber-200">
+              <CalendarDays size={14} /> {temple.worshipDay}s
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* ── Content ── */}
+      <div className="max-w-7xl mx-auto px-6 md:px-10 py-8 space-y-6">
+
+        {/* About */}
         {(temple.description || temple.history || temple.mission) && (
-          <section>
-            <h2 className="text-3xl font-bold brand-font text-highlight mb-6">About</h2>
-            <div className="space-y-6">
-              {temple.description && (
-                <div>
-                  <h3 className="text-xl font-semibold mb-2">Description</h3>
-                  <p className="text-muted leading-relaxed">{temple.description}</p>
-                </div>
-              )}
+          <div className="bg-card rounded-3xl border border-border shadow-sm p-8">
+            <h2 className="text-2xl font-bold brand-font text-foreground mb-5 flex items-center gap-3">
+              <span className="w-1 h-7 rounded-full bg-highlight inline-block" />
+              About
+            </h2>
+            <div className="space-y-4">
+              {temple.description && <p className="text-muted-foreground leading-relaxed text-base">{temple.description}</p>}
               {temple.history && (
                 <div>
-                  <h3 className="text-xl font-semibold mb-2">History</h3>
-                  <p className="text-muted leading-relaxed">{temple.history}</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">History</p>
+                  <p className="text-muted-foreground leading-relaxed">{temple.history}</p>
                 </div>
               )}
               {temple.mission && (
                 <div>
-                  <h3 className="text-xl font-semibold mb-2">Mission</h3>
-                  <p className="text-muted leading-relaxed">{temple.mission}</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Mission</p>
+                  <p className="text-muted-foreground leading-relaxed">{temple.mission}</p>
                 </div>
               )}
             </div>
-          </section>
+          </div>
         )}
 
         {/* Cultural Information */}
-        {(temple.lineage || temple.tradition || temple.specialties?.length) && (
-          <section>
-            <h2 className="text-3xl font-bold brand-font text-highlight mb-6">Cultural Information</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {(temple.lineage || temple.tradition || temple.specialties?.length > 0) && (
+          <div className="bg-card rounded-3xl border border-border shadow-sm p-8">
+            <h2 className="text-2xl font-bold brand-font text-foreground mb-5 flex items-center gap-3">
+              <span className="w-1 h-7 rounded-full bg-primary inline-block" />
+              Cultural Information
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {temple.lineage && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Lineage</h3>
-                  <p className="text-muted">{temple.lineage}</p>
+                <div className="bg-muted/50 rounded-2xl p-5">
+                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Lineage</p>
+                  <p className="text-foreground font-semibold">{temple.lineage}</p>
                 </div>
               )}
               {temple.tradition && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Tradition</h3>
-                  <p className="text-muted">{temple.tradition}</p>
+                <div className="bg-muted/50 rounded-2xl p-5">
+                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Tradition</p>
+                  <p className="text-foreground font-semibold">{temple.tradition}</p>
                 </div>
               )}
-              {temple.specialties && temple.specialties.length > 0 && (
+              {temple.specialties?.length > 0 && (
                 <div className="md:col-span-2">
-                  <h3 className="text-lg font-semibold mb-2">Specialties</h3>
+                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Specialties</p>
                   <div className="flex flex-wrap gap-2">
-                    {temple.specialties.map((specialty: string, index: number) => (
-                      <span
-                        key={index}
-                        className="bg-highlight/20 text-highlight px-4 py-2 rounded-lg text-sm"
-                      >
-                        {specialty}
-                      </span>
+                    {temple.specialties.map((s: string, i: number) => (
+                      <span key={i} className="bg-primary/10 text-primary px-3 py-1.5 rounded-full text-sm font-semibold">{s}</span>
                     ))}
                   </div>
                 </div>
               )}
             </div>
-          </section>
+          </div>
         )}
 
-        {/* Babalawos Section */}
-        <section>
+        {/* Babalawos */}
+        <div className="bg-card rounded-3xl border border-border shadow-sm p-8">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-3xl font-bold brand-font text-highlight">
+            <h2 className="text-2xl font-bold brand-font text-foreground flex items-center gap-3">
+              <span className="w-1 h-7 rounded-full bg-primary inline-block" />
               Babalawos ({filteredBabalawos.length})
             </h2>
-            <select
-              value={selectedTier}
-              onChange={(e) => setSelectedTier(e.target.value as VerificationTier | 'ALL')}
-              className="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white outline-none focus:ring-2 focus:ring-highlight"
-              aria-label="Filter babalawos by verification tier"
-            >
+            <select value={selectedTier} onChange={(e) => setSelectedTier(e.target.value as VerificationTier | 'ALL')}
+              className="border border-border rounded-xl px-4 py-2 text-foreground bg-background text-sm font-semibold outline-none focus:ring-2 focus:ring-primary"
+              aria-label="Filter babalawos by verification tier">
               <option value="ALL">All Tiers</option>
               <option value={VerificationTier.JUNIOR}>Junior</option>
               <option value={VerificationTier.SENIOR}>Senior</option>
               <option value={VerificationTier.MASTER}>Master</option>
             </select>
           </div>
-
           {filteredBabalawos.length === 0 ? (
-            <p className="text-muted">No babalawos found.</p>
+            <div className="text-center py-12">
+              <Users size={40} className="mx-auto mb-3 text-muted-foreground/40" />
+              <p className="text-muted-foreground font-semibold">No babalawos registered yet</p>
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredBabalawos.map((babalawo: any) => (
-                <BabalawoProfileCard
-                  key={babalawo.id}
-                  babalawo={babalawo}
+                <BabalawoProfileCard key={babalawo.id} babalawo={babalawo}
                   onClick={() => setSelectedBabalawoId(babalawo.id)}
-                  onBookSession={(id) => setSelectedBabalawoId(id)}
-                />
+                  onBookSession={(id) => setSelectedBabalawoId(id)} />
               ))}
             </div>
           )}
-
-          {/* Babalawo Profile Modal - stays within temple context */}
-          <BabalawoProfileModal
-            babalawoId={selectedBabalawoId || ''}
-            isOpen={!!selectedBabalawoId}
+          <BabalawoProfileModal babalawoId={selectedBabalawoId || ''} isOpen={!!selectedBabalawoId}
             onClose={() => setSelectedBabalawoId(null)}
-            onRequestConsultation={(id) => {
-              setSelectedBabalawoId(null);
-              onSelectBabalawo?.(id);
-            }}
-            onViewProfile={(id) => {
-              setSelectedBabalawoId(null);
-              onViewBabalawoProfile?.(id);
-            }}
-            onMessage={(_id: string) => {
-              setSelectedBabalawoId(null);
-              // Navigate to messages with this babalawo
-              window.location.href = '/messages';
-            }}
-          />
-        </section>
+            onRequestConsultation={(id) => { setSelectedBabalawoId(null); onSelectBabalawo?.(id); }}
+            onViewProfile={(id) => { setSelectedBabalawoId(null); onViewBabalawoProfile?.(id); }}
+            onMessage={(_id: string) => { setSelectedBabalawoId(null); window.location.href = '/messages'; }} />
+        </div>
 
-        {/* Contact Section */}
+        {/* Contact & Links */}
         {(temple.address || temple.phone || temple.email || temple.website || temple.socialLinks) && (
-          <section>
-            <h2 className="text-3xl font-bold brand-font text-highlight mb-6">Contact</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-card rounded-3xl border border-border shadow-sm p-8">
+            <h2 className="text-2xl font-bold brand-font text-foreground mb-6 flex items-center gap-3">
+              <span className="w-1 h-7 rounded-full bg-amber-400 inline-block" />
+              Contact & Links
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               {temple.address && (
-                <div className="flex items-start gap-3">
-                  <MapPin size={20} className="text-highlight mt-1" />
+                <div className="flex items-start gap-3 bg-muted/50 rounded-2xl p-4">
+                  <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <MapPin size={17} className="text-primary" />
+                  </div>
                   <div>
-                    <p className="font-semibold mb-1">Address</p>
-                    <p className="text-muted">{temple.address}</p>
-                    {temple.city && temple.state && (
-                      <p className="text-muted">{temple.city}, {temple.state}</p>
-                    )}
-                    {temple.country && (
-                      <p className="text-muted">{temple.country}</p>
-                    )}
+                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Address</p>
+                    <p className="text-foreground font-semibold text-sm">{temple.address}</p>
+                    {temple.country && <p className="text-muted-foreground text-xs mt-0.5">{temple.country}</p>}
                   </div>
                 </div>
               )}
               {temple.phone && (
-                <div className="flex items-start gap-3">
-                  <Phone size={20} className="text-highlight mt-1" />
+                <div className="flex items-start gap-3 bg-muted/50 rounded-2xl p-4">
+                  <div className="w-9 h-9 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Phone size={17} className="text-green-700" />
+                  </div>
                   <div>
-                    <p className="font-semibold mb-1">Phone</p>
-                    <a href={`tel:${temple.phone}`} className="text-highlight hover:underline">
-                      {temple.phone}
-                    </a>
+                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Phone</p>
+                    <a href={`tel:${temple.phone}`} className="text-green-700 font-bold text-sm hover:underline">{temple.phone}</a>
                   </div>
                 </div>
               )}
               {temple.email && (
-                <div className="flex items-start gap-3">
-                  <Mail size={20} className="text-highlight mt-1" />
+                <div className="flex items-start gap-3 bg-muted/50 rounded-2xl p-4">
+                  <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Mail size={17} className="text-blue-700" />
+                  </div>
                   <div>
-                    <p className="font-semibold mb-1">Email</p>
-                    <a href={`mailto:${temple.email}`} className="text-highlight hover:underline">
-                      {temple.email}
-                    </a>
+                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Email</p>
+                    <a href={`mailto:${temple.email}`} className="text-blue-700 font-bold text-sm hover:underline break-all">{temple.email}</a>
                   </div>
                 </div>
               )}
               {temple.website && (
-                <div className="flex items-start gap-3">
-                  <Globe size={20} className="text-highlight mt-1" />
+                <div className="flex items-start gap-3 bg-muted/50 rounded-2xl p-4">
+                  <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Globe size={17} className="text-amber-700" />
+                  </div>
                   <div>
-                    <p className="font-semibold mb-1">Website</p>
-                    <a
-                      href={temple.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-highlight hover:underline"
-                    >
-                      {temple.website}
+                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Website</p>
+                    <a href={temple.website} target="_blank" rel="noopener noreferrer"
+                      className="text-amber-700 font-bold text-sm hover:underline break-all">
+                      {temple.website.replace(/^https?:\/\//, '')}
                     </a>
                   </div>
                 </div>
               )}
-              {temple.socialLinks && (
-                <div className="md:col-span-2">
-                  <p className="font-semibold mb-3">Social Media</p>
-                  <div className="flex flex-wrap gap-4">
-                    {temple.socialLinks.facebook && (
-                      <a
-                        href={temple.socialLinks.facebook}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-highlight hover:underline"
-                      >
-                        Facebook
-                      </a>
-                    )}
-                    {temple.socialLinks.instagram && (
-                      <a
-                        href={temple.socialLinks.instagram}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-highlight hover:underline"
-                      >
-                        Instagram
-                      </a>
-                    )}
-                    {temple.socialLinks.twitter && (
-                      <a
-                        href={temple.socialLinks.twitter}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-highlight hover:underline"
-                      >
-                        Twitter
-                      </a>
-                    )}
-                    {temple.socialLinks.youtube && (
-                      <a
-                        href={temple.socialLinks.youtube}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-highlight hover:underline"
-                      >
-                        YouTube
-                      </a>
-                    )}
+              {temple.socialLinks?.leadPriest && (
+                <div className="flex items-start gap-3 bg-amber-50 rounded-2xl p-4 border border-amber-100">
+                  <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Users size={17} className="text-amber-700" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-amber-600 mb-1">Lead Priest</p>
+                    <p className="text-foreground font-bold text-sm">{temple.socialLinks.leadPriest}</p>
+                  </div>
+                </div>
+              )}
+              {temple.socialLinks?.registrationNumber && (
+                <div className="flex items-start gap-3 bg-emerald-50 rounded-2xl p-4 border border-emerald-100">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Award size={17} className="text-emerald-700" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-emerald-600 mb-1">Official Registration</p>
+                    <p className="text-emerald-800 font-bold text-sm">{temple.socialLinks.registrationNumber}</p>
                   </div>
                 </div>
               )}
             </div>
-          </section>
+            {(temple.socialLinks?.instagram || temple.socialLinks?.facebook || temple.socialLinks?.youtube || temple.socialLinks?.eventbrite) && (
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Social Media</p>
+                <div className="flex flex-wrap gap-3">
+                  {temple.socialLinks?.instagram && (
+                    <a href={`https://instagram.com/${temple.socialLinks.instagram.replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-br from-purple-500 to-pink-500 text-white rounded-xl text-sm font-bold hover:shadow-lg hover:-translate-y-0.5 transition-all">
+                      <Instagram size={15} /> {temple.socialLinks.instagram}
+                    </a>
+                  )}
+                  {temple.socialLinks?.facebook && (
+                    <a href={`https://facebook.com/search/pages?q=${encodeURIComponent(temple.socialLinks.facebook)}`} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:shadow-lg hover:-translate-y-0.5 transition-all">
+                      <Facebook size={15} /> {temple.socialLinks.facebook}
+                    </a>
+                  )}
+                  {temple.socialLinks?.youtube && (
+                    <a href={`https://youtube.com/results?search_query=${encodeURIComponent(temple.socialLinks.youtube)}`} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-4 py-2.5 bg-red-600 text-white rounded-xl text-sm font-bold hover:shadow-lg hover:-translate-y-0.5 transition-all">
+                      <Youtube size={15} /> {temple.socialLinks.youtube}
+                    </a>
+                  )}
+                  {temple.socialLinks?.eventbrite && (
+                    <a href={`https://eventbrite.com/o/${encodeURIComponent(temple.socialLinks.eventbrite)}`} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-4 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-bold hover:shadow-lg hover:-translate-y-0.5 transition-all">
+                      <Calendar size={15} /> {temple.socialLinks.eventbrite}
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
-        {/* Events Section */}
-        <section>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-3xl font-bold brand-font text-highlight">
-              Upcoming Events
-            </h2>
-          </div>
-
+        {/* Events */}
+        <div className="bg-card rounded-3xl border border-border shadow-sm p-8">
+          <h2 className="text-2xl font-bold brand-font text-foreground mb-6 flex items-center gap-3">
+            <span className="w-1 h-7 rounded-full bg-highlight inline-block" />
+            Upcoming Events
+          </h2>
           <TempleEventsList templeId={temple.id} onSelectEvent={onSelectEvent} />
-        </section>
+        </div>
 
-        {/* Gallery Section */}
-        {temple.images && temple.images.length > 0 && (
-          <section>
-            <h2 className="text-3xl font-bold brand-font text-highlight mb-6">Gallery</h2>
+        {/* Gallery */}
+        {temple.images?.length > 0 && (
+          <div className="bg-card rounded-3xl border border-border shadow-sm p-8">
+            <h2 className="text-2xl font-bold brand-font text-foreground mb-6 flex items-center gap-3">
+              <span className="w-1 h-7 rounded-full bg-primary inline-block" />
+              Gallery
+            </h2>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {temple.images.map((image: string, index: number) => (
-                <img
-                  key={index}
-                  src={image}
-                  alt={`${temple.name} - Image ${index + 1}`}
-                  className="w-full h-48 object-cover rounded-lg hover:scale-105 transition-transform cursor-pointer"
-                />
+                <img key={index} src={image} alt={`${temple.name} - ${index + 1}`}
+                  className="w-full h-48 object-cover rounded-2xl hover:scale-105 transition-transform cursor-pointer shadow-sm" />
               ))}
             </div>
-          </section>
+          </div>
         )}
+
       </div>
     </div>
   );
@@ -614,14 +566,14 @@ const TempleEventsList: React.FC<{ templeId: string; onSelectEvent?: (eventId: s
   });
 
   if (isLoading) {
-    return <div className="h-20 animate-pulse bg-white/5 rounded-lg"></div>;
+    return <div className="h-20 animate-pulse bg-muted rounded-2xl"></div>;
   }
 
   if (events.length === 0) {
     return (
-      <div className="bg-white/5 rounded-lg p-6 text-center border border-white/10">
-        <Calendar size={32} className="mx-auto text-muted mb-2" />
-        <p className="text-muted">No upcoming events scheduled.</p>
+      <div className="bg-muted/50 rounded-2xl p-8 text-center border border-border/60">
+        <Calendar size={32} className="mx-auto text-muted-foreground/40 mb-2" />
+        <p className="text-muted-foreground font-semibold">No upcoming events scheduled.</p>
       </div>
     );
   }
@@ -632,29 +584,29 @@ const TempleEventsList: React.FC<{ templeId: string; onSelectEvent?: (eventId: s
         <div
           key={event.id}
           onClick={() => onSelectEvent?.(event.slug)}
-          className="bg-white/5 hover:bg-white/10 border border-white/10 hover:border-highlight transition-all rounded-xl overflow-hidden cursor-pointer group"
+          className="bg-muted/50 hover:bg-amber-50 border border-border/60 hover:border-amber-200 transition-all rounded-2xl overflow-hidden cursor-pointer group shadow-sm"
         >
           {event.image ? (
-            <img src={event.image} alt={event.title} className="w-full h-48 object-cover" />
+            <img src={event.image} alt={event.title} className="w-full h-40 object-cover" />
           ) : (
-            <div className="w-full h-48 bg-gradient-to-br from-highlight/10 to-muted/10 flex items-center justify-center">
-              <Calendar size={48} className="text-highlight/30" />
+            <div className="w-full h-40 bg-gradient-to-br from-amber-100 to-stone-100 flex items-center justify-center">
+              <Calendar size={40} className="text-amber-300" />
             </div>
           )}
           <div className="p-5">
-            <div className="flex items-center gap-2 text-highlight text-xs uppercase tracking-wider font-semibold mb-2">
-              <span className="bg-highlight/10 px-2 py-1 rounded">{event.type}</span>
+            <div className="flex items-center gap-2 text-amber-700 text-xs uppercase tracking-wider font-bold mb-2">
+              <span className="bg-amber-100 px-2 py-1 rounded-lg">{event.type}</span>
               <span>•</span>
               <span>{new Date(event.startDate).toLocaleDateString()}</span>
             </div>
-            <h3 className="text-xl font-bold brand-font text-white mb-2 group-hover:text-highlight transition-colors">
+            <h3 className="text-lg font-bold brand-font text-foreground mb-1.5 group-hover:text-primary transition-colors">
               {event.title}
             </h3>
-            <p className="text-muted text-sm line-clamp-2 mb-4">
+            <p className="text-muted-foreground text-sm line-clamp-2 mb-3">
               {event.description}
             </p>
-            <div className="flex items-center gap-2 text-sm text-muted">
-              <MapPin size={14} />
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground font-medium">
+              <MapPin size={13} />
               <span>{event.location}</span>
             </div>
           </div>

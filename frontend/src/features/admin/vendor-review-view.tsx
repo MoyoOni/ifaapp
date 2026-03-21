@@ -2,12 +2,10 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { XCircle, Store, Loader2, FileText, User } from 'lucide-react';
 import api from '@/lib/api';
-import { logger } from '@/shared/utils/logger';
-
-import { UserRole, VendorStatus } from '@common';
-import { getDemoUsersByRole } from '@/demo';
+import { VendorStatus } from '@common';
 import VerificationBadge from '@/shared/components/verification-badge';
 import { useToast } from '@/shared/components/toast';
+import { SkeletonTable } from '@/shared/components/skeleton';
 
 interface Vendor {
   id: string;
@@ -50,40 +48,11 @@ const VendorReviewView: React.FC = () => {
   const [reviewNotes, setReviewNotes] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
 
-  const demoVendors: Vendor[] = getDemoUsersByRole(UserRole.VENDOR)
-    .map((demoUser) => {
-      return {
-      id: demoUser.id,
-      userId: demoUser.id,
-      businessName: demoUser.name,
-      status: VendorStatus.PENDING,
-      description: demoUser.bio || 'Demo vendor application.',
-      createdAt: demoUser.createdAt || new Date().toISOString(),
-      user: {
-        id: demoUser.id,
-        name: demoUser.name,
-        email: demoUser.email || 'vendor@example.com',
-        verified: demoUser.verified ?? true,
-        yorubaName: demoUser.yorubaName,
-      },
-      _count: {
-        products: 2,
-        orders: 5,
-      },
-    };
-    });
-
   const { data: vendors = [], isLoading } = useQuery<Vendor[]>({
     queryKey: ['admin-vendors'],
     queryFn: async () => {
-      try {
-        const response = await api.get('/marketplace/vendors');
-        return response.data;
-      } catch (error) {
-        throw error;
-        logger.warn('Failed to fetch vendors, using demo data');
-        return demoVendors;
-      }
+      const response = await api.get('/admin/vendors/pending');
+      return response.data;
     },
   });
 
@@ -91,8 +60,8 @@ const VendorReviewView: React.FC = () => {
 
   const approveVendorMutation = useMutation({
     mutationFn: async ({ vendorId, notes }: { vendorId: string; notes: string }) => {
-      await api.patch(`/marketplace/vendors/${vendorId}`, {
-        status: VendorStatus.APPROVED,
+      await api.post(`/admin/vendors/${vendorId}/review`, {
+        approved: true,
         culturalAuthenticityNotes: notes || undefined,
       });
     },
@@ -109,8 +78,8 @@ const VendorReviewView: React.FC = () => {
 
   const rejectVendorMutation = useMutation({
     mutationFn: async ({ vendorId, reason, notes }: { vendorId: string; reason: string; notes: string }) => {
-      await api.patch(`/marketplace/vendors/${vendorId}`, {
-        status: VendorStatus.REJECTED,
+      await api.post(`/admin/vendors/${vendorId}/review`, {
+        approved: false,
         rejectionReason: reason,
         culturalAuthenticityNotes: notes || undefined,
       });
@@ -149,9 +118,7 @@ const VendorReviewView: React.FC = () => {
   };
   
   if (isLoading) {
-    return <div className="flex justify-center items-center h-64">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-    </div>;
+    return <SkeletonTable rows={4} />;
   }
   
   return (
@@ -189,7 +156,7 @@ const VendorReviewView: React.FC = () => {
         </div>
 
         {/* Vendors Table */}
-        <div className="overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm">
+        <div className="overflow-x-auto rounded-xl border border-stone-200 bg-white shadow-sm">
           <table className="min-w-full divide-y divide-stone-200">
             <thead className="bg-stone-50">
               <tr>
@@ -259,7 +226,7 @@ const VendorReviewView: React.FC = () => {
                   <p className="text-stone-600">{selectedVendor.description || 'No description provided'}</p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-stone-700 mb-1">Business License</label>
                     {selectedVendor.businessLicense ? (

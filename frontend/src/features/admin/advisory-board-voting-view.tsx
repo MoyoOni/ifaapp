@@ -11,7 +11,6 @@ import {
   Flag
 } from 'lucide-react';
 import api from '@/lib/api';
-import { logger } from '@/shared/utils/logger';
 
 import { useAuth } from '@/shared/hooks/use-auth';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
@@ -52,7 +51,7 @@ interface CastVoteDto {
 
 const AdvisoryBoardVotingView: React.FC = () => {
   const { user } = useAuth();
-  const { error } = useToast();
+  const { error: toastError, success: toastSuccess } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'active' | 'closed' | 'create'>('active');
 
@@ -62,58 +61,8 @@ const AdvisoryBoardVotingView: React.FC = () => {
       const params = {
         status: activeTab === 'active' ? 'ACTIVE,PENDING' : 'CLOSED,APPROVED,REJECTED'
       };
-      try {
-        const response = await api.get('/admin/advisory-board/votes', { params });
-        return response.data;
-      } catch (error) {
-        throw error;
-
-        logger.warn('Failed to fetch advisory votes, using demo data');
-        const now = Date.now();
-        const demoVotes: AdvisoryVote[] = [
-          {
-            id: 'vote-1',
-            title: 'Expand Community Grants',
-            description: 'Approve additional funding for temple-led community grants.',
-            proposer: { id: 'demo-admin-1', name: 'Chief Adeyemi', role: 'ADMIN' },
-            deadline: new Date(now + 5 * 24 * 60 * 60 * 1000).toISOString(),
-            requiredMajority: 'SUPER',
-            status: 'ACTIVE',
-            createdAt: new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString(),
-            votes: { yes: 8, no: 2, abstain: 1 },
-            voterCount: 11,
-            voteOptions: ['Approve', 'Reject', 'Needs Review'],
-            results: [
-              { option: 'Approve', count: 8, percentage: 73 },
-              { option: 'Reject', count: 2, percentage: 18 },
-              { option: 'Needs Review', count: 1, percentage: 9 }
-            ],
-          },
-          {
-            id: 'vote-2',
-            title: 'Update Practitioner Code of Conduct',
-            description: 'Adopt updated guidelines for practitioner onboarding.',
-            proposer: { id: 'demo-admin-1', name: 'Chief Adeyemi', role: 'ADMIN' },
-            deadline: new Date(now - 10 * 24 * 60 * 60 * 1000).toISOString(),
-            requiredMajority: 'SIMPLE',
-            status: 'CLOSED',
-            createdAt: new Date(now - 20 * 24 * 60 * 60 * 1000).toISOString(),
-            votes: { yes: 12, no: 1, abstain: 0 },
-            voterCount: 13,
-            voteOptions: ['Approve', 'Reject'],
-            results: [
-              { option: 'Approve', count: 12, percentage: 92 },
-              { option: 'Reject', count: 1, percentage: 8 }
-            ],
-          },
-        ];
-
-        return demoVotes.filter((vote) =>
-          activeTab === 'active'
-            ? vote.status === 'ACTIVE' || vote.status === 'PENDING'
-            : vote.status !== 'ACTIVE' && vote.status !== 'PENDING'
-        );
-      }
+      const response = await api.get('/admin/advisory-board/votes', { params });
+      return response.data;
     }
   });
 
@@ -124,7 +73,11 @@ const AdvisoryBoardVotingView: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['advisory-votes'] });
-    }
+      toastSuccess('Vote cast successfully');
+    },
+    onError: (err: Error) => {
+      toastError(`Failed to cast vote — ${err.message}`);
+    },
   });
 
   const createVoteMutation = useMutation({
@@ -140,8 +93,12 @@ const AdvisoryBoardVotingView: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['advisory-votes'] });
+      toastSuccess('Vote created');
       setActiveTab('active');
-    }
+    },
+    onError: (err: Error) => {
+      toastError(`Failed to create vote — ${err.message}`);
+    },
   });
 
   const [newVote, setNewVote] = useState({
@@ -156,12 +113,12 @@ const AdvisoryBoardVotingView: React.FC = () => {
     e.preventDefault();
     
     if (newVote.voteOptions.length < 2) {
-      error('Please provide at least 2 voting options');
+      toastError('Please provide at least 2 voting options');
       return;
     }
 
     if (!newVote.title.trim()) {
-      error('Please fill in all required fields');
+      toastError('Please fill in all required fields');
       return;
     }
 
@@ -470,12 +427,12 @@ const AdvisoryBoardVotingView: React.FC = () => {
 
                               {vote.results ? (
                                 <div className="flex items-center gap-3">
-                                  <div className="w-32 bg-background/20 rounded-full h-2">
-                                    <div
-                                      className="bg-highlight h-2 rounded-full"
-                                      style={{ width: `${percentage}%` } as React.CSSProperties}
-                                    ></div>
-                                  </div>
+                                  <progress
+                                    value={percentage}
+                                    max={100}
+                                    aria-label={`${option} vote percentage`}
+                                    className="w-32 h-2 rounded-full [&::-webkit-progress-bar]:rounded-full [&::-webkit-progress-bar]:bg-background/20 [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-highlight [&::-moz-progress-bar]:rounded-full [&::-moz-progress-bar]:bg-highlight"
+                                  />
                                   <span className="text-white font-medium w-10">{percentage}%</span>
                                 </div>
                               ) : (

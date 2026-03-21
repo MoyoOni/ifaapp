@@ -8,6 +8,7 @@ import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
 import { PrivacyLevel, AutoDeleteDays } from '@common';
 import { useDraftMessage } from '@/shared/hooks/use-draft-message';
+import { useToast } from '@/shared/components/toast';
 import { useMessageSocket } from '../hooks/use-message-socket';
 import { sendMessage, getConversation, markAsRead } from '../message-service';
 
@@ -66,6 +67,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({ userId, otherUserId, onBa
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
+  const toast = useToast();
 
   // Real-time updates
   useMessageSocket(userId);
@@ -89,8 +91,12 @@ const MessageThread: React.FC<MessageThreadProps> = ({ userId, otherUserId, onBa
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['message-conversation', userId, otherUserId] });
       queryClient.invalidateQueries({ queryKey: ['message-inbox', userId] });
+      toast.success('Message deleted');
       setShowMenu(false);
       setSelectedMessageId(null);
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to delete message — ${err.message}`);
     },
   });
 
@@ -196,6 +202,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({ userId, otherUserId, onBa
         queryClient.setQueryData(['message-conversation', userId, otherUserId], context.previousMessages);
       }
       logger.error('Failed to send message', err);
+      toast.error('Failed to send message — please try again');
     },
     onSuccess: () => {
       setMessageText('');
@@ -247,7 +254,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({ userId, otherUserId, onBa
   const renderAttachment = (att: Attachment) => {
     switch (att.type) {
       case 'image':
-        return <img src={att.url} alt={att.name} className="max-w-full rounded-lg mb-2 border border-white/10" />;
+        return <img src={att.url} alt={att.name} className="max-w-full rounded-lg mb-2 border border-border" />;
       case 'audio':
         return (
           <div className="bg-black/20 p-2 rounded-lg mb-2 flex items-center gap-2">
@@ -257,12 +264,12 @@ const MessageThread: React.FC<MessageThreadProps> = ({ userId, otherUserId, onBa
       case 'video':
         return (
           <div className="mb-2">
-            <video controls src={att.url} className="max-w-full rounded-lg border border-white/10 max-h-60" />
+            <video controls src={att.url} className="max-w-full rounded-lg border border-border max-h-60" />
           </div>
         );
       default:
         return (
-          <div className="flex items-center gap-3 bg-white/10 p-3 rounded-lg mb-2 border border-white/10">
+          <div className="flex items-center gap-3 bg-muted p-3 rounded-lg mb-2 border border-border">
             <div className="bg-highlight/20 p-2 rounded-full">
               <Paperclip size={16} className="text-highlight" />
             </div>
@@ -277,22 +284,22 @@ const MessageThread: React.FC<MessageThreadProps> = ({ userId, otherUserId, onBa
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background text-white p-6 flex items-center justify-center">
+      <div className="min-h-screen bg-background p-6 flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-highlight border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background text-white flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <div className="bg-white/5 backdrop-blur-sm border-b border-white/10 p-6">
+      <div className="bg-card backdrop-blur-sm border-b border-border p-6">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             {onBack && (
               <button
                 onClick={onBack}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                className="p-2 hover:bg-muted rounded-lg transition-colors"
                 title="Go back"
                 aria-label="Go back"
               >
@@ -311,9 +318,9 @@ const MessageThread: React.FC<MessageThreadProps> = ({ userId, otherUserId, onBa
               )}
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">{resolvedOtherUser?.name}</h2>
+              <h2 className="text-xl font-bold text-foreground">{resolvedOtherUser?.name}</h2>
               {resolvedOtherUser?.yorubaName && (
-                <p className="text-muted text-sm">{resolvedOtherUser.yorubaName}</p>
+                <p className="text-muted-foreground text-sm">{resolvedOtherUser.yorubaName}</p>
               )}
             </div>
           </div>
@@ -324,7 +331,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({ userId, otherUserId, onBa
       <div className="flex-1 overflow-y-auto p-6 relative"> {/* Added relative positioning for dropdown */}
         <div className="max-w-4xl mx-auto space-y-4">
           {messages.length === 0 ? (
-            <div className="text-center py-12 text-muted">
+            <div className="text-center py-12 text-muted-foreground">
               <p className="text-lg">No messages yet.</p>
               <p className="text-sm mt-2">Start the conversation below.</p>
             </div>
@@ -341,7 +348,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({ userId, otherUserId, onBa
                   <div
                     className={`max-w-[70%] rounded-2xl p-4 ${isOwnMessage
                       ? 'bg-highlight text-white'
-                      : 'bg-white/10 text-white border border-white/20'
+                      : 'bg-muted text-foreground border border-border'
                       }`}
                   >
                     {message.attachments && (message.attachments as Attachment[]).map((att: Attachment) => (
@@ -385,13 +392,13 @@ const MessageThread: React.FC<MessageThreadProps> = ({ userId, otherUserId, onBa
                           </button>
 
                           {isMenuOpen && (
-                            <div className="absolute right-0 mt-1 w-32 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg shadow-lg z-10">
+                            <div className="absolute right-0 mt-1 w-32 bg-card backdrop-blur-sm border border-border rounded-lg shadow-lg z-10">
                               <button
                                 onClick={() => {
                                   deleteMessageMutation.mutate(message.id);
                                   setMenuOpenMessageId(null);
                                 }}
-                                className="w-full text-left px-3 py-2 text-sm hover:bg-white/10 rounded-b-lg flex items-center gap-2"
+                                className="w-full text-left px-3 py-2 text-sm text-foreground hover:bg-muted rounded-b-lg flex items-center gap-2"
                               >
                                 <Trash2 size={14} /> Delete
                               </button>
@@ -410,7 +417,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({ userId, otherUserId, onBa
       </div>
 
       {/* Message Input */}
-      <div className="bg-white/5 backdrop-blur-sm border-t border-white/10 p-6">
+      <div className="bg-card border-t border-border p-6">
         <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto space-y-3">
           {/* Privacy Settings */}
           {showPrivacySettings && (
@@ -463,7 +470,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({ userId, otherUserId, onBa
                   <select
                     value={privacyLevel}
                     onChange={(e) => setPrivacyLevel(e.target.value as PrivacyLevel)}
-                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-highlight"
+                    className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground text-sm focus:outline-none focus:border-highlight"
                     title="Privacy Level"
                     aria-label="Privacy Level"
                   >
@@ -483,7 +490,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({ userId, otherUserId, onBa
                 <select
                   value={autoDeleteDays || ''}
                   onChange={(e) => setAutoDeleteDays(e.target.value ? parseInt(e.target.value) : null)}
-                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-highlight"
+                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground text-sm focus:outline-none focus:border-highlight"
                   title="Auto-Delete After"
                   aria-label="Auto-Delete After"
                 >
@@ -505,7 +512,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({ userId, otherUserId, onBa
           {selectedFiles.length > 0 && (
             <div className="px-6 pb-2 flex gap-2 overflow-x-auto">
               {selectedFiles.map((file, i) => (
-                <div key={i} className="relative bg-white/10 p-2 rounded-lg flex items-center gap-2 min-w-[150px]">
+                <div key={i} className="relative bg-muted p-2 rounded-lg flex items-center gap-2 min-w-[150px]">
                   <span className="text-xs truncate max-w-[100px]">{file.name}</span>
                   <button type="button" onClick={() => removeSelectedFile(i)} className="ml-auto text-red-400 hover:text-red-300" aria-label={`Remove file ${file.name}`}>
                     <Trash2 size={14} />
@@ -528,17 +535,19 @@ const MessageThread: React.FC<MessageThreadProps> = ({ userId, otherUserId, onBa
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="p-3 hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
+              className="p-3 hover:bg-muted rounded-lg transition-colors flex-shrink-0"
               title="Attach document"
+              aria-label="Attach document"
             >
-              <Paperclip size={20} className="text-muted" />
+              <Paperclip size={20} className="text-muted-foreground" />
             </button>
             <button
               type="button"
               onClick={() => setShowPrivacySettings(!showPrivacySettings)}
-              className={`p-3 hover:bg-white/10 rounded-lg transition-colors flex-shrink-0 ${confidential ? 'text-yellow-400' : 'text-muted'
+              className={`p-3 hover:bg-muted rounded-lg transition-colors flex-shrink-0 ${confidential ? 'text-yellow-400' : 'text-muted-foreground'
                 }`}
               title="Privacy settings"
+              aria-label="Privacy settings"
             >
               <Settings size={20} />
             </button>
@@ -548,7 +557,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({ userId, otherUserId, onBa
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
                 placeholder="Type a message..."
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 outline-none focus:ring-4 focus:ring-highlight/10 focus:border-highlight transition-all resize-none"
+                className="w-full px-4 py-3 bg-muted border border-border rounded-xl text-foreground placeholder-muted-foreground outline-none focus:ring-4 focus:ring-highlight/10 focus:border-highlight transition-all resize-none"
                 disabled={sendMessageMutation.isPending}
                 aria-label="Message input"
               />

@@ -1,43 +1,32 @@
 /**
- * Client dashboard hook (PB-203.1)
+ * Client dashboard hook (V5-401)
  */
 
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuth } from '../use-auth';
-import { logger } from '@/shared/utils/logger';
-import { isDemoMode } from '@/shared/config/demo-mode';
-import { DEMO_USERS } from '@/demo';
-import { buildDemoClientDashboard } from './demo-builders';
 import type { ClientDashboardSummary } from './types';
 import * as Sentry from '@sentry/react';
 
 export function useClientDashboard(userId?: string) {
   const { user } = useAuth();
   const effectiveUserId = userId ?? user?.id;
-  const fallbackId = effectiveUserId ?? DEMO_USERS['demo-client-1']?.id ?? 'demo-client-1';
 
   return useQuery<ClientDashboardSummary>({
-    queryKey: ['dashboard', 'client', effectiveUserId ?? fallbackId],
+    queryKey: ['dashboard', 'client', effectiveUserId],
     queryFn: async () => {
-      const id = effectiveUserId ?? fallbackId;
-      try {
-        const response = await api.get(`/dashboard/client/${id}/summary`);
-        return response.data;
-      } catch (err) {
-        if (!isDemoMode) {
-          Sentry.captureException(err, {
-            tags: { type: 'dashboard_client_fetch' },
-            extra: { userId: id }
-          });
-          throw err;
-        }
-        logger.warn('Failed to fetch client dashboard, using demo data');
-        return buildDemoClientDashboard(id);
-      }
+      const response = await api.get(`/dashboard/client/${effectiveUserId}/summary`);
+      return response.data;
     },
-    enabled: true,
+    enabled: !!effectiveUserId,
     staleTime: 30000,
     refetchOnWindowFocus: true,
+    throwOnError: (err) => {
+      Sentry.captureException(err, {
+        tags: { type: 'dashboard_client_fetch' },
+        extra: { userId: effectiveUserId },
+      });
+      return false; // Let component handle isError instead of crashing error boundary
+    },
   });
 }

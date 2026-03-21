@@ -66,14 +66,14 @@ const MyCoursesView: React.FC<MyCoursesViewProps> = ({ onSelectEnrollment: _onSe
 
   if (enrollmentsLoading) {
     return (
-      <div className="min-h-screen bg-background text-white p-6 flex items-center justify-center">
+      <div className="min-h-screen bg-background p-6 flex items-center justify-center">
         <LoadingSpinner size="lg" variant="primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background text-white p-6">
+    <div className="min-h-screen bg-background p-6">
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
           <h1 className="text-[1.5rem] font-[700] text-foreground">My Courses</h1>
@@ -107,12 +107,12 @@ const MyCoursesView: React.FC<MyCoursesViewProps> = ({ onSelectEnrollment: _onSe
                       <span>Progress</span>
                       <span>{Math.round(enrollment.progress)}%</span>
                     </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div 
-                        className="bg-primary h-2 rounded-full" 
-                        style={{ width: `${enrollment.progress}%` }}
-                      ></div>
-                    </div>
+                    <progress
+                      value={enrollment.progress}
+                      max={100}
+                      aria-label="Course progress"
+                      className="w-full h-2 rounded-full [&::-webkit-progress-bar]:rounded-full [&::-webkit-progress-bar]:bg-muted [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-primary [&::-moz-progress-bar]:rounded-full [&::-moz-progress-bar]:bg-primary"
+                    />
                   </div>
                   
                   <div className="flex items-center justify-between">
@@ -129,7 +129,7 @@ const MyCoursesView: React.FC<MyCoursesViewProps> = ({ onSelectEnrollment: _onSe
           </div>
         ) : (
           <div className="text-center py-12">
-            <BookOpen className="w-16 h-16 text-muted mx-auto mb-4" />
+            <BookOpen className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-[1.25rem] font-[700] text-foreground mb-2">No courses enrolled</h3>
             <p className="text-[0.875rem] text-muted-foreground mb-6">Start your learning journey by enrolling in a course</p>
             <Button onClick={() => window.location.href = '/academy'}>

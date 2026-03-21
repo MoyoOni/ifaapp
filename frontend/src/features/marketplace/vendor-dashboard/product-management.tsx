@@ -5,6 +5,7 @@ import api from '@/lib/api';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
+import { useToast } from '@/shared/components/toast';
 
 interface Product {
   id: string;
@@ -25,6 +26,7 @@ interface ProductManagementProps {
 const ProductManagement: React.FC<ProductManagementProps> = ({ vendorId, activeTab }) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const toast = useToast();
   
   const { data: productsData = [], isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ['vendor-products', vendorId],
@@ -45,6 +47,10 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ vendorId, activeT
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vendor-products', vendorId] });
+      toast.success('Product deleted');
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to delete product — ${err.message}`);
     },
   });
 

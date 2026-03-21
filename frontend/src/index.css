@@ -17,7 +17,7 @@
   --border: 24 5% 85%; /* Border Sacred - Subtle border color */
   --input: 24 5% 85%; /* Border Sacred - Input border */
   
-  --card: 50 25% 96%; /* Sacred Ivory - Card surface */
+  --card: 0 0% 100%; /* White - Card surface (stands out from ivory background) */
   --card-foreground: 24 15% 15%; /* Deep Sacred - Card text */
   
   --primary: 38 92% 50%; /* Osun Gold - Golden yellow */
@@ -353,3 +353,4 @@ html {
 }
 
 /* Remove the old dark mode adjustments as we now define proper CSS variables */
+.pb-safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }

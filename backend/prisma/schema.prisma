@@ -901,6 +901,7 @@ model Temple {
   type          String         @default("STUDY_CIRCLE")
   lineage       String?
   tradition     String?
+  worshipDay    String?
   specialties   String[]
   socialLinks   Json?
   babalawoCount Int            @default(0)

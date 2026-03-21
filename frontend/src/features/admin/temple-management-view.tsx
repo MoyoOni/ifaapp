@@ -3,8 +3,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Building2, CheckCircle, XCircle, Clock, MapPin, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
+import { SkeletonTable } from '@/shared/components/skeleton';
+import { useToast } from '@/shared/components/toast';
 
-import { DEMO_TEMPLES, getDemoUserById, type DemoUser } from '@/demo';
 import { useModal } from '@/components/common/ModalProvider';
 
 interface Temple {
@@ -39,56 +40,6 @@ interface Temple {
 
 type FilterType = 'all' | 'pending' | 'verified' | 'rejected';
 
-const buildDemoTemples = (): Temple[] => {
-  const demoTemples = Object.values(DEMO_TEMPLES).map((temple, index) => {
-    const founderId = temple.babalawos?.[0] || 'demo-baba-1';
-    const founder = getDemoUserById(founderId) as DemoUser | null;
-    const isRejected = index === 1;
-    const isVerified = temple.verified && !isRejected;
-
-    return {
-      id: temple.id,
-      name: temple.name,
-      yorubaName: temple.yorubaName,
-      slug: temple.slug,
-      type: 'COMMUNITY',
-      status: isRejected ? 'REJECTED' : 'ACTIVE',
-      verified: isVerified,
-      verifiedAt: isVerified ? new Date().toISOString() : undefined,
-      founderId: founder?.id || founderId,
-      city: temple.location?.split(',')[0]?.trim(),
-      state: temple.location?.split(',')[1]?.trim(),
-      country: 'NG',
-      description: temple.description,
-      lineage: 'Ile Ife',
-      tradition: 'Ifa',
-      _count: {
-        babalawos: temple.babalawos?.length ?? 0,
-        followers: temple.members?.length ?? 0,
-      },
-      founder: {
-        id: founder?.id || founderId,
-        name: founder?.name || 'Unknown Founder',
-        yorubaName: founder?.yorubaName,
-        email: founder?.email,
-        verified: founder?.verified ?? false,
-      },
-      createdAt: new Date().toISOString(),
-    };
-  });
-
-  if (demoTemples.length > 0) {
-    demoTemples[0] = {
-      ...demoTemples[0],
-      verified: false,
-      status: 'ACTIVE',
-      verifiedAt: undefined,
-    };
-  }
-
-  return demoTemples;
-};
-
 /**
  * Temple Management View
  * Admin interface for managing temples, verification, and temple-babalawo relationships
@@ -96,6 +47,7 @@ const buildDemoTemples = (): Temple[] => {
 const TempleManagementView: React.FC = () => {
   const [filter, setFilter] = useState<FilterType>('all');
   const queryClient = useQueryClient();
+  const toast = useToast();
 
   // Fetch all temples
   const { data: temples = [], isLoading } = useQuery<Temple[]>({
@@ -127,6 +79,10 @@ const TempleManagementView: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-temples'] });
+      toast.success('Temple verified');
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to verify temple — ${err.message}`);
     },
   });
 
@@ -140,6 +96,10 @@ const TempleManagementView: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-temples'] });
+      toast.success('Temple rejected');
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to reject temple — ${err.message}`);
     },
   });
 
@@ -172,11 +132,7 @@ const TempleManagementView: React.FC = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <SkeletonTable rows={4} />;
   }
 
   return (

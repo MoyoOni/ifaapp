@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Building2, Calendar, MapPin, Globe, Star, Heart, Search, Loader2, AlertCircle } from 'lucide-react';
 import api from '@/lib/api';
+import { useToast } from '@/shared/components/toast';
 
 interface Temple {
   id: string;
@@ -22,8 +23,9 @@ const TempleConnectionView: React.FC = () => {
   const [filter, setFilter] = useState<'all' | 'affiliated'>('all');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const toast = useToast();
 
-  const { data: allTemples = [], isLoading, isError } = useQuery<Temple[]>({
+  const { data: allTemples = [], isLoading, isError, refetch } = useQuery<Temple[]>({
     queryKey: ['temples', searchTerm],
     queryFn: async () => {
       const res = await api.get('/temples', {
@@ -52,6 +54,10 @@ const TempleConnectionView: React.FC = () => {
     onSuccess: () => {
       refetchFollowed();
       queryClient.invalidateQueries({ queryKey: ['temples-followed'] });
+      toast.success('Temple followed');
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to follow temple — ${err.message}`);
     },
   });
 
@@ -60,6 +66,10 @@ const TempleConnectionView: React.FC = () => {
     onSuccess: () => {
       refetchFollowed();
       queryClient.invalidateQueries({ queryKey: ['temples-followed'] });
+      toast.success('Temple unfollowed');
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to unfollow temple — ${err.message}`);
     },
   });
 
@@ -70,20 +80,20 @@ const TempleConnectionView: React.FC = () => {
   if (isLoading) {
     return (
       <div className="animate-pulse space-y-6 p-6">
-        <div className="h-8 bg-gray-200 rounded w-1/3" />
+        <div className="h-8 bg-muted rounded w-1/3" />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="border rounded-xl p-6 bg-white shadow-sm">
+            <div key={i} className="border border-border rounded-xl p-6 bg-card shadow-sm">
               <div className="flex items-center gap-4 mb-4">
-                <div className="bg-gray-200 rounded-full h-12 w-12" />
+                <div className="bg-muted rounded-full h-12 w-12" />
                 <div>
-                  <div className="h-4 bg-gray-200 rounded w-48 mb-2" />
-                  <div className="h-3 bg-gray-200 rounded w-32" />
+                  <div className="h-4 bg-muted rounded w-48 mb-2" />
+                  <div className="h-3 bg-muted rounded w-32" />
                 </div>
               </div>
               <div className="space-y-2">
-                <div className="h-3 bg-gray-200 rounded w-full" />
-                <div className="h-3 bg-gray-200 rounded w-4/5" />
+                <div className="h-3 bg-muted rounded w-full" />
+                <div className="h-3 bg-muted rounded w-4/5" />
               </div>
             </div>
           ))}
@@ -94,10 +104,13 @@ const TempleConnectionView: React.FC = () => {
 
   if (isError) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
+      <div className="flex flex-col items-center justify-center py-20 text-center bg-red-50 rounded-xl border border-red-100">
         <AlertCircle size={48} className="text-red-400 mb-4" />
-        <p className="text-lg font-medium text-stone-700 mb-2">Failed to load temples</p>
-        <button type="button" onClick={() => queryClient.invalidateQueries({ queryKey: ['temples'] })} className="px-4 py-2 bg-highlight text-white rounded-xl font-medium">
+        <p className="text-lg font-medium text-foreground mb-1">Connection error</p>
+        <p className="text-muted-foreground text-sm mb-6 max-w-sm">
+          Could not load temples from the server. Check your connection and try again.
+        </p>
+        <button type="button" onClick={() => refetch()} className="px-4 py-2 bg-highlight text-white rounded-xl font-medium">
           Try Again
         </button>
       </div>
@@ -108,35 +121,35 @@ const TempleConnectionView: React.FC = () => {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold brand-font text-stone-900">Temple Connection</h1>
-          <p className="text-stone-600 text-lg mt-1">Connect with traditional temples and spiritual centers</p>
+          <h1 className="text-3xl md:text-4xl font-bold brand-font text-foreground">Temple Connection</h1>
+          <p className="text-muted-foreground text-lg mt-1">Connect with traditional temples and spiritual centers</p>
         </div>
       </div>
 
       {/* Search & Filter */}
       <div className="flex flex-wrap gap-4">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
           <input
             type="text"
             placeholder="Search temples..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            className="pl-10 pr-4 py-2 border border-stone-300 rounded-lg w-full md:w-64 focus:ring-2 focus:ring-highlight focus:border-highlight"
+            className="pl-10 pr-4 py-2 border border-border rounded-lg w-full md:w-64 focus:ring-2 focus:ring-highlight focus:border-highlight bg-muted/50 text-foreground"
           />
         </div>
         <div className="flex gap-2">
           <button
             type="button"
             onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium ${filter === 'all' ? 'bg-highlight text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'}`}
+            className={`px-4 py-2 rounded-lg text-sm font-medium ${filter === 'all' ? 'bg-highlight text-white' : 'bg-muted text-foreground hover:bg-muted/80'}`}
           >
             All Temples
           </button>
           <button
             type="button"
             onClick={() => setFilter('affiliated')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium ${filter === 'affiliated' ? 'bg-highlight text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'}`}
+            className={`px-4 py-2 rounded-lg text-sm font-medium ${filter === 'affiliated' ? 'bg-highlight text-white' : 'bg-muted text-foreground hover:bg-muted/80'}`}
           >
             Affiliated ({followedIds.size})
           </button>
@@ -144,13 +157,13 @@ const TempleConnectionView: React.FC = () => {
       </div>
 
       {displayedTemples.length === 0 ? (
-        <div className="text-center py-16 bg-stone-50 rounded-xl border border-stone-200">
-          <Building2 size={48} className="mx-auto text-stone-300 mb-4" />
-          <p className="text-stone-500 font-medium">
+        <div className="text-center py-16 bg-muted/50 rounded-xl border border-border">
+          <Building2 size={48} className="mx-auto text-muted-foreground mb-4" />
+          <p className="text-muted-foreground font-medium">
             {filter === 'affiliated' ? 'No affiliated temples yet' : 'No temples found'}
           </p>
           {filter === 'affiliated' && (
-            <p className="text-stone-400 text-sm mt-1">Join a temple from the All Temples list</p>
+            <p className="text-muted-foreground text-sm mt-1">Join a temple from the All Temples list</p>
           )}
         </div>
       ) : (
@@ -160,15 +173,15 @@ const TempleConnectionView: React.FC = () => {
             const isMutating = followMutation.isPending || unfollowMutation.isPending;
 
             return (
-              <div key={temple.id} className="border rounded-xl p-6 bg-white shadow-sm hover:shadow-md transition-shadow">
+              <div key={temple.id} className="border border-border rounded-xl p-6 bg-card shadow-sm hover:shadow-md transition-shadow">
                 <div className="flex justify-between items-start">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <Building2 className="text-highlight flex-shrink-0" size={20} />
-                      <h3 className="text-xl font-bold text-stone-900 truncate">{temple.name}</h3>
+                      <h3 className="text-xl font-bold text-foreground truncate">{temple.name}</h3>
                     </div>
                     {temple.yorubaName && (
-                      <p className="text-stone-500 text-sm italic mt-1">{temple.yorubaName}</p>
+                      <p className="text-muted-foreground text-sm italic mt-1">{temple.yorubaName}</p>
                     )}
                   </div>
                   {temple.rating != null && (
@@ -180,18 +193,18 @@ const TempleConnectionView: React.FC = () => {
                 </div>
 
                 {temple.description && (
-                  <p className="mt-4 text-stone-600 text-sm line-clamp-2">{temple.description}</p>
+                  <p className="mt-4 text-muted-foreground text-sm line-clamp-2">{temple.description}</p>
                 )}
 
                 <div className="mt-4 space-y-1.5">
                   {temple.location && (
-                    <div className="flex items-center text-stone-500 text-sm">
+                    <div className="flex items-center text-muted-foreground text-sm">
                       <MapPin size={13} className="mr-2 flex-shrink-0" />
                       <span>{temple.location}</span>
                     </div>
                   )}
                   {temple.website && (
-                    <div className="flex items-center text-stone-500 text-sm">
+                    <div className="flex items-center text-muted-foreground text-sm">
                       <Globe size={13} className="mr-2 flex-shrink-0" />
                       <span className="truncate">{temple.website}</span>
                     </div>
@@ -199,23 +212,23 @@ const TempleConnectionView: React.FC = () => {
                 </div>
 
                 {(temple.upcomingEventsCount != null || temple.practitionerCount != null || temple.memberCount != null) && (
-                  <div className="mt-4 pt-4 border-t border-stone-100 grid grid-cols-3 gap-2 text-center">
+                  <div className="mt-4 pt-4 border-t border-border/60 grid grid-cols-3 gap-2 text-center">
                     {temple.upcomingEventsCount != null && (
                       <div>
-                        <p className="text-xs text-stone-400">Events</p>
-                        <p className="font-semibold text-stone-800">{temple.upcomingEventsCount}</p>
+                        <p className="text-xs text-muted-foreground">Events</p>
+                        <p className="font-semibold text-foreground">{temple.upcomingEventsCount}</p>
                       </div>
                     )}
                     {temple.practitionerCount != null && (
                       <div>
-                        <p className="text-xs text-stone-400">Practitioners</p>
-                        <p className="font-semibold text-stone-800">{temple.practitionerCount}</p>
+                        <p className="text-xs text-muted-foreground">Practitioners</p>
+                        <p className="font-semibold text-foreground">{temple.practitionerCount}</p>
                       </div>
                     )}
                     {temple.memberCount != null && (
                       <div>
-                        <p className="text-xs text-stone-400">Members</p>
-                        <p className="font-semibold text-stone-800">{temple.memberCount}</p>
+                        <p className="text-xs text-muted-foreground">Members</p>
+                        <p className="font-semibold text-foreground">{temple.memberCount}</p>
                       </div>
                     )}
                   </div>
@@ -246,7 +259,7 @@ const TempleConnectionView: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => navigate('/events')}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-stone-100 text-stone-700 rounded-lg hover:bg-stone-200 text-sm"
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-muted text-foreground rounded-lg hover:bg-muted/80 text-sm"
                   >
                     <Calendar size={15} /> Events
                   </button>

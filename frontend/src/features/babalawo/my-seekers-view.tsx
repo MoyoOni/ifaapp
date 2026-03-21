@@ -42,20 +42,20 @@ const MySeekersView: React.FC = () => {
   if (isLoading) {
     return (
       <div className="animate-pulse space-y-6 p-6">
-        <div className="h-8 bg-gray-200 rounded w-1/3" />
+        <div className="h-8 bg-muted rounded w-1/3" />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="border rounded-xl p-6 bg-white shadow-sm">
+            <div key={i} className="border border-border rounded-xl p-6 bg-card shadow-sm">
               <div className="flex items-center gap-4 mb-4">
-                <div className="bg-gray-200 rounded-full h-12 w-12" />
+                <div className="bg-muted rounded-full h-12 w-12" />
                 <div>
-                  <div className="h-4 bg-gray-200 rounded w-32 mb-2" />
-                  <div className="h-3 bg-gray-200 rounded w-24" />
+                  <div className="h-4 bg-muted rounded w-32 mb-2" />
+                  <div className="h-3 bg-muted rounded w-24" />
                 </div>
               </div>
               <div className="space-y-2">
-                <div className="h-3 bg-gray-200 rounded w-full" />
-                <div className="h-3 bg-gray-200 rounded w-4/5" />
+                <div className="h-3 bg-muted rounded w-full" />
+                <div className="h-3 bg-muted rounded w-4/5" />
               </div>
             </div>
           ))}
@@ -67,15 +67,13 @@ const MySeekersView: React.FC = () => {
   if (isError) {
     return (
       <div className="space-y-6 animate-in fade-in duration-500">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold brand-font text-stone-900">My Seekers</h1>
-          <Link to="/practitioner/invite-client" className="px-4 py-2 bg-highlight text-white font-bold rounded-xl shadow-lg hover:bg-yellow-600 flex items-center gap-2">
-            <UserPlus size={18} /> Find Seeker
-          </Link>
-        </div>
-        <div className="flex flex-col items-center justify-center py-16 text-center">
+        <h1 className="text-3xl font-bold brand-font text-foreground">My Seekers</h1>
+        <div className="flex flex-col items-center justify-center py-16 text-center bg-red-50 rounded-xl border border-red-100">
           <AlertCircle size={48} className="text-red-400 mb-4" />
-          <p className="text-lg font-medium text-stone-700 mb-2">Failed to load seekers</p>
+          <p className="text-lg font-medium text-foreground mb-1">Connection error</p>
+          <p className="text-muted-foreground text-sm mb-6 max-w-sm">
+            Could not reach the server to load your seekers. Check your connection and try again.
+          </p>
           <button type="button" onClick={() => refetch()} className="px-4 py-2 bg-highlight text-white rounded-xl font-medium">
             Try Again
           </button>
@@ -88,8 +86,8 @@ const MySeekersView: React.FC = () => {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold brand-font text-stone-900">My Seekers</h1>
-          <p className="text-stone-600 text-lg mt-1">
+          <h1 className="text-3xl md:text-4xl font-bold brand-font text-foreground">My Seekers</h1>
+          <p className="text-muted-foreground text-lg mt-1">
             {data.length} seeker{data.length !== 1 ? 's' : ''} connected
           </p>
         </div>
@@ -103,20 +101,31 @@ const MySeekersView: React.FC = () => {
 
       {data.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <User size={64} className="text-stone-300 mb-4" />
-          <h2 className="text-xl font-bold text-stone-700 mb-2">No seekers yet</h2>
-          <p className="text-stone-500 mb-6">Complete a session, then add the client as a seeker from the appointment details.</p>
-          <Link
-            to="/practitioner/consultations"
-            className="px-5 py-2 bg-highlight text-white font-bold rounded-xl shadow hover:bg-yellow-600 transition-colors"
-          >
-            View Appointments
-          </Link>
+          <User size={64} className="text-muted-foreground mb-4" />
+          <h2 className="text-xl font-bold text-foreground mb-2">No seekers yet</h2>
+          <p className="text-muted-foreground mb-6 max-w-sm">
+            Share your booking link so seekers can find and book you. After a session, they'll appear here.
+          </p>
+          <div className="flex flex-wrap gap-3 justify-center">
+            <button
+              type="button"
+              onClick={() => handleCopyBookingLink('empty')}
+              className="flex items-center gap-2 px-5 py-2 bg-highlight text-white font-bold rounded-xl shadow hover:bg-yellow-600 transition-colors"
+            >
+              {copiedId === 'empty' ? <><Check size={16} /> Copied!</> : <><Copy size={16} /> Copy Booking Link</>}
+            </button>
+            <Link
+              to="/practitioner/consultations"
+              className="flex items-center gap-2 px-5 py-2 bg-muted text-foreground font-medium rounded-xl hover:bg-muted/80 transition-colors"
+            >
+              View Appointments
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {data.map(({ client }) => (
-            <div key={client.id} className="border rounded-xl p-6 bg-white shadow-sm hover:shadow-md transition-shadow">
+            <div key={client.id} className="border border-border rounded-xl p-6 bg-card shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-start gap-4">
                 <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center text-lg font-bold brand-font text-primary flex-shrink-0">
                   {client.avatar ? (
@@ -127,27 +136,27 @@ const MySeekersView: React.FC = () => {
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-lg text-stone-900 truncate">{client.name}</h3>
+                  <h3 className="font-bold text-lg text-foreground truncate">{client.name}</h3>
                   {client.yorubaName && (
-                    <p className="text-stone-500 text-sm italic truncate">{client.yorubaName}</p>
+                    <p className="text-muted-foreground text-sm italic truncate">{client.yorubaName}</p>
                   )}
 
                   <div className="mt-3 space-y-1.5">
-                    <div className="flex items-center text-stone-500 text-sm">
+                    <div className="flex items-center text-muted-foreground text-sm">
                       <Mail size={13} className="mr-2 flex-shrink-0" />
                       <span className="truncate">{client.email}</span>
                     </div>
                     {client.location && (
-                      <div className="flex items-center text-stone-500 text-sm">
+                      <div className="flex items-center text-muted-foreground text-sm">
                         <MapPin size={13} className="mr-2 flex-shrink-0" />
                         <span>{client.location}</span>
                       </div>
                     )}
                     {client.bio && (
-                      <p className="text-stone-400 text-xs mt-2 line-clamp-2">{client.bio}</p>
+                      <p className="text-muted-foreground text-xs mt-2 line-clamp-2">{client.bio}</p>
                     )}
                     {client.culturalLevel && (
-                      <p className="text-xs text-stone-400 uppercase tracking-wider">{client.culturalLevel}</p>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider">{client.culturalLevel}</p>
                     )}
                   </div>
                 </div>
@@ -157,7 +166,7 @@ const MySeekersView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => navigate(`/messages/${client.id}`)}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-stone-50 border border-stone-200 text-stone-700 rounded-lg hover:bg-stone-100 text-sm font-medium transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-muted/50 border border-border text-foreground rounded-lg hover:bg-muted text-sm font-medium transition-colors"
                 >
                   <MessageCircle size={15} />
                   Message
@@ -165,7 +174,7 @@ const MySeekersView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => handleCopyBookingLink(client.id)}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-stone-50 border border-stone-200 text-stone-700 rounded-lg hover:bg-stone-100 text-sm font-medium transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-muted/50 border border-border text-foreground rounded-lg hover:bg-muted text-sm font-medium transition-colors"
                 >
                   {copiedId === client.id ? (
                     <><Check size={15} className="text-green-600" /> Copied!</>
@@ -176,7 +185,7 @@ const MySeekersView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => navigate(`/profile/${client.id}`)}
-                  className="flex items-center justify-center px-3 py-2 bg-stone-50 border border-stone-200 text-stone-700 rounded-lg hover:bg-stone-100 text-sm transition-colors"
+                  className="flex items-center justify-center px-3 py-2 bg-muted/50 border border-border text-foreground rounded-lg hover:bg-muted text-sm transition-colors"
                   title="View profile"
                 >
                   <User size={15} />

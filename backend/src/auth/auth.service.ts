@@ -117,6 +117,7 @@ export class AuthService {
         yorubaName: user.yorubaName,
         culturalLevel: user.culturalLevel,
         hasOnboarded: user.hasOnboarded,
+        adminSubRole: (user as any).adminSubRole ?? undefined,
       },
       ...tokens,
     };
@@ -204,6 +205,15 @@ Aboru Aboye.`;
         },
       });
 
+      // Auto-assign slug from name
+      const baseSlug = generateSlug(user.name);
+      let slug = baseSlug;
+      const slugConflict = await this.prisma.user.findUnique({ where: { slug } });
+      if (slugConflict) {
+        slug = generateSlug(user.name, Date.now().toString(36).slice(-4));
+      }
+      await this.prisma.user.update({ where: { id: user.id }, data: { slug } });
+
       // Send welcome message for new Google users
       this.sendWelcomeMessage(user.id).catch((err) => {
         this.logger.error(`Failed to send welcome message to ${user!.id}`, err);
@@ -227,6 +237,7 @@ Aboru Aboye.`;
         yorubaName: user.yorubaName,
         culturalLevel: user.culturalLevel,
         hasOnboarded: user.hasOnboarded,
+        adminSubRole: (user as any).adminSubRole ?? undefined,
       },
       ...tokens,
     };
@@ -255,6 +266,7 @@ Aboru Aboye.`;
         yorubaName: user.yorubaName,
         culturalLevel: user.culturalLevel,
         hasOnboarded: user.hasOnboarded,
+        adminSubRole: (user as any).adminSubRole ?? undefined,
       },
       ...tokens,
     };
@@ -320,6 +332,7 @@ Aboru Aboye.`;
         yorubaName: user.yorubaName,
         culturalLevel: user.culturalLevel,
         hasOnboarded: user.hasOnboarded,
+        adminSubRole: (user as any).adminSubRole ?? undefined,
       },
       ...tokens,
     };

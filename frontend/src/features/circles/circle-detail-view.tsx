@@ -79,29 +79,8 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({
         const response = await api.get(`/circles/${circle.id}/feed`);
         return response.data;
       } catch (e) {
-        logger.error('Failed to fetch circle feed, using demo data', e);
-        return [
-          {
-            id: 'post-1',
-            authorId: 'user-123',
-            authorName: 'Babalawo Adeyemi',
-            content:
-              'Welcome to our circle! Feel free to introduce yourselves.',
-            createdAt: new Date(Date.now() - 3600000).toISOString(),
-            likes: 5,
-            comments: 2,
-            isPinned: true,
-          },
-          {
-            id: 'post-2',
-            authorId: 'user-456',
-            authorName: 'New Seeker',
-            content: 'Hello everyone! I am new here and excited to learn.',
-            createdAt: new Date(Date.now() - 1800000).toISOString(),
-            likes: 10,
-            comments: 5,
-          },
-        ];
+        logger.error('Failed to fetch circle feed', e);
+        throw e;
       }
     },
     enabled: !!circle,
@@ -137,6 +116,7 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({
     onSuccess: () => {
       setNewPost('');
       queryClient.invalidateQueries({ queryKey: ['circle-feed', circle?.id] });
+      success('Post created');
     },
     onError: (err: any) => {
       showError(
@@ -180,6 +160,7 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['circle', circleSlug] });
       queryClient.invalidateQueries({ queryKey: ['circles'] });
+      success('Joined circle');
     },
     onError: (err: any) => {
       showError(
@@ -221,6 +202,10 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['circle', circleSlug] });
       queryClient.invalidateQueries({ queryKey: ['circles'] });
+      success('Left circle');
+    },
+    onError: (err: any) => {
+      showError(err?.response?.data?.message || 'Failed to leave circle');
     },
   });
 
@@ -287,7 +272,7 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({
       />
 
       {/* Tab Navigation */}
-      <div className="bg-white rounded-2xl border border-stone-200 p-1.5 flex gap-1">
+      <div className="bg-card rounded-2xl border border-border p-1.5 flex gap-1">
         {(['feed', 'members', 'events', 'resources'] as const).map((tab) => (
           <button
             key={tab}
@@ -295,7 +280,7 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({
             className={`flex-1 px-4 py-2.5 rounded-xl font-medium transition-all capitalize ${
               activeTab === tab
                 ? 'bg-primary text-white shadow-md'
-                : 'text-stone-500 hover:bg-stone-100'
+                : 'text-muted-foreground hover:bg-muted'
             }`}
           >
             {tab}
@@ -308,7 +293,7 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({
         key={activeTab}
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-2xl border border-stone-200 p-6"
+        className="bg-card rounded-2xl border border-border p-6"
       >
         {activeTab === 'feed' && (
           <CircleFeedTab

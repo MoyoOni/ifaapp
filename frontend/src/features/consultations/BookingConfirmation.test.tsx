@@ -54,7 +54,7 @@ describe('BookingConfirmation', () => {
   it('renders loading state initially', () => {
     mockApiGet.mockImplementation(() => new Promise(() => { }));
     renderWithRouter();
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
+    expect(screen.getByText('Processing booking...')).toBeInTheDocument();
   });
 
   it('shows error when appointment not found', async () => {

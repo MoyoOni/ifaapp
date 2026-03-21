@@ -147,7 +147,22 @@
       "Bash(REGION=us-east-1)",
       "Bash(MSYS_NO_PATHCONV=1 aws ecr get-login-password --region $REGION)",
       "Bash(docker login:*)",
-      "Bash(aws cloudfront:*)"
+      "Bash(aws cloudfront:*)",
+      "Bash(aws ecs:*)",
+      "Bash(aws logs:*)",
+      "Bash(MSYS_NO_PATHCONV=1 aws logs describe-log-streams --log-group-name \"/ecs/iluase-prod/backend\" --region us-east-1 --order-by LastEventTime --descending --max-items 3 --query 'logStreams[*].logStreamName' --output text)",
+      "Bash(MSYS_NO_PATHCONV=1 aws logs get-log-events --log-group-name \"/ecs/iluase-prod/backend\" --log-stream-name \"ecs/backend/032bf325ab434aef9b1e647760cd4dcf\" --region us-east-1 --limit 60 --query 'events[*].message' --output text)",
+      "Bash(powershell.exe -ExecutionPolicy Bypass -File deploy.ps1)",
+      "Bash(powershell.exe -Command \":*)",
+      "Bash(powershell.exe -Command \"aws ecs describe-services --cluster iluase-prod --services iluase-backend --region us-east-1 --query ''services[0].deployments[*].{status:status,desired:desiredCount,running:runningCount,pending:pendingCount,created:createdAt}'' --output table\")",
+      "Bash(docker tag:*)",
+      "Bash(docker push:*)",
+      "Bash(npx jest:*)",
+      "Bash(npx vitest:*)",
+      "Bash(powershell -ExecutionPolicy Bypass -File deploy.ps1)",
+      "Bash(docker info:*)",
+      "Bash(git log:*)",
+      "Bash(\"c:/Users/Test/ifa_app/frontend/src/index.css\")"
     ]
   }
 }

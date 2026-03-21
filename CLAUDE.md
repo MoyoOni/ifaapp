@@ -10,6 +10,29 @@ This document provides context for AI agents working on the Ìlú Àṣẹ platf
 
 ## Required Reading Before Coding
 
+### V5 Phase (The Real Platform) — ✅ COMPLETE (Audited March 20, 2026)
+
+Before working on any wiring, real-data, or UX fix work, AI agents MUST read:
+
+1. **[V5_BACKLOG.md](V5_BACKLOG.md)** — Full backlog: 8 sprints, 187 SP, all stories with technical specs, file maps, API endpoints, logic flows, and acceptance criteria.
+
+**Goal:** Remove all demo data fallbacks. Connect every view to the real backend. Make ADMIN, BABALAWO, VENDOR, and CLIENT fully functional.
+
+**Labeling:** `V5-XXX` stories
+**Branch:** `v5/real-platform`
+
+**Sprint Status:**
+- Sprint 1: Foundation & Quick Wins (24 SP) — ✅ COMPLETED
+- Sprint 2: Admin Dashboard Real Data (42 SP) — ✅ COMPLETED
+- Sprint 3: User Profiles Edit & Share (20 SP) — ✅ COMPLETED
+- Sprint 4: Client Experience (18 SP) — ✅ COMPLETED
+- Sprint 5: Babalawo Real Data (20 SP) — ✅ COMPLETED
+- Sprint 6: Vendor Real Data (18 SP) — ✅ COMPLETED
+- Sprint 7: Advanced Platform Features (30 SP) — ✅ COMPLETED
+- Sprint 8: Polish, Performance & UX (15 SP) — ✅ COMPLETED
+
+---
+
 ### V1 Phase (Feature Development) — ✅ COMPLETE
 
 Before implementing any V1 feature, AI agents MUST read these documents in order:

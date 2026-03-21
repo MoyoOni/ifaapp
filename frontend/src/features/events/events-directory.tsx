@@ -145,13 +145,13 @@ const EventsDirectory: React.FC<EventsDirectoryProps> = ({ onCreateEvent, onSele
 
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="space-y-2 text-center md:text-left">
-            <span className="inline-block px-3 py-1 rounded-full bg-white text-xs font-bold text-primary uppercase tracking-widest border border-primary/20">
+            <span className="inline-block px-3 py-1 rounded-full bg-card text-xs font-bold text-primary uppercase tracking-widest border border-primary/20">
               Ọdún & Rituals
             </span>
             <h1 className="text-4xl md:text-5xl font-bold brand-font leading-tight text-primary">
               Community Calendar
             </h1>
-            <p className="text-stone-500 max-w-lg text-lg">
+            <p className="text-muted-foreground max-w-lg text-lg">
               Join us for rituals, workshops, and celebrations of our shared heritage.
             </p>
           </div>
@@ -171,13 +171,13 @@ const EventsDirectory: React.FC<EventsDirectoryProps> = ({ onCreateEvent, onSele
       </div>
 
       {/* 2. Controls & Search */}
-      <div className="bg-white p-4 rounded-2xl border border-stone-100 shadow-sm flex flex-col md:flex-row gap-4 items-center">
+      <div className="bg-card p-4 rounded-2xl border border-border shadow-sm flex flex-col md:flex-row gap-4 items-center">
         <div className="relative flex-1 w-full">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
           <input
             type="text"
             placeholder="Find a ceremony or workshop..."
-            className="w-full pl-11 pr-4 py-2 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-highlight text-stone-700 bg-stone-50/50"
+            className="w-full pl-11 pr-4 py-2 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-highlight text-foreground bg-muted/50"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -187,7 +187,7 @@ const EventsDirectory: React.FC<EventsDirectoryProps> = ({ onCreateEvent, onSele
           <select
             title="Filter by event type"
             aria-label="Filter by event type"
-            className="px-4 py-2 border border-stone-200 rounded-xl bg-white text-stone-600 font-medium focus:outline-none focus:ring-2 focus:ring-highlight cursor-pointer"
+            className="px-4 py-2 border border-border rounded-xl bg-card text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-highlight cursor-pointer"
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
           >
@@ -198,34 +198,41 @@ const EventsDirectory: React.FC<EventsDirectoryProps> = ({ onCreateEvent, onSele
             <option value="CEREMONY">Ceremonies</option>
           </select>
 
-          <label className="flex items-center gap-2 px-4 py-2 border border-stone-200 rounded-xl cursor-pointer hover:bg-stone-50 transition-colors whitespace-nowrap select-none">
+          <label className="flex items-center gap-2 px-4 py-2 border border-border rounded-xl cursor-pointer hover:bg-muted transition-colors whitespace-nowrap select-none">
             <input
               type="checkbox"
               checked={upcomingOnly}
               onChange={(e) => setUpcomingOnly(e.target.checked)}
-              className="text-highlight rounded focus:ring-highlight border-gray-300"
+              className="text-highlight rounded focus:ring-highlight border-border"
             />
-            <span className="text-sm font-bold text-stone-600">Upcoming Only</span>
+            <span className="text-sm font-bold text-foreground">Upcoming Only</span>
           </label>
         </div>
       </div>
 
       {/* 3. Events Grid */}
       {events.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-stone-100 border-dashed">
-          <div className="w-16 h-16 bg-stone-50 text-stone-300 rounded-full flex items-center justify-center mb-4">
+        <div className="flex flex-col items-center justify-center py-20 bg-card rounded-3xl border border-border border-dashed">
+          <div className="w-16 h-16 bg-muted text-muted-foreground rounded-full flex items-center justify-center mb-4">
             <Calendar size={32} />
           </div>
-          <h3 className="text-xl font-bold text-stone-400">No events on the horizon</h3>
-          <p className="text-stone-400 mb-6 text-center max-w-md px-4">
-            There are no events matching your criteria right now. Check back later or clear your filters to see past events.
+          <h3 className="text-xl font-bold text-muted-foreground">No events on the horizon</h3>
+          <p className="text-muted-foreground mb-6 text-center max-w-md px-4">
+            {searchQuery || typeFilter !== 'all'
+              ? 'No events match your filters. Try clearing them.'
+              : upcomingOnly
+              ? 'No upcoming events right now. Check back later or browse past events.'
+              : 'No events yet. Be the first to create one for the community.'}
           </p>
-          <button
-            onClick={() => { setSearchQuery(''); setTypeFilter('all'); setUpcomingOnly(false); }}
-            className="text-highlight font-bold hover:underline"
-          >
-            View all past events
-          </button>
+          {(searchQuery || typeFilter !== 'all' || upcomingOnly) && (
+            <button
+              type="button"
+              onClick={() => { setSearchQuery(''); setTypeFilter('all'); setUpcomingOnly(false); }}
+              className="text-highlight font-bold hover:underline cursor-pointer"
+            >
+              {upcomingOnly && !searchQuery && typeFilter === 'all' ? 'View all past events' : 'Clear filters'}
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -235,23 +242,23 @@ const EventsDirectory: React.FC<EventsDirectoryProps> = ({ onCreateEvent, onSele
             return (
               <div
                 key={event.id}
-                className="group bg-white rounded-2xl border border-stone-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col h-full"
+                className="group bg-card rounded-2xl border border-border shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col h-full"
                 onClick={() => onSelectEvent?.(event.slug || event.id)}
               >
                 {/* Event Image */}
-                <div className="h-48 relative overflow-hidden bg-stone-100">
+                <div className="h-48 relative overflow-hidden bg-muted">
                   {event.image ? (
                     <img src={event.image} alt={event.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-stone-50">
-                      <Calendar size={48} className="text-stone-200" />
+                    <div className="w-full h-full flex items-center justify-center bg-muted/50">
+                      <Calendar size={48} className="text-muted-foreground/30" />
                     </div>
                   )}
 
                   {/* Date Badge */}
-                  <div className="absolute top-3 left-3 bg-white rounded-xl px-3 py-2 text-center shadow-lg border border-stone-100/50 backdrop-blur-sm bg-white/90">
+                  <div className="absolute top-3 left-3 bg-card/90 rounded-xl px-3 py-2 text-center shadow-lg border border-border backdrop-blur-sm">
                     <div className="text-xs font-bold text-highlight">{dateInfo.month}</div>
-                    <div className="text-xl font-black brand-font text-stone-800 leading-none">{dateInfo.day}</div>
+                    <div className="text-xl font-black brand-font text-foreground leading-none">{dateInfo.day}</div>
                   </div>
 
                   {/* Price Badge */}
@@ -271,12 +278,12 @@ const EventsDirectory: React.FC<EventsDirectoryProps> = ({ onCreateEvent, onSele
                 {/* Content */}
                 <div className="p-5 flex-1 flex flex-col">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                       {event.type}
                     </span>
                     {event.category && (
                       <>
-                        <span className="w-1 h-1 rounded-full bg-stone-300"></span>
+                        <span className="w-1 h-1 rounded-full bg-border"></span>
                         <span className="text-[10px] font-bold uppercase tracking-wider text-orange-500">
                           {event.category}
                         </span>
@@ -284,31 +291,31 @@ const EventsDirectory: React.FC<EventsDirectoryProps> = ({ onCreateEvent, onSele
                     )}
                   </div>
 
-                  <h3 className="text-lg font-bold brand-font text-stone-800 mb-2 group-hover:text-orange-600 transition-colors line-clamp-2">
+                  <h3 className="text-lg font-bold brand-font text-foreground mb-2 group-hover:text-orange-600 transition-colors line-clamp-2">
                     {event.title}
                   </h3>
 
                   {event.description && (
-                    <p className="text-sm text-stone-500 line-clamp-2 mb-4">
+                    <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
                       {event.description}
                     </p>
                   )}
 
-                  <div className="mt-auto space-y-2 pt-4 border-t border-stone-100">
-                    <div className="flex items-center gap-2 text-xs font-bold text-stone-500">
+                  <div className="mt-auto space-y-2 pt-4 border-t border-border">
+                    <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
                       <Calendar size={14} className="text-orange-400" />
                       <span>{formatDate(event.startDate)} • {dateInfo.time}</span>
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-xs font-bold text-stone-500 truncate max-w-[70%]">
+                      <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground truncate max-w-[70%]">
                         {getLocationIcon(event.locationType)}
                         <span className="truncate">
                           {event.locationType === 'VIRTUAL' ? 'Online' : event.location || 'TBA'}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-1 text-xs text-stone-400">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Users size={12} />
                         <span>{event._count?.registrations || 0}</span>
                       </div>

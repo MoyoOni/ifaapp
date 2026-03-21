@@ -3,6 +3,8 @@ import { render, RenderOptions } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import { CartProvider } from '@/shared/contexts/cart-context';
+import { ToastProvider } from '@/shared/components/toast';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
 // Create a fresh QueryClient for each test
 const createTestQueryClient = () =>
@@ -29,11 +31,15 @@ const AllTheProviders: React.FC<WrapperProps> = ({ children }) => {
   const queryClient = createTestQueryClient();
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <CartProvider>{children}</CartProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
+    <GoogleOAuthProvider clientId="test-client-id">
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <ToastProvider>
+            <CartProvider>{children}</CartProvider>
+          </ToastProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </GoogleOAuthProvider>
   );
 };
 

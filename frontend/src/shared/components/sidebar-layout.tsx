@@ -12,7 +12,17 @@ import {
     ChevronLeft,
     ChevronRight,
     Settings,
-    HelpCircle
+    HelpCircle,
+    Search as SearchIcon,
+    LayoutDashboard,
+    Building2,
+    Users,
+    Calendar as CalendarIcon,
+    ShoppingBag,
+    Package,
+    Shield,
+    CheckCircle,
+    Wallet
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../hooks/use-auth';
@@ -24,6 +34,7 @@ import api from '@/lib/api';
 import { getNavItemsForRole, getRoleDisplayName, getRoleBadgeColor, type NavItem } from '../config/navigation';
 import { logger } from '@/shared/utils/logger';
 import { useDailyOdu } from '@/shared/hooks/use-daily-odu';
+import { SearchModal } from './search-modal';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ProfileMenuDropdown } from './profile-menu-dropdown';
 import { User as UserType } from '@common';
@@ -44,6 +55,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [isHovering, setIsHovering] = useState(false);
     const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
     const { displayString: dailyOduDisplay } = useDailyOdu();
 
     // Fetch unread notification count for bell badge
@@ -71,12 +83,30 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
         staleTime: 60000, // Consider data fresh for 1 minute
     });
 
+    // Cmd+K / Ctrl+K global search shortcut
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                setIsSearchOpen(true);
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
     // Get role-based navigation items
     const allNavItems = getNavItemsForRole(user?.role);
     const navItems = allNavItems.filter(item => {
         if (user?.role !== 'ADMIN' || !item.requiredAdminSubRoles) return true;
         if (user?.adminSubRole === 'SUPER') return true;
         return item.requiredAdminSubRoles.includes(user?.adminSubRole as any);
+    }).map(item => {
+        // Inject dynamic badge counts
+        if (item.id === 'messages' && unreadCount?.count) {
+            return { ...item, badge: String(unreadCount.count) };
+        }
+        return item;
     });
 
     const roleDisplayName = getRoleDisplayName(user?.role);
@@ -127,6 +157,8 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
     const NavLink = ({ item, isMobile = false, showLabel = true }: { item: NavItem, isMobile?: boolean, showLabel?: boolean }) => {
         const isActive = item.path === '/'
             ? location.pathname === '/'
+            : item.path === '/admin'
+            ? location.pathname === '/admin'
             : location.pathname.startsWith(item.path);
 
         return (
@@ -152,7 +184,12 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                 {showLabel && (
                     <>
                         <span className="truncate">{item.label}</span>
-                        {isActive && (
+                        {item.badge && (
+                            <span className="ml-auto min-w-[20px] h-5 flex items-center justify-center px-1.5 text-[10px] font-bold bg-primary/20 text-primary rounded-full">
+                                {item.badge}
+                            </span>
+                        )}
+                        {isActive && !item.badge && (
                             <motion.div
                                 layoutId="activeIndicator"
                                 className="ml-auto w-1.5 h-1.5 rounded-full bg-primary"
@@ -171,6 +208,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
     };
 
     return (
+        <>
         <div className="min-h-screen bg-background flex font-sans text-foreground">
 
             {/* Desktop Sidebar (Left) - Collapsible */}
@@ -215,6 +253,27 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                             </button>
                         )}
                     </div>
+                </div>
+
+                {/* Search Button */}
+                <div className="px-3 pt-4 pb-2">
+                    <button
+                        onClick={() => setIsSearchOpen(true)}
+                        className={cn(
+                            "flex items-center gap-3 w-full px-4 py-2.5 rounded-xl transition-all duration-200",
+                            "text-muted-foreground hover:bg-secondary/10 hover:text-foreground border border-border/50",
+                            !showExpanded && "justify-center px-3"
+                        )}
+                        title={!showExpanded ? 'Search (Ctrl+K)' : undefined}
+                    >
+                        <SearchIcon size={18} className="flex-shrink-0" />
+                        {showExpanded && (
+                            <>
+                                <span className="text-sm truncate">Search…</span>
+                                <kbd className="ml-auto text-[10px] font-mono px-1.5 py-0.5 rounded bg-secondary/50 text-muted-foreground border border-border/50">⌘K</kbd>
+                            </>
+                        )}
+                    </button>
                 </div>
 
                 {/* Navigation Items */}
@@ -285,10 +344,12 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
 
                 {/* Legal Links Footer */}
                 {showExpanded && (
-                    <div className="px-4 pb-2 flex gap-3 justify-center">
+                    <div className="px-4 pb-2 flex gap-3 justify-center flex-wrap">
                         <a href="/terms" className="text-[10px] text-muted-foreground hover:text-highlight transition-colors">Terms</a>
                         <span className="text-[10px] text-muted-foreground">·</span>
                         <a href="/privacy" className="text-[10px] text-muted-foreground hover:text-highlight transition-colors">Privacy</a>
+                        <span className="text-[10px] text-muted-foreground">·</span>
+                        <a href="/donate" className="text-[10px] text-highlight font-semibold hover:text-yellow-600 transition-colors">♥ Support Us</a>
                     </div>
                 )}
 
@@ -359,66 +420,54 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                             </div>
 
                             {/* Mobile Navigation */}
-                            <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+                            <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-2 custom-scrollbar overscroll-contain">
                                 {navItems.map((item) => (
                                     <NavLink key={item.id} item={item} isMobile />
                                 ))}
                             </div>
 
                             {/* Mobile Footer */}
-                            <div className="p-4 border-t border-border bg-card/50">
-                                <div className="mb-3 p-3 rounded-xl bg-primary/5 border border-primary/20">
-                                    <p className="text-sm font-bold text-foreground">{user?.name || 'User'}</p>
-                                    <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide inline-block mt-1", roleBadgeColor)}>
-                                        {roleDisplayName}
-                                    </span>
+                            <div className="p-3 border-t border-border bg-card/50 flex-shrink-0">
+                                {/* User chip */}
+                                <div className="flex items-center gap-2 px-2 py-2 mb-2">
+                                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-bold flex-shrink-0">
+                                        {user?.name?.charAt(0) || 'U'}
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-bold text-foreground truncate">{user?.name || 'User'}</p>
+                                        <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide inline-block", roleBadgeColor)}>
+                                            {roleDisplayName}
+                                        </span>
+                                    </div>
                                 </div>
 
-                                {/* Quick Actions - Profile, Messages, Wallet, Settings, Help */}
-                                <div className="mb-3 space-y-1">
-                                    <button
-                                        onClick={() => handleNavClick('/profile')}
-                                        className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-secondary/10 text-foreground transition-colors text-left"
-                                    >
-                                        <User size={18} className="text-highlight" />
-                                        <span className="text-sm font-medium">My Profile</span>
-                                    </button>
-                                    <button
-                                        onClick={() => handleNavClick('/messages')}
-                                        className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-secondary/10 text-foreground transition-colors text-left"
-                                    >
-                                        <MessageSquare size={18} className="text-primary" />
-                                        <span className="text-sm font-medium">Messages</span>
-                                    </button>
-                                    <div className="h-px bg-border my-1" />
-                                    <button
-                                        onClick={() => handleNavClick('/settings')}
-                                        className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-secondary/10 text-foreground transition-colors text-left"
-                                    >
-                                        <Settings size={18} className="text-muted-foreground" />
-                                        <span className="text-sm font-medium">Settings</span>
-                                    </button>
-                                    <button
-                                        onClick={() => handleNavClick('/help')}
-                                        className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-secondary/10 text-foreground transition-colors text-left"
-                                    >
-                                        <HelpCircle size={18} className="text-muted-foreground" />
-                                        <span className="text-sm font-medium">Help & Support</span>
-                                    </button>
+                                {/* Quick actions row */}
+                                <div className="grid grid-cols-4 gap-1 mb-2">
+                                    {[
+                                        { icon: User, label: 'Profile', path: '/profile', color: 'text-highlight' },
+                                        { icon: MessageSquare, label: 'Messages', path: '/messages', color: 'text-primary' },
+                                        { icon: Settings, label: 'Settings', path: '/settings', color: 'text-muted-foreground' },
+                                        { icon: HelpCircle, label: 'Help', path: '/help', color: 'text-muted-foreground' },
+                                    ].map(({ icon: Icon, label, path, color }) => (
+                                        <button
+                                            key={path}
+                                            type="button"
+                                            onClick={() => handleNavClick(path)}
+                                            className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-secondary/10 transition-colors"
+                                        >
+                                            <Icon size={18} className={color} />
+                                            <span className="text-[10px] text-muted-foreground">{label}</span>
+                                        </button>
+                                    ))}
                                 </div>
 
                                 <button
                                     onClick={logout}
-                                    className="flex items-center gap-3 w-full p-4 rounded-xl bg-error/10 text-error font-medium hover:bg-error/20 transition-colors"
+                                    className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-error/10 text-error font-medium hover:bg-error/20 transition-colors text-sm"
                                 >
-                                    <LogOut size={20} />
+                                    <LogOut size={16} />
                                     Log Out
                                 </button>
-
-                                <div className="flex gap-4 justify-center pt-2">
-                                    <a href="/terms" className="text-xs text-muted-foreground hover:text-highlight transition-colors">Terms</a>
-                                    <a href="/privacy" className="text-xs text-muted-foreground hover:text-highlight transition-colors">Privacy</a>
-                                </div>
                             </div>
                         </motion.aside>
                     </>
@@ -447,20 +496,23 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                             Ìlú <span className="text-primary">Àṣẹ</span>
                         </h1>
                     </div>
-                    <div className="relative">
-                        <button
-                            type="button"
-                            onClick={() => setShowNotificationDropdown(!showNotificationDropdown)}
-                            className="p-2 rounded-xl hover:bg-secondary/10 text-muted-foreground hover:text-foreground transition-colors relative"
-                        >
-                            <Bell size={20} />
-                            {(unreadCount?.count ?? 0) > 0 && (
-                                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-error border-2 border-card"></span>
+                    <div className="flex items-center gap-1">
+                        <ModeToggle />
+                        <div className="relative">
+                            <button
+                                type="button"
+                                onClick={() => setShowNotificationDropdown(!showNotificationDropdown)}
+                                className="p-2 rounded-xl hover:bg-secondary/10 text-muted-foreground hover:text-foreground transition-colors relative"
+                            >
+                                <Bell size={20} />
+                                {(unreadCount?.count ?? 0) > 0 && (
+                                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-error border-2 border-card"></span>
+                                )}
+                            </button>
+                            {showNotificationDropdown && (
+                                <NotificationDropdown onClose={() => setShowNotificationDropdown(false)} />
                             )}
-                        </button>
-                        {showNotificationDropdown && (
-                            <NotificationDropdown onClose={() => setShowNotificationDropdown(false)} />
-                        )}
+                        </div>
                     </div>
                 </header>
 
@@ -514,6 +566,84 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                     </div>
                 </div>
             </main>
+
+            {/* Global Search Modal */}
+            <SearchModal open={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
         </div>
+
+        {/* Mobile Bottom Tab Bar — visible only on mobile (lg:hidden) */}
+        {(() => {
+            const role = user?.role;
+            type BottomTab = { id: string; label: string; icon: React.ElementType; path: string };
+            let tabs: BottomTab[];
+
+            if (role === 'BABALAWO') {
+                tabs = [
+                    { id: 'home', label: 'Home', icon: LayoutDashboard, path: '/practitioner/dashboard' },
+                    { id: 'temples', label: 'Temples', icon: Building2, path: '/practitioner/temple-connection' },
+                    { id: 'seekers', label: 'Seekers', icon: Users, path: '/practitioner/my-seekers' },
+                    { id: 'calendar', label: 'Calendar', icon: CalendarIcon, path: '/practitioner/consultations' },
+                ];
+            } else if (role === 'VENDOR') {
+                tabs = [
+                    { id: 'home', label: 'Home', icon: LayoutDashboard, path: '/vendor/dashboard' },
+                    { id: 'market', label: 'Market', icon: ShoppingBag, path: '/marketplace' },
+                    { id: 'inventory', label: 'Inventory', icon: Package, path: '/vendor/products' },
+                    { id: 'messages', label: 'Messages', icon: MessageSquare, path: '/messages' },
+                ];
+            } else if (role === 'ADMIN' || role === 'ADVISORY_BOARD_MEMBER') {
+                tabs = [
+                    { id: 'home', label: 'Overview', icon: Shield, path: '/admin' },
+                    { id: 'verify', label: 'Verify', icon: CheckCircle, path: '/admin/verification' },
+                    { id: 'finance', label: 'Finance', icon: Wallet, path: '/admin/withdrawals' },
+                    { id: 'messages', label: 'Messages', icon: MessageSquare, path: '/messages' },
+                ];
+            } else {
+                // CLIENT (default)
+                tabs = [
+                    { id: 'home', label: 'Home', icon: LayoutDashboard, path: '/client/dashboard' },
+                    { id: 'temples', label: 'Temples', icon: Building2, path: '/client/temples' },
+                    { id: 'find-guide', label: 'Find Guide', icon: SearchIcon, path: '/babalawo' },
+                    { id: 'circles', label: 'Circles', icon: Users, path: '/circles' },
+                ];
+            }
+
+            return (
+                <nav className="fixed bottom-0 left-0 right-0 z-30 lg:hidden bg-card border-t border-border pb-safe-area-bottom">
+                    <div className="flex items-stretch">
+                        {tabs.map((tab) => {
+                            const isActive = tab.path === '/admin'
+                                ? location.pathname === '/admin'
+                                : location.pathname.startsWith(tab.path);
+                            const Icon = tab.icon;
+                            return (
+                                <button
+                                    key={tab.id}
+                                    type="button"
+                                    onClick={() => handleNavClick(tab.path)}
+                                    className={cn(
+                                        "flex-1 flex flex-col items-center justify-center gap-0.5 py-2 px-1 transition-colors min-w-0",
+                                        isActive ? "text-primary" : "text-muted-foreground"
+                                    )}
+                                >
+                                    <Icon size={22} className={isActive ? "text-primary" : "text-muted-foreground"} />
+                                    <span className="text-[10px] font-bold truncate w-full text-center leading-tight">{tab.label}</span>
+                                    {isActive && <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-primary" />}
+                                </button>
+                            );
+                        })}
+                        <button
+                            type="button"
+                            onClick={toggleMobileMenu}
+                            className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 px-1 text-muted-foreground transition-colors min-w-0"
+                        >
+                            <Menu size={22} />
+                            <span className="text-[10px] font-bold">More</span>
+                        </button>
+                    </div>
+                </nav>
+            );
+        })()}
+        </>
     );
 };

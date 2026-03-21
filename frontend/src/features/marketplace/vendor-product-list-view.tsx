@@ -47,9 +47,9 @@ const VendorProductListView: React.FC<VendorProductListViewProps> = ({
         <div className="space-y-6 animate-in fade-in duration-500">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <button onClick={handleBack} className="text-sm font-bold text-stone-500 hover:text-stone-800 mb-1">← Dashboard</button>
-                    <h1 className="text-3xl font-bold brand-font text-stone-900">My Inventory</h1>
-                    <p className="text-stone-500">Manage your product listings</p>
+                    <button onClick={handleBack} className="text-sm font-bold text-muted-foreground hover:text-foreground mb-1">← Dashboard</button>
+                    <h1 className="text-3xl font-bold brand-font text-foreground">My Inventory</h1>
+                    <p className="text-muted-foreground">Manage your product listings</p>
                 </div>
                 <button
                     onClick={handleCreateProduct}
@@ -60,68 +60,68 @@ const VendorProductListView: React.FC<VendorProductListViewProps> = ({
             </div>
 
             {/* Filters Bar */}
-            <div className="bg-white p-4 rounded-xl border border-stone-200 flex gap-4 md:items-center flex-col md:flex-row shadow-sm">
+            <div className="bg-card p-4 rounded-xl border border-border flex gap-4 md:items-center flex-col md:flex-row shadow-sm">
                 <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
                     <input
                         type="text"
                         placeholder="Search products..."
-                        className="w-full pl-10 pr-4 py-2 bg-stone-50 border border-stone-200 rounded-lg focus:outline-none focus:border-highlight"
+                        className="w-full pl-10 pr-4 py-2 bg-muted/50 border border-border text-foreground rounded-lg focus:outline-none focus:border-highlight"
                     />
                 </div>
-                <button className="flex items-center gap-2 px-4 py-2 border border-stone-200 rounded-lg text-stone-600 hover:bg-stone-50 font-bold text-sm">
+                <button className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-foreground hover:bg-muted font-bold text-sm">
                     <Filter size={16} /> Filter
                 </button>
             </div>
 
             {/* Product List */}
-            <div className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
+            <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
-                        <thead className="bg-stone-50 border-b border-stone-200">
+                        <thead className="bg-muted/50 border-b border-border">
                             <tr>
-                                <th className="p-4 font-bold text-stone-600 text-sm uppercase tracking-wider">Product</th>
-                                <th className="p-4 font-bold text-stone-600 text-sm uppercase tracking-wider">Category</th>
-                                <th className="p-4 font-bold text-stone-600 text-sm uppercase tracking-wider">Price</th>
-                                <th className="p-4 font-bold text-stone-600 text-sm uppercase tracking-wider">Stock</th>
-                                <th className="p-4 font-bold text-stone-600 text-sm uppercase tracking-wider text-right">Actions</th>
+                                <th className="p-4 font-bold text-muted-foreground text-sm uppercase tracking-wider">Product</th>
+                                <th className="p-4 font-bold text-muted-foreground text-sm uppercase tracking-wider">Category</th>
+                                <th className="p-4 font-bold text-muted-foreground text-sm uppercase tracking-wider">Price</th>
+                                <th className="p-4 font-bold text-muted-foreground text-sm uppercase tracking-wider">Stock</th>
+                                <th className="p-4 font-bold text-muted-foreground text-sm uppercase tracking-wider text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-stone-100">
+                        <tbody className="divide-y divide-border/60">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan={5} className="p-8 text-center text-stone-400">Loading inventory...</td>
+                                    <td colSpan={5} className="p-8 text-center text-muted-foreground">Loading inventory...</td>
                                 </tr>
                             ) : products.length === 0 ? (
                                 <tr>
                                     <td colSpan={5} className="p-12 text-center">
-                                        <div className="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                            <Package className="text-stone-400" size={32} />
+                                        <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <Package className="text-muted-foreground" size={32} />
                                         </div>
-                                        <p className="text-stone-500 font-medium">No products listed yet.</p>
+                                        <p className="text-muted-foreground font-medium">No products listed yet.</p>
                                         <button onClick={handleCreateProduct} className="text-highlight font-bold mt-2 hover:underline">Create your first listing</button>
                                     </td>
                                 </tr>
                             ) : (
                                 products.map((product) => (
-                                    <tr key={product.id} className="hover:bg-stone-50 transition-colors group">
+                                    <tr key={product.id} className="hover:bg-muted/30 transition-colors group">
                                         <td className="p-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-12 h-12 bg-stone-100 rounded-lg overflow-hidden border border-stone-200">
+                                                <div className="w-12 h-12 bg-muted rounded-lg overflow-hidden border border-border">
                                                     {(product as any).image ? (
                                                         <img src={(product as any).image} alt="" className="w-full h-full object-cover" />
                                                     ) : (
-                                                        <div className="w-full h-full flex items-center justify-center text-stone-300"><Package size={20} /></div>
+                                                        <div className="w-full h-full flex items-center justify-center text-muted-foreground"><Package size={20} /></div>
                                                     )}
                                                 </div>
                                                 <div>
-                                                    <p className="font-bold text-stone-800">{product.name}</p>
-                                                    <p className="text-xs text-stone-400">ID: {product.id.slice(0, 8)}</p>
+                                                    <p className="font-bold text-foreground">{product.name}</p>
+                                                    <p className="text-xs text-muted-foreground">ID: {product.id.slice(0, 8)}</p>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="p-4 text-stone-500 text-sm">{product.category}</td>
-                                        <td className="p-4 font-bold text-stone-800">
+                                        <td className="p-4 text-muted-foreground text-sm">{product.category}</td>
+                                        <td className="p-4 font-bold text-foreground">
                                             {/* Assuming NGN for simplicity or product currency */}
                                             ₦{product.price.toLocaleString()}
                                         </td>
@@ -133,15 +133,19 @@ const VendorProductListView: React.FC<VendorProductListViewProps> = ({
                                         <td className="p-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
                                                 <button
+                                                    type="button"
                                                     onClick={() => handleEditProduct(product.id)}
                                                     className="p-2 hover:bg-highlight/10 hover:text-highlight rounded-lg transition-colors"
                                                     title="Edit Product"
+                                                    aria-label="Edit product"
                                                 >
                                                     <Edit2 size={16} />
                                                 </button>
                                                 <button
+                                                    type="button"
                                                     className="p-2 hover:bg-red-50 hover:text-red-500 rounded-lg transition-colors"
                                                     title="Delete Product"
+                                                    aria-label="Delete product"
                                                 >
                                                     <Trash2 size={16} />
                                                 </button>

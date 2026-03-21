@@ -112,7 +112,7 @@ describe('ProfilePage', () => {
     vi.mocked(useNavigate).mockReturnValue(mockNavigate);
     renderProfile('u1', null);
     fireEvent.click(screen.getByText('ToProduct'));
-    expect(mockNavigate).toHaveBeenCalledWith('/marketplace/prod-1');
+    expect(mockNavigate).toHaveBeenCalledWith('/product/prod-1');
   });
 
   it('handleNavigate product-detail without param navigates to /marketplace', () => {

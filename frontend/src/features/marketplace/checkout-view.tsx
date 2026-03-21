@@ -159,17 +159,19 @@ const CheckoutView: React.FC<CheckoutViewProps> = ({ onBack, onSuccess }) => {
     }
 
     return (
-        <div className="min-h-screen bg-stone-50 text-stone-800 p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="min-h-screen bg-background p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="max-w-4xl mx-auto">
                 {/* Header */}
                 <div className="flex items-center gap-4 mb-8">
                     <button
                         onClick={onBack}
-                        className="p-2 hover:bg-white rounded-full transition-colors"
+                        className="p-2 hover:bg-muted rounded-full transition-colors"
+                        aria-label="Go back"
+                        title="Go back"
                     >
                         <ArrowLeft size={24} />
                     </button>
-                    <h1 className="text-3xl font-bold brand-font">Checkout</h1>
+                    <h1 className="text-3xl font-bold brand-font text-foreground">Checkout</h1>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -196,72 +198,72 @@ const CheckoutView: React.FC<CheckoutViewProps> = ({ onBack, onSuccess }) => {
 
                         {/* Steps Indicator */}
                         <div className="flex items-center gap-4 mb-6">
-                            <div className={`flex items-center gap-2 ${step === 'shipping' ? 'text-highlight font-bold' : 'text-stone-400'}`}>
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${step === 'shipping' ? 'border-highlight bg-highlight/10' : 'border-stone-200'}`}>1</div>
+                            <div className={`flex items-center gap-2 ${step === 'shipping' ? 'text-highlight font-bold' : 'text-muted-foreground'}`}>
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${step === 'shipping' ? 'border-highlight bg-highlight/10' : 'border-border'}`}>1</div>
                                 <span>Shipping</span>
                             </div>
-                            <div className="h-px bg-stone-200 w-12"></div>
-                            <div className={`flex items-center gap-2 ${step === 'payment' ? 'text-highlight font-bold' : 'text-stone-400'}`}>
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${step === 'payment' ? 'border-highlight bg-highlight/10' : 'border-stone-200'}`}>2</div>
+                            <div className="h-px bg-border w-12"></div>
+                            <div className={`flex items-center gap-2 ${step === 'payment' ? 'text-highlight font-bold' : 'text-muted-foreground'}`}>
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${step === 'payment' ? 'border-highlight bg-highlight/10' : 'border-border'}`}>2</div>
                                 <span>Payment</span>
                             </div>
                         </div>
 
                         {step === 'shipping' ? (
-                            <div className="bg-white rounded-2xl p-6 shadow-sm border border-stone-100 space-y-4">
-                                <h2 className="text-xl font-bold flex items-center gap-2">
+                            <div className="bg-card rounded-2xl p-6 shadow-sm border border-border space-y-4">
+                                <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
                                     <MapPin className="text-highlight" />
                                     Shipping Address
                                 </h2>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1">
-                                        <label className="text-xs font-bold uppercase text-stone-400">Full Name</label>
+                                        <label className="text-xs font-bold uppercase text-muted-foreground">Full Name</label>
                                         <input
                                             type="text"
                                             value={shippingDetails.fullName}
                                             onChange={e => setShippingDetails({ ...shippingDetails, fullName: e.target.value })}
-                                            className="w-full p-3 bg-stone-50 rounded-xl border border-stone-200 focus:outline-none focus:border-highlight"
+                                            className="w-full p-3 bg-muted/50 rounded-xl border border-border focus:outline-none focus:border-highlight text-foreground"
                                             placeholder="Adewale Adebayo"
                                         />
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-xs font-bold uppercase text-stone-400">Phone</label>
+                                        <label className="text-xs font-bold uppercase text-muted-foreground">Phone</label>
                                         <input
                                             type="tel"
                                             value={shippingDetails.phone}
                                             onChange={e => setShippingDetails({ ...shippingDetails, phone: e.target.value })}
-                                            className="w-full p-3 bg-stone-50 rounded-xl border border-stone-200 focus:outline-none focus:border-highlight"
+                                            className="w-full p-3 bg-muted/50 rounded-xl border border-border focus:outline-none focus:border-highlight text-foreground"
                                             placeholder="+234..."
                                         />
                                     </div>
                                     <div className="col-span-full space-y-1">
-                                        <label className="text-xs font-bold uppercase text-stone-400">Address</label>
+                                        <label className="text-xs font-bold uppercase text-muted-foreground">Address</label>
                                         <input
                                             type="text"
                                             value={shippingDetails.address}
                                             onChange={e => setShippingDetails({ ...shippingDetails, address: e.target.value })}
-                                            className="w-full p-3 bg-stone-50 rounded-xl border border-stone-200 focus:outline-none focus:border-highlight"
+                                            className="w-full p-3 bg-muted/50 rounded-xl border border-border focus:outline-none focus:border-highlight text-foreground"
                                             placeholder="123 Ifa Street"
                                         />
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-xs font-bold uppercase text-stone-400">City</label>
+                                        <label className="text-xs font-bold uppercase text-muted-foreground">City</label>
                                         <input
                                             type="text"
                                             value={shippingDetails.city}
                                             onChange={e => setShippingDetails({ ...shippingDetails, city: e.target.value })}
-                                            className="w-full p-3 bg-stone-50 rounded-xl border border-stone-200 focus:outline-none focus:border-highlight"
+                                            className="w-full p-3 bg-muted/50 rounded-xl border border-border focus:outline-none focus:border-highlight text-foreground"
                                             placeholder="Lagos"
                                         />
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-xs font-bold uppercase text-stone-400">State</label>
+                                        <label className="text-xs font-bold uppercase text-muted-foreground">State</label>
                                         <input
                                             type="text"
                                             value={shippingDetails.state}
                                             onChange={e => setShippingDetails({ ...shippingDetails, state: e.target.value })}
-                                            className="w-full p-3 bg-stone-50 rounded-xl border border-stone-200 focus:outline-none focus:border-highlight"
+                                            className="w-full p-3 bg-muted/50 rounded-xl border border-border focus:outline-none focus:border-highlight text-foreground"
                                             placeholder="Lagos State"
                                         />
                                     </div>
@@ -271,15 +273,15 @@ const CheckoutView: React.FC<CheckoutViewProps> = ({ onBack, onSuccess }) => {
                                     <button
                                         onClick={() => setStep('payment')}
                                         disabled={!shippingDetails.address || !shippingDetails.city}
-                                        className="bg-stone-800 text-white px-6 py-3 rounded-xl font-bold hover:bg-black transition-colors disabled:opacity-50"
+                                        className="bg-foreground text-background px-6 py-3 rounded-xl font-bold hover:opacity-90 transition-colors disabled:opacity-50"
                                     >
                                         Continue to Payment
                                     </button>
                                 </div>
                             </div>
                         ) : (
-                            <div className="bg-white rounded-2xl p-6 shadow-sm border border-stone-100 space-y-6">
-                                <h2 className="text-xl font-bold flex items-center gap-2">
+                            <div className="bg-card rounded-2xl p-6 shadow-sm border border-border space-y-6">
+                                <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
                                     <CreditCard className="text-highlight" />
                                     Payment Method
                                 </h2>
@@ -287,31 +289,31 @@ const CheckoutView: React.FC<CheckoutViewProps> = ({ onBack, onSuccess }) => {
                                 <div className="space-y-3">
                                     <button
                                         onClick={() => setPaymentMethod('card')}
-                                        className={`w-full p-4 rounded-xl border flex items-center justify-between transition-all ${paymentMethod === 'card' ? 'border-highlight bg-highlight/5 ring-1 ring-highlight' : 'border-stone-200 hover:border-stone-300'}`}
+                                        className={`w-full p-4 rounded-xl border flex items-center justify-between transition-all ${paymentMethod === 'card' ? 'border-highlight bg-highlight/5 ring-1 ring-highlight' : 'border-border hover:border-muted-foreground'}`}
                                     >
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-6 bg-stone-800 rounded"></div>
-                                            <span className="font-bold">Card Payment</span>
+                                            <div className="w-10 h-6 bg-foreground rounded"></div>
+                                            <span className="font-bold text-foreground">Card Payment</span>
                                         </div>
                                         {paymentMethod === 'card' && <CheckCircle2 className="text-highlight" size={20} />}
                                     </button>
 
                                     <button
                                         onClick={() => setPaymentMethod('bank_transfer')}
-                                        className={`w-full p-4 rounded-xl border flex items-center justify-between transition-all ${paymentMethod === 'bank_transfer' ? 'border-highlight bg-highlight/5 ring-1 ring-highlight' : 'border-stone-200 hover:border-stone-300'}`}
+                                        className={`w-full p-4 rounded-xl border flex items-center justify-between transition-all ${paymentMethod === 'bank_transfer' ? 'border-highlight bg-highlight/5 ring-1 ring-highlight' : 'border-border hover:border-muted-foreground'}`}
                                     >
                                         <div className="flex items-center gap-3">
-                                            <div className="p-1 bg-stone-100 rounded"><Truck size={16} /></div>
-                                            <span className="font-bold">Bank Transfer</span>
+                                            <div className="p-1 bg-muted rounded"><Truck size={16} /></div>
+                                            <span className="font-bold text-foreground">Bank Transfer</span>
                                         </div>
                                         {paymentMethod === 'bank_transfer' && <CheckCircle2 className="text-highlight" size={20} />}
                                     </button>
                                 </div>
 
-                                <div className="pt-4 flex items-center justify-between border-t border-stone-100 mt-4">
+                                <div className="pt-4 flex items-center justify-between border-t border-border mt-4">
                                     <button
                                         onClick={() => setStep('shipping')}
-                                        className="text-stone-500 font-bold hover:text-stone-800"
+                                        className="text-muted-foreground font-bold hover:text-foreground"
                                     >
                                         Back
                                     </button>
@@ -331,25 +333,25 @@ const CheckoutView: React.FC<CheckoutViewProps> = ({ onBack, onSuccess }) => {
 
                     {/* Order Summary Sidebar */}
                     <div className="lg:col-span-1">
-                        <div className="bg-white rounded-2xl p-6 shadow-sm border border-stone-100 sticky top-6">
-                            <h3 className="text-lg font-bold brand-font mb-4">Order Summary</h3>
+                        <div className="bg-card rounded-2xl p-6 shadow-sm border border-border sticky top-6">
+                            <h3 className="text-lg font-bold brand-font text-foreground mb-4">Order Summary</h3>
 
                             {/* Group items by vendor */}
                             <div className="space-y-4 mb-6">
                                 {itemsByVendor.map((group) => (
                                     <div key={group.vendorId} className="space-y-2">
-                                        <div className="flex items-center gap-2 text-xs font-bold uppercase text-stone-400">
+                                        <div className="flex items-center gap-2 text-xs font-bold uppercase text-muted-foreground">
                                             <Store size={12} />
                                             {group.vendorName}
                                         </div>
                                         {group.items.map((item) => (
                                             <div key={item.productId} className="flex items-start gap-3 text-sm pl-4">
-                                                <div className="w-10 h-10 bg-stone-100 rounded-lg overflow-hidden flex-shrink-0">
+                                                <div className="w-10 h-10 bg-muted rounded-lg overflow-hidden flex-shrink-0">
                                                     {item.image && <img src={item.image} className="w-full h-full object-cover" alt={item.name} />}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="font-medium line-clamp-1">{item.name}</p>
-                                                    <p className="text-stone-400 text-xs">Qty: {item.quantity}</p>
+                                                    <p className="font-medium text-foreground line-clamp-1">{item.name}</p>
+                                                    <p className="text-muted-foreground text-xs">Qty: {item.quantity}</p>
                                                 </div>
                                                 <div className="font-bold text-sm">
                                                     {currency === 'NGN' ? '₦' : '$'}{(item.price * item.quantity).toLocaleString()}
@@ -361,21 +363,21 @@ const CheckoutView: React.FC<CheckoutViewProps> = ({ onBack, onSuccess }) => {
                             </div>
 
                             {itemsByVendor.length > 1 && (
-                                <p className="text-xs text-stone-400 mb-4 bg-stone-50 p-2 rounded-lg">
+                                <p className="text-xs text-muted-foreground mb-4 bg-muted/50 p-2 rounded-lg">
                                     Your order will be split into {itemsByVendor.length} separate orders from different vendors.
                                 </p>
                             )}
 
-                            <div className="border-t border-stone-100 pt-4 space-y-2">
-                                <div className="flex justify-between text-stone-500">
+                            <div className="border-t border-border pt-4 space-y-2">
+                                <div className="flex justify-between text-muted-foreground">
                                     <span>Subtotal</span>
                                     <span>{currency === 'NGN' ? '₦' : '$'}{totalAmount.toLocaleString()}</span>
                                 </div>
-                                <div className="flex justify-between text-stone-500">
+                                <div className="flex justify-between text-muted-foreground">
                                     <span>Shipping</span>
                                     <span>Free</span>
                                 </div>
-                                <div className="flex justify-between font-bold text-xl text-stone-800 pt-2">
+                                <div className="flex justify-between font-bold text-xl text-foreground pt-2">
                                     <span>Total</span>
                                     <span>{currency === 'NGN' ? '₦' : '$'}{totalAmount.toLocaleString()}</span>
                                 </div>
