@@ -17,6 +17,7 @@ import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { VendorStatus, ProductStatus, OrderStatus, VerifiedTier } from '@ile-ase/common';
 import { OrderNotificationService } from './order-notification.service';
 import { SearchService } from '../search/search.service';
+import { WhatsAppService } from '../whatsapp';
 
 /**
  * Marketplace Service
@@ -30,7 +31,8 @@ export class MarketplaceService {
   constructor(
     private prisma: PrismaService,
     private orderNotificationService: OrderNotificationService,
-    private searchService: SearchService
+    private searchService: SearchService,
+    private whatsapp: WhatsAppService,
   ) {}
 
   // ==================== Vendors ====================
@@ -504,6 +506,29 @@ export class MarketplaceService {
           data: { stock: product.stock - item.quantity },
         });
       }
+    }
+
+    // WhatsApp: notify vendor of new order
+    const vendorRecord = await this.prisma.vendor.findUnique({
+      where: { id: order.vendorId },
+      select: { userId: true },
+    });
+    const vendorUser = vendorRecord
+      ? await this.prisma.user.findUnique({
+          where: { id: vendorRecord.userId },
+          select: { whatsappNumber: true, whatsappEnabled: true },
+        })
+      : null;
+    if (vendorUser?.whatsappEnabled && vendorUser?.whatsappNumber) {
+      const firstItem = order.items[0];
+      const totalQty = order.items.reduce((sum: number, i: any) => sum + i.quantity, 0);
+      await this.whatsapp.notifyVendorNewOrder({
+        phone: vendorUser.whatsappNumber,
+        productName: firstItem?.product?.name || 'Order',
+        qty: totalQty,
+        amount: `₦${order.totalAmount.toLocaleString()}`,
+        url: 'https://iluase.com/vendor/orders',
+      });
     }
 
     return order;

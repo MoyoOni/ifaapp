@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings, User, Bell, Shield, Palette, Moon, Sun, Mail, Lock, CreditCard, Trash2, LogOut, AtSign, Check, X, Loader2 } from 'lucide-react';
+import { Settings, User, Bell, Shield, Palette, Mail, Lock, CreditCard, Trash2, LogOut, AtSign, Check, X, Loader2, MessageCircle, Sun, Moon } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { useToast } from '@/shared/components/toast';
@@ -59,6 +59,8 @@ const SettingsPage: React.FC = () => {
   const [slugEditing, setSlugEditing] = useState(false);
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [slugChecking, setSlugChecking] = useState(false);
+  const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [whatsappEnabled, setWhatsappEnabled] = useState(true);
 
   const { data: userProfile } = useQuery({
     queryKey: ['user-settings', user?.id],
@@ -77,7 +79,21 @@ const SettingsPage: React.FC = () => {
         appearance: { ...prev.appearance, ...userProfile.settings.appearance },
       }));
     }
+    if (userProfile) {
+      setWhatsappNumber(userProfile.whatsappNumber || '');
+      setWhatsappEnabled(userProfile.whatsappEnabled ?? true);
+    }
   }, [userProfile]);
+
+  const saveWhatsappMutation = useMutation({
+    mutationFn: (data: { whatsappNumber: string; whatsappEnabled: boolean }) =>
+      api.patch(`/users/${user!.id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-settings', user?.id] });
+      toast.success('WhatsApp preferences saved');
+    },
+    onError: () => toast.error('Failed to save WhatsApp settings'),
+  });
 
   const saveSettingsMutation = useMutation({
     mutationFn: (updated: SettingsState) =>
@@ -345,6 +361,70 @@ const SettingsPage: React.FC = () => {
                           </label>
                         ))}
                       </div>
+                    </div>
+
+                    {/* WhatsApp Notifications */}
+                    <div className="bg-green-50 dark:bg-green-900/20 rounded-2xl border border-green-200 dark:border-green-800 p-5">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-9 h-9 rounded-xl bg-green-500 flex items-center justify-center flex-shrink-0">
+                          <MessageCircle size={18} className="text-white" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-stone-800 dark:text-stone-200">WhatsApp Notifications</h3>
+                          <p className="text-xs text-muted-foreground">Get instant alerts for bookings, orders & messages</p>
+                        </div>
+                        <label className="ml-auto flex items-center cursor-pointer">
+                          <div className="relative">
+                            <input
+                              type="checkbox"
+                              className="sr-only"
+                              aria-label="Enable WhatsApp notifications"
+                              checked={whatsappEnabled}
+                              onChange={(e) => {
+                                setWhatsappEnabled(e.target.checked);
+                                saveWhatsappMutation.mutate({ whatsappNumber, whatsappEnabled: e.target.checked });
+                              }}
+                            />
+                            <div className={`w-11 h-6 rounded-full transition-colors ${whatsappEnabled ? 'bg-green-500' : 'bg-muted'}`} />
+                            <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${whatsappEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                          </div>
+                        </label>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
+                          WhatsApp Number
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="tel"
+                            placeholder="+234 800 000 0000"
+                            value={whatsappNumber}
+                            onChange={(e) => setWhatsappNumber(e.target.value)}
+                            className="flex-1 px-4 py-2.5 rounded-xl border border-border bg-card text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => saveWhatsappMutation.mutate({ whatsappNumber, whatsappEnabled })}
+                            disabled={saveWhatsappMutation.isPending || !whatsappNumber.trim()}
+                            className="px-4 py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold text-sm disabled:opacity-50 transition-colors flex items-center gap-2"
+                          >
+                            {saveWhatsappMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                            Save
+                          </button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Include country code e.g. +234 for Nigeria, +44 for UK</p>
+                      </div>
+
+                      {whatsappEnabled && whatsappNumber && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {['New bookings', 'Messages', 'Orders', 'Payments', 'Guidance plans'].map((item) => (
+                            <span key={item} className="inline-flex items-center gap-1 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 text-xs font-semibold px-2.5 py-1 rounded-full">
+                              <Check size={10} /> {item}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     <div>

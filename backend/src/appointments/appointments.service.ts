@@ -15,13 +15,15 @@ import { WalletService } from '../wallet/wallet.service';
 import { Appointment } from '../shared/types/prisma-models';
 import { EscrowType, EscrowStatus } from '@ile-ase/common';
 import { AvailabilitySlot } from './types';
+import { WhatsAppService } from '../whatsapp';
 
 @Injectable()
 export class AppointmentsService {
   constructor(
     private prisma: PrismaService,
     private notificationService: NotificationService,
-    private walletService: WalletService
+    private walletService: WalletService,
+    private whatsapp: WhatsAppService,
   ) {}
 
   private async getAppointmentWithDetails(id: string) {
@@ -158,6 +160,21 @@ export class AppointmentsService {
       time: appointment.time,
     });
 
+    // WhatsApp: notify babalawo of new booking
+    const babalawoUser = await this.prisma.user.findUnique({
+      where: { id: babalawoId },
+      select: { whatsappNumber: true, whatsappEnabled: true },
+    });
+    if (babalawoUser?.whatsappEnabled && babalawoUser?.whatsappNumber) {
+      await this.whatsapp.notifyBabalawoNewBooking({
+        phone: babalawoUser.whatsappNumber,
+        clientName: appointment.client.name,
+        date: appointment.date,
+        time: appointment.time,
+        url: 'https://iluase.com/practitioner/consultations',
+      });
+    }
+
     return appointment;
   }
 
@@ -243,6 +260,20 @@ export class AppointmentsService {
           time: appointment.time,
         }
       );
+      // WhatsApp: notify client their booking is confirmed
+      const clientUser = await this.prisma.user.findUnique({
+        where: { id: appointment.clientId },
+        select: { whatsappNumber: true, whatsappEnabled: true },
+      });
+      if (clientUser?.whatsappEnabled && clientUser?.whatsappNumber) {
+        await this.whatsapp.notifyClientBookingConfirmed({
+          phone: clientUser.whatsappNumber,
+          babalawoName: appointment.babalawo.name,
+          date: appointment.date,
+          time: appointment.time,
+          url: 'https://iluase.com/client/consultations',
+        });
+      }
     } else if (status === 'DECLINED') {
       const baseDecline = {
         reason: reason || 'Appointment declined',

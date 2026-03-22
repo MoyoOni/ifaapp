@@ -4,9 +4,10 @@ import { AppointmentsController } from './appointments.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { WalletModule } from '../wallet/wallet.module';
+import { WhatsAppModule } from '../whatsapp';
 
 @Module({
-  imports: [PrismaModule, NotificationsModule, WalletModule],
+  imports: [PrismaModule, NotificationsModule, WalletModule, WhatsAppModule],
   controllers: [AppointmentsController],
   providers: [AppointmentsService],
   exports: [AppointmentsService],

@@ -50,6 +50,7 @@ import { SentryModule } from './sentry/sentry.module';
 import { DiscoveryModule } from '@nestjs/core';
 import { SharedModule } from './shared/shared.module';
 import { InfrastructureModule } from './shared/infrastructure.module';
+import { WhatsAppModule } from './whatsapp';
 
 @Module({
   imports: [
@@ -100,6 +101,7 @@ import { InfrastructureModule } from './shared/infrastructure.module';
     SecurityModule,
     SharedModule,
     InfrastructureModule,
+    WhatsAppModule,
     SentryModule,
   ],
   controllers: [],
