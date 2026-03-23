@@ -1726,4 +1726,60 @@ export class AdminService {
 
     return updatedUser;
   }
+
+  /**
+   * Subscription analytics for admin dashboard
+   */
+  async getSubscriptionStats() {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const [
+      totalDevoted,
+      quarterlyCount,
+      annualCount,
+      newThisMonth,
+      cancelledThisMonth,
+      recentSubscribers,
+    ] = await Promise.all([
+      this.prisma.user.count({ where: { subscriptionStatus: 'DEVOTED' } }),
+      this.prisma.subscription.count({ where: { status: 'ACTIVE', plan: 'QUARTERLY' } }),
+      this.prisma.subscription.count({ where: { status: 'ACTIVE', plan: 'ANNUAL' } }),
+      this.prisma.subscription.count({ where: { createdAt: { gte: startOfMonth } } }),
+      this.prisma.subscription.count({ where: { status: 'CANCELLED', updatedAt: { gte: startOfMonth } } }),
+      this.prisma.subscription.findMany({
+        where: { status: 'ACTIVE' },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+        include: { user: { select: { id: true, name: true, email: true } } },
+      }),
+    ]);
+
+    const mrr =
+      quarterlyCount * Math.round(2_500_000 / 3) + annualCount * Math.round(10_000_000 / 12);
+    const arr = quarterlyCount * 2_500_000 + annualCount * 10_000_000;
+
+    const churnRate =
+      totalDevoted > 0 ? Math.round((cancelledThisMonth / Math.max(totalDevoted, 1)) * 1000) / 10 : 0;
+
+    return {
+      totalDevoted,
+      quarterlyCount,
+      annualCount,
+      mrr,
+      arr,
+      newThisMonth,
+      cancelledThisMonth,
+      churnRate,
+      recentSubscribers: recentSubscribers.map((s) => ({
+        id: s.id,
+        name: (s as any).user?.name ?? 'Unknown',
+        email: (s as any).user?.email ?? '',
+        plan: s.plan,
+        startDate: s.startDate,
+        endDate: s.endDate,
+        status: s.status,
+      })),
+    };
+  }
 }

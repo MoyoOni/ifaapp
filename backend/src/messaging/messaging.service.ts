@@ -73,6 +73,39 @@ export class MessagingService {
       throw new ForbiddenException('You can only send messages as yourself');
     }
 
+    // Messaging limit: free users can only message 10 unique people per month
+    const sender = await this.prisma.user.findUnique({
+      where: { id: senderId },
+      select: { subscriptionStatus: true },
+    });
+
+    if (sender?.subscriptionStatus !== 'DEVOTED') {
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const uniqueThreads = await this.prisma.message.findMany({
+        where: {
+          senderId,
+          createdAt: { gte: startOfMonth },
+          receiverId: { not: dto.receiverId }, // Exclude current receiver
+        },
+        select: { receiverId: true },
+        distinct: ['receiverId'],
+      });
+
+      // Allow if already messaging this receiver (existing thread), gate new threads at 10
+      const alreadyMessaged = await this.prisma.message.findFirst({
+        where: { senderId, receiverId: dto.receiverId },
+      });
+
+      if (!alreadyMessaged && uniqueThreads.length >= 10) {
+        throw new ForbiddenException(
+          'Free members can start up to 10 conversations per month. Become Devoted for unlimited messaging.'
+        );
+      }
+    }
+
     // Verify relationship exists (Babalawo-Client relationship)
     const relationship = await this.prisma.babalawoClient.findFirst({
       where: {
@@ -215,6 +248,38 @@ export class MessagingService {
     });
 
     return decryptedMessages;
+  }
+
+  /**
+   * Returns how many new threads a FREE user has started this month (for the counter UI)
+   */
+  async getMessageLimitStatus(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { subscriptionStatus: true },
+    });
+
+    const isDevoted = user?.subscriptionStatus === 'DEVOTED';
+    if (isDevoted) {
+      return { isDevoted: true, count: 0, limit: null, remaining: null };
+    }
+
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const uniqueThreads = await this.prisma.message.findMany({
+      where: {
+        senderId: userId,
+        createdAt: { gte: startOfMonth },
+      },
+      select: { receiverId: true },
+      distinct: ['receiverId'],
+    });
+
+    const count = uniqueThreads.length;
+    const limit = 10;
+    return { isDevoted: false, count, limit, remaining: Math.max(0, limit - count) };
   }
 
   async getInbox(userId: string, currentUser: CurrentUserPayload) {

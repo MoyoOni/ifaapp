@@ -27,6 +27,11 @@ export class MessagingController {
     return this.messagingService.getConversation(userId, otherUserId, currentUser);
   }
 
+  @Get('limit-status')
+  async getMessageLimitStatus(@CurrentUser() currentUser: CurrentUserPayload) {
+    return this.messagingService.getMessageLimitStatus(currentUser.id);
+  }
+
   @Get('inbox/:userId')
   async getInbox(@Param('userId') userId: string, @CurrentUser() currentUser: CurrentUserPayload) {
     return this.messagingService.getInbox(userId, currentUser);

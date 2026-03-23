@@ -49,6 +49,7 @@ export interface Appointment {
   notes?: string | null;
   cancelledAt?: Date | null;
   cancelledBy?: string | null;
+  isPriority: boolean;
   createdAt: Date;
   updatedAt: Date;
   babalawo?: User;

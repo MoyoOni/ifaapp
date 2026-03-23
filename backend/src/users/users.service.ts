@@ -79,7 +79,12 @@ export class UsersService {
     return users;
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, viewerId?: string) {
+    // Log profile view (fire-and-forget — never blocks the response)
+    if (viewerId && viewerId !== id) {
+      this.logProfileView(id, viewerId).catch(() => {/* ignore errors */});
+    }
+
     // Try to get from cache first
     const cachedUser = await this.cacheManager.getUserProfile(id);
     if (cachedUser) {
@@ -144,6 +149,55 @@ export class UsersService {
     return safeUser;
   }
 
+  private async logProfileView(profileId: string, viewerId: string) {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const existing = await this.prisma.profileView.findFirst({
+      where: { profileId, viewerId, viewedAt: { gte: twentyFourHoursAgo } },
+    });
+    if (!existing) {
+      await this.prisma.profileView.create({ data: { profileId, viewerId } });
+    }
+  }
+
+  async getProfileViewers(userId: string) {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    return this.prisma.profileView.findMany({
+      where: { profileId: userId, viewedAt: { gte: thirtyDaysAgo } },
+      include: {
+        viewer: { select: { id: true, name: true, yorubaName: true, avatar: true, role: true } },
+      },
+      orderBy: { viewedAt: 'desc' },
+      take: 50,
+    });
+  }
+
+  async getReferralStats(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { referralCode: true },
+    });
+
+    const referrals = await this.prisma.referral.findMany({
+      where: { referrerId: userId },
+      include: {
+        referred: { select: { id: true, name: true, createdAt: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return {
+      referralCode: user?.referralCode ?? null,
+      referralCount: referrals.length,
+      rewardedCount: referrals.filter((r) => r.rewardGranted).length,
+      referrals: referrals.map((r) => ({
+        id: r.referred.id,
+        name: r.referred.name,
+        joinedAt: r.referred.createdAt.toISOString(),
+        rewardGranted: r.rewardGranted,
+      })),
+    };
+  }
+
   async update(id: string, dto: UpdateUserDto, currentUser: CurrentUserPayload) {
     // Users can only update their own profile (unless admin)
     if (currentUser.id !== id && currentUser.role !== 'ADMIN') {
@@ -195,6 +249,38 @@ export class UsersService {
     await this.searchService.triggerIndexing('USER', user.id, user);
 
     return user;
+  }
+
+  /**
+   * Award XP to a user. Devoted members earn 2× the base amount.
+   * Automatically promotes culturalLevel based on XP thresholds.
+   */
+  async awardXP(userId: string, baseAmount: number): Promise<void> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { subscriptionStatus: true, rankXP: true },
+    });
+    if (!user) return;
+
+    const multiplier = user.subscriptionStatus === 'DEVOTED' ? 2 : 1;
+    const earned = baseAmount * multiplier;
+    const newXP = (user.rankXP ?? 0) + earned;
+
+    // Cultural level thresholds
+    let culturalLevel = 'Omo Ilé';
+    if (newXP >= 5000) culturalLevel = 'Awo Agba';
+    else if (newXP >= 2500) culturalLevel = 'Awo';
+    else if (newXP >= 1000) culturalLevel = 'Akọ̀wé';
+    else if (newXP >= 500) culturalLevel = 'Ẹ̀kọ́ Jinlẹ̀';
+    else if (newXP >= 200) culturalLevel = 'Ẹ̀kọ́';
+    else if (newXP >= 50) culturalLevel = 'Ọmọ Ilé Tuntun';
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { rankXP: newXP, culturalLevel },
+    });
+
+    await this.cacheManager.invalidateUserCache(userId);
   }
 
   async completeOnboarding(id: string, onboardingData: Record<string, unknown>) {

@@ -51,6 +51,7 @@ import { DiscoveryModule } from '@nestjs/core';
 import { SharedModule } from './shared/shared.module';
 import { InfrastructureModule } from './shared/infrastructure.module';
 import { WhatsAppModule } from './whatsapp';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 
 @Module({
   imports: [
@@ -91,6 +92,7 @@ import { WhatsAppModule } from './whatsapp';
     CirclesModule,
     EventsModule,
     ReviewsModule,
+    SubscriptionsModule,
     HealthModule,
     MetricsModule,
     // QueueModule, // DISABLED: see import comment above

@@ -13,6 +13,7 @@ export interface Circle {
   banner?: string;
   memberCount: number;
   active: boolean;
+  isDevoted?: boolean;
   createdAt: string;
   creator: {
     id: string;

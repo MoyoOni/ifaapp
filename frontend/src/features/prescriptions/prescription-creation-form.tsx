@@ -265,7 +265,7 @@ const GuidancePlanCreationForm: React.FC<GuidancePlanCreationFormProps> = ({
               type="button"
               onClick={addItem}
               disabled={!canCreate}
-              className="px-3 py-1 text-sm bg-card/10 text-white rounded-lg hover:bg-card/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-3 py-1 text-sm bg-muted text-foreground rounded-lg hover:bg-muted/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
               Add Item
@@ -302,7 +302,7 @@ const GuidancePlanCreationForm: React.FC<GuidancePlanCreationFormProps> = ({
                       value={item.name}
                       onChange={(e) => updateItem(index, 'name', e.target.value)}
                       disabled={!canCreate}
-                      className="w-full px-3 py-2 bg-muted/50 border border-border rounded-lg text-white focus:outline-none focus:border-highlight disabled:opacity-50"
+                      className="w-full px-3 py-2 bg-muted/50 border border-border rounded-lg text-foreground focus:outline-none focus:border-highlight disabled:opacity-50"
                       placeholder="Item name"
                       required
                     />
@@ -316,7 +316,7 @@ const GuidancePlanCreationForm: React.FC<GuidancePlanCreationFormProps> = ({
                       value={item.quantity}
                       onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 1)}
                       disabled={!canCreate}
-                      className="w-full px-3 py-2 bg-muted/50 border border-border rounded-lg text-white focus:outline-none focus:border-highlight disabled:opacity-50"
+                      className="w-full px-3 py-2 bg-muted/50 border border-border rounded-lg text-foreground focus:outline-none focus:border-highlight disabled:opacity-50"
                       required
                     />
                   </div>
@@ -330,7 +330,7 @@ const GuidancePlanCreationForm: React.FC<GuidancePlanCreationFormProps> = ({
                       value={item.cost}
                       onChange={(e) => updateItem(index, 'cost', parseFloat(e.target.value) || 0)}
                       disabled={!canCreate}
-                      className="w-full px-3 py-2 bg-muted/50 border border-border rounded-lg text-white focus:outline-none focus:border-highlight disabled:opacity-50"
+                      className="w-full px-3 py-2 bg-muted/50 border border-border rounded-lg text-foreground focus:outline-none focus:border-highlight disabled:opacity-50"
                       required
                     />
                   </div>
@@ -342,7 +342,7 @@ const GuidancePlanCreationForm: React.FC<GuidancePlanCreationFormProps> = ({
                       value={item.description || ''}
                       onChange={(e) => updateItem(index, 'description', e.target.value)}
                       disabled={!canCreate}
-                      className="w-full px-3 py-2 bg-muted/50 border border-border rounded-lg text-white focus:outline-none focus:border-highlight disabled:opacity-50"
+                      className="w-full px-3 py-2 bg-muted/50 border border-border rounded-lg text-foreground focus:outline-none focus:border-highlight disabled:opacity-50"
                       placeholder="Optional description"
                     />
                   </div>
@@ -373,7 +373,7 @@ const GuidancePlanCreationForm: React.FC<GuidancePlanCreationFormProps> = ({
             onChange={(e) => setInstructions(e.target.value)}
             disabled={!canCreate}
             rows={4}
-            className="w-full px-4 py-2 bg-muted/50 border border-border rounded-lg text-white focus:outline-none focus:border-highlight disabled:opacity-50"
+            className="w-full px-4 py-2 bg-muted/50 border border-border rounded-lg text-foreground focus:outline-none focus:border-highlight disabled:opacity-50"
             placeholder="Provide instructions on how to use or prepare the guidance plan items..."
           />
         </div>
@@ -386,7 +386,7 @@ const GuidancePlanCreationForm: React.FC<GuidancePlanCreationFormProps> = ({
             onChange={(e) => setNotes(e.target.value)}
             disabled={!canCreate}
             rows={2}
-            className="w-full px-4 py-2 bg-muted/50 border border-border rounded-lg text-white focus:outline-none focus:border-highlight disabled:opacity-50"
+            className="w-full px-4 py-2 bg-muted/50 border border-border rounded-lg text-foreground focus:outline-none focus:border-highlight disabled:opacity-50"
             placeholder="Private notes (not visible to client)..."
           />
         </div>
@@ -398,7 +398,7 @@ const GuidancePlanCreationForm: React.FC<GuidancePlanCreationFormProps> = ({
               type="button"
               onClick={onCancel}
               disabled={isSubmitting}
-              className="flex-1 px-4 py-3 bg-card/10 text-white rounded-lg font-medium hover:bg-card/20 transition-colors disabled:opacity-50"
+              className="flex-1 px-4 py-3 bg-muted text-foreground rounded-lg font-medium hover:bg-muted/80 transition-colors disabled:opacity-50"
             >
               Cancel
             </button>

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, Shield, MessageSquare,
   AlertTriangle, DollarSign, BarChart3,
-  Building2, Store, Activity, XCircle
+  Building2, Store, Activity, XCircle, Crown
 } from 'lucide-react';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { usePrompt } from '@/hooks/use-prompt';
@@ -24,6 +24,7 @@ import AdminOverviewTab from './admin-overview-tab';
 import AdminUserManagementTab from './admin-user-management-tab';
 import AdminManagementView from './admin-management-view';
 import PaymentVerificationView from './payment-verification-view';
+import AdminSubscriptionTab from './admin-subscription-tab';
 import { AdminUser, VerificationApplication } from './admin-shared-components';
 import { useToast } from '@/shared/components/toast';
 import { TabErrorBoundary } from '@/shared/components/tab-error-boundary';
@@ -42,7 +43,7 @@ type AdminTab =
   | 'overview' | 'verification' | 'temples' | 'vendors'
   | 'disputes' | 'withdrawals' | 'analytics' | 'fraud'
   | 'content' | 'users' | 'circles' | 'quality' | 'health'
-  | 'admin-management' | 'payment-verification';
+  | 'admin-management' | 'payment-verification' | 'subscriptions';
 
 interface AdminDashboardViewProps {
   initialTab?: AdminTab;
@@ -178,6 +179,7 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ initialTab }) =
     { id: 'fraud' as AdminTab, label: 'Fraud Alerts', icon: AlertTriangle },
     { id: 'admin-management' as AdminTab, label: 'Admin Management', icon: Shield },
     { id: 'payment-verification' as AdminTab, label: 'Payment Verification', icon: DollarSign },
+    { id: 'subscriptions' as AdminTab, label: 'Subscriptions', icon: Crown },
   ];
 
   const renderTabContent = () => {
@@ -228,6 +230,8 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ initialTab }) =
         return <TabErrorBoundary fallback={<TabFallback icon={Shield} label="Admin Management" />} tabName="admin-management"><AdminManagementView /></TabErrorBoundary>;
       case 'payment-verification':
         return <TabErrorBoundary fallback={<TabFallback icon={DollarSign} label="Payment Verification" />} tabName="payment-verification"><PaymentVerificationView /></TabErrorBoundary>;
+      case 'subscriptions':
+        return <TabErrorBoundary fallback={<TabFallback icon={Crown} label="Subscriptions" />} tabName="subscriptions"><AdminSubscriptionTab /></TabErrorBoundary>;
       default:
         return (
           <div className="bg-card rounded-2xl p-6 border border-border">

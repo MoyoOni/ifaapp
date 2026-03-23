@@ -35,4 +35,9 @@ export class RegisterDto {
   @IsEnum(CulturalLevel)
   @IsOptional()
   declare culturalLevel?: CulturalLevel;
+
+  @ApiPropertyOptional({ example: 'adewale-3k9xp2' })
+  @IsString()
+  @IsOptional()
+  declare referredByCode?: string;
 }

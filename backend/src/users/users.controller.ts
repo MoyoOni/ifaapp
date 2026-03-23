@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Param, Body, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Patch, Param, Body, UseGuards, Query, ForbiddenException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -23,14 +23,29 @@ export class UsersController {
     return this.usersService.findOne(currentUser.id);
   }
 
+  @Get('referral-stats')
+  async getReferralStats(@CurrentUser() currentUser: CurrentUserPayload) {
+    return this.usersService.getReferralStats(currentUser.id);
+  }
+
+  @Get('profile-views/mine')
+  async getMyProfileViews(@CurrentUser() currentUser: CurrentUserPayload) {
+    // Check Devoted subscription
+    const profile = await this.usersService.findOne(currentUser.id);
+    if ((profile as any).subscriptionStatus !== 'DEVOTED') {
+      throw new ForbiddenException('Profile view history is a Devoted member benefit.');
+    }
+    return this.usersService.getProfileViewers(currentUser.id);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
   }
 
   @Get(':id/profile')
-  async getProfile(@Param('id') id: string) {
-    return this.usersService.findOne(id);
+  async getProfile(@Param('id') id: string, @CurrentUser() currentUser: CurrentUserPayload) {
+    return this.usersService.findOne(id, currentUser.id);
   }
 
   @Patch(':id')

@@ -1,5 +1,5 @@
 import { IsString, IsEnum, IsObject, IsOptional } from 'class-validator';
-import { Platform } from '../push-notification.service';
+import { Platform } from '../push/push-notification.service';
 
 export class RegisterDeviceTokenDto {
   @IsString()

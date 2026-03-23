@@ -79,7 +79,16 @@ export class NotificationsController {
     @CurrentUser() currentUser: CurrentUserPayload,
     @Body() body: RegisterDeviceTokenDto
   ) {
-    return this.pushService.registerDeviceToken(currentUser.id, body.token, body.deviceType);
+    return this.pushService.registerDeviceToken(currentUser.id, body.token, body.deviceType, body.platform);
+  }
+
+  /**
+   * Deregister device token (on logout)
+   * POST /notifications/deregister-device-token
+   */
+  @Post('deregister-device-token')
+  async deregisterDeviceToken(@Body() body: { token: string }) {
+    return this.pushService.deregisterDeviceToken(body.token);
   }
 
   /**

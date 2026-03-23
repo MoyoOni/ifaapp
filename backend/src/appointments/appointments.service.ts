@@ -121,10 +121,18 @@ export class AppointmentsService {
       }
     }
 
+    // Check if client is Devoted — priority booking
+    const clientUser = await this.prisma.user.findUnique({
+      where: { id: clientId },
+      select: { subscriptionStatus: true },
+    });
+    const isPriority = clientUser?.subscriptionStatus === 'DEVOTED';
+
     const appointment = await this.prisma.appointment.create({
       data: {
         ...dto,
         status: 'PENDING_CONFIRMATION',
+        isPriority,
       },
       include: {
         babalawo: true,
@@ -337,7 +345,7 @@ export class AppointmentsService {
           select: { id: true, name: true, yorubaName: true, avatar: true },
         },
       },
-      orderBy: { date: 'asc', time: 'asc' },
+      orderBy: [{ isPriority: 'desc' }, { date: 'asc' }, { time: 'asc' }],
     });
   }
 

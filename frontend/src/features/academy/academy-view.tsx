@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Search, BookOpen, GraduationCap, Play, Clock, CheckCircle, Users, Filter, AlertCircle } from 'lucide-react';
+import { Search, BookOpen, GraduationCap, Play, Clock, CheckCircle, Users, Filter, AlertCircle, Lock, Sparkles } from 'lucide-react';
 import { FeatureHeader } from '@/shared/components/feature-header';
 import { PageTransition } from '@/components/common/page-transition';
 import { Button } from '@/shared/components/ui/button';
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
 import { AcademySkeleton } from '@/shared/components/skeleton';
+import { useSubscription } from '@/features/subscription/use-subscription';
 
 interface Course {
   id: string;
@@ -27,6 +28,7 @@ interface Course {
   enrolledCount: number;
   lessonCount: number;
   certificateEnabled: boolean;
+  isDevoted?: boolean;
   instructor: {
     id: string;
     name: string;
@@ -52,7 +54,17 @@ const AcademyView: React.FC<AcademyViewProps> = ({ onSelectCourse }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedLevel, setSelectedLevel] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const navigate = useNavigate(); // Add navigate hook
+  const navigate = useNavigate();
+  const { isDevoted } = useSubscription();
+
+  const handleCourseClick = (course: Course) => {
+    if (course.isDevoted && !isDevoted) {
+      navigate('/pricing');
+      return;
+    }
+    onSelectCourse?.(course.id);
+    navigate(`/academy/course/${course.id}`);
+  };
 
   // Fetch courses
   const { data: courses = [], isLoading: coursesLoading, isError: coursesError } = useQuery<Course[]>({
@@ -132,15 +144,20 @@ const AcademyView: React.FC<AcademyViewProps> = ({ onSelectCourse }) => {
 
           {/* Featured Course */}
           {filteredCourses.length > 0 && (
-            <div 
+            <div
               className="mb-12 rounded-3xl bg-gradient-to-r from-primary/10 via-secondary/5 to-accent/10 p-8 border border-border cursor-pointer hover:shadow-lg transition-all"
-              onClick={() => navigate(`/academy/course/${filteredCourses[0].id}`)}
+              onClick={() => handleCourseClick(filteredCourses[0])}
             >
               <div className="flex flex-col md:flex-row gap-8 items-center">
                 <div className="flex-1">
-                  <Badge variant="secondary" className="mb-3">
-                    Featured Course
-                  </Badge>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Badge variant="secondary">Featured Course</Badge>
+                    {filteredCourses[0].isDevoted && (
+                      <Badge className="bg-amber-500 text-white text-[0.625rem] font-[700] uppercase tracking-wider px-2 py-1 rounded-md flex items-center gap-1">
+                        <Sparkles size={9} /> Devoted
+                      </Badge>
+                    )}
+                  </div>
                   <h2 className="text-2xl font-bold text-foreground mb-2">{filteredCourses[0].title}</h2>
                   <p className="text-muted-foreground mb-4">{filteredCourses[0].description}</p>
                   
@@ -209,12 +226,7 @@ const AcademyView: React.FC<AcademyViewProps> = ({ onSelectCourse }) => {
               {filteredCourses.map((course) => (
                 <div
                   key={course.id}
-                  onClick={() => {
-                    // Call the prop callback if provided (for backward compatibility)
-                    onSelectCourse?.(course.id);
-                    // Navigate to the course detail page
-                    navigate(`/academy/course/${course.id}`);
-                  }}
+                  onClick={() => handleCourseClick(course)}
                   className="group bg-card rounded-2xl border border-input shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col h-full"
                 >
                   {/* Thumbnail */}
@@ -229,13 +241,18 @@ const AcademyView: React.FC<AcademyViewProps> = ({ onSelectCourse }) => {
 
                     {/* Badges/Tags */}
                     <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
+                      {course.isDevoted && (
+                        <Badge className="bg-amber-500 text-white text-[0.625rem] font-[700] uppercase tracking-wider px-2 py-1 rounded-md shadow-sm flex items-center gap-1">
+                          <Sparkles size={9} /> Devoted
+                        </Badge>
+                      )}
                       {course.certificateEnabled && (
                         <Badge className="bg-accent text-accent-foreground text-[0.625rem] font-[700] uppercase tracking-wider px-2 py-1 rounded-md shadow-sm flex items-center gap-1">
                           <CheckCircle size={10} /> Certified
                         </Badge>
                       )}
-                      <Badge 
-                        variant="outline" 
+                      <Badge
+                        variant="outline"
                         className={`text-[0.625rem] font-[700] uppercase tracking-wider px-2 py-1 rounded-md shadow-sm ${
                           course.level === 'BEGINNER' ? 'bg-success text-success-foreground' :
                           course.level === 'INTERMEDIATE' ? 'bg-primary text-primary-foreground' :
@@ -246,12 +263,22 @@ const AcademyView: React.FC<AcademyViewProps> = ({ onSelectCourse }) => {
                       </Badge>
                     </div>
 
-                    {/* Play Overlay */}
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <div className="w-16 h-16 rounded-full bg-primary/20 backdrop-blur-md flex items-center justify-center text-primary scale-50 group-hover:scale-100 transition-transform duration-300">
-                        <Play size={32} className="ml-1" />
+                    {/* Lock overlay for Devoted-only courses (free users) */}
+                    {course.isDevoted && !isDevoted ? (
+                      <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-2">
+                        <div className="w-12 h-12 rounded-full bg-amber-500/20 border border-amber-400/50 flex items-center justify-center">
+                          <Lock size={22} className="text-amber-400" />
+                        </div>
+                        <span className="text-amber-300 text-xs font-semibold">Devoted Only</span>
                       </div>
-                    </div>
+                    ) : (
+                      /* Play Overlay */
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <div className="w-16 h-16 rounded-full bg-primary/20 backdrop-blur-md flex items-center justify-center text-primary scale-50 group-hover:scale-100 transition-transform duration-300">
+                          <Play size={32} className="ml-1" />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Content */}

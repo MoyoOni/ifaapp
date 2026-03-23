@@ -5,9 +5,10 @@ import { EmailService } from './email.service';
 import { PushNotificationService } from './push/push-notification.service';
 import { JobQueueService } from '../queues/job-queue.service';
 import { DatabaseModule } from '../database/database.module';
+import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, PrismaModule],
   controllers: [NotificationsController],
   providers: [
     NotificationService,

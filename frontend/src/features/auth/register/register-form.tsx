@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Lock, User, Phone, Loader2, ArrowLeft, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/shared/hooks/use-auth';
+import { useSearchParams } from 'react-router-dom';
 import { UserRole } from '@common';
 import appLogo from '@/assets/logo.png';
 import GoogleAuthButton from '../components/google-auth-button';
@@ -22,6 +23,8 @@ interface RegisterFormProps {
 
 const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, onSwitchToLogin, onBack }) => {
   const { register } = useAuth();
+  const [searchParams] = useSearchParams();
+  const referredByCode = searchParams.get('ref') || undefined;
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -46,7 +49,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, on
 
     setIsSubmitting(true);
     try {
-      await register(email, password, name, selectedRole, phone || undefined);
+      await register(email, password, name, selectedRole, phone || undefined, referredByCode);
       setRegisteredEmail(email);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Registration failed. Please try again.');

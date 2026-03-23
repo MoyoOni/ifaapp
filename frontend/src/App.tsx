@@ -10,6 +10,7 @@ import { getDashboardPathForRole } from './shared/config/navigation';
 import { ProtectedRoute, AdminRoute } from './shared/components/protected-route';
 import { UserRole } from '@common';
 import { logger } from '@/shared/utils/logger';
+import { usePushNotifications } from '@/shared/hooks/use-push-notifications';
 import OfflineIndicator from './shared/components/offline-indicator';
 import SpiritualJourneyView from './features/client-hub/spiritual-journey-view';
 import CircleDirectory from './features/circles/circle-directory'; // Import CircleDirectory
@@ -22,6 +23,11 @@ import VerifyEmailPage from './pages/VerifyEmailPage';
 import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
 import DonatePage from './pages/DonatePage';
+import LandingPage from './pages/LandingPage';
+import AboutPage from './pages/AboutPage';
+import PricingPage from './pages/PricingPage';
+import SubscriptionConfirmPage from './pages/SubscriptionConfirmPage';
+import SubscriptionManagePage from './pages/SubscriptionManagePage';
 import SentryTestPage from './pages/SentryTestPage';
 import SettingsPage from './pages/SettingsPage';
 import HelpPage from './pages/HelpPage';
@@ -112,11 +118,14 @@ const queryClient = new QueryClient({
   },
 });
 
-const LayoutWrapper: React.FC = () => (
-  <SidebarLayout>
-    <Outlet />
-  </SidebarLayout>
-);
+const LayoutWrapper: React.FC = () => {
+  usePushNotifications();
+  return (
+    <SidebarLayout>
+      <Outlet />
+    </SidebarLayout>
+  );
+};
 
 const HomePage: React.FC = () => {
   const { user, isLoading } = useAuth();
@@ -160,28 +169,7 @@ const HomePage: React.FC = () => {
 
   // Show landing page for non-authenticated users
   if (!user) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center"> {/* Updated background to match new theme */}
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-stone-900 dark:text-stone-100 mb-4">Welcome to Ìlú Àṣẹ</h1>
-          <p className="text-stone-600 mb-8">Your gateway to authentic spiritual guidance</p>
-          <div className="space-x-4">
-            <button
-              onClick={() => navigate('/login')}
-              className="px-6 py-3 bg-primary text-white font-bold rounded-xl hover:opacity-90 transition-colors"
-            >
-              Sign In
-            </button>
-            <button
-              onClick={() => navigate('/signup')}
-              className="px-6 py-3 bg-card border border-primary text-primary font-bold rounded-xl hover:bg-primary/5 transition-colors"
-            >
-              Create Account
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    return <LandingPage />;
   }
 
   // Show loading while redirect happens for authenticated users
@@ -389,15 +377,19 @@ function App() {
                 <Route path="/terms" element={<TermsPage />} />
                 <Route path="/privacy" element={<PrivacyPage />} />
                 <Route path="/donate" element={<DonatePage />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/pricing" element={<PricingPage />} />
                 <Route path="/quick-access" element={<QuickAccessPage />} /> {/* Add quick access route */}
                 <Route path="/test-sentry" element={<SentryTestPage />} /> {/* Sentry testing route */}
                 <Route path="/onboarding" element={<OnboardingView />} />
+                <Route path="/" element={<HomePage />} />
                 <Route element={<LayoutWrapper />}>
+                  <Route path="/subscription/confirm" element={<SubscriptionConfirmPage />} />
+                  <Route path="/subscription/manage" element={<SubscriptionManagePage />} />
                   <Route path="/notifications" element={<NotificationsPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/help" element={<HelpPage />} />
                   <Route path="/vendors" element={<VendorDirectoryPage />} />
-                  <Route path="/" element={<HomePage />} />
                   <Route path="/client/dashboard" element={
                     <ErrorBoundary fallback={<ClientErrorPage />}>
                       <ProtectedRoute allowedRoles={[UserRole.CLIENT, UserRole.ADMIN]}>

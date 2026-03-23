@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, CreditCard, Loader2, MapPin, Truck, CheckCircle2, Store, AlertCircle } from 'lucide-react';
+import { ArrowLeft, CreditCard, Loader2, MapPin, Truck, CheckCircle2, Store, AlertCircle, Sparkles } from 'lucide-react';
+import { useSubscription } from '@/features/subscription/use-subscription';
 import { useCart } from '@/shared/contexts/cart-context';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
@@ -15,7 +16,9 @@ interface CheckoutViewProps {
 
 const CheckoutView: React.FC<CheckoutViewProps> = ({ onBack, onSuccess }) => {
     const { user } = useAuth();
+    const { isDevoted } = useSubscription();
     const { items, totalAmount, clearCart, currency } = useCart();
+    const freeDeliveryEligible = totalAmount >= 100_000;
     const queryClient = useQueryClient();
     const [step, setStep] = useState<'shipping' | 'payment'>('shipping');
     const [loading, setLoading] = useState(false);
@@ -368,6 +371,20 @@ const CheckoutView: React.FC<CheckoutViewProps> = ({ onBack, onSuccess }) => {
                                 </p>
                             )}
 
+                            {/* Free delivery banner */}
+                            {freeDeliveryEligible && isDevoted && (
+                                <div className="flex items-center gap-2 p-3 mb-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl text-sm">
+                                    <Sparkles size={14} className="text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                                    <span className="text-amber-800 dark:text-amber-300 font-semibold">Free local delivery applied — Devoted member benefit</span>
+                                </div>
+                            )}
+                            {freeDeliveryEligible && !isDevoted && (
+                                <div className="flex items-center gap-2 p-3 mb-3 bg-muted/50 border border-border rounded-xl text-sm cursor-pointer hover:bg-muted transition-colors" onClick={() => window.location.href = '/pricing'}>
+                                    <Truck size={14} className="text-muted-foreground flex-shrink-0" />
+                                    <span className="text-muted-foreground">Devoted members get <strong>free local delivery</strong> on this order. <span className="text-primary underline">Upgrade</span></span>
+                                </div>
+                            )}
+
                             <div className="border-t border-border pt-4 space-y-2">
                                 <div className="flex justify-between text-muted-foreground">
                                     <span>Subtotal</span>
@@ -375,7 +392,7 @@ const CheckoutView: React.FC<CheckoutViewProps> = ({ onBack, onSuccess }) => {
                                 </div>
                                 <div className="flex justify-between text-muted-foreground">
                                     <span>Shipping</span>
-                                    <span>Free</span>
+                                    <span>{isDevoted && freeDeliveryEligible ? <span className="text-amber-600 dark:text-amber-400 font-semibold">Free</span> : 'Free'}</span>
                                 </div>
                                 <div className="flex justify-between font-bold text-xl text-foreground pt-2">
                                     <span>Total</span>

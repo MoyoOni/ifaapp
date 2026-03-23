@@ -6,6 +6,8 @@ import { logger } from '@/shared/utils/logger';
 import { isDemoMode } from '@/shared/config/demo-mode';
 import { DEMO_FORUM_CATEGORIES, DEMO_FORUM_THREADS } from './forum-demo';
 import CreateThreadForm from './create-thread-form';
+import { useSubscription } from '@/features/subscription/use-subscription';
+import { useNavigate } from 'react-router-dom';
 
 
 interface ForumCategory {
@@ -82,6 +84,16 @@ const ForumHomeView: React.FC<ForumHomeViewProps> = ({ onSelectThread, onCreateT
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const { isDevoted } = useSubscription();
+  const navigate = useNavigate();
+
+  const handleStartDiscussion = () => {
+    if (!isDevoted) {
+      navigate('/pricing');
+      return;
+    }
+    setShowCreateForm(true);
+  };
 
   // Fetch categories
   const { data: categories = [] } = useQuery<ForumCategory[]>({
@@ -155,10 +167,11 @@ const ForumHomeView: React.FC<ForumHomeViewProps> = ({ onSelectThread, onCreateT
           </div>
 
           <button
-            onClick={() => setShowCreateForm(true)}
+            onClick={handleStartDiscussion}
             className="px-6 py-3 bg-card text-emerald-700 dark:text-emerald-400 rounded-xl font-bold hover:bg-emerald-50 transition-colors shadow-lg flex items-center gap-2"
+            title={isDevoted ? undefined : 'Devoted members can start new discussions'}
           >
-            <Plus size={20} />
+            {isDevoted ? <Plus size={20} /> : <Lock size={20} />}
             Start Discussion
           </button>
         </div>

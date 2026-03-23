@@ -1,6 +1,7 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import PublicProfileView from '@/features/profile/public-profile-view';
+import { ProfileViewsPanel } from '@/features/devoted/profile-views-panel';
 import { useAuth } from '@/shared/hooks/use-auth';
 
 /**
@@ -112,15 +113,18 @@ const ProfilePage: React.FC = () => {
     );
   }
 
+  const isOwnProfile = targetUserId === currentUser?.id;
+
   return (
     <div className="min-h-screen bg-muted/40">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 space-y-6">
         <PublicProfileView
           userId={targetUserId}
           onNavigate={handleNavigate}
           onBack={handleBack}
           currentUserId={currentUser?.id}
         />
+        {isOwnProfile && <ProfileViewsPanel />}
       </div>
     </div>
   );

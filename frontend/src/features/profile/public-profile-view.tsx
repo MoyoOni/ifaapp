@@ -227,10 +227,20 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
                   {roleBadge.label}
                 </span>
 
+                {/* Devoted badge */}
+                {user.subscriptionStatus === 'DEVOTED' && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full text-xs font-bold uppercase tracking-wider">
+                    <Sparkles size={12} /> Devoted
+                  </span>
+                )}
+
                 {user.culturalLevel && (
                   <span className="inline-flex items-center gap-1 px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold uppercase tracking-wider">
                     <Sparkles size={12} />
                     {String(user.culturalLevel).replace(/_/g, ' ')}
+                    {user.subscriptionStatus === 'DEVOTED' && isCurrentUser && (
+                      <span className="ml-1 text-amber-600 dark:text-amber-400 normal-case tracking-normal font-semibold">· 2× growth</span>
+                    )}
                   </span>
                 )}
 

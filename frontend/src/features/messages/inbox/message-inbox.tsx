@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { MessageSquare, Search, Plus, MoreHorizontal, User } from 'lucide-react';
+import { MessageSquare, Search, Plus, MoreHorizontal, User, Lock } from 'lucide-react';
 import { logger } from '@/shared/utils/logger';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getInbox } from '../message-service';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { useSubscription } from '@/features/subscription/use-subscription';
+import { useNavigate } from 'react-router-dom';
+import api from '@/lib/api';
 
 interface Conversation {
   id: string;
@@ -31,6 +34,23 @@ interface MessageInboxProps {
 const MessageInbox: React.FC<MessageInboxProps> = ({ userId, onSelectConversation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const { isDevoted } = useSubscription();
+  const navigate = useNavigate();
+
+  const { data: limitStatus } = useQuery({
+    queryKey: ['message-limit-status'],
+    queryFn: () => api.get('/messaging/limit-status').then(r => r.data),
+    enabled: !isDevoted,
+    staleTime: 60 * 1000,
+  });
+
+  const handleNewMessage = () => {
+    if (!isDevoted && limitStatus && limitStatus.remaining === 0) {
+      navigate('/pricing');
+      return;
+    }
+    // TODO: open new message composer
+  };
 
   const { data: conversations = [], isLoading } = useQuery<Conversation[]>({
     queryKey: ['message-inbox', userId],
@@ -86,9 +106,23 @@ const MessageInbox: React.FC<MessageInboxProps> = ({ userId, onSelectConversatio
                 Unread
               </button>
             </div>
-            <button className="p-3 bg-highlight text-white rounded-xl shadow-lg shadow-highlight/20 hover:bg-yellow-600 transition-all hover:scale-105 active:scale-95" aria-label="Create new message">
-              <Plus size={20} />
-            </button>
+            <div className="flex flex-col items-end gap-1">
+              <button
+                onClick={handleNewMessage}
+                className="p-3 bg-highlight text-white rounded-xl shadow-lg shadow-highlight/20 hover:bg-yellow-600 transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+                aria-label="Create new message"
+              >
+                {!isDevoted && limitStatus?.remaining === 0
+                  ? <Lock size={20} />
+                  : <Plus size={20} />
+                }
+              </button>
+              {!isDevoted && limitStatus && (
+                <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                  {limitStatus.remaining} of {limitStatus.limit} left this month
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>

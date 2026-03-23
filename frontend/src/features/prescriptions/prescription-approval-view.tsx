@@ -402,7 +402,7 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
               rows={3}
-              className="w-full px-4 py-2 bg-muted/50 border border-border rounded-lg text-white focus:outline-none focus:border-highlight"
+              className="w-full px-4 py-2 bg-muted/50 border border-border rounded-lg text-foreground focus:outline-none focus:border-highlight"
               placeholder="Optional: Provide a reason for rejection..."
             />
           </div>

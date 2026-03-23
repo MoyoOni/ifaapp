@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Calendar, Clock, ChevronLeft, ChevronRight, Grid3X3, CalendarDays, LayoutGrid, Loader2, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, ChevronLeft, ChevronRight, Grid3X3, CalendarDays, LayoutGrid, Loader2, AlertCircle, Sparkles } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 
@@ -14,6 +14,7 @@ interface Appointment {
   duration: number;
   status: 'scheduled' | 'completed' | 'cancelled' | 'missed' | 'pending' | 'confirmed';
   topic: string;
+  isPriority: boolean;
 }
 
 const statusClass = (status: string) => {
@@ -57,6 +58,7 @@ const PractitionerCalendarView: React.FC = () => {
       duration: (apt.duration as number) ?? 60,
       status,
       topic: (apt.topic as string) ?? (apt.notes as string) ?? 'Consultation',
+      isPriority: (apt.isPriority as boolean) ?? false,
     };
   });
 
@@ -161,7 +163,10 @@ const PractitionerCalendarView: React.FC = () => {
   const renderDayView = () => {
     const dayApts = appointments
       .filter(a => sameDay(a.date, currentDate))
-      .sort((a, b) => a.date.getTime() - b.date.getTime());
+      .sort((a, b) => {
+        if (b.isPriority !== a.isPriority) return b.isPriority ? 1 : -1;
+        return a.date.getTime() - b.date.getTime();
+      });
 
     return (
       <div className="mt-6 space-y-4">
@@ -170,14 +175,19 @@ const PractitionerCalendarView: React.FC = () => {
         </h2>
         {dayApts.length > 0 ? (
           dayApts.map(apt => (
-            <div key={apt.id} className={`p-4 rounded-lg border-l-4 ${statusClass(apt.status)}`}>
+            <div key={apt.id} className={`p-4 rounded-lg border-l-4 ${apt.isPriority ? 'border-l-amber-500' : ''} ${statusClass(apt.status)}`}>
               <div className="flex justify-between items-start">
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Clock size={16} />
                     <span className="font-medium">{apt.time}</span>
                     <span className="text-muted-foreground">•</span>
                     <span className="font-medium">{apt.duration} min</span>
+                    {apt.isPriority && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 text-xs font-bold">
+                        <Sparkles size={10} /> Devoted Client
+                      </span>
+                    )}
                   </div>
                   <h3 className="font-bold text-lg mt-1">{apt.clientName}</h3>
                   <p className="text-muted-foreground">{apt.topic}</p>

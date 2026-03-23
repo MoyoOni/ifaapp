@@ -15,6 +15,7 @@ import { CompleteLessonDto } from './dto/complete-lesson.dto';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { CourseStatus, LessonType, EnrollmentStatus, CourseLevel } from '@ile-ase/common';
 import { CertificateService } from '../certificates/certificate.service';
+import { UsersService } from '../users/users.service';
 
 /**
  * Academy Service
@@ -25,7 +26,8 @@ import { CertificateService } from '../certificates/certificate.service';
 export class AcademyService {
   constructor(
     private prisma: PrismaService,
-    private certificateService: CertificateService
+    private certificateService: CertificateService,
+    private usersService: UsersService
   ) {}
 
   // ==================== Courses ====================
@@ -553,6 +555,9 @@ export class AcademyService {
       if (enrollment.course.certificateEnabled) {
         await this.certificateService.generateCertificate(enrollmentId);
       }
+
+      // Award XP for course completion (100 XP base, 2× for Devoted)
+      this.usersService.awardXP(enrollment.studentId, 100).catch(() => {/* ignore */});
     }
 
     return this.prisma.enrollment.update({
@@ -616,6 +621,9 @@ export class AcademyService {
         lessonId: dto.lessonId,
       },
     });
+
+    // Award XP for lesson completion (10 XP base, 2× for Devoted)
+    this.usersService.awardXP(currentUser.id, 10).catch(() => {/* ignore */});
 
     // Calculate and update progress
     const totalLessons = await this.prisma.lesson.count({

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Sparkles } from 'lucide-react';
 import api from '@/lib/api';
 import { getDemoAppointmentById, getDemoUserById, type DemoUser } from '@/demo';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { useSubscription } from '@/features/subscription/use-subscription';
 
 interface Appointment {
   id: string;
@@ -22,6 +24,7 @@ interface Appointment {
 
 export const BookingConfirmation: React.FC = () => {
   const { appointmentId } = useParams<{ appointmentId: string }>();
+  const { isDevoted } = useSubscription();
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -108,6 +111,15 @@ export const BookingConfirmation: React.FC = () => {
       <div className="p-4 my-4 text-sm text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30 rounded-lg" role="alert">
         ✓ Consultation Booked Successfully!
       </div>
+
+      {isDevoted && (
+        <div className="p-4 flex items-center gap-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+          <Sparkles size={20} className="text-amber-600 dark:text-amber-400 flex-shrink-0" />
+          <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+            Your booking is priority — the Babalawo will be notified first.
+          </p>
+        </div>
+      )}
 
       <div className="p-4 bg-card rounded-lg shadow">
         <h3 className="text-lg font-semibold">Confirmation Code</h3>

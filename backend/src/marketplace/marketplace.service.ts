@@ -454,9 +454,24 @@ export class MarketplaceService {
       });
     }
 
+    // Free delivery for Devoted members on orders >= ₦100,000 (local delivery)
+    let effectiveShippingCost = dto.shippingCost || 0;
+    const itemsTotal = totalAmount; // before shipping/tax
+    let devotedFreeDelivery = false;
+    if (effectiveShippingCost > 0 && itemsTotal >= 100_000) {
+      const buyer = await this.prisma.user.findUnique({
+        where: { id: currentUser.id },
+        select: { subscriptionStatus: true },
+      });
+      if (buyer?.subscriptionStatus === 'DEVOTED') {
+        effectiveShippingCost = 0;
+        devotedFreeDelivery = true;
+      }
+    }
+
     // Add shipping cost
-    if (dto.shippingCost) {
-      totalAmount += dto.shippingCost;
+    if (effectiveShippingCost) {
+      totalAmount += effectiveShippingCost;
     }
 
     // Calculate VAT (7.5% in Nigeria)
@@ -472,7 +487,7 @@ export class MarketplaceService {
         totalAmount,
         currency: 'NGN',
         taxAmount,
-        shippingCost: dto.shippingCost || 0,
+        shippingCost: effectiveShippingCost,
         shippingAddress: dto.shippingAddress,
         notes: dto.notes,
         items: {
@@ -531,7 +546,7 @@ export class MarketplaceService {
       });
     }
 
-    return order;
+    return { ...order, devotedFreeDelivery };
   }
 
   async findAllOrders(currentUser: CurrentUserPayload, vendorId?: string) {

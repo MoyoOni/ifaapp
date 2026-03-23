@@ -85,7 +85,11 @@ export class AuthService {
     if (slugConflict) {
       slug = generateSlug(user.name, Date.now().toString(36).slice(-4));
     }
-    await this.prisma.user.update({ where: { id: user.id }, data: { slug } });
+    // Generate unique referral code: firstname-6chars e.g. 'adewale-3k9xp2'
+    const firstName = user.name.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+    const suffix = Math.random().toString(36).slice(2, 8);
+    const referralCode = `${firstName}-${suffix}`;
+    await this.prisma.user.update({ where: { id: user.id }, data: { slug, referralCode } });
 
     // Generate tokens
     const tokens = await this.generateTokens({
@@ -99,6 +103,13 @@ export class AuthService {
     this.sendVerificationEmail(user.email, user.name, emailVerificationToken).catch((err) => {
       this.logger.error(`Failed to send verification email to ${user.email}`, err);
     });
+
+    // Link referral if a valid referral code was provided
+    if (dto.referredByCode) {
+      this.linkReferral(user.id, dto.referredByCode).catch((err) => {
+        this.logger.warn(`Referral link failed for code ${dto.referredByCode}`, err);
+      });
+    }
 
     // Send Welcome Message from Chief Adeyemi (Admin)
     if (user.role === UserRole.CLIENT) {
@@ -121,6 +132,14 @@ export class AuthService {
       },
       ...tokens,
     };
+  }
+
+  private async linkReferral(newUserId: string, referralCode: string) {
+    const referrer = await this.prisma.user.findUnique({ where: { referralCode } });
+    if (!referrer || referrer.id === newUserId) return; // invalid or self-referral
+    await this.prisma.referral.create({
+      data: { referrerId: referrer.id, referredId: newUserId, code: referralCode, rewardGranted: false },
+    });
   }
 
   private async sendWelcomeMessage(userId: string) {

@@ -18,6 +18,7 @@ import {
   User,
   BookOpen,
   Activity,
+  MessagesSquare,
   type LucideIcon
 } from 'lucide-react';
 import { UserRole, AdminSubRole } from '@common';
@@ -45,6 +46,7 @@ const CLIENT_NAV_ITEMS: NavItem[] = [
   { id: 'temples', label: 'Temples', icon: Building2, path: '/client/temples' },
   { id: 'learning-path', label: 'Academy', icon: GraduationCap, path: '/academy' },
   { id: 'community-circles', label: 'Community Circles', icon: Users, path: '/circles' },
+  { id: 'forum', label: 'Forum', icon: MessagesSquare, path: '/forum' },
   { id: 'marketplace', label: 'Marketplace', icon: ShoppingBag, path: '/marketplace' },
   { id: 'profile', label: 'My Profile', icon: User, path: '/profile' },
 ];
@@ -58,6 +60,7 @@ const BABALAWO_NAV_ITEMS: NavItem[] = [
   { id: 'service-offerings', label: 'Service Offerings', icon: BookOpen, path: '/practitioner/service-offering' },
   { id: 'temple-connection', label: 'Temple Connection', icon: Building2, path: '/practitioner/temple-connection' },
   { id: 'practice-earnings', label: 'Practice Earnings', icon: DollarSign, path: '/practitioner/earnings' },
+  { id: 'forum', label: 'Forum', icon: MessagesSquare, path: '/forum' },
   { id: 'professional-growth', label: 'Academy', icon: TrendingUp, path: '/academy' },
   { id: 'profile', label: 'My Profile', icon: User, path: '/profile' },
 ];
@@ -70,6 +73,7 @@ const VENDOR_NAV_ITEMS: NavItem[] = [
   { id: 'customer-care', label: 'Customer Care', icon: Users, path: '/vendor/support' },
   { id: 'community-market', label: 'Community Market', icon: ShoppingBag, path: '/marketplace' },
   { id: 'sales-insights', label: 'Revenue/Analytics', icon: BarChart3, path: '/vendor/insights' },
+  { id: 'forum', label: 'Forum', icon: MessagesSquare, path: '/forum' },
   { id: 'academy', label: 'Academy', icon: TrendingUp, path: '/academy' },
   { id: 'profile', label: 'My Profile', icon: User, path: '/profile' },
 ];
@@ -121,6 +125,7 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     path: '/admin/fraud',
     requiredAdminSubRoles: [AdminSubRole.COMPLIANCE, AdminSubRole.SUPER]
   },
+  { id: 'forum', label: 'Forum', icon: MessagesSquare, path: '/forum' },
   { id: 'profile', label: 'My Profile', icon: User, path: '/profile' },
 ];
 

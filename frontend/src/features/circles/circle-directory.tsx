@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Users, UserPlus, Lightbulb, Globe, Lock, MapPin, ChevronRight } from 'lucide-react';
+import { Users, UserPlus, Lightbulb, Globe, Lock, MapPin, ChevronRight, Sparkles } from 'lucide-react';
 import { FeatureHeader } from '@/shared/components/feature-header';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/shared/hooks/use-auth';
@@ -9,6 +9,7 @@ import { useToast } from '@/shared/components/toast';
 import { UserRole } from '@common';
 import { Input, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, Button } from '@/shared/components/ui';
 import { Skeleton, SkeletonText } from '@/shared/components/skeleton';
+import { useSubscription } from '@/features/subscription/use-subscription';
 
 interface CircleDirectoryProps {
   onSelectCircle?: (circleId: string) => void; // Keep for backward compatibility
@@ -22,7 +23,8 @@ interface CircleDirectoryProps {
 const CircleDirectory: React.FC<CircleDirectoryProps> = ({ onSelectCircle, onCreateCircle }) => {
   const { user } = useAuth();
   const toast = useToast();
-  const navigate = useNavigate(); // Added navigate hook
+  const navigate = useNavigate();
+  const { isDevoted } = useSubscription();
   const [searchQuery, setSearchQuery] = useState('');
   const [privacyFilter, setPrivacyFilter] = useState<string>('all');
   const [topicFilter, setTopicFilter] = useState<string>('');
@@ -34,11 +36,13 @@ const CircleDirectory: React.FC<CircleDirectoryProps> = ({ onSelectCircle, onCre
     topic: topicFilter,
   });
 
-  const handleCircleClick = (circleId: string) => {
-    // Call the prop callback if provided (for backward compatibility)
-    onSelectCircle?.(circleId);
-    // Navigate to the circle detail page
-    navigate(`/circles/${circleId}`);
+  const handleCircleClick = (circle: { id: string; slug?: string; isDevoted?: boolean }) => {
+    if (circle.isDevoted && !isDevoted) {
+      navigate('/pricing');
+      return;
+    }
+    onSelectCircle?.(circle.id);
+    navigate(`/circles/${circle.slug || circle.id}`);
   };
 
   const getPrivacyLabel = (privacy: string) => {
@@ -105,17 +109,25 @@ const CircleDirectory: React.FC<CircleDirectoryProps> = ({ onSelectCircle, onCre
               Create Circle
             </button>
           )}
-          {user && user.role !== UserRole.ADMIN && (
+          {user && user.role !== UserRole.ADMIN && isDevoted && (
             <button
               type="button"
-              onClick={() => {
-                const forumUrl = '/forum?category=circle-suggestions&suggest=circle';
-                window.location.href = forumUrl;
-              }}
-              className="px-4 py-2 bg-card text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 rounded-xl font-bold hover:bg-rose-50 dark:bg-rose-950/20 dark:hover:bg-rose-950/30 transition-colors flex items-center gap-2 text-sm"
+              onClick={onCreateCircle}
+              className="px-4 py-2 bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700 transition-colors flex items-center gap-2 text-sm"
             >
-              <Lightbulb size={16} />
-              Suggest Circle
+              <UserPlus size={16} />
+              Create Circle
+            </button>
+          )}
+          {user && user.role !== UserRole.ADMIN && !isDevoted && (
+            <button
+              type="button"
+              onClick={() => navigate('/pricing')}
+              className="px-4 py-2 bg-card text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 rounded-xl font-bold hover:bg-rose-50 dark:bg-rose-950/20 dark:hover:bg-rose-950/30 transition-colors flex items-center gap-2 text-sm"
+              title="Creating circles is a Devoted member benefit"
+            >
+              <Lock size={16} />
+              Create Circle
             </button>
           )}
         </div>
@@ -191,7 +203,7 @@ const CircleDirectory: React.FC<CircleDirectoryProps> = ({ onSelectCircle, onCre
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
               className="bg-card border border-input rounded-2xl overflow-hidden hover:shadow-md transition-shadow"
-              onClick={() => handleCircleClick(circle.slug || circle.id)}
+              onClick={() => handleCircleClick(circle)}
             >
               {/* Banner */}
               {circle.banner ? (
@@ -223,11 +235,17 @@ const CircleDirectory: React.FC<CircleDirectoryProps> = ({ onSelectCircle, onCre
               {/* Card Content */}
               <div className="p-6">
                 {/* Privacy Badge */}
-                <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-2 mb-3 flex-wrap">
                   <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-primary/10 text-xs font-medium text-primary">
                     {getPrivacyIcon(circle.privacy)}
                     {getPrivacyLabel(circle.privacy)}
                   </span>
+                  {circle.isDevoted && (
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-xs font-semibold text-amber-700 dark:text-amber-400">
+                      {isDevoted ? <Sparkles size={10} /> : <Lock size={10} />}
+                      Devoted only
+                    </span>
+                  )}
                 </div>
 
                 {/* Title */}

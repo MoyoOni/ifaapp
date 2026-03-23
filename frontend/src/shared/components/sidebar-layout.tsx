@@ -14,6 +14,12 @@ import {
     Settings,
     HelpCircle,
     Search as SearchIcon,
+    LayoutDashboard,
+    Building2,
+    Users,
+    Shield,
+    Crown,
+    type LucideIcon,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../hooks/use-auth';
@@ -22,9 +28,10 @@ import { LanguageSwitcher } from './language-switcher';
 import { ModeToggle } from './mode-toggle';
 import NotificationDropdown from './notification-dropdown';
 import api from '@/lib/api';
-import { getNavItemsForRole, getRoleDisplayName, getRoleBadgeColor, type NavItem } from '../config/navigation';
+import { getNavItemsForRole, getRoleDisplayName, getRoleBadgeColor, getDashboardPathForRole, type NavItem } from '../config/navigation';
 import { logger } from '@/shared/utils/logger';
 import { useDailyOdu } from '@/shared/hooks/use-daily-odu';
+import { useSubscription } from '@/features/subscription/use-subscription';
 import { SearchModal } from './search-modal';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ProfileMenuDropdown } from './profile-menu-dropdown';
@@ -34,11 +41,57 @@ interface SidebarLayoutProps {
     children: React.ReactNode;
 }
 
+// Mobile bottom tab bar — 4 fixed tabs + "More" per role
+interface BottomTab {
+    id: string;
+    label: string;
+    icon: LucideIcon;
+    path?: string;
+    action?: 'more';
+}
+
+function getMobileBottomTabs(role: string | undefined): BottomTab[] {
+    switch (role) {
+        case 'BABALAWO':
+            return [
+                { id: 'home', label: 'Home', icon: LayoutDashboard, path: '/practitioner/dashboard' },
+                { id: 'temples', label: 'Temple', icon: Building2, path: '/practitioner/temple-connection' },
+                { id: 'messages', label: 'Messages', icon: MessageSquare, path: '/messages' },
+                { id: 'seekers', label: 'Seekers', icon: Users, path: '/practitioner/my-seekers' },
+                { id: 'more', label: 'More', icon: Menu, action: 'more' },
+            ];
+        case 'VENDOR':
+            return [
+                { id: 'home', label: 'Home', icon: LayoutDashboard, path: '/vendor/dashboard' },
+                { id: 'messages', label: 'Messages', icon: MessageSquare, path: '/messages' },
+                { id: 'profile', label: 'Profile', icon: User, path: '/profile' },
+                { id: 'more', label: 'More', icon: Menu, action: 'more' },
+            ];
+        case 'ADMIN':
+        case 'ADVISORY_BOARD_MEMBER':
+            return [
+                { id: 'home', label: 'Home', icon: Shield, path: '/admin' },
+                { id: 'messages', label: 'Messages', icon: MessageSquare, path: '/messages' },
+                { id: 'profile', label: 'Profile', icon: User, path: '/profile' },
+                { id: 'more', label: 'More', icon: Menu, action: 'more' },
+            ];
+        default: // CLIENT
+            return [
+                { id: 'home', label: 'Home', icon: LayoutDashboard, path: '/client/dashboard' },
+                { id: 'temples', label: 'Temples', icon: Building2, path: '/client/temples' },
+                { id: 'guide', label: 'Find Guide', icon: SearchIcon, path: '/babalawo' },
+                { id: 'circles', label: 'Circles', icon: Users, path: '/circles' },
+                { id: 'more', label: 'More', icon: Menu, action: 'more' },
+            ];
+    }
+}
+
 export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
     children
 }) => {
     logger.info('[SidebarLayout] Render');
     const { user, logout } = useAuth();
+    const { isDevoted } = useSubscription();
     const navigate = useNavigate();
     const location = useLocation();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -213,7 +266,12 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                 {/* Brand Header */}
                 <div className={cn("p-6 pb-4 border-b border-border/50", !showExpanded && "px-3")}>
                     <div className="flex items-center gap-3 justify-between">
-                        <div className="flex items-center gap-3 min-w-0">
+                        <button
+                            type="button"
+                            onClick={() => handleNavClick('/')}
+                            className="flex items-center gap-3 min-w-0 hover:opacity-80 transition-opacity"
+                            title="Go to Home"
+                        >
                             <img src={appLogo} alt="Ìlú Àṣẹ" className="w-10 h-10 rounded-xl shadow-lg shadow-primary/20 flex-shrink-0 object-cover" />
                             <AnimatePresence mode="wait">
                                 {showExpanded && (
@@ -232,7 +290,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                                     </motion.div>
                                 )}
                             </AnimatePresence>
-                        </div>
+                        </button>
                         {showExpanded && (
                             <button
                                 onClick={toggleSidebar}
@@ -305,7 +363,12 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                                     </div>
                                 </div>
                                 <div className="flex-1 text-left min-w-0">
-                                    <p className="text-sm font-bold truncate text-foreground">{user?.name || 'User'}</p>
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                        <p className="text-sm font-bold truncate text-foreground">{user?.name || 'User'}</p>
+                                        {isDevoted && (
+                                            <Crown size={12} className="text-amber-500 flex-shrink-0" aria-label="Devoted member" />
+                                        )}
+                                    </div>
                                     <span className={cn(
                                         "text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide inline-block mt-1",
                                         roleBadgeColor
@@ -335,6 +398,10 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                 {/* Legal Links Footer */}
                 {showExpanded && (
                     <div className="px-4 pb-2 flex gap-3 justify-center flex-wrap">
+                        <a href="/about" className="text-[10px] text-muted-foreground hover:text-highlight transition-colors">About</a>
+                        <span className="text-[10px] text-muted-foreground">·</span>
+                        <a href="/pricing" className="text-[10px] text-muted-foreground hover:text-highlight transition-colors">Pricing</a>
+                        <span className="text-[10px] text-muted-foreground">·</span>
                         <a href="/terms" className="text-[10px] text-muted-foreground hover:text-highlight transition-colors">Terms</a>
                         <span className="text-[10px] text-muted-foreground">·</span>
                         <a href="/privacy" className="text-[10px] text-muted-foreground hover:text-highlight transition-colors">Privacy</a>
@@ -480,12 +547,17 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                             <Menu size={24} />
                         </motion.div>
                     </button>
-                    <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => handleNavClick('/')}
+                        className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                        title="Go to Home"
+                    >
                         <img src={appLogo} alt="Ìlú Àṣẹ" className="w-8 h-8 rounded-lg object-cover" />
                         <h1 className="text-lg font-bold brand-font text-foreground">
                             Ìlú <span className="text-primary">Àṣẹ</span>
                         </h1>
-                    </div>
+                    </button>
                     <div className="flex items-center gap-1">
                         <ModeToggle />
                         <div className="relative">
@@ -559,6 +631,54 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
 
             {/* Global Search Modal */}
             <SearchModal open={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+
+            {/* Mobile Bottom Tab Bar */}
+            {(() => {
+                const bottomTabs = getMobileBottomTabs(user?.role);
+                return (
+                    <nav className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-card/95 backdrop-blur-md border-t border-border shadow-elevation-3">
+                        <div className="flex items-stretch">
+                            {bottomTabs.map((tab) => {
+                                const isActive = tab.path
+                                    ? (tab.path === '/admin'
+                                        ? location.pathname === '/admin'
+                                        : location.pathname.startsWith(tab.path))
+                                    : false;
+                                return (
+                                    <button
+                                        key={tab.id}
+                                        type="button"
+                                        onClick={() => {
+                                            if (tab.action === 'more') {
+                                                toggleMobileMenu();
+                                            } else if (tab.path) {
+                                                handleNavClick(tab.path);
+                                            }
+                                        }}
+                                        className={cn(
+                                            "flex-1 flex flex-col items-center justify-center gap-1 py-2.5 px-1 transition-all duration-200 active:scale-95",
+                                            isActive
+                                                ? "text-primary"
+                                                : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        <tab.icon size={22} className={cn("transition-colors", isActive && "drop-shadow-sm")} />
+                                        <span className={cn(
+                                            "text-[10px] font-medium leading-none",
+                                            isActive ? "font-bold" : ""
+                                        )}>
+                                            {tab.label}
+                                        </span>
+                                        {isActive && (
+                                            <span className="absolute top-0 w-8 h-0.5 rounded-b-full bg-primary" />
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </nav>
+                );
+            })()}
         </div>
 
     );

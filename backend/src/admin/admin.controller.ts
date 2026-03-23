@@ -41,6 +41,12 @@ export class AdminController {
     return this.adminService.getPlatformStats(currentUser);
   }
 
+  @Get('subscription-stats')
+  @Roles(UserRole.ADMIN)
+  async getSubscriptionStats() {
+    return this.adminService.getSubscriptionStats();
+  }
+
   @Get('users')
   @Roles(UserRole.ADMIN)
   @AdminRoles(AdminSubRole.SUPPORT, AdminSubRole.SUPER)

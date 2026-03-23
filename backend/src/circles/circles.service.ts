@@ -37,11 +37,15 @@ export class CirclesService {
    * Only admins can create circles directly
    */
   async create(dto: CreateCircleDto, currentUser: CurrentUserPayload) {
-    // Only admins can create circles
+    // Only admins or Devoted members can create circles
     if (currentUser.role !== 'ADMIN') {
-      throw new ForbiddenException(
-        'Only admins can create circles. Please suggest a circle in the forum.'
-      );
+      const user = await this.prisma.user.findUnique({
+        where: { id: currentUser.id },
+        select: { subscriptionStatus: true },
+      });
+      if (user?.subscriptionStatus !== 'DEVOTED') {
+        throw new ForbiddenException('Creating circles is a Devoted member benefit. Join and participate in any existing circle for free.');
+      }
     }
 
     // Generate unique slug
@@ -426,6 +430,17 @@ export class CirclesService {
 
     if (!circle.active) {
       throw new BadRequestException('This circle is no longer active');
+    }
+
+    // Gate Devoted-only circles
+    if (circle.isDevoted) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: currentUser.id },
+        select: { subscriptionStatus: true },
+      });
+      if (user?.subscriptionStatus !== 'DEVOTED') {
+        throw new ForbiddenException('This circle is exclusive to Devoted members. Upgrade at /pricing.');
+      }
     }
 
     // Check if already a member

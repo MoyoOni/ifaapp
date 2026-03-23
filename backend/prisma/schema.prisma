@@ -93,8 +93,19 @@ model User {
   castVotes                 AdvisoryVoteCast[]       @relation("CastVotes")
   proposedVotes             AdvisoryVote[]           @relation("ProposedVotes")
   templesJoined             Temple[]                 @relation("TempleMembers")
+  subscriptions             Subscription[]           @relation("UserSubscriptions")
+  profileViewsGiven         ProfileView[]            @relation("ProfileViewGiver")
+  profileViewsReceived      ProfileView[]            @relation("ProfileViewReceiver")
+  referralsMade             Referral[]               @relation("ReferralsMade")
+  referralReceived          Referral?                @relation("ReferralReceived")
+
+  // Subscription / billing fields
+  subscriptionStatus        String                   @default("FREE") // FREE | DEVOTED | EXPIRED
+  subscriptionEnd           DateTime?
+  referralCode              String?                  @unique
 
   @@index([slug])
+  @@index([subscriptionStatus])
   @@map("users")
 }
 
@@ -258,6 +269,7 @@ model Appointment {
   notes        String?
   cancelledAt  DateTime?
   cancelledBy  String?
+  isPriority   Boolean       @default(false)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   recordingUrl String?
@@ -646,6 +658,7 @@ model Course {
   enrolledCount      Int            @default(0)
   lessonCount        Int            @default(0)
   certificateEnabled Boolean        @default(true)
+  isDevoted          Boolean        @default(false) // V8: gate behind Devoted tier
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
   instructor         User           @relation("CourseInstructor", fields: [instructorId], references: [id], onDelete: Cascade)
@@ -950,6 +963,7 @@ model Circle {
   banner             String?
   memberCount        Int               @default(0)
   active             Boolean           @default(true)
+  isDevoted          Boolean           @default(false) // V8: gate behind Devoted tier
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
   approvedAt         DateTime?
@@ -1289,4 +1303,74 @@ model AuditLog {
   @@index([createdAt])
   @@index([userId, action])
   @@map("audit_logs")
+}
+
+// ─── V8: Monetisation Models ─────────────────────────────────────────────────
+
+model Subscription {
+  id              String             @id @default(cuid())
+  userId          String
+  plan            SubscriptionPlan
+  status          SubscriptionStatus @default(ACTIVE)
+  paystackSubId   String?            @unique
+  paystackRef     String?            // transaction reference
+  startDate       DateTime
+  endDate         DateTime
+  autoRenew       Boolean            @default(true)
+  amountPaid      Int                // in kobo (₦25,000 = 2500000)
+  currency        String             @default("NGN")
+  reminderSent    Boolean            @default(false)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  user User @relation("UserSubscriptions", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([endDate])
+  @@index([paystackSubId])
+  @@map("subscriptions")
+}
+
+enum SubscriptionPlan {
+  QUARTERLY
+  ANNUAL
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  PAST_DUE
+}
+
+model ProfileView {
+  id        String   @id @default(cuid())
+  viewerId  String
+  profileId String
+  viewedAt  DateTime @default(now())
+
+  viewer  User @relation("ProfileViewGiver",    fields: [viewerId],  references: [id], onDelete: Cascade)
+  profile User @relation("ProfileViewReceiver", fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([viewerId, profileId]) // one row per viewer-profile pair (updated on revisit)
+  @@index([profileId, viewedAt])
+  @@index([viewerId])
+  @@map("profile_views")
+}
+
+model Referral {
+  id             String   @id @default(cuid())
+  referrerId     String
+  referredId     String   @unique // each user can only be referred once
+  code           String
+  rewardGranted  Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  referrer User @relation("ReferralsMade",    fields: [referrerId], references: [id], onDelete: Cascade)
+  referred User @relation("ReferralReceived", fields: [referredId], references: [id], onDelete: Cascade)
+
+  @@index([referrerId])
+  @@index([code])
+  @@map("referrals")
 }

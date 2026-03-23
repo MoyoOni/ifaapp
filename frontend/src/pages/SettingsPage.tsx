@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings, User, Bell, Shield, Palette, Mail, Lock, CreditCard, Trash2, LogOut, AtSign, Check, X, Loader2, MessageCircle, Sun, Moon } from 'lucide-react';
+import { Settings, User, Bell, Shield, Palette, Mail, Lock, CreditCard, Trash2, LogOut, AtSign, Check, X, Loader2, MessageCircle, Sun, Moon, Sparkles, Crown, ArrowRight, AlertCircle } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { useToast } from '@/shared/components/toast';
 import api from '@/lib/api';
+import { useSubscription } from '@/features/subscription/use-subscription';
+import ReferralPanel from '@/features/devoted/referral-panel';
 
 type SettingsState = {
   notifications: {
@@ -133,8 +135,20 @@ const SettingsPage: React.FC = () => {
     saveSettingsMutation.mutate(updated);
   };
 
+  const { isDevoted, isFree, plan, endDate, daysRemaining, status, autoRenew } = useSubscription();
+
+  const cancelSubscriptionMutation = useMutation({
+    mutationFn: () => api.post('/subscriptions/cancel'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subscription'] });
+      toast.success('Your subscription will not renew. You keep Devoted access until your period ends.');
+    },
+    onError: () => toast.error('Could not cancel subscription. Please try again.'),
+  });
+
   const sections = [
     { id: 'account', label: 'Account', icon: User },
+    { id: 'subscription', label: 'Subscription', icon: Crown },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'privacy', label: 'Privacy', icon: Shield },
     { id: 'appearance', label: 'Appearance', icon: Palette },
@@ -328,6 +342,150 @@ const SettingsPage: React.FC = () => {
                       </button>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {activeSection === 'subscription' && (
+                <div>
+                  <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200 mb-6 flex items-center gap-2">
+                    <Crown className="text-amber-500" size={24} /> Subscription
+                  </h2>
+
+                  {isDevoted ? (
+                    <div className="space-y-6">
+                      {/* Active Devoted card */}
+                      <div className="rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/20 border border-amber-200 dark:border-amber-800 p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center">
+                            <Sparkles size={18} className="text-white" />
+                          </div>
+                          <div>
+                            <p className="font-bold text-amber-800 dark:text-amber-300 text-lg">Devoted Member</p>
+                            <p className="text-amber-600 dark:text-amber-500 text-sm">
+                              {plan === 'ANNUAL' ? 'Annual plan' : 'Quarterly plan'}
+                            </p>
+                          </div>
+                          <span className="ml-auto px-3 py-1 rounded-full bg-amber-500 text-white text-xs font-bold uppercase tracking-wide">
+                            {status}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                          <div className="bg-white/60 dark:bg-black/20 rounded-xl p-3">
+                            <p className="text-xs text-amber-600 dark:text-amber-500 font-medium mb-0.5">Access until</p>
+                            <p className="font-bold text-amber-800 dark:text-amber-300">
+                              {endDate ? new Date(endDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                            </p>
+                          </div>
+                          <div className="bg-white/60 dark:bg-black/20 rounded-xl p-3">
+                            <p className="text-xs text-amber-600 dark:text-amber-500 font-medium mb-0.5">Days remaining</p>
+                            <p className="font-bold text-amber-800 dark:text-amber-300">{daysRemaining ?? '—'}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2 mb-5">
+                          {[
+                            'Selected premium Academy courses',
+                            'Exclusive Community Circles',
+                            'Unlimited messaging',
+                            'Free local delivery above ₦100k',
+                            'Devoted badge on profile',
+                          ].map((benefit) => (
+                            <span key={benefit} className="inline-flex items-center gap-1 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 text-xs font-medium px-2.5 py-1 rounded-full">
+                              <Check size={10} /> {benefit}
+                            </span>
+                          ))}
+                        </div>
+
+                        {autoRenew ? (
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs text-amber-600 dark:text-amber-500">Auto-renews on expiry</p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (window.confirm('Cancel auto-renewal? You keep Devoted access until the period ends.')) {
+                                  cancelSubscriptionMutation.mutate();
+                                }
+                              }}
+                              disabled={cancelSubscriptionMutation.isPending}
+                              className="text-xs text-red-600 dark:text-red-400 hover:underline font-medium disabled:opacity-50"
+                            >
+                              {cancelSubscriptionMutation.isPending ? 'Cancelling...' : 'Cancel renewal'}
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-500">
+                            <AlertCircle size={12} />
+                            Auto-renewal cancelled — access ends on expiry date
+                          </div>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => navigate('/subscription/manage')}
+                        className="w-full flex items-center justify-between px-4 py-3 bg-muted/60 hover:bg-muted rounded-xl transition-colors text-stone-700 dark:text-stone-300"
+                      >
+                        <span className="font-medium">Manage subscription & billing</span>
+                        <ArrowRight size={16} />
+                      </button>
+
+                      {/* Referral panel */}
+                      <div className="rounded-2xl border border-border bg-card p-6">
+                        <ReferralPanel />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {/* Free tier */}
+                      <div className="rounded-2xl border border-border bg-muted/30 p-6 text-center">
+                        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
+                          <User size={22} className="text-muted-foreground" />
+                        </div>
+                        <p className="font-bold text-foreground mb-1">Seeker — Free</p>
+                        <p className="text-sm text-muted-foreground mb-4">Access core platform features at no cost.</p>
+                        <div className="flex flex-wrap gap-2 justify-center mb-5">
+                          {['Browse temples & Babalawos', 'Book consultations', 'Community forum', 'Marketplace'].map((f) => (
+                            <span key={f} className="inline-flex items-center gap-1 bg-muted text-muted-foreground text-xs px-2.5 py-1 rounded-full">
+                              <Check size={10} /> {f}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20 p-6">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Sparkles size={18} className="text-amber-600 dark:text-amber-400" />
+                          <h3 className="font-bold text-amber-800 dark:text-amber-300">Become Devoted</h3>
+                        </div>
+                        <p className="text-sm text-amber-700 dark:text-amber-400 mb-4">
+                          Unlock premium Academy courses, exclusive Circles, unlimited messaging, and more.
+                        </p>
+                        <div className="grid grid-cols-2 gap-3 mb-5 text-sm">
+                          <div className="bg-white/60 dark:bg-black/20 rounded-xl p-3 text-center">
+                            <p className="font-bold text-amber-800 dark:text-amber-300 text-lg">₦25,000</p>
+                            <p className="text-amber-600 dark:text-amber-500 text-xs">3 months</p>
+                          </div>
+                          <div className="bg-white/60 dark:bg-black/20 rounded-xl p-3 text-center">
+                            <p className="font-bold text-amber-800 dark:text-amber-300 text-lg">₦100,000</p>
+                            <p className="text-amber-600 dark:text-amber-500 text-xs">1 year · best value</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => navigate('/pricing')}
+                          className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold transition-colors"
+                        >
+                          <Sparkles size={15} /> Become Devoted <ArrowRight size={15} />
+                        </button>
+                      </div>
+
+                      {/* Referral panel — available to all users */}
+                      <div className="rounded-2xl border border-border bg-card p-6">
+                        <ReferralPanel />
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

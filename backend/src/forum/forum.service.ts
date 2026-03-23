@@ -166,6 +166,17 @@ export class ForumService {
   }
 
   async createThread(dto: CreateThreadDto, currentUser: CurrentUserPayload) {
+    // Devoted gate: only Devoted (or admin) can start new forum topics
+    if (currentUser.role !== 'ADMIN') {
+      const user = await this.prisma.user.findUnique({
+        where: { id: currentUser.id },
+        select: { subscriptionStatus: true },
+      });
+      if (user?.subscriptionStatus !== 'DEVOTED') {
+        throw new ForbiddenException('Starting new forum topics is a Devoted member benefit. You can still reply to any existing thread.');
+      }
+    }
+
     // Verify category exists
     const category = await this.prisma.forumCategory.findUnique({
       where: { id: dto.categoryId },

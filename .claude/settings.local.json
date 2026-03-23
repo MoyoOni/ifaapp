@@ -162,7 +162,13 @@
       "Bash(powershell -ExecutionPolicy Bypass -File deploy.ps1)",
       "Bash(docker info:*)",
       "Bash(git log:*)",
-      "Bash(\"c:/Users/Test/ifa_app/frontend/src/index.css\")"
+      "Bash(\"c:/Users/Test/ifa_app/frontend/src/index.css\")",
+      "Bash(python3 -c \":*)",
+      "Bash(find /c/Users/Test/ifa_app -name *.env.production -o -name *.env.prod)",
+      "Bash(find /c/Users/Test/ifa_app/backend/src -name *push* -o -name *device-token*)",
+      "Bash(find /c/Users/Test/ifa_app/frontend/src -name *push* -o -name *notification*)",
+      "Bash(npm install:*)",
+      "Bash(ls c:/Users/Test/ifa_app/backend/.env*)"
     ]
   }
 }
