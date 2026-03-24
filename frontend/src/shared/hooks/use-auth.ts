@@ -5,6 +5,7 @@ import api from '@/lib/api';
 import { DEMO_USERS } from '@/demo';
 import { logger, setLogContext, clearLogContext } from '@/shared/utils/logger';
 import * as Sentry from '@sentry/react';
+import { registerPushNotifications, deregisterPushNotifications } from '@/lib/firebase-messaging';
 
 interface User {
   id: string;
@@ -21,6 +22,7 @@ interface User {
   culturalLevel?: string;
   isImpersonated?: boolean;
   impersonatorId?: string;
+  passedCulturalOrientation?: boolean;
 }
 
 interface AuthState {
@@ -118,6 +120,7 @@ export function useAuth(): AuthState & {
       setTokenCheck(true);
       setUser(userResponse);
       setLogContext({ userId: userResponse.id });
+      registerPushNotifications().catch(() => {});
     } catch (error: any) {
       // Always capture authentication errors to Sentry
       Sentry.captureException(error, {
@@ -155,6 +158,7 @@ export function useAuth(): AuthState & {
       setTokenCheck(true);
       setUser(userWithOnboarded);
       setLogContext({ userId: userWithOnboarded.id });
+      registerPushNotifications().catch(() => {});
 
       logger.log('Quick Access: Successfully logged in', userWithOnboarded);
     } catch (error: any) {
@@ -180,6 +184,7 @@ export function useAuth(): AuthState & {
       setTokenCheck(true);
       setUser(userResponse);
       setLogContext({ userId: userResponse.id });
+      registerPushNotifications().catch(() => {});
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message || 'Registration failed';
       throw new Error(errorMessage);
@@ -188,6 +193,7 @@ export function useAuth(): AuthState & {
 
   const logout = () => {
     clearLogContext();
+    deregisterPushNotifications().catch(() => {});
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('userId');

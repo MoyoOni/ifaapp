@@ -23,7 +23,11 @@ export class CreateProductDto {
 
   @IsString()
   @MinLength(1)
-  declare category: string; // artifacts, books, music, services, ingredients
+  declare category: string; // sacred-ritual, education, apparel, art-decor, cultural-lifestyle, premium-collector, gift-bundles, digital
+
+  @IsString()
+  @IsOptional()
+  declare subcategory?: string; // e.g. divination-tools, beads-jewelry
 
   @IsEnum(ProductType)
   @IsOptional()
@@ -66,6 +70,10 @@ export class CreateProductDto {
   @IsEnum(VerifiedTier)
   @IsOptional()
   declare verifiedTier?: VerifiedTier;
+
+  @IsBoolean()
+  @IsOptional()
+  declare requiresInitiation?: boolean; // Gate for initiated practitioners only
 
   @IsBoolean()
   @IsOptional()

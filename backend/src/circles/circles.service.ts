@@ -507,6 +507,38 @@ export class CirclesService {
   }
 
   /**
+   * Become a Circle Patron (requires Devoted subscription)
+   */
+  async becomePatron(circleId: string, currentUser: CurrentUserPayload) {
+    const membership = await this.prisma.circleMember.findUnique({
+      where: { circleId_userId: { circleId, userId: currentUser.id } },
+    });
+
+    if (!membership || membership.status !== 'ACTIVE') {
+      throw new BadRequestException('You must be an active member to become a patron');
+    }
+
+    if (membership.role === 'PATRON') {
+      throw new BadRequestException('You are already a patron of this circle');
+    }
+
+    // Verify Devoted subscription
+    const user = await this.prisma.user.findUnique({
+      where: { id: currentUser.id },
+      select: { subscriptionStatus: true },
+    });
+
+    if (user?.subscriptionStatus !== 'DEVOTED') {
+      throw new ForbiddenException('Patron status requires a Devoted subscription');
+    }
+
+    return this.prisma.circleMember.update({
+      where: { id: membership.id },
+      data: { role: 'PATRON' },
+    });
+  }
+
+  /**
    * Leave a circle
    */
   async leaveCircle(circleId: string, currentUser: CurrentUserPayload) {

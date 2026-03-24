@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, Shield, MessageSquare,
   AlertTriangle, DollarSign, BarChart3,
-  Building2, Store, Activity, XCircle, Crown
+  Building2, Store, Activity, XCircle, Crown, Flag, ScrollText, Lock
 } from 'lucide-react';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { usePrompt } from '@/hooks/use-prompt';
@@ -25,6 +25,9 @@ import AdminUserManagementTab from './admin-user-management-tab';
 import AdminManagementView from './admin-management-view';
 import PaymentVerificationView from './payment-verification-view';
 import AdminSubscriptionTab from './admin-subscription-tab';
+import AdminForumReportsTab from './admin-forum-reports-tab';
+import AdminAuditLogTab from './admin-audit-log-tab';
+import AdminSacredContentTab from './admin-sacred-content-tab';
 import { AdminUser, VerificationApplication } from './admin-shared-components';
 import { useToast } from '@/shared/components/toast';
 import { TabErrorBoundary } from '@/shared/components/tab-error-boundary';
@@ -43,7 +46,8 @@ type AdminTab =
   | 'overview' | 'verification' | 'temples' | 'vendors'
   | 'disputes' | 'withdrawals' | 'analytics' | 'fraud'
   | 'content' | 'users' | 'circles' | 'quality' | 'health'
-  | 'admin-management' | 'payment-verification' | 'subscriptions';
+  | 'admin-management' | 'payment-verification' | 'subscriptions'
+  | 'forum-reports' | 'audit-log' | 'sacred-content';
 
 interface AdminDashboardViewProps {
   initialTab?: AdminTab;
@@ -180,6 +184,9 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ initialTab }) =
     { id: 'admin-management' as AdminTab, label: 'Admin Management', icon: Shield },
     { id: 'payment-verification' as AdminTab, label: 'Payment Verification', icon: DollarSign },
     { id: 'subscriptions' as AdminTab, label: 'Subscriptions', icon: Crown },
+    { id: 'forum-reports' as AdminTab, label: 'Forum Reports', icon: Flag },
+    { id: 'sacred-content' as AdminTab, label: 'Sacred Content', icon: Lock },
+    { id: 'audit-log' as AdminTab, label: 'Audit Log', icon: ScrollText },
   ];
 
   const renderTabContent = () => {
@@ -232,6 +239,12 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ initialTab }) =
         return <TabErrorBoundary fallback={<TabFallback icon={DollarSign} label="Payment Verification" />} tabName="payment-verification"><PaymentVerificationView /></TabErrorBoundary>;
       case 'subscriptions':
         return <TabErrorBoundary fallback={<TabFallback icon={Crown} label="Subscriptions" />} tabName="subscriptions"><AdminSubscriptionTab /></TabErrorBoundary>;
+      case 'forum-reports':
+        return <TabErrorBoundary fallback={<TabFallback icon={Flag} label="Forum Reports" />} tabName="forum-reports"><AdminForumReportsTab /></TabErrorBoundary>;
+      case 'sacred-content':
+        return <TabErrorBoundary fallback={<TabFallback icon={Lock} label="Sacred Content" />} tabName="sacred-content"><AdminSacredContentTab /></TabErrorBoundary>;
+      case 'audit-log':
+        return <TabErrorBoundary fallback={<TabFallback icon={ScrollText} label="Audit Log" />} tabName="audit-log"><AdminAuditLogTab /></TabErrorBoundary>;
       default:
         return (
           <div className="bg-card rounded-2xl p-6 border border-border">

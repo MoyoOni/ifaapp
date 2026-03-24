@@ -12,6 +12,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
+import { RefundOrderDto } from './dto/refund-order.dto';
 import { CreateProductReviewDto } from './dto/create-product-review.dto';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { VendorStatus, ProductStatus, OrderStatus, VerifiedTier } from '@ile-ase/common';
@@ -546,6 +547,14 @@ export class MarketplaceService {
       });
     }
 
+    // Fire email notifications (non-blocking — don't fail the order if email fails)
+    this.orderNotificationService.notifyOrderCreated({
+      ...order,
+      customer: (order as any).customer ?? { id: currentUser.id, name: (currentUser as any).name ?? 'Customer', email: currentUser.email ?? '' },
+    } as any).catch((err: Error) => {
+      this.logger.warn(`Order created email failed for ${order.id}: ${err.message}`);
+    });
+
     return { ...order, devotedFreeDelivery };
   }
 
@@ -704,15 +713,81 @@ export class MarketplaceService {
       updateData.notes = dto.notes;
     }
 
-    return this.prisma.order.update({
+    const previousStatus = order.status;
+
+    const updatedOrder = await this.prisma.order.update({
       where: { id: orderId },
       data: updateData,
       include: {
-        items: {
-          include: { product: true },
-        },
+        items: { include: { product: true } },
+        vendor: { include: { user: { select: { id: true, name: true, email: true } } } },
+        customer: { select: { id: true, name: true, email: true } },
       },
     });
+
+    // Fire status-change email notifications (non-blocking)
+    if (dto.status && dto.status !== previousStatus) {
+      this.orderNotificationService.notifyOrderStatusChange(updatedOrder as any, previousStatus).catch((err: Error) => {
+        this.logger.warn(`Order status email failed for ${orderId}: ${err.message}`);
+      });
+    }
+
+    // Fire tracking notification when tracking number is added
+    if (dto.trackingNumber && !order.trackingNumber) {
+      this.orderNotificationService.notifyTrackingAdded(updatedOrder as any).catch((err: Error) => {
+        this.logger.warn(`Order tracking email failed for ${orderId}: ${err.message}`);
+      });
+    }
+
+    return updatedOrder;
+  }
+
+  async refundOrder(orderId: string, dto: RefundOrderDto, currentUser: CurrentUserPayload) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        items: { include: { product: true } },
+        vendor: { include: { user: { select: { id: true, name: true, email: true } } } },
+        customer: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    if (!order) throw new NotFoundException('Order not found');
+
+    // Only ADMIN or the vendor who owns the order can issue a refund
+    const vendor = await this.prisma.vendor.findUnique({ where: { userId: currentUser.id } });
+    if (currentUser.role !== 'ADMIN' && (!vendor || order.vendorId !== vendor.id)) {
+      throw new ForbiddenException('Only the vendor or admin can issue a refund');
+    }
+
+    // Can only refund PAID, SHIPPED, or DELIVERED orders
+    if (!['PAID', 'SHIPPED', 'DELIVERED'].includes(order.status)) {
+      throw new BadRequestException(`Cannot refund an order with status ${order.status}`);
+    }
+
+    const refundAmount = dto.refundAmount ?? order.totalAmount;
+
+    const refunded = await this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        status: OrderStatus.REFUNDED,
+        refundedAt: new Date(),
+        refundAmount,
+        refundReason: dto.refundReason,
+      },
+      include: {
+        items: { include: { product: true } },
+        vendor: { include: { user: { select: { id: true, name: true, email: true } } } },
+        customer: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    // Notify customer via email (non-blocking)
+    this.orderNotificationService.notifyOrderStatusChange(refunded as any, order.status).catch((err: Error) => {
+      this.logger.warn(`Refund notification email failed for ${orderId}: ${err.message}`);
+    });
+
+    return refunded;
   }
 
   // ==================== Product Reviews ====================

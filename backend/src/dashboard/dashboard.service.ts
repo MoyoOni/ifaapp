@@ -304,6 +304,98 @@ export class DashboardService {
   }
 
   /**
+   * Get detailed analytics for a babalawo over a time period
+   */
+  async getBabalawoAnalytics(userId: string, period: '7d' | '30d' | '90d' = '30d') {
+    const days = period === '7d' ? 7 : period === '90d' ? 90 : 30;
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+    const sinceStr = since.toISOString().split('T')[0];
+
+    // Consultation volume grouped by week
+    const appointments = await this.prisma.appointment.findMany({
+      where: {
+        babalawoId: userId,
+        date: { gte: sinceStr },
+      },
+      select: { date: true, status: true, clientId: true },
+      orderBy: { date: 'asc' },
+    });
+
+    // Group by ISO week label
+    const weekMap: Record<string, { week: string; consultations: number; completed: number }> = {};
+    for (const apt of appointments) {
+      const d = new Date(apt.date);
+      const weekStart = new Date(d);
+      weekStart.setDate(d.getDate() - d.getDay());
+      const label = weekStart.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
+      if (!weekMap[label]) weekMap[label] = { week: label, consultations: 0, completed: 0 };
+      weekMap[label].consultations++;
+      if (apt.status === 'COMPLETED') weekMap[label].completed++;
+    }
+    const consultationTrend = Object.values(weekMap);
+
+    // Repeat client rate
+    const clientCounts: Record<string, number> = {};
+    for (const apt of appointments) {
+      clientCounts[apt.clientId] = (clientCounts[apt.clientId] || 0) + 1;
+    }
+    const totalClients = Object.keys(clientCounts).length;
+    const repeatClients = Object.values(clientCounts).filter(c => c > 1).length;
+    const repeatClientRate = totalClients > 0 ? Math.round((repeatClients / totalClients) * 100) : 0;
+
+    // Income trend by week from escrow releases
+    const escrows = await this.prisma.escrow.findMany({
+      where: {
+        recipientId: userId,
+        status: 'RELEASED',
+        releasedAt: { gte: since },
+      },
+      select: { amount: true, currency: true, releasedAt: true },
+      orderBy: { releasedAt: 'asc' },
+    });
+
+    const incomeMap: Record<string, { week: string; income: number; currency: string }> = {};
+    for (const e of escrows) {
+      if (!e.releasedAt) continue;
+      const d = new Date(e.releasedAt);
+      const weekStart = new Date(d);
+      weekStart.setDate(d.getDate() - d.getDay());
+      const label = weekStart.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
+      if (!incomeMap[label]) incomeMap[label] = { week: label, income: 0, currency: e.currency || 'NGN' };
+      incomeMap[label].income += Number(e.amount);
+    }
+    const incomeTrend = Object.values(incomeMap);
+
+    // Rating breakdown
+    const allReviews = await this.prisma.babalawoReview.findMany({
+      where: { babalawoId: userId },
+      select: { rating: true },
+    });
+    const ratingBreakdown = [1, 2, 3, 4, 5].map(star => ({
+      stars: star,
+      count: allReviews.filter((r: any) => r.rating === star).length,
+    }));
+
+    const totalReviews = allReviews.length;
+    const averageRating = totalReviews > 0
+      ? Math.round((allReviews.reduce((s: number, r: any) => s + r.rating, 0) / totalReviews) * 10) / 10
+      : 0;
+
+    return {
+      period,
+      consultationTrend,
+      repeatClientRate,
+      totalClients,
+      repeatClients,
+      incomeTrend,
+      ratingBreakdown,
+      averageRating,
+      totalReviews,
+    };
+  }
+
+  /**
    * Get dashboard summary for a vendor user
    */
   async getVendorSummary(userId: string): Promise<VendorDashboardSummary> {

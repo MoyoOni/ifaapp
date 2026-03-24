@@ -15,7 +15,8 @@ export enum OrderStatus {
   PAID = 'PAID',
   SHIPPED = 'SHIPPED',
   DELIVERED = 'DELIVERED',
-  CANCELLED = 'CANCELLED'
+  CANCELLED = 'CANCELLED',
+  REFUNDED = 'REFUNDED'
 }
 
 export enum ProductType {

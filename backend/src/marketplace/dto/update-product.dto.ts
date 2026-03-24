@@ -24,6 +24,14 @@ export class UpdateProductDto {
   @IsOptional()
   category?: string;
 
+  @IsString()
+  @IsOptional()
+  subcategory?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  requiresInitiation?: boolean;
+
   @IsEnum(ProductType)
   @IsOptional()
   type?: ProductType;

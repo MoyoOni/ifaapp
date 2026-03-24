@@ -1,14 +1,15 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Calendar, Loader2, BookOpen, Building2, BarChart3, User } from 'lucide-react';
+import { Users, Calendar, Loader2, BookOpen, Building2, BarChart3, User, Shield } from 'lucide-react';
 import ClientList from '../../client-hub/client-list';
+import PractitionerAnalyticsView from './practitioner-analytics-view';
 import { useBabalawoDashboard } from '@/shared/hooks/dashboard';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { Button } from '@/shared/components/ui/button';
 
 interface PractitionerDashboardProps {
     userId?: string;
-    initialTab?: 'overview' | 'seekers' | 'services' | 'temple';
+    initialTab?: 'overview' | 'seekers' | 'services' | 'temple' | 'analytics';
 }
 
 interface AppointmentDisplay {
@@ -109,6 +110,8 @@ const PractitionerDashboard: React.FC<PractitionerDashboardProps> = ({ userId, i
                         <button className="px-6 py-2 bg-highlight text-white font-bold rounded-xl shadow-lg">Connect Temple</button>
                     </div>
                 );
+            case 'analytics':
+                return <PractitionerAnalyticsView userId={resolvedUserId} />;
             case 'overview':
             default:
                 return (
@@ -179,9 +182,13 @@ const PractitionerDashboard: React.FC<PractitionerDashboardProps> = ({ userId, i
                             <Users className="w-4 h-4 mr-2" />
                             View Clients
                           </Button>
-                          <Button className="w-full justify-start" onClick={() => navigate('/practitioner/earnings')}>
+                          <Button className="w-full justify-start" onClick={() => navigate('/practitioner/analytics')}>
                             <BarChart3 className="w-4 h-4 mr-2" />
                             View Analytics
+                          </Button>
+                          <Button className="w-full justify-start" variant="outline" onClick={() => navigate('/practitioner/elder-oversight')}>
+                            <Shield className="w-4 h-4 mr-2" />
+                            Elder Oversight
                           </Button>
                           <Button className="w-full justify-start" onClick={() => navigate('/practitioner/courses')}>
                             <BookOpen className="w-4 h-4 mr-2" />

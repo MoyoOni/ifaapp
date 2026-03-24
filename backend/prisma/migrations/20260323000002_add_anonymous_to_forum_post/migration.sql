@@ -1,0 +1,1 @@
+ALTER TABLE "ForumPost" ADD COLUMN "isAnonymous" BOOLEAN NOT NULL DEFAULT false;

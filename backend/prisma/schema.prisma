@@ -68,6 +68,14 @@ model User {
   postsAuthored             ForumPost[]              @relation("PostAuthor")
   threadsAuthored           ForumThread[]            @relation("ThreadAuthor")
   threadsLastPoster         ForumThread[]            @relation("ThreadLastPoster")
+  forumBookmarks            ForumBookmark[]
+  forumReports              ForumReport[]    @relation("ForumReporter")
+  forumSubscriptions        ForumSubscription[]
+  elderFlagsCreated         ElderFlag[]              @relation("ElderFlagsCreated")
+  elderFlagsReviewed        ElderFlag[]              @relation("ElderFlagsReviewed")
+  tipsGiven                 ForumTip[]               @relation("TipsGiven")
+  tipsReceived              ForumTip[]               @relation("TipsReceived")
+  elderReactions            ElderReaction[]          @relation("ElderReactions")
   guidancePlansCreated      GuidancePlan[]           @relation("GuidancePlanBabalawo")
   guidancePlansReceived     GuidancePlan[]           @relation("GuidancePlanClient")
   receivedMessages          Message[]                @relation("ReceivedMessages")
@@ -103,6 +111,22 @@ model User {
   subscriptionStatus        String                   @default("FREE") // FREE | DEVOTED | EXPIRED
   subscriptionEnd           DateTime?
   referralCode              String?                  @unique
+
+  // F9-702: Forum digest email opt-in
+  forumDigestOptIn          Boolean                  @default(true)
+
+  // F9-703: Community Builder badge
+  isCommunityBuilder        Boolean                  @default(false)
+
+  // F9-802: Participation streak
+  contributionStreak        Int                      @default(0)
+  lastContributionDate      DateTime?
+  longestStreak             Int                      @default(0)
+
+  // F9-901: Practitioner Trust Score
+  trustScore                Int                      @default(0)
+  // F9-902: Cultural Onboarding Gate
+  passedCulturalOrientation Boolean                  @default(false)
 
   @@index([slug])
   @@index([subscriptionStatus])
@@ -344,10 +368,12 @@ model ForumThread {
   authorId               String
   title                  String
   content                String
+  tags                   String[]
   status                 String            @default("ACTIVE")
   isPinned               Boolean           @default(false)
   isLocked               Boolean           @default(false)
   isApproved             Boolean           @default(true)
+  isSacred               Boolean           @default(false)
   viewCount              Int               @default(0)
   postCount              Int               @default(0)
   lastPostAt             DateTime?
@@ -357,6 +383,8 @@ model ForumThread {
   circleSuggestionThread Circle?           @relation("CircleSuggestionThread")
   circleSuggestion       CircleSuggestion?
   posts                  ForumPost[]
+  bookmarks              ForumBookmark[]
+  subscriptions          ForumSubscription[]
   author                 User              @relation("ThreadAuthor", fields: [authorId], references: [id], onDelete: Cascade)
   category               ForumCategory     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   lastPoster             User?             @relation("ThreadLastPoster", fields: [lastPostBy], references: [id])
@@ -376,12 +404,20 @@ model ForumPost {
   status           String               @default("ACTIVE")
   isEdited         Boolean              @default(false)
   editedAt         DateTime?
+  isAnonymous      Boolean              @default(false)
   acknowledgeCount Int                  @default(0)
+  hasCrisisSignal  Boolean              @default(false)
+  isFirstResponder Boolean              @default(false)
+  postTag          String?
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt
   author           User                 @relation("PostAuthor", fields: [authorId], references: [id], onDelete: Cascade)
   thread           ForumThread          @relation(fields: [threadId], references: [id], onDelete: Cascade)
   acknowledgments  PostAcknowledgment[]
+  reports          ForumReport[]
+  elderFlags       ElderFlag[]
+  tips             ForumTip[]
+  elderReactions   ElderReaction[]
 
   @@index([threadId, createdAt])
   @@index([authorId])
@@ -395,6 +431,103 @@ model PostAcknowledgment {
   createdAt DateTime  @default(now())
   post      ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
   user      User      @relation("PostAcknowledgments", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
+}
+
+model ForumBookmark {
+  id        String      @id @default(uuid())
+  userId    String
+  threadId  String
+  createdAt DateTime    @default(now())
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  thread    ForumThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, threadId])
+  @@index([userId])
+  @@index([threadId])
+}
+
+model ForumReport {
+  id          String    @id @default(uuid())
+  reporterId  String
+  postId      String
+  reason      String
+  note        String?
+  status      String    @default("PENDING")
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  action      String?
+  createdAt   DateTime  @default(now())
+  reporter    User      @relation("ForumReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  post        ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([reporterId, postId])
+  @@index([status])
+  @@index([postId])
+}
+
+model ForumSubscription {
+  id        String      @id @default(uuid())
+  userId    String
+  threadId  String
+  createdAt DateTime    @default(now())
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  thread    ForumThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, threadId])
+  @@index([userId])
+  @@index([threadId])
+}
+
+model ElderFlag {
+  id          String    @id @default(uuid())
+  postId      String
+  flaggedBy   String
+  reason      String
+  status      String    @default("PENDING")
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  post        ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  flagger     User      @relation("ElderFlagsCreated", fields: [flaggedBy], references: [id], onDelete: Cascade)
+  reviewer    User?     @relation("ElderFlagsReviewed", fields: [reviewedBy], references: [id])
+
+  @@index([postId])
+  @@index([status])
+  @@index([flaggedBy])
+}
+
+// F9-705: Micro-tip for forum posts
+model ForumTip {
+  id         String    @id @default(uuid())
+  postId     String
+  fromUserId String
+  toUserId   String
+  amount     Float
+  currency   String    @default("NGN")
+  status     String    @default("COMPLETED")
+  createdAt  DateTime  @default(now())
+  post       ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  fromUser   User      @relation("TipsGiven", fields: [fromUserId], references: [id])
+  toUser     User      @relation("TipsReceived", fields: [toUserId], references: [id])
+
+  @@index([postId])
+  @@index([fromUserId])
+  @@index([toUserId])
+}
+
+// F9-803: Elder Reacts quick reactions
+model ElderReaction {
+  id        String    @id @default(uuid())
+  postId    String
+  userId    String
+  emoji     String
+  createdAt DateTime  @default(now())
+  post      ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  elder     User      @relation("ElderReactions", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userId])
   @@index([postId])
@@ -481,20 +614,22 @@ model Product {
   id              String          @id @default(uuid())
   vendorId        String
   name            String
-  category        String
-  type            String          @default("PHYSICAL")
-  description     String
-  longDescription String?
-  price           Float
-  currency        String          @default("NGN")
-  stock           Int?
-  images          String[]
-  provenance      String?
-  usageProtocol   String?
-  status          String          @default("ACTIVE")
-  approvedBy      String?
-  verifiedTier    String          @default("COMMUNITY_LISTED")
-  taxCompliant    Boolean         @default(false)
+  category           String
+  subcategory        String?
+  type               String          @default("PHYSICAL")
+  description        String
+  longDescription    String?
+  price              Float
+  currency           String          @default("NGN")
+  stock              Int?
+  images             String[]
+  provenance         String?
+  usageProtocol      String?
+  requiresInitiation Boolean         @default(false)
+  status             String          @default("ACTIVE")
+  approvedBy         String?
+  verifiedTier       String          @default("COMMUNITY_LISTED")
+  taxCompliant       Boolean         @default(false)
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   orders          OrderItem[]
@@ -503,10 +638,12 @@ model Product {
 
   @@index([vendorId])
   @@index([category])
+  @@index([subcategory])
   @@index([status])
   @@index([verifiedTier])
   @@index([vendorId, status])
   @@index([category, status])
+  @@index([category, subcategory])
 }
 
 model Order {
@@ -525,6 +662,9 @@ model Order {
   shippedAt       DateTime?
   deliveredAt     DateTime?
   cancelledAt     DateTime?
+  refundedAt      DateTime?
+  refundAmount    Float?
+  refundReason    String?
   notes           String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
@@ -1373,4 +1513,21 @@ model Referral {
   @@index([referrerId])
   @@index([code])
   @@map("referrals")
+}
+
+// F9-806: Àṣẹ Live audio space
+model LiveSession {
+  id           String    @id @default(uuid())
+  title        String
+  hostIds      String[]
+  scheduledAt  DateTime
+  platform     String
+  externalUrl  String
+  preThreadId  String?
+  recordingUrl String?
+  status       String    @default("SCHEDULED")
+  createdAt    DateTime  @default(now())
+
+  @@index([status])
+  @@index([scheduledAt])
 }

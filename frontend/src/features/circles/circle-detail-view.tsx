@@ -5,9 +5,9 @@ import { Users, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { useToast } from '@/shared/components/toast';
+import { useSubscription } from '@/features/subscription/use-subscription';
 import { logger } from '@/shared/utils/logger';
 
-import { DEMO_CIRCLES, DEMO_USERS } from '@/demo';
 import {
   CircleDetail,
   CircleDetailViewProps,
@@ -34,6 +34,7 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({
   onBack,
 }) => {
   const { user } = useAuth();
+  const { isDevoted } = useSubscription();
   const { success, error: showError } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabType>('feed');
@@ -43,12 +44,8 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({
   const { data: circle, isLoading } = useQuery<CircleDetail>({
     queryKey: ['circle', circleSlug, user?.id],
     queryFn: async () => {
-      try {
-        const response = await api.get(`/circles/${circleSlug}`);
-        return response.data;
-      } catch (e) {
-        throw e;
-      }
+      const response = await api.get(`/circles/${circleSlug}`);
+      return response.data;
     },
   });
 
@@ -67,7 +64,7 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({
         return [];
       }
     },
-    enabled: !!circle?.id,
+    enabled: !!circle?.id && !localStorage.getItem('dev_mode_role'),
   });
 
   // Fetch feed posts
@@ -83,7 +80,7 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({
         throw e;
       }
     },
-    enabled: !!circle,
+    enabled: !!circle && !localStorage.getItem('dev_mode_role'),
   });
 
   // Approve circle event mutation
@@ -209,6 +206,18 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({
     },
   });
 
+  // Become patron mutation
+  const becomePatronMutation = useMutation({
+    mutationFn: () => api.post(`/circles/${circle!.id}/become-patron`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['circle', circleSlug] });
+      success('You are now a Circle Patron! ✦');
+    },
+    onError: (err: any) => {
+      showError(err?.response?.data?.message || 'Failed to become patron');
+    },
+  });
+
   // Compute derived state
   const sessionMembership = circle?.id ? getSessionMembership(circle.id) : null;
   const isMember =
@@ -219,6 +228,7 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({
     circle?.userMembership?.role === 'ADMIN' ||
     circle?.creator.id === user?.id;
   const isCreator = circle?.creator.id === user?.id;
+  const isPatron = circle?.userMembership?.role === 'PATRON';
 
   const handleCreatePost = () => {
     if (newPost.trim()) {
@@ -265,10 +275,14 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({
         isMember={isMember ?? false}
         isAdmin={isAdmin}
         isCreator={isCreator}
+        isPatron={isPatron}
         onJoin={() => joinCircleMutation.mutate()}
         onLeave={() => leaveCircleMutation.mutate()}
+        onBecomePatron={() => becomePatronMutation.mutate()}
         isJoining={joinCircleMutation.isPending}
         isLeaving={leaveCircleMutation.isPending}
+        isBecomingPatron={becomePatronMutation.isPending}
+        isDevoted={isDevoted}
       />
 
       {/* Tab Navigation */}

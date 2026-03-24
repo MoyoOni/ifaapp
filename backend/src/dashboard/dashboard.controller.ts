@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards, ForbiddenException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { DashboardService } from './dashboard.service';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
@@ -44,6 +44,23 @@ export class DashboardController {
     }
 
     return this.dashboardService.getBabalawoSummary(userId);
+  }
+
+  /**
+   * Get detailed analytics for a babalawo (consultation trends, income, ratings)
+   */
+  @Get('babalawo/:userId/analytics')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.BABALAWO, UserRole.ADMIN)
+  async getBabalawoAnalytics(
+    @Param('userId') userId: string,
+    @Query('period') period: '7d' | '30d' | '90d' = '30d',
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    if (currentUser.id !== userId && currentUser.role !== UserRole.ADMIN) {
+      throw new ForbiddenException("Cannot view another babalawo's analytics");
+    }
+    return this.dashboardService.getBabalawoAnalytics(userId, period);
   }
 
   /**

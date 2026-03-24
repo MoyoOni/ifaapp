@@ -1,14 +1,17 @@
 import { Controller, Get, Patch, Param, Body, UseGuards, Query, ForbiddenException } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../shared/guards/auth.guard';
+import { Public } from '../auth/decorators/public.decorator';
 
 @Controller('users')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(JwtAuthGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  // Public — unauthenticated users need to browse the babalawo directory
+  @Public()
   @Get()
   async findAll(
     @Query('role') role?: string,
@@ -38,6 +41,8 @@ export class UsersController {
     return this.usersService.getProfileViewers(currentUser.id);
   }
 
+  // Public — booking page must load babalawo details without requiring login
+  @Public()
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
@@ -68,5 +73,17 @@ export class UsersController {
       throw new Error('You can only complete your own onboarding');
     }
     return this.usersService.completeOnboarding(id, onboardingData);
+  }
+
+  // F9-902: Cultural Orientation completion
+  @Patch(':id/cultural-orientation')
+  async completeCulturalOrientation(
+    @Param('id') id: string,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    if (currentUser.id !== id) {
+      throw new ForbiddenException('You can only update your own profile');
+    }
+    return this.usersService.update(id, { passedCulturalOrientation: true } as any, currentUser);
   }
 }

@@ -58,6 +58,11 @@ export const CircleMembersTab: React.FC<CircleMembersTabProps> = ({ circle }) =>
                   Moderator
                 </span>
               )}
+              {member.role === 'PATRON' && (
+                <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 text-xs rounded-full font-bold">
+                  ✦ Patron
+                </span>
+              )}
               {member.user.verified && (
                 <CheckCircle size={14} className="inline ml-1 text-primary" />
               )}

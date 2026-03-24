@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Filter, Search, ShoppingBag, Eye, Truck, CheckCircle, Clock } from 'lucide-react';
 
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
+import VendorOrderDetailPanel from './vendor-order-detail-panel';
 
 interface VendorOrderListViewProps {
     onViewOrder?: (orderId: string) => void;
@@ -17,10 +18,13 @@ const VendorOrderListView: React.FC<VendorOrderListViewProps> = ({
 }) => {
     const navigate = useNavigate();
     const { user } = useAuth();
+    const [detailOrderId, setDetailOrderId] = useState<string | null>(null);
 
     const handleBack = () => (onBack ? onBack() : navigate('/vendor/dashboard'));
-    const handleViewOrder = (orderId: string) =>
-        (onViewOrder ? onViewOrder(orderId) : navigate('/vendor/orders'));
+    const handleViewOrder = (orderId: string) => {
+        if (onViewOrder) { onViewOrder(orderId); return; }
+        setDetailOrderId(orderId);
+    };
 
     const { data: orders = [], isLoading } = useQuery({
         queryKey: ['vendor-orders', user?.id],
@@ -28,7 +32,7 @@ const VendorOrderListView: React.FC<VendorOrderListViewProps> = ({
             const res = await api.get('/marketplace/orders', { params: { vendorId: user!.id } });
             return res.data ?? [];
         },
-        enabled: !!user?.id,
+        enabled: !!user?.id && !localStorage.getItem('dev_mode_role'),
     });
 
     const getStatusBadge = (status: string) => {
@@ -42,6 +46,12 @@ const VendorOrderListView: React.FC<VendorOrderListViewProps> = ({
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
+        {detailOrderId && (
+            <VendorOrderDetailPanel
+                orderId={detailOrderId}
+                onClose={() => setDetailOrderId(null)}
+            />
+        )}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <button onClick={handleBack} className="text-sm font-bold text-muted-foreground hover:text-foreground mb-1">← Dashboard</button>

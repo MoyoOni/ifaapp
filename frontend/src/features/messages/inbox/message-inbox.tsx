@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { MessageSquare, Search, Plus, MoreHorizontal, User, Lock } from 'lucide-react';
+import { MessageSquare, Search, Plus, MoreHorizontal, User, Lock, X } from 'lucide-react';
 import { logger } from '@/shared/utils/logger';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getInbox } from '../message-service';
@@ -34,8 +34,29 @@ interface MessageInboxProps {
 const MessageInbox: React.FC<MessageInboxProps> = ({ userId, onSelectConversation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const [showComposer, setShowComposer] = useState(false);
+  const [userSearch, setUserSearch] = useState('');
+  const [userResults, setUserResults] = useState<any[]>([]);
+  const [searching, setSearching] = useState(false);
+  const composerRef = useRef<HTMLDivElement>(null);
   const { isDevoted } = useSubscription();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!userSearch.trim() || userSearch.length < 2) { setUserResults([]); return; }
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await api.get('/users', { params: { search: userSearch, limit: 8 } });
+        setUserResults(res.data ?? []);
+      } catch {
+        setUserResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [userSearch]);
 
   const { data: limitStatus } = useQuery({
     queryKey: ['message-limit-status'],
@@ -49,7 +70,18 @@ const MessageInbox: React.FC<MessageInboxProps> = ({ userId, onSelectConversatio
       navigate('/pricing');
       return;
     }
-    // TODO: open new message composer
+    setShowComposer(true);
+    setUserSearch('');
+    setUserResults([]);
+  };
+
+  const handleSelectUser = (targetUserId: string) => {
+    setShowComposer(false);
+    if (onSelectConversation) {
+      onSelectConversation(targetUserId);
+    } else {
+      navigate(`/messages/${targetUserId}`);
+    }
   };
 
   const { data: conversations = [], isLoading } = useQuery<Conversation[]>({
@@ -62,7 +94,7 @@ const MessageInbox: React.FC<MessageInboxProps> = ({ userId, onSelectConversatio
         return [];
       }
     },
-    enabled: !!userId,
+    enabled: !!userId && !localStorage.getItem('dev_mode_role'),
   });
 
   const filteredConversations = conversations.filter((conv) => {
@@ -77,6 +109,56 @@ const MessageInbox: React.FC<MessageInboxProps> = ({ userId, onSelectConversatio
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
+
+      {/* New Message Composer Modal */}
+      {showComposer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div ref={composerRef} className="bg-card rounded-2xl border border-border shadow-2xl w-full max-w-md">
+            <div className="flex items-center justify-between p-5 border-b border-border">
+              <h3 className="font-bold text-foreground">New Message</h3>
+              <button type="button" onClick={() => setShowComposer(false)} aria-label="Close" className="p-2 hover:bg-muted rounded-lg transition-colors">
+                <X size={18} className="text-muted-foreground" />
+              </button>
+            </div>
+            <div className="p-5 space-y-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                <input
+                  autoFocus
+                  type="text"
+                  value={userSearch}
+                  onChange={e => setUserSearch(e.target.value)}
+                  placeholder="Search by name or email..."
+                  className="w-full pl-9 pr-4 py-2.5 bg-muted/50 border border-border rounded-xl text-foreground text-sm outline-none focus:border-highlight"
+                />
+              </div>
+              {searching && <p className="text-xs text-muted-foreground text-center py-2">Searching...</p>}
+              {!searching && userSearch.length >= 2 && userResults.length === 0 && (
+                <p className="text-xs text-muted-foreground text-center py-2">No users found</p>
+              )}
+              <div className="space-y-1 max-h-64 overflow-y-auto">
+                {userResults.map((u: any) => (
+                  <button
+                    key={u.id}
+                    type="button"
+                    onClick={() => handleSelectUser(u.id)}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted transition-colors text-left"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-highlight/20 flex items-center justify-center text-highlight font-bold flex-shrink-0">
+                      {u.avatar ? <img src={u.avatar} alt="" className="w-full h-full rounded-full object-cover" /> : (u.yorubaName || u.name || '?')[0].toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-foreground">{u.yorubaName || u.name}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{u.role?.toLowerCase()}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 1. Inbox Controls */}
       <div className="p-6 border-b border-border/60 bg-muted/500">
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">

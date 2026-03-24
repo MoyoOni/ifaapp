@@ -111,6 +111,15 @@ export class CirclesController {
   }
 
   /**
+   * POST /circles/:id/become-patron
+   */
+  @Post(':id/become-patron')
+  @UseGuards(AuthGuard('jwt'))
+  async becomePatron(@Param('id') circleId: string, @CurrentUser() currentUser: CurrentUserPayload) {
+    return this.circlesService.becomePatron(circleId, currentUser);
+  }
+
+  /**
    * Get user's circles
    * GET /circles/user/:userId
    */

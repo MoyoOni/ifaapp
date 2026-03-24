@@ -19,10 +19,14 @@ interface CircleHeroProps {
   isMember: boolean;
   isAdmin: boolean;
   isCreator: boolean;
+  isPatron?: boolean;
   onJoin: () => void;
   onLeave: () => void;
+  onBecomePatron?: () => void;
   isJoining: boolean;
   isLeaving: boolean;
+  isBecomingPatron?: boolean;
+  isDevoted?: boolean;
 }
 
 export const CircleHero: React.FC<CircleHeroProps> = ({
@@ -31,10 +35,14 @@ export const CircleHero: React.FC<CircleHeroProps> = ({
   isMember,
   isAdmin,
   isCreator,
+  isPatron = false,
   onJoin,
   onLeave,
+  onBecomePatron,
   isJoining,
   isLeaving,
+  isBecomingPatron = false,
+  isDevoted = false,
 }) => {
   return (
     <>
@@ -119,7 +127,23 @@ export const CircleHero: React.FC<CircleHeroProps> = ({
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                {isMember && !isPatron && isDevoted && onBecomePatron && (
+                  <button
+                    type="button"
+                    onClick={onBecomePatron}
+                    disabled={isBecomingPatron}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-amber-500 text-white rounded-xl font-bold hover:bg-amber-600 transition-colors disabled:opacity-50 shadow-lg shadow-amber-500/20"
+                  >
+                    {isBecomingPatron ? <Loader2 size={16} className="animate-spin" /> : '✦'}
+                    Become Patron
+                  </button>
+                )}
+                {isPatron && (
+                  <span className="flex items-center gap-1.5 px-4 py-2.5 bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 rounded-xl font-bold text-sm">
+                    ✦ Circle Patron
+                  </span>
+                )}
                 {isAdmin && (
                   <button
                     className="p-2.5 bg-muted hover:bg-muted rounded-xl transition-colors"

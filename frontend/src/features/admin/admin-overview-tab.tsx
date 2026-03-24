@@ -71,7 +71,7 @@ const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
             const res = await api.get('/admin/audit-logs', { params: { limit: 5 } });
             return res.data;
         },
-        enabled: user?.adminSubRole === 'SUPER',
+        enabled: user?.adminSubRole === 'SUPER' && !localStorage.getItem('dev_mode_role'),
         staleTime: 60000,
     });
 

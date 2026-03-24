@@ -126,7 +126,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({ userId, otherUserId, onBa
         return [];
       }
     },
-    enabled: !!userId && !!otherUserId,
+    enabled: !!userId && !!otherUserId && !localStorage.getItem('dev_mode_role'),
   });
 
   // Get other user info from first message

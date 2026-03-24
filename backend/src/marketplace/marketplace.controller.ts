@@ -26,6 +26,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
+import { RefundOrderDto } from './dto/refund-order.dto';
 import { CreateProductReviewDto } from './dto/create-product-review.dto';
 import { RolesGuard, Roles } from '../auth/guards/roles.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -159,6 +160,17 @@ export class MarketplaceController {
     @CurrentUser() user: CurrentUserPayload
   ) {
     return this.marketplaceService.updateOrder(id, dto, user);
+  }
+
+  @ApiOperation({ summary: 'Issue a refund for an order (vendor or admin)' })
+  @Post('orders/:id/refund')
+  @HttpCode(HttpStatus.OK)
+  async refundOrder(
+    @Param('id') id: string,
+    @Body() dto: RefundOrderDto,
+    @CurrentUser() user: CurrentUserPayload
+  ) {
+    return this.marketplaceService.refundOrder(id, dto, user);
   }
 
   // ==================== Product Reviews ====================

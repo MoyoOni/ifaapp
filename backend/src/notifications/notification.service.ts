@@ -14,6 +14,8 @@ export enum NotificationType {
   SYSTEM = 'SYSTEM',
   TEMPLE = 'TEMPLE',
   GUIDANCE_PLAN = 'GUIDANCE_PLAN',
+  FORUM_REPLY = 'FORUM_REPLY',
+  MENTION = 'MENTION',
 }
 
 export enum NotificationCategory {

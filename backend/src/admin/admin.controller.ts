@@ -21,6 +21,7 @@ import { CurrentUserPayload } from '@/shared/types/current-user-payload.interfac
 import { AdminService } from './admin.service';
 import { AuditInterceptor } from './interceptors/audit.interceptor';
 import { ApproveVerificationDto } from './dto/approve-verification.dto';
+import { BulkVerifyDto } from './dto/bulk-verify.dto';
 import { CreateAdvisoryVoteDto, CastAdvisoryVoteDto } from './dto/advisory-board.dto';
 import { CreateCircleDto } from '../circles/dto/create-circle.dto';
 import { VerificationStage } from '@common/enums/verification-stage.enum';
@@ -89,6 +90,16 @@ export class AdminController {
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
     return this.adminService.rejectVerification(id, dto, currentUser);
+  }
+
+  @Post('bulk-verify')
+  @Roles(UserRole.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  async bulkVerifyApplications(
+    @Body() dto: BulkVerifyDto,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.adminService.bulkVerifyApplications(dto, currentUser);
   }
 
   /**

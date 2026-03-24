@@ -1,10 +1,13 @@
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Edit2, Trash2, Package, Search, Filter } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { Product } from '@common';
+import VendorProductForm from './vendor-product-form';
+import { getCategoryBySlug } from './marketplace-categories';
+import { useToast } from '@/shared/components/toast';
 
 interface VendorProductListViewProps {
     onCreateProduct?: () => void;
@@ -21,12 +24,37 @@ const VendorProductListView: React.FC<VendorProductListViewProps> = ({
 }) => {
     const navigate = useNavigate();
     const { user } = useAuth();
+    const queryClient = useQueryClient();
+    const toast = useToast();
+    const [showAddForm, setShowAddForm] = useState(false);
+    const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+    const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
 
     const handleBack = () => (onBack ? onBack() : navigate('/vendor/dashboard'));
-    const handleCreateProduct = () =>
-        (onCreateProduct ? onCreateProduct() : navigate('/vendor/products'));
-    const handleEditProduct = (productId: string) =>
-        (onEditProduct ? onEditProduct(productId) : navigate('/vendor/products'));
+    const handleCreateProduct = () => {
+        if (onCreateProduct) { onCreateProduct(); return; }
+        setShowAddForm(true);
+    };
+    const handleEditProduct = (product: Product) => {
+        if (onEditProduct) { onEditProduct(product.id); return; }
+        setEditingProduct(product);
+    };
+
+    const deleteMutation = useMutation({
+        mutationFn: async (productId: string) => {
+            await api.delete(`/marketplace/products/${productId}`);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['vendor-products'] });
+            queryClient.invalidateQueries({ queryKey: ['marketplace-products'] });
+            toast.success('Product deleted');
+            setDeletingProductId(null);
+        },
+        onError: (err: any) => {
+            toast.error(err?.response?.data?.message || 'Failed to delete product');
+            setDeletingProductId(null);
+        },
+    });
 
     const { data: products = [], isLoading } = useQuery<Product[]>({
         queryKey: ['vendor-products', user?.id],
@@ -40,11 +68,49 @@ const VendorProductListView: React.FC<VendorProductListViewProps> = ({
                 throw error;
             }
         },
-        enabled: !!user?.id
+        enabled: !!user?.id && !localStorage.getItem('dev_mode_role'),
     });
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
+        {showAddForm && (
+            <VendorProductForm
+                onClose={() => setShowAddForm(false)}
+                onSuccess={() => setShowAddForm(false)}
+            />
+        )}
+        {editingProduct && (
+            <VendorProductForm
+                initialData={editingProduct as any}
+                onClose={() => setEditingProduct(null)}
+                onSuccess={() => setEditingProduct(null)}
+            />
+        )}
+        {deletingProductId && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                <div className="bg-card rounded-2xl border border-border shadow-2xl w-full max-w-sm p-6 space-y-4">
+                    <h3 className="text-lg font-bold text-foreground">Delete Product?</h3>
+                    <p className="text-muted-foreground text-sm">This action cannot be undone. The listing will be permanently removed.</p>
+                    <div className="flex gap-3 pt-2">
+                        <button
+                            type="button"
+                            onClick={() => setDeletingProductId(null)}
+                            className="flex-1 py-2.5 rounded-xl border border-border text-foreground font-bold hover:bg-muted transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => deleteMutation.mutate(deletingProductId)}
+                            disabled={deleteMutation.isPending}
+                            className="flex-1 py-2.5 rounded-xl bg-red-500 text-white font-bold hover:bg-red-600 transition-colors disabled:opacity-50"
+                        >
+                            {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <button onClick={handleBack} className="text-sm font-bold text-muted-foreground hover:text-foreground mb-1">← Dashboard</button>
@@ -120,7 +186,12 @@ const VendorProductListView: React.FC<VendorProductListViewProps> = ({
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="p-4 text-muted-foreground text-sm">{product.category}</td>
+                                        <td className="p-4 text-muted-foreground text-sm">
+                                            {(() => {
+                                                const cat = getCategoryBySlug(product.category);
+                                                return cat ? `${cat.icon} ${cat.label}` : product.category;
+                                            })()}
+                                        </td>
                                         <td className="p-4 font-bold text-foreground">
                                             {/* Assuming NGN for simplicity or product currency */}
                                             ₦{product.price.toLocaleString()}
@@ -134,7 +205,7 @@ const VendorProductListView: React.FC<VendorProductListViewProps> = ({
                                             <div className="flex items-center justify-end gap-2">
                                                 <button
                                                     type="button"
-                                                    onClick={() => handleEditProduct(product.id)}
+                                                    onClick={() => handleEditProduct(product)}
                                                     className="p-2 hover:bg-highlight/10 hover:text-highlight rounded-lg transition-colors"
                                                     title="Edit Product"
                                                     aria-label="Edit product"
@@ -143,6 +214,7 @@ const VendorProductListView: React.FC<VendorProductListViewProps> = ({
                                                 </button>
                                                 <button
                                                     type="button"
+                                                    onClick={() => setDeletingProductId(product.id)}
                                                     className="p-2 hover:bg-red-50 dark:bg-red-950/30 hover:text-red-500 dark:text-red-400 rounded-lg transition-colors"
                                                     title="Delete Product"
                                                     aria-label="Delete product"

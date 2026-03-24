@@ -13,6 +13,7 @@ import { WalletService } from '../wallet/wallet.service';
 import { PaymentsService } from '../payments/payments.service';
 import { CirclesService } from '../circles/circles.service';
 import { ApproveVerificationDto } from './dto/approve-verification.dto';
+import { BulkVerifyDto } from './dto/bulk-verify.dto';
 import { CreateAdvisoryVoteDto } from './dto/advisory-board.dto';
 import {
   NotificationService,
@@ -261,6 +262,86 @@ export class AdminService {
     });
 
     return updatedApplication;
+  }
+
+  /**
+   * Bulk approve or decline verification applications
+   */
+  async bulkVerifyApplications(dto: BulkVerifyDto, currentUser: CurrentUserPayload) {
+    if (currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can bulk-verify applications');
+    }
+    if (!dto.appIds.length) {
+      throw new BadRequestException('No application IDs provided');
+    }
+
+    const results: { id: string; success: boolean; error?: string }[] = [];
+
+    for (const appId of dto.appIds) {
+      try {
+        const application = await this.prisma.verificationApplication.findUnique({
+          where: { id: appId },
+        });
+        if (!application) {
+          results.push({ id: appId, success: false, error: 'Not found' });
+          continue;
+        }
+
+        if (dto.action === 'approve') {
+          await this.prisma.verificationApplication.update({
+            where: { id: appId },
+            data: {
+              approvedById: currentUser.id,
+              approvedAt: new Date(),
+              currentStage: 'APPROVED' as VerificationStage,
+            },
+          });
+          await this.prisma.user.update({
+            where: { id: application.userId },
+            data: { verified: true, role: 'BABALAWO' },
+          });
+          await this.notificationService.createNotification({
+            userId: application.userId,
+            type: NotificationType.VERIFICATION,
+            category: NotificationCategory.SUCCESS,
+            title: 'Verification Approved',
+            message: dto.note
+              ? `Your verification has been approved. Note: ${dto.note}`
+              : 'Your verification has been approved.',
+            sendEmail: true,
+            sendPush: true,
+          });
+        } else {
+          await this.prisma.verificationApplication.update({
+            where: { id: appId },
+            data: {
+              rejectedById: currentUser.id,
+              rejectedAt: new Date(),
+              rejectionReason: dto.note || 'Application declined by admin',
+              currentStage: 'REJECTED' as VerificationStage,
+            },
+          });
+          await this.notificationService.createNotification({
+            userId: application.userId,
+            type: NotificationType.VERIFICATION,
+            category: NotificationCategory.ERROR,
+            title: 'Verification Declined',
+            message: dto.note
+              ? `Your verification has been declined. Reason: ${dto.note}`
+              : 'Your verification application has been declined.',
+            sendEmail: true,
+            sendPush: true,
+          });
+        }
+
+        results.push({ id: appId, success: true });
+      } catch (err) {
+        this.logger.error(`Bulk verify failed for app ${appId}`, err);
+        results.push({ id: appId, success: false, error: (err as Error).message });
+      }
+    }
+
+    return { processed: results.length, results };
   }
 
   /**

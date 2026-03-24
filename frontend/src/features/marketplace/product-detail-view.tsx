@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ShoppingCart, Package, Store, Star, Plus, Minus, Check, MessageSquare } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Package, Store, Star, Plus, Minus, Check, MessageSquare, Lock } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { logger } from '@/shared/utils/logger';
 import { useCart } from '@/shared/contexts/cart-context';
-import { DEMO_PRODUCTS, DEMO_USERS } from '@/demo';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { getCategoryBySlug, getSubcategoryLabel } from './marketplace-categories';
 
 interface Product {
   id: string;
   vendorId: string;
   name: string;
   category: string;
+  subcategory?: string;
+  requiresInitiation?: boolean;
   type: string;
   description: string;
   longDescription?: string;
@@ -75,68 +77,10 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ productId, onBack
   const { data: product, isLoading: productLoading } = useQuery<Product>({
     queryKey: ['marketplace-product', productId],
     queryFn: async () => {
-      try {
-        const response = await api.get(`/marketplace/products/${productId}`);
-        return response.data;
-      } catch (error) {
-        logger.warn('API fetch failed, falling back to demo data');
-        const demoProduct = Object.values(DEMO_PRODUCTS).find((product) => product.id === productId);
-
-        if (demoProduct) {
-          const vendor = DEMO_USERS[demoProduct.vendorId as keyof typeof DEMO_USERS];
-
-          return {
-            id: demoProduct.id,
-            vendorId: demoProduct.vendorId,
-            name: demoProduct.name,
-            category: demoProduct.category || 'General',
-            type: 'PHYSICAL',
-            description: demoProduct.description || 'Authentic spiritual item.',
-            longDescription: demoProduct.description
-              ? `${demoProduct.description}\n\nSourced directly from the artisans of Yorubaland.`
-              : undefined,
-            price: demoProduct.price,
-            currency: demoProduct.currency,
-            stock: demoProduct.stock ?? 10,
-            images: demoProduct.images?.length ? demoProduct.images : [],
-            provenance: 'Osun State, Nigeria',
-            verifiedTier: 'COUNCIL_APPROVED',
-            status: demoProduct.status,
-            vendor: {
-              id: demoProduct.vendorId,
-              businessName: vendor?.name || 'Sacred Vendor',
-              user: {
-                id: vendor?.id || demoProduct.vendorId,
-                name: vendor?.name || 'Sacred Vendor',
-                yorubaName: vendor?.yorubaName,
-                verified: (vendor as any)?.verified ?? true,
-              },
-            },
-            reviews: [
-              {
-                id: 'r1',
-                rating: 5,
-                title: 'Excellent quality',
-                content: 'The energy from this item is palpable. Ase!',
-                createdAt: new Date().toISOString(),
-                customer: {
-                  id: 'c1',
-                  name: 'Adewale',
-                  yorubaName: 'Ifadayo',
-                  verified: true,
-                },
-              },
-            ],
-            _count: {
-              orders: 12,
-              reviews: 1,
-            },
-          } as Product;
-        }
-        throw new Error('Product not found in demo data');
-      }
+      const response = await api.get(`/marketplace/products/${productId}`);
+      return response.data;
     },
-    enabled: !!productId,
+    enabled: !!productId && !localStorage.getItem('dev_mode_role'),
   });
 
   const handleAddToCart = () => {
@@ -254,11 +198,31 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ productId, onBack
                   </span>
                 )}
               </div>
-              {product.verifiedTier === 'COUNCIL_APPROVED' && (
-                <div className="inline-block bg-highlight/20 text-highlight px-3 py-1 rounded text-sm font-bold mb-4">
-                  ✓ Council Approved
-                </div>
-              )}
+              <div className="flex flex-wrap gap-2 mb-4">
+                {(() => {
+                  const cat = getCategoryBySlug(product.category);
+                  return cat ? (
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${cat.color}`}>
+                      {cat.icon} {cat.label}
+                    </span>
+                  ) : null;
+                })()}
+                {product.subcategory && (
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-muted text-muted-foreground">
+                    {getSubcategoryLabel(product.category, product.subcategory)}
+                  </span>
+                )}
+                {product.requiresInitiation && (
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 flex items-center gap-1">
+                    <Lock size={10} /> Initiated Practitioners Only
+                  </span>
+                )}
+                {product.verifiedTier === 'COUNCIL_APPROVED' && (
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-highlight/20 text-highlight">
+                    ✓ Council Approved
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Price */}
@@ -399,7 +363,14 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ productId, onBack
                 <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-2">
                   Category
                 </h4>
-                <p className="text-muted-foreground capitalize">{product.category}</p>
+                <p className="text-muted-foreground">
+                  {(() => {
+                    const cat = getCategoryBySlug(product.category);
+                    const catLabel = cat ? `${cat.icon} ${cat.label}` : product.category;
+                    const subLabel = product.subcategory ? ` › ${getSubcategoryLabel(product.category, product.subcategory)}` : '';
+                    return catLabel + subLabel;
+                  })()}
+                </p>
               </div>
             </div>
           </div>

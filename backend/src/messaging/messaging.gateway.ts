@@ -74,6 +74,31 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
 
   handleDisconnect(client: Socket) {
     this.logger.log(`Client disconnected: ${client.id}`);
+    // Broadcast updated viewer counts for any forum threads the client was viewing
+    const rooms = Array.from(client.rooms);
+    rooms.forEach((room) => {
+      if (room.startsWith('forum_thread:')) {
+        const count = (this.server.sockets.adapter.rooms.get(room)?.size ?? 1) - 1;
+        this.server.to(room).emit('forum:viewers', {
+          threadId: room.replace('forum_thread:', ''),
+          count: Math.max(0, count),
+        });
+      }
+    });
+  }
+
+  @SubscribeMessage('forum:join')
+  handleForumJoin(@ConnectedSocket() client: Socket, @MessageBody() threadId: string) {
+    void client.join(`forum_thread:${threadId}`);
+    const count = this.server.sockets.adapter.rooms.get(`forum_thread:${threadId}`)?.size ?? 1;
+    this.server.to(`forum_thread:${threadId}`).emit('forum:viewers', { threadId, count });
+  }
+
+  @SubscribeMessage('forum:leave')
+  handleForumLeave(@ConnectedSocket() client: Socket, @MessageBody() threadId: string) {
+    void client.leave(`forum_thread:${threadId}`);
+    const count = this.server.sockets.adapter.rooms.get(`forum_thread:${threadId}`)?.size ?? 0;
+    this.server.to(`forum_thread:${threadId}`).emit('forum:viewers', { threadId, count: Math.max(0, count) });
   }
 
   @UseGuards(WsJwtGuard)

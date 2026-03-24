@@ -90,6 +90,7 @@ const TempleDetailView = React.lazy(() => import('./features/temple/temple-detai
 // Unused directory imports removed
 const ForumHomeView = React.lazy(() => import('./features/forum/forum-home-view'));
 const ThreadView = React.lazy(() => import('./features/forum/thread-view'));
+const ElderOversightPanel = React.lazy(() => import('./features/forum/elder-oversight-panel'));
 const AcademyView = React.lazy(() => import('./features/academy/academy-view'));
 const CourseDetailView = React.lazy(() => import('./features/academy/course-detail-view'));
 const MyCoursesView = React.lazy(() => import('./features/academy/my-courses-view'));
@@ -435,6 +436,7 @@ function App() {
                   <Route path="/circles/:slug" element={<ErrorBoundary><CircleDetailPage /></ErrorBoundary>} />
                   <Route path="/forum" element={<ErrorBoundary><ForumHomePage /></ErrorBoundary>} />
                   <Route path="/forum/:threadId" element={<ErrorBoundary><ForumThreadPage /></ErrorBoundary>} />
+                  <Route path="/practitioner/elder-oversight" element={<ErrorBoundary fallback={<PractitionerErrorPage />}><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><React.Suspense fallback={<div />}><ElderOversightPanel /></React.Suspense></ProtectedRoute></ErrorBoundary>} />
                   <Route path="/academy" element={<ErrorBoundary><AcademyPage /></ErrorBoundary>} />
                   <Route path="/academy/course/:courseId" element={<ErrorBoundary><CourseDetailPage /></ErrorBoundary>} />
                   <Route path="/academy/my-courses" element={<ErrorBoundary><MyCoursesPage /></ErrorBoundary>} />
@@ -449,6 +451,7 @@ function App() {
                   <Route path="/practitioner/clients/invite" element={<ErrorBoundary fallback={<PractitionerErrorPage />}><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><InviteClientView /></ProtectedRoute></ErrorBoundary>} />
                   <Route path="/practitioner/services" element={<ErrorBoundary fallback={<PractitionerErrorPage />}><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><PractitionerDashboard initialTab="services" /></ProtectedRoute></ErrorBoundary>} />
                   <Route path="/practitioner/temple" element={<ErrorBoundary fallback={<PractitionerErrorPage />}><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><PractitionerDashboard initialTab="temple" /></ProtectedRoute></ErrorBoundary>} />
+                  <Route path="/practitioner/analytics" element={<ErrorBoundary fallback={<PractitionerErrorPage />}><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><PractitionerDashboard initialTab="analytics" /></ProtectedRoute></ErrorBoundary>} />
                   <Route path="/practitioner/my-seekers" element={<ErrorBoundary fallback={<PractitionerErrorPage />}><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><MySeekersView /></ProtectedRoute></ErrorBoundary>} />
                   <Route path="/practitioner/service-offering" element={<ErrorBoundary fallback={<PractitionerErrorPage />}><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><ServiceOfferingView /></ProtectedRoute></ErrorBoundary>} />
                   <Route path="/practitioner/temple-connection" element={<ErrorBoundary fallback={<PractitionerErrorPage />}><ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}><TempleConnectionView /></ProtectedRoute></ErrorBoundary>} />

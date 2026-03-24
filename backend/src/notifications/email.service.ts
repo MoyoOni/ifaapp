@@ -44,6 +44,11 @@ export class EmailService {
     this.logger.log(`Password reset email sent to ${email}`);
   }
 
+  /** Send an arbitrary HTML email directly — used for bulk digest and similar. */
+  async sendDirectEmail(to: string, subject: string, html: string): Promise<void> {
+    await this.sesEmailService.sendEmail(to, subject, html);
+  }
+
   private getEmailTemplate(notification: any): { subject: string; body: string; greeting: string } {
     const templates: Record<string, { subject: string; body: string; greeting: string }> = {
       APPOINTMENT: { subject: 'Appointment Update - Ilé Àṣẹ', body: notification.message, greeting: 'Àṣẹ' },

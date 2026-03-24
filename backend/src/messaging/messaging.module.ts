@@ -11,6 +11,6 @@ import { MessagingGateway } from './messaging.gateway';
   imports: [PrismaModule, /*ScheduleModule,*/ forwardRef(() => AuthModule)],
   controllers: [MessagingController],
   providers: [MessagingService, MessageCleanupService, MessagingGateway],
-  exports: [MessagingService],
+  exports: [MessagingService, MessagingGateway],
 })
 export class MessagingModule {}

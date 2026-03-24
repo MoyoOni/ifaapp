@@ -31,6 +31,7 @@ import api from '@/lib/api';
 import { getNavItemsForRole, getRoleDisplayName, getRoleBadgeColor, getDashboardPathForRole, type NavItem } from '../config/navigation';
 import { logger } from '@/shared/utils/logger';
 import { useDailyOdu } from '@/shared/hooks/use-daily-odu';
+import { onForegroundMessage } from '@/lib/firebase-messaging';
 import { useSubscription } from '@/features/subscription/use-subscription';
 import { SearchModal } from './search-modal';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -121,11 +122,22 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                 return { count: 0 };
             }
         },
-        enabled: !!user,
+        enabled: !!user && !localStorage.getItem('dev_mode_role'),
         refetchInterval: 30000, // Refresh every 30 seconds
         retry: 1, // Retry once on failure
         staleTime: 60000, // Consider data fresh for 1 minute
     });
+
+    // Listen for foreground Firebase push messages and show browser notifications
+    useEffect(() => {
+        if (!user) return;
+        const unsub = onForegroundMessage(({ title, body }) => {
+            if (Notification.permission === 'granted') {
+                new Notification(title, { body, icon: '/favicon.ico' });
+            }
+        });
+        return unsub;
+    }, [user?.id]);
 
     // Cmd+K / Ctrl+K global search shortcut
     useEffect(() => {

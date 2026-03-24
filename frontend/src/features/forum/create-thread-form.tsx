@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, Wand2 } from 'lucide-react';
+import { getTemplatesForCategory, ForumTemplate } from './forum-templates';
 import api from '@/lib/api';
 import { useToast } from '@/shared/components/toast';
 import { logger } from '@/shared/utils/logger';
-import { DEMO_FORUM_CATEGORIES } from './forum-demo';
 
 interface ForumCategory {
   id: string;
@@ -58,6 +58,11 @@ interface CreateThreadFormProps {
  * Form for creating new forum threads
  * NOTE: Yoruba diacritics supported in title and content (Àṣẹ, Babaláwo)
  */
+const SUGGESTED_TAGS = [
+  'question', 'discussion', 'resource', 'dream', 'odù',
+  'herbs', 'events', 'language', 'personal', 'elder-wisdom', 'beginner', 'oral-history',
+];
+
 const CreateThreadForm: React.FC<CreateThreadFormProps> = ({
   categoryId,
   onSuccess,
@@ -66,7 +71,10 @@ const CreateThreadForm: React.FC<CreateThreadFormProps> = ({
   const [searchParams] = useSearchParams();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState(categoryId || '');
+  const [activeTemplate, setActiveTemplate] = useState<ForumTemplate | null>(null);
+  const [isSacred, setIsSacred] = useState(false);
   const isCircleSuggestion = searchParams.get('suggest') === 'circle';
 
   // Pre-fill circle suggestion template if applicable
@@ -87,25 +95,32 @@ Why this circle is needed: [Explain why this circle would benefit the community]
     }
   }, [isCircleSuggestion, content]);
 
+  const applyTemplate = (template: ForumTemplate) => {
+    setTitle(template.titlePrefix + ' ');
+    setContent(template.body);
+    setActiveTemplate(template);
+  };
+
   const queryClient = useQueryClient();
 
   // Fetch categories
   const { data: categories = [] } = useQuery<ForumCategory[]>({
     queryKey: ['forum-categories'],
     queryFn: async () => {
-      try {
-        const response = await api.get('/forum/categories');
-        return response.data;
-      } catch (error) {
-        logger.error('Failed to fetch forum categories, using demo data', error);
-        return DEMO_FORUM_CATEGORIES as ForumCategory[];
-      }
+      const response = await api.get('/forum/categories');
+      return response.data;
     },
   });
 
   // Create thread mutation
+  const toggleTag = (tag: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : prev.length < 5 ? [...prev, tag] : prev
+    );
+  };
+
   const createThreadMutation = useMutation({
-    mutationFn: async (data: { categoryId: string; title: string; content: string }) => {
+    mutationFn: async (data: { categoryId: string; title: string; content: string; tags: string[]; isSacred: boolean }) => {
       const response = await api.post('/forum/threads', data);
       return response.data;
     },
@@ -151,6 +166,8 @@ Why this circle is needed: [Explain why this circle would benefit the community]
       categoryId: selectedCategoryId,
       title: title.trim(),
       content: content.trim(),
+      tags: selectedTags,
+      isSacred,
     });
   };
 
@@ -183,7 +200,7 @@ Why this circle is needed: [Explain why this circle would benefit the community]
             </label>
             <select
               value={selectedCategoryId}
-              onChange={(e) => setSelectedCategoryId(e.target.value)}
+              onChange={(e) => { setSelectedCategoryId(e.target.value); setActiveTemplate(null); }}
               required
               aria-label="Select forum category for new thread"
               className="w-full bg-muted/50 border border-border rounded-xl p-4 text-white focus:outline-none focus:ring-2 focus:ring-highlight"
@@ -203,6 +220,45 @@ Why this circle is needed: [Explain why this circle would benefit the community]
               <p className="text-xs text-muted-foreground mt-1">{selectedCategory.description}</p>
             )}
           </div>
+
+          {/* Template selector — shown when category has templates */}
+          {(() => {
+            const slug = categories.find((c) => c.id === selectedCategoryId)?.slug ?? '';
+            const templates = getTemplatesForCategory(slug);
+            if (templates.length === 0) return null;
+            return (
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+                  <Wand2 size={13} /> Use a Template <span className="font-normal normal-case text-muted-foreground/60">(optional)</span>
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {templates.map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => applyTemplate(t)}
+                      className={`text-sm px-3 py-1.5 rounded-xl font-semibold border transition-colors ${
+                        activeTemplate?.id === t.id
+                          ? 'bg-highlight text-white border-highlight'
+                          : 'border-border text-muted-foreground hover:border-highlight/50 hover:text-foreground'
+                      }`}
+                    >
+                      {t.name}
+                    </button>
+                  ))}
+                  {activeTemplate && (
+                    <button
+                      type="button"
+                      onClick={() => { setActiveTemplate(null); setTitle(''); setContent(''); }}
+                      className="text-sm px-3 py-1.5 rounded-xl border border-dashed border-border text-muted-foreground hover:border-red-400 hover:text-red-400 transition-colors"
+                    >
+                      Clear template
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Title */}
           <div className="space-y-2">
@@ -233,6 +289,51 @@ Why this circle is needed: [Explain why this circle would benefit the community]
               rows={8}
               className="w-full bg-muted/50 border border-border rounded-xl p-4 text-white placeholder-muted focus:outline-none focus:ring-2 focus:ring-highlight resize-none custom-scrollbar"
             />
+          </div>
+
+          {/* Tags */}
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
+              Tags <span className="font-normal normal-case text-muted-foreground/60">(optional, max 5)</span>
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {SUGGESTED_TAGS.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => toggleTag(tag)}
+                  className={`text-xs px-3 py-1 rounded-full font-semibold border transition-colors ${
+                    selectedTags.includes(tag)
+                      ? 'bg-highlight text-white border-highlight'
+                      : 'border-border text-muted-foreground hover:border-highlight/50 hover:text-foreground'
+                  }`}
+                >
+                  #{tag}
+                </button>
+              ))}
+            </div>
+            {selectedTags.length === 5 && (
+              <p className="text-xs text-muted-foreground">Maximum 5 tags selected.</p>
+            )}
+          </div>
+
+          {/* F9-601: Sacred Knowledge checkbox */}
+          <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 space-y-2">
+            <label className="flex items-start gap-3 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={isSacred}
+                onChange={(e) => setIsSacred(e.target.checked)}
+                className="mt-0.5 rounded border-border accent-amber-500"
+              />
+              <div>
+                <span className="text-sm font-semibold text-amber-400">Mark as Sacred Knowledge</span>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Use this for discussions involving ritual details, initiatory content, or esoteric Odù teachings.
+                  Limits visibility to registered members only.
+                </p>
+              </div>
+            </label>
           </div>
 
           {/* Cultural Teachings Notice */}

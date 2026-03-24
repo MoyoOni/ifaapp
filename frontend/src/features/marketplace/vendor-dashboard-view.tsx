@@ -37,7 +37,7 @@ const VendorDashboardView: React.FC<VendorDashboardViewProps> = ({ initialTab = 
         throw error;
       }
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id && !localStorage.getItem('dev_mode_role'),
   });
 
   if (isLoading) {

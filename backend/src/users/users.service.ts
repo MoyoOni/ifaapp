@@ -174,7 +174,7 @@ export class UsersService {
   async getReferralStats(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { referralCode: true },
+      select: { referralCode: true, isCommunityBuilder: true },
     });
 
     const referrals = await this.prisma.referral.findMany({
@@ -185,10 +185,27 @@ export class UsersService {
       orderBy: { createdAt: 'desc' },
     });
 
+    const rewardedCount = referrals.filter((r) => r.rewardGranted).length;
+
+    // F9-703: Award Community Builder badge when 3+ rewarded referrals
+    if (rewardedCount >= 3 && user && !user.isCommunityBuilder) {
+      await this.prisma.user.update({ where: { id: userId }, data: { isCommunityBuilder: true } });
+      await this.prisma.notification.create({
+        data: {
+          userId,
+          type: 'SYSTEM',
+          category: 'INFO',
+          title: '🏗️ Community Builder Badge Earned!',
+          message: "You've earned the Community Builder badge! Your contribution is building this community.",
+        },
+      }).catch(() => {});
+    }
+
     return {
       referralCode: user?.referralCode ?? null,
       referralCount: referrals.length,
-      rewardedCount: referrals.filter((r) => r.rewardGranted).length,
+      rewardedCount,
+      isCommunityBuilder: rewardedCount >= 3 || (user?.isCommunityBuilder ?? false),
       referrals: referrals.map((r) => ({
         id: r.referred.id,
         name: r.referred.name,
@@ -296,5 +313,73 @@ export class UsersService {
     await this.searchService.triggerIndexing('USER', user.id, user);
 
     return user;
+  }
+
+  // ==================== F9-901: Trust Score Computation ====================
+
+  /**
+   * Compute and update a practitioner's trust score
+   * Components:
+   * +30 Video verified (one-time)
+   * +20 5+ consultations with positive ratings
+   * +15 50+ forum posts (active contributor)
+   * +10 Temple member
+   * +5 Referred by verified Babalawo
+   * -20 Active dispute
+   */
+  async recomputeTrustScore(userId: string): Promise<number> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        role: true,
+        verified: true,
+        templeId: true,
+        postsAuthored: { select: { id: true }, where: { status: { not: 'DELETED' } } },
+        appointmentsAsBabalawo: { select: { id: true } },
+        babalawoReviewsReceived: { select: { id: true, rating: true } },
+        disputesAsRespondent: { select: { id: true, status: true } },
+      },
+    });
+
+    if (!user || user.role !== 'BABALAWO') return 0;
+
+    let score = 0;
+
+    // +30 Video verified
+    if (user.verified) score += 30;
+
+    // +20 5+ consultations with positive ratings
+    const positiveReviews = user.babalawoReviewsReceived.filter((r) => (r.rating ?? 0) >= 4).length;
+    if (user.appointmentsAsBabalawo.length >= 5 && positiveReviews >= 3) score += 20;
+
+    // +15 50+ forum posts
+    if (user.postsAuthored.length >= 50) score += 15;
+
+    // +10 Temple member
+    if (user.templeId) score += 10;
+
+    // -20 Active dispute
+    const activeDispute = user.disputesAsRespondent.some((d) => d.status === 'PENDING' || d.status === 'UNDER_REVIEW');
+    if (activeDispute) score -= 20;
+
+    score = Math.max(0, score); // Floor at 0
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { trustScore: score },
+    });
+
+    return score;
+  }
+
+  /**
+   * Get trust score tier badge
+   */
+  getTrustScoreTier(trustScore: number): { tier: string; badge: string } {
+    if (trustScore >= 75) return { tier: 'Elder Trusted', badge: '🏆' };
+    if (trustScore >= 50) return { tier: 'Community Trusted', badge: '⭐' };
+    if (trustScore >= 30) return { tier: 'Building Trust', badge: '🌱' };
+    return { tier: '', badge: '' };
   }
 }

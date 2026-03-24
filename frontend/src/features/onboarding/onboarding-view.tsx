@@ -51,6 +51,12 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
   const [slugChecking, setSlugChecking] = useState(false);
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
 
+  // Vendor registration fields
+  const [vendorBusinessName, setVendorBusinessName] = useState('');
+  const [vendorDescription, setVendorDescription] = useState('');
+  const [vendorNoCounterfeit, setVendorNoCounterfeit] = useState(false);
+  const [vendorSubmitting, setVendorSubmitting] = useState(false);
+
   const checkSlug = useCallback(async (value: string) => {
     if (value.length < 3) { setSlugAvailable(null); return; }
     setSlugChecking(true);
@@ -99,6 +105,28 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
       } else {
         setOnboardingStep('heritage');
       }
+    }
+  };
+
+  const handleVendorRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!vendorBusinessName.trim()) return;
+    setVendorSubmitting(true);
+    try {
+      await api.post('/marketplace/vendors', {
+        businessName: vendorBusinessName.trim(),
+        description: vendorDescription.trim() || undefined,
+        noCounterfeitSpiritualItems: vendorNoCounterfeit,
+      });
+    } catch (err: any) {
+      // If vendor profile already exists (409), continue — otherwise log
+      if (err?.response?.status !== 409) {
+        logger.error('Vendor registration failed:', err);
+      }
+    } finally {
+      setVendorSubmitting(false);
+      setRoleSetupComplete(true);
+      setOnboardingStep('heritage');
     }
   };
 
@@ -239,29 +267,55 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
           <div className="bg-card rounded-[2rem] p-8 md:p-10 border border-border/50 shadow-xl space-y-6 animate-in slide-in-from-bottom-8 duration-500">
             <div className="text-center space-y-2">
               <div className="w-16 h-16 bg-muted/40 rounded-2xl flex items-center justify-center mx-auto text-3xl">🛍️</div>
-              <h2 className="text-3xl font-bold brand-font text-stone-800 dark:text-stone-200">Your Shop</h2>
+              <h2 className="text-3xl font-bold brand-font text-stone-800 dark:text-stone-200">Register Your Shop</h2>
               <p className="text-stone-400 text-sm font-bold uppercase tracking-widest">Vendor Setup</p>
             </div>
-            <p className="text-stone-500 text-center">What category of items will you primarily sell?</p>
-            <div className="grid grid-cols-2 gap-3">
-              {['Sacred Tools', 'Ritual Herbs', 'Spiritual Jewelry', 'Ifa Materials', 'Cultural Clothing', 'Books & Media'].map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => { setRoleSetupComplete(true); setOnboardingStep('form'); }}
-                  className="py-3 px-4 bg-muted/40 border border-border rounded-xl text-sm font-semibold text-stone-700 dark:text-stone-300 hover:bg-muted/60 hover:border-stone-400 transition-all text-left"
-                >
-                  {cat}
-                </button>
-              ))}
+            <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-100 rounded-2xl p-4 text-sm text-amber-800 dark:text-amber-400">
+              Your shop will be reviewed by our admin team before you can list products. This usually takes 1–2 business days.
             </div>
-            <button
-              type="button"
-              onClick={() => { setRoleSetupComplete(true); setOnboardingStep('form'); }}
-              className="w-full py-3 text-stone-400 text-sm font-semibold hover:text-stone-600 transition-colors"
-            >
-              Skip for now
-            </button>
+            <form onSubmit={handleVendorRegister} className="space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase text-stone-400 tracking-widest">Business / Shop Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={vendorBusinessName}
+                  onChange={e => setVendorBusinessName(e.target.value)}
+                  placeholder="e.g. Ẹkùn Ifá Sacred Supplies"
+                  className="w-full bg-muted/40 border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-highlight/50 focus:border-highlight"
+                  maxLength={100}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase text-stone-400 tracking-widest">Shop Description <span className="normal-case font-normal">(optional)</span></label>
+                <textarea
+                  rows={3}
+                  value={vendorDescription}
+                  onChange={e => setVendorDescription(e.target.value)}
+                  placeholder="Tell the community what you sell and your connection to the tradition"
+                  className="w-full bg-muted/40 border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-highlight/50 focus:border-highlight resize-none"
+                  maxLength={500}
+                />
+              </div>
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={vendorNoCounterfeit}
+                  onChange={e => setVendorNoCounterfeit(e.target.checked)}
+                  className="w-4 h-4 mt-0.5 accent-primary"
+                />
+                <span className="text-sm text-stone-600 dark:text-stone-400">
+                  I agree not to sell counterfeit spiritual items or items that misrepresent their cultural origin
+                </span>
+              </label>
+              <button
+                type="submit"
+                disabled={vendorSubmitting || !vendorBusinessName.trim()}
+                className="w-full py-4 bg-stone-900 text-white rounded-xl font-bold uppercase tracking-widest hover:bg-stone-800 transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {vendorSubmitting ? 'Submitting...' : <>Register Shop <ChevronRight size={16} /></>}
+              </button>
+            </form>
           </div>
         )}
 

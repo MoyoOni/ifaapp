@@ -568,7 +568,9 @@ export const DEMO_PRODUCTS = [
     description: 'Authentic brass divination chains with traditional craftsmanship',
     fullDescription:
       'Handcrafted in Nigeria using traditional methods. These opele chains are carefully constructed and consecrated at the temple. Each chain is unique and carries the energy of respectful craftsmanship.',
-    category: 'Institutional Tools',
+    category: 'sacred-ritual',
+    subcategory: 'divination-tools',
+    requiresInitiation: true,
     image:
       'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=600&auto=format&fit=crop',
     images: [
@@ -589,7 +591,9 @@ export const DEMO_PRODUCTS = [
     description: 'Pure white cloth for ceremonies, rituals, and spiritual practice',
     fullDescription:
       'This cloth is made from high-quality natural fibers and traditionally consecrated. It is appropriate for use in various spiritual ceremonies including cleansing, Obatala practices, and personal protection rituals.',
-    category: 'Textiles',
+    category: 'sacred-ritual',
+    subcategory: 'sacred-fabrics',
+    requiresInitiation: false,
     image:
       'https://images.unsplash.com/photo-1533323716635-f1f4f8fb27b4?q=80&w=600&auto=format&fit=crop',
     images: [
@@ -609,7 +613,9 @@ export const DEMO_PRODUCTS = [
     description: 'Authentic red parrot feathers used in ceremonies and spiritual adornment',
     fullDescription:
       'Sourced ethically and respectfully. These feathers are used in various Orisha ceremonies and are particularly important in Oshun, Shango, and Oya practices. Each feather carries traditional significance.',
-    category: 'Artisanal Artifacts',
+    category: 'sacred-ritual',
+    subcategory: 'ritual-supplies',
+    requiresInitiation: false,
     image:
       'https://images.unsplash.com/photo-1569163139394-de4eeeffc2aa?q=80&w=600&auto=format&fit=crop',
     images: [
@@ -629,7 +635,9 @@ export const DEMO_PRODUCTS = [
     description: 'Dried hibiscus flowers for healing tea and ritual practices',
     fullDescription:
       'Hand-harvested and dried with intention. Hibiscus is known for emotional balance, heart-opening, and supporting feminine energy. Can be used as tea, in baths, or in ritual preparations.',
-    category: 'Botanical Resources',
+    category: 'cultural-lifestyle',
+    subcategory: 'wellness',
+    requiresInitiation: false,
     image:
       'https://images.unsplash.com/photo-1587854692152-cbe660dbde0b?q=80&w=600&auto=format&fit=crop',
     images: [
@@ -649,7 +657,9 @@ export const DEMO_PRODUCTS = [
     description: 'Traditional herbs for building immunity and supporting wellness',
     fullDescription:
       'Contains 5 different herbs traditionally used to support the immune system: ginger root, turmeric, echinacea, lemon grass, and holy basil. Instructions for preparation included.',
-    category: 'Botanical Resources',
+    category: 'cultural-lifestyle',
+    subcategory: 'wellness',
+    requiresInitiation: false,
     image:
       'https://images.unsplash.com/photo-1584308666744-24d5f474f055?q=80&w=600&auto=format&fit=crop',
     images: [
