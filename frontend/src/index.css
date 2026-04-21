@@ -1,97 +1,77 @@
+@import './styles/accessibility.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  /* Light theme colors based on Orisha system */
-  --background: 50 25% 96%; /* Sacred Ivory - Sacred Ivory light */
-  --foreground: 24 15% 15%; /* Deep Sacred - Deep sacred light */
-  --foreground-secondary: 24 10% 40%; /* Soft Sacred - Medium neutral for secondary text */
-  
-  --muted: 24 5% 90%; /* Light neutral */
-  --muted-foreground: 24 5% 60%; /* Muted Sacred - Light neutral for muted text */
-  
-  --popover: 50 25% 96%; /* Sacred Ivory - Card background */
-  --popover-foreground: 24 15% 15%; /* Deep Sacred - Card text */
-  
-  --border: 24 5% 85%; /* Border Sacred - Subtle border color */
-  --input: 24 5% 85%; /* Border Sacred - Input border */
-  
-  --card: 0 0% 100%; /* White - Card surface (stands out from ivory background) */
-  --card-foreground: 24 15% 15%; /* Deep Sacred - Card text */
-  
-  --primary: 38 92% 50%; /* Osun Gold - Golden yellow */
-  --primary-foreground: 0 0% 98%; /* Light text on primary */
-  
-  --secondary: 350 90% 45%; /* Ogun Iron - Deep red */
-  --secondary-foreground: 0 0% 98%; /* Light text on secondary */
-  
-  --accent: 15 70% 45%; /* Ogun Rust - Rust brown */
-  --accent-foreground: 0 0% 98%; /* Light text on accent */
-  
-  --highlight: 0 85% 55%; /* Shango Thunder - Bright red */
-  --highlight-foreground: 0 0% 98%; /* Light text on highlight */
-  
-  --success: 142 86% 28%; /* Oshun Forest - Emerald green */
-  --success-foreground: 0 0% 98%; /* Light text on success */
-  
-  --warning: 15 70% 45%; /* Ogun Rust - Rust brown */
-  --warning-foreground: 0 0% 98%; /* Light text on warning */
-  
-  --error: 0 85% 55%; /* Shango Thunder - Bright red */
-  --error-foreground: 0 0% 98%; /* Light text on error */
-  
-  --destructive: 0 85% 55%; /* Shango Thunder - Same as error for consistency */
-  --destructive-foreground: 0 0% 98%; /* Light text on destructive */
-  
-  --ring: 24 5% 60%; /* Ring color */
-  
-  --radius: 0.5rem;
+@layer base {
+  :root {
+    /* Light theme */
+    --background: 0 0% 100%;
+    --foreground: 222.2 47.4% 11.2%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 47.4% 11.2%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 47.4% 11.2%;
+    --primary: 142 76% 36%; /* emerald-600 */
+    --primary-foreground: 356 2% 13%; /* stone-900 */
+    --secondary: 210 20% 98%; /* slate-50 */
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 20% 98%; /* slate-50 */
+    --muted-foreground: 215.4 16.3% 46.9%; /* slate-500 */
+    --accent: 142 76% 36%; /* emerald-600 */
+    --accent-foreground: 0 0% 98%; /* stone-50 */
+    --destructive: 0 100% 50%; /* red-500 */
+    --destructive-foreground: 0 0% 98%; /* stone-50 */
+    --border: 214.3 31.8% 91.4%; /* slate-200 */
+    --input: 214.3 31.8% 91.4%; /* slate-200 */
+    --ring: 142 76% 36%; /* emerald-600 */
+    --radius: 0.5rem;
+    --highlight: 45 100% 51%; /* amber-500 */
+    --highlight-foreground: 0 0% 98%; /* stone-50 */
+    --error: 0 100% 50%; /* red-500 */
+    --success: 142 76% 36%; /* emerald-600 */
+    --warning: 45 100% 51%; /* amber-500 */
+    --info: 221 83% 53%; /* blue-500 */
+  }
+
+  .dark {
+    /* Dark theme */
+    --background: 222 47% 3.5%; /* stone-950 */
+    --foreground: 213 31% 91%; /* slate-100 */
+    --card: 222 47% 3.5%; /* stone-950 */
+    --card-foreground: 213 31% 91%; /* slate-100 */
+    --popover: 222 47% 3.5%; /* stone-950 */
+    --popover-foreground: 213 31% 91%; /* slate-100 */
+    --primary: 142 76% 36%; /* emerald-600 */
+    --primary-foreground: 0 0% 98%; /* stone-50 */
+    --secondary: 217.2 32.6% 17.5%; /* slate-800 */
+    --secondary-foreground: 213 31% 91%; /* slate-100 */
+    --muted: 217.2 32.6% 17.5%; /* slate-800 */
+    --muted-foreground: 215 20.2% 65.1%; /* slate-400 */
+    --accent: 142 76% 36%; /* emerald-600 */
+    --accent-foreground: 0 0% 98%; /* stone-50 */
+    --destructive: 0 100% 50%; /* red-500 */
+    --destructive-foreground: 0 0% 98%; /* stone-50 */
+    --border: 217.2 32.6% 17.5%; /* slate-800 */
+    --input: 217.2 32.6% 17.5%; /* slate-800 */
+    --ring: 142 76% 36%; /* emerald-600 */
+    --highlight: 45 100% 51%; /* amber-500 */
+    --highlight-foreground: 0 0% 98%; /* stone-50 */
+    --error: 0 100% 50%; /* red-500 */
+    --success: 142 76% 36%; /* emerald-600 */
+    --warning: 45 100% 51%; /* amber-500 */
+    --info: 221 83% 53%; /* blue-500 */
+  }
 }
 
-.dark {
-  /* Dark theme colors based on Orisha system */
-  --background: 24 10% 10%; /* Dark background */
-  --foreground: 40 10% 90%; /* Deep Sacred - Inverted for dark mode */
-  --foreground-secondary: 40 5% 70%; /* Soft Sacred - Inverted for dark mode */
-  
-  --muted: 24 5% 15%; /* Darker neutral */
-  --muted-foreground: 40 5% 50%; /* Muted Sacred - Inverted for dark mode */
-  
-  --popover: 24 10% 8%; /* Dark popover */
-  --popover-foreground: 40 10% 90%; /* Popover text */
-  
-  --border: 30 5% 30%; /* Border Sacred - Inverted for dark mode */
-  --input: 30 5% 30%; /* Input border */
-  
-  --card: 24 10% 8%; /* Dark card surface */
-  --card-foreground: 40 10% 90%; /* Card text */
-  
-  --primary: 38 92% 60%; /* Osun Gold - Adjusted for dark mode */
-  --primary-foreground: 0 0% 20%; /* Darker text on primary */
-  
-  --secondary: 350 90% 55%; /* Ogun Iron - Adjusted for dark mode */
-  --secondary-foreground: 0 0% 98%; /* Light text on secondary */
-  
-  --accent: 15 70% 55%; /* Ogun Rust - Adjusted for dark mode */
-  --accent-foreground: 0 0% 98%; /* Light text on accent */
-  
-  --highlight: 0 85% 65%; /* Shango Thunder - Adjusted for dark mode */
-  --highlight-foreground: 0 0% 98%; /* Light text on highlight */
-  
-  --success: 142 86% 35%; /* Oshun Forest - Adjusted for dark mode */
-  --success-foreground: 0 0% 98%; /* Light text on success */
-  
-  --warning: 15 70% 55%; /* Ogun Rust - Adjusted for dark mode */
-  --warning-foreground: 0 0% 98%; /* Light text on warning */
-  
-  --error: 0 85% 65%; /* Shango Thunder - Adjusted for dark mode */
-  --error-foreground: 0 0% 98%; /* Light text on error */
-  
-  --destructive: 0 85% 65%; /* Shango Thunder - Adjusted for dark mode */
-  --destructive-foreground: 0 0% 98%; /* Light text on destructive */
-  
-  --ring: 24 5% 40%; /* Ring color for dark mode */
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }
 
 /* Custom scrollbar styling */

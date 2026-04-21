@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import MessageThread from '@/features/messages/thread/message-thread';
 import MessageInbox from '@/features/messages/inbox/message-inbox';
@@ -6,6 +6,9 @@ import { useAuth } from '@/shared/hooks/use-auth';
 import { MessageSquare, ArrowLeft } from 'lucide-react';
 import { FeatureHeader } from '@/shared/components/feature-header';
 import { motion, AnimatePresence } from 'framer-motion';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
+import ErrorBoundary from '@/shared/components/error-boundary';
+import { MessagesSkeleton } from '@/shared/components/skeleton';
 
 /**
  * Messages Page
@@ -66,39 +69,74 @@ const MessagesPage: React.FC = () => {
           </FeatureHeader>
 
           {/* Main Interface Content */}
-          <div className="bg-card/40 backdrop-blur-md rounded-[2.5rem] border border-white shadow-2xl overflow-hidden min-h-[700px] flex flex-col relative transition-all duration-500">
-            <AnimatePresence mode="wait" initial={false}>
-              {!otherUserId ? (
-                <motion.div
-                  key="inbox"
-                  initial={{ opacity: 0, scale: 0.98 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 1.02 }}
-                  transition={{ duration: 0.2, ease: "easeOut" }}
-                  className="flex-1 flex flex-col"
-                >
-                  <MessageInbox
-                    userId={user.id}
-                    onSelectConversation={(id) => navigate(`/messages/${id}`)}
-                  />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="thread"
-                  initial={{ opacity: 0, scale: 1.02 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.98 }}
-                  transition={{ duration: 0.2, ease: "easeOut" }}
-                  className="flex-1 flex flex-col"
-                >
-                  <MessageThread
-                    userId={user.id}
-                    otherUserId={otherUserId}
-                    onBack={() => navigate('/messages')}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
+          <div 
+            className="bg-card/40 backdrop-blur-md rounded-[2.5rem] border border-white shadow-2xl overflow-hidden min-h-[700px] flex flex-col relative transition-all duration-500"
+            role="main"
+            aria-label={otherUserId ? "Message conversation" : "Message inbox"}
+          >
+            <ErrorBoundary 
+              fallback={
+                <div className="p-8 text-center">
+                  <div className="text-destructive text-6xl mb-4">⚠️</div>
+                  <h2 className="text-2xl font-bold text-foreground mb-2">Communication Error</h2>
+                  <p className="text-muted-foreground mb-6">
+                    There was a problem loading your messages. Please try again.
+                  </p>
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="px-6 py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 transition-colors"
+                    aria-label="Refresh messages"
+                  >
+                    Refresh Messages
+                  </button>
+                </div>
+              }
+            >
+              <Suspense 
+                fallback={
+                  <div className="flex items-center justify-center h-[700px]">
+                    <LoadingSpinner size="lg" variant="highlight" label="Loading messages..." />
+                  </div>
+                }
+              >
+                <AnimatePresence mode="wait" initial={false}>
+                  {!otherUserId ? (
+                    <motion.div
+                      key="inbox"
+                      initial={{ opacity: 0, scale: 0.98 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 1.02 }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
+                      className="flex-1 flex flex-col"
+                    >
+                      <Suspense fallback={<MessagesSkeleton />}>
+                        <MessageInbox
+                          userId={user.id}
+                          onSelectConversation={(id) => navigate(`/messages/${id}`)}
+                        />
+                      </Suspense>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="thread"
+                      initial={{ opacity: 0, scale: 1.02 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.98 }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
+                      className="flex-1 flex flex-col"
+                    >
+                      <Suspense fallback={<MessagesSkeleton />}>
+                        <MessageThread
+                          userId={user.id}
+                          otherUserId={otherUserId}
+                          onBack={() => navigate('/messages')}
+                        />
+                      </Suspense>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </Suspense>
+            </ErrorBoundary>
           </div>
         </div>
       </div>

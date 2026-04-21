@@ -1,15 +1,10 @@
 import { Module } from '@nestjs/common';
-import { SentryInterceptor } from './sentry.interceptor';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { SentryInitializerService } from './sentry-initializer.service';
+import { SecretsModule } from '../secrets/secrets.module';
 
 @Module({
-  providers: [
-    SentryInterceptor,
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: SentryInterceptor,
-    },
-  ],
-  exports: [SentryInterceptor],
+  imports: [SecretsModule],
+  providers: [SentryInitializerService],
+  exports: [SentryInitializerService],
 })
 export class SentryModule {}

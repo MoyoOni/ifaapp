@@ -1,15 +1,14 @@
 import { Module } from '@nestjs/common';
 import { AppointmentsService } from './appointments.service';
 import { AppointmentsController } from './appointments.controller';
-import { PrismaModule } from '../prisma/prisma.module';
-import { NotificationsModule } from '../notifications/notifications.module';
-import { WalletModule } from '../wallet/wallet.module';
-import { WhatsAppModule } from '../whatsapp';
+import { ConsultationNotesService } from './consultation-notes.service';
+import { ConsultationNotesController } from './consultation-notes.controller';
+import { ClientSessionNotesService } from './client-session-notes.service';
+import { ClientSessionNotesController } from './client-session-notes.controller';
 
 @Module({
-  imports: [PrismaModule, NotificationsModule, WalletModule, WhatsAppModule],
-  controllers: [AppointmentsController],
-  providers: [AppointmentsService],
-  exports: [AppointmentsService],
+  controllers: [AppointmentsController, ConsultationNotesController, ClientSessionNotesController],
+  providers: [AppointmentsService, ConsultationNotesService, ClientSessionNotesService],
+  exports: [AppointmentsService, ConsultationNotesService, ClientSessionNotesService],
 })
 export class AppointmentsModule {}

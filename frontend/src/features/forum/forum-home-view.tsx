@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Lock, Pin, X, Flame, MessageSquare, HelpCircle, BookOpen } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import api from '@/lib/api';
@@ -162,6 +163,7 @@ const TOUR_STEPS = [
 
 const ForumHomeView: React.FC<ForumHomeViewProps> = ({ onSelectThread, onCreateThread }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -614,13 +616,17 @@ const ForumHomeView: React.FC<ForumHomeViewProps> = ({ onSelectThread, onCreateT
 
                     <div className="flex items-start gap-4">
                       {/* Avatar */}
-                      <div className="shrink-0 w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center font-bold text-emerald-400 overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); navigate(`/profile/${thread.author.id}`); }}
+                        className="shrink-0 w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center font-bold text-emerald-400 overflow-hidden hover:opacity-80 transition-opacity"
+                      >
                         {thread.author.avatar ? (
                           <img src={thread.author.avatar} alt="" className="w-full h-full object-cover" />
                         ) : (
                           thread.author.name[0].toUpperCase()
                         )}
-                      </div>
+                      </button>
 
                       <div className="flex-1 min-w-0">
                         {/* Title row */}
@@ -662,9 +668,13 @@ const ForumHomeView: React.FC<ForumHomeViewProps> = ({ onSelectThread, onCreateT
 
                         {/* Meta row */}
                         <div className="flex items-center flex-wrap gap-3 text-xs text-emerald-400 font-medium">
-                          <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); navigate(`/profile/${thread.author.id}`); }}
+                            className="text-emerald-600 dark:text-emerald-400 font-bold hover:underline"
+                          >
                             {thread.author.yorubaName || thread.author.name}
-                          </span>
+                          </button>
                           <ForumRoleBadge
                             role={thread.author.role}
                             verified={thread.author.verified}

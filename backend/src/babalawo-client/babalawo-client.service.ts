@@ -337,4 +337,54 @@ export class BabalawoClientService {
       endDate: activePersonalAwo.endDate,
     };
   }
+
+  async getClientTimeline(babalawoId: string, clientId: string, currentUser: CurrentUserPayload) {
+    if (currentUser.id !== babalawoId && currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Access denied');
+    }
+
+    const [appointments, guidancePlans] = await Promise.all([
+      this.prisma.appointment.findMany({
+        where: { babalawoId, clientId },
+        select: {
+          id: true, date: true, time: true, status: true,
+          duration: true, topic: true, notes: true, createdAt: true,
+        },
+        orderBy: { date: 'desc' },
+      }),
+      this.prisma.guidancePlan.findMany({
+        where: { babalawoId, clientId },
+        select: {
+          id: true, type: true, status: true, instructions: true,
+          totalCost: true, currency: true, createdAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+
+    const entries = [
+      ...appointments.map((a) => ({
+        kind: 'consultation' as const,
+        id: a.id,
+        date: `${a.date}T${a.time ?? '00:00'}`,
+        status: a.status,
+        duration: a.duration,
+        topic: a.topic,
+        summary: a.notes ?? null,
+      })),
+      ...guidancePlans.map((g) => ({
+        kind: 'guidance_plan' as const,
+        id: g.id,
+        date: g.createdAt.toISOString(),
+        status: g.status,
+        planType: g.type,
+        summary: g.instructions ? g.instructions.slice(0, 120) : null,
+        totalCost: g.totalCost,
+        currency: g.currency,
+      })),
+    ];
+
+    entries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return entries;
+  }
 }

@@ -39,46 +39,10 @@ const MultiCurrencyBalance: React.FC<MultiCurrencyBalanceProps> = ({
   }>({
     queryKey: ['wallet-balance-multi', userId],
     queryFn: async () => {
-      try {
-        const response = await api.get(`/wallet/${userId}/balance?multiCurrency=true`);
-        return response.data;
-      } catch (error) {
-        logger.warn("API/Network fallback for multicurrency, using mock data");
-        // Mock data
-        return {
-          baseBalance: baseBalance,
-          baseCurrency: baseCurrency,
-          locked: false,
-          conversions: [
-            {
-              currency: Currency.NGN,
-              balance: baseBalance,
-              rate: 1,
-              symbol: '₦'
-            },
-            {
-              currency: Currency.USD,
-              balance: baseBalance * 0.00065, // Approx rate
-              rate: 0.00065,
-              symbol: '$'
-            },
-            {
-              currency: Currency.EUR,
-              balance: baseBalance * 0.00060, // Approx rate
-              rate: 0.00060,
-              symbol: '€'
-            },
-            {
-              currency: Currency.GBP,
-              balance: baseBalance * 0.00051, // Approx rate
-              rate: 0.00051,
-              symbol: '£'
-            }
-          ]
-        };
-      }
+      const response = await api.get(`/wallet/${userId}/balance?multiCurrency=true`);
+      return response.data;
     },
-    enabled: !!userId,
+    enabled: !!userId && !localStorage.getItem('dev_mode_role'),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 

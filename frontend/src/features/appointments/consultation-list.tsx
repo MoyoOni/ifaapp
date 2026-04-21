@@ -1,20 +1,23 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Calendar, 
-  Clock, 
-  Video, 
-  MapPin, 
-  Phone, 
-  Users, 
-  MessageCircle, 
-  CheckCircle, 
-  XCircle, 
+import { ConsultationNotepad } from '@/shared/components/consultation-notepad';
+import {
+  Calendar,
+  Clock,
+  Video,
+  MapPin,
+  Phone,
+  Users,
+  MessageCircle,
+  CheckCircle,
+  XCircle,
   Clock as ClockIcon,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Star
 } from 'lucide-react';
 import { useClientAppointments } from './hooks/use-client-appointments';
+import { LeaveReviewModal } from '@/shared/components/leave-review-modal';
 
 interface ConsultationListProps {
   clientId: string;
@@ -23,6 +26,14 @@ interface ConsultationListProps {
 const ConsultationList: React.FC<ConsultationListProps> = ({ clientId }) => {
   const navigate = useNavigate();
   const { appointments, loading, error, refetch } = useClientAppointments(clientId);
+  const [reviewModal, setReviewModal] = useState<{ appointmentId: string; babalawoId: string; babalawoName: string; babalawoAvatar?: string } | null>(null);
+
+  const isSkipped = (apptId: string) => {
+    try {
+      const skipped: string[] = JSON.parse(localStorage.getItem('review_skipped') || '[]');
+      return skipped.includes(apptId);
+    } catch { return false; }
+  };
 
   if (loading) {
     return (
@@ -222,10 +233,60 @@ const ConsultationList: React.FC<ConsultationListProps> = ({ clientId }) => {
                   </button>
                 </div>
               )}
+              {appointment.status === 'COMPLETED' && appointment.babalawo?.id && (
+                <div className="mt-4 pt-4 border-t border-border/50 space-y-2">
+                  {/* Rebook shortcut */}
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/booking/${appointment.babalawo!.id}`)}
+                    className="w-full py-2 bg-primary/10 text-primary text-xs font-bold rounded-xl hover:bg-primary/20 transition-colors"
+                  >
+                    Book again with {appointment.babalawo.name || 'this Babalawo'} →
+                  </button>
+                  {/* Review prompt */}
+                  {!isSkipped(appointment.id) && (
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-muted-foreground">How was this session?</p>
+                      <button
+                        type="button"
+                        onClick={() => setReviewModal({
+                          appointmentId: appointment.id,
+                          babalawoId: appointment.babalawo!.id,
+                          babalawoName: appointment.babalawo!.name || 'Your Babalawo',
+                          babalawoAvatar: appointment.babalawo!.avatar,
+                        })}
+                        className="flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline"
+                      >
+                        <Star size={13} className="fill-amber-400 text-amber-400" />
+                        Rate this session
+                      </button>
+                    </div>
+                  )}
+                  {/* Client session notes */}
+                  <ConsultationNotepad
+                    clientId={clientId}
+                    clientName={appointment.babalawo.name || 'your Babalawo'}
+                    appointmentId={appointment.id}
+                    label="My Session Notes"
+                    placeholder="What guidance did you receive? What do you want to remember from this session?"
+                  />
+                </div>
+              )}
             </div>
           );
         })}
       </div>
+
+      {reviewModal && (
+        <LeaveReviewModal
+          isOpen
+          onClose={() => setReviewModal(null)}
+          appointmentId={reviewModal.appointmentId}
+          babalawoId={reviewModal.babalawoId}
+          babalawoName={reviewModal.babalawoName}
+          babalawoAvatar={reviewModal.babalawoAvatar}
+        />
+      )}
     </div>
   );
 };

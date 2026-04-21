@@ -229,6 +229,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                     !showLabel && "justify-center px-3"
                 )}
                 title={!showLabel ? item.label : undefined}
+                aria-label={item.label}
             >
                 <item.icon
                     size={isMobile ? 24 : 20}
@@ -308,6 +309,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                                 onClick={toggleSidebar}
                                 className="p-1.5 rounded-lg hover:bg-secondary/10 text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
                                 title="Collapse sidebar"
+                                aria-label="Collapse sidebar"
                             >
                                 <ChevronLeft size={18} />
                             </button>
@@ -350,6 +352,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                             onClick={toggleSidebar}
                             className="w-full p-2 rounded-lg hover:bg-secondary/10 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center"
                             title="Expand sidebar"
+                            aria-label="Expand sidebar"
                         >
                             <ChevronRight size={18} />
                         </button>
@@ -523,6 +526,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                                             type="button"
                                             onClick={() => handleNavClick(path)}
                                             className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-secondary/10 transition-colors"
+                                            aria-label={label}
                                         >
                                             <Icon size={18} className={color} />
                                             <span className="text-[10px] text-muted-foreground">{label}</span>
@@ -533,6 +537,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                                 <button
                                     onClick={logout}
                                     className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-error/10 text-error font-medium hover:bg-error/20 transition-colors text-sm"
+                                    aria-label="Log out"
                                 >
                                     <LogOut size={16} />
                                     Log Out
@@ -577,6 +582,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                                 type="button"
                                 onClick={() => setShowNotificationDropdown(!showNotificationDropdown)}
                                 className="p-2 rounded-xl hover:bg-secondary/10 text-muted-foreground hover:text-foreground transition-colors relative"
+                                aria-label="Notifications"
                             >
                                 <Bell size={20} />
                                 {(unreadCount?.count ?? 0) > 0 && (
@@ -618,6 +624,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                                 type="button"
                                 onClick={() => setShowNotificationDropdown(!showNotificationDropdown)}
                                 className="p-2.5 rounded-full bg-background border border-border shadow-sm text-muted-foreground hover:text-primary hover:border-primary/30 transition-all relative"
+                                aria-label="Notifications"
                             >
                                 <Bell size={20} />
                                 {(unreadCount?.count ?? 0) > 0 && (
@@ -673,6 +680,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                                                 ? "text-primary"
                                                 : "text-muted-foreground hover:text-foreground"
                                         )}
+                                        aria-label={tab.label}
                                     >
                                         <tab.icon size={22} className={cn("transition-colors", isActive && "drop-shadow-sm")} />
                                         <span className={cn(

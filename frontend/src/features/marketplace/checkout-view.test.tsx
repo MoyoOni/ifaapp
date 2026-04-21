@@ -82,7 +82,7 @@ describe('CheckoutView', () => {
 
   it('back button on checkout calls onBack', () => {
     render(<CheckoutView onBack={onBack} onSuccess={onSuccess} />);
-    const backBtn = screen.getByRole('button', { name: '' });
+    const backBtn = screen.getByRole('button', { name: /Go back/i });  // Changed to look for the correct label
     fireEvent.click(backBtn);
     expect(onBack).toHaveBeenCalled();
   });

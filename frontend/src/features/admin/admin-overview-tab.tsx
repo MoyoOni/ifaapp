@@ -2,13 +2,97 @@ import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
     Users, Shield, CheckCircle, MessageSquare, Calendar,
-    Link as LinkIcon, Activity, Clock
+    Link as LinkIcon, Activity, Clock, Sun, Sunrise, Moon, AlertTriangle
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { StatCard, UserListItem, VerificationListItem, AdminUser, VerificationApplication } from './admin-shared-components';
 import { SkeletonStat, SkeletonTable } from '@/shared/components/skeleton';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
+
+function getGreeting(): { text: string; Icon: React.ElementType } {
+    const hour = new Date().getHours();
+    if (hour < 12) return { text: 'Good morning', Icon: Sunrise };
+    if (hour < 17) return { text: 'Good afternoon', Icon: Sun };
+    return { text: 'Good evening', Icon: Moon };
+}
+
+const MorningBriefing: React.FC<{
+    adminName: string;
+    pendingVerifications: number;
+    statsLoading: boolean;
+}> = ({ adminName, pendingVerifications, statsLoading }) => {
+    const { text: greeting, Icon: GreetingIcon } = getGreeting();
+    const today = new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
+
+    const { data: openDisputes } = useQuery<number>({
+        queryKey: ['admin-open-disputes-count'],
+        queryFn: async () => {
+            const res = await api.get('/admin/disputes');
+            const disputes: Array<{ status: string }> = res.data?.disputes ?? res.data ?? [];
+            return disputes.filter(d => d.status === 'OPEN' || d.status === 'DISPUTED').length;
+        },
+        enabled: !localStorage.getItem('dev_mode_role'),
+        staleTime: 120000,
+    });
+
+    const { data: reportedCount } = useQuery<number>({
+        queryKey: ['admin-reported-content-count'],
+        queryFn: async () => {
+            const res = await api.get('/admin/reported-content');
+            const items: unknown[] = res.data?.reports ?? res.data ?? [];
+            return items.length;
+        },
+        enabled: !localStorage.getItem('dev_mode_role'),
+        staleTime: 120000,
+    });
+
+    const urgentItems = [
+        pendingVerifications > 0 && { label: 'Pending verifications', count: pendingVerifications, color: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20' },
+        (openDisputes ?? 0) > 0 && { label: 'Open disputes', count: openDisputes!, color: 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20' },
+        (reportedCount ?? 0) > 0 && { label: 'Reported content', count: reportedCount!, color: 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20' },
+    ].filter(Boolean) as Array<{ label: string; count: number; color: string }>;
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-2xl p-6"
+        >
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
+                        <GreetingIcon size={20} className="text-primary" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-foreground">
+                            {greeting}, {adminName.split(' ')[0]}
+                        </h2>
+                        <p className="text-sm text-muted-foreground">{today}</p>
+                    </div>
+                </div>
+
+                {!statsLoading && urgentItems.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                        {urgentItems.map(item => (
+                            <div key={item.label} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${item.color}`}>
+                                <AlertTriangle size={11} />
+                                {item.count} {item.label}
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {!statsLoading && urgentItems.length === 0 && (
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20">
+                        <CheckCircle size={11} />
+                        All clear — no urgent items
+                    </div>
+                )}
+            </div>
+        </motion.div>
+    );
+};
 
 function formatRelativeTime(dateStr: string): string {
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -84,8 +168,17 @@ const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
         { label: 'Total Messages', value: stats?.totalMessages ?? 0, icon: MessageSquare, color: 'text-pink-600 dark:text-pink-400 border-pink-200 dark:border-pink-800' },
     ];
 
+    const adminName = user?.name ?? user?.email ?? 'Admin';
+
     return (
         <>
+            {/* Morning Briefing */}
+            <MorningBriefing
+                adminName={adminName}
+                pendingVerifications={stats?.pendingVerifications ?? 0}
+                statsLoading={statsLoading}
+            />
+
             {/* Statistics Cards */}
             {statsLoading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

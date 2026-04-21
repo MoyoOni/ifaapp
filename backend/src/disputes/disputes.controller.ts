@@ -3,6 +3,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { DisputesService } from './disputes.service';
 import { CreateDisputeDto } from './dto/create-dispute.dto';
 import { ResolveDisputeDto } from './dto/resolve-dispute.dto';
+import { AssignDisputeDto } from './dto/assign-dispute.dto';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { RolesGuard, Roles } from '../auth/guards/roles.guard';
 import { UserRole } from '@ile-ase/common';
@@ -69,7 +70,7 @@ export class DisputesController {
   @Roles(UserRole.ADMIN)
   async assignDispute(
     @Param('id') id: string,
-    @Body() body: { reviewerId: string },
+    @Body() body: AssignDisputeDto,
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
     return this.disputesService.assignDispute(id, body.reviewerId, currentUser);

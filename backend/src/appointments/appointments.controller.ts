@@ -8,13 +8,15 @@ import {
   Query,
   UseGuards,
   BadRequestException,
+  Res,
 } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
+import { Response } from 'express';
 import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { CheckAvailabilityDto } from './dto/check-availability.dto';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('appointments')
 @UseGuards(AuthGuard('jwt'))
@@ -70,6 +72,18 @@ export class AppointmentsController {
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
     return this.appointmentsService.findByClient(clientId, currentUser);
+  }
+
+  /**
+   * Get completed appointments for a client (session history)
+   * GET /appointments/client/:clientId/history
+   */
+  @Get('client/:clientId/history')
+  async getSessionHistory(
+    @Param('clientId') clientId: string,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.appointmentsService.getSessionHistory(clientId, currentUser);
   }
 
   /**
@@ -140,6 +154,25 @@ export class AppointmentsController {
   @Get(':id')
   async findOne(@Param('id') id: string, @CurrentUser() currentUser: CurrentUserPayload) {
     return this.appointmentsService.findOne(id, currentUser);
+  }
+
+  /**
+   * Download receipt for completed appointment
+   * GET /appointments/:id/receipt
+   */
+  @Get(':id/receipt')
+  async downloadReceipt(
+    @Param('id') id: string,
+    @CurrentUser() currentUser: CurrentUserPayload,
+    @Res() res: Response
+  ) {
+    const receiptData = await this.appointmentsService.generateReceipt(id, currentUser);
+    
+    // Set headers for PDF download
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="receipt-${id}.pdf"`);
+    
+    res.send(receiptData);
   }
 
   /**

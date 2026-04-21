@@ -5,6 +5,7 @@ import {
   BadRequestException,
   Inject,
   forwardRef,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
@@ -20,6 +21,8 @@ import { EmailService } from '../notifications/email.service';
 
 @Injectable()
 export class ForumService {
+  private readonly logger = new Logger(ForumService.name);
+
   constructor(
     private prisma: PrismaService,
     @Inject(forwardRef(() => MessagingGateway))
@@ -1381,6 +1384,385 @@ Share your reflections, questions, and experiences below. All levels welcome.
     });
   }
 
+  // ==================== Admin Forum Management ====================
+
+  async createForumCategory(
+    data: { 
+      name: string; 
+      description?: string; 
+      icon?: string; 
+      order?: number; 
+      isTeachings?: boolean 
+    },
+    currentUser: CurrentUserPayload
+  ) {
+    if (currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can create forum categories');
+    }
+
+    // Generate slug from name
+    const slug = data.name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')  // Remove special characters
+      .replace(/\s+/g, '-')           // Replace spaces with hyphens
+      .trim();
+
+    return this.prisma.forumCategory.create({
+      data: {
+        name: data.name,
+        slug,
+        description: data.description,
+        icon: data.icon,
+        order: data.order || 0,
+        isTeachings: data.isTeachings || false,
+        isActive: true,
+      },
+    });
+  }
+
+  async updateForumCategory(
+    id: string,
+    data: { 
+      name?: string; 
+      description?: string; 
+      icon?: string; 
+      order?: number; 
+      isTeachings?: boolean;
+      isActive?: boolean;
+    },
+    currentUser: CurrentUserPayload
+  ) {
+    if (currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can update forum categories');
+    }
+
+    // If name is changing, update the slug
+    let slug = undefined;
+    if (data.name) {
+      slug = data.name
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .trim();
+    }
+
+    return this.prisma.forumCategory.update({
+      where: { id },
+      data: {
+        ...(data.name && { name: data.name }),
+        ...(slug && { slug }),
+        ...(data.description !== undefined && { description: data.description }),
+        ...(data.icon !== undefined && { icon: data.icon }),
+        ...(data.order !== undefined && { order: data.order }),
+        ...(data.isTeachings !== undefined && { isTeachings: data.isTeachings }),
+        ...(data.isActive !== undefined && { isActive: data.isActive }),
+      },
+    });
+  }
+
+  async deleteForumCategory(
+    id: string,
+    currentUser: CurrentUserPayload
+  ) {
+    if (currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can delete forum categories');
+    }
+
+    // Check if category has threads
+    const threadCount = await this.prisma.forumThread.count({
+      where: { categoryId: id }
+    });
+
+    if (threadCount > 0) {
+      throw new BadRequestException('Cannot delete category with existing threads. Move threads to another category first.');
+    }
+
+    return this.prisma.forumCategory.delete({
+      where: { id },
+    });
+  }
+
+  async reorderForumCategory(
+    id: string,
+    newPosition: number,
+    currentUser: CurrentUserPayload
+  ) {
+    if (currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can reorder forum categories');
+    }
+
+    return this.prisma.forumCategory.update({
+      where: { id },
+      data: { order: newPosition },
+    });
+  }
+
+  async moveThreadToCategory(
+    threadId: string,
+    targetCategoryId: string,
+    currentUser: CurrentUserPayload
+  ) {
+    if (currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can move threads between categories');
+    }
+
+    // Verify thread exists
+    const thread = await this.prisma.forumThread.findUnique({
+      where: { id: threadId },
+    });
+
+    if (!thread) {
+      throw new NotFoundException('Thread not found');
+    }
+
+    // Verify target category exists and is active
+    const category = await this.prisma.forumCategory.findFirst({
+      where: { 
+        id: targetCategoryId,
+        isActive: true 
+      },
+    });
+
+    if (!category) {
+      throw new NotFoundException('Target category not found or inactive');
+    }
+
+    return this.prisma.forumThread.update({
+      where: { id: threadId },
+      data: { categoryId: targetCategoryId },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            yorubaName: true,
+            avatar: true,
+            verified: true,
+            culturalLevel: true,
+          },
+        },
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+      },
+    });
+  }
+
+  async featureThread(
+    threadId: string,
+    isFeatured: boolean,
+    currentUser: CurrentUserPayload
+  ) {
+    if (currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can feature threads');
+    }
+
+    const thread = await this.prisma.forumThread.findUnique({
+      where: { id: threadId },
+    });
+
+    if (!thread) {
+      throw new NotFoundException('Thread not found');
+    }
+
+    return this.prisma.forumThread.update({
+      where: { id: threadId },
+      data: { isPinned: isFeatured }, // Using isPinned for now, could extend with isFeatured later
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            yorubaName: true,
+            avatar: true,
+            verified: true,
+            culturalLevel: true,
+          },
+        },
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+      },
+    });
+  }
+
+  async mergeThreads(
+    primaryThreadId: string,
+    secondaryThreadId: string,
+    currentUser: CurrentUserPayload
+  ) {
+    if (currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can merge threads');
+    }
+
+    // Verify both threads exist
+    const [primaryThread, secondaryThread] = await Promise.all([
+      this.prisma.forumThread.findUnique({ where: { id: primaryThreadId } }),
+      this.prisma.forumThread.findUnique({ where: { id: secondaryThreadId } }),
+    ]);
+
+    if (!primaryThread) {
+      throw new NotFoundException('Primary thread not found');
+    }
+
+    if (!secondaryThread) {
+      throw new NotFoundException('Secondary thread not found');
+    }
+
+    if (primaryThread.categoryId !== secondaryThread.categoryId) {
+      throw new BadRequestException('Cannot merge threads from different categories');
+    }
+
+    // Move all posts from secondary thread to primary thread
+    await this.prisma.forumPost.updateMany({
+      where: { threadId: secondaryThreadId },
+      data: { threadId: primaryThreadId },
+    });
+
+    // Update the primary thread's post count and last post info
+    const posts = await this.prisma.forumPost.findMany({
+      where: { threadId: primaryThreadId },
+      orderBy: { createdAt: 'desc' },
+      take: 1,
+    });
+
+    const postCount = await this.prisma.forumPost.count({
+      where: { threadId: primaryThreadId },
+    });
+
+    await this.prisma.forumThread.update({
+      where: { id: primaryThreadId },
+      data: {
+        postCount,
+        lastPostAt: posts[0]?.createdAt,
+        lastPostBy: posts[0]?.authorId,
+      },
+    });
+
+    // Delete the secondary thread
+    await this.prisma.forumThread.delete({
+      where: { id: secondaryThreadId },
+    });
+
+    // Return the updated primary thread
+    return this.prisma.forumThread.findUnique({
+      where: { id: primaryThreadId },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            yorubaName: true,
+            avatar: true,
+            verified: true,
+            culturalLevel: true,
+          },
+        },
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+      },
+    });
+  }
+
+  async deleteThreadForAdmin(
+    threadId: string,
+    currentUser: CurrentUserPayload,
+    reason?: string
+  ) {
+    if (currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can delete threads');
+    }
+
+    const thread = await this.prisma.forumThread.findUnique({
+      where: { id: threadId },
+    });
+
+    if (!thread) {
+      throw new NotFoundException('Thread not found');
+    }
+
+    // Log the deletion with reason if provided
+    // In a real implementation, we might want to store this in an audit log
+    if (reason) {
+      this.logger.log(`Thread ${threadId} deleted by admin ${currentUser.id} for reason: ${reason}`);
+    }
+
+    return this.prisma.forumThread.delete({
+      where: { id: threadId },
+    });
+  }
+
+  async adminDeleteThread(
+    threadId: string,
+    currentUser: CurrentUserPayload,
+    reason?: string
+  ) {
+    if (currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can delete threads');
+    }
+
+    const thread = await this.prisma.forumThread.findUnique({
+      where: { id: threadId },
+    });
+
+    if (!thread) {
+      throw new NotFoundException('Thread not found');
+    }
+
+    // Log the deletion with reason if provided
+    // In a real implementation, we might want to store this in an audit log
+    if (reason) {
+      this.logger.log(`Thread ${threadId} deleted by admin ${currentUser.id} for reason: ${reason}`);
+    }
+
+    return this.prisma.forumThread.delete({
+      where: { id: threadId },
+    });
+  }
+
+  async getAllForumCategories() {
+    return this.prisma.forumCategory.findMany({
+      orderBy: { order: 'asc' },
+    });
+  }
+
+  async getForumManagementStats() {
+    const [
+      totalCategories,
+      totalThreads,
+      totalPosts,
+      lockedThreads,
+      pinnedThreads,
+    ] = await Promise.all([
+      this.prisma.forumCategory.count(),
+      this.prisma.forumThread.count(),
+      this.prisma.forumPost.count(),
+      this.prisma.forumThread.count({ where: { isLocked: true } }),
+      this.prisma.forumThread.count({ where: { isPinned: true } }),
+    ]);
+
+    return {
+      totalCategories,
+      totalThreads,
+      totalPosts,
+      lockedThreads,
+      pinnedThreads,
+    };
+  }
+
   // ==================== F9-701: Share Tracking ====================
 
   async trackThreadShare(_threadId: string) {
@@ -2023,6 +2405,33 @@ Share your reflections, questions, and experiences below. All levels welcome.
     return this.prisma.elderFlag.update({
       where: { id: flagId },
       data: { status: 'REVIEWED', reviewedBy: currentUser.id, reviewedAt: new Date() },
+    });
+  }
+
+  // ==================== D3: Crisis Signal Admin View ====================
+
+  async getCrisisSignalPosts(page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    const [posts, total] = await Promise.all([
+      this.prisma.forumPost.findMany({
+        where: { hasCrisisSignal: true },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        include: {
+          author: { select: { id: true, name: true, email: true, role: true } },
+          thread: { select: { id: true, title: true, categoryId: true } },
+        },
+      }),
+      this.prisma.forumPost.count({ where: { hasCrisisSignal: true } }),
+    ]);
+    return { posts, total, page, limit };
+  }
+
+  async clearCrisisSignal(postId: string) {
+    return this.prisma.forumPost.update({
+      where: { id: postId },
+      data: { hasCrisisSignal: false },
     });
   }
 }

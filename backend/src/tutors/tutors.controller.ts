@@ -5,6 +5,7 @@ import { TutorsService } from './tutors.service';
 import { CreateTutorDto } from './dto/create-tutor.dto';
 import { UpdateTutorDto } from './dto/update-tutor.dto';
 import { CreateTutorSessionDto } from './dto/create-tutor-session.dto';
+import { UpdateTutorSessionStatusDto } from './dto/update-tutor-session-status.dto';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { UserRole } from '@ile-ase/common';
 
@@ -75,7 +76,7 @@ export class TutorsController {
   @Patch('sessions/:id')
   async updateTutorSession(
     @Param('id') id: string,
-    @Body() body: { status: string },
+    @Body() body: UpdateTutorSessionStatusDto,
     @CurrentUser() user: CurrentUserPayload
   ) {
     return this.tutorsService.updateTutorSession(id, body.status, user);

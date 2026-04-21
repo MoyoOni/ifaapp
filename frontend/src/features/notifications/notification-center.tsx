@@ -36,7 +36,7 @@ const NotificationCenter: React.FC = () => {
       const response = await api.get('/notifications', { params });
       return response.data;
     },
-    enabled: !!user,
+    enabled: !!user && !localStorage.getItem('dev_mode_role'),
   });
 
   // Fetch unread count
@@ -46,7 +46,7 @@ const NotificationCenter: React.FC = () => {
       const response = await api.get('/notifications/unread-count');
       return response.data;
     },
-    enabled: !!user,
+    enabled: !!user && !localStorage.getItem('dev_mode_role'),
   });
 
   // Fetch notification counts by type
@@ -56,7 +56,7 @@ const NotificationCenter: React.FC = () => {
       const response = await api.get('/notifications/count-by-type');
       return response.data;
     },
-    enabled: !!user,
+    enabled: !!user && !localStorage.getItem('dev_mode_role'),
   });
 
   // Mark as read mutation

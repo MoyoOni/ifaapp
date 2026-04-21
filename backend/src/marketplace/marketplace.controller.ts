@@ -71,6 +71,14 @@ export class MarketplaceController {
     return this.marketplaceService.findVendorByUserId(id);
   }
 
+  @ApiOperation({ summary: 'Get vendor analytics and earnings summary' })
+  @Get('vendors/:id/analytics')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.VENDOR)
+  async getVendorAnalytics(@Param('id') id: string) {
+    return this.marketplaceService.getVendorAnalytics(id);
+  }
+
   @ApiOperation({ summary: 'Update vendor profile' })
   @Patch('vendors/:id')
   @UseGuards(RolesGuard)

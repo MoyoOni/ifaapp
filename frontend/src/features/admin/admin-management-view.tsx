@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { UserPlus, Shield, Trash2, Edit, Search } from 'lucide-react';
+import { UserPlus, Shield, Trash2, Edit, Search, MessageSquare, Megaphone, Activity, Crown, AlertTriangle } from 'lucide-react'; // Added AlertTriangle for complaints
 import { AdminSubRole } from '@common';
 import api from '@/lib/api';
 import { useToast } from '@/shared/components/toast';
 import { useModal } from '@/components/common/ModalProvider';
+import ForumManagementTab from './forum-management-tab';
 
 interface AdminMember {
   id: string;
@@ -333,6 +334,7 @@ const AdminManagementView: React.FC = () => {
           ))}
         </div>
       )}
+
     </div>
   );
 };

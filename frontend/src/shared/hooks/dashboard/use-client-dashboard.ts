@@ -18,7 +18,7 @@ export function useClientDashboard(userId?: string) {
       const response = await api.get(`/dashboard/client/${effectiveUserId}/summary`);
       return response.data;
     },
-    enabled: !!effectiveUserId,
+    enabled: !!effectiveUserId && !localStorage.getItem('dev_mode_role'),
     staleTime: 30000,
     refetchOnWindowFocus: true,
     throwOnError: (err) => {

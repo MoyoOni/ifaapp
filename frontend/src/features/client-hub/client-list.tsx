@@ -40,7 +40,7 @@ const ClientList: React.FC<ClientListProps> = ({ babalawoId, onSelectClient, onM
         throw error;
       }
     },
-    enabled: !!babalawoId,
+    enabled: !!babalawoId && !localStorage.getItem('dev_mode_role'),
   });
 
   if (isLoading) {

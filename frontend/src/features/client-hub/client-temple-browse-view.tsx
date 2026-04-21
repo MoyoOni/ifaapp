@@ -7,60 +7,6 @@ import {
 import api from '@/lib/api';
 import { useToast } from '@/shared/components/toast';
 
-const DEMO_TEMPLES_FALLBACK: Temple[] = [
-  {
-    id: 'demo-1', slug: 'ioa-national-hq-abeokuta-1',
-    name: 'Ìjọ Òrúnmìlà Adúláwọ National HQ', yorubaName: 'IOA National HQ',
-    description: 'National Headquarters and governing body of Ijo Orunmila Adulawo worldwide. Incorporated Trustees — CAC/IT/NO 446.',
-    location: 'Agbeloba, Abẹòkúta, Ogun State', website: 'https://ijoorunmilaadulawo.com',
-    worshipDay: 'Sunday', memberCount: 0, practitionerCount: 0,
-  },
-  {
-    id: 'demo-2', slug: 'ifadiwura-temple-uk-london-1',
-    name: 'Ifadiwura Temple UK', yorubaName: 'Ilé Ifádíwúrà UK',
-    description: 'Officially registered Ifá temple in London. Company No. 14261437.',
-    location: '26 Lorn Road, London, SW9 0AD', website: 'https://ifadiwuratempleukituk.org',
-    worshipDay: 'Sunday', memberCount: 0, practitionerCount: 0,
-  },
-  {
-    id: 'demo-3', slug: 'the-256-ifa-temple-lagos-1',
-    name: 'The 256 Ifá Temple', description: 'Contemporary Ifá temple based in Lagos with a strong digital presence.',
-    location: 'Lekki / Ajah, Lagos, Nigeria', website: 'https://the256ifa.com',
-    worshipDay: 'Sunday', memberCount: 0, practitionerCount: 0,
-  },
-  {
-    id: 'demo-4', slug: 'ijo-orunmila-adulawo-somolu-1',
-    name: 'Ìjọ Òrúnmìlà Adúláwọ (Solution Temple)',
-    description: 'IOA Somolu Parish — one of the major hubs in Lagos, over 55 years in operation.',
-    location: '96, Apata Street, Ṣómólú, Lagos', website: 'https://ijoorunmilaadulawo.com',
-    worshipDay: 'Sunday', memberCount: 0, practitionerCount: 0,
-  },
-  {
-    id: 'demo-5', slug: 'ijo-orunmila-ogbe-alara-abeokuta-1',
-    name: 'Ìjọ Òrúnmìlà Ogbè Alárá',
-    description: 'Independent Ifá congregation in Abeokuta known for cultural preservation and digital outreach.',
-    location: 'Abeokuta, Ogun State',
-    worshipDay: 'Sunday', memberCount: 0, practitionerCount: 0,
-  },
-  {
-    id: 'demo-6', slug: 'ile-ifa-agbaye-odogbolu-1',
-    name: 'Ile Ifa Agbaye',
-    description: 'International Ifá institution with branches in Nigeria and the UK (Croydon, London).',
-    location: 'Odogbolu, Ogun State',
-    worshipDay: 'Sunday', memberCount: 0, practitionerCount: 0,
-  },
-  {
-    id: 'demo-7', slug: 'ijo-orunmila-adulawo-sagamu-1',
-    name: 'Ìjọ Òrúnmìlà Adúláwọ', location: 'Ṣàgámù, Ogun State',
-    website: 'https://ijoorunmilaadulawo.com', worshipDay: 'Sunday',
-    memberCount: 0, practitionerCount: 0,
-  },
-  {
-    id: 'demo-8', slug: 'ijo-orunmila-adulawo-ibadan-1',
-    name: 'Ilé Ifá Ògúndá Méjì (Agbala Ifá)', location: 'Apata, Ìbàdàn, Oyo State',
-    worshipDay: 'Saturday', memberCount: 0, practitionerCount: 0,
-  },
-];
 
 interface Temple {
   id: string;
@@ -98,10 +44,7 @@ const ClientTempleBrowseView: React.FC = () => {
         const payload = res.data;
         return Array.isArray(payload) ? payload : (payload.temples ?? payload.data ?? []);
       } catch {
-        // Demo fallback for local development / when backend is unavailable
-        return DEMO_TEMPLES_FALLBACK.filter(t =>
-          !searchTerm || t.name.toLowerCase().includes(searchTerm.toLowerCase()) || t.location?.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+        return [];
       }
     },
     staleTime: 10 * 60 * 1000,

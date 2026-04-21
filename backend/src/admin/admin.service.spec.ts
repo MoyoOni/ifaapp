@@ -27,7 +27,7 @@ describe('AdminService', () => {
 
   const mockAdminUser = {
     id: 'admin-1',
-        sub: 'admin-1',
+    sub: 'admin-1',
     email: 'admin@example.com',
     role: 'ADMIN',
     verified: true,
@@ -35,7 +35,7 @@ describe('AdminService', () => {
 
   const mockNonAdminUser = {
     id: 'user-1',
-        sub: 'user-1',
+    sub: 'user-1',
     email: 'user@example.com',
     role: 'CLIENT',
     verified: false,

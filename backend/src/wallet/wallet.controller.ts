@@ -15,6 +15,7 @@ import { CreateDepositDto } from './dto/create-deposit.dto';
 import { CreateWithdrawalRequestDto } from './dto/create-withdrawal-request.dto';
 import { CreateEscrowDto } from './dto/create-escrow.dto';
 import { ReleaseEscrowDto } from './dto/release-escrow.dto';
+import { SyncQueuedActionsDto } from './dto/sync-queued-actions.dto';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { TransactionType, TransactionStatus, EscrowType, EscrowStatus } from '@ile-ase/common';
 
@@ -174,7 +175,7 @@ export class WalletController {
   @Post(':userId/sync')
   async syncQueuedActions(
     @Param('userId') userId: string,
-    @Body() body: { actions: Array<any> },
+    @Body() body: SyncQueuedActionsDto,
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
     return this.walletService.syncQueuedActions(userId, body.actions, currentUser);

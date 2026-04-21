@@ -26,7 +26,7 @@ export function useBabalawoDashboard(userId?: string) {
         throw err;
       }
     },
-    enabled: !!effectiveUserId,
+    enabled: !!effectiveUserId && !localStorage.getItem('dev_mode_role'),
     staleTime: 30000,
     refetchOnWindowFocus: true,
   });

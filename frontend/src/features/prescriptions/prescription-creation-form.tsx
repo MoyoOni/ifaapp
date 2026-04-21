@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { Plus, X, AlertCircle, Loader2, BookOpen } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Plus, X, AlertCircle, Loader2, BookOpen, Save, Trash2 } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { logger } from '@/shared/utils/logger';
 import { Currency } from '@common';
-import { getDemoAppointmentById, getDemoUserById } from '@/demo';
-// import { getDemoAppointment } from '@/demo';
 
 interface GuidancePlanItem {
   name: string;
@@ -43,6 +41,7 @@ const GuidancePlanCreationForm: React.FC<GuidancePlanCreationFormProps> = ({
   onCancel,
 }) => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [type, setType] = useState<'AKOSE' | 'EBO' | 'BOTH'>('AKOSE');
   const [items, setItems] = useState<GuidancePlanItem[]>([
     { name: '', quantity: 1, cost: 0 },
@@ -57,16 +56,48 @@ const GuidancePlanCreationForm: React.FC<GuidancePlanCreationFormProps> = ({
   const { data: appointment, isLoading: loadingAppointment } = useQuery({
     queryKey: ['appointment', appointmentId],
     queryFn: async () => {
-      try {
-        const response = await api.get(`/appointments/${appointmentId}`);
-        return response.data;
-      } catch (e) {
-        logger.error('Failed to fetch appointment', e);
-        return getDemoAppointmentById(appointmentId);
-      }
+      const response = await api.get(`/appointments/${appointmentId}`);
+      return response.data;
     },
     enabled: !!appointmentId,
   });
+
+  const { data: templates = [] } = useQuery<any[]>({
+    queryKey: ['guidance-plan-templates', user?.id],
+    queryFn: async () => {
+      const res = await api.get(`/guidance-plans/templates/${user?.id}`);
+      return res.data;
+    },
+    enabled: !!user?.id,
+  });
+
+  const saveTemplateMutation = useMutation({
+    mutationFn: async (templateName: string) => {
+      await api.post(`/guidance-plans/templates/${user?.id}`, { name: templateName, type, items, instructions, notes });
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['guidance-plan-templates', user?.id] }),
+    onError: () => logger.error('Failed to save template'),
+  });
+
+  const deleteTemplateMutation = useMutation({
+    mutationFn: async (templateId: string) => {
+      await api.delete(`/guidance-plans/templates/${templateId}`);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['guidance-plan-templates', user?.id] }),
+    onError: () => logger.error('Failed to delete template'),
+  });
+
+  const applyTemplate = (tpl: any) => {
+    setType(tpl.type);
+    setItems(tpl.items);
+    setInstructions(tpl.instructions ?? '');
+    setNotes(tpl.notes ?? '');
+  };
+
+  const handleSaveTemplate = () => {
+    const name = window.prompt('Template name:');
+    if (name?.trim()) saveTemplateMutation.mutate(name.trim());
+  };
 
   // Check if appointment is completed
   useEffect(() => {
@@ -85,43 +116,8 @@ const GuidancePlanCreationForm: React.FC<GuidancePlanCreationFormProps> = ({
 
   const createGuidancePlanMutation = useMutation({
     mutationFn: async (data: any) => {
-      try {
-        const response = await api.post(`/guidance-plans/${user?.id}`, data);
-        return response.data;
-      } catch (error) {
-        const demoAppointment = getDemoAppointmentById(appointmentId);
-        const babalawo = getDemoUserById(user?.id || '') || getDemoUserById(demoAppointment?.babalawoId || '');
-        const client = getDemoUserById(demoAppointment?.clientId || '');
-        const demoPlan = {
-          id: `demo-plan-${Date.now()}`,
-          type: data.type,
-          items: data.items,
-          totalCost: data.totalCost,
-          platformServiceFee: 0,
-          currency: data.currency || Currency.NGN,
-          instructions: data.instructions,
-          status: 'PENDING',
-          appointment: {
-            id: appointmentId,
-            date: demoAppointment?.date || '2026-02-10',
-            time: demoAppointment?.time || '10:00',
-          },
-          babalawo: {
-            id: babalawo?.id || user?.id || 'demo-baba-1',
-            name: babalawo?.name || 'Babalawo',
-            yorubaName: babalawo?.yorubaName,
-          },
-          client: {
-            id: client?.id || demoAppointment?.clientId || 'demo-client-1',
-            name: client?.name || 'Client',
-          },
-          createdAt: new Date().toISOString(),
-        };
-        if (typeof sessionStorage !== 'undefined') {
-          sessionStorage.setItem(`demo-guidance-plan:${demoPlan.id}`, JSON.stringify(demoPlan));
-        }
-        return demoPlan;
-      }
+      const response = await api.post(`/guidance-plans/${user?.id}`, data);
+      return response.data;
     },
     onSuccess: () => {
       onSuccess?.();
@@ -217,6 +213,36 @@ const GuidancePlanCreationForm: React.FC<GuidancePlanCreationFormProps> = ({
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Templates */}
+        {templates.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+              <BookOpen size={14} />
+              Load from Template
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {templates.map((tpl: any) => (
+                <div key={tpl.id} className="flex items-center gap-1 bg-card border border-border rounded-lg px-3 py-1.5">
+                  <button
+                    type="button"
+                    onClick={() => applyTemplate(tpl)}
+                    className="text-sm text-foreground hover:text-highlight transition-colors"
+                  >
+                    {tpl.name}
+                  </button>
+                  <button
+                    type="button"
+                    title="Delete template"
+                    onClick={() => deleteTemplateMutation.mutate(tpl.id)}
+                    className="ml-1 text-muted-foreground hover:text-red-400 transition-colors"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {/* Guidance Plan Type */}
         <div>
           <label className="block text-sm font-medium mb-2">Guidance Plan Type</label>
@@ -389,6 +415,19 @@ const GuidancePlanCreationForm: React.FC<GuidancePlanCreationFormProps> = ({
             className="w-full px-4 py-2 bg-muted/50 border border-border rounded-lg text-foreground focus:outline-none focus:border-highlight disabled:opacity-50"
             placeholder="Private notes (not visible to client)..."
           />
+        </div>
+
+        {/* Save as Template */}
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={handleSaveTemplate}
+            disabled={items.some((i) => !i.name)}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground border border-border rounded-lg transition-colors disabled:opacity-40"
+          >
+            <Save size={14} />
+            Save as Template
+          </button>
         </div>
 
         {/* Actions */}

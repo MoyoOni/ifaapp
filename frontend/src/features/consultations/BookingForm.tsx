@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Calendar,
@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
-import { getDemoUserById, type DemoUser } from '@/demo/index';
 import { cn } from '@/lib/utils';
 
 interface BookingFormProps {
@@ -25,6 +24,8 @@ interface BookingFormProps {
 
 export const BookingForm: React.FC<BookingFormProps> = ({ babalawoId, babalawoName }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     scheduledDate: '',
     time: '',
@@ -36,7 +37,35 @@ export const BookingForm: React.FC<BookingFormProps> = ({ babalawoId, babalawoNa
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
+
+  // Gate: must be logged in to book a real consultation
+  if (!user) {
+    return (
+      <div className="bg-card rounded-[2.5rem] p-8 md:p-10 shadow-elevation-2 border border-border text-center space-y-4">
+        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+          <span className="text-3xl">🔐</span>
+        </div>
+        <h2 className="text-2xl font-bold brand-font text-foreground">Sign In to Book</h2>
+        <p className="text-muted-foreground max-w-sm mx-auto">
+          You need an account to book a consultation with {babalawoName}. It's free to join.
+        </p>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+          <Link
+            to={`/login?redirect=/booking/${babalawoId}`}
+            className="w-full sm:w-auto px-6 py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 transition-colors"
+          >
+            Sign In
+          </Link>
+          <Link
+            to={`/signup?redirect=/booking/${babalawoId}`}
+            className="w-full sm:w-auto px-6 py-3 border border-border text-foreground rounded-xl font-bold hover:bg-muted transition-colors"
+          >
+            Create Account
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   // Calculate price based on duration
   const pricePerMinute = 25; // NGN per minute
@@ -50,7 +79,7 @@ export const BookingForm: React.FC<BookingFormProps> = ({ babalawoId, babalawoNa
     try {
       const appointmentPayload = {
         babalawoId,
-        clientId: user?.id || 'demo-client-1',
+        clientId: user.id,
         date: formData.scheduledDate,
         time: formData.time,
         duration: formData.duration,
@@ -63,29 +92,8 @@ export const BookingForm: React.FC<BookingFormProps> = ({ babalawoId, babalawoNa
       const response = await api.post('/appointments', appointmentPayload);
       const appointment = response.data;
       navigate(`/booking/${appointment.id}/confirmation`);
-    } catch (err) {
-      const demoId = `demo-apt-${Date.now()}`;
-      const demoBabalawo = getDemoUserById(babalawoId) as DemoUser | null;
-      const demoAppointment = {
-        id: demoId,
-        confirmationCode: `CONF-${Date.now().toString(36).slice(-6).toUpperCase()}`,
-        clientId: user?.id || 'demo-client-1',
-        babalawoId,
-        babalawo: {
-          name: demoBabalawo?.name || babalawoName,
-          avatar: demoBabalawo?.avatar || '',
-          specialty: demoBabalawo?.specialization?.[0] || 'Ifa Divination',
-        },
-        date: formData.scheduledDate,
-        time: formData.time,
-        duration: formData.duration,
-        topic: formData.topic,
-        preferredMethod: formData.preferredMethod,
-        price: totalPrice,
-      };
-
-      sessionStorage.setItem(`demo-appointment:${demoId}`, JSON.stringify(demoAppointment));
-      navigate(`/booking/${demoId}/confirmation`);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Failed to book consultation. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -119,11 +127,12 @@ export const BookingForm: React.FC<BookingFormProps> = ({ babalawoId, babalawoNa
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Date */}
         <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm font-bold text-foreground uppercase tracking-wide">
+          <label htmlFor="booking-date" className="flex items-center gap-2 text-sm font-bold text-foreground uppercase tracking-wide">
             <Calendar size={16} className="text-primary" />
             Consultation Date
           </label>
           <input
+            id="booking-date"
             type="date"
             min={new Date().toISOString().split('T')[0]}
             value={formData.scheduledDate}
@@ -135,11 +144,12 @@ export const BookingForm: React.FC<BookingFormProps> = ({ babalawoId, babalawoNa
 
         {/* Time */}
         <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm font-bold text-foreground uppercase tracking-wide">
+          <label htmlFor="booking-time" className="flex items-center gap-2 text-sm font-bold text-foreground uppercase tracking-wide">
             <Clock size={16} className="text-primary" />
             Preferred Time
           </label>
           <input
+            id="booking-time"
             type="time"
             value={formData.time}
             onChange={(e) => setFormData({ ...formData, time: e.target.value })}

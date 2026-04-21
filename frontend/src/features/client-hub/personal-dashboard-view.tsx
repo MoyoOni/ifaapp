@@ -19,6 +19,11 @@ import { useAuth } from '@/shared/hooks/use-auth';
 import { useClientDashboard } from '@/shared/hooks/dashboard';
 import { useUserStats } from '@/shared/hooks/use-user-stats';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { FirstStepsChecklist } from '@/shared/components/first-steps-checklist';
+import { WelcomeBanner } from '@/shared/components/welcome-banner';
+import { PersonalAwoPanel } from '@/shared/components/personal-awo-panel';
+import { JourneyCtaCard } from '@/shared/components/journey-cta-card';
+import ReferralPanel from '@/features/devoted/referral-panel';
 
 const PersonalDashboardView: React.FC = () => {
   const navigate = useNavigate();
@@ -71,6 +76,31 @@ const PersonalDashboardView: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
+        {/* Welcome Banner — personalized for first 30 days */}
+        {user && (
+          <WelcomeBanner
+            role={user.role}
+            intentTags={user.intentTags}
+            joinedAt={user.createdAt}
+          />
+        )}
+        {/* First Steps Checklist — visible for new users */}
+        {user && (
+          <FirstStepsChecklist
+            userId={user.id}
+            role={user.role}
+          />
+        )}
+        {/* Smart Journey CTA — context-aware next step */}
+        <JourneyCtaCard />
+        {/* Personal Awo Panel — shows saved practitioner or CTA to find one */}
+        <div className="mb-6">
+          <PersonalAwoPanel />
+        </div>
+        {/* Referral panel — accessible to all clients */}
+        <div className="mb-6 bg-card border border-border rounded-2xl p-5">
+          <ReferralPanel />
+        </div>
         {/* Personal Header */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
@@ -274,6 +304,50 @@ const PersonalDashboardView: React.FC = () => {
                 </button>
               </div>
             </motion.div>
+
+            {/* My Babalawo — previously-booked practitioners */}
+            {(() => {
+              const consultations = dashboard?.recentConsultations ?? [];
+              const seen = new Set<string>();
+              const practitioners: Array<{ id: string; name: string; avatar?: string; culturalLevel?: string }> = [];
+              for (const c of consultations) {
+                const b = (c as any).babalawo;
+                if (b?.id && !seen.has(b.id)) { seen.add(b.id); practitioners.push(b); }
+              }
+              if (practitioners.length === 0) return null;
+              return (
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.25 }}
+                  className="bg-card rounded-2xl p-6 border border-emerald-100 dark:border-emerald-900/50 shadow-sm mb-6"
+                >
+                  <h2 className="text-lg font-bold text-emerald-900 dark:text-emerald-100 mb-4">My Babalawo</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {practitioners.slice(0, 4).map(p => (
+                      <div key={p.id} className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl border border-border/50">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
+                          {p.avatar
+                            ? <img src={p.avatar} alt={p.name} className="w-full h-full object-cover" />
+                            : <span className="font-bold text-primary text-sm">{p.name?.[0]?.toUpperCase()}</span>}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-foreground truncate">{p.name}</p>
+                          {p.culturalLevel && <p className="text-xs text-muted-foreground">{p.culturalLevel}</p>}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/booking/${p.id}`)}
+                          className="text-xs font-bold text-primary hover:underline whitespace-nowrap"
+                        >
+                          Book again
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              );
+            })()}
 
             {/* Recent Activity Feed */}
             <motion.div

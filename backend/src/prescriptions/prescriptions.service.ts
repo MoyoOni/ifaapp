@@ -620,26 +620,322 @@ export class GuidancePlansService {
   }
 
   /**
+   * Toggle completion status of a specific item in a guidance plan (Client or Babalawo)
+   */
+  async toggleItemCompletion(
+    guidancePlanId: string,
+    itemIndex: number,
+    completed: boolean,
+    currentUser: CurrentUserPayload
+  ) {
+    const guidancePlan = await this.prisma.guidancePlan.findUnique({
+      where: { id: guidancePlanId },
+      select: {
+        id: true,
+        clientId: true,
+        babalawoId: true,
+        status: true,
+        items: true,
+        completedItems: true,
+      },
+    });
+
+    if (!guidancePlan) {
+      throw new NotFoundException('Guidance plan not found');
+    }
+
+    // Only client or babalawo can update item completion
+    if (guidancePlan.clientId !== currentUser.id && guidancePlan.babalawoId !== currentUser.id) {
+      throw new ForbiddenException('You do not have permission to update this guidance plan');
+    }
+
+    // Only allow updates when plan is IN_PROGRESS or COMPLETED
+    if (!['IN_PROGRESS', 'COMPLETED'].includes(guidancePlan.status)) {
+      throw new BadRequestException(
+        `Cannot update items when plan status is ${guidancePlan.status}`
+      );
+    }
+
+    // Validate item index
+    const items = guidancePlan.items as any[];
+    if (itemIndex < 0 || itemIndex >= items.length) {
+      throw new BadRequestException('Invalid item index');
+    }
+
+    // Update completedItems array based on the toggle action
+    const completedItems = [...(guidancePlan.completedItems as string[])];
+    const itemId = `${guidancePlanId}_item_${itemIndex}`;
+    
+    if (completed) {
+      // Add item to completed if not already there
+      if (!completedItems.includes(itemId)) {
+        completedItems.push(itemId);
+      }
+    } else {
+      // Remove item from completed if it exists
+      const index = completedItems.indexOf(itemId);
+      if (index > -1) {
+        completedItems.splice(index, 1);
+      }
+    }
+
+    // Update the guidance plan record with the new completedItems array
+    const updatedPlan = await this.prisma.guidancePlan.update({
+      where: { id: guidancePlanId },
+      data: {
+        completedItems,
+      },
+      include: {
+        appointment: {
+          select: {
+            id: true,
+            date: true,
+            time: true,
+          },
+        },
+        babalawo: {
+          select: {
+            id: true,
+            name: true,
+            yorubaName: true,
+            avatar: true,
+          },
+        },
+        client: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatar: true,
+          },
+        },
+        escrow: {
+          include: {
+            wallet: {
+              select: {
+                id: true,
+                currency: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // Check if all items are completed and update plan status accordingly
+    if (completedItems.length === items.length && items.length > 0) {
+      await this.prisma.guidancePlan.update({
+        where: { id: guidancePlanId },
+        data: { status: 'COMPLETED', completedAt: new Date() },
+      });
+    }
+
+    return updatedPlan;
+  }
+
+  /**
+   * Get detailed guidance plan with progress tracking information
+   */
+  async getDetailedGuidancePlan(guidancePlanId: string, currentUser: CurrentUserPayload) {
+    const guidancePlan = await this.prisma.guidancePlan.findUnique({
+      where: { id: guidancePlanId },
+      include: {
+        appointment: {
+          select: {
+            id: true,
+            date: true,
+            time: true,
+          },
+        },
+        babalawo: {
+          select: {
+            id: true,
+            name: true,
+            yorubaName: true,
+            avatar: true,
+          },
+        },
+        client: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatar: true,
+          },
+        },
+        escrow: {
+          include: {
+            wallet: {
+              select: {
+                id: true,
+                currency: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!guidancePlan) {
+      throw new NotFoundException('Guidance plan not found');
+    }
+
+    // Only Babalawo, client, or admin can view
+    const canView =
+      guidancePlan.babalawoId === currentUser.id ||
+      guidancePlan.clientId === currentUser.id ||
+      currentUser.role === 'ADMIN';
+
+    if (!canView) {
+      throw new ForbiddenException('You do not have permission to view this guidance plan');
+    }
+
+    // Calculate progress information
+    const items = guidancePlan.items as any[];
+    const completedItems = guidancePlan.completedItems as string[];
+    const totalItems = items.length;
+    const completedCount = completedItems.length;
+    const progressPercentage = totalItems > 0 ? Math.round((completedCount / totalItems) * 100) : 0;
+
+    // Determine if the plan is overdue (based on appointment date + duration)
+    const appointmentDate = new Date(guidancePlan.appointment.date);
+    // Assuming a default duration of 30 days if not specified in the plan
+    const planDurationDays = 30;
+    const dueDate = new Date(appointmentDate);
+    dueDate.setDate(dueDate.getDate() + planDurationDays);
+    const isOverdue = guidancePlan.status !== 'COMPLETED' && new Date() > dueDate;
+
+    return {
+      ...guidancePlan,
+      progress: {
+        totalItems,
+        completedCount,
+        progressPercentage,
+        isOverdue,
+      },
+      items: items.map((item: any, index: number) => {
+        const itemId = `${guidancePlanId}_item_${index}`;
+        const isCompleted = completedItems.includes(itemId);
+        return {
+          ...item,
+          completed: isCompleted,
+          completedAt: isCompleted ? new Date() : null, // In a real implementation, we'd store the actual completion date
+        };
+      }),
+    };
+  }
+
+  /**
    * Get completion progress for a guidance plan
    */
   async getCompletionProgress(guidancePlanId: string, currentUser: CurrentUserPayload) {
-    const guidancePlan = await this.getGuidancePlan(guidancePlanId, currentUser);
-    const items = guidancePlan.items as any[];
+    const guidancePlan = await this.prisma.guidancePlan.findUnique({
+      where: { id: guidancePlanId },
+      include: {
+        appointment: {
+          select: {
+            id: true,
+            date: true,
+            time: true,
+          },
+        },
+        babalawo: {
+          select: {
+            id: true,
+            name: true,
+            yorubaName: true,
+            avatar: true,
+          },
+        },
+        client: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatar: true,
+          },
+        },
+      },
+    });
 
+    if (!guidancePlan) {
+      throw new NotFoundException('Guidance plan not found');
+    }
+
+    // Only Babalawo, client, or admin can view
+    const canView =
+      guidancePlan.babalawoId === currentUser.id ||
+      guidancePlan.clientId === currentUser.id ||
+      currentUser.role === 'ADMIN';
+
+    if (!canView) {
+      throw new ForbiddenException('You do not have permission to view this guidance plan');
+    }
+
+    const items = guidancePlan.items as any[];
+    const completedItemsList = guidancePlan.completedItems as string[];
     const totalItems = items.length;
-    const completedItems = items.filter((item) => item.completed === true).length;
-    const progressPercent = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+    const completedCount = completedItemsList.length;
+    const progressPercent = totalItems > 0 ? Math.round((completedCount / totalItems) * 100) : 0;
 
     return {
       totalItems,
-      completedItems,
+      completedItems: completedCount,
       progressPercent,
-      items: items.map((item, index) => ({
-        index,
-        name: item.name,
-        completed: item.completed || false,
-        completedAt: item.completedAt || null,
-      })),
+      items: items.map((item, index) => {
+        const itemId = `${guidancePlanId}_item_${index}`;
+        const isCompleted = completedItemsList.includes(itemId);
+        return {
+          index,
+          name: item.name,
+          completed: isCompleted,
+          completedAt: isCompleted ? new Date() : null, // In a real implementation, we'd store the actual completion date
+        };
+      }),
     };
+  }
+
+  // ─── EXP-015: Guidance Plan Templates ───────────────────────────────────────
+
+  async getTemplates(babalawoId: string, currentUser: CurrentUserPayload) {
+    if (currentUser.id !== babalawoId && currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Access denied');
+    }
+    return this.prisma.guidancePlanTemplate.findMany({
+      where: { babalawoId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async saveTemplate(
+    babalawoId: string,
+    body: { name: string; type: string; items: unknown[]; instructions?: string; notes?: string },
+    currentUser: CurrentUserPayload,
+  ) {
+    if (currentUser.id !== babalawoId && currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Access denied');
+    }
+    return this.prisma.guidancePlanTemplate.create({
+      data: {
+        babalawoId,
+        name: body.name,
+        type: body.type,
+        items: body.items as object[],
+        instructions: body.instructions,
+        notes: body.notes,
+      },
+    });
+  }
+
+  async deleteTemplate(templateId: string, currentUser: CurrentUserPayload) {
+    const template = await this.prisma.guidancePlanTemplate.findUnique({
+      where: { id: templateId },
+      select: { babalawoId: true },
+    });
+    if (!template) throw new NotFoundException('Template not found');
+    if (template.babalawoId !== currentUser.id && currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Access denied');
+    }
+    return this.prisma.guidancePlanTemplate.delete({ where: { id: templateId } });
   }
 }

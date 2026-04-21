@@ -716,4 +716,11 @@ export class TemplesService {
 
     return follows.map((follow: any) => follow.temple);
   }
+
+  /**
+   * Get total count of temples
+   */
+  async getCount() {
+    return await this.prisma.temple.count();
+  }
 }

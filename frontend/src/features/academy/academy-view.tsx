@@ -67,21 +67,18 @@ const AcademyView: React.FC<AcademyViewProps> = ({ onSelectCourse }) => {
   };
 
   // Fetch courses
-  const { data: courses = [], isLoading: coursesLoading, isError: coursesError } = useQuery<Course[]>({
+  const { data: courses = [], isLoading: coursesLoading, isError: coursesError, refetch: refetchCourses } = useQuery<Course[]>({
     queryKey: ['academy-courses', selectedCategory, selectedLevel, searchQuery],
     queryFn: async () => {
-      try {
-        const params = new URLSearchParams();
-        if (selectedCategory !== 'all') {
-          params.append('category', selectedCategory);
-        }
-        const response = await api.get(`/academy/courses?${params.toString()}`);
-        return response.data;
-      } catch (e) {
-        throw e;
+      const params = new URLSearchParams();
+      if (selectedCategory !== 'all') {
+        params.append('category', selectedCategory);
       }
+      const response = await api.get(`/academy/courses?${params.toString()}`);
+      return response.data;
     },
     staleTime: 10 * 60 * 1000, // Course catalog: 10 minutes
+    enabled: !localStorage.getItem('dev_mode_role'),
   });
 
   const categories = [
@@ -111,223 +108,130 @@ const AcademyView: React.FC<AcademyViewProps> = ({ onSelectCourse }) => {
   });
 
   return (
-    <PageTransition>
-      <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Main Header */}
-          <FeatureHeader feature="academy" title="Ìlú Àṣẹ Academy" subtitle="Explore the wisdom of Ifá and Yoruba traditions through our curated collection of courses" icon={GraduationCap} />
-
-          {/* Filters and Search */}
-          <div className="mb-8 flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={20} />
-              <Input 
-                placeholder="Search courses..." 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 w-full"
-              />
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="sticky top-0 z-10 bg-card/80 backdrop-blur-md border-b border-border/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold brand-font text-foreground">Academy</h1>
+              <p className="text-muted-foreground">Expand your knowledge of Ifá and Isese</p>
             </div>
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <Filter size={16} className="mr-2" />
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue placeholder="All Categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={selectedLevel} onValueChange={setSelectedLevel}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue placeholder="All Levels" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Levels</SelectItem>
+                  <SelectItem value="beginner">Beginner</SelectItem>
+                  <SelectItem value="intermediate">Intermediate</SelectItem>
+                  <SelectItem value="advanced">Advanced</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+        </div>
+      </header>
 
-          {/* Featured Course */}
-          {filteredCourses.length > 0 && (
-            <div
-              className="mb-12 rounded-3xl bg-gradient-to-r from-primary/10 via-secondary/5 to-accent/10 p-8 border border-border cursor-pointer hover:shadow-lg transition-all"
-              onClick={() => handleCourseClick(filteredCourses[0])}
-            >
-              <div className="flex flex-col md:flex-row gap-8 items-center">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Badge variant="secondary">Featured Course</Badge>
-                    {filteredCourses[0].isDevoted && (
-                      <Badge className="bg-amber-500 text-white text-[0.625rem] font-[700] uppercase tracking-wider px-2 py-1 rounded-md flex items-center gap-1">
-                        <Sparkles size={9} /> Devoted
-                      </Badge>
-                    )}
-                  </div>
-                  <h2 className="text-2xl font-bold text-foreground mb-2">{filteredCourses[0].title}</h2>
-                  <p className="text-muted-foreground mb-4">{filteredCourses[0].description}</p>
-                  
-                  <div className="flex flex-wrap gap-4">
-                    <div className="flex items-center gap-2">
-                      <Users className="text-primary" size={16} />
-                      <span className="text-sm text-muted-foreground">{filteredCourses[0]._count.enrollments} enrolled</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="text-primary" size={16} />
-                      <span className="text-sm text-muted-foreground">{filteredCourses[0].duration || 2}h</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <BookOpen className="text-primary" size={16} />
-                      <span className="text-sm text-muted-foreground">{filteredCourses[0]._count.lessons} lessons</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="bg-primary/10 p-6 rounded-2xl">
-                  <BookOpen className="text-primary" size={64} />
-                </div>
-              </div>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Browse All Courses */}
+        <section>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <h2 className="text-xl font-bold brand-font text-foreground">Browse All Courses</h2>
+            <div className="text-sm text-muted-foreground">
+              {filteredCourses.length} course{filteredCourses.length !== 1 ? 's' : ''} available
             </div>
-          )}
-
-          {/* Courses Grid */}
-          {coursesLoading ? (
-            <AcademySkeleton />
-          ) : coursesError ? (
-            <div className="text-center py-16">
-              <div className="mx-auto w-24 h-24 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center mb-4">
-                <AlertCircle className="text-red-400" size={40} />
-              </div>
-              <h3 className="text-xl font-bold text-foreground mb-2">Could not load courses</h3>
-              <p className="text-muted-foreground max-w-md mx-auto mb-6">
-                There was a problem connecting to the server. Check your connection and try again.
-              </p>
-              <Button variant="outline" onClick={() => window.location.reload()}>
-                Refresh Page
-              </Button>
-            </div>
-          ) : filteredCourses.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="mx-auto w-24 h-24 rounded-full bg-muted flex items-center justify-center mb-4">
-                <Search className="text-muted-foreground m-4" size={32} />
-              </div>
-              <h3 className="text-xl font-bold text-foreground mb-2">No courses found</h3>
-              <p className="text-muted-foreground max-w-md mx-auto">
-                Try adjusting your search or filter criteria to find what you're looking for.
-              </p>
-              <Button 
-                variant="outline" 
-                className="mt-6"
-                onClick={() => { 
-                  setSelectedCategory('all'); 
-                  setSelectedLevel('all'); 
-                  setSearchQuery(''); 
-                }}
-              >
-                Clear Filters
-              </Button>
-            </div>
-          ) : (
+          </div>
+          
+          {filteredCourses.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredCourses.map((course) => (
-                <div
+                <div 
                   key={course.id}
+                  className="bg-card rounded-2xl border border-border/50 p-5 hover:shadow-md transition-shadow cursor-pointer"
                   onClick={() => handleCourseClick(course)}
-                  className="group bg-card rounded-2xl border border-input shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col h-full"
                 >
-                  {/* Thumbnail */}
-                  <div className="relative h-56 bg-muted overflow-hidden">
-                    {course.thumbnail ? (
-                      <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-muted text-muted-foreground">
-                        <BookOpen className="text-muted-foreground" size={48} />
-                      </div>
-                    )}
-
-                    {/* Badges/Tags */}
-                    <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
-                      {course.isDevoted && (
-                        <Badge className="bg-amber-500 text-white text-[0.625rem] font-[700] uppercase tracking-wider px-2 py-1 rounded-md shadow-sm flex items-center gap-1">
-                          <Sparkles size={9} /> Devoted
-                        </Badge>
-                      )}
-                      {course.certificateEnabled && (
-                        <Badge className="bg-accent text-accent-foreground text-[0.625rem] font-[700] uppercase tracking-wider px-2 py-1 rounded-md shadow-sm flex items-center gap-1">
-                          <CheckCircle size={10} /> Certified
-                        </Badge>
-                      )}
-                      <Badge
-                        variant="outline"
-                        className={`text-[0.625rem] font-[700] uppercase tracking-wider px-2 py-1 rounded-md shadow-sm ${
-                          course.level === 'BEGINNER' ? 'bg-success text-success-foreground' :
-                          course.level === 'INTERMEDIATE' ? 'bg-primary text-primary-foreground' :
-                          'bg-secondary text-secondary-foreground'
-                        }`}
-                      >
-                        {course.level}
-                      </Badge>
+                  <div className="aspect-video bg-muted rounded-xl mb-4 overflow-hidden">
+                    <img
+                      src={course.thumbnail}
+                      alt={course.title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                      {course.duration}m
                     </div>
-
-                    {/* Lock overlay for Devoted-only courses (free users) */}
-                    {course.isDevoted && !isDevoted ? (
-                      <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-2">
-                        <div className="w-12 h-12 rounded-full bg-amber-500/20 border border-amber-400/50 flex items-center justify-center">
-                          <Lock size={22} className="text-amber-400" />
-                        </div>
-                        <span className="text-amber-300 text-xs font-semibold">Devoted Only</span>
-                      </div>
-                    ) : (
-                      /* Play Overlay */
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <div className="w-16 h-16 rounded-full bg-primary/20 backdrop-blur-md flex items-center justify-center text-primary scale-50 group-hover:scale-100 transition-transform duration-300">
-                          <Play size={32} className="ml-1" />
-                        </div>
-                      </div>
+                  </div>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-bold text-foreground line-clamp-1">{course.title}</h3>
+                      <p className="text-muted-foreground text-sm mt-1">{course.instructor.name}</p>
+                    </div>
+                    {course.level === 'beginner' && (
+                      <span className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 text-xs px-2 py-1 rounded-full">Beginner</span>
+                    )}
+                    {course.level === 'intermediate' && (
+                      <span className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 text-xs px-2 py-1 rounded-full">Intermediate</span>
+                    )}
+                    {course.level === 'advanced' && (
+                      <span className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 text-xs px-2 py-1 rounded-full">Advanced</span>
                     )}
                   </div>
-
-                  {/* Content */}
-                  <div className="p-6 flex-1 flex flex-col">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-[0.625rem] font-[700] text-primary">
-                        {course.instructor.name.charAt(0)}
-                      </div>
-                      <span className="text-[0.75rem] font-[700] text-primary uppercase tracking-wide">
-                        {course.instructor.name}
-                      </span>
-                      {course.instructor.verified && (
-                        <CheckCircle size={10} className="text-primary" />
-                      )}
+                  
+                  <p className="text-muted-foreground text-sm mt-3 line-clamp-2">
+                    {course.description}
+                  </p>
+                  
+                  <div className="flex items-center gap-4 mt-4 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <Clock size={14} />
+                      <span>{course.duration} min</span>
                     </div>
-
-                    <h3 className="text-[1.25rem] font-[700] text-foreground mb-2 group-hover:text-primary transition-colors line-clamp-2">
-                      {course.title}
-                    </h3>
-                    <p className="text-foreground text-sm line-clamp-2 mb-6">
-                      {course.description}
-                    </p>
-
-                    <div className="mt-auto flex items-center justify-between pt-4 border-t border-input">
-                      <div className="flex items-center gap-4 text-[0.875rem] font-[500] text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Clock size={14} />
-                          <span>{course.duration || 2}h</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <BookOpen size={14} />
-                          <span>{course.lessonCount}</span>
-                        </div>
-                      </div>
-
-                      <div className="text-[1.125rem] font-[700] text-foreground">
-                        {course.price === 0 ? 'Free' : (
-                          <>{course.currency === 'NGN' ? '₦' : '$'}{course.price.toLocaleString()}</>
-                        )}
-                      </div>
+                    <div className="flex items-center gap-1">
+                      <Users size={14} />
+                      <span>{course.enrolledCount} students</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <CheckCircle size={14} />
+                      <span>{course.lessonCount} lessons</span>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
+          ) : (
+            <div className="text-center py-12 bg-muted/20 rounded-2xl border border-border/50">
+              <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                <BookOpen size={32} className="text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-bold text-foreground mb-2">No courses found</h3>
+              <p className="text-muted-foreground max-w-md mx-auto">
+                We couldn't find any courses matching your filters. Try changing your selection.
+              </p>
+              <button
+                onClick={() => {
+                  setSelectedCategory('all');
+                  setSelectedLevel('all');
+                }}
+                className="mt-4 text-primary font-bold hover:underline"
+              >
+                Clear filters
+              </button>
+            </div>
           )}
-        </div>
-      </div>
-    </PageTransition>
+        </section>
+      </main>
+    </div>
   );
 };
 

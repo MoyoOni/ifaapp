@@ -1,16 +1,22 @@
-import { Module } from '@nestjs/common';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { Module, MiddlewareConsumer, NestModule, RequestMethod } from '@nestjs/common';
+import { EnhancedMetricsService } from './enhanced-metrics.service';
 import { MetricsController } from './metrics.controller';
-import { MetricsInterceptor } from './metrics.interceptor';
-import { MetricsService } from './metrics.service';
+import { PerformanceMonitoringMiddleware } from './performance-monitoring.middleware';
 
-/**
- * Prometheus metrics for dashboards (PB-202.4).
- * Exposes GET /api/metrics for request count and latency.
- */
 @Module({
   controllers: [MetricsController],
-  providers: [MetricsService, { provide: APP_INTERCEPTOR, useClass: MetricsInterceptor }],
-  exports: [MetricsService],
+  providers: [EnhancedMetricsService],
+  exports: [EnhancedMetricsService],
 })
-export class MetricsModule {}
+export class MetricsModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(PerformanceMonitoringMiddleware)
+      .exclude(
+        { path: 'metrics', method: RequestMethod.ALL },
+        { path: 'health', method: RequestMethod.ALL },
+        { path: 'api-docs', method: RequestMethod.ALL },
+      )
+      .forRoutes('*');
+  }
+}

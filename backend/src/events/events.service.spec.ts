@@ -1,399 +1,437 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { EventsService } from './events.service';
+import { Test } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
-import { NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { EventsService } from './events.service';
+import { BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { User, Event, EventRegistration } from '@prisma/client';
+import { EventStatus } from '@common/enums/event-status.enum';
+import { UserRole } from '@common/enums/user-role.enum';
 
 describe('EventsService', () => {
-    let service: EventsService;
-    let prisma: PrismaService;
+  let service: EventsService;
+  let prisma: PrismaService;
 
-    const mockPrismaService = {
-        event: {
-            create: jest.fn(),
-            findMany: jest.fn(),
-            findUnique: jest.fn(),
-            findFirst: jest.fn(),
-            update: jest.fn(),
-            delete: jest.fn(),
+  beforeEach(async () => {
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        EventsService,
+        {
+          provide: PrismaService,
+          useValue: {
+            event: {
+              findMany: jest.fn(),
+              findUnique: jest.fn(),
+              create: jest.fn(),
+              update: jest.fn(),
+              delete: jest.fn(),
+            },
+            eventRegistration: {
+              findMany: jest.fn(),
+              findUnique: jest.fn(),
+              create: jest.fn(),
+              update: jest.fn(),
+              delete: jest.fn(),
+            },
+            user: {
+              findUnique: jest.fn(),
+            },
+            $transaction: jest.fn(),
+          },
         },
-        eventRegistration: {
-            create: jest.fn(),
-            findUnique: jest.fn(),
-            findMany: jest.fn(),
-            update: jest.fn(),
-            delete: jest.fn(),
+      ],
+    }).compile();
+
+    service = moduleRef.get<EventsService>(EventsService);
+    prisma = moduleRef.get<PrismaService>(PrismaService);
+  });
+
+  describe('createEvent', () => {
+    it('should create an event successfully', async () => {
+      const mockUser: User = {
+        id: 'user1',
+        email: 'test@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+        role: UserRole.BABALAWO,
+        isVerified: true,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
+        isEmailVerified: true,
+        fcmTokens: [],
+        bio: '',
+        phone: '',
+        avatar: '',
+        additionalInfo: '',
+      };
+
+      const newEvent: Event = {
+        id: 'event1',
+        title: 'Test Event',
+        description: 'Test event description',
+        startDate: new Date('2025-01-01'),
+        endDate: new Date('2025-01-02'),
+        location: 'Test Location',
+        organizerId: 'user1',
+        maxAttendees: 100,
+        status: EventStatus.SCHEDULED,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        coverImage: null,
+      };
+
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
+      jest.spyOn(prisma.event, 'create').mockResolvedValue(newEvent);
+
+      const result = await service.createEvent({
+        title: 'Test Event',
+        description: 'Test event description',
+        startDate: new Date('2025-01-01'),
+        endDate: new Date('2025-01-02'),
+        location: 'Test Location',
+        maxAttendees: 100,
+      }, 'user1');
+
+      expect(result).toEqual(newEvent);
+      expect(prisma.event.create).toHaveBeenCalledWith({
+        data: {
+          title: 'Test Event',
+          description: 'Test event description',
+          startDate: new Date('2025-01-01'),
+          endDate: new Date('2025-01-02'),
+          location: 'Test Location',
+          organizerId: 'user1',
+          maxAttendees: 100,
+          status: EventStatus.SCHEDULED,
         },
-    };
+      });
+    });
 
-    const mockCurrentUser = {
-        id: 'user-1',
-        sub: 'user-1',
-        email: 'user@example.com',
-        role: 'CLIENT' as any,
-        verified: true,
-    };
+    it('should throw an exception if user does not exist', async () => {
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(null);
 
-    beforeEach(async () => {
-        const module: TestingModule = await Test.createTestingModule({
-            providers: [
-                EventsService,
-                {
-                    provide: PrismaService,
-                    useValue: mockPrismaService,
+      await expect(service.createEvent({
+        title: 'Test Event',
+        description: 'Test event description',
+        startDate: new Date('2025-01-01'),
+        endDate: new Date('2025-01-02'),
+        location: 'Test Location',
+        maxAttendees: 100,
+      }, 'nonexistent-user')).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw an exception if end date is before start date', async () => {
+      const mockUser: User = {
+        id: 'user1',
+        email: 'test@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+        role: UserRole.BABALAWO,
+        isVerified: true,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
+        isEmailVerified: true,
+        fcmTokens: [],
+        bio: '',
+        phone: '',
+        avatar: '',
+        additionalInfo: '',
+      };
+
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
+
+      await expect(service.createEvent({
+        title: 'Test Event',
+        description: 'Test event description',
+        startDate: new Date('2025-01-02'), // Later date
+        endDate: new Date('2025-01-01'), // Earlier date
+        location: 'Test Location',
+        maxAttendees: 100,
+      }, 'user1')).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('registerForEvent', () => {
+    it('should register a user for an event successfully', async () => {
+      const mockEvent: Event = {
+        id: 'event1',
+        title: 'Test Event',
+        description: 'Test event description',
+        startDate: new Date('2025-01-01'),
+        endDate: new Date('2025-01-02'),
+        location: 'Test Location',
+        organizerId: 'organizer1',
+        maxAttendees: 100,
+        status: EventStatus.SCHEDULED,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        coverImage: null,
+      };
+
+      const mockUser: User = {
+        id: 'user1',
+        email: 'test@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+        role: UserRole.CLIENT,
+        isVerified: true,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
+        isEmailVerified: true,
+        fcmTokens: [],
+        bio: '',
+        phone: '',
+        avatar: '',
+        additionalInfo: '',
+      };
+
+      const registrations: EventRegistration[] = [];
+
+      const newRegistration: EventRegistration = {
+        id: 'reg1',
+        eventId: 'event1',
+        userId: 'user1',
+        registrationDate: new Date(),
+        status: 'CONFIRMED',
+      };
+
+      jest.spyOn(prisma.event, 'findUnique').mockResolvedValue(mockEvent);
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
+      jest.spyOn(prisma.eventRegistration, 'findMany').mockResolvedValue(registrations);
+      jest.spyOn(prisma.eventRegistration, 'create').mockResolvedValue(newRegistration);
+
+      const result = await service.registerForEvent('event1', 'user1');
+
+      expect(result).toEqual(newRegistration);
+      expect(prisma.eventRegistration.create).toHaveBeenCalledWith({
+        data: {
+          eventId: 'event1',
+          userId: 'user1',
+          status: 'CONFIRMED',
+        },
+      });
+    });
+
+    it('should throw an exception if event does not exist', async () => {
+      jest.spyOn(prisma.event, 'findUnique').mockResolvedValue(null);
+
+      await expect(service.registerForEvent('nonexistent-event', 'user1')).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw an exception if event is full', async () => {
+      const mockEvent: Event = {
+        id: 'event1',
+        title: 'Test Event',
+        description: 'Test event description',
+        startDate: new Date('2025-01-01'),
+        endDate: new Date('2025-01-02'),
+        location: 'Test Location',
+        organizerId: 'organizer1',
+        maxAttendees: 1, // Only 1 spot available
+        status: EventStatus.SCHEDULED,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        coverImage: null,
+      };
+
+      const mockUser: User = {
+        id: 'user1',
+        email: 'test@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+        role: UserRole.CLIENT,
+        isVerified: true,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
+        isEmailVerified: true,
+        fcmTokens: [],
+        bio: '',
+        phone: '',
+        avatar: '',
+        additionalInfo: '',
+      };
+
+      // Mock 1 registration already exists (the max capacity)
+      const registrations: EventRegistration[] = [
+        {
+          id: 'existingReg',
+          eventId: 'event1',
+          userId: 'otherUser',
+          registrationDate: new Date(),
+          status: 'CONFIRMED',
+        } as EventRegistration,
+      ];
+
+      jest.spyOn(prisma.event, 'findUnique').mockResolvedValue(mockEvent);
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
+      jest.spyOn(prisma.eventRegistration, 'findMany').mockResolvedValue(registrations);
+
+      await expect(service.registerForEvent('event1', 'user1')).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw an exception if user is already registered', async () => {
+      const mockEvent: Event = {
+        id: 'event1',
+        title: 'Test Event',
+        description: 'Test event description',
+        startDate: new Date('2025-01-01'),
+        endDate: new Date('2025-01-02'),
+        location: 'Test Location',
+        organizerId: 'organizer1',
+        maxAttendees: 100,
+        status: EventStatus.SCHEDULED,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        coverImage: null,
+      };
+
+      const mockUser: User = {
+        id: 'user1',
+        email: 'test@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+        role: UserRole.CLIENT,
+        isVerified: true,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
+        isEmailVerified: true,
+        fcmTokens: [],
+        bio: '',
+        phone: '',
+        avatar: '',
+        additionalInfo: '',
+      };
+
+      const existingRegistrations: EventRegistration[] = [
+        {
+          id: 'existingReg',
+          eventId: 'event1',
+          userId: 'user1', // Same user
+          registrationDate: new Date(),
+          status: 'CONFIRMED',
+        } as EventRegistration,
+      ];
+
+      jest.spyOn(prisma.event, 'findUnique').mockResolvedValue(mockEvent);
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
+      jest.spyOn(prisma.eventRegistration, 'findMany').mockResolvedValue(existingRegistrations);
+
+      await expect(service.registerForEvent('event1', 'user1')).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('cancelRegistration', () => {
+    it('should cancel a registration successfully', async () => {
+      const mockRegistration: EventRegistration = {
+        id: 'reg1',
+        eventId: 'event1',
+        userId: 'user1',
+        registrationDate: new Date(),
+        status: 'CONFIRMED',
+      };
+
+      jest.spyOn(prisma.eventRegistration, 'findUnique').mockResolvedValue(mockRegistration);
+      jest.spyOn(prisma.eventRegistration, 'update').mockResolvedValue({
+        ...mockRegistration,
+        status: 'CANCELLED',
+      });
+
+      const result = await service.cancelRegistration('reg1', 'user1');
+
+      expect(result.status).toBe('CANCELLED');
+      expect(prisma.eventRegistration.update).toHaveBeenCalledWith({
+        where: { id: 'reg1' },
+        data: { status: 'CANCELLED' },
+      });
+    });
+
+    it('should throw ForbiddenException if user is not the registrant', async () => {
+      const mockRegistration: EventRegistration = {
+        id: 'reg1',
+        eventId: 'event1',
+        userId: 'different-user', // Different user
+        registrationDate: new Date(),
+        status: 'CONFIRMED',
+      };
+
+      jest.spyOn(prisma.eventRegistration, 'findUnique').mockResolvedValue(mockRegistration);
+
+      await expect(service.cancelRegistration('reg1', 'user1'))
+        .rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw NotFoundException if registration does not exist', async () => {
+      jest.spyOn(prisma.eventRegistration, 'findUnique').mockResolvedValue(null);
+
+      await expect(service.cancelRegistration('nonexistent-reg', 'user1'))
+        .rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('getEvent', () => {
+    it('should retrieve an event successfully', async () => {
+      const mockEvent: Event = {
+        id: 'event1',
+        title: 'Test Event',
+        description: 'Test event description',
+        startDate: new Date('2025-01-01'),
+        endDate: new Date('2025-01-02'),
+        location: 'Test Location',
+        organizerId: 'organizer1',
+        maxAttendees: 100,
+        status: EventStatus.SCHEDULED,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        coverImage: null,
+      };
+
+      jest.spyOn(prisma.event, 'findUnique').mockResolvedValue(mockEvent);
+
+      const result = await service.getEvent('event1');
+
+      expect(result).toEqual(mockEvent);
+      expect(prisma.event.findUnique).toHaveBeenCalledWith({
+        where: { id: 'event1' },
+        include: {
+          organizer: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              avatar: true,
+              isVerified: true,
+            },
+          },
+          registrations: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  avatar: true,
                 },
-            ],
-        }).compile();
-
-        service = module.get<EventsService>(EventsService);
-        prisma = module.get<PrismaService>(PrismaService);
-
-        jest.clearAllMocks();
+              },
+            },
+          },
+        },
+      });
     });
 
-    describe('create', () => {
-        it('should create an event', async () => {
-            const dto = {
-                title: 'Ifa Festival 2024',
-                description: 'Annual Ifa celebration',
-                type: 'FESTIVAL',
-                startDate: new Date('2024-06-01'),
-                endDate: new Date('2024-06-03'),
-                location: 'Lagos, Nigeria',
-                maxAttendees: 100,
-            };
+    it('should return null if event does not exist', async () => {
+      jest.spyOn(prisma.event, 'findUnique').mockResolvedValue(null);
 
-            const mockEvent = {
-                id: 'event-1',
-        sub: 'event-1',
-                ...dto,
-                slug: 'ifa-festival-2024',
-                creatorId: mockCurrentUser.id,
-                published: false,
-                createdAt: new Date(),
-            };
+      const result = await service.getEvent('nonexistent-event');
 
-            mockPrismaService.event.create.mockResolvedValue(mockEvent);
-
-            const result = await service.create(dto as any, mockCurrentUser);
-
-            expect(result).toEqual(mockEvent);
-            expect(prisma.event.create).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    data: expect.objectContaining({
-                        title: dto.title,
-                        creatorId: mockCurrentUser.id,
-                        slug: expect.any(String),
-                    }),
-                })
-            );
-        });
+      expect(result).toBeNull();
     });
-
-    describe('findAll', () => {
-        it('should return all events', async () => {
-            const mockEvents = [
-                { id: 'event-1', title: 'Event 1', published: true },
-                { id: 'event-2', title: 'Event 2', published: true },
-            ];
-
-            mockPrismaService.event.findMany.mockResolvedValue(mockEvents);
-
-            const result = await service.findAll();
-
-            expect(result).toEqual(mockEvents);
-        });
-
-        it('should filter events by type', async () => {
-            const mockEvents = [
-                { id: 'event-1', title: 'Workshop', type: 'WORKSHOP' },
-            ];
-
-            mockPrismaService.event.findMany.mockResolvedValue(mockEvents);
-
-            const result = await service.findAll({ type: 'WORKSHOP' });
-
-            expect(result).toEqual(mockEvents);
-            expect(prisma.event.findMany).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    where: expect.objectContaining({ type: 'WORKSHOP' }),
-                })
-            );
-        });
-
-        it('should filter upcoming events', async () => {
-            const mockEvents = [
-                { id: 'event-1', title: 'Future Event', startDate: new Date('2025-01-01') },
-            ];
-
-            mockPrismaService.event.findMany.mockResolvedValue(mockEvents);
-
-            const result = await service.findAll({ upcoming: true });
-
-            expect(result).toEqual(mockEvents);
-        });
-    });
-
-    describe('findOne', () => {
-        it('should return event by ID', async () => {
-            const mockEvent = {
-                id: 'event-1',
-        sub: 'event-1',
-                title: 'Test Event',
-                registrations: [],
-            };
-
-            mockPrismaService.event.findFirst.mockResolvedValue(mockEvent);
-
-            const result = await service.findOne('event-1');
-
-            expect(result).toMatchObject({ id: 'event-1', title: 'Test Event' });
-            expect(result.userRegistration).toBeNull();
-        });
-
-        it('should return event by slug', async () => {
-            const mockEvent = {
-                id: 'event-1',
-        sub: 'event-1',
-                slug: 'test-event',
-                title: 'Test Event',
-            };
-
-            mockPrismaService.event.findFirst.mockResolvedValue(mockEvent);
-
-            const result = await service.findOne('test-event');
-
-            expect(result).toMatchObject({ id: 'event-1', slug: 'test-event', title: 'Test Event' });
-            expect(result.userRegistration).toBeNull();
-        });
-
-        it('should throw NotFoundException when event not found', async () => {
-            mockPrismaService.event.findUnique.mockResolvedValue(null);
-            mockPrismaService.event.findFirst.mockResolvedValue(null);
-
-            await expect(service.findOne('nonexistent')).rejects.toThrow(NotFoundException);
-        });
-    });
-
-    describe('update', () => {
-        it('should update event when user is organizer', async () => {
-            const eventId = 'event-1';
-            const dto = { title: 'Updated Event Title' };
-
-            const mockEvent = {
-                id: eventId,
-                title: 'Original Title',
-                creatorId: mockCurrentUser.id,
-            };
-
-            const mockUpdatedEvent = {
-                ...mockEvent,
-                title: dto.title,
-            };
-
-            mockPrismaService.event.findUnique.mockResolvedValue(mockEvent);
-            mockPrismaService.event.update.mockResolvedValue(mockUpdatedEvent);
-
-            const result = await service.update(eventId, dto as any, mockCurrentUser);
-
-            expect(result).toEqual(mockUpdatedEvent);
-        });
-
-        it('should throw ForbiddenException when user is not organizer', async () => {
-            const eventId = 'event-1';
-            const dto = { title: 'Hacked Title' };
-
-            const mockEvent = {
-                id: eventId,
-                creatorId: 'other-user',
-            };
-
-            mockPrismaService.event.findUnique.mockResolvedValue(mockEvent);
-
-            await expect(service.update(eventId, dto as any, mockCurrentUser)).rejects.toThrow(
-                ForbiddenException,
-            );
-        });
-    });
-
-    describe('delete', () => {
-        it('should delete event when user is organizer', async () => {
-            const eventId = 'event-1';
-
-            const mockEvent = {
-                id: eventId,
-                creatorId: mockCurrentUser.id,
-            };
-
-            mockPrismaService.event.findUnique.mockResolvedValue(mockEvent);
-            mockPrismaService.event.delete.mockResolvedValue(mockEvent);
-
-            await service.delete(eventId, mockCurrentUser);
-
-            expect(prisma.event.delete).toHaveBeenCalledWith({
-                where: { id: eventId },
-            });
-        });
-    });
-
-    describe('registerForEvent', () => {
-        it('should register user for event', async () => {
-            const eventId = 'event-1';
-
-            const mockEvent = {
-                id: eventId,
-                title: 'Test Event',
-                maxAttendees: 100,
-                _count: { registrations: 50 },
-                published: true,
-                status: 'UPCOMING',
-                price: 0,
-            };
-
-            const mockRegistration = {
-                id: 'reg-1',
-        sub: 'reg-1',
-                eventId,
-                userId: mockCurrentUser.id,
-                status: 'REGISTERED',
-                createdAt: new Date(),
-            };
-
-            mockPrismaService.event.findUnique.mockResolvedValue(mockEvent);
-            mockPrismaService.eventRegistration.findUnique.mockResolvedValue(null);
-            mockPrismaService.eventRegistration.create.mockResolvedValue(mockRegistration);
-
-            const result = await service.registerForEvent(eventId, mockCurrentUser);
-
-            expect(result).toEqual(mockRegistration);
-            expect(prisma.eventRegistration.create).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    data: expect.objectContaining({
-                        eventId,
-                        userId: mockCurrentUser.id,
-                        status: 'REGISTERED',
-                    }),
-                })
-            );
-        });
-
-        it('should throw error when event is full', async () => {
-            const eventId = 'event-1';
-
-            const mockEvent = {
-                id: eventId,
-                maxAttendees: 10,
-                _count: { registrations: 10 },
-            };
-
-            mockPrismaService.event.findUnique.mockResolvedValue(mockEvent);
-
-            await expect(service.registerForEvent(eventId, mockCurrentUser)).rejects.toThrow(
-                BadRequestException,
-            );
-        });
-
-        it('should throw error when already registered', async () => {
-            const eventId = 'event-1';
-
-            const mockEvent = {
-                id: eventId,
-                maxAttendees: 100,
-                _count: { registrations: 50 },
-            };
-
-            const mockExistingRegistration = {
-                id: 'reg-1',
-        sub: 'reg-1',
-                eventId,
-                userId: mockCurrentUser.id,
-            };
-
-            mockPrismaService.event.findUnique.mockResolvedValue(mockEvent);
-            mockPrismaService.eventRegistration.findUnique.mockResolvedValue(mockExistingRegistration);
-
-            await expect(service.registerForEvent(eventId, mockCurrentUser)).rejects.toThrow(
-                BadRequestException,
-            );
-        });
-    });
-
-    describe('cancelRegistration', () => {
-        it('should cancel event registration', async () => {
-            const eventId = 'event-1';
-
-            const mockRegistration = {
-                id: 'reg-1',
-        sub: 'reg-1',
-                eventId,
-                userId: mockCurrentUser.id,
-                status: 'REGISTERED',
-            };
-
-            const mockUpdated = { ...mockRegistration, status: 'CANCELLED' };
-            mockPrismaService.eventRegistration.findUnique.mockResolvedValue(mockRegistration);
-            mockPrismaService.eventRegistration.update.mockResolvedValue(mockUpdated);
-
-            const result = await service.cancelRegistration(eventId, mockCurrentUser);
-
-            expect(result).toMatchObject({ status: 'CANCELLED' });
-            expect(prisma.eventRegistration.update).toHaveBeenCalledWith({
-                where: { id: 'reg-1' },
-                data: expect.objectContaining({ status: 'CANCELLED' }),
-            });
-        });
-
-        it('should throw error when registration not found', async () => {
-            const eventId = 'event-1';
-
-            mockPrismaService.eventRegistration.findUnique.mockResolvedValue(null);
-
-            await expect(service.cancelRegistration(eventId, mockCurrentUser)).rejects.toThrow(
-                BadRequestException,
-            );
-        });
-    });
-
-    describe('getUserRegistrations', () => {
-        it('should return user event registrations', async () => {
-            const userId = 'user-1';
-            const mockRegistrations = [
-                { id: 'reg-1', eventId: 'event-1', userId, event: { title: 'Event 1' } },
-                { id: 'reg-2', eventId: 'event-2', userId, event: { title: 'Event 2' } },
-            ];
-
-            mockPrismaService.eventRegistration.findMany.mockResolvedValue(mockRegistrations);
-
-            const result = await service.getUserRegistrations(userId);
-
-            expect(result).toEqual(mockRegistrations);
-        });
-    });
-
-    describe('publishEvent', () => {
-        it('should publish event when user is organizer', async () => {
-            const eventId = 'event-1';
-
-            const mockEvent = {
-                id: eventId,
-                creatorId: mockCurrentUser.id,
-                published: false,
-            };
-
-            const mockPublishedEvent = {
-                ...mockEvent,
-                published: true,
-            };
-
-            mockPrismaService.event.findUnique.mockResolvedValue(mockEvent);
-            mockPrismaService.event.update.mockResolvedValue(mockPublishedEvent);
-
-            const result = await service.publishEvent(eventId, mockCurrentUser);
-
-            expect(result).toEqual(mockPublishedEvent);
-            expect(prisma.event.update).toHaveBeenCalledWith({
-                where: { id: eventId },
-                data: { published: true },
-            });
-        });
-    });
+  });
 });

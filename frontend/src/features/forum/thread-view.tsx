@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Lock, Pin, Send, Loader2, Shield, Trash2, BookOpen, Eye, Share2, Bookmark, BookmarkCheck, UserCircle2, MoreHorizontal, Flag, Bell, BellOff, AlertTriangle, Stethoscope, ChevronDown } from 'lucide-react';
 import api from '@/lib/api';
@@ -117,6 +118,7 @@ function renderContent(text: string) {
  */
 const ThreadView: React.FC<ThreadViewProps> = ({ threadId, onBack }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [replyText, setReplyText] = useState('');
   const [viewerCount, setViewerCount] = useState(1);
   const [isBookmarked, setIsBookmarked] = useState(false);
@@ -547,7 +549,7 @@ const ThreadView: React.FC<ThreadViewProps> = ({ threadId, onBack }) => {
                 <h1 className="text-3xl font-bold brand-font text-foreground">{thread.title}</h1>
               </div>
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <span>By {thread.author.yorubaName || thread.author.name}</span>
+                <button type="button" onClick={() => navigate(`/profile/${thread.author.id}`)} className="hover:underline">By {thread.author.yorubaName || thread.author.name}</button>
                 {thread.author.verified && <span className="text-highlight">✓ Verified</span>}
                 <span>• {thread.category.name}</span>
                 <span>• {thread.viewCount} views</span>
@@ -685,12 +687,12 @@ const ThreadView: React.FC<ThreadViewProps> = ({ threadId, onBack }) => {
         {/* Thread Content (First Post) */}
         <div className="bg-card border border-border/60 shadow-sm rounded-xl p-6 space-y-4">
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-full bg-highlight/20 flex items-center justify-center text-highlight font-bold flex-shrink-0">
+            <button type="button" onClick={() => navigate(`/profile/${thread.author.id}`)} className="w-12 h-12 rounded-full bg-highlight/20 flex items-center justify-center text-highlight font-bold flex-shrink-0 hover:opacity-80 transition-opacity">
               {(thread.author.yorubaName || thread.author.name)[0].toUpperCase()}
-            </div>
+            </button>
             <div className="flex-1 space-y-2">
               <div className="flex items-center gap-3">
-                <span className="font-bold">{thread.author.yorubaName || thread.author.name}</span>
+                <button type="button" onClick={() => navigate(`/profile/${thread.author.id}`)} className="font-bold hover:underline">{thread.author.yorubaName || thread.author.name}</button>
                 {thread.author.verified && (
                   <span className="text-xs bg-highlight/20 text-highlight px-2 py-1 rounded">
                     Verified
@@ -718,7 +720,12 @@ const ThreadView: React.FC<ThreadViewProps> = ({ threadId, onBack }) => {
               className="bg-card border border-border/60 shadow-sm rounded-xl p-6 space-y-4 animate-in fade-in duration-300"
             >
               <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-highlight/20 flex items-center justify-center text-highlight font-bold text-sm flex-shrink-0 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => { if (!(post.isAnonymous && post.author.id === 'anon')) navigate(`/profile/${post.author.id}`); }}
+                  className="w-10 h-10 rounded-full bg-highlight/20 flex items-center justify-center text-highlight font-bold text-sm flex-shrink-0 overflow-hidden hover:opacity-80 transition-opacity"
+                  disabled={post.isAnonymous && post.author.id === 'anon'}
+                >
                   {post.isAnonymous && post.author.id === 'anon' ? (
                     <UserCircle2 size={28} className="text-muted-foreground" />
                   ) : post.author.avatar ? (
@@ -726,12 +733,17 @@ const ThreadView: React.FC<ThreadViewProps> = ({ threadId, onBack }) => {
                   ) : (
                     (post.author.yorubaName || post.author.name)[0].toUpperCase()
                   )}
-                </div>
+                </button>
                 <div className="flex-1 space-y-2">
                   <div className="flex items-center flex-wrap gap-2">
-                    <span className={`font-bold text-sm ${post.isAnonymous && post.author.id === 'anon' ? 'italic text-muted-foreground' : ''}`}>
+                    <button
+                      type="button"
+                      onClick={() => { if (!(post.isAnonymous && post.author.id === 'anon')) navigate(`/profile/${post.author.id}`); }}
+                      disabled={post.isAnonymous && post.author.id === 'anon'}
+                      className={`font-bold text-sm ${post.isAnonymous && post.author.id === 'anon' ? 'italic text-muted-foreground cursor-default' : 'hover:underline'}`}
+                    >
                       {post.author.yorubaName || post.author.name}
-                    </span>
+                    </button>
                     {post.isAnonymous && post.author.id === 'anon' ? (
                       <Lock size={10} className="text-muted-foreground" />
                     ) : (

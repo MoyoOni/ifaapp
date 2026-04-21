@@ -28,6 +28,52 @@ import { useProfileQuery } from './hooks/use-profile-query';
 import ProfileSkeleton from './components/profile-skeleton';
 import { UserRole, CulturalLevel } from '@common';
 
+interface MilestoneBadge {
+  key: string;
+  emoji: string;
+  label: string;
+  description: string;
+}
+
+const MilestoneBadges: React.FC<{ userId: string }> = ({ userId }) => {
+  const [tooltip, setTooltip] = React.useState<string | null>(null);
+  const { data: badges = [] } = useQuery<MilestoneBadge[]>({
+    queryKey: ['milestone-badges', userId],
+    queryFn: async () => {
+      const r = await api.get(`/users/${userId}/badges`);
+      return r.data;
+    },
+    staleTime: 5 * 60_000,
+  });
+
+  if (badges.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap gap-2 mt-3 justify-center sm:justify-start">
+      {badges.map((b) => (
+        <div key={b.key} className="relative">
+          <button
+            type="button"
+            onMouseEnter={() => setTooltip(b.key)}
+            onMouseLeave={() => setTooltip(null)}
+            onFocus={() => setTooltip(b.key)}
+            onBlur={() => setTooltip(null)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-secondary/10 text-secondary rounded-full text-xs font-semibold cursor-default select-none hover:bg-secondary/20 transition-colors"
+          >
+            <span>{b.emoji}</span>
+            <span>{b.label}</span>
+          </button>
+          {tooltip === b.key && (
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[180px] bg-popover border border-border rounded-lg px-3 py-1.5 text-xs text-foreground shadow-lg z-50 text-center pointer-events-none">
+              {b.description}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
+
 interface PublicProfileViewProps {
   userId: string;
   onNavigate: (view: string, params?: string) => void;
@@ -92,7 +138,7 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
       const response = await api.get(`/babalawo-client/personal-awo/${currentUserId}`);
       return response.data;
     },
-    enabled: !isCurrentUser && isBabalawo && currentUserIsClient && !!currentUserId,
+    enabled: !isCurrentUser && isBabalawo && currentUserIsClient && !!currentUserId && !localStorage.getItem('dev_mode_role'),
     retry: 0,
     staleTime: 60_000,
   });
@@ -270,6 +316,9 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
                   </span>
                 )}
               </div>
+
+              {/* Spiritual Milestones */}
+              <MilestoneBadges userId={userId} />
             </div>
           </div>
         </div>

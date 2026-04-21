@@ -107,9 +107,35 @@ async function seedUsers() {
   try {
     const usersToCreate = DEMO_ECOSYSTEM.users;
 
+    // Create mock user with all required fields for testing
+    const mockUser = {
+      id: 'user-1',
+      email: 'test@example.com',
+      name: 'Test User',
+      passwordHash: '$2b$10$demo',
+      role: 'USER',
+      yorubaName: null,
+      avatar: null,
+      bio: null,
+      location: null,
+      gender: null,
+      culturalLevel: 'Omo Ilé' as const,
+      verified: false,
+      templeId: null,
+      interests: [],
+      hasOnboarded: true,
+      createdAt: new Date(),
+    };
+
+    // Seed actual users from ecosystem
     for (const [userId, userData] of Object.entries(usersToCreate)) {
       // Create a simple hash for demo password
       const passwordHash = '$2b$10$demo'; // In real scenario, use bcrypt
+
+      // Validate required fields
+      if (!userData.id || !userData.email || !userData.name) {
+        throw new Error(`Missing required fields for user ${userId}`);
+      }
 
       await prisma.user.create({
         data: {
@@ -117,19 +143,18 @@ async function seedUsers() {
           email: userData.email,
           name: userData.name,
           passwordHash: passwordHash,
-          role: userData.role,
-          yorubaName: userData.yorubaName || null,
-          avatar: userData.avatar || null,
-          bio: userData.bio || null,
-          location: userData.location || null,
-          gender: userData.gender || null,
-          culturalLevel: userData.culturalLevel || 'Omo Ilé',
-          verified: userData.verified || false,
-          templeId: userData.templeId || null,
-          interests: userData.interests || [],
+          role: userData.role || 'USER',
+          yorubaName: userData.yorubaName ?? null,
+          avatar: userData.avatar ?? null,
+          bio: userData.bio ?? null,
+          location: userData.location ?? null,
+          gender: userData.gender ?? null,
+          culturalLevel: userData.culturalLevel ?? 'Omo Ilé',
+          verified: userData.verified ?? false,
+          templeId: userData.templeId ?? null,
+          interests: userData.interests ?? [],
           hasOnboarded: true,
-          createdAt: new Date(userData.createdAt),
-          // Role-specific fields will be handled separately
+          createdAt: userData.createdAt ? new Date(userData.createdAt) : new Date(),
         },
       });
     }

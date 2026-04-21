@@ -1,0 +1,58 @@
+[
+  {
+    "id": "oh-001",
+    "title": "The Origin of Ifá",
+    "category": "creation-stories",
+    "babalawoName": "Babaláwo Aládé",
+    "recordingDate": "2024-05-15T00:00:00.000Z",
+    "tags": ["creation", "mythology", "ifá", "origin"],
+    "content": "This is the sacred story of how Orúnmílà brought the art of Ifá to earth. It tells of the journey from the spiritual realm to the physical world, and how the wisdom of divination became accessible to humanity. The story emphasizes the importance of wisdom, patience, and understanding in the practice of Ifá.",
+    "sourceUrl": "https://example.com/oral-histories/ifá-origin",
+    "publishedAt": "2024-05-20T00:00:00.000Z",
+    "createdBy": "admin-123"
+  },
+  {
+    "id": "oh-002",
+    "title": "Traditional Healing Methods",
+    "category": "healing-practices",
+    "babalawoName": "Babaláwo Okunade",
+    "recordingDate": "2024-06-10T00:00:00.000Z",
+    "tags": ["healing", "medicine", "herbs", "traditional"],
+    "content": "Our ancestors used various herbs and spiritual methods to heal both physical and spiritual ailments. This knowledge was passed down through generations of traditional healers who understood the connection between the physical and metaphysical realms. The healing process often involved prayers, sacrifices, and the use of specific plants with medicinal properties.",
+    "publishedAt": "2024-06-15T00:00:00.000Z",
+    "createdBy": "admin-123"
+  },
+  {
+    "id": "oh-003",
+    "title": "The Significance of Sacrifices",
+    "category": "ritual-practices",
+    "babalawoName": "Babaláwo Adeyemo",
+    "recordingDate": "2024-07-22T00:00:00.000Z",
+    "tags": ["sacrifice", "ritual", "communion", "spiritual"],
+    "content": "Sacrifices in our tradition are not about taking life but about giving back to the spiritual forces that support us. They represent a form of communication with the Orisha and ancestors, expressing gratitude and requesting guidance. Each sacrifice has specific meaning and purpose, carefully chosen based on the situation and divination results.",
+    "publishedAt": "2024-07-25T00:00:00.000Z",
+    "createdBy": "admin-123"
+  },
+  {
+    "id": "oh-004",
+    "title": "The Four Pillars of Yoruba Spirituality",
+    "category": "fundamentals",
+    "babalawoName": "Babaláwo Oloyede",
+    "recordingDate": "2024-08-05T00:00:00.000Z",
+    "tags": ["fundamentals", "spirituality", "pillars", "philosophy"],
+    "content": "Yoruba spirituality rests on four fundamental pillars: Olódùmarè (the supreme deity), the Orisha (divine energies), the ancestors (those who came before), and humanity (the living). These pillars interact and support each other, creating a balanced spiritual ecosystem. Understanding these relationships is essential for anyone seeking to live according to Yoruba principles.",
+    "publishedAt": "2024-08-10T00:00:00.000Z",
+    "createdBy": "admin-123"
+  },
+  {
+    "id": "oh-005",
+    "title": "Naming Ceremonies and Their Meanings",
+    "category": "life-events",
+    "babalawoName": "Babaláwo Agboola",
+    "recordingDate": "2024-09-12T00:00:00.000Z",
+    "tags": ["names", "ceremony", "identity", "culture"],
+    "content": "In Yoruba culture, names are not merely labels but carry deep spiritual significance. The naming ceremony typically occurs seven days after birth, and the name chosen reflects circumstances of birth, family history, or spiritual guidance received. Names connect individuals to their destiny and community, and are believed to influence character and life path.",
+    "publishedAt": "2024-09-18T00:00:00.000Z",
+    "createdBy": "admin-123"
+  }
+]

@@ -127,4 +127,30 @@ export class CirclesController {
   async getUserCircles(@Param('userId') userId: string) {
     return this.circlesService.getUserCircles(userId);
   }
+
+  // ==================== D5: Circle Feed ====================
+
+  @Get(':id/feed')
+  @UseGuards(AuthGuard('jwt'))
+  async getCircleFeed(
+    @Param('id') circleId: string,
+    @CurrentUser() currentUser: CurrentUserPayload,
+  ) {
+    return this.circlesService.getCircleFeed(circleId, currentUser.id);
+  }
+
+  @Post(':id/feed')
+  @UseGuards(AuthGuard('jwt'))
+  async createCircleFeedPost(
+    @Param('id') circleId: string,
+    @Body() body: { content: string; patronOnly?: boolean },
+    @CurrentUser() currentUser: CurrentUserPayload,
+  ) {
+    return this.circlesService.createCircleFeedPost(
+      circleId,
+      body.content,
+      body.patronOnly ?? false,
+      currentUser,
+    );
+  }
 }

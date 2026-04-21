@@ -35,6 +35,7 @@ const TempleConnectionView: React.FC = () => {
       return Array.isArray(payload) ? payload : (payload.temples ?? payload.data ?? []);
     },
     staleTime: 30000,
+    enabled: !localStorage.getItem('dev_mode_role'),
   });
 
   const { data: followedTemples = [], refetch: refetchFollowed } = useQuery<Temple[]>({
@@ -45,6 +46,7 @@ const TempleConnectionView: React.FC = () => {
       return Array.isArray(payload) ? payload : (payload.temples ?? payload.data ?? []);
     },
     staleTime: 30000,
+    enabled: !localStorage.getItem('dev_mode_role'),
   });
 
   const followedIds = new Set<string>(followedTemples.map(t => t.id));
@@ -104,8 +106,8 @@ const TempleConnectionView: React.FC = () => {
 
   if (isError) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center bg-red-50 dark:bg-red-950/30 rounded-xl border border-red-100">
-        <AlertCircle size={48} className="text-red-400 mb-4" />
+      <div className="flex flex-col items-center justify-center py-20 text-center bg-destructive/10 rounded-xl border border-destructive/20">
+        <AlertCircle size={48} className="text-destructive mb-4" />
         <p className="text-lg font-medium text-foreground mb-1">Connection error</p>
         <p className="text-muted-foreground text-sm mb-6 max-w-sm">
           Could not load temples from the server. Check your connection and try again.

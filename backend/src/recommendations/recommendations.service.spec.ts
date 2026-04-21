@@ -1,167 +1,409 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { RecommendationsService } from './recommendations.service';
+import { Test } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
+import { RecommendationsService } from './recommendations.service';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { User, BabalawoProfile, Temple, Circle, ForumThread, Event, Product, Appointment } from '@prisma/client';
+import { UserRole } from '@common/enums/user-role.enum';
 
 describe('RecommendationsService', () => {
-    let service: RecommendationsService;
-    let prisma: PrismaService;
+  let service: RecommendationsService;
+  let prisma: PrismaService;
 
-    const mockPrismaService = {
-        user: {
-            findUnique: jest.fn(),
-            findMany: jest.fn(),
+  beforeEach(async () => {
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        RecommendationsService,
+        {
+          provide: PrismaService,
+          useValue: {
+            user: {
+              findUnique: jest.fn(),
+              findMany: jest.fn(),
+            },
+            babalawoProfile: {
+              findMany: jest.fn(),
+            },
+            temple: {
+              findMany: jest.fn(),
+            },
+            circle: {
+              findMany: jest.fn(),
+            },
+            forumThread: {
+              findMany: jest.fn(),
+            },
+            event: {
+              findMany: jest.fn(),
+            },
+            product: {
+              findMany: jest.fn(),
+            },
+            appointment: {
+              findMany: jest.fn(),
+            },
+            $transaction: jest.fn(),
+          },
         },
-        temple: {
-            findMany: jest.fn(),
-        },
-        babalawoProfile: {
-            findMany: jest.fn(),
-        },
-        product: {
-            findMany: jest.fn(),
-        },
-        event: {
-            findMany: jest.fn(),
-        },
-        circle: {
-            findMany: jest.fn(),
-        },
-        course: {
-            findMany: jest.fn(),
-        },
-    };
+      ],
+    }).compile();
 
-    const mockCurrentUser = {
-        id: 'user-1',
-        sub: 'user-1',
-        email: 'user@example.com',
-        role: 'CLIENT' as any,
-        verified: true,
-    };
+    service = moduleRef.get<RecommendationsService>(RecommendationsService);
+    prisma = moduleRef.get<PrismaService>(PrismaService);
+  });
 
-    beforeEach(async () => {
-        const module: TestingModule = await Test.createTestingModule({
-            providers: [
-                RecommendationsService,
-                {
-                    provide: PrismaService,
-                    useValue: mockPrismaService,
-                },
-            ],
-        }).compile();
+  describe('getPersonalizedRecommendations', () => {
+    it('should return personalized recommendations for a user', async () => {
+      const mockUser: User = {
+        id: 'user1',
+        email: 'test@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+        role: UserRole.CLIENT,
+        isVerified: true,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
+        isEmailVerified: true,
+        fcmTokens: [],
+        bio: 'Test bio',
+        phone: '',
+        avatar: '',
+        additionalInfo: '',
+      };
 
-        service = module.get<RecommendationsService>(RecommendationsService);
-        prisma = module.get<PrismaService>(PrismaService);
+      const mockAppointments: Appointment[] = [
+        {
+          id: 'apt1',
+          clientId: 'user1',
+          babalawoId: 'user2',
+          scheduledStart: new Date(),
+          scheduledEnd: new Date(),
+          status: 'COMPLETED',
+          notes: 'Completed appointment',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
 
-        jest.clearAllMocks();
+      const mockRecommendedBabalawos = [
+        {
+          id: 'profile1',
+          userId: 'user2',
+          expertise: 'Traditional Healing',
+          yearsOfPractice: 10,
+          isVerified: true,
+          bio: 'Experienced traditional healer',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
+      jest.spyOn(prisma.appointment, 'findMany').mockResolvedValue(mockAppointments);
+      jest.spyOn(prisma.babalawoProfile, 'findMany').mockResolvedValue(mockRecommendedBabalawos);
+      jest.spyOn(prisma.temple, 'findMany').mockResolvedValue([]);
+      jest.spyOn(prisma.circle, 'findMany').mockResolvedValue([]);
+      jest.spyOn(prisma.event, 'findMany').mockResolvedValue([]);
+      jest.spyOn(prisma.product, 'findMany').mockResolvedValue([]);
+
+      const result = await service.getPersonalizedRecommendations('user1');
+
+      expect(result).toEqual({
+        babalawos: mockRecommendedBabalawos,
+        temples: [],
+        circles: [],
+        events: [],
+        products: [],
+      });
     });
 
-    describe('getRecommendations', () => {
-        it('should return personalized recommendations for user', async () => {
-            const userId = 'user-1';
+    it('should throw NotFoundException if user does not exist', async () => {
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(null);
 
-            const mockUser = {
-                id: userId,
-                city: 'Lagos',
-                state: 'Lagos State',
-                interests: ['Divination', 'Healing'],
-            };
+      await expect(service.getPersonalizedRecommendations('nonexistent-user')).rejects.toThrow(NotFoundException);
+    });
+  });
 
-            const mockBabalawos = [
-                { id: 'bab-1', name: 'Babalawo 1', city: 'Lagos', lineage: 'Orunmila' },
-            ];
+  describe('getRecommendedBabalawos', () => {
+    it('should return recommended babalawos based on user history', async () => {
+      const mockAppointments: Appointment[] = [
+        {
+          id: 'apt1',
+          clientId: 'user1',
+          babalawoId: 'user2',
+          scheduledStart: new Date(),
+          scheduledEnd: new Date(),
+          status: 'COMPLETED',
+          notes: 'Completed appointment',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
 
-            const mockProducts = [
-                { id: 'prod-1', name: 'Divination Chain', category: 'SPIRITUAL_TOOLS' },
-            ];
+      const mockRecommendedBabalawos = [
+        {
+          id: 'profile1',
+          userId: 'user3',
+          expertise: 'Traditional Healing',
+          yearsOfPractice: 10,
+          isVerified: true,
+          bio: 'Experienced traditional healer',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
 
-            const mockEvents = [
-                { id: 'event-1', title: 'Ifa Festival', type: 'FESTIVAL' },
-            ];
+      jest.spyOn(prisma.appointment, 'findMany').mockResolvedValue(mockAppointments);
+      jest.spyOn(prisma.babalawoProfile, 'findMany').mockResolvedValue(mockRecommendedBabalawos);
 
-            const mockCircles = [
-                { id: 'circle-1', name: 'Divination Study', topic: 'Divination' },
-            ];
+      const result = await service.getRecommendedBabalawos('user1');
 
-            mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
-            mockPrismaService.babalawoProfile.findMany.mockResolvedValue(mockBabalawos);
-            mockPrismaService.product.findMany.mockResolvedValue(mockProducts);
-            mockPrismaService.event.findMany.mockResolvedValue(mockEvents);
-            mockPrismaService.circle.findMany.mockResolvedValue(mockCircles);
-
-            const result = await service.getRecommendations(userId, mockCurrentUser);
-
-            expect(result).toBeDefined();
-            expect(result).toHaveProperty('featuredBabalawos');
-            expect(result).toHaveProperty('featuredProducts');
-        });
-
-        it('should handle user with no preferences', async () => {
-            const userId = 'new-user';
-
-            const mockUser = {
-                id: userId,
-                city: null,
-                state: null,
-                interests: [],
-            };
-
-            mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
-            mockPrismaService.babalawoProfile.findMany.mockResolvedValue([]);
-            mockPrismaService.product.findMany.mockResolvedValue([]);
-            mockPrismaService.event.findMany.mockResolvedValue([]);
-            mockPrismaService.circle.findMany.mockResolvedValue([]);
-
-            const result = await service.getRecommendations(userId, mockCurrentUser);
-
-            expect(result).toBeDefined();
-        });
+      expect(result).toEqual(mockRecommendedBabalawos);
     });
 
-    describe('getDefaultRecommendations', () => {
-        it('should return default recommendations', async () => {
-            const mockBabalawos = [
-                { id: 'bab-1', name: 'Top Babalawo', verified: true },
-            ];
+    it('should return popular babalawos if no user history', async () => {
+      jest.spyOn(prisma.appointment, 'findMany').mockResolvedValue([]);
+      jest.spyOn(prisma.babalawoProfile, 'findMany').mockResolvedValue([]);
 
-            const mockProducts = [
-                { id: 'prod-1', name: 'Popular Product', rating: 5 },
-            ];
+      const result = await service.getRecommendedBabalawos('user1');
 
-            const mockEvents = [
-                { id: 'event-1', title: 'Upcoming Festival', published: true },
-            ];
-
-            const mockCircles = [
-                { id: 'circle-1', name: 'Beginner Circle', active: true },
-            ];
-
-            mockPrismaService.user.findMany.mockResolvedValue(mockBabalawos);
-            mockPrismaService.temple.findMany.mockResolvedValue([]);
-            mockPrismaService.product.findMany.mockResolvedValue(mockProducts);
-            mockPrismaService.course.findMany.mockResolvedValue([]);
-
-            const result = await (service as any).getDefaultRecommendations();
-
-            expect(result).toBeDefined();
-            expect(result).toHaveProperty('featuredBabalawos');
-            expect(result).toHaveProperty('featuredTemples');
-            expect(result).toHaveProperty('featuredProducts');
-            expect(result).toHaveProperty('featuredCourses');
-        });
-
-        it('should handle empty default recommendations', async () => {
-            mockPrismaService.user.findMany.mockResolvedValue([]);
-            mockPrismaService.temple.findMany.mockResolvedValue([]);
-            mockPrismaService.product.findMany.mockResolvedValue([]);
-            mockPrismaService.course.findMany.mockResolvedValue([]);
-
-            const result = await (service as any).getDefaultRecommendations();
-
-            expect(result.featuredBabalawos).toEqual([]);
-            expect(result.featuredProducts).toEqual([]);
-            expect(result.featuredCourses).toEqual([]);
-            expect(result.featuredTemples).toEqual([]);
-        });
+      expect(result).toEqual([]);
     });
+  });
+
+  describe('getRecommendedTemples', () => {
+    it('should return recommended temples based on user location', async () => {
+      const mockUser: User = {
+        id: 'user1',
+        email: 'test@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+        role: UserRole.CLIENT,
+        isVerified: true,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
+        isEmailVerified: true,
+        fcmTokens: [],
+        bio: 'Test bio',
+        phone: '+1234567890',
+        avatar: '',
+        additionalInfo: '{"location": "Lagos"}',
+      };
+
+      const mockRecommendedTemples = [
+        {
+          id: 'temple1',
+          name: 'Lagos Temple',
+          description: 'A temple in Lagos',
+          location: 'Lagos',
+          contactInfo: '{}',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          isVerified: true,
+          avatar: null,
+          coverImage: null,
+        },
+      ];
+
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
+      jest.spyOn(prisma.temple, 'findMany').mockResolvedValue(mockRecommendedTemples);
+
+      const result = await service.getRecommendedTemples('user1');
+
+      expect(result).toEqual(mockRecommendedTemples);
+    });
+
+    it('should return popular temples if user has no location info', async () => {
+      const mockUser: User = {
+        id: 'user1',
+        email: 'test@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+        role: UserRole.CLIENT,
+        isVerified: true,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
+        isEmailVerified: true,
+        fcmTokens: [],
+        bio: 'Test bio',
+        phone: '+1234567890',
+        avatar: '',
+        additionalInfo: '{}', // No location info
+      };
+
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
+      jest.spyOn(prisma.temple, 'findMany').mockResolvedValue([]);
+
+      const result = await service.getRecommendedTemples('user1');
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('getRecommendedCircles', () => {
+    it('should return recommended circles based on user interests', async () => {
+      const mockRecommendedCircles = [
+        {
+          id: 'circle1',
+          name: 'Healing Circle',
+          description: 'A circle for healing practices',
+          ownerId: 'user2',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          isPublic: true,
+          avatar: null,
+          coverImage: null,
+        },
+      ];
+
+      jest.spyOn(prisma.circle, 'findMany').mockResolvedValue(mockRecommendedCircles);
+
+      const result = await service.getRecommendedCircles('user1');
+
+      expect(result).toEqual(mockRecommendedCircles);
+    });
+
+    it('should return trending circles if no user interests', async () => {
+      jest.spyOn(prisma.circle, 'findMany').mockResolvedValue([]);
+
+      const result = await service.getRecommendedCircles('user1');
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('getRecommendedEvents', () => {
+    it('should return recommended events based on user interests', async () => {
+      const mockRecommendedEvents = [
+        {
+          id: 'event1',
+          title: 'Healing Workshop',
+          description: 'A workshop on traditional healing',
+          startDate: new Date(),
+          endDate: new Date(),
+          location: 'Lagos',
+          organizerId: 'user2',
+          maxAttendees: 50,
+          status: 'SCHEDULED',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          coverImage: null,
+        },
+      ];
+
+      jest.spyOn(prisma.event, 'findMany').mockResolvedValue(mockRecommendedEvents);
+
+      const result = await service.getRecommendedEvents('user1');
+
+      expect(result).toEqual(mockRecommendedEvents);
+    });
+
+    it('should return upcoming events if no user history', async () => {
+      jest.spyOn(prisma.event, 'findMany').mockResolvedValue([]);
+
+      const result = await service.getRecommendedEvents('user1');
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('getRecommendedProducts', () => {
+    it('should return recommended products based on user history', async () => {
+      const mockRecommendedProducts = [
+        {
+          id: 'product1',
+          name: 'Herbal Tincture',
+          description: 'Traditional herbal remedy',
+          price: 2500,
+          vendorId: 'user3',
+          categoryId: 'remedy',
+          status: 'ACTIVE',
+          stockQuantity: 10,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          images: [],
+        },
+      ];
+
+      jest.spyOn(prisma.product, 'findMany').mockResolvedValue(mockRecommendedProducts);
+
+      const result = await service.getRecommendedProducts('user1');
+
+      expect(result).toEqual(mockRecommendedProducts);
+    });
+
+    it('should return popular products if no user history', async () => {
+      jest.spyOn(prisma.product, 'findMany').mockResolvedValue([]);
+
+      const result = await service.getRecommendedProducts('user1');
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('getContentBasedRecommendations', () => {
+    it('should return content-based recommendations', async () => {
+      const mockUser: User = {
+        id: 'user1',
+        email: 'test@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+        role: UserRole.CLIENT,
+        isVerified: true,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
+        isEmailVerified: true,
+        fcmTokens: [],
+        bio: 'Interested in traditional healing and spiritual guidance',
+        phone: '',
+        avatar: '',
+        additionalInfo: '{}',
+      };
+
+      const mockRecommendedContent = {
+        babalawos: [
+          {
+            id: 'profile1',
+            userId: 'user2',
+            expertise: 'Traditional Healing',
+            yearsOfPractice: 10,
+            isVerified: true,
+            bio: 'Specialist in traditional healing',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        ],
+        temples: [
+          {
+            id: 'temple1',
+            name: 'Traditional Healing Temple',
+            description: 'Temple specializing in traditional healing',
+            location: 'Lagos',
+            contactInfo: '{}',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            isVerified: true,
+            avatar: null,
+            coverImage: null,
+          },
+        ],
+      };
+
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
+      jest.spyOn(prisma.babalawoProfile, 'findMany').mockResolvedValue(mockRecommendedContent.babalawos);
+      jest.spyOn(prisma.temple, 'findMany').mockResolvedValue(mockRecommendedContent.temples);
+
+      const result = await service.getContentBasedRecommendations('user1');
+
+      expect(result.babalawos).toEqual(mockRecommendedContent.babalawos);
+      expect(result.temples).toEqual(mockRecommendedContent.temples);
+    });
+  });
 });

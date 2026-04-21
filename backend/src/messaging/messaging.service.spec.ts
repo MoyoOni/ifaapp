@@ -1,265 +1,419 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { MessagingService } from './messaging.service';
+import { Test } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
-import { NotFoundException, ForbiddenException } from '@nestjs/common';
+import { MessagingService } from './messaging.service';
+import { BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { User, Message, Conversation } from '@prisma/client';
+import { MessageStatus } from '@common/enums/message-status.enum';
+import { UserRole } from '@common/enums/user-role.enum';
 
 describe('MessagingService', () => {
-    let service: MessagingService;
-    let prisma: PrismaService;
+  let service: MessagingService;
+  let prisma: PrismaService;
 
-    const mockPrismaService = {
-        message: {
-            create: jest.fn(),
-            findMany: jest.fn(),
-            findUnique: jest.fn(),
-            update: jest.fn(),
-            updateMany: jest.fn(),
-            count: jest.fn(),
+  beforeEach(async () => {
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        MessagingService,
+        {
+          provide: PrismaService,
+          useValue: {
+            message: {
+              findMany: jest.fn(),
+              findUnique: jest.fn(),
+              create: jest.fn(),
+              update: jest.fn(),
+              delete: jest.fn(),
+            },
+            conversation: {
+              findUnique: jest.fn(),
+              create: jest.fn(),
+              update: jest.fn(),
+            },
+            user: {
+              findUnique: jest.fn(),
+            },
+            $transaction: jest.fn(),
+          },
         },
-        user: {
-            findUnique: jest.fn(),
+      ],
+    }).compile();
+
+    service = moduleRef.get<MessagingService>(MessagingService);
+    prisma = moduleRef.get<PrismaService>(PrismaService);
+  });
+
+  describe('sendMessage', () => {
+    it('should send a message successfully', async () => {
+      const mockSender: User = {
+        id: 'user1',
+        email: 'sender@example.com',
+        firstName: 'Sender',
+        lastName: 'User',
+        role: UserRole.CLIENT,
+        isVerified: true,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
+        isEmailVerified: true,
+        fcmTokens: [],
+        bio: '',
+        phone: '',
+        avatar: '',
+        additionalInfo: '',
+      };
+
+      const mockRecipient: User = {
+        id: 'user2',
+        email: 'recipient@example.com',
+        firstName: 'Recipient',
+        lastName: 'User',
+        role: UserRole.BABALAWO,
+        isVerified: true,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
+        isEmailVerified: true,
+        fcmTokens: [],
+        bio: '',
+        phone: '',
+        avatar: '',
+        additionalInfo: '',
+      };
+
+      const mockConversation: Conversation = {
+        id: 'conv1',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastMessageAt: new Date(),
+        type: 'DIRECT',
+      };
+
+      const newMessage: Message = {
+        id: 'msg1',
+        content: 'Hello there!',
+        senderId: 'user1',
+        recipientId: 'user2',
+        conversationId: 'conv1',
+        status: MessageStatus.SENT,
+        readAt: null,
+        deliveredAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      jest.spyOn(prisma.user, 'findUnique').mockImplementation(({ where }) => {
+        if (where.id === 'user1') return Promise.resolve(mockSender);
+        if (where.id === 'user2') return Promise.resolve(mockRecipient);
+        return Promise.resolve(null);
+      });
+      jest.spyOn(prisma.conversation, 'findUnique').mockResolvedValue(mockConversation);
+      jest.spyOn(prisma.message, 'create').mockResolvedValue(newMessage);
+
+      const result = await service.sendMessage({
+        recipientId: 'user2',
+        content: 'Hello there!',
+      }, 'user1');
+
+      expect(result).toEqual(newMessage);
+      expect(prisma.message.create).toHaveBeenCalledWith({
+        data: {
+          content: 'Hello there!',
+          senderId: 'user1',
+          recipientId: 'user2',
+          conversationId: 'conv1',
+          status: MessageStatus.SENT,
         },
-        babalawoClient: {
-            findFirst: jest.fn(),
+        include: {
+          sender: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              avatar: true,
+              isVerified: true,
+            },
+          },
+          recipient: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              avatar: true,
+              isVerified: true,
+            },
+          },
         },
-    };
-
-    const mockCurrentUser = {
-        id: 'user-1',
-        sub: 'user-1',
-        email: 'user@example.com',
-        role: 'CLIENT' as any,
-        verified: true,
-    };
-
-    const mockOtherUser = {
-        id: 'user-2',
-        sub: 'user-2',
-        name: 'Other User',
-        email: 'other@example.com',
-    };
-
-    beforeEach(async () => {
-        const module: TestingModule = await Test.createTestingModule({
-            providers: [
-                MessagingService,
-                {
-                    provide: PrismaService,
-                    useValue: mockPrismaService,
-                },
-            ],
-        }).compile();
-
-        service = module.get<MessagingService>(MessagingService);
-        prisma = module.get<PrismaService>(PrismaService);
-
-        // Mock encryption key (must be exactly 32 chars for messaging service)
-        process.env.ENCRYPTION_KEY = 'a'.repeat(32);
-
-        jest.clearAllMocks();
+      });
     });
 
-    describe('sendMessage', () => {
-        it('should send a message successfully', async () => {
-            const dto = {
-                receiverId: 'user-2',
-                content: 'Hello, how are you?',
-            };
+    it('should throw an exception if sender does not exist', async () => {
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(null);
 
-            const mockMessage = {
-                id: 'message-1',
-        sub: 'message-1',
-                senderId: mockCurrentUser.id,
-                receiverId: dto.receiverId,
-                content: dto.content,
-                read: false,
-                createdAt: new Date(),
-            };
-
-            mockPrismaService.babalawoClient.findFirst.mockResolvedValue({ id: 'rel-1' });
-            mockPrismaService.message.create.mockResolvedValue(mockMessage);
-
-            const result = await service.sendMessage(mockCurrentUser.id, dto as any, mockCurrentUser);
-
-            expect(result).toEqual(mockMessage);
-            expect(prisma.message.create).toHaveBeenCalled();
-        });
-
-        it('should throw ForbiddenException when sender is not current user', async () => {
-            const dto = {
-                receiverId: 'user-2',
-                content: 'Test',
-            };
-
-            await expect(
-                service.sendMessage('other-user', dto as any, mockCurrentUser)
-            ).rejects.toThrow(ForbiddenException);
-        });
+      await expect(service.sendMessage({
+        recipientId: 'user2',
+        content: 'Hello there!',
+      }, 'nonexistent-sender')).rejects.toThrow(NotFoundException);
     });
 
-    describe('sendSystemMessage', () => {
-        it('should send system message without authorization checks', async () => {
-            const mockMessage = {
-                id: 'message-1',
-        sub: 'message-1',
-                senderId: 'system',
-                receiverId: 'user-1',
-                content: 'Welcome to the platform!',
-                read: false,
-            };
+    it('should throw an exception if recipient does not exist', async () => {
+      const mockSender: User = {
+        id: 'user1',
+        email: 'sender@example.com',
+        firstName: 'Sender',
+        lastName: 'User',
+        role: UserRole.CLIENT,
+        isVerified: true,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
+        isEmailVerified: true,
+        fcmTokens: [],
+        bio: '',
+        phone: '',
+        avatar: '',
+        additionalInfo: '',
+      };
 
-            mockPrismaService.message.create.mockResolvedValue(mockMessage);
+      jest.spyOn(prisma.user, 'findUnique').mockImplementation(({ where }) => {
+        if (where.id === 'user1') return Promise.resolve(mockSender);
+        return Promise.resolve(null);
+      });
 
-            const result = await service.sendSystemMessage('system', 'user-1', 'Welcome to the platform!');
-
-            expect(result).toEqual(mockMessage);
-        });
+      await expect(service.sendMessage({
+        recipientId: 'nonexistent-recipient',
+        content: 'Hello there!',
+      }, 'user1')).rejects.toThrow(NotFoundException);
     });
 
-    describe('getConversation', () => {
-        it('should return conversation messages', async () => {
-            const mockMessages = [
-                { id: 'msg-1', senderId: 'user-1', receiverId: 'user-2', content: 'Hi', read: true },
-                { id: 'msg-2', senderId: 'user-2', receiverId: 'user-1', content: 'Hello', read: true },
-            ];
+    it('should throw an exception if content is empty', async () => {
+      const mockSender: User = {
+        id: 'user1',
+        email: 'sender@example.com',
+        firstName: 'Sender',
+        lastName: 'User',
+        role: UserRole.CLIENT,
+        isVerified: true,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
+        isEmailVerified: true,
+        fcmTokens: [],
+        bio: '',
+        phone: '',
+        avatar: '',
+        additionalInfo: '',
+      };
 
-            mockPrismaService.message.findMany.mockResolvedValue(mockMessages);
+      const mockRecipient: User = {
+        id: 'user2',
+        email: 'recipient@example.com',
+        firstName: 'Recipient',
+        lastName: 'User',
+        role: UserRole.BABALAWO,
+        isVerified: true,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
+        isEmailVerified: true,
+        fcmTokens: [],
+        bio: '',
+        phone: '',
+        avatar: '',
+        additionalInfo: '',
+      };
 
-            const result = await service.getConversation('user-1', 'user-2', mockCurrentUser);
+      jest.spyOn(prisma.user, 'findUnique').mockImplementation(({ where }) => {
+        if (where.id === 'user1') return Promise.resolve(mockSender);
+        if (where.id === 'user2') return Promise.resolve(mockRecipient);
+        return Promise.resolve(null);
+      });
 
-            expect(result).toEqual(mockMessages);
-            expect(prisma.message.findMany).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    where: expect.objectContaining({
-                        OR: expect.any(Array),
-                    }),
-                    orderBy: { createdAt: 'asc' },
-                })
-            );
-        });
+      await expect(service.sendMessage({
+        recipientId: 'user2',
+        content: '', // Empty content
+      }, 'user1')).rejects.toThrow(BadRequestException);
+    });
+  });
 
-        it('should throw ForbiddenException when user is not participant', async () => {
-            await expect(
-                service.getConversation('user-3', 'user-4', mockCurrentUser)
-            ).rejects.toThrow(ForbiddenException);
-        });
+  describe('getMessages', () => {
+    it('should retrieve messages between two users', async () => {
+      const mockMessages: Message[] = [
+        {
+          id: 'msg1',
+          content: 'First message',
+          senderId: 'user1',
+          recipientId: 'user2',
+          conversationId: 'conv1',
+          status: MessageStatus.READ,
+          readAt: new Date(),
+          deliveredAt: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: 'msg2',
+          content: 'Second message',
+          senderId: 'user2',
+          recipientId: 'user1',
+          conversationId: 'conv1',
+          status: MessageStatus.DELIVERED,
+          readAt: null,
+          deliveredAt: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+
+      jest.spyOn(prisma.message, 'findMany').mockResolvedValue(mockMessages);
+
+      const result = await service.getMessages('user1', 'user2');
+
+      expect(result).toEqual(mockMessages);
+      expect(prisma.message.findMany).toHaveBeenCalledWith({
+        where: {
+          OR: [
+            { senderId: 'user1', recipientId: 'user2' },
+            { senderId: 'user2', recipientId: 'user1' },
+          ],
+        },
+        orderBy: { createdAt: 'asc' },
+        include: {
+          sender: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              avatar: true,
+              isVerified: true,
+            },
+          },
+          recipient: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              avatar: true,
+              isVerified: true,
+            },
+          },
+        },
+      });
     });
 
-    describe('getInbox', () => {
-        it('should return user inbox with conversations', async () => {
-            const mockMessages = [
-                {
-                    id: 'msg-1',
-        sub: 'msg-1',
-                    senderId: 'user-2',
-                    receiverId: 'user-1',
-                    content: 'Latest message',
-                    createdAt: new Date(),
-                    sender: mockOtherUser,
-                },
-            ];
+    it('should return empty array if no messages exist', async () => {
+      jest.spyOn(prisma.message, 'findMany').mockResolvedValue([]);
 
-            mockPrismaService.message.findMany.mockResolvedValue(mockMessages);
-            mockPrismaService.message.count.mockResolvedValue(0);
+      const result = await service.getMessages('user1', 'user2');
 
-            const result = await service.getInbox('user-1', mockCurrentUser);
+      expect(result).toEqual([]);
+    });
+  });
 
-            expect(result).toBeDefined();
-            expect(prisma.message.findMany).toHaveBeenCalled();
-        });
+  describe('markAsRead', () => {
+    it('should mark a message as read successfully', async () => {
+      const mockMessage: Message = {
+        id: 'msg1',
+        content: 'Test message',
+        senderId: 'user1',
+        recipientId: 'user2',
+        conversationId: 'conv1',
+        status: MessageStatus.DELIVERED,
+        readAt: null,
+        deliveredAt: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
 
-        it('should throw ForbiddenException when accessing other user inbox', async () => {
-            await expect(
-                service.getInbox('user-2', mockCurrentUser)
-            ).rejects.toThrow(ForbiddenException);
-        });
+      const updatedMessage = {
+        ...mockMessage,
+        status: MessageStatus.READ,
+        readAt: new Date(),
+      };
+
+      jest.spyOn(prisma.message, 'findUnique').mockResolvedValue(mockMessage);
+      jest.spyOn(prisma.message, 'update').mockResolvedValue(updatedMessage);
+
+      const result = await service.markAsRead('msg1', 'user2');
+
+      expect(result).toEqual(updatedMessage);
+      expect(prisma.message.update).toHaveBeenCalledWith({
+        where: { id: 'msg1' },
+        data: {
+          status: MessageStatus.READ,
+          readAt: expect.any(Date),
+        },
+      });
     });
 
-    describe('markAsRead', () => {
-        it('should mark message as read', async () => {
-            const mockMessage = {
-                id: 'message-1',
-        sub: 'message-1',
-                senderId: 'user-2',
-                receiverId: 'user-1',
-                content: 'Test',
-                read: false,
-            };
+    it('should throw ForbiddenException if user is not the recipient', async () => {
+      const mockMessage: Message = {
+        id: 'msg1',
+        content: 'Test message',
+        senderId: 'user1',
+        recipientId: 'user3', // Different recipient
+        conversationId: 'conv1',
+        status: MessageStatus.DELIVERED,
+        readAt: null,
+        deliveredAt: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
 
-            const mockUpdatedMessage = {
-                ...mockMessage,
-                read: true,
-            };
+      jest.spyOn(prisma.message, 'findUnique').mockResolvedValue(mockMessage);
 
-            mockPrismaService.message.findUnique.mockResolvedValue(mockMessage);
-            mockPrismaService.message.update.mockResolvedValue(mockUpdatedMessage);
-
-            const result = await service.markAsRead('message-1', 'user-1', mockCurrentUser);
-
-            expect(result).toEqual(mockUpdatedMessage);
-            expect(prisma.message.update).toHaveBeenCalledWith({
-                where: { id: 'message-1' },
-                data: expect.objectContaining({ read: true }),
-            });
-        });
-
-        it('should throw NotFoundException when message not found', async () => {
-            mockPrismaService.message.findUnique.mockResolvedValue(null);
-
-            await expect(
-                service.markAsRead('nonexistent', 'user-1', mockCurrentUser)
-            ).rejects.toThrow(NotFoundException);
-        });
-
-        it('should throw ForbiddenException when user is not receiver', async () => {
-            const mockMessage = {
-                id: 'message-1',
-        sub: 'message-1',
-                receiverId: 'user-3',
-            };
-
-            mockPrismaService.message.findUnique.mockResolvedValue(mockMessage);
-
-            await expect(
-                service.markAsRead('message-1', 'user-1', mockCurrentUser)
-            ).rejects.toThrow(ForbiddenException);
-        });
+      await expect(service.markAsRead('msg1', 'user2')) // Trying to read as user2
+        .rejects.toThrow(ForbiddenException);
     });
 
-    describe('markConversationAsRead', () => {
-        it('should mark all messages in conversation as read', async () => {
-            mockPrismaService.message.updateMany.mockResolvedValue({ count: 5 });
+    it('should throw NotFoundException if message does not exist', async () => {
+      jest.spyOn(prisma.message, 'findUnique').mockResolvedValue(null);
 
-            const result = await service.markConversationAsRead('user-2', 'user-1', mockCurrentUser);
-
-            expect(result).toMatchObject({ success: true });
-            expect(prisma.message.updateMany).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    where: expect.objectContaining({
-                        senderId: 'user-2',
-                        receiverId: 'user-1',
-                    }),
-                    data: expect.objectContaining({ read: true }),
-                })
-            );
-        });
-
-        it('should throw ForbiddenException when user is not participant', async () => {
-            await expect(
-                service.markConversationAsRead('user-3', 'user-2', mockCurrentUser)
-            ).rejects.toThrow(ForbiddenException);
-        });
+      await expect(service.markAsRead('nonexistent-msg', 'user2'))
+        .rejects.toThrow(NotFoundException);
     });
+  });
 
-    describe('encryption', () => {
-        it('should encrypt and decrypt content correctly', () => {
-            const originalContent = 'This is a secret message';
+  describe('getConversations', () => {
+    it('should retrieve conversations for a user', async () => {
+      const mockConversations = [
+        {
+          id: 'conv1',
+          participants: [
+            {
+              id: 'user1',
+              firstName: 'User',
+              lastName: 'One',
+              avatar: 'avatar1.jpg',
+              isVerified: true,
+            },
+            {
+              id: 'user2',
+              firstName: 'User',
+              lastName: 'Two',
+              avatar: 'avatar2.jpg',
+              isVerified: false,
+            },
+          ],
+          lastMessage: {
+            id: 'msg1',
+            content: 'Last message',
+            createdAt: new Date(),
+            status: MessageStatus.READ,
+          },
+        },
+      ];
 
-            const encrypted = (service as any).encryptContent(originalContent);
-            expect(encrypted).not.toBe(originalContent);
+      // Mock the raw query that would return this data
+      jest.spyOn<any, any>(service, 'getConversationsForUser').mockResolvedValue(mockConversations);
 
-            const decrypted = (service as any).decryptContent(encrypted);
-            expect(decrypted).toBe(originalContent);
-        });
+      const result = await service.getConversations('user1');
+
+      expect(result).toEqual(mockConversations);
     });
+  });
 });

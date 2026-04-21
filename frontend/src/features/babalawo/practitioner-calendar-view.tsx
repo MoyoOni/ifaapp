@@ -33,13 +33,13 @@ const PractitionerCalendarView: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'day' | 'week' | 'month' | 'year'>('month');
 
-  const { data: raw = [], isLoading, isError } = useQuery<unknown[]>({
+  const { data: raw = [], isLoading, isError, refetch } = useQuery<unknown[]>({
     queryKey: ['babalawo-appointments', user?.id],
     queryFn: async () => {
       const res = await api.get(`/appointments/babalawo/${user!.id}`);
       return res.data;
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id && !localStorage.getItem('dev_mode_role'),
   });
 
   const appointments: Appointment[] = (raw as Record<string, unknown>[]).map(apt => {
@@ -218,11 +218,12 @@ const PractitionerCalendarView: React.FC = () => {
 
   if (isError) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
-        <AlertCircle size={48} className="text-red-400 mb-4" />
-        <p className="text-lg font-medium text-foreground mb-4">Failed to load appointments</p>
-        <button type="button" onClick={() => window.location.reload()} className="px-4 py-2 bg-highlight text-white rounded-xl font-medium">
-          Refresh
+      <div className="flex flex-col items-center justify-center py-20 text-center bg-destructive/10 rounded-xl border border-destructive/20 mx-4">
+        <AlertCircle size={48} className="text-destructive mb-4" />
+        <p className="text-lg font-medium text-foreground mb-2">Failed to load appointments</p>
+        <p className="text-muted-foreground text-sm mb-6 max-w-sm">Could not reach the server. Check your connection and try again.</p>
+        <button type="button" onClick={() => refetch()} className="px-4 py-2 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-colors">
+          Try Again
         </button>
       </div>
     );

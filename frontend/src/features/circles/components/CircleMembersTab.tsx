@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Users, CheckCircle } from 'lucide-react';
 import { CircleDetail } from '../types/circle.types';
@@ -8,6 +9,7 @@ interface CircleMembersTabProps {
 }
 
 export const CircleMembersTab: React.FC<CircleMembersTabProps> = ({ circle }) => {
+  const navigate = useNavigate();
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -28,6 +30,7 @@ export const CircleMembersTab: React.FC<CircleMembersTabProps> = ({ circle }) =>
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: index * 0.03 }}
+              onClick={() => navigate(`/profile/${member.user.id}`)}
               className="p-4 bg-muted/50 rounded-xl text-center hover:bg-muted transition-colors cursor-pointer"
             >
               {member.user.avatar ? (

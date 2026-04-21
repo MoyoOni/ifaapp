@@ -11,6 +11,8 @@ interface OptimizedImageProps {
   priority?: boolean;
   onLoad?: () => void;
   onError?: () => void;
+  sizes?: string; // For responsive images
+  srcSet?: string; // For responsive images
 }
 
 const OptimizedImage: React.FC<OptimizedImageProps> = ({
@@ -22,7 +24,9 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
   placeholder = 'transparent',
   priority = false,
   onLoad,
-  onError
+  onError,
+  sizes,
+  srcSet
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
@@ -78,6 +82,16 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
     }
   };
 
+  // Generate srcSet if not provided and we have dimensions
+  const computedSrcSet = srcSet || (width && typeof width === 'number' ? 
+    `${src} ${width}w, ${src.replace(/\?.*/, '')}?w=${width * 2} 2x` : 
+    undefined);
+
+  // Generate sizes if not provided and we have dimensions
+  const computedSizes = sizes || (width ? 
+    `(max-width: ${typeof width === 'number' ? width : '768'}px) 100vw, ${width}px` : 
+    undefined);
+
   return (
     <div 
       className={cn("relative overflow-hidden", className)}
@@ -96,6 +110,8 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
         <img
           ref={imgRef}
           src={src}
+          srcSet={computedSrcSet}
+          sizes={computedSizes}
           alt={alt}
           width={width as number | undefined}
           height={height as number | undefined}

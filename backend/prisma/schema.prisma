@@ -18,6 +18,7 @@ model User {
   name                      String
   passwordHash              String
   role                      String
+  permissions               String[]                 @default([]) // D6: granular RBAC
   yorubaName                String?
   avatar                    String?
   bio                       String?
@@ -25,12 +26,14 @@ model User {
   gender                    String?
   age                       Int?
   location                  String?
+  timezone                  String?                  @default("UTC")
   culturalLevel             String                   @default("Omo Ilé")
   rankXP                    Int                      @default(0)
   dialectPreference         String?
   themeColor                String?
   profileVisibility         String                   @default("community")
   interests                 String[]                 @default([])
+  intentTags                String[]                 @default([])
   verified                  Boolean                  @default(false)
   emailVerificationToken    String?                  @unique
   emailVerifiedAt           DateTime?
@@ -38,6 +41,7 @@ model User {
   slug                      String?                  @unique
   adminSubRole              String? // FINANCE, MODERATOR, COMPLIANCE, SUPPORT, SUPER
   templeId                  String?
+  averageRating             Float?                   @default(0.0)
   createdAt                 DateTime                 @default(now())
   updatedAt                 DateTime                 @updatedAt
   availability              Json?
@@ -51,6 +55,7 @@ model User {
   circlesApproved           Circle[]                 @relation("CircleApprover")
   circlesCreated            Circle[]                 @relation("CircleCreator")
   circlesSuggested          Circle[]                 @relation("CircleSuggester")
+  circleFeedPosts           CircleFeedPost[]         @relation("CircleFeedAuthor")
   circleMemberships         CircleMember[]           @relation("CircleMembers")
   circleSuggestionsReviewed CircleSuggestion[]       @relation("CircleReviewer")
   circleSuggestions         CircleSuggestion[]       @relation("CircleSuggester")
@@ -78,6 +83,7 @@ model User {
   elderReactions            ElderReaction[]          @relation("ElderReactions")
   guidancePlansCreated      GuidancePlan[]           @relation("GuidancePlanBabalawo")
   guidancePlansReceived     GuidancePlan[]           @relation("GuidancePlanClient")
+  guidancePlanTemplates     GuidancePlanTemplate[]   @relation("GuidancePlanTemplates")
   receivedMessages          Message[]                @relation("ReceivedMessages")
   sentMessages              Message[]                @relation("SentMessages")
   notifications             Notification[]           @relation("NotificationRecipient")
@@ -124,13 +130,90 @@ model User {
   longestStreak             Int                      @default(0)
 
   // F9-901: Practitioner Trust Score
-  trustScore                Int                      @default(0)
-  // F9-902: Cultural Onboarding Gate
+  trustScore                Float                    @default(0.5) // 0.0 - 1.0, default is neutral
+  trustScoreOverride        Float?
+  trustScoreOverrideReason  String?
+  trustScoreOverrideBy      String?
+  trustScoreOverrideAt      DateTime?
   passedCulturalOrientation Boolean                  @default(false)
+  culturalQuizFailCount     Int                      @default(0)
+  // F9-10: Inactive Practitioner Re-engagement
+  isOnLeave                 Boolean                  @default(false)
+  isDeactivated             Boolean                  @default(false)
 
-  @@index([slug])
-  @@index([subscriptionStatus])
+  // ADM-003: Suspension & Ban
+  suspendedUntil            DateTime?
+  bannedAt                  DateTime?
+  banReason                 String?
+  warnedAt                  DateTime?
+  warnCount                 Int                      @default(0)
+
+  // ADM-007: Featured Practitioners
+  isFeatured                Boolean                  @default(false)
+  featuredOrder             Int?
+  featuredExpiry            DateTime?
+
+  // Reverse relations for new admin models
+  announcements             Announcement[]           @relation("AnnouncementCreator")
+  complaintsAsClient        PractitionerComplaint[]  @relation("ClientComplaint")
+  complaintsAsPractitioner  PractitionerComplaint[]  @relation("PractitionerComplaint")
+  resolvedComplaints        PractitionerComplaint[]  @relation("ResolverComplaint")
+  refundRequestsMade        RefundRequest[]          @relation("RefundRequester")
+  refundRequestsProcessed   RefundRequest[]          @relation("RefundProcessor")
+  oralHistoryEntries        OralHistoryEntry[]       @relation("OralHistoryCreator")
+  sacredCalendarEvents      SacredCalendarEvent[]    @relation("SacredCalendarCreator")
+
+  // EXP-020: Personal Awo relationship
+  personalAwoId             String?
+  personalAwo               User?                    @relation("PersonalAwoClients", fields: [personalAwoId], references: [id])
+  personalAwoClients        User[]                   @relation("PersonalAwoClients")
+  
+  // EXP-024: Consultation Notes relations
+  babalawoNotes             ConsultationNote[]       @relation("BabalawoNotes")
+  clientNotes               ConsultationNote[]       @relation("ClientNotes")
+  
+  // EXP-023: Client Session Notes
+  clientSessionNotes        ClientSessionNote[]      @relation("ClientSessionNotes")
+  
+  // EXP-026: Notification Preferences
+  userNotificationPreferences   NotificationPreferences? @relation("UserNotificationPreferences")
+  notificationPreferencesId     String?                  @unique
+  
+  onboardingEmails          OnboardingEmail[]        @relation("OnboardingEmailUser")
+
+  // Additional relations for other models
+  userBadges                UserBadge[]              @relation("UserBadges")
+  badgeAwarder              UserBadge[]              @relation("BadgeAwarder")
+  flagRuleCreator           ContentFlagRule[]        @relation("FlagRuleCreator")
+  campaignCreator           EmailCampaign[]          @relation("CampaignCreator")
+  promoCodeCreator          PromoCode[]              @relation("PromoCodeCreator")
+  promoRedemptions          PromoRedemption[]        @relation("PromoRedemptions")
+  userSessions              UserSession[]            @relation("UserSessions")
+
   @@map("users")
+}
+
+model NotificationPreferences {
+  id                  String   @id @default(uuid())
+  userId              String   @unique
+  emailBooking        Boolean  @default(true)
+  emailReminder       Boolean  @default(true)
+  emailDigest         Boolean  @default(false)
+  emailPlan           Boolean  @default(true)
+  emailMessages       Boolean  @default(true)
+  emailMarketing      Boolean  @default(false)
+  pushReminder        Boolean  @default(true)
+  pushMessages        Boolean  @default(true)
+  pushFollowup        Boolean  @default(true)
+  pushForum           Boolean  @default(false)
+  pushCircles         Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relations
+  user                User     @relation("UserNotificationPreferences", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model SocialLink {
@@ -303,11 +386,47 @@ model Appointment {
   babalawo     User          @relation("BabalawoAppointments", fields: [babalawoId], references: [id], onDelete: Cascade)
   client       User          @relation("ClientAppointments", fields: [clientId], references: [id], onDelete: Cascade)
   guidancePlan GuidancePlan?
+  
+  // EXP-023: Client Session Notes
+  clientSessionNotes ClientSessionNote[]
 
-  @@index([babalawoId, date])
+  @@index([babalawoId])
   @@index([clientId])
+  @@index([date])
   @@index([status])
-  @@index([date, status])
+}
+
+model ConsultationNote {
+  id         String   @id @default(cuid())
+  babalawoId String
+  clientId   String
+  title      String?
+  content    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  babalawo User @relation("BabalawoNotes", fields: [babalawoId], references: [id], onDelete: Cascade)
+  client   User @relation("ClientNotes", fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([babalawoId])
+  @@index([clientId])
+  @@index([createdAt])
+}
+
+model ClientSessionNote {
+  id            String      @id @default(cuid())
+  appointmentId String
+  clientId      String
+  title         String?
+  content       String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  client      User        @relation("ClientSessionNotes", fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([appointmentId])
+  @@index([clientId])
   @@index([createdAt])
 }
 
@@ -328,6 +447,7 @@ model GuidancePlan {
   completedAt        DateTime?
   cancelledAt        DateTime?
   notes              String?
+  completedItems     String[]    @default([])
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
   appointment        Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
@@ -342,6 +462,21 @@ model GuidancePlan {
   @@index([createdAt])
   @@index([babalawoId, status])
   @@index([clientId, status])
+}
+
+model GuidancePlanTemplate {
+  id           String   @id @default(uuid())
+  babalawoId   String
+  name         String
+  type         String   @default("AKOSE")
+  items        Json
+  instructions String?
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  babalawo     User     @relation("GuidancePlanTemplates", fields: [babalawoId], references: [id], onDelete: Cascade)
+
+  @@index([babalawoId])
 }
 
 model ForumCategory {
@@ -374,6 +509,8 @@ model ForumThread {
   isLocked               Boolean           @default(false)
   isApproved             Boolean           @default(true)
   isSacred               Boolean           @default(false)
+  isFeatured             Boolean           @default(false)
+  featuredUntil          DateTime?
   viewCount              Int               @default(0)
   postCount              Int               @default(0)
   lastPostAt             DateTime?
@@ -409,6 +546,10 @@ model ForumPost {
   hasCrisisSignal  Boolean              @default(false)
   isFirstResponder Boolean              @default(false)
   postTag          String?
+  heldForReview    Boolean              @default(false)
+  reviewReason     String?
+  reviewedBy       String?
+  reviewedAt       DateTime?
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt
   author           User                 @relation("PostAuthor", fields: [authorId], references: [id], onDelete: Cascade)
@@ -630,6 +771,8 @@ model Product {
   approvedBy         String?
   verifiedTier       String          @default("COMMUNITY_LISTED")
   taxCompliant       Boolean         @default(false)
+  isFeatured         Boolean         @default(false)
+  featuredUntil      DateTime?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   orders          OrderItem[]
@@ -799,6 +942,8 @@ model Course {
   lessonCount        Int            @default(0)
   certificateEnabled Boolean        @default(true)
   isDevoted          Boolean        @default(false) // V8: gate behind Devoted tier
+  isFeatured         Boolean        @default(false)
+  featuredUntil      DateTime?
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
   instructor         User           @relation("CourseInstructor", fields: [instructorId], references: [id], onDelete: Cascade)
@@ -1104,6 +1249,8 @@ model Circle {
   memberCount        Int               @default(0)
   active             Boolean           @default(true)
   isDevoted          Boolean           @default(false) // V8: gate behind Devoted tier
+  isFeatured         Boolean           @default(false)
+  featuredUntil      DateTime?
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
   approvedAt         DateTime?
@@ -1116,6 +1263,7 @@ model Circle {
   suggester          User?             @relation("CircleSuggester", fields: [suggestedBy], references: [id])
   suggestionThread   ForumThread?      @relation("CircleSuggestionThread", fields: [suggestionThreadId], references: [id])
   members            CircleMember[]
+  feedPosts          CircleFeedPost[]
   suggestion         CircleSuggestion?
   events             Event[]
 
@@ -1125,6 +1273,24 @@ model Circle {
   @@index([active])
   @@index([status])
   @@index([topics])
+}
+
+model CircleFeedPost {
+  id          String   @id @default(cuid())
+  circleId    String
+  authorId    String
+  content     String
+  patronOnly  Boolean  @default(false)
+  isPinned    Boolean  @default(false)
+  likes       Int      @default(0)
+  commentCount Int     @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  author      User     @relation("CircleFeedAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  circle      Circle   @relation(fields: [circleId], references: [id], onDelete: Cascade)
+
+  @@index([circleId])
+  @@index([authorId])
 }
 
 model CircleSuggestion {
@@ -1243,20 +1409,21 @@ model DeviceToken {
 }
 
 model Notification {
-  id        String    @id @default(uuid())
-  userId    String
-  type      String
-  category  String?
-  title     String
-  message   String
-  data      Json?
-  read      Boolean   @default(false)
-  readAt    DateTime?
-  emailSent Boolean   @default(false)
-  pushSent  Boolean   @default(false)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  user      User      @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  id          String    @id @default(uuid())
+  userId      String
+  type        String
+  category    String?
+  title       String
+  message     String
+  data        Json?
+  read        Boolean   @default(false)
+  readAt      DateTime?
+  emailSent   Boolean   @default(false)
+  pushSent    Boolean   @default(false)
+  scheduledAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([userId, read])
@@ -1515,6 +1682,80 @@ model Referral {
   @@map("referrals")
 }
 
+// ADM-012: Refund Request Management
+model RefundRequest {
+  id            String    @id @default(uuid())
+  requestedBy   String
+  orderId       String?
+  appointmentId String?
+  amount        Float?    // null = full refund
+  reason        String
+  evidence      String[]  @default([])
+  status        String    @default("PENDING") // PENDING | APPROVED | REJECTED | CANCELLED
+  adminNote     String?
+  approvedAmount Float?   // actual amount approved (may differ from requested)
+  processedBy   String?
+  processedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  requester User  @relation("RefundRequester", fields: [requestedBy], references: [id], onDelete: Cascade)
+  processor User? @relation("RefundProcessor", fields: [processedBy], references: [id])
+
+  @@index([requestedBy])
+  @@index([status])
+  @@index([orderId])
+  @@index([appointmentId])
+  @@index([createdAt])
+}
+
+// ADM-005: Platform Announcement System
+model Announcement {
+  id          String    @id @default(uuid())
+  title       String
+  content     String
+  type        String    // BANNER | NOTIFICATION | EMAIL_BROADCAST
+  target      String    // ALL | CLIENT | BABALAWO | VENDOR | DEVOTED | SPECIFIC
+  targetIds   String[]  @default([])
+  status      String    @default("DRAFT") // DRAFT | SCHEDULED | ACTIVE | EXPIRED
+  scheduledAt DateTime?
+  expiresAt   DateTime?
+  createdBy   String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  creator     User      @relation("AnnouncementCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([type])
+  @@index([createdBy])
+  @@index([scheduledAt])
+}
+
+// ADM-008: Practitioner Complaint Handling
+model PractitionerComplaint {
+  id              String    @id @default(uuid())
+  clientId        String
+  practitionerId  String
+  reason          String    // NO_SHOW | INAPPROPRIATE | FRAUD | OTHER
+  description     String
+  evidence        String[]  @default([])
+  status          String    @default("OPEN") // OPEN | UNDER_REVIEW | RESOLVED | DISMISSED
+  resolution      String?
+  resolvedById    String?
+  resolvedAt      DateTime?
+  resolutionNotes String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  client          User      @relation("ClientComplaint", fields: [clientId], references: [id], onDelete: Cascade)
+  practitioner    User      @relation("PractitionerComplaint", fields: [practitionerId], references: [id], onDelete: Cascade)
+  resolvedBy      User?     @relation("ResolverComplaint", fields: [resolvedById], references: [id])
+
+  @@index([clientId])
+  @@index([practitionerId])
+  @@index([status])
+  @@index([createdAt])
+}
+
 // F9-806: Àṣẹ Live audio space
 model LiveSession {
   id           String    @id @default(uuid())
@@ -1530,4 +1771,214 @@ model LiveSession {
 
   @@index([status])
   @@index([scheduledAt])
+}
+
+model OralHistoryEntry {
+  id             String   @id @default(uuid())
+  title          String
+  category       String
+  babalawoName   String?
+  recordingDate  DateTime?
+  tags           String[] @default([])
+  content        String
+  sourceUrl      String?
+  publishedAt    DateTime?
+  createdBy      String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  creator        User     @relation("OralHistoryCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([category])
+  @@index([createdAt])
+  @@index([publishedAt])
+}
+
+model SacredCalendarEvent {
+  id           String   @id @default(uuid())
+  title        String
+  yorubaName   String?
+  description  String
+  date         DateTime
+  endDate      DateTime?
+  type         String   @default("FESTIVAL")
+  bannerColor  String?
+  isActive     Boolean  @default(true)
+  createdBy    String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  creator      User     @relation("SacredCalendarCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([date])
+  @@index([isActive])
+}
+
+model PlatformSettings {
+  id                           String   @id @default("singleton")
+  consultationCommissionPct    Float    @default(15)
+  marketplaceCommissionPct     Float    @default(10)
+  minPayoutThresholdNgn        Float    @default(5000)
+  maxPayoutWithoutApprovalNgn  Float    @default(100000)
+  quizPassThreshold            Int      @default(2)
+  updatedAt                    DateTime @updatedAt
+  updatedBy                    String?
+}
+
+// ADM-028: Cultural Orientation Quiz
+model CulturalQuizQuestion {
+  id           String   @id @default(uuid())
+  questionText String
+  options      Json     // String[]
+  correctIndex Int
+  sortOrder    Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([sortOrder])
+  @@map("cultural_quiz_questions")
+}
+
+// ADM-017: Community Recognition System
+model UserBadge {
+  id         String   @id @default(uuid())
+  userId     String
+  badgeKey   String   // Unique identifier for the badge type
+  awardedAt  DateTime @default(now())
+  awardedById String?
+  reason     String?
+  
+  user      User     @relation("UserBadges", fields: [userId], references: [id], onDelete: Cascade)
+  awardedBy User?    @relation("BadgeAwarder", fields: [awardedById], references: [id])
+
+  @@index([userId])
+  @@index([badgeKey])
+}
+
+// EXP-012: Onboarding completion email tracking
+model OnboardingEmail {
+  id      String   @id @default(uuid())
+  userId  String
+  email   String   // Store email at time of sending (in case user changes it later)
+  sentAt  DateTime @default(now())
+
+  user User @relation("OnboardingEmailUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([sentAt])
+}
+
+// ADM-018: Cultural Integrity Review Queue
+model ContentFlagRule {
+  id        String   @id @default(uuid())
+  type      String   // KEYWORD | CATEGORY_MOD
+  value     String   // keyword text OR categoryId
+  reason    String?
+  isActive  Boolean  @default(true)
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  creator   User     @relation("FlagRuleCreator", fields: [createdBy], references: [id])
+
+  @@index([type, isActive])
+}
+
+// ADM-019: Segmented Email Campaigns
+model EmailCampaign {
+  id             String    @id @default(uuid())
+  subject        String
+  body           String
+  segment        String    // ALL | CLIENTS | BABALAWOS | DEVOTED | FREE_TIER | NEW_30D | INACTIVE_30D | COUNTRY_NG | COUNTRY_UK | COUNTRY_US
+  status         String    @default("DRAFT") // DRAFT | SENT | SCHEDULED
+  scheduledAt    DateTime?
+  sentAt         DateTime?
+  recipientCount Int       @default(0)
+  openCount      Int       @default(0)
+  clickCount     Int       @default(0)
+  createdBy      String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  creator        User      @relation("CampaignCreator", fields: [createdBy], references: [id])
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ADM-020: Promo Code & Discount System
+model PromoCode {
+  id             String    @id @default(uuid())
+  code           String    @unique
+  type           String    // PCT_SUBSCRIPTION | FIXED_CONSULTATION | FREE_TRIAL_DAYS | REFERRAL_CREDIT
+  value          Float
+  maxUses        Int?
+  usedCount      Int       @default(0)
+  expiresAt      DateTime?
+  eligibleRoles  String[]  @default([])
+  isActive       Boolean   @default(true)
+  createdBy      String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  creator        User      @relation("PromoCodeCreator", fields: [createdBy], references: [id])
+  redemptions    PromoRedemption[]
+
+  @@index([code])
+  @@index([isActive])
+}
+
+model PromoRedemption {
+  id          String    @id @default(uuid())
+  promoCodeId String
+  userId      String
+  redeemedAt  DateTime  @default(now())
+  discountNgn Float     @default(0)
+
+  promoCode   PromoCode @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
+  user        User      @relation("PromoRedemptions", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([promoCodeId])
+  @@index([userId])
+}
+
+// ADM-021: Referral Program Management uses the existing Referral model above
+
+// ADM-027: Session & Security Management
+model UserSession {
+  id          String    @id @default(uuid())
+  userId      String
+  ipAddress   String?
+  userAgent   String?
+  deviceInfo  String?
+  location    String?
+  loginAt     DateTime  @default(now())
+  lastSeenAt  DateTime  @default(now())
+  loggedOutAt DateTime?
+  isActive    Boolean   @default(true)
+  success     Boolean   @default(true)
+  failReason  String?
+
+  user User @relation("UserSessions", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isActive])
+  @@index([loginAt])
+  @@index([ipAddress])
+  @@map("user_sessions")
+}
+
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  event     String
+  userId    String?
+  role      String?
+  data      Json?
+  createdAt DateTime @default(now())
+
+  @@index([event])
+  @@index([createdAt])
+  @@index([userId])
 }

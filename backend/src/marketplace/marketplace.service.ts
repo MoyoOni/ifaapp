@@ -841,6 +841,76 @@ export class MarketplaceService {
     });
   }
 
+  async getVendorAnalytics(vendorId: string) {
+    const [allOrders, products] = await Promise.all([
+      this.prisma.order.findMany({
+        where: { vendorId },
+        select: { id: true, totalAmount: true, status: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.product.count({ where: { vendorId } }),
+    ]);
+
+    const completedOrders = allOrders.filter(o => o.status === 'COMPLETED' || o.status === 'DELIVERED');
+    const totalRevenue = completedOrders.reduce((s, o) => s + Number(o.totalAmount), 0);
+    const totalOrders = allOrders.length;
+    const totalSales = completedOrders.length;
+    const avgOrderValue = totalSales > 0 ? totalRevenue / totalSales : 0;
+
+    // Monthly revenue for the last 6 months
+    const now = new Date();
+    const monthlyRevenue: Array<{ month: string; revenue: number; orders: number }> = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const end = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+      const monthOrders = completedOrders.filter(o => {
+        const created = new Date(o.createdAt);
+        return created >= d && created < end;
+      });
+      monthlyRevenue.push({
+        month: d.toLocaleString('en-GB', { month: 'short', year: '2-digit' }),
+        revenue: monthOrders.reduce((s, o) => s + Number(o.totalAmount), 0),
+        orders: monthOrders.length,
+      });
+    }
+
+    // Revenue growth: compare current month vs previous month
+    const [curr, prev] = monthlyRevenue.slice(-2);
+    const revenueGrowth = prev && prev.revenue > 0
+      ? Math.round(((curr.revenue - prev.revenue) / prev.revenue) * 100)
+      : 0;
+
+    // Top products by order count
+    const productOrderCounts: Record<string, number> = {};
+    await Promise.resolve(); // keep async chain
+    const orderItems = await this.prisma.orderItem.findMany({
+      where: { order: { vendorId, status: { in: ['COMPLETED', 'DELIVERED'] } } },
+      include: { product: { select: { id: true, name: true } } },
+    });
+    for (const item of orderItems) {
+      const key = item.product.id;
+      productOrderCounts[key] = (productOrderCounts[key] ?? 0) + item.quantity;
+    }
+    const topProducts = Object.entries(productOrderCounts)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 5)
+      .map(([productId, count]) => {
+        const item = orderItems.find(i => i.product.id === productId);
+        return { id: productId, name: item?.product.name ?? 'Unknown', orderCount: count };
+      });
+
+    return {
+      totalRevenue,
+      totalOrders,
+      totalSales,
+      totalProducts: products,
+      avgOrderValue,
+      revenueGrowth,
+      monthlyRevenue,
+      topProducts,
+    };
+  }
+
   async findProductReviews(productId: string) {
     return this.prisma.productReview.findMany({
       where: {

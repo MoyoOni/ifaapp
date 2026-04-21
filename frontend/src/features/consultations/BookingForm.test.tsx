@@ -2,6 +2,11 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@/test/test-utils';
 import { BookingForm } from './BookingForm';
 
+// Mock a user to be authenticated
+vi.mock('@/shared/hooks/use-auth', () => ({
+  useAuth: () => ({ user: { id: 'user-1', name: 'Test User' } }),
+}));
+
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');

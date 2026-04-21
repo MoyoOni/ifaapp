@@ -45,7 +45,7 @@ export const ProfileViewsPanel: React.FC = () => {
   const { data: views = [], isLoading } = useQuery<ProfileView[]>({
     queryKey: ['profile-views-mine', user?.id],
     queryFn: () => api.get('/users/profile-views/mine').then(r => r.data),
-    enabled: !!user && isDevoted,
+    enabled: !!user && isDevoted && !localStorage.getItem('dev_mode_role'),
     staleTime: 5 * 60 * 1000,
     retry: 1,
   });

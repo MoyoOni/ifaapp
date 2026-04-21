@@ -42,7 +42,7 @@ const AnalyticsDashboard: React.FC = () => {
         },
       };
     },
-    enabled: !!user && (user.role === 'BABALAWO' || user.role === 'VENDOR'),
+    enabled: !!user && (user.role === 'BABALAWO' || user.role === 'VENDOR') && !localStorage.getItem('dev_mode_role'),
   });
 
   if (isLoading) {

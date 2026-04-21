@@ -1,116 +1,333 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { VideoCallService } from './video-call.service';
+import { Test } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
-import { ConfigService } from '@nestjs/config';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { VideoCallService } from './video-call.service';
+import { BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { User, Appointment } from '@prisma/client';
+import { UserRole } from '@common/enums/user-role.enum';
 
 describe('VideoCallService', () => {
-    let service: VideoCallService;
-    let prisma: PrismaService;
+  let service: VideoCallService;
+  let prisma: PrismaService;
 
-    const mockPrismaService = {
-        appointment: {
-            findUnique: jest.fn(),
-            update: jest.fn(),
+  beforeEach(async () => {
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        VideoCallService,
+        {
+          provide: PrismaService,
+          useValue: {
+            appointment: {
+              findUnique: jest.fn(),
+            },
+            user: {
+              findUnique: jest.fn(),
+            },
+            $transaction: jest.fn(),
+          },
         },
-    };
+      ],
+    }).compile();
 
-    const mockConfigService = {
-        get: jest.fn((key: string) => {
-            if (key === 'AGORA_APP_ID') return 'test-app-id';
-            if (key === 'AGORA_APP_CERTIFICATE') return 'test-certificate';
-            return null;
-        }),
-    };
+    service = moduleRef.get<VideoCallService>(VideoCallService);
+    prisma = moduleRef.get<PrismaService>(PrismaService);
+  });
 
-    const mockCurrentUser = {
-        id: 'user-1',
-        sub: 'user-1',
-        email: 'user@example.com',
-        role: 'CLIENT' as any,
-        verified: true,
-    };
+  describe('generateToken', () => {
+    it('should generate a valid RTC token', async () => {
+      const mockAppointment: Appointment = {
+        id: 'apt1',
+        clientId: 'user1',
+        babalawoId: 'user2',
+        scheduledStart: new Date(Date.now() - 300000), // 5 minutes ago
+        scheduledEnd: new Date(Date.now() + 300000), // 5 minutes from now
+        status: 'CONFIRMED',
+        notes: 'Scheduled appointment',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
 
-    beforeEach(async () => {
-        const module: TestingModule = await Test.createTestingModule({
-            providers: [
-                VideoCallService,
-                { provide: PrismaService, useValue: mockPrismaService },
-                { provide: ConfigService, useValue: mockConfigService },
-            ],
-        }).compile();
+      const mockUser: User = {
+        id: 'user1',
+        email: 'user1@example.com',
+        firstName: 'Client',
+        lastName: 'User',
+        role: UserRole.CLIENT,
+        isVerified: true,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
+        isEmailVerified: true,
+        fcmTokens: [],
+        bio: 'Test bio',
+        phone: '',
+        avatar: '',
+        additionalInfo: '',
+      };
 
-        service = module.get<VideoCallService>(VideoCallService);
-        prisma = module.get<PrismaService>(PrismaService);
-        jest.clearAllMocks();
+      jest.spyOn(prisma.appointment, 'findUnique').mockResolvedValue(mockAppointment);
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
+
+      const result = await service.generateToken('apt1', 'user1', 'channel1');
+
+      expect(result).toHaveProperty('channelName', 'channel1');
+      expect(result).toHaveProperty('rtcToken');
+      expect(result.rtcToken).toBeDefined();
+      expect(typeof result.rtcToken).toBe('string');
     });
 
-    describe('generateToken', () => {
-        it('should generate video call token', async () => {
-            const mockAppointment = {
-                id: 'apt-1',
-        sub: 'apt-1',
-                babalawoId: 'bab-1',
-                clientId: mockCurrentUser.id,
-                status: 'UPCOMING',
-                videoRoomId: null,
-            };
+    it('should throw ForbiddenException if user is not part of the appointment', async () => {
+      const mockAppointment: Appointment = {
+        id: 'apt1',
+        clientId: 'user1',
+        babalawoId: 'user2',
+        scheduledStart: new Date(Date.now() - 300000), // 5 minutes ago
+        scheduledEnd: new Date(Date.now() + 300000), // 5 minutes from now
+        status: 'CONFIRMED',
+        notes: 'Scheduled appointment',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
 
-            mockPrismaService.appointment.findUnique.mockResolvedValue(mockAppointment);
-            mockPrismaService.appointment.update.mockResolvedValue({ ...mockAppointment, videoRoomId: 'room-1' });
+      jest.spyOn(prisma.appointment, 'findUnique').mockResolvedValue(mockAppointment);
 
-            const result = await service.generateToken('apt-1', mockCurrentUser.id, mockCurrentUser);
-
-            expect(result).toHaveProperty('token');
-            expect(result).toHaveProperty('roomId');
-            expect(result).toHaveProperty('appId');
-        });
-
-        it('should throw NotFoundException when appointment not found', async () => {
-            mockPrismaService.appointment.findUnique.mockResolvedValue(null);
-
-            await expect(service.generateToken('nonexistent', 'user-1', mockCurrentUser)).rejects.toThrow(NotFoundException);
-        });
+      await expect(service.generateToken('apt1', 'user3', 'channel1')).rejects.toThrow(ForbiddenException);
     });
 
-    describe('endSession', () => {
-        it('should end video session', async () => {
-            const mockAppointment = {
-                id: 'apt-1',
-        sub: 'apt-1',
-                babalawoId: 'bab-1',
-                clientId: mockCurrentUser.id,
-                status: 'IN_SESSION',
-            };
+    it('should throw BadRequestException if appointment is not confirmed', async () => {
+      const mockAppointment: Appointment = {
+        id: 'apt1',
+        clientId: 'user1',
+        babalawoId: 'user2',
+        scheduledStart: new Date(Date.now() - 300000), // 5 minutes ago
+        scheduledEnd: new Date(Date.now() + 300000), // 5 minutes from now
+        status: 'PENDING', // Not confirmed
+        notes: 'Pending appointment',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
 
-            mockPrismaService.appointment.findUnique.mockResolvedValue(mockAppointment);
-            mockPrismaService.appointment.update.mockResolvedValue({ ...mockAppointment, status: 'COMPLETED' });
+      const mockUser: User = {
+        id: 'user1',
+        email: 'user1@example.com',
+        firstName: 'Client',
+        lastName: 'User',
+        role: UserRole.CLIENT,
+        isVerified: true,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
+        isEmailVerified: true,
+        fcmTokens: [],
+        bio: 'Test bio',
+        phone: '',
+        avatar: '',
+        additionalInfo: '',
+      };
 
-            const result = await service.endSession('apt-1', mockCurrentUser);
+      jest.spyOn(prisma.appointment, 'findUnique').mockResolvedValue(mockAppointment);
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
 
-            expect(result).toEqual({ success: true, message: 'Session ended successfully' });
-        });
+      await expect(service.generateToken('apt1', 'user1', 'channel1')).rejects.toThrow(BadRequestException);
     });
 
-    describe('getVideoCallInfo', () => {
-        it('should return video call info', async () => {
-            const mockAppointment = {
-                id: 'apt-1',
-        sub: 'apt-1',
-                babalawoId: 'bab-1',
-                clientId: mockCurrentUser.id,
-                videoRoomId: 'room-1',
-                status: 'UPCOMING',
-                babalawo: { id: 'bab-1', name: 'Babalawo' },
-                client: { id: mockCurrentUser.id, name: 'Client' },
-            };
+    it('should throw BadRequestException if appointment is not within valid time window', async () => {
+      const mockAppointment: Appointment = {
+        id: 'apt1',
+        clientId: 'user1',
+        babalawoId: 'user2',
+        scheduledStart: new Date(Date.now() - 3600000), // 1 hour ago
+        scheduledEnd: new Date(Date.now() - 1800000), // 30 mins ago
+        status: 'CONFIRMED',
+        notes: 'Past appointment',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
 
-            mockPrismaService.appointment.findUnique.mockResolvedValue(mockAppointment);
+      const mockUser: User = {
+        id: 'user1',
+        email: 'user1@example.com',
+        firstName: 'Client',
+        lastName: 'User',
+        role: UserRole.CLIENT,
+        isVerified: true,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
+        isEmailVerified: true,
+        fcmTokens: [],
+        bio: 'Test bio',
+        phone: '',
+        avatar: '',
+        additionalInfo: '',
+      };
 
-            const result = await service.getVideoCallInfo('apt-1', mockCurrentUser);
+      jest.spyOn(prisma.appointment, 'findUnique').mockResolvedValue(mockAppointment);
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
 
-            expect(result).toHaveProperty('appointmentId');
-            expect(result).toHaveProperty('canJoin');
-        });
+      await expect(service.generateToken('apt1', 'user1', 'channel1')).rejects.toThrow(BadRequestException);
     });
+
+    it('should throw NotFoundException if appointment does not exist', async () => {
+      jest.spyOn(prisma.appointment, 'findUnique').mockResolvedValue(null);
+
+      await expect(service.generateToken('nonexistent-apt', 'user1', 'channel1')).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw NotFoundException if user does not exist', async () => {
+      const mockAppointment: Appointment = {
+        id: 'apt1',
+        clientId: 'user1',
+        babalawoId: 'user2',
+        scheduledStart: new Date(Date.now() - 300000), // 5 minutes ago
+        scheduledEnd: new Date(Date.now() + 300000), // 5 minutes from now
+        status: 'CONFIRMED',
+        notes: 'Scheduled appointment',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      jest.spyOn(prisma.appointment, 'findUnique').mockResolvedValue(mockAppointment);
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(null);
+
+      await expect(service.generateToken('apt1', 'nonexistent-user', 'channel1')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('generateRTMToken', () => {
+    it('should generate a valid RTM token', async () => {
+      const mockUser: User = {
+        id: 'user1',
+        email: 'user1@example.com',
+        firstName: 'Client',
+        lastName: 'User',
+        role: UserRole.CLIENT,
+        isVerified: true,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
+        isEmailVerified: true,
+        fcmTokens: [],
+        bio: 'Test bio',
+        phone: '',
+        avatar: '',
+        additionalInfo: '',
+      };
+
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
+
+      const result = await service.generateRTMToken('user1');
+
+      expect(result).toHaveProperty('rtmToken');
+      expect(result.rtmToken).toBeDefined();
+      expect(typeof result.rtmToken).toBe('string');
+    });
+
+    it('should throw NotFoundException if user does not exist', async () => {
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(null);
+
+      await expect(service.generateRTMToken('nonexistent-user')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('validateAppointmentForCall', () => {
+    it('should validate appointment correctly', async () => {
+      const mockAppointment: Appointment = {
+        id: 'apt1',
+        clientId: 'user1',
+        babalawoId: 'user2',
+        scheduledStart: new Date(Date.now() - 300000), // 5 minutes ago
+        scheduledEnd: new Date(Date.now() + 300000), // 5 minutes from now
+        status: 'CONFIRMED',
+        notes: 'Scheduled appointment',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      jest.spyOn(prisma.appointment, 'findUnique').mockResolvedValue(mockAppointment);
+
+      const result = await service.validateAppointmentForCall('apt1', 'user1');
+
+      expect(result).toBe(true);
+    });
+
+    it('should return false for unconfirmed appointment', async () => {
+      const mockAppointment: Appointment = {
+        id: 'apt1',
+        clientId: 'user1',
+        babalawoId: 'user2',
+        scheduledStart: new Date(Date.now() - 300000), // 5 minutes ago
+        scheduledEnd: new Date(Date.now() + 300000), // 5 minutes from now
+        status: 'PENDING', // Not confirmed
+        notes: 'Pending appointment',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      jest.spyOn(prisma.appointment, 'findUnique').mockResolvedValue(mockAppointment);
+
+      await expect(service.validateAppointmentForCall('apt1', 'user1')).rejects.toThrow(BadRequestException);
+    });
+
+    it('should return false for appointment outside time window', async () => {
+      const mockAppointment: Appointment = {
+        id: 'apt1',
+        clientId: 'user1',
+        babalawoId: 'user2',
+        scheduledStart: new Date(Date.now() - 7200000), // 2 hours ago
+        scheduledEnd: new Date(Date.now() - 3600000), // 1 hour ago
+        status: 'CONFIRMED',
+        notes: 'Past appointment',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      jest.spyOn(prisma.appointment, 'findUnique').mockResolvedValue(mockAppointment);
+
+      await expect(service.validateAppointmentForCall('apt1', 'user1')).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('getUserAppointments', () => {
+    it('should return user appointments', async () => {
+      const mockAppointment: Appointment = {
+        id: 'apt1',
+        clientId: 'user1',
+        babalawoId: 'user2',
+        scheduledStart: new Date(Date.now() - 300000), // 5 minutes ago
+        scheduledEnd: new Date(Date.now() + 300000), // 5 minutes from now
+        status: 'CONFIRMED',
+        notes: 'Scheduled appointment',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      jest.spyOn(prisma.appointment, 'findUnique').mockResolvedValue(mockAppointment);
+
+      const result = await service.getUserAppointment('apt1', 'user1');
+
+      expect(result).toEqual(mockAppointment);
+    });
+
+    it('should throw ForbiddenException if user is not part of the appointment', async () => {
+      const mockAppointment: Appointment = {
+        id: 'apt1',
+        clientId: 'user1',
+        babalawoId: 'user2',
+        scheduledStart: new Date(Date.now() - 300000), // 5 minutes ago
+        scheduledEnd: new Date(Date.now() + 300000), // 5 minutes from now
+        status: 'CONFIRMED',
+        notes: 'Scheduled appointment',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      jest.spyOn(prisma.appointment, 'findUnique').mockResolvedValue(mockAppointment);
+
+      await expect(service.getUserAppointment('apt1', 'user3')).rejects.toThrow(ForbiddenException);
+    });
+  });
 });

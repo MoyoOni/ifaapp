@@ -550,15 +550,20 @@ export class ReviewsService {
       select: { rating: true },
     });
 
-    if (reviews.length === 0) return;
+    let averageRating = 0;
+    if (reviews.length > 0) {
+      averageRating =
+        reviews.reduce((sum: number, review: { rating: number }) => sum + review.rating, 0) /
+        reviews.length;
+    }
 
-    const averageRating =
-      reviews.reduce((sum: number, review: { rating: number }) => sum + review.rating, 0) /
-      reviews.length;
+    // Update the user's averageRating field
+    await this.prisma.user.update({
+      where: { id: babalawoId },
+      data: { averageRating },
+    });
 
-    // Note: User model doesn't have a rating field yet, so we'd need to add it
-    // For now, we'll just log it
-    this.logger.log(`Babalawo ${babalawoId} average rating: ${averageRating.toFixed(2)}`);
+    this.logger.log(`Babalawo ${babalawoId} average rating updated to: ${averageRating.toFixed(2)}`);
   }
 
   /**

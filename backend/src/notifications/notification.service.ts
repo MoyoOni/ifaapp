@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from './email.service';
 import { PushNotificationService } from './push-notification.service';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
+import { NotificationPreferencesService } from './notification-preferences.service';
 
 export enum NotificationType {
   APPOINTMENT = 'APPOINTMENT',
@@ -16,6 +17,7 @@ export enum NotificationType {
   GUIDANCE_PLAN = 'GUIDANCE_PLAN',
   FORUM_REPLY = 'FORUM_REPLY',
   MENTION = 'MENTION',
+  REVIEW_REQUEST = 'REVIEW_REQUEST',
 }
 
 export enum NotificationCategory {
@@ -47,15 +49,74 @@ export class NotificationService {
 
   constructor(
     private prisma: PrismaService,
+    private notificationPreferencesService: NotificationPreferencesService,
     @Optional() private pushService?: PushNotificationService,
     @Optional() private emailService?: EmailService
   ) {}
+
+  /**
+   * Check if a notification should be sent based on user preferences
+   */
+  async shouldSendNotification(
+    userId: string,
+    notificationType: NotificationType,
+    channel: 'email' | 'push'
+  ): Promise<boolean> {
+    // Map notification types to preference keys
+    let typeKey: string;
+    switch (notificationType) {
+      case NotificationType.APPOINTMENT:
+        typeKey = 'booking';
+        break;
+      case NotificationType.MESSAGE:
+        typeKey = 'messages';
+        break;
+      case NotificationType.GUIDANCE_PLAN:
+        typeKey = 'plan';
+        break;
+      case NotificationType.FORUM_REPLY:
+      case NotificationType.MENTION:
+        typeKey = 'forum';
+        break;
+      case NotificationType.REVIEW_REQUEST:
+        typeKey = 'followup';
+        break;
+      default:
+        // For types not specifically controlled, allow them by default
+        return true;
+    }
+    
+    return this.notificationPreferencesService.isNotificationEnabled(userId, typeKey, channel);
+  }
 
   /**
    * Create and send a notification
    */
   async createNotification(dto: CreateNotificationDto) {
     try {
+      // Check preferences before creating notification
+      if (dto.sendEmail) {
+        const shouldSendEmail = await this.shouldSendNotification(
+          dto.userId,
+          dto.type,
+          'email'
+        );
+        if (!shouldSendEmail) {
+          dto.sendEmail = false;
+        }
+      }
+      
+      if (dto.sendPush) {
+        const shouldSendPush = await this.shouldSendNotification(
+          dto.userId,
+          dto.type,
+          'push'
+        );
+        if (!shouldSendPush) {
+          dto.sendPush = false;
+        }
+      }
+
       // Create notification in database
       const notification = await this.prisma.notification.create({
         data: {
@@ -94,8 +155,7 @@ export class NotificationService {
             data: {
               notificationId: notification.id,
               type: dto.type,
-              category: dto.category || 'INFO',
-              ...dto.data,
+              action: dto.data?.action,
             },
           });
           await this.prisma.notification.update({
@@ -106,12 +166,12 @@ export class NotificationService {
           this.logger.error(`Failed to send push notification: ${(error as any).message}`);
         }
       } else if (dto.sendPush && !this.pushService) {
-        this.logger.warn('PushNotificationService unavailable; skipping push');
+        this.logger.warn('PushService unavailable; cannot send push notification');
       }
 
       return notification;
     } catch (error) {
-      this.logger.error(`Failed to create notification: ${(error as any).message}`);
+      this.logger.error(`Failed to create notification: ${(error as any).message}`, error);
       throw error;
     }
   }
@@ -125,7 +185,11 @@ export class NotificationService {
     filter?: string,
     take: number = 50
   ) {
-    const where: any = { userId };
+    const now = new Date();
+    const where: any = {
+      userId,
+      OR: [{ scheduledAt: null }, { scheduledAt: { lte: now } }],
+    };
     if (unreadOnly) {
       where.read = false;
     }
@@ -491,6 +555,58 @@ export class NotificationService {
       },
       sendEmail: true,
       sendPush: true,
+    });
+  }
+
+  async scheduleFollowUpReminder(
+    babalawoId: string,
+    appointmentId: string,
+    clientName: string,
+    delayMs: number = 24 * 60 * 60 * 1000,
+  ) {
+    const scheduledAt = new Date(Date.now() + delayMs);
+    await this.prisma.notification.create({
+      data: {
+        userId: babalawoId,
+        type: NotificationType.APPOINTMENT,
+        category: NotificationCategory.INFO,
+        title: 'Follow up with your seeker',
+        message: `Your session with ${clientName} ended yesterday. Would you like to send them a follow-up message or update their guidance plan?`,
+        data: { appointmentId, clientName, action: 'follow_up' },
+        scheduledAt,
+        emailSent: false,
+        pushSent: false,
+      },
+    });
+  }
+
+  /**
+   * Schedule a review request notification to be sent to the client
+   * after an appointment is completed
+   */
+  async scheduleReviewRequest(
+    clientId: string,
+    appointmentId: string,
+    babalawoName: string,
+    delayMs: number = 24 * 60 * 60 * 1000, // 24 hours default
+  ) {
+    const scheduledAt = new Date(Date.now() + delayMs);
+    await this.prisma.notification.create({
+      data: {
+        userId: clientId,
+        type: NotificationType.REVIEW_REQUEST,
+        category: NotificationCategory.INFO,
+        title: 'How was your session?',
+        message: `How was your session with ${babalawoName}? Share your experience.`,
+        data: { 
+          appointmentId, 
+          babalawoName, 
+          action: 'request_review' 
+        },
+        scheduledAt,
+        emailSent: false,
+        pushSent: false,
+      },
     });
   }
 }

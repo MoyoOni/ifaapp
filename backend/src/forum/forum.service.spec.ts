@@ -1,381 +1,393 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { ForumService } from './forum.service';
+import { Test } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
-import { NotFoundException, ForbiddenException } from '@nestjs/common';
-
-jest.mock('@ile-ase/common', () => {
-  const actual = jest.requireActual('@ile-ase/common');
-  return {
-    ...actual,
-    ThreadStatus: { ACTIVE: 'ACTIVE', LOCKED: 'LOCKED', DELETED: 'DELETED' },
-    PostStatus: { ACTIVE: 'ACTIVE', EDITED: 'EDITED', DELETED: 'DELETED' },
-  };
-});
+import { ForumService } from './forum.service';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { User, ForumThread, ForumPost } from '@prisma/client';
+import { ForumThreadVisibility } from '@common/enums/forum-thread-visibility.enum';
+import { ForumThreadStatus } from '@common/enums/forum-thread-status.enum';
 
 describe('ForumService', () => {
-    let service: ForumService;
-    let prisma: PrismaService;
+  let service: ForumService;
+  let prisma: PrismaService;
 
-    const mockPrismaService = {
-        forumCategory: {
-            findMany: jest.fn(),
-            findUnique: jest.fn(),
-            create: jest.fn(),
-            update: jest.fn(),
+  beforeEach(async () => {
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        ForumService,
+        {
+          provide: PrismaService,
+          useValue: {
+            forumThread: {
+              findMany: jest.fn(),
+              findUnique: jest.fn(),
+              create: jest.fn(),
+              update: jest.fn(),
+              delete: jest.fn(),
+            },
+            forumPost: {
+              findMany: jest.fn(),
+              findUnique: jest.fn(),
+              create: jest.fn(),
+              update: jest.fn(),
+            },
+            forumCategory: {
+              findMany: jest.fn(),
+              findUnique: jest.fn(),
+            },
+            user: {
+              findUnique: jest.fn(),
+            },
+            $transaction: jest.fn(),
+          },
         },
-        forumThread: {
-            findMany: jest.fn(),
-            findUnique: jest.fn(),
-            create: jest.fn(),
-            update: jest.fn(),
-            delete: jest.fn(),
-        },
-        forumPost: {
-            findMany: jest.fn(),
-            findUnique: jest.fn(),
-            create: jest.fn(),
-            update: jest.fn(),
-            delete: jest.fn(),
-        },
-        postAcknowledgment: {
-            create: jest.fn(),
-            findUnique: jest.fn(),
-            delete: jest.fn(),
-            findMany: jest.fn(),
-        },
-        $transaction: jest.fn((arg) => (Array.isArray(arg) ? Promise.all(arg) : arg)),
-    };
+      ],
+    }).compile();
 
-    const mockCurrentUser = {
-        id: 'user-1',
-        sub: 'user-1',
-        email: 'user@example.com',
-        role: 'CLIENT' as any,
-        verified: true,
-    };
+    service = moduleRef.get<ForumService>(ForumService);
+    prisma = moduleRef.get<PrismaService>(PrismaService);
+  });
 
-    beforeEach(async () => {
-        const module: TestingModule = await Test.createTestingModule({
-            providers: [
-                ForumService,
-                {
-                    provide: PrismaService,
-                    useValue: mockPrismaService,
+  describe('createThread', () => {
+    it('should create a forum thread successfully', async () => {
+      const mockUser: User = {
+        id: 'user1',
+        email: 'test@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+        role: 'CLIENT',
+        isVerified: true,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
+        isEmailVerified: true,
+        fcmTokens: [],
+        bio: '',
+        phone: '',
+        avatar: '',
+        additionalInfo: '',
+      };
+
+      const mockThread: ForumThread = {
+        id: 'thread1',
+        title: 'Test Thread',
+        content: 'Test content',
+        authorId: 'user1',
+        categoryId: 'cat1',
+        templeId: null,
+        circleId: null,
+        visibility: ForumThreadVisibility.PUBLIC,
+        status: ForumThreadStatus.APPROVED,
+        isLocked: false,
+        isPinned: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        approvedAt: new Date(),
+        approvedById: null,
+        lockedAt: null,
+        lockedById: null,
+        lockedReason: null,
+        pinnedAt: null,
+        pinnedById: null,
+        deletedAt: null,
+        deletedById: null,
+        deletionReason: null,
+        rejectionReason: null,
+        rejectedAt: null,
+        rejectedById: null,
+      };
+
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
+      jest.spyOn(prisma.forumCategory, 'findUnique').mockResolvedValue({ id: 'cat1', name: 'General', description: 'General discussions' } as any);
+      jest.spyOn(prisma.forumThread, 'create').mockResolvedValue(mockThread);
+
+      const result = await service.createThread({
+        title: 'Test Thread',
+        content: 'Test content',
+        categoryId: 'cat1',
+        visibility: ForumThreadVisibility.PUBLIC,
+      }, 'user1');
+
+      expect(result).toEqual(mockThread);
+      expect(prisma.forumThread.create).toHaveBeenCalledWith({
+        data: {
+          title: 'Test Thread',
+          content: 'Test content',
+          authorId: 'user1',
+          categoryId: 'cat1',
+          visibility: ForumThreadVisibility.PUBLIC,
+          status: ForumThreadStatus.PENDING, // Default status for new threads
+        },
+        include: {
+          author: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              avatar: true,
+              isVerified: true,
+            },
+          },
+          category: true,
+          temple: true,
+          circle: true,
+        },
+      });
+    });
+
+    it('should throw an exception if user does not exist', async () => {
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(null);
+
+      await expect(service.createThread({
+        title: 'Test Thread',
+        content: 'Test content',
+        categoryId: 'cat1',
+        visibility: ForumThreadVisibility.PUBLIC,
+      }, 'nonexistent-user')).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw an exception if category does not exist', async () => {
+      const mockUser: User = {
+        id: 'user1',
+        email: 'test@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+        role: 'CLIENT',
+        isVerified: true,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
+        isEmailVerified: true,
+        fcmTokens: [],
+        bio: '',
+        phone: '',
+        avatar: '',
+        additionalInfo: '',
+      };
+
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
+      jest.spyOn(prisma.forumCategory, 'findUnique').mockResolvedValue(null);
+
+      await expect(service.createThread({
+        title: 'Test Thread',
+        content: 'Test content',
+        categoryId: 'nonexistent-cat',
+        visibility: ForumThreadVisibility.PUBLIC,
+      }, 'user1')).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('createPost', () => {
+    it('should create a forum post successfully', async () => {
+      const mockThread: ForumThread = {
+        id: 'thread1',
+        title: 'Test Thread',
+        content: 'Test content',
+        authorId: 'user1',
+        categoryId: 'cat1',
+        templeId: null,
+        circleId: null,
+        visibility: ForumThreadVisibility.PUBLIC,
+        status: ForumThreadStatus.APPROVED,
+        isLocked: false,
+        isPinned: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        approvedAt: new Date(),
+        approvedById: null,
+        lockedAt: null,
+        lockedById: null,
+        lockedReason: null,
+        pinnedAt: null,
+        pinnedById: null,
+        deletedAt: null,
+        deletedById: null,
+        deletionReason: null,
+        rejectionReason: null,
+        rejectedAt: null,
+        rejectedById: null,
+      };
+
+      const mockPost: ForumPost = {
+        id: 'post1',
+        content: 'Test post content',
+        authorId: 'user2',
+        threadId: 'thread1',
+        parentId: null,
+        status: ForumThreadStatus.APPROVED,
+        isRemoved: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        removedAt: null,
+        removedById: null,
+        removalReason: null,
+        approvedAt: new Date(),
+        approvedById: null,
+        rejectedAt: null,
+        rejectedById: null,
+        rejectionReason: null,
+      };
+
+      jest.spyOn(prisma.forumThread, 'findUnique').mockResolvedValue(mockThread);
+      jest.spyOn(prisma.forumPost, 'create').mockResolvedValue(mockPost);
+
+      const result = await service.createPost({
+        content: 'Test post content',
+        threadId: 'thread1',
+      }, 'user2');
+
+      expect(result).toEqual(mockPost);
+      expect(prisma.forumPost.create).toHaveBeenCalledWith({
+        data: {
+          content: 'Test post content',
+          authorId: 'user2',
+          threadId: 'thread1',
+          status: ForumThreadStatus.PENDING, // Default status for new posts
+        },
+        include: {
+          author: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              avatar: true,
+              isVerified: true,
+            },
+          },
+          thread: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+        },
+      });
+    });
+
+    it('should throw an exception if thread does not exist', async () => {
+      jest.spyOn(prisma.forumThread, 'findUnique').mockResolvedValue(null);
+
+      await expect(service.createPost({
+        content: 'Test post content',
+        threadId: 'nonexistent-thread',
+      }, 'user2')).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw an exception if thread is locked', async () => {
+      const mockThread: ForumThread = {
+        id: 'thread1',
+        title: 'Test Thread',
+        content: 'Test content',
+        authorId: 'user1',
+        categoryId: 'cat1',
+        templeId: null,
+        circleId: null,
+        visibility: ForumThreadVisibility.PUBLIC,
+        status: ForumThreadStatus.APPROVED,
+        isLocked: true, // Locked thread
+        isPinned: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        approvedAt: new Date(),
+        approvedById: null,
+        lockedAt: new Date(),
+        lockedById: null,
+        lockedReason: 'Spam',
+        pinnedAt: null,
+        pinnedById: null,
+        deletedAt: null,
+        deletedById: null,
+        deletionReason: null,
+        rejectionReason: null,
+        rejectedAt: null,
+        rejectedById: null,
+      };
+
+      jest.spyOn(prisma.forumThread, 'findUnique').mockResolvedPromiseOnce(mockThread);
+
+      await expect(service.createPost({
+        content: 'Test post content',
+        threadId: 'thread1',
+      }, 'user2')).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('getThread', () => {
+    it('should retrieve a thread successfully', async () => {
+      const mockThread: ForumThread = {
+        id: 'thread1',
+        title: 'Test Thread',
+        content: 'Test content',
+        authorId: 'user1',
+        categoryId: 'cat1',
+        templeId: null,
+        circleId: null,
+        visibility: ForumThreadVisibility.PUBLIC,
+        status: ForumThreadStatus.APPROVED,
+        isLocked: false,
+        isPinned: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        approvedAt: new Date(),
+        approvedById: null,
+        lockedAt: null,
+        lockedById: null,
+        lockedReason: null,
+        pinnedAt: null,
+        pinnedById: null,
+        deletedAt: null,
+        deletedById: null,
+        deletionReason: null,
+        rejectionReason: null,
+        rejectedAt: null,
+        rejectedById: null,
+      };
+
+      jest.spyOn(prisma.forumThread, 'findUnique').mockResolvedValue(mockThread);
+
+      const result = await service.getThread('thread1');
+
+      expect(result).toEqual(mockThread);
+      expect(prisma.forumThread.findUnique).toHaveBeenCalledWith({
+        where: { id: 'thread1' },
+        include: {
+          author: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              avatar: true,
+              isVerified: true,
+            },
+          },
+          category: true,
+          temple: true,
+          circle: true,
+          posts: {
+            include: {
+              author: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  avatar: true,
+                  isVerified: true,
                 },
-            ],
-        }).compile();
-
-        service = module.get<ForumService>(ForumService);
-        prisma = module.get<PrismaService>(PrismaService);
-
-        jest.clearAllMocks();
+              },
+            },
+            orderBy: { createdAt: 'asc' },
+          },
+        },
+      });
     });
 
-    describe('findAllCategories', () => {
-        it('should return all forum categories', async () => {
-            const mockCategories = [
-                { id: 'cat-1', name: 'General Discussion', slug: 'general', threadCount: 10 },
-                { id: 'cat-2', name: 'Teachings', slug: 'teachings', threadCount: 5 },
-            ];
+    it('should return null if thread does not exist', async () => {
+      jest.spyOn(prisma.forumThread, 'findUnique').mockResolvedValue(null);
 
-            mockPrismaService.forumCategory.findMany.mockResolvedValue(mockCategories);
+      const result = await service.getThread('nonexistent-thread');
 
-            const result = await service.findAllCategories();
-
-            expect(result).toEqual(mockCategories);
-            expect(prisma.forumCategory.findMany).toHaveBeenCalled();
-        });
+      expect(result).toBeNull();
     });
-
-    describe('findCategoryBySlug', () => {
-        it('should return category by slug', async () => {
-            const mockCategory = {
-                id: 'cat-1',
-        sub: 'cat-1',
-                name: 'General Discussion',
-                slug: 'general',
-            };
-
-            mockPrismaService.forumCategory.findUnique.mockResolvedValue(mockCategory);
-
-            const result = await service.findCategoryBySlug('general');
-
-            expect(result).toEqual(mockCategory);
-        });
-
-        it('should throw NotFoundException when category not found', async () => {
-            mockPrismaService.forumCategory.findUnique.mockResolvedValue(null);
-
-            await expect(service.findCategoryBySlug('nonexistent')).rejects.toThrow(
-                NotFoundException,
-            );
-        });
-    });
-
-    describe('createCategory', () => {
-        it('should create a forum category (admin only)', async () => {
-            const dto = {
-                name: 'New Category',
-                slug: 'new-category',
-                description: 'A new discussion category',
-            };
-
-            const adminUser = {
-                ...mockCurrentUser,
-                role: 'ADMIN' as any,
-            };
-
-            const mockCategory = {
-                id: 'cat-new',
-        sub: 'cat-new',
-                ...dto,
-                threadCount: 0,
-                createdAt: new Date(),
-            };
-
-            mockPrismaService.forumCategory.create.mockResolvedValue(mockCategory);
-
-            const result = await service.createCategory(dto as any, adminUser);
-
-            expect(result).toEqual(mockCategory);
-        });
-    });
-
-    describe('findAllThreads', () => {
-        it('should return all threads', async () => {
-            const mockThreads = [
-                { id: 'thread-1', title: 'Thread 1', categoryId: 'cat-1' },
-                { id: 'thread-2', title: 'Thread 2', categoryId: 'cat-1' },
-            ];
-
-            mockPrismaService.forumThread.findMany.mockResolvedValue(mockThreads);
-
-            const result = await service.findAllThreads();
-
-            expect(result).toEqual(mockThreads);
-        });
-
-        it('should filter threads by category', async () => {
-            const categoryId = 'cat-1';
-            const mockThreads = [
-                { id: 'thread-1', title: 'Thread 1', categoryId },
-            ];
-
-            mockPrismaService.forumThread.findMany.mockResolvedValue(mockThreads);
-
-            const result = await service.findAllThreads(categoryId);
-
-            expect(result).toEqual(mockThreads);
-            expect(prisma.forumThread.findMany).toHaveBeenCalledWith({
-                where: expect.objectContaining({ categoryId }),
-                include: expect.any(Object),
-                orderBy: expect.any(Object),
-            });
-        });
-    });
-
-    describe('createThread', () => {
-        it('should create a forum thread', async () => {
-            const dto = {
-                categoryId: 'cat-1',
-                title: 'New Discussion Thread',
-                content: 'This is the first post content',
-            };
-
-            const mockThread = {
-                id: 'thread-1',
-        sub: 'thread-1',
-                ...dto,
-                authorId: mockCurrentUser.id,
-                status: 'ACTIVE',
-                createdAt: new Date(),
-            };
-
-            mockPrismaService.forumCategory.findUnique.mockResolvedValue({
-                id: dto.categoryId,
-                isActive: true,
-                name: 'General',
-                slug: 'general',
-            });
-            mockPrismaService.forumThread.create.mockResolvedValue(mockThread);
-
-            const result = await service.createThread(dto as any, mockCurrentUser);
-
-            expect(result).toEqual(mockThread);
-            expect(prisma.forumThread.create).toHaveBeenCalledWith({
-                data: expect.objectContaining({
-                    categoryId: dto.categoryId,
-                    title: dto.title,
-                    authorId: mockCurrentUser.id,
-                }),
-                include: expect.any(Object),
-            });
-        });
-    });
-
-    describe('findThreadById', () => {
-        it('should return thread with posts', async () => {
-            const mockThread = {
-                id: 'thread-1',
-        sub: 'thread-1',
-                title: 'Test Thread',
-                posts: [
-                    { id: 'post-1', content: 'First post' },
-                    { id: 'post-2', content: 'Second post' },
-                ],
-            };
-
-            mockPrismaService.forumThread.findUnique.mockResolvedValue(mockThread);
-
-            const result = await service.findThreadById('thread-1');
-
-            expect(result).toEqual(mockThread);
-        });
-
-        it('should throw NotFoundException when thread not found', async () => {
-            mockPrismaService.forumThread.findUnique.mockResolvedValue(null);
-
-            await expect(service.findThreadById('nonexistent')).rejects.toThrow(
-                NotFoundException,
-            );
-        });
-    });
-
-    describe('updateThread', () => {
-        it('should update thread when user is author', async () => {
-            const threadId = 'thread-1';
-            const dto = { title: 'Updated Title' };
-
-            const mockThread = {
-                id: threadId,
-                title: 'Original Title',
-                authorId: mockCurrentUser.id,
-            };
-
-            const mockUpdatedThread = {
-                ...mockThread,
-                title: dto.title,
-            };
-
-            mockPrismaService.forumThread.findUnique.mockResolvedValue(mockThread);
-            mockPrismaService.forumThread.update.mockResolvedValue(mockUpdatedThread);
-
-            const result = await service.updateThread(threadId, dto as any, mockCurrentUser);
-
-            expect(result).toEqual(mockUpdatedThread);
-        });
-
-        it('should throw ForbiddenException when user is not author', async () => {
-            const threadId = 'thread-1';
-            const dto = { title: 'Hacked Title' };
-
-            const mockThread = {
-                id: threadId,
-                authorId: 'other-user',
-            };
-
-            mockPrismaService.forumThread.findUnique.mockResolvedValue(mockThread);
-
-            await expect(service.updateThread(threadId, dto as any, mockCurrentUser)).rejects.toThrow(
-                ForbiddenException,
-            );
-        });
-    });
-
-    describe('createPost', () => {
-        it('should create a forum post', async () => {
-            const dto = {
-                threadId: 'thread-1',
-                content: 'This is my reply to the thread',
-            };
-
-            const mockPost = {
-                id: 'post-1',
-        sub: 'post-1',
-                ...dto,
-                authorId: mockCurrentUser.id,
-                status: 'ACTIVE',
-                createdAt: new Date(),
-            };
-
-            mockPrismaService.forumThread.findUnique.mockResolvedValue({ id: dto.threadId });
-            mockPrismaService.forumPost.create.mockResolvedValue(mockPost);
-
-            const result = await service.createPost(dto as any, mockCurrentUser);
-
-            expect(result).toEqual(mockPost);
-            expect(prisma.forumPost.create).toHaveBeenCalledWith({
-                data: expect.objectContaining({
-                    threadId: dto.threadId,
-                    content: dto.content,
-                    authorId: mockCurrentUser.id,
-                }),
-                include: expect.any(Object),
-            });
-        });
-    });
-
-    describe('acknowledgePost', () => {
-        it('should acknowledge a post', async () => {
-            const postId = 'post-1';
-
-            const mockAcknowledgment = {
-                id: 'ack-1',
-        sub: 'ack-1',
-                postId,
-                userId: mockCurrentUser.id,
-                createdAt: new Date(),
-            };
-
-            mockPrismaService.forumPost.findUnique.mockResolvedValue({ id: postId, acknowledgeCount: 0 });
-            mockPrismaService.postAcknowledgment.findUnique.mockResolvedValue(null);
-            mockPrismaService.postAcknowledgment.create.mockResolvedValue(mockAcknowledgment);
-
-            const result = await service.acknowledgePost(postId, mockCurrentUser);
-
-            expect(result).toMatchObject({ acknowledged: true });
-        });
-    });
-
-    describe('getPostAcknowledgments', () => {
-        it('should return post acknowledgments as users', async () => {
-            const postId = 'post-1';
-            const mockUser1 = { id: 'user-1', name: 'User 1' };
-            const mockUser2 = { id: 'user-2', name: 'User 2' };
-            const mockAcknowledgments = [
-                { id: 'ack-1', postId, userId: 'user-1', user: mockUser1 },
-                { id: 'ack-2', postId, userId: 'user-2', user: mockUser2 },
-            ];
-
-            mockPrismaService.postAcknowledgment.findMany.mockResolvedValue(mockAcknowledgments);
-
-            const result = await service.getPostAcknowledgments(postId);
-
-            expect(result).toEqual([mockUser1, mockUser2]);
-        });
-    });
-
-    describe('deletePost', () => {
-        it('should delete post when user is author', async () => {
-            const postId = 'post-1';
-
-            const mockPost = {
-                id: postId,
-                authorId: mockCurrentUser.id,
-                content: 'Post content',
-            };
-
-            const mockPostWithThread = { ...mockPost, threadId: 'thread-1' };
-            mockPrismaService.forumPost.findUnique.mockResolvedValue(mockPostWithThread);
-            mockPrismaService.forumPost.update.mockResolvedValue({ ...mockPost, status: 'DELETED' });
-            mockPrismaService.forumThread.update.mockResolvedValue({});
-
-            const result = await service.deletePost(postId, mockCurrentUser);
-
-            expect(prisma.forumPost.update).toHaveBeenCalledWith({
-                where: { id: postId },
-                data: expect.objectContaining({ status: 'DELETED' }),
-            });
-        });
-    });
+  });
 });

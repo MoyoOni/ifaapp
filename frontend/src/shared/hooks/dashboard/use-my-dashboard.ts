@@ -23,7 +23,7 @@ export function useMyDashboard() {
         throw err;
       }
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id && !localStorage.getItem('dev_mode_role'),
     staleTime: 30000,
     refetchOnWindowFocus: true,
   });

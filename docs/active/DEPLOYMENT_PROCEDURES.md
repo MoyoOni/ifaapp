@@ -1,19 +1,129 @@
 # 🚀 Deployment Procedures — Ìlú Àṣẹ Platform
 
-**Version:** 1.0  
-**Last Updated:** February 26, 2026  
-**Target:** Staging (March 15), Production (April 1)
+**Version:** 1.1
+**Last Updated:** March 23, 2026
+**Production:** https://iluase.com (LIVE — April 1, 2026 go-live)
 
 ---
 
 ## 📋 Table of Contents
 
+0. [Local Development (Docker)](#local-development-docker)
 1. [Pre-Deployment Checklist](#pre-deployment-checklist)
 2. [Environment Setup](#environment-setup)
-3. [Staging Deployment](#staging-deployment)
-4. [Production Deployment](#production-deployment)
+3. [Staging Locally (Docker)](#staging-locally-docker)
+4. [Production Deployment (AWS ECS)](#production-deployment)
 5. [Post-Deployment Verification](#post-deployment-verification)
 6. [Rollback Procedures](#rollback-procedures)
+
+---
+
+## Local Development (Docker)
+
+The **only** Docker container that should be running during normal local development is `ifa-postgres`.
+
+```
+ifa-postgres   port 5432   DB: ifa_app   (always running, healthy)
+```
+
+### Start local DB
+
+```bash
+# One-time: creates postgres container
+docker run -d \
+  --name ifa-postgres \
+  -e POSTGRES_DB=ifa_app \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -p 5432:5432 \
+  --restart unless-stopped \
+  postgres:16-alpine
+```
+
+If it already exists but is stopped:
+```bash
+docker start ifa-postgres
+```
+
+### Start backend & frontend (no Docker — hot reload)
+
+```bash
+# Terminal 1 — backend
+cd backend && npm run start:dev
+
+# Terminal 2 — frontend
+cd frontend && npm run dev
+```
+
+Backend `.env` for local dev:
+```env
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/ifa_app"
+REDIS_URL=redis://localhost:6379   # optional — only needed for WebSocket scaling
+```
+
+### Verify local state
+
+```bash
+docker ps   # should show only ifa-postgres (Up, healthy)
+```
+
+---
+
+## Staging Locally (Docker)
+
+**What is staging locally?** It's a full production-like stack running on your machine — Postgres + Redis + compiled backend + Nginx — all in Docker, isolated from your local dev setup. It mirrors what runs on the AWS EC2 staging server (http://100.52.200.113:4040).
+
+**When to use it:**
+- Testing Dockerised builds before pushing to ECR
+- Verifying migrations on a clean DB
+- Testing Nginx config changes
+- QA sessions that need a stable (non-hot-reload) environment
+
+**When NOT to use it:** Day-to-day development. Use the local dev setup above instead — it's faster and has hot reload.
+
+### Port map (staging avoids clashing with local dev)
+
+| Service | Container | Port |
+|---------|-----------|------|
+| PostgreSQL 16 | `ilu-ase-staging-postgres` | 5433 (host) → 5432 |
+| Redis 7 | `ilu-ase-staging-redis` | 6380 (host) → 6379 |
+| NestJS backend | `ilu-ase-staging-backend` | 8080 |
+| Nginx (frontend) | `ilu-ase-staging-nginx` | **4040** ← browse here |
+
+### Spin up
+
+```bash
+# From project root — starts all 4 containers together
+docker-compose -f docker-compose.staging.yml up -d
+
+# Watch logs
+docker-compose -f docker-compose.staging.yml logs -f backend
+
+# Tear down (keeps data volumes)
+docker-compose -f docker-compose.staging.yml down
+
+# Tear down + wipe DB (clean slate)
+docker-compose -f docker-compose.staging.yml down -v
+```
+
+Then open http://localhost:4040
+
+### Clean up staging containers when done
+
+```bash
+docker-compose -f docker-compose.staging.yml down
+```
+
+**Never leave staging containers running without their full stack** — an orphaned backend with no postgres will sit `unhealthy` indefinitely and waste memory.
+
+### Staging volumes
+
+| Volume | Contents |
+|--------|----------|
+| `ifa_app_postgres_staging_data` | Staging DB data |
+| `ifa_app_redis_staging_data` | Staging Redis data |
+
+To wipe staging data for a fresh run: `docker-compose -f docker-compose.staging.yml down -v`
 
 ---
 
@@ -114,7 +224,9 @@ VITE_SENTRY_DSN=https://xxxxx@sentry.io/xxxxx
 
 ---
 
-## Staging Deployment
+## Production Deployment
+
+> **Note:** Staging locally is documented above. This section covers deploying to the EC2 staging server (http://100.52.200.113:4040) and production (ECS Fargate / https://iluase.com).
 
 ### 1. Prepare Staging Environment
 

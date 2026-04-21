@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Param, Body, UseGuards, Query, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, UseGuards, Query, ForbiddenException } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
@@ -10,80 +10,62 @@ import { Public } from '../auth/decorators/public.decorator';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  // Public — unauthenticated users need to browse the babalawo directory
-  @Public()
-  @Get()
-  async findAll(
-    @Query('role') role?: string,
-    @Query('verified') verified?: string,
-    @Query('search') search?: string
-  ) {
-    return this.usersService.findAll({ role, verified, search });
+  @Get('my/personal-awo')
+  async getPersonalAwo(@CurrentUser() currentUser: CurrentUserPayload) {
+    return this.usersService.getPersonalAwo(currentUser.sub);
   }
 
-  @Get('me')
-  async getMe(@CurrentUser() currentUser: CurrentUserPayload) {
-    return this.usersService.findOne(currentUser.id);
-  }
-
-  @Get('referral-stats')
-  async getReferralStats(@CurrentUser() currentUser: CurrentUserPayload) {
-    return this.usersService.getReferralStats(currentUser.id);
-  }
-
-  @Get('profile-views/mine')
-  async getMyProfileViews(@CurrentUser() currentUser: CurrentUserPayload) {
-    // Check Devoted subscription
-    const profile = await this.usersService.findOne(currentUser.id);
-    if ((profile as any).subscriptionStatus !== 'DEVOTED') {
-      throw new ForbiddenException('Profile view history is a Devoted member benefit.');
-    }
-    return this.usersService.getProfileViewers(currentUser.id);
-  }
-
-  // Public — booking page must load babalawo details without requiring login
-  @Public()
   @Get(':id')
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param('id') id: string, @CurrentUser() currentUser?: CurrentUserPayload) {
+    // Only allow users to access their own profile unless they're an admin
+    if (currentUser?.sub !== id && currentUser?.role !== 'ADMIN') {
+      throw new ForbiddenException();
+    }
     return this.usersService.findOne(id);
   }
 
-  @Get(':id/profile')
-  async getProfile(@Param('id') id: string, @CurrentUser() currentUser: CurrentUserPayload) {
-    return this.usersService.findOne(id, currentUser.id);
-  }
-
   @Patch(':id')
-  async update(
-    @Param('id') id: string,
-    @Body() dto: UpdateUserDto,
-    @CurrentUser() currentUser: CurrentUserPayload
-  ) {
-    return this.usersService.update(id, dto, currentUser);
+  async update(@Param('id') id: string, @Body() dto: UpdateUserDto, @CurrentUser() currentUser?: CurrentUserPayload) {
+    // Only allow users to update their own profile unless they're an admin
+    if (currentUser?.sub !== id && currentUser?.role !== 'ADMIN') {
+      throw new ForbiddenException();
+    }
+    return this.usersService.update(id, dto, currentUser!);
   }
 
+  @Public()
   @Patch(':id/onboarding')
   async completeOnboarding(
     @Param('id') id: string,
-    @Body() onboardingData: Record<string, unknown>,
-    @CurrentUser() currentUser: CurrentUserPayload
+    @Body() onboardingData: Partial<UpdateUserDto>,
+    @CurrentUser() currentUser?: CurrentUserPayload
   ) {
-    // Users can only complete their own onboarding
-    if (currentUser.id !== id) {
-      throw new Error('You can only complete your own onboarding');
+    // Only allow users to update their own onboarding unless they're an admin
+    if (currentUser?.sub !== id && currentUser?.role !== 'ADMIN') {
+      throw new ForbiddenException();
     }
-    return this.usersService.completeOnboarding(id, onboardingData);
+    return this.usersService.completeOnboarding(id, onboardingData, currentUser!);
   }
 
-  // F9-902: Cultural Orientation completion
-  @Patch(':id/cultural-orientation')
-  async completeCulturalOrientation(
-    @Param('id') id: string,
-    @CurrentUser() currentUser: CurrentUserPayload
+  @Get()
+  async findAll(
+    @Query('search') search?: string,
+    @Query('role') role?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+    @CurrentUser() currentUser?: CurrentUserPayload
   ) {
-    if (currentUser.id !== id) {
-      throw new ForbiddenException('You can only update your own profile');
+    if (currentUser?.role !== 'ADMIN') {
+      throw new ForbiddenException();
     }
-    return this.usersService.update(id, { passedCulturalOrientation: true } as any, currentUser);
+    
+    // Create filters object without 'limit' property which doesn't exist in FindAllFilters
+    const filters: any = {};
+    if (search) filters.search = search;
+    if (role) filters.role = role;
+    if (limit) filters.take = parseInt(limit, 10);  // Changed from 'limit' to 'take'
+    if (offset) filters.skip = parseInt(offset, 10);  // Changed from 'offset' to 'skip'
+
+    return this.usersService.findAll(filters);
   }
 }

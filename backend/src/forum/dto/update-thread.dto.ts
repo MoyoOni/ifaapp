@@ -25,4 +25,8 @@ export class UpdateThreadDto {
   @IsBoolean()
   @IsOptional()
   isApproved?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  isSacred?: boolean;
 }

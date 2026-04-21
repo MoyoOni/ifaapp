@@ -5,7 +5,6 @@ import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { logger } from '@/shared/utils/logger';
 
-import { DEMO_EVENTS, DEMO_USERS } from '@/demo';
 import { UserRole } from '@common';
 
 interface Event {
@@ -66,28 +65,12 @@ const EventsDirectory: React.FC<EventsDirectoryProps> = ({ onCreateEvent, onSele
   const { data: events = [], isLoading } = useQuery<Event[]>({
     queryKey: ['events', searchQuery, typeFilter, upcomingOnly],
     queryFn: async () => {
-      const storedDemoEvents = (() => {
-        try {
-          const raw = sessionStorage.getItem('demo-events');
-          return raw ? (JSON.parse(raw) as Event[]) : [];
-        } catch (error) {
-          logger.warn('Failed to parse demo events cache', error);
-          return [];
-        }
-      })();
-
-      try {
-        const params: any = { published: 'true' };
-        if (searchQuery) params.search = searchQuery;
-        if (typeFilter !== 'all') params.type = typeFilter;
-        if (upcomingOnly) params.upcoming = 'true';
-        const response = await api.get('/events', { params });
-        const apiEvents = response.data || [];
-        // Include circle events that are published (promoted)
-        return [...storedDemoEvents, ...apiEvents];
-      } catch (e) {
-        throw e;
-      }
+      const params: any = { published: 'true' };
+      if (searchQuery) params.search = searchQuery;
+      if (typeFilter !== 'all') params.type = typeFilter;
+      if (upcomingOnly) params.upcoming = 'true';
+      const response = await api.get('/events', { params });
+      return response.data || [];
     },
   });
 

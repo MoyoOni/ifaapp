@@ -50,7 +50,7 @@ export function useProfileQuery(userId: string) {
       const response = await api.get(`/users/${userId}/profile`);
       return response.data;
     },
-    enabled: !!userId,
+    enabled: !!userId && !localStorage.getItem('dev_mode_role'),
     staleTime: 5 * 60 * 1000,
     retry: 1,
   });

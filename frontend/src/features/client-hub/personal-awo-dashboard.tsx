@@ -68,7 +68,7 @@ const PersonalAwoDashboard: React.FC<PersonalAwoDashboardProps> = ({
       const response = await api.get(`/babalawo-client/personal-awo/${clientId}`);
       return response.data ?? null;
     },
-    enabled: !!clientId,
+    enabled: !!clientId && !localStorage.getItem('dev_mode_role'),
     retry: 1,
   });
 

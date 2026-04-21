@@ -19,6 +19,11 @@ import { Roles } from '@/shared/decorators/roles.decorator';
 import { CurrentUser } from '@/shared/decorators/current-user.decorator';
 import { CurrentUserPayload } from '@/shared/types/current-user-payload.interface';
 import { AdminService } from './admin.service';
+import { AdminMarketplaceService } from './admin-marketplace.service';
+import { AdminAcademyService } from './admin-academy.service';
+import { AdminTrustScoreService } from './admin-trust-score.service';
+import { AdminPlatformSettingsService } from './admin-platform-settings.service';
+import { GdprService } from '../gdpr/gdpr.service';
 import { AuditInterceptor } from './interceptors/audit.interceptor';
 import { ApproveVerificationDto } from './dto/approve-verification.dto';
 import { BulkVerifyDto } from './dto/bulk-verify.dto';
@@ -27,6 +32,19 @@ import { CreateCircleDto } from '../circles/dto/create-circle.dto';
 import { VerificationStage } from '@common/enums/verification-stage.enum';
 import { UserRole } from '@common/enums/user-role.enum';
 import { AdminSubRole } from '@common/enums/admin-sub-role.enum';
+import { LogPiiRevealDto } from './dto/log-pii-reveal.dto';
+import { ProcessWithdrawalDto } from './dto/process-withdrawal.dto';
+import { ReviewVendorDto } from './dto/review-vendor.dto';
+import { ResolveReportedContentDto } from './dto/resolve-reported-content.dto';
+import { RejectWithReasonDto } from './dto/reject-with-reason.dto';
+import { ModerateCircleDto } from './dto/moderate-circle.dto';
+import { ManageAdminDto } from './dto/manage-admin.dto';
+import { CreateQuizQuestionDto, UpdateQuizQuestionDto, UpdateQuizThresholdDto } from './dto/quiz-question.dto';
+import { TrustScoreOverrideDto } from './dto/trust-score-override.dto';
+import { FeatureItemDto } from './dto/feature-item.dto';
+import { UpdateCourseStatusDto } from './dto/update-course-status.dto';
+import { ManualEnrollDto } from './dto/manual-enroll.dto';
+import { RemoveEnrollmentDto } from './dto/remove-enrollment.dto';
 
 @Controller('admin')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
@@ -34,7 +52,14 @@ import { AdminSubRole } from '@common/enums/admin-sub-role.enum';
 export class AdminController {
   private readonly logger = new Logger(AdminController.name);
 
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly marketplaceService: AdminMarketplaceService,
+    private readonly academyService: AdminAcademyService,
+    private readonly trustScoreService: AdminTrustScoreService,
+    private readonly platformSettingsService: AdminPlatformSettingsService,
+    private readonly gdprService: GdprService,
+  ) {}
 
   @Get('stats')
   @Roles(UserRole.ADMIN)
@@ -121,15 +146,16 @@ export class AdminController {
    * POST /admin/withdrawals/:id/process
    */
   @Post('withdrawals/:id/process')
+  @Roles(UserRole.ADMIN)
   async processWithdrawal(
     @Param('id') withdrawalId: string,
-    @Body() body: { approve: boolean; notes?: string },
+    @Body() dto: ProcessWithdrawalDto,
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
     return this.adminService.processWithdrawal(
       withdrawalId,
-      body.approve,
-      body.notes || '',
+      dto.approve,
+      dto.notes || '',
       currentUser
     );
   }
@@ -176,23 +202,18 @@ export class AdminController {
    * POST /admin/log-pii-reveal
    */
   @Post('log-pii-reveal')
+  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.OK)
   async logPiiRevealAction(
     @CurrentUser() currentUser: CurrentUserPayload,
-    @Body()
-    body: {
-      entityType: string;
-      entityId: string;
-      fieldLabel: string;
-      reason: string;
-    }
+    @Body() dto: LogPiiRevealDto
   ) {
     await this.adminService.logPiiReveal(
       currentUser.id,
-      body.entityType,
-      body.entityId,
-      body.fieldLabel,
-      body.reason
+      dto.entityType,
+      dto.entityId,
+      dto.fieldLabel,
+      dto.reason
     );
     return { message: 'PII reveal action logged successfully' };
   }
@@ -209,6 +230,12 @@ export class AdminController {
     @Query('period') period?: string
   ) {
     return this.adminService.getAnalytics(currentUser, period || '30d');
+  }
+
+  @Get('analytics/lifecycle')
+  @Roles(UserRole.ADMIN)
+  async getLifecycleAnalytics() {
+    return this.adminService.getLifecycleAnalytics();
   }
 
   /**
@@ -229,11 +256,10 @@ export class AdminController {
   @Roles(UserRole.ADMIN)
   async reviewVendorApplication(
     @Param('vendorId') vendorId: string,
-    @Body()
-    body: { approved: boolean; culturalAuthenticityNotes?: string; rejectionReason?: string },
+    @Body() dto: ReviewVendorDto,
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
-    return this.adminService.reviewVendorApplication(vendorId, body, currentUser);
+    return this.adminService.reviewVendorApplication(vendorId, dto, currentUser);
   }
 
   /**
@@ -256,10 +282,10 @@ export class AdminController {
   async resolveReportedContent(
     @Param('type') type: string,
     @Param('id') id: string,
-    @Body() body: { action: 'DISMISS' | 'REMOVE' },
+    @Body() dto: ResolveReportedContentDto,
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
-    return this.adminService.resolveReportedContent(type, id, body.action, currentUser);
+    return this.adminService.resolveReportedContent(type, id, dto.action, currentUser);
   }
 
   // ==================== Circle Management ====================
@@ -287,10 +313,10 @@ export class AdminController {
   @Roles(UserRole.ADMIN)
   async rejectCircleSuggestion(
     @Param('id') suggestionId: string,
-    @Body() body: { reason: string },
+    @Body() dto: RejectWithReasonDto,
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
-    return this.adminService.rejectCircleSuggestion(suggestionId, body.reason, currentUser);
+    return this.adminService.rejectCircleSuggestion(suggestionId, dto.reason, currentUser);
   }
 
   @Get('circles/pending')
@@ -303,10 +329,10 @@ export class AdminController {
   @Roles(UserRole.ADMIN)
   async moderateCircle(
     @Param('id') circleId: string,
-    @Body() body: { action: 'ARCHIVE' | 'DELETE' | 'ACTIVATE' },
+    @Body() dto: ModerateCircleDto,
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
-    return this.adminService.moderateCircle(circleId, body.action, currentUser);
+    return this.adminService.moderateCircle(circleId, dto.action, currentUser);
   }
 
   @Post('circle-events/:id/approve')
@@ -366,15 +392,9 @@ export class AdminController {
   @AdminRoles(AdminSubRole.SUPER)
   async createOrUpdateAdmin(
     @CurrentUser() currentUser: CurrentUserPayload,
-    @Body()
-    body: {
-      email: string;
-      name: string;
-      adminSubRole: string;
-      sendInvite?: boolean;
-    }
+    @Body() dto: ManageAdminDto
   ) {
-    return this.adminService.createOrUpdateAdmin(currentUser, body);
+    return this.adminService.createOrUpdateAdmin(currentUser, dto);
   }
 
   @Get('admins')
@@ -427,4 +447,249 @@ export class AdminController {
   ) {
     return this.adminService.castAdvisoryVote(castVoteDto.voteId, castVoteDto.option, currentUser);
   }
+
+  // ADM-027: Session & Security Management
+
+  @Get('security/overview')
+  @Roles(UserRole.ADMIN)
+  async getSecurityOverview() {
+    return this.adminService.getSecurityOverview();
+  }
+
+  @Get('security/logins')
+  @Roles(UserRole.ADMIN)
+  async getRecentLogins(@Query('limit') limit: number = 50) {
+    return this.adminService.getRecentLogins(Number(limit));
+  }
+
+  @Get('security/users/:userId/sessions')
+  @Roles(UserRole.ADMIN)
+  async getUserSessions(@Param('userId') userId: string) {
+    return this.adminService.getUserSessions(userId);
+  }
+
+  @Delete('security/users/:userId/sessions')
+  @Roles(UserRole.ADMIN)
+  async forceLogoutUser(@Param('userId') userId: string) {
+    return this.adminService.forceLogoutUser(userId);
+  }
+
+  // ADM-028: Cultural Orientation Quiz Management
+
+  @Get('quiz/questions')
+  @Roles(UserRole.ADMIN)
+  async getQuizQuestions() {
+    return this.adminService.getQuizQuestions();
+  }
+
+  @Post('quiz/questions')
+  @Roles(UserRole.ADMIN)
+  async createQuizQuestion(@Body() dto: CreateQuizQuestionDto) {
+    return this.adminService.createQuizQuestion(dto);
+  }
+
+  @Patch('quiz/questions/:id')
+  @Roles(UserRole.ADMIN)
+  async updateQuizQuestion(@Param('id') id: string, @Body() dto: UpdateQuizQuestionDto) {
+    return this.adminService.updateQuizQuestion(id, dto);
+  }
+
+  @Delete('quiz/questions/:id')
+  @Roles(UserRole.ADMIN)
+  async deleteQuizQuestion(@Param('id') id: string) {
+    return this.adminService.deleteQuizQuestion(id);
+  }
+
+  @Get('quiz/stats')
+  @Roles(UserRole.ADMIN)
+  async getQuizStats() {
+    return this.adminService.getQuizStats();
+  }
+
+  @Patch('quiz/threshold')
+  @Roles(UserRole.ADMIN)
+  async updateQuizThreshold(@Body() dto: UpdateQuizThresholdDto) {
+    return this.adminService.updateQuizThreshold(dto.threshold);
+  }
+
+  @Post('quiz/users/:userId/reset')
+  @Roles(UserRole.ADMIN)
+  async resetUserQuizStatus(@Param('userId') userId: string) {
+    return this.adminService.resetUserQuizStatus(userId);
+  }
+
+  // ADM-029: Trust Score Audit
+
+  @Get('trust-scores/audit/:userId')
+  @Roles(UserRole.ADMIN)
+  async getTrustScoreAudit(@Param('userId') userId: string) {
+    return this.trustScoreService.getTrustScoreAudit(userId);
+  }
+
+  @Patch('trust-scores/override/:userId')
+  @Roles(UserRole.ADMIN)
+  async applyTrustScoreOverride(
+    @Param('userId') userId: string,
+    @Body() dto: TrustScoreOverrideDto,
+    @CurrentUser() admin: CurrentUserPayload
+  ) {
+    return this.trustScoreService.applyOverride(userId, dto.override, dto.reason, admin.id);
+  }
+
+  @Get('trust-scores/override-history/:userId')
+  @Roles(UserRole.ADMIN)
+  async getTrustScoreOverrideHistory(@Param('userId') userId: string) {
+    return this.trustScoreService.getOverrideHistory(userId);
+  }
+
+  // ADM-030: Platform Settings
+
+  @Get('platform-settings')
+  @Roles(UserRole.ADMIN)
+  async getPlatformSettings() {
+    return this.platformSettingsService.getSettings();
+  }
+
+  @Patch('platform-settings')
+  @Roles(UserRole.ADMIN)
+  async updatePlatformSettings(
+    @Body() body: Record<string, unknown>,
+    @CurrentUser() admin: CurrentUserPayload
+  ) {
+    return this.platformSettingsService.updateSettings(body, admin.id);
+  }
+
+  // ADM-031: Marketplace Management
+
+  @Get('marketplace/products')
+  @Roles(UserRole.ADMIN)
+  async getAllProducts(@Query('page') page: number = 1, @Query('limit') limit: number = 50) {
+    return this.marketplaceService.getAllProducts(Number(page), Number(limit));
+  }
+
+  @Delete('marketplace/products/:id')
+  @Roles(UserRole.ADMIN)
+  async removeProduct(
+    @Param('id') id: string,
+    @Body() dto: RejectWithReasonDto,
+    @CurrentUser() admin: CurrentUserPayload
+  ) {
+    return this.marketplaceService.removeProduct(id, dto.reason, admin.id);
+  }
+
+  @Patch('marketplace/products/:id/feature')
+  @Roles(UserRole.ADMIN)
+  async featureProduct(@Param('id') id: string, @Body() dto: FeatureItemDto) {
+    return this.marketplaceService.featureProduct(id, dto.featuredUntil ? new Date(dto.featuredUntil) : null);
+  }
+
+  @Get('marketplace/orders')
+  @Roles(UserRole.ADMIN)
+  async getAllOrders(@Query('page') page: number = 1, @Query('limit') limit: number = 50) {
+    return this.marketplaceService.getAllOrders(Number(page), Number(limit));
+  }
+
+  @Get('marketplace/vendor-health')
+  @Roles(UserRole.ADMIN)
+  async getVendorHealth() {
+    return this.marketplaceService.getVendorHealth();
+  }
+
+  @Get('marketplace/categories')
+  @Roles(UserRole.ADMIN)
+  async getMarketplaceCategories() {
+    return this.marketplaceService.getCategories();
+  }
+
+  // ADM-032: Academy Management
+
+  @Get('academy/courses')
+  @Roles(UserRole.ADMIN)
+  async getAllCourses(@Query('page') page: number = 1, @Query('limit') limit: number = 50) {
+    return this.academyService.getAllCourses(Number(page), Number(limit));
+  }
+
+  @Patch('academy/courses/:id/feature')
+  @Roles(UserRole.ADMIN)
+  async featureCourse(@Param('id') id: string, @Body() dto: FeatureItemDto) {
+    return this.academyService.featureCourse(id, dto.featuredUntil ? new Date(dto.featuredUntil) : null);
+  }
+
+  @Patch('academy/courses/:id/status')
+  @Roles(UserRole.ADMIN)
+  async updateCourseStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateCourseStatusDto,
+    @CurrentUser() admin: CurrentUserPayload
+  ) {
+    return this.academyService.updateCourseStatus(id, dto.status, admin.id, dto.reason);
+  }
+
+  @Get('academy/enrollment-stats')
+  @Roles(UserRole.ADMIN)
+  async getEnrollmentStats() {
+    return this.academyService.getEnrollmentStats();
+  }
+
+  @Post('academy/enroll')
+  @Roles(UserRole.ADMIN)
+  async manualEnroll(@Body() dto: ManualEnrollDto) {
+    return this.academyService.manualEnroll(dto.courseId, dto.userId);
+  }
+
+  @Delete('academy/enrollments/:enrollmentId')
+  @Roles(UserRole.ADMIN)
+  async removeEnrollment(@Param('enrollmentId') enrollmentId: string, @Body() dto: RemoveEnrollmentDto) {
+    return this.academyService.removeEnrollment(enrollmentId, dto.userId);
+  }
+
+  @Post('academy/certificates/:enrollmentId/issue')
+  @Roles(UserRole.ADMIN)
+  async issueCertificate(@Param('enrollmentId') enrollmentId: string, @CurrentUser() admin: CurrentUserPayload) {
+    return this.academyService.issueCertificate(enrollmentId, admin.id);
+  }
+
+  @Delete('academy/certificates/:enrollmentId')
+  @Roles(UserRole.ADMIN)
+  async revokeCertificate(
+    @Param('enrollmentId') enrollmentId: string,
+    @Body() dto: RejectWithReasonDto,
+    @CurrentUser() admin: CurrentUserPayload
+  ) {
+    return this.academyService.revokeCertificate(enrollmentId, dto.reason, admin.id);
+  }
+
+  // ==================== GDPR / Compliance ====================
+
+  @Get('compliance/users/:userId/export')
+  @Roles(UserRole.ADMIN)
+  async adminExportUserData(@Param('userId') userId: string) {
+    return this.gdprService.exportUserData(userId);
+  }
+
+  @Delete('compliance/users/:userId/erase')
+  @Roles(UserRole.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  async adminEraseUser(
+    @Param('userId') userId: string,
+    @CurrentUser() admin: CurrentUserPayload,
+  ) {
+    return this.gdprService.deleteUser(userId, admin);
+  }
+
+  @Get('compliance/users/:userId/consent')
+  @Roles(UserRole.ADMIN)
+  async adminGetConsent(@Param('userId') userId: string) {
+    return this.gdprService.getConsentPreferences(userId);
+  }
+
+  @Post('compliance/users/:userId/consent')
+  @Roles(UserRole.ADMIN)
+  async adminUpdateConsent(
+    @Param('userId') userId: string,
+    @Body() preferences: { marketingEmails?: boolean; dataProcessing?: boolean; forumDigest?: boolean },
+  ) {
+    return this.gdprService.updateConsentPreferences(userId, preferences);
+  }
+
 }

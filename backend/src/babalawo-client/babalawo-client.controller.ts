@@ -66,6 +66,17 @@ export class BabalawoClientController {
     return this.babalawoClientService.getPersonalAwo(clientId, currentUser);
   }
 
+  @Get(':babalawoId/clients/:clientId/timeline')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.BABALAWO, UserRole.ADMIN)
+  async getClientTimeline(
+    @Param('babalawoId') babalawoId: string,
+    @Param('clientId') clientId: string,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.babalawoClientService.getClientTimeline(babalawoId, clientId, currentUser);
+  }
+
   @Patch('change/:clientId')
   async changeClientRelationship(
     @Param('clientId') clientId: string,

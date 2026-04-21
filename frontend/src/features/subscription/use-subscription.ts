@@ -19,7 +19,7 @@ export function useSubscription() {
       const r = await api.get('/subscriptions/me');
       return r.data;
     },
-    enabled: !!user,
+    enabled: !!user && !localStorage.getItem('dev_mode_role'),
     staleTime: 5 * 60 * 1000,  // 5 minutes
     // Fail open — if API errors, treat as FREE (never accidentally lock Devoted users)
     retry: 1,

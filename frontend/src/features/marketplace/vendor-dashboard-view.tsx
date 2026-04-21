@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Package, ShoppingBag, TrendingUp, MessageCircle } from 'lucide-react';
+import { Package, ShoppingBag, TrendingUp, MessageCircle, Banknote } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { useNavigate } from 'react-router-dom';
@@ -9,6 +9,8 @@ import { Tabs, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import ProductManagement from './vendor-dashboard/product-management';
 import OrdersManagement from './vendor-dashboard/orders-management';
 import AnalyticsDashboard from './vendor-dashboard/analytics-dashboard';
+import PayoutManagement from './vendor-dashboard/payout-management';
+import { useNewOrderNotifications } from '@/shared/hooks/use-new-order-notifications';
 
 interface Vendor {
   id: string;
@@ -40,6 +42,9 @@ const VendorDashboardView: React.FC<VendorDashboardViewProps> = ({ initialTab = 
     enabled: !!user?.id && !localStorage.getItem('dev_mode_role'),
   });
 
+  // Poll for new orders and show toast notifications
+  useNewOrderNotifications(vendorData?.id);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -70,7 +75,7 @@ const VendorDashboardView: React.FC<VendorDashboardViewProps> = ({ initialTab = 
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:w-fit">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 lg:w-fit">
           <TabsTrigger value="inventory" className="flex items-center gap-2">
             <Package className="w-4 h-4" />
             Inventory
@@ -83,6 +88,10 @@ const VendorDashboardView: React.FC<VendorDashboardViewProps> = ({ initialTab = 
             <TrendingUp className="w-4 h-4" />
             Analytics
           </TabsTrigger>
+          <TabsTrigger value="payouts" className="flex items-center gap-2">
+            <Banknote className="w-4 h-4" />
+            Payouts
+          </TabsTrigger>
           <TabsTrigger value="support" className="flex items-center gap-2">
             <MessageCircle className="w-4 h-4" />
             Support
@@ -93,6 +102,7 @@ const VendorDashboardView: React.FC<VendorDashboardViewProps> = ({ initialTab = 
       <ProductManagement vendorId={vendorData?.id || ''} activeTab={activeTab} />
       <OrdersManagement vendorId={vendorData?.id || ''} activeTab={activeTab} />
       <AnalyticsDashboard vendorId={vendorData?.id || ''} activeTab={activeTab} />
+      <PayoutManagement activeTab={activeTab} />
 
       {activeTab === 'support' && (
         <div className="space-y-6">

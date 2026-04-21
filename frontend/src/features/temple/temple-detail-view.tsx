@@ -5,8 +5,6 @@ import { VerificationTier } from '@common';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { logger } from '@/shared/utils/logger';
-import { isDemoMode } from '@/shared/config/demo-mode';
-import { DEMO_EVENTS, DEMO_TEMPLES, DEMO_USERS } from '@/demo';
 import BabalawoProfileCard from '../babalawo/profile/babalawo-profile-card';
 import BabalawoProfileModal from '@/shared/components/babalawo-profile-modal';
 import { seededRandomInt } from '@/shared/utils/seeded-random';
@@ -45,79 +43,19 @@ const TempleDetailView: React.FC<TempleDetailViewProps> = ({
   const { data: temple, isLoading } = useQuery<any>({
     queryKey: ['temple', templeSlug],
     queryFn: async () => {
-      try {
-        const response = await api.get(`/temples/slug/${templeSlug}`);
-        const data = response.data;
+      const response = await api.get(`/temples/slug/${templeSlug}`);
+      const data = response.data;
 
-        // Enrich API data with mock ratings if missing
-        if (data.babalawos) {
-          data.babalawos = data.babalawos.map((b: any) => ({
-            ...b,
-            rating: b.rating || 5.0,
-            reviewCount: b.reviewCount || seededRandomInt(`${b.id}-reviews`, 10, 59),
-            specialties: b.interests || b.specialization || ['Ifa Divination', 'Counseling'] // Fallback
-          }));
-        }
-        return data;
-      } catch (error) {
-        logger.error('Temple API fetch failed, using demo data', error);
-        const demoTemple = Object.values(DEMO_TEMPLES).find((temple) => temple.slug === templeSlug);
-        if (!demoTemple) {
-          // Also check the real-temple browse fallback slugs
-          const REAL_TEMPLE_FALLBACKS: Record<string, any> = {
-            'ioa-national-hq-abeokuta-1': { id: 'demo-1', name: 'Ìjọ Òrúnmìlà Adúláwọ National HQ', slug: 'ioa-national-hq-abeokuta-1', type: 'ILE_IFA', verified: true, city: 'Abẹòkúta', state: 'Ogun', country: 'Nigeria', address: '1, Ijo Orunmila Street, Agbeloba, Abẹòkúta', website: 'https://ijoorunmilaadulawo.com', email: 'info@ijoorunmilaadulawo.com', worshipDay: 'Sunday', description: 'National HQ and governing body of IOA worldwide. CAC/IT/NO 446.', socialLinks: { facebook: 'Ijo Orunmila Adulawo Worldwide', youtube: 'Ijo Orunmila Adulawo National', leadPriest: 'Supreme Leader Chief Ifagbemi Ifajobi', registrationNumber: 'CAC/IT/NO 446' }, babalawos: [], _count: { followers: 0 } },
-            'ifadiwura-temple-uk-london-1': { id: 'demo-2', name: 'Ifadiwura Temple UK', slug: 'ifadiwura-temple-uk-london-1', type: 'ILE_IFA', verified: true, city: 'London', state: 'London', country: 'UK', address: '26 Lorn Road, London, SW9 0AD', website: 'https://ifadiwuratempleukituk.org', email: 'ifadiwuratempleuk@gmail.com', worshipDay: 'Sunday', description: 'Officially registered Ifá temple in London. Company No. 14261437.', socialLinks: { instagram: '@ifadiwuratempleuk', registrationNumber: 'Company No. 14261437' }, babalawos: [], _count: { followers: 0 } },
-            'the-256-ifa-temple-lagos-1': { id: 'demo-3', name: 'The 256 Ifá Temple', slug: 'the-256-ifa-temple-lagos-1', type: 'ILE_IFA', verified: true, city: 'Lagos', state: 'Lagos', country: 'Nigeria', address: 'Lekki / Ajah, Lagos', website: 'https://the256ifa.com', email: 'admin@the256ifa.com', worshipDay: 'Sunday', description: 'Contemporary Ifá temple with strong digital presence.', socialLinks: { instagram: '@the256ifatemple', youtube: 'The 256 Ifá Temple' }, babalawos: [], _count: { followers: 0 } },
-            'ijo-orunmila-adulawo-somolu-1': { id: 'demo-4', name: 'Ìjọ Òrúnmìlà Adúláwọ (Solution Temple)', slug: 'ijo-orunmila-adulawo-somolu-1', type: 'ILE_IFA', verified: false, city: 'Ṣómólú', state: 'Lagos', country: 'Nigeria', address: '96, Apata Street, off Oguntolu Street, Ṣómólú, Lagos', phone: '+234 813 014 3617', website: 'https://ijoorunmilaadulawo.com', worshipDay: 'Sunday', description: 'Solution Temple — IOA Somolu Parish. Over 55 years in operation.', socialLinks: { leadPriest: 'Odofin Adesegun Adetayo', facebook: 'Ijo Orunmila Adulawo Worldwide' }, babalawos: [], _count: { followers: 0 } },
-            'ijo-orunmila-ogbe-alara-abeokuta-1': { id: 'demo-5', name: 'Ìjọ Òrúnmìlà Ogbè Alárá', slug: 'ijo-orunmila-ogbe-alara-abeokuta-1', type: 'ILE_IFA', verified: false, city: 'Abẹòkúta', state: 'Ogun', country: 'Nigeria', address: 'Abeokuta, Ogun State', phone: '+234 803 381 0540', worshipDay: 'Sunday', description: 'Independent Ifá congregation known for cultural preservation.', socialLinks: { facebook: 'Ogbe Alara Ifa Temple', youtube: 'Ifa Quotes & Tales', leadPriest: 'Oluwo Ifagbemi Adewale' }, babalawos: [], _count: { followers: 0 } },
-            'ile-ifa-agbaye-odogbolu-1': { id: 'demo-6', name: 'Ile Ifa Agbaye', slug: 'ile-ifa-agbaye-odogbolu-1', type: 'ILE_IFA', verified: false, city: 'Odogbolu', state: 'Ogun', country: 'Nigeria', address: 'Odogbolu, Ogun State', worshipDay: 'Sunday', description: 'International Ifá institution with branches in Nigeria and UK.', socialLinks: { facebook: 'Ile Ifa Agbaye Official', instagram: '@ileifaagbaye', leadPriest: 'Oluwo Ifasola Ifamapami' }, babalawos: [], _count: { followers: 0 } },
-          };
-          const realFallback = REAL_TEMPLE_FALLBACKS[templeSlug];
-          if (realFallback) return realFallback;
-          if (isDemoMode) return null;
-          throw error;
-        }
-
-        const [city, state] = (demoTemple.location || '').split(',').map((part) => part.trim());
-        const demoBabalawos = (demoTemple.babalawos || [])
-          .map((id) => DEMO_USERS[id as keyof typeof DEMO_USERS])
-          .filter(Boolean)
-          .map((user) => ({
-            id: user.id,
-            name: user.name,
-            yorubaName: user.yorubaName,
-            avatar: user.avatar,
-            verified: (user as any).verified ?? true,
-            rating: (user as any).rating || 5.0,
-            reviewCount: (user as any).reviewCount || seededRandomInt(`${user.id}-reviews`, 10, 59),
-            specialties: (user as any).services?.map((service: any) => service.title) || (user as any).interests || ['Ifa Divination'],
-            verificationApps: [{ tier: 'MASTER' }]
-          }));
-
-        return {
-          id: demoTemple.id,
-          name: demoTemple.name,
-          yorubaName: demoTemple.yorubaName,
-          slug: demoTemple.slug,
-          logo: demoTemple.logo,
-          verified: demoTemple.verified,
-          description: demoTemple.description,
-          foundedYear: demoTemple.founded ? parseInt(demoTemple.founded, 10) : undefined,
-          type: 'IFA',
-          city: city || '',
-          state: state || '',
-          address: demoTemple.location,
-          babalawos: demoBabalawos,
-          babalawoCount: demoBabalawos.length,
-          _count: {
-            babalawos: demoBabalawos.length,
-            followers: 0
-          },
-          isFollowing: false,
-          specialties: ['Ifa Divination', 'Community Guidance'],
-          socialLinks: {}
-        };
+      // Enrich API data with mock ratings if missing
+      if (data.babalawos) {
+        data.babalawos = data.babalawos.map((b: any) => ({
+          ...b,
+          rating: b.rating || 5.0,
+          reviewCount: b.reviewCount || seededRandomInt(`${b.id}-reviews`, 10, 59),
+          specialties: b.interests || b.specialization || ['Ifa Divination', 'Counseling'],
+        }));
       }
+      return data;
     },
   });
 
@@ -528,41 +466,16 @@ const TempleEventsList: React.FC<{ templeId: string; onSelectEvent?: (eventId: s
   const { data: events = [], isLoading } = useQuery<TempleEvent[]>({
     queryKey: ['events', 'temple', templeId],
     queryFn: async () => {
-      try {
-        const response = await api.get('/events', {
-          params: {
-            templeId,
-            status: 'UPCOMING',
-            limit: 3,
-          },
-        });
-        return response.data as TempleEvent[];
-      } catch (error) {
-        if (!isDemoMode) throw error;
-
-        logger.warn('Failed to fetch temple events, using demo data');
-        const demoEvents = Object.values(DEMO_EVENTS) as Array<{
-          id: string;
-          slug: string;
-          title: string;
-          description: string;
-          date: string;
-          location: string;
-          isVirtual: boolean;
-        }>;
-        return demoEvents.map((event) => ({
-          id: event.id,
-          slug: event.slug,
-          title: event.title,
-          description: event.description,
-          type: event.isVirtual ? 'VIRTUAL' : 'IN_PERSON',
-          startDate: event.date,
-          location: event.location,
-          image: undefined,
-        }));
-      }
+      const response = await api.get('/events', {
+        params: {
+          templeId,
+          status: 'UPCOMING',
+          limit: 3,
+        },
+      });
+      return response.data as TempleEvent[];
     },
-    enabled: !!templeId,
+    enabled: !!templeId && !localStorage.getItem('dev_mode_role'),
   });
 
   if (isLoading) {

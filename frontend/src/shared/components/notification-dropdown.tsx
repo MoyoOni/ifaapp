@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Bell, CheckCheck, Loader2, Mail, Calendar, ShoppingBag, Users, Info } from 'lucide-react';
+import { Bell, CheckCheck, Loader2, Mail, Calendar, ShoppingBag, Users, Info, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
+import { LeaveReviewModal } from './leave-review-modal';
 
 interface Notification {
   id: string;
@@ -12,6 +13,7 @@ interface Notification {
   message: string;
   read: boolean;
   createdAt: string;
+  data?: { action?: string; appointmentId?: string; clientName?: string; babalawoId?: string; babalawoName?: string; babalawoAvatar?: string };
 }
 
 interface NotificationDropdownProps {
@@ -22,6 +24,14 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ onClose }) 
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  const [reviewModalData, setReviewModalData] = useState<{
+    isOpen: boolean;
+    appointmentId: string;
+    babalawoId: string;
+    babalawoName: string;
+    babalawoAvatar?: string;
+  } | null>(null);
 
   const { data: notifications = [], isLoading } = useQuery<Notification[]>({
     queryKey: ['notifications-dropdown'],
@@ -41,12 +51,17 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ onClose }) 
     enabled: !!user,
   });
 
-  const markAllAsReadMutation = useMutation({
-    mutationFn: async () => {
-      await api.patch('/notifications/read-all', {});
-    },
+  const markAsReadMutation = useMutation({
+    mutationFn: (notificationId: string) => api.patch(`/notifications/${notificationId}/read`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications-dropdown'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
+    },
+  });
+
+  const markAllAsReadMutation = useMutation({
+    mutationFn: () => api.patch('/notifications/read-all'),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications-dropdown'] });
       queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
     },
@@ -54,27 +69,47 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ onClose }) 
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'MESSAGE': return <Mail size={16} className="text-blue-400" />;
-      case 'APPOINTMENT': return <Calendar size={16} className="text-purple-400" />;
-      case 'ORDER': return <ShoppingBag size={16} className="dark:text-green-400 text-green-600" />;
-      case 'COMMUNITY': return <Users size={16} className="text-orange-400" />;
-      default: return <Info size={16} className="text-muted-foreground" />;
+      case 'MESSAGE': return <Mail size={18} className="text-blue-400" />;
+      case 'APPOINTMENT': return <Calendar size={18} className="text-purple-400" />;
+      case 'ORDER': return <ShoppingBag size={18} className="dark:text-green-400 text-green-600" />;
+      case 'COMMUNITY': return <Users size={18} className="text-orange-400" />;
+      case 'REVIEW_REQUEST': return <Star size={18} className="text-amber-400" />;
+      default: return <Info size={18} className="text-muted-foreground/70" />;
+    }
+  };
+
+  const handleNotificationClick = (notification: Notification) => {
+    if (!notification.read) {
+      markAsReadMutation.mutate(notification.id);
+    }
+
+    // Handle different actions based on notification data
+    if (notification.data?.action === 'request_review' && notification.data.appointmentId && notification.data.babalawoName) {
+      // Open the review modal
+      setReviewModalData({
+        isOpen: true,
+        appointmentId: notification.data.appointmentId,
+        babalawoId: notification.data.babalawoId || '',
+        babalawoName: notification.data.babalawoName,
+      });
+    } else if (notification.data?.action === 'follow_up') {
+      onClose();
+      navigate('/messages');
+    } else if (notification.data?.action === 'rebooking_nudge' && notification.data.babalawoId) {
+      onClose();
+      navigate(`/booking/${notification.data.babalawoId}`);
     }
   };
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
+    if (diffInSeconds < 60) return 'just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    return `${Math.floor(diffInSeconds / 86400)}d ago`;
   };
 
   if (!user) {
@@ -96,93 +131,99 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ onClose }) 
   }
 
   return (
-    <>
-      <div 
-        className="fixed inset-0 z-40" 
-        onClick={onClose}
-        onKeyDown={(e) => e.key === 'Escape' && onClose()}
-        role="button"
-        tabIndex={0}
-        aria-label="Close notifications"
-      />
-      <div className="absolute right-0 top-full mt-2 w-80 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-          <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-foreground text-sm">Notifications</h3>
-            {unreadCount.count > 0 && (
-              <span className="px-1.5 py-0.5 bg-red-500 text-white rounded-full text-xs font-bold">
-                {unreadCount.count}
-              </span>
-            )}
-          </div>
-          {unreadCount.count > 0 && (
-            <button
-              onClick={() => markAllAsReadMutation.mutate()}
-              disabled={markAllAsReadMutation.isPending}
-              className="text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1"
-            >
-              {markAllAsReadMutation.isPending ? (
-                <Loader2 size={12} className="animate-spin" />
-              ) : (
-                <CheckCheck size={12} />
-              )}
-              Mark all read
-            </button>
-          )}
-        </div>
-
-        {/* Notification List */}
-        <div className="max-h-80 overflow-y-auto">
-          {isLoading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="w-5 h-5 animate-spin text-primary" />
-            </div>
-          ) : notifications.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Bell size={24} className="mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No notifications yet</p>
-            </div>
-          ) : (
-            notifications.map((notification) => (
-              <div
-                key={notification.id}
-                className={`px-4 py-3 border-b border-border last:border-0 hover:bg-secondary/50 transition-colors ${
-                  !notification.read ? 'bg-primary/5' : ''
-                }`}
-              >
-                <div className="flex items-start gap-2.5">
-                  <div className="mt-0.5">{getTypeIcon(notification.type)}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <p className="text-sm font-medium text-foreground truncate">{notification.title}</p>
-                      {!notification.read && (
-                        <span className="w-1.5 h-1.5 bg-primary rounded-full flex-shrink-0"></span>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground truncate mt-0.5">{notification.message}</p>
-                    <p className="text-xs text-muted-foreground/70 mt-1">{formatTime(notification.createdAt)}</p>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="border-t border-border px-4 py-2.5">
+    <div className="absolute right-0 mt-2 w-80 bg-background border border-border rounded-xl shadow-lg z-50 overflow-hidden">
+      <div className="p-4 border-b border-border flex items-center justify-between">
+        <h3 className="font-bold text-foreground">Notifications</h3>
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => {
-              onClose();
-              navigate('/notifications');
-            }}
-            className="w-full text-center text-sm text-primary hover:text-primary/80 font-medium py-1"
+            onClick={() => markAllAsReadMutation.mutate()}
+            disabled={markAllAsReadMutation.isPending}
+            className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-50 flex items-center gap-1"
           >
-            View all notifications
+            {markAllAsReadMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <CheckCheck size={12} />}
+            Mark all read
           </button>
         </div>
       </div>
-    </>
+
+      <div className="max-h-96 overflow-y-auto">
+        {isLoading ? (
+          <div className="flex justify-center items-center h-32">
+            <Loader2 className="animate-spin text-muted-foreground" size={20} />
+          </div>
+        ) : notifications.length === 0 ? (
+          <div className="p-8 text-center">
+            <Bell className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+            <p className="text-sm">No notifications yet</p>
+          </div>
+        ) : (
+          notifications.map((notification) => (
+            <div
+              key={notification.id}
+              className={`px-4 py-3 border-b border-border last:border-0 hover:bg-secondary/50 transition-colors ${
+                !notification.read ? 'bg-primary/5' : ''
+              }`}
+              onClick={() => handleNotificationClick(notification)}
+            >
+              <div className="flex items-start gap-2.5">
+                <div className="mt-0.5">{getTypeIcon(notification.type)}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-sm font-medium text-foreground truncate">{notification.title}</p>
+                    {!notification.read && (
+                      <span className="w-1.5 h-1.5 bg-primary rounded-full flex-shrink-0"></span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{notification.message}</p>
+                  {notification.data?.action === 'follow_up' && (
+                    <div className="flex gap-2 mt-2">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); onClose(); navigate('/messages'); }}
+                        className="text-xs px-2 py-1 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
+                      >
+                        Send Message
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); onClose(); navigate('/practitioner/consultations'); }}
+                        className="text-xs px-2 py-1 bg-muted text-foreground rounded-md hover:bg-muted/80 transition-colors"
+                      >
+                        Update Plan
+                      </button>
+                    </div>
+                  )}
+                  {notification.data?.action === 'rebooking_nudge' && notification.data.babalawoId && (
+                    <div className="flex gap-2 mt-2">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); onClose(); navigate(`/booking/${notification.data!.babalawoId}`); }}
+                        className="text-xs px-2 py-1 bg-highlight text-white rounded-md hover:bg-yellow-600 transition-colors"
+                      >
+                        Book Again
+                      </button>
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground/70 mt-1">{formatTime(notification.createdAt)}</p>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Render the LeaveReviewModal when reviewModalData is set */}
+      {reviewModalData && (
+        <LeaveReviewModal
+          isOpen={reviewModalData.isOpen}
+          onClose={() => setReviewModalData(null)}
+          appointmentId={reviewModalData.appointmentId}
+          babalawoId={reviewModalData.babalawoId}
+          babalawoName={reviewModalData.babalawoName}
+          babalawoAvatar={reviewModalData.babalawoAvatar}
+        />
+      )}
+    </div>
   );
 };
 

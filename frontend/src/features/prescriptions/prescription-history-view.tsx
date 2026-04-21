@@ -63,7 +63,7 @@ const GuidancePlanHistoryView: React.FC<GuidancePlanHistoryViewProps> = ({
         throw error;
       }
     },
-    enabled: !!targetUserId,
+    enabled: !!targetUserId && !localStorage.getItem('dev_mode_role'),
   });
 
   // Filter plans based on view mode and other criteria

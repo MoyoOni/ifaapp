@@ -127,6 +127,59 @@ export class VerificationService {
     return updatedApp;
   }
 
+  async uploadCredentials(userId: string, files: Array<{ name: string; data: string }>) {
+    if (!files || files.length === 0) {
+      throw new BadRequestException('No files provided');
+    }
+    if (files.length > 3) {
+      throw new BadRequestException('Maximum 3 credential documents allowed');
+    }
+
+    const allowed = ['data:application/pdf', 'data:image/jpeg', 'data:image/jpg', 'data:image/png', 'data:image/webp'];
+    for (const file of files) {
+      if (!allowed.some(prefix => file.data.startsWith(prefix))) {
+        throw new BadRequestException(`File "${file.name}" must be PDF, JPG, PNG, or WebP`);
+      }
+      const base64 = file.data.split(',')[1] ?? '';
+      if (Buffer.byteLength(base64, 'base64') > 10 * 1024 * 1024) {
+        throw new BadRequestException(`File "${file.name}" exceeds 10MB limit`);
+      }
+    }
+
+    let application = await this.prisma.verificationApplication.findUnique({ where: { userId } });
+
+    if (!application) {
+      application = await this.prisma.verificationApplication.create({
+        data: {
+          userId,
+          lineage: '',
+          mentorEndorsements: [],
+          yearsOfService: 0,
+          documentation: files.map(f => f.data),
+          specialization: [],
+          languages: [],
+          currentStage: VerificationStage.APPLICATION,
+          history: {
+            create: {
+              stage: VerificationStage.APPLICATION,
+              status: 'PENDING',
+              timestamp: BigInt(Date.now()),
+            },
+          },
+        },
+        include: { history: { orderBy: { timestamp: 'desc' } } },
+      });
+    } else {
+      application = await this.prisma.verificationApplication.update({
+        where: { userId },
+        data: { documentation: files.map(f => f.data) },
+        include: { history: { orderBy: { timestamp: 'desc' } } },
+      });
+    }
+
+    return { success: true, documentCount: files.length };
+  }
+
   async listApplications(stage?: VerificationStage) {
     const where = stage ? { currentStage: stage } : {};
 

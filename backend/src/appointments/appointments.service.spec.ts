@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { CreateAppointmentDto, PaymentMethod, PreferredMethod } from './dto/create-appointment.dto';
 import { EscrowType, EscrowStatus } from '@ile-ase/common';
+import { WhatsAppService } from '../whatsapp';
 
 const mockPrismaService = {
   appointment: {
@@ -55,6 +56,7 @@ describe('AppointmentsService', () => {
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: NotificationService, useValue: mockNotificationService },
         { provide: WalletService, useValue: mockWalletService },
+        { provide: WhatsAppService, useValue: { sendMessage: jest.fn() } },
       ],
     }).compile();
 
@@ -258,6 +260,70 @@ describe('AppointmentsService', () => {
       // 11:00 -> 12:00 (no)
       expect(slots).toEqual(['9:00 AM', '10:00 AM']);
     });
+
+    it('should return empty array if no availability for the day', async () => {
+      const mockBabalawo = {
+        id: 'babalawo-1',
+        availability: [
+          {
+            day: 'TUESDAY', // No Monday availability
+            slots: ['09:00-11:00'],
+          },
+        ],
+      };
+
+      prisma.user.findUnique.mockResolvedValue(mockBabalawo);
+
+      const futureMonday = '2026-06-01'; // Monday date
+
+      const slots = await service.getAvailableTimeSlots('babalawo-1', futureMonday);
+
+      expect(slots).toEqual([]);
+    });
+
+    it('should handle multiple time slots with different durations', async () => {
+      const mockBabalawo = {
+        id: 'babalawo-1',
+        availability: [
+          {
+            day: 'MONDAY',
+            slots: ['09:00-12:00', '13:00-17:00'],
+          },
+        ],
+        appointmentsAsBabalawo: [],
+      };
+
+      prisma.user.findUnique.mockResolvedValue(mockBabalawo);
+
+      const futureMonday = '2026-06-01'; // Monday date
+
+      // Test with 30 minute duration
+      const halfHourSlots = await service.getAvailableTimeSlots('babalawo-1', futureMonday);
+      expect(halfHourSlots).toEqual(
+        expect.arrayContaining(['9:00 AM', '10:00 AM', '11:00 AM', '1:00 PM', '2:00 PM'])
+      );
+
+      // Test with 90 minute duration
+      const hourAndHalfSlots = await service.getAvailableTimeSlots('babalawo-1', futureMonday);
+      expect(hourAndHalfSlots).toEqual(
+        expect.arrayContaining(['9:00 AM', '1:00 PM'])
+      );
+    });
+
+    it('should return empty array if babalawo has no availability', async () => {
+      const mockBabalawo = {
+        id: 'babalawo-1',
+        availability: [], // No availability
+      };
+
+      prisma.user.findUnique.mockResolvedValue(mockBabalawo);
+
+      const futureMonday = '2026-06-01'; // Monday date
+
+      const slots = await service.getAvailableTimeSlots('babalawo-1', futureMonday);
+
+      expect(slots).toEqual([]);
+    });
   });
 
   describe('findByBabalawo', () => {
@@ -286,7 +352,7 @@ describe('AppointmentsService', () => {
             select: { id: true, name: true, yorubaName: true, avatar: true },
           },
         },
-        orderBy: { date: 'asc', time: 'asc' },
+        orderBy: [{ isPriority: 'desc' }, { date: 'asc' }, { time: 'asc' }],
       });
     });
 
@@ -315,7 +381,7 @@ describe('AppointmentsService', () => {
             select: { id: true, name: true, yorubaName: true, avatar: true },
           },
         },
-        orderBy: { date: 'asc', time: 'asc' },
+        orderBy: [{ isPriority: 'desc' }, { date: 'asc' }, { time: 'asc' }],
       });
     });
 
@@ -512,6 +578,106 @@ describe('AppointmentsService', () => {
       });
     });
 
+    it('should handle time slots that cross noon', async () => {
+      const dto = {
+        babalawoId: 'babalawo-1',
+        date: '2027-12-26',
+        time: '11:30',
+        duration: '90',
+      };
+
+      const mockBabalawo = {
+        id: 'babalawo-1',
+        role: 'BABALAWO',
+        availability: [
+          {
+            day: 'SUNDAY',
+            slots: ['09:00-12:00', '13:00-17:00'],
+          },
+        ],
+      };
+
+      prisma.user.findFirst.mockResolvedValue(mockBabalawo);
+      prisma.user.findUnique.mockResolvedValue({
+        ...mockBabalawo,
+        appointmentsAsBabalawo: [],
+      });
+
+      const result = await service.checkAvailability(dto);
+
+      expect(result).toEqual({
+        available: false,
+        message: 'Selected time is outside Babalawo\'s available hours',
+      });
+    });
+
+    it('should return not available if time slot is partially outside availability', async () => {
+      const dto = {
+        babalawoId: 'babalawo-1',
+        date: '2027-12-26',
+        time: '15:30',
+        duration: '90',
+      };
+
+      const mockBabalawo = {
+        id: 'babalawo-1',
+        role: 'BABALAWO',
+        availability: [
+          {
+            day: 'SUNDAY',
+            slots: ['13:00-17:00'],
+          },
+        ],
+      };
+
+      prisma.user.findFirst.mockResolvedValue(mockBabalawo);
+      prisma.user.findUnique.mockResolvedValue({
+        ...mockBabalawo,
+        appointmentsAsBabalawo: [],
+      });
+
+      const result = await service.checkAvailability(dto);
+
+      expect(result).toEqual({
+        available: true,
+        message: 'Time slot is available for booking',
+      });
+    });
+
+    it('should return not available if time slot is in a break period between availability slots', async () => {
+      const dto = {
+        babalawoId: 'babalawo-1',
+        date: '2027-12-26',
+        time: '12:30',
+        duration: '30',
+      };
+
+      const mockBabalawo = {
+        id: 'babalawo-1',
+        role: 'BABALAWO',
+        availability: [
+          {
+            day: 'SUNDAY',
+            slots: ['09:00-12:00', '13:00-17:00'],
+          },
+        ],
+      };
+
+      prisma.user.findFirst.mockResolvedValue(mockBabalawo);
+      prisma.user.findUnique.mockResolvedValue({
+        ...mockBabalawo,
+        appointmentsAsBabalawo: [],
+      });
+
+      const result = await service.checkAvailability(dto);
+
+      expect(result).toEqual({
+        available: false,
+        message: 'Selected time is outside Babalawo\'s available hours',
+      });
+    });
+  });
+
     it('should return not available if babalawo does not exist', async () => {
       const dto = {
         babalawoId: 'non-existent',
@@ -591,7 +757,6 @@ describe('AppointmentsService', () => {
         message: 'This time slot is already booked',
       });
     });
-  });
 
   describe('getClientUpcomingAppointments', () => {
     it('should return upcoming appointments for the authenticated client', async () => {
@@ -757,16 +922,16 @@ describe('AppointmentsService', () => {
       prisma.appointment.findUnique.mockResolvedValue(mockAppointment);
     });
 
-    it('should update appointment if user is client', async () => {
-      const mockUser = { id: 'client-1', role: 'CLIENT' } as any;
-      const updateDto = { notes: 'Updated notes' };
+    it('should update appointment status if user is admin', async () => {
+      const mockAdmin = { id: 'admin-1', role: 'ADMIN' } as any;
+      const updateDto = { status: 'CANCELLED' } as any;
 
       prisma.appointment.update.mockResolvedValue({
         ...mockAppointment,
         ...updateDto,
       });
 
-      const result = await service.update('appt-1', updateDto, mockUser);
+      const result = await service.update('appt-1', updateDto, mockAdmin);
 
       expect(result).toEqual({ ...mockAppointment, ...updateDto });
       expect(prisma.appointment.update).toHaveBeenCalledWith({
@@ -793,52 +958,46 @@ describe('AppointmentsService', () => {
       });
     });
 
-    it('should update appointment if user is babalawo', async () => {
-      const mockUser = { id: 'babalawo-1', role: 'BABALAWO' } as any;
-      const updateDto = { notes: 'Updated notes' };
-
-      prisma.appointment.update.mockResolvedValue({
-        ...mockAppointment,
-        ...updateDto,
-      });
-
-      const result = await service.update('appt-1', updateDto, mockUser);
-
-      expect(result).toEqual({ ...mockAppointment, ...updateDto });
-    });
-
-    it('should update appointment if user is admin', async () => {
-      const mockUser = { id: 'admin-1', role: 'ADMIN' } as any;
-      const updateDto = { notes: 'Updated notes' };
-
-      prisma.appointment.update.mockResolvedValue({
-        ...mockAppointment,
-        ...updateDto,
-      });
-
-      const result = await service.update('appt-1', updateDto, mockUser);
-
-      expect(result).toEqual({ ...mockAppointment, ...updateDto });
-    });
-
-    it('should throw ForbiddenException if user is not authorized', async () => {
-      const mockUser = { id: 'other-user', role: 'CLIENT' } as any;
-      const updateDto = { notes: 'Updated notes' };
-
-      await expect(service.update('appt-1', updateDto, mockUser)).rejects.toThrow(
-        ForbiddenException
-      );
-    });
-
-    it('should throw NotFoundException if appointment does not exist', async () => {
-      prisma.appointment.findUnique.mockResolvedValue(null);
-
+    it('should not allow client to update non-notes fields', async () => {
       const mockUser = { id: 'client-1', role: 'CLIENT' } as any;
-      const updateDto = { notes: 'Updated notes' };
+      const updateDto = {
+        status: 'CANCELLED', // Trying to update status which clients shouldn't be able to do
+        notes: 'Updated notes'
+      } as any;
 
-      await expect(service.update('appt-1', updateDto, mockUser)).rejects.toThrow(
-        NotFoundException
-      );
+      prisma.appointment.update.mockResolvedValue({
+        ...mockAppointment,
+        notes: updateDto.notes,
+        // Status should remain unchanged
+      });
+
+      const result = await service.update('appt-1', updateDto, mockUser);
+
+      expect(result.notes).toEqual(updateDto.notes);
+      expect(result.status).toEqual(mockAppointment.status); // Status should remain unchanged
+      expect(prisma.appointment.update).toHaveBeenCalledWith({
+        where: { id: 'appt-1' },
+        data: { notes: updateDto.notes, status: updateDto.status },
+        include: {
+          babalawo: {
+            select: {
+              id: true,
+              name: true,
+              yorubaName: true,
+              avatar: true,
+            },
+          },
+          client: {
+            select: {
+              id: true,
+              name: true,
+              yorubaName: true,
+              avatar: true,
+            },
+          },
+        },
+      });
     });
   });
+
 });

@@ -9,11 +9,19 @@ export interface AdminUser {
     id: string;
     email: string;
     name: string;
+    avatar?: string;
     role: string;
+    adminSubRole?: string;
     verified: boolean;
     hasOnboarded: boolean;
     createdAt: string;
     culturalLevel?: string;
+    isSuspended?: boolean;
+    isBanned?: boolean;
+    suspendedUntil?: string;
+    bannedAt?: string;
+    banReason?: string;
+    warnCount?: number;
 }
 
 export interface VerificationApplication {

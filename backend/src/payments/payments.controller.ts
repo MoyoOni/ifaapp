@@ -20,6 +20,10 @@ import { RefundPaymentDto } from './dto/refund-payment.dto';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { PrismaService } from '../prisma/prisma.service';
 import { Currency } from '@ile-ase/common';
+import { JwtAuthGuard } from '../shared/guards/auth.guard';
+import { RolesGuard } from '../shared/guards/roles.guard';
+import { Roles } from '@/shared/decorators/roles.decorator';
+import { UserRole } from '@common/enums/user-role.enum';
 
 @Controller('payments')
 export class PaymentsController {
@@ -171,15 +175,12 @@ export class PaymentsController {
    * POST /payments/verify-manual/:transactionId
    */
   @Post('verify-manual/:transactionId')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   async manuallyVerifyPayment(
     @Param('transactionId') transactionId: string,
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
-    if (currentUser.role !== 'ADMIN') {
-      throw new Error('Admin access required');
-    }
-
     return this.paymentsService.manuallyVerifyPayment(transactionId, currentUser.id);
   }
 }

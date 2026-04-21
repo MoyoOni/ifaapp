@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { UserPlus, Calendar, MessageCircle, Mail, MapPin, User, AlertCircle, Copy, Check } from 'lucide-react';
+import { UserPlus, Calendar, MessageCircle, Mail, MapPin, User, AlertCircle, Copy, Check, Clock } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
+import { ConsultationNotepad } from '@/shared/components/consultation-notepad';
+import { ClientTimeline } from '@/shared/components/client-timeline';
 
 interface Client {
   id: string;
@@ -20,6 +22,7 @@ const MySeekersView: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [timelineClientId, setTimelineClientId] = useState<string | null>(null);
 
   const { data = [], isLoading, isError, refetch } = useQuery<Array<{ client: Client }>>({
     queryKey: ['babalawo-clients', user?.id],
@@ -28,7 +31,7 @@ const MySeekersView: React.FC = () => {
       const payload = res.data as Array<{ client: Client } | Client>;
       return payload.map(item => ('client' in item ? item : { client: item }));
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id && !localStorage.getItem('dev_mode_role'),
   });
 
   const handleCopyBookingLink = (clientId: string) => {
@@ -68,8 +71,8 @@ const MySeekersView: React.FC = () => {
     return (
       <div className="space-y-6 animate-in fade-in duration-500">
         <h1 className="text-3xl font-bold brand-font text-foreground">My Seekers</h1>
-        <div className="flex flex-col items-center justify-center py-16 text-center bg-red-50 dark:bg-red-950/30 rounded-xl border border-red-100">
-          <AlertCircle size={48} className="text-red-400 mb-4" />
+        <div className="flex flex-col items-center justify-center py-16 text-center bg-destructive/10 rounded-xl border border-destructive/20">
+          <AlertCircle size={48} className="text-destructive mb-4" />
           <p className="text-lg font-medium text-foreground mb-1">Connection error</p>
           <p className="text-muted-foreground text-sm mb-6 max-w-sm">
             Could not reach the server to load your seekers. Check your connection and try again.
@@ -190,7 +193,30 @@ const MySeekersView: React.FC = () => {
                 >
                   <User size={15} />
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setTimelineClientId(timelineClientId === client.id ? null : client.id)}
+                  className="flex items-center justify-center px-3 py-2 bg-muted/50 border border-border text-foreground rounded-lg hover:bg-muted text-sm transition-colors"
+                  title="View timeline"
+                >
+                  <Clock size={15} />
+                </button>
               </div>
+
+              {timelineClientId === client.id && (
+                <div className="mt-4 border-t border-border pt-4">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Timeline</p>
+                  <ClientTimeline clientId={client.id} clientName={client.name} />
+                </div>
+              )}
+
+              {user?.id && (
+                <ConsultationNotepad
+                  babalawoId={user.id}
+                  clientId={client.id}
+                  clientName={client.name}
+                />
+              )}
             </div>
           ))}
         </div>

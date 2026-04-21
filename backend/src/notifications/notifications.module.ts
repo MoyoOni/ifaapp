@@ -1,21 +1,10 @@
 import { Module } from '@nestjs/common';
-import { NotificationService } from './notification.service';
-import { NotificationsController } from './notifications.controller';
-import { EmailService } from './email.service';
-import { PushNotificationService } from './push/push-notification.service';
-import { JobQueueService } from '../queues/job-queue.service';
-import { DatabaseModule } from '../database/database.module';
-import { PrismaModule } from '../prisma/prisma.module';
+import { PushNotificationService } from './push-notification.service';
+import { PushNotificationController } from './push-notification.controller';
 
 @Module({
-  imports: [DatabaseModule, PrismaModule],
-  controllers: [NotificationsController],
-  providers: [
-    NotificationService,
-    EmailService,
-    PushNotificationService,
-    JobQueueService,
-  ],
-  exports: [NotificationService, EmailService, PushNotificationService],
+  controllers: [PushNotificationController],
+  providers: [PushNotificationService],
+  exports: [PushNotificationService],
 })
 export class NotificationsModule {}

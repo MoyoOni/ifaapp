@@ -11,11 +11,14 @@ import {
   Logger,
   UnauthorizedException,
   BadRequestException,
+  Req,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { IsString } from 'class-validator';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { SetPasswordDto } from './dto/set-password.dto';
 import { JwtAuthGuard } from '@/shared/guards/auth.guard';
 import { RolesGuard } from '@/shared/guards/roles.guard';
 import { Roles } from '@/shared/decorators/roles.decorator';
@@ -62,8 +65,8 @@ export class AuthController {
   @ApiOperation({ summary: 'User login' })
   @ApiResponse({ status: 200, description: 'Successfully logged in' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
-  async login(@Body(ValidationPipe) loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+  async login(@Body(ValidationPipe) loginDto: LoginDto, @Req() req: Request) {
+    return this.authService.login(loginDto, req);
   }
 
   /**
@@ -168,5 +171,15 @@ export class AuthController {
     }
 
     return this.authService.quickAccessLogin(dto.email);
+  }
+
+  @Post('set-password')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async setPassword(
+    @CurrentUser() currentUser: { id: string },
+    @Body() body: SetPasswordDto,
+  ) {
+    return this.authService.setPassword(currentUser.id, body.password);
   }
 }

@@ -114,4 +114,10 @@ export class TemplesController {
   async getFollowedTemples(@CurrentUser() currentUser: CurrentUserPayload) {
     return this.templesService.getFollowedTemples(currentUser.id);
   }
+
+  @ApiOperation({ summary: 'Get total count of temples' })
+  @Get('count')
+  async getCount() {
+    return this.templesService.getCount();
+  }
 }

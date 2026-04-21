@@ -85,7 +85,7 @@ const BabalawoGuidancePlansView: React.FC<BabalawoGuidancePlansViewProps> = ({
         throw error;
       }
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id && !localStorage.getItem('dev_mode_role'),
   });
 
   // Mark as In Progress mutation

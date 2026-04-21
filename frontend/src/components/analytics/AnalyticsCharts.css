@@ -1,0 +1,17 @@
+/* Chart styles will be auto-applied through component inline styles */
+/* Recharts handles its own styling */
+
+/* Responsive chart container adjustments */
+@media (max-width: 640px) {
+  .recharts-wrapper {
+    width: 100% !important;
+  }
+
+  .recharts-surface {
+    width: 100% !important;
+  }
+
+  .recharts-text {
+    font-size: 12px;
+  }
+}

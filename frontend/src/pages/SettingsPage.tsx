@@ -7,6 +7,8 @@ import { useToast } from '@/shared/components/toast';
 import api from '@/lib/api';
 import { useSubscription } from '@/features/subscription/use-subscription';
 import ReferralPanel from '@/features/devoted/referral-panel';
+import { GdprSettingsPanel } from '@/features/gdpr/GdprSettingsPanel';
+import { useNotificationPreferences } from '@/shared/hooks/useNotificationPreferences';
 
 type SettingsState = {
   notifications: {
@@ -26,6 +28,25 @@ type SettingsState = {
     theme: string;
     language: string;
   };
+};
+
+// Define NotificationPreferences type locally
+type NotificationPreferences = {
+  id?: string;
+  userId: string;
+  emailBooking: boolean;
+  emailReminder: boolean;
+  emailDigest: boolean;
+  emailPlan: boolean;
+  emailMessages: boolean;
+  emailMarketing: boolean;
+  pushReminder: boolean;
+  pushMessages: boolean;
+  pushFollowup: boolean;
+  pushForum: boolean;
+  pushCircles: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 const DEFAULT_SETTINGS: SettingsState = {
@@ -63,6 +84,9 @@ const SettingsPage: React.FC = () => {
   const [slugChecking, setSlugChecking] = useState(false);
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [whatsappEnabled, setWhatsappEnabled] = useState(true);
+  const [showSetPassword, setShowSetPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [setPasswordError, setSetPasswordError] = useState('');
 
   const { data: userProfile } = useQuery({
     queryKey: ['user-settings', user?.id],
@@ -115,6 +139,19 @@ const SettingsPage: React.FC = () => {
     },
   });
 
+  const setPasswordMutation = useMutation({
+    mutationFn: (password: string) => api.post('/auth/set-password', { password }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-settings', user?.id] });
+      toast.success('Password set successfully. You can now log in with your email and password.');
+      setShowSetPassword(false);
+      setNewPassword('');
+    },
+    onError: (err: any) => {
+      setSetPasswordError(err?.response?.data?.message || 'Failed to set password');
+    },
+  });
+
   const checkSlugAvailability = async (slug: string) => {
     if (!slugRegex.test(slug)) { setSlugAvailable(null); return; }
     setSlugChecking(true);
@@ -152,6 +189,7 @@ const SettingsPage: React.FC = () => {
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'privacy', label: 'Privacy', icon: Shield },
     { id: 'appearance', label: 'Appearance', icon: Palette },
+    { id: 'gdpr', label: 'Data & Privacy Rights', icon: Shield },
   ];
 
   const handleLogout = () => {
@@ -324,14 +362,57 @@ const SettingsPage: React.FC = () => {
                         <Mail size={18} className="text-stone-600" />
                         <span className="font-medium text-stone-700 dark:text-stone-300">Update Email</span>
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => navigate('/profile')}
-                        className="flex items-center gap-2 px-4 py-3 bg-muted/60 hover:bg-muted rounded-xl transition-colors"
-                      >
-                        <Lock size={18} className="text-stone-600" />
-                        <span className="font-medium text-stone-700 dark:text-stone-300">Change Password</span>
-                      </button>
+                      {userProfile?.hasPassword === false ? (
+                        <div className="col-span-full">
+                          {!showSetPassword ? (
+                            <div className="flex items-center justify-between px-4 py-3 bg-muted/60 rounded-xl">
+                              <div className="flex items-center gap-2">
+                                <Lock size={18} className="text-stone-600" />
+                                <span className="text-sm text-muted-foreground">You signed up with Google.</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setShowSetPassword(true)}
+                                className="text-sm font-semibold text-primary hover:underline"
+                              >
+                                Set a password →
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="px-4 py-3 bg-muted/60 rounded-xl space-y-3">
+                              <p className="text-sm font-medium text-foreground flex items-center gap-2"><Lock size={14} /> Set a password</p>
+                              <input
+                                type="password"
+                                value={newPassword}
+                                onChange={(e) => { setNewPassword(e.target.value); setSetPasswordError(''); }}
+                                placeholder="New password (min 8 characters)"
+                                className="w-full px-3 py-2 rounded-lg bg-background border border-border text-sm"
+                              />
+                              {setPasswordError && <p className="text-xs text-red-500">{setPasswordError}</p>}
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  disabled={newPassword.length < 8 || setPasswordMutation.isPending}
+                                  onClick={() => setPasswordMutation.mutate(newPassword)}
+                                  className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium disabled:opacity-50"
+                                >
+                                  {setPasswordMutation.isPending ? 'Saving…' : 'Save Password'}
+                                </button>
+                                <button type="button" onClick={() => { setShowSetPassword(false); setNewPassword(''); }} className="px-4 py-2 bg-muted rounded-lg text-sm">Cancel</button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => navigate('/profile')}
+                          className="flex items-center gap-2 px-4 py-3 bg-muted/60 hover:bg-muted rounded-xl transition-colors"
+                        >
+                          <Lock size={18} className="text-stone-600" />
+                          <span className="font-medium text-stone-700 dark:text-stone-300">Change Password</span>
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => navigate('/wallet')}
@@ -744,6 +825,12 @@ const SettingsPage: React.FC = () => {
                       </select>
                     </div>
                   </div>
+                </div>
+              )}
+              {activeSection === 'gdpr' && (
+                <div>
+                  <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200 mb-6">Data & Privacy Rights</h2>
+                  <GdprSettingsPanel />
                 </div>
               )}
             </div>

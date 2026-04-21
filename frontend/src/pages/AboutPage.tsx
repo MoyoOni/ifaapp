@@ -153,6 +153,20 @@ const AboutPage: React.FC = () => {
         </div>
       </section>
 
+      {/* ── Pod Network ─────────────────────────────────────────────────── */}
+      <section className="py-16">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
+          <div className="text-4xl mb-4">🌍</div>
+          <h2 className="brand-font text-2xl md:text-3xl font-bold text-foreground mb-4">The Pod Network</h2>
+          <p className="text-muted-foreground leading-relaxed text-base max-w-2xl mx-auto">
+            The Pod Network is how Ìlú Àṣẹ becomes local. Every major city will have a Pod — a small group of practitioners led by a trusted Steward, meeting monthly, sharing resources, and supporting each other offline. Pods are the bridge between the global platform and your real neighbourhood. They are coming in 2026.
+          </p>
+          <Link to="/pods" className="inline-flex items-center gap-2 mt-6 text-sm font-bold text-primary hover:underline">
+            Learn about Pods <ArrowRight size={14} />
+          </Link>
+        </div>
+      </section>
+
       {/* ── Who Builds It ───────────────────────────────────────────────── */}
       <section className="py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">

@@ -51,62 +51,17 @@ const TransactionHistoryView: React.FC<TransactionHistoryViewProps> = ({ onBack 
   }>({
     queryKey: ['wallet-transactions', user?.id, selectedType, selectedStatus, page],
     queryFn: async () => {
-      try {
-        const response = await api.get(`/wallet/${user?.id}/transactions`, {
-          params: {
-            type: selectedType !== 'ALL' ? selectedType : undefined,
-            status: selectedStatus !== 'ALL' ? selectedStatus : undefined,
-            limit,
-            offset: page * limit,
-          },
-        });
-        return response.data;
-      } catch (error) {
-        logger.warn('API/Network error, showing demo transactions');
-        // Return rich demo data
-        return {
-          transactions: [
-            {
-              id: 'tx1',
-              type: TransactionType.DEPOSIT,
-              amount: 50000,
-              currency: Currency.NGN,
-              status: TransactionStatus.COMPLETED,
-              description: 'Wallet funding via Bank Transfer',
-              reference: 'REF-883920',
-              createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-              updatedAt: new Date().toISOString()
-            },
-            {
-              id: 'tx2',
-              type: TransactionType.PAYMENT,
-              amount: -12500,
-              currency: Currency.NGN,
-              status: TransactionStatus.COMPLETED,
-              description: 'Purchase: Ifa Divination Board',
-              reference: 'ORD-29910',
-              createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-              updatedAt: new Date().toISOString()
-            },
-            {
-              id: 'tx3',
-              type: TransactionType.ESCROW_HOLD,
-              amount: -25000,
-              currency: Currency.NGN,
-              status: TransactionStatus.PENDING,
-              description: 'Escrow Lock: Consultation Session',
-              reference: 'ESC-11029',
-              createdAt: new Date().toISOString(), // Today
-              updatedAt: new Date().toISOString()
-            }
-          ],
-          total: 3,
+      const response = await api.get(`/wallet/${user?.id}/transactions`, {
+        params: {
+          type: selectedType !== 'ALL' ? selectedType : undefined,
+          status: selectedStatus !== 'ALL' ? selectedStatus : undefined,
           limit,
-          offset: 0
-        };
-      }
+          offset: page * limit,
+        },
+      });
+      return response.data;
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id && !localStorage.getItem('dev_mode_role'),
   });
 
   const formatCurrency = (amount: number, currency: Currency = Currency.NGN) => {

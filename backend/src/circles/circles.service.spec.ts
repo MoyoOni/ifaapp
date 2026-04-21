@@ -1,233 +1,442 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { CirclesService } from './circles.service';
+import { Test } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
-import { NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { CirclesService } from './circles.service';
+import { BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { User, Circle, CircleMembership, CircleRole } from '@prisma/client';
+import { UserRole } from '@common/enums/user-role.enum';
 
 describe('CirclesService', () => {
-    let service: CirclesService;
-    let prisma: PrismaService;
+  let service: CirclesService;
+  let prisma: PrismaService;
 
-    const mockPrismaService = {
-        circle: {
-            create: jest.fn(),
-            findMany: jest.fn(),
-            findUnique: jest.fn(),
-            findFirst: jest.fn(),
-            update: jest.fn(),
-            delete: jest.fn(),
+  beforeEach(async () => {
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        CirclesService,
+        {
+          provide: PrismaService,
+          useValue: {
+            circle: {
+              findMany: jest.fn(),
+              findUnique: jest.fn(),
+              create: jest.fn(),
+              update: jest.fn(),
+              delete: jest.fn(),
+            },
+            circleMembership: {
+              findMany: jest.fn(),
+              findUnique: jest.fn(),
+              create: jest.fn(),
+              update: jest.fn(),
+              delete: jest.fn(),
+            },
+            user: {
+              findUnique: jest.fn(),
+            },
+            $transaction: jest.fn(),
+          },
         },
-        circleMember: {
-            create: jest.fn(),
-            findUnique: jest.fn(),
-            findMany: jest.fn(),
-            update: jest.fn(),
-            delete: jest.fn(),
+      ],
+    }).compile();
+
+    service = moduleRef.get<CirclesService>(CirclesService);
+    prisma = moduleRef.get<PrismaService>(PrismaService);
+  });
+
+  describe('createCircle', () => {
+    it('should create a circle successfully', async () => {
+      const mockUser: User = {
+        id: 'user1',
+        email: 'test@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+        role: UserRole.CLIENT,
+        isVerified: true,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
+        isEmailVerified: true,
+        fcmTokens: [],
+        bio: '',
+        phone: '',
+        avatar: '',
+        additionalInfo: '',
+      };
+
+      const newCircle: Circle = {
+        id: 'circle1',
+        name: 'Test Circle',
+        description: 'A test circle',
+        ownerId: 'user1',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isPublic: true,
+        avatar: null,
+        coverImage: null,
+      };
+
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
+      jest.spyOn(prisma.circle, 'create').mockResolvedValue(newCircle);
+
+      const result = await service.createCircle({
+        name: 'Test Circle',
+        description: 'A test circle',
+        isPublic: true,
+      }, 'user1');
+
+      expect(result).toEqual(newCircle);
+      expect(prisma.circle.create).toHaveBeenCalledWith({
+        data: {
+          name: 'Test Circle',
+          description: 'A test circle',
+          ownerId: 'user1',
+          isPublic: true,
         },
-    };
-
-    const mockCurrentUser = {
-        id: 'user-1',
-        sub: 'user-1',
-        email: 'user@example.com',
-        role: 'CLIENT' as any,
-        verified: true,
-    };
-
-    beforeEach(async () => {
-        const module: TestingModule = await Test.createTestingModule({
-            providers: [
-                CirclesService,
-                {
-                    provide: PrismaService,
-                    useValue: mockPrismaService,
-                },
-            ],
-        }).compile();
-
-        service = module.get<CirclesService>(CirclesService);
-        prisma = module.get<PrismaService>(PrismaService);
-
-        jest.clearAllMocks();
+      });
     });
 
-    describe('create', () => {
-        it('should create a circle (admin only)', async () => {
-            const dto = {
-                name: 'Ifa Study Circle',
-                description: 'Weekly Ifa study and discussion',
-                topic: 'Divination',
-                privacy: 'PUBLIC',
-            };
+    it('should throw an exception if user does not exist', async () => {
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(null);
 
-            const adminUser = {
-                ...mockCurrentUser,
-                role: 'ADMIN' as any,
-            };
-
-            const mockCircle = {
-                id: 'circle-1',
-        sub: 'circle-1',
-                ...dto,
-                slug: 'ifa-study-circle',
-                createdBy: adminUser.id,
-                active: true,
-                createdAt: new Date(),
-            };
-
-            mockPrismaService.circle.create.mockResolvedValue(mockCircle);
-
-            const result = await service.create(dto as any, adminUser);
-
-            expect(result).toEqual(mockCircle);
-        });
+      await expect(service.createCircle({
+        name: 'Test Circle',
+        description: 'A test circle',
+        isPublic: true,
+      }, 'nonexistent-user')).rejects.toThrow(NotFoundException);
     });
 
-    describe('findAll', () => {
-        it('should return all circles', async () => {
-            const mockCircles = [
-                { id: 'circle-1', name: 'Circle 1', active: true },
-                { id: 'circle-2', name: 'Circle 2', active: true },
-            ];
+    it('should throw an exception if circle name is too short', async () => {
+      const mockUser: User = {
+        id: 'user1',
+        email: 'test@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+        role: UserRole.CLIENT,
+        isVerified: true,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
+        isEmailVerified: true,
+        fcmTokens: [],
+        bio: '',
+        phone: '',
+        avatar: '',
+        additionalInfo: '',
+      };
 
-            mockPrismaService.circle.findMany.mockResolvedValue(mockCircles);
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
 
-            const result = await service.findAll();
+      await expect(service.createCircle({
+        name: 'A', // Too short
+        description: 'A test circle',
+        isPublic: true,
+      }, 'user1')).rejects.toThrow(BadRequestException);
+    });
+  });
 
-            expect(result).toEqual(mockCircles);
-        });
+  describe('joinCircle', () => {
+    it('should join a public circle successfully', async () => {
+      const mockCircle: Circle = {
+        id: 'circle1',
+        name: 'Test Circle',
+        description: 'A test circle',
+        ownerId: 'owner1',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isPublic: true, // Public circle
+        avatar: null,
+        coverImage: null,
+      };
 
-        it('should filter circles by topic', async () => {
-            const mockCircles = [
-                { id: 'circle-1', name: 'Divination Circle', topic: 'Divination' },
-            ];
+      const mockUser: User = {
+        id: 'user1',
+        email: 'test@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+        role: UserRole.CLIENT,
+        isVerified: true,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
+        isEmailVerified: true,
+        fcmTokens: [],
+        bio: '',
+        phone: '',
+        avatar: '',
+        additionalInfo: '',
+      };
 
-            mockPrismaService.circle.findMany.mockResolvedValue(mockCircles);
+      const newMembership: CircleMembership = {
+        id: 'membership1',
+        userId: 'user1',
+        circleId: 'circle1',
+        role: CircleRole.MEMBER,
+        joinedAt: new Date(),
+        isActive: true,
+      };
 
-            const result = await service.findAll({ topic: 'Divination' });
+      jest.spyOn(prisma.circle, 'findUnique').mockResolvedValue(mockCircle);
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
+      jest.spyOn(prisma.circleMembership, 'create').mockResolvedValue(newMembership);
 
-            expect(result).toEqual(mockCircles);
-        });
+      const result = await service.joinCircle('circle1', 'user1');
+
+      expect(result).toEqual(newMembership);
+      expect(prisma.circleMembership.create).toHaveBeenCalledWith({
+        data: {
+          userId: 'user1',
+          circleId: 'circle1',
+          role: CircleRole.MEMBER,
+        },
+      });
     });
 
-    describe('findOne', () => {
-        it('should return circle by ID', async () => {
-            const mockCircle = {
-                id: 'circle-1',
-        sub: 'circle-1',
-                name: 'Test Circle',
-                members: [],
-            };
+    it('should throw an exception if trying to join a private circle', async () => {
+      const mockCircle: Circle = {
+        id: 'circle1',
+        name: 'Test Circle',
+        description: 'A test circle',
+        ownerId: 'owner1',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isPublic: false, // Private circle
+        avatar: null,
+        coverImage: null,
+      };
 
-            mockPrismaService.circle.findFirst.mockResolvedValue(mockCircle);
+      jest.spyOn(prisma.circle, 'findUnique').mockResolvedValue(mockCircle);
 
-            const result = await service.findOne('circle-1');
-
-            expect(result).toMatchObject({ id: 'circle-1', name: 'Test Circle' });
-            expect(result.userMembership).toBeNull();
-        });
-
-        it('should throw NotFoundException when circle not found', async () => {
-            mockPrismaService.circle.findUnique.mockResolvedValue(null);
-            mockPrismaService.circle.findFirst.mockResolvedValue(null);
-
-            await expect(service.findOne('nonexistent')).rejects.toThrow(NotFoundException);
-        });
+      await expect(service.joinCircle('circle1', 'user1')).rejects.toThrow(BadRequestException);
     });
 
-    describe('joinCircle', () => {
-        it('should join a circle', async () => {
-            const circleId = 'circle-1';
+    it('should throw an exception if circle does not exist', async () => {
+      jest.spyOn(prisma.circle, 'findUnique').mockResolvedValue(null);
 
-            const mockCircle = {
-                id: circleId,
-                name: 'Test Circle',
-                privacy: 'PUBLIC',
-                active: true,
-                maxMembers: 50,
-                _count: { members: 10 },
-            };
-
-            const mockMembership = {
-                id: 'membership-1',
-        sub: 'membership-1',
-                circleId,
-                userId: mockCurrentUser.id,
-                role: 'MEMBER',
-                createdAt: new Date(),
-            };
-
-            mockPrismaService.circle.findUnique.mockResolvedValue(mockCircle);
-            mockPrismaService.circleMember.findUnique.mockResolvedValue(null);
-            mockPrismaService.circleMember.create.mockResolvedValue(mockMembership);
-
-            const result = await service.joinCircle(circleId, mockCurrentUser);
-
-            expect(result).toMatchObject({ success: true });
-        });
-
-        it('should throw error when circle is full', async () => {
-            const circleId = 'circle-1';
-
-            const mockCircle = {
-                id: circleId,
-                maxMembers: 10,
-                _count: { members: 10 },
-            };
-
-            mockPrismaService.circle.findUnique.mockResolvedValue(mockCircle);
-
-            await expect(service.joinCircle(circleId, mockCurrentUser)).rejects.toThrow(
-                BadRequestException,
-            );
-        });
+      await expect(service.joinCircle('nonexistent-circle', 'user1')).rejects.toThrow(NotFoundException);
     });
 
-    describe('leaveCircle', () => {
-        it('should leave a circle', async () => {
-            const circleId = 'circle-1';
+    it('should throw an exception if user does not exist', async () => {
+      const mockCircle: Circle = {
+        id: 'circle1',
+        name: 'Test Circle',
+        description: 'A test circle',
+        ownerId: 'owner1',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isPublic: true,
+        avatar: null,
+        coverImage: null,
+      };
 
-            const mockMembership = {
-                id: 'membership-1',
-        sub: 'membership-1',
-                circleId,
-                userId: mockCurrentUser.id,
-                status: 'ACTIVE',
-            };
+      jest.spyOn(prisma.circle, 'findUnique').mockResolvedValue(mockCircle);
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(null);
 
-            mockPrismaService.circleMember.findUnique.mockResolvedValue(mockMembership);
-            mockPrismaService.circle.findUnique.mockResolvedValue({ creatorId: 'other-user' });
-            mockPrismaService.circleMember.update.mockResolvedValue(mockMembership);
-
-            await service.leaveCircle(circleId, mockCurrentUser);
-
-            expect(prisma.circleMember.update).toHaveBeenCalled();
-        });
-
-        it('should throw error when not a member', async () => {
-            const circleId = 'circle-1';
-
-            mockPrismaService.circleMember.findUnique.mockResolvedValue(null);
-
-            await expect(service.leaveCircle(circleId, mockCurrentUser)).rejects.toThrow(
-                BadRequestException,
-            );
-        });
+      await expect(service.joinCircle('circle1', 'nonexistent-user')).rejects.toThrow(NotFoundException);
     });
 
-    describe('getUserCircles', () => {
-        it('should return user circles', async () => {
-            const userId = 'user-1';
-            const mockMemberships = [
-                { id: 'mem-1', circleId: 'circle-1', userId, role: 'MEMBER', circle: { id: 'circle-1', name: 'Circle 1' } },
-                { id: 'mem-2', circleId: 'circle-2', userId, role: 'MEMBER', circle: { id: 'circle-2', name: 'Circle 2' } },
-            ];
+    it('should throw an exception if user is already a member', async () => {
+      const mockCircle: Circle = {
+        id: 'circle1',
+        name: 'Test Circle',
+        description: 'A test circle',
+        ownerId: 'owner1',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isPublic: true,
+        avatar: null,
+        coverImage: null,
+      };
 
-            mockPrismaService.circleMember.findMany.mockResolvedValue(mockMemberships);
+      const mockUser: User = {
+        id: 'user1',
+        email: 'test@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+        role: UserRole.CLIENT,
+        isVerified: true,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
+        isEmailVerified: true,
+        fcmTokens: [],
+        bio: '',
+        phone: '',
+        avatar: '',
+        additionalInfo: '',
+      };
 
-            const result = await service.getUserCircles(userId);
+      const existingMembership: CircleMembership = {
+        id: 'membership1',
+        userId: 'user1',
+        circleId: 'circle1',
+        role: CircleRole.MEMBER,
+        joinedAt: new Date(),
+        isActive: true,
+      };
 
-            expect(result).toHaveLength(2);
-            expect(result[0]).toMatchObject({ name: 'Circle 1', userRole: 'MEMBER' });
-        });
+      jest.spyOn(prisma.circle, 'findUnique').mockResolvedValue(mockCircle);
+      jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
+      jest.spyOn(prisma.circleMembership, 'findUnique').mockResolvedValue(existingMembership);
+
+      await expect(service.joinCircle('circle1', 'user1')).rejects.toThrow(BadRequestException);
     });
+  });
+
+  describe('getCircleMembers', () => {
+    it('should retrieve circle members successfully', async () => {
+      const mockMemberships: CircleMembership[] = [
+        {
+          id: 'membership1',
+          userId: 'user1',
+          circleId: 'circle1',
+          role: CircleRole.ADMIN,
+          joinedAt: new Date(),
+          isActive: true,
+        },
+        {
+          id: 'membership2',
+          userId: 'user2',
+          circleId: 'circle1',
+          role: CircleRole.MEMBER,
+          joinedAt: new Date(),
+          isActive: true,
+        },
+      ];
+
+      const mockUsers = [
+        {
+          id: 'user1',
+          email: 'user1@example.com',
+          firstName: 'User',
+          lastName: 'One',
+          role: UserRole.CLIENT,
+          isVerified: true,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          lastLoginAt: new Date(),
+          isEmailVerified: true,
+          fcmTokens: [],
+          bio: '',
+          phone: '',
+          avatar: '',
+          additionalInfo: '',
+        },
+        {
+          id: 'user2',
+          email: 'user2@example.com',
+          firstName: 'User',
+          lastName: 'Two',
+          role: UserRole.BABALAWO,
+          isVerified: true,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          lastLoginAt: new Date(),
+          isEmailVerified: true,
+          fcmTokens: [],
+          bio: '',
+          phone: '',
+          avatar: '',
+          additionalInfo: '',
+        },
+      ];
+
+      jest.spyOn(prisma.circleMembership, 'findMany').mockResolvedValue(mockMemberships);
+      jest.spyOn(prisma.user, 'findUnique').mockImplementation(({ where }) => {
+        const user = mockUsers.find(u => u.id === where.id);
+        return Promise.resolve(user);
+      });
+
+      const result = await service.getCircleMembers('circle1');
+
+      expect(result).toHaveLength(2);
+      expect(result[0].user.id).toBe('user1');
+      expect(result[0].role).toBe(CircleRole.ADMIN);
+      expect(result[1].user.id).toBe('user2');
+      expect(result[1].role).toBe(CircleRole.MEMBER);
+    });
+
+    it('should return empty array if no members found', async () => {
+      jest.spyOn(prisma.circleMembership, 'findMany').mockResolvedValue([]);
+
+      const result = await service.getCircleMembers('nonexistent-circle');
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('updateCircle', () => {
+    it('should update a circle successfully if user is owner', async () => {
+      const mockCircle: Circle = {
+        id: 'circle1',
+        name: 'Original Name',
+        description: 'Original Description',
+        ownerId: 'user1',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isPublic: true,
+        avatar: null,
+        coverImage: null,
+      };
+
+      const updatedCircle = {
+        ...mockCircle,
+        name: 'Updated Name',
+        description: 'Updated Description',
+        isPublic: false,
+        updatedAt: new Date(),
+      };
+
+      jest.spyOn(prisma.circle, 'findUnique').mockResolvedValue(mockCircle);
+      jest.spyOn(prisma.circle, 'update').mockResolvedValue(updatedCircle);
+
+      const result = await service.updateCircle('circle1', { 
+        name: 'Updated Name',
+        description: 'Updated Description',
+        isPublic: false,
+      }, 'user1');
+
+      expect(result).toEqual(updatedCircle);
+      expect(prisma.circle.update).toHaveBeenCalledWith({
+        where: { id: 'circle1' },
+        data: {
+          name: 'Updated Name',
+          description: 'Updated Description',
+          isPublic: false,
+          updatedAt: expect.any(Date),
+        },
+      });
+    });
+
+    it('should throw ForbiddenException if user is not the circle owner', async () => {
+      const mockCircle: Circle = {
+        id: 'circle1',
+        name: 'Original Name',
+        description: 'Original Description',
+        ownerId: 'owner1', // Different owner
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isPublic: true,
+        avatar: null,
+        coverImage: null,
+      };
+
+      jest.spyOn(prisma.circle, 'findUnique').mockResolvedValue(mockCircle);
+
+      await expect(service.updateCircle('circle1', { name: 'Updated Name' }, 'different-user'))
+        .rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw NotFoundException if circle does not exist', async () => {
+      jest.spyOn(prisma.circle, 'findUnique').mockResolvedValue(null);
+
+      await expect(service.updateCircle('nonexistent-circle', { name: 'Updated Name' }, 'user1'))
+        .rejects.toThrow(NotFoundException);
+    });
+  });
 });

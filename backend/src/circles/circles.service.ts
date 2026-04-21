@@ -626,4 +626,67 @@ export class CirclesService {
       userRole: m.role,
     }));
   }
+
+  // ==================== D5: Circle Feed ====================
+
+  async getCircleFeed(circleId: string, currentUserId: string) {
+    const membership = await this.prisma.circleMember.findUnique({
+      where: { circleId_userId: { circleId, userId: currentUserId } },
+      select: { role: true, status: true },
+    });
+    const isPatron = membership?.role === 'PATRON' || membership?.role === 'ADMIN';
+
+    const posts = await (this.prisma as any).circleFeedPost.findMany({
+      where: {
+        circleId,
+        ...(isPatron ? {} : { patronOnly: false }),
+      },
+      orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }],
+      take: 50,
+      include: {
+        author: { select: { id: true, name: true, avatar: true, role: true } },
+      },
+    });
+
+    return posts.map((p: any) => ({
+      id: p.id,
+      authorId: p.author.id,
+      authorName: p.author.name,
+      authorAvatar: p.author.avatar,
+      authorRole: p.author.role,
+      content: p.content,
+      patronOnly: p.patronOnly,
+      isPinned: p.isPinned,
+      likes: p.likes,
+      comments: p.commentCount,
+      createdAt: p.createdAt,
+    }));
+  }
+
+  async createCircleFeedPost(
+    circleId: string,
+    content: string,
+    patronOnly: boolean,
+    currentUser: CurrentUserPayload,
+  ) {
+    const membership = await this.prisma.circleMember.findUnique({
+      where: { circleId_userId: { circleId, userId: currentUser.id } },
+      select: { role: true, status: true },
+    });
+
+    if (!membership || membership.status !== 'ACTIVE') {
+      throw new ForbiddenException('You must be a member to post in this circle');
+    }
+
+    if (patronOnly && membership.role !== 'PATRON' && membership.role !== 'ADMIN') {
+      throw new ForbiddenException('Only patrons can create patron-only posts');
+    }
+
+    return (this.prisma as any).circleFeedPost.create({
+      data: { circleId, authorId: currentUser.id, content, patronOnly },
+      include: {
+        author: { select: { id: true, name: true, avatar: true, role: true } },
+      },
+    });
+  }
 }

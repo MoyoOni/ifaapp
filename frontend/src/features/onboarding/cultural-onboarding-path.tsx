@@ -169,15 +169,66 @@ const CulturalOnboardingPath: React.FC<CulturalOnboardingPathProps> = ({ onConti
         {activeTab === 'video' && (
           <div className="space-y-4">
             <h4 className="text-lg font-bold text-foreground">What to Expect in a Divination</h4>
-            <div className="bg-muted/40 rounded-xl p-8 border border-border/50 text-center">
-              <Play className="w-16 h-16 text-highlight mx-auto mb-4" />
-              <p className="text-muted-foreground mb-4">
-                Video guide coming soon. This will explain the divination process, what to expect,
-                and how to prepare for your first session with a Babaláwo.
-              </p>
-              <p className="text-sm text-muted-foreground">
-                In the meantime, you can explore the Academy course below for detailed information.
-              </p>
+            <div className="space-y-6">
+              <div className="bg-muted/40 rounded-xl p-6 border border-border/50">
+                <h5 className="font-bold text-foreground text-lg mb-3">Introduction to Ifá Divination</h5>
+                <div className="aspect-video bg-black rounded-lg overflow-hidden mb-3">
+                  <iframe 
+                    width="100%" 
+                    height="100%" 
+                    src="https://www.youtube.com/embed/Xp9XpQPx50g" 
+                    title="Introduction to Ifá Divination" 
+                    frameBorder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowFullScreen
+                    className="w-full h-full"
+                  ></iframe>
+                </div>
+                <p className="text-sm text-muted-foreground mt-3">
+                  Learn about the fundamentals of Ifá divination, its cultural significance, and how it connects 
+                  practitioners and seekers in a sacred dialogue.
+                </p>
+              </div>
+
+              <div className="bg-muted/40 rounded-xl p-6 border border-border/50">
+                <h5 className="font-bold text-foreground text-lg mb-3">Your First Divination Session</h5>
+                <div className="aspect-video bg-black rounded-lg overflow-hidden mb-3">
+                  <iframe 
+                    width="100%" 
+                    height="100%" 
+                    src="https://www.youtube.com/embed/4a48V6WQ_NM" 
+                    title="Your First Divination Session" 
+                    frameBorder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowFullScreen
+                    className="w-full h-full"
+                  ></iframe>
+                </div>
+                <p className="text-sm text-muted-foreground mt-3">
+                  Understand what happens during a typical divination session, how to prepare, and what to expect 
+                  from your interaction with a Babaláwo.
+                </p>
+              </div>
+
+              <div className="bg-muted/40 rounded-xl p-6 border border-border/50">
+                <h5 className="font-bold text-foreground text-lg mb-3">Respectful Engagement with Tradition</h5>
+                <div className="aspect-video bg-black rounded-lg overflow-hidden mb-3">
+                  <iframe 
+                    width="100%" 
+                    height="100%" 
+                    src="https://www.youtube.com/embed/3tJzMb6jL88" 
+                    title="Respectful Engagement with Tradition" 
+                    frameBorder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowFullScreen
+                    className="w-full h-full"
+                  ></iframe>
+                </div>
+                <p className="text-sm text-muted-foreground mt-3">
+                  Discover the appropriate ways to approach the tradition, show respect, and build meaningful 
+                  relationships with practitioners.
+                </p>
+              </div>
             </div>
           </div>
         )}

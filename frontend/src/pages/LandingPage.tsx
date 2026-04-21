@@ -2,8 +2,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import {
   Building2, Users, BookOpen, ShoppingBag, MessageSquare,
-  Star, ArrowRight, CheckCircle2, Flame, Globe2, Heart,
-  Shield, Sparkles, ChevronRight
+  ArrowRight, CheckCircle2, Flame, Globe2, Heart,
+  Shield, Sparkles, ChevronRight, MapPin, Clock
 } from 'lucide-react';
 
 // ─── Data ────────────────────────────────────────────────────────────────────
@@ -19,7 +19,7 @@ const features = [
     icon: Building2,
     colour: 'from-emerald-500 to-teal-600',
     title: 'Discover Temples Near You',
-    body: '200+ Ilé Ìjúbà and Ilé Ifá congregations registered on the platform. Filter by tradition, worship day, or location and find your spiritual home.',
+    body: 'A growing directory of Ilé Ìjúbà and Ilé Ifá congregations. Filter by tradition, worship day, or location and find your spiritual home.',
   },
   {
     icon: BookOpen,
@@ -81,16 +81,28 @@ const steps = [
 ];
 
 const stats = [
-  { value: '200+', label: 'Verified Temples' },
-  { value: '50+', label: 'Practising Babalawos' },
-  { value: '12+', label: 'Countries Represented' },
-  { value: '1,000+', label: 'Community Members' },
+  { value: 'Free', label: 'To Join — Always' },
+  { value: '100%', label: 'Verified Practitioners' },
+  { value: '6+', label: 'Integrated Features' },
+  { value: 'Global', label: 'Diaspora & Homeland' },
 ];
 
 const testimonials = [
-  { name: 'Adewale O.', location: 'Lagos, Nigeria', text: 'I found my Babalawo through Ìlú Àṣẹ after years of searching. The verification process gave me confidence, and our sessions have transformed my understanding of my Orì.', stars: 5 },
-  { name: 'Taiwo A.', location: 'London, UK', text: 'Living in the diaspora, I felt disconnected from the tradition. The temple directory helped me find a community 20 minutes from my home. It has changed everything.', stars: 5 },
-  { name: 'Funmilayo K.', location: 'Houston, USA', text: 'As a vendor of authentic Yorùbá beads, this platform connected me with clients who truly understand the spiritual significance of what I create.', stars: 5 },
+  {
+    name: 'Simbi T.',
+    location: 'Atlanta, USA',
+    text: 'I typed "Ifa priest near me" and got overwhelmed. No way to know who was trained, who was legitimate, who I could actually trust with something this personal. I needed somewhere that had already done that work for me.',
+  },
+  {
+    name: 'Olumide F.',
+    location: 'Manchester, UK',
+    text: 'My grandmother was a devotee. When she passed, that knowledge went with her. I\'ve spent three years on scattered websites and dead Facebook groups trying to find my way back. I just needed one real place.',
+  },
+  {
+    name: 'Babalawo Adeyemi',
+    location: 'Lagos, Nigeria',
+    text: 'My clients are in the UK, US, and Canada. I track consultations in WhatsApp, payments by bank transfer, guidance plans in notebooks. It works — but barely. A proper tool built for this would change everything.',
+  },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -265,19 +277,18 @@ const LandingPage: React.FC = () => {
       <section className="py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <div className="inline-block text-xs font-bold uppercase tracking-widest text-primary bg-primary/10 px-4 py-2 rounded-full mb-4">Voices from the Community</div>
-            <h2 className="brand-font text-4xl md:text-5xl font-bold text-foreground mb-4">Stories from the Tradition</h2>
+            <div className="inline-block text-xs font-bold uppercase tracking-widest text-primary bg-primary/10 px-4 py-2 rounded-full mb-4">Why This Exists</div>
+            <h2 className="brand-font text-4xl md:text-5xl font-bold text-foreground mb-4">The Gap We're Closing</h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Real voices. Real needs. This is why Ìlú Àṣẹ had to be built.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {testimonials.map((t) => (
-              <div key={t.name} className="bg-card border border-border rounded-2xl p-6">
-                <div className="flex mb-4">
-                  {Array.from({ length: t.stars }).map((_, i) => (
-                    <Star key={i} size={14} className="text-primary fill-primary" />
-                  ))}
-                </div>
-                <p className="text-foreground text-sm leading-relaxed mb-6 italic">"{t.text}"</p>
+              <div key={t.name} className="bg-card border border-border rounded-2xl p-6 flex flex-col">
+                <span className="text-3xl text-primary/30 font-serif leading-none mb-3 select-none">"</span>
+                <p className="text-foreground text-sm leading-relaxed mb-6 flex-1">{t.text}</p>
                 <div>
                   <div className="font-bold text-foreground text-sm">{t.name}</div>
                   <div className="text-muted-foreground text-xs flex items-center gap-1 mt-0.5">
@@ -290,6 +301,61 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
+      {/* ── Pod Network (Coming Soon) ──────────────────────────────────── */}
+      <section className="py-24 bg-muted/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full mb-4">
+              <Clock size={11} /> Coming 2026
+            </div>
+            <h2 className="brand-font text-4xl md:text-5xl font-bold text-foreground mb-3">Pod Network</h2>
+            <p className="text-muted-foreground text-lg max-w-xl mx-auto">
+              One global platform. Rooted in your city.
+            </p>
+          </div>
+
+          {/* Placeholder pod cards — blurred coming soon */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
+            {[
+              { city: 'London', country: 'UK', flag: '🇬🇧', members: 47 },
+              { city: 'Lagos', country: 'Nigeria', flag: '🇳🇬', members: 83 },
+              { city: 'Atlanta', country: 'USA', flag: '🇺🇸', members: 31 },
+            ].map(pod => (
+              <div key={pod.city} className="bg-card border border-amber-200 dark:border-amber-800/50 rounded-2xl p-6 relative overflow-hidden">
+                <div className="absolute top-3 right-3 bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full">
+                  2026
+                </div>
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-2xl">{pod.flag}</span>
+                  <div>
+                    <p className="font-bold text-foreground">{pod.city} Pod</p>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <MapPin size={10} /> {pod.city}, {pod.country}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 text-sm text-foreground font-semibold mb-4">
+                  <Users size={13} className="text-primary" />
+                  <span className="blur-sm select-none">{pod.members} members</span>
+                </div>
+                <Link
+                  to="/pods"
+                  className="text-xs font-bold text-amber-700 dark:text-amber-400 hover:underline flex items-center gap-1"
+                >
+                  Notify Me <ArrowRight size={11} />
+                </Link>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center">
+            <Link to="/pods" className="inline-flex items-center gap-2 text-sm font-bold text-foreground hover:text-primary transition-colors">
+              Learn about the Pod Network <ChevronRight size={16} />
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* ── CTA ─────────────────────────────────────────────────────────── */}
       <section className="py-24 relative overflow-hidden">
         <div className="absolute inset-0 -z-10">
@@ -298,7 +364,7 @@ const LandingPage: React.FC = () => {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <div className="text-5xl mb-6">🔱</div>
           <h2 className="brand-font text-4xl md:text-5xl font-bold text-foreground mb-4">
-            Àṣẹ. Your Path Is Here.
+            Your Path Is Here. Àṣẹ.
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto mb-10">
             Join a growing community of seekers, practitioners, and culture-keepers dedicated to preserving and living the Ifá tradition.
@@ -344,6 +410,7 @@ const LandingPage: React.FC = () => {
                 <li><Link to="/academy" className="hover:text-foreground transition-colors">Academy</Link></li>
                 <li><Link to="/marketplace" className="hover:text-foreground transition-colors">Marketplace</Link></li>
                 <li><Link to="/circles" className="hover:text-foreground transition-colors">Community Circles</Link></li>
+                <li><Link to="/pods" className="hover:text-foreground transition-colors">Pod Network</Link></li>
               </ul>
             </div>
 

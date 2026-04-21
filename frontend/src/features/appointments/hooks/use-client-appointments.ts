@@ -47,7 +47,7 @@ export const useClientAppointments = (clientId?: string) => {
       const response = await api.get(`/appointments/client/${clientId}`);
       return response.data;
     },
-    enabled: !!clientId,
+    enabled: !!clientId && !localStorage.getItem('dev_mode_role'),
     staleTime: 30000, // 30 seconds
     refetchOnWindowFocus: true,
   });

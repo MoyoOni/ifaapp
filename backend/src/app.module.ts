@@ -1,126 +1,129 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { APP_GUARD, APP_INTERCEPTOR, APP_FILTER, Reflector } from '@nestjs/core';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { validateEnv } from './config/env.validation';
-import { infrastructureConfig } from './shared/config/infrastructure.config';
-import { RequestIdMiddleware } from './middleware/request-id.middleware';
-import { LoggingInterceptor } from './interceptors/logging.interceptor';
-import { PrismaModule } from './prisma/prisma.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerBehindProxyFix } from './throttler-behind-proxy.guard';
+import { getThrottlerConfig } from './config/throttler.config';
 import { AuthModule } from './auth/auth.module';
-import { UsersModule } from './users/users.module';
-import { VerificationModule } from './verification/verification.module';
-import { BabalawoClientModule } from './babalawo-client/babalawo-client.module';
-import { MessagingModule } from './messaging/messaging.module';
-import { AppointmentsModule } from './appointments/appointments.module';
-// import { DocumentsModule } from './documents/documents.module';  // DISABLED: file storage (S3/local) not yet configured for production
-import { AdminModule } from './admin/admin.module';
-import { ForumModule } from './forum/forum.module';
-import { MarketplaceModule } from './marketplace/marketplace.module';
+import { UserModule } from './modules/user/user.module';
 import { AcademyModule } from './academy/academy.module';
-import { WalletModule } from './wallet/wallet.module';
+import { AppointmentsModule } from './appointments/appointments.module';
+import { BabalawoClientModule } from './babalawo-client/babalawo-client.module';
+import { CacheModule } from './cache/cache.module';
+import { CertificateModule } from './certificates/certificate.module';
+import { CirclesModule } from './circles/circles.module';
+import { DashboardModule } from './dashboard/dashboard.module';
+import { DisputesModule } from './disputes/disputes.module';
+import { DocumentsModule } from './documents/documents.module';
+import { EventsModule } from './events/events.module';
+import { ForumModule } from './forum/forum.module';
+import { HealthModule } from './health/health.module';
+import { ImageModule } from './images/image.module';
+import { MarketplaceModule } from './marketplace/marketplace.module';
+import { MessagingModule } from './messaging/messaging.module';
+import { MetricsModule } from './metrics/metrics.module';
+import { LoggerModule } from './common/logger/logger.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { PaymentsModule } from './payments/payments.module';
 import { GuidancePlansModule } from './prescriptions/prescriptions.module';
+import { PrismaModule } from './prisma/prisma.module';
+import { RecommendationsModule } from './recommendations/recommendations.module';
+import { ReviewsModule } from './reviews/reviews.module';
+import { SearchModule } from './search/search.module';
+import { SecurityModule } from './security/security.module';
+import { SharedModule } from './shared/shared.module';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { TemplesModule } from './temples/temples.module';
 import { TutorsModule } from './tutors/tutors.module';
-import { RecommendationsModule } from './recommendations/recommendations.module';
-import { DisputesModule } from './disputes/disputes.module';
+import { VerificationModule } from './verification/verification.module';
+import { EnhancedPractitionerOnboardingModule } from './verification/enhanced-practitioner-onboarding.module';
 import { VideoCallModule } from './video-call/video-call.module';
-import { NotificationsModule } from './notifications/notifications.module';
-import { CirclesModule } from './circles/circles.module';
-import { EventsModule } from './events/events.module';
-import { ReviewsModule } from './reviews/reviews.module';
-// import { SpiritualJourneyModule } from './spiritual-journey/spiritual-journey.module';  // DEFERRED: post-launch feature (see SPIRITUAL_JOURNEY_EVALUATION.md)
-import { SearchModule } from './search/search.module';
-import { DashboardModule } from './dashboard/dashboard.module';
-import { DatabaseModule } from './database/database.module';
-import { EncryptionModule } from './encryption/encryption.module';
-import { SecurityModule } from './security/security.module';
-// import { CacheModule } from './cache/cache.module';  // DISABLED: Redis cache layer not yet wired to ConfigService — enable post-launch
-// import { ImageModule } from './images/image.module';  // DISABLED: image processing (sharp) not bundled in prod Docker image — enable post-launch
-// import { CertificateModule } from './certificates/certificate.module';  // DISABLED: pdfkit not installed; placeholder PDF generation only — enable post-launch
-import { HealthModule } from './health/health.module';
-import { MetricsModule } from './metrics/metrics.module';
-// import { QueueModule } from './common/queue/queue.module';  // DISABLED: BullMQ peer dep version mismatch with current NestJS version — enable post-launch
-// import { TestModule } from './test/test.module';  // DISABLED: development-only test helper, never load in production
-import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
+import { WalletModule } from './wallet/wallet.module';
+import { WhatsAppModule } from './whatsapp/whatsapp.module';
+import { AdminModule } from './admin/admin.module';
+import { AnalyticsModule } from './analytics/analytics.module';
+import { SecretsModule } from './secrets/secrets.module';
 import { SentryModule } from './sentry/sentry.module';
-
-// import { ScheduleModule } from '@nestjs/schedule';  // DISABLED: circular Reflector injection issue — enable post-launch after upgrading @nestjs/schedule
-import { DiscoveryModule } from '@nestjs/core';
-import { SharedModule } from './shared/shared.module';
-import { InfrastructureModule } from './shared/infrastructure.module';
-import { WhatsAppModule } from './whatsapp';
-import { SubscriptionsModule } from './subscriptions/subscriptions.module';
+import { PractitionerAnalyticsModule } from './practitioners/practitioner-analytics.module';
+import { ModerationModule } from './moderation/moderation.module';
+import { LegalModule } from './legal/legal.module';
+import { PerformanceModule } from './performance/performance.module';
+import { ComplianceModule } from './compliance/compliance.module';
+import { ElderOversightModule } from './elders/elder-oversight.module';
+import { RbacModule } from './rbac/rbac.module';
+import { SentryInitializerService } from './sentry/sentry-initializer.service';
+import { OralHistorySeedService } from './seeding/oral-history.seed.service';
+import { RequestIdMiddleware } from './middleware/request-id.middleware';
+import { AlertingModule } from './alerts/alerting.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      validate: validateEnv,
-      load: [infrastructureConfig],
+    ConfigModule.forRoot({ isGlobal: true }),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: getThrottlerConfig,
     }),
-    DiscoveryModule,
-    // ScheduleModule.forRoot(), // DISABLED: see import comment above
-    ThrottlerModule.forRoot([
-      {
-        ttl: 60000,
-        limit: 100,
-      },
-    ]),
-    PrismaModule,
     AuthModule,
-    UsersModule,
-    VerificationModule,
-    BabalawoClientModule,
-    MessagingModule,
-    AppointmentsModule,
-    // DocumentsModule,  // DISABLED: see import comment above
-    AdminModule,
-    ForumModule,
-    MarketplaceModule,
+    UserModule,
     AcademyModule,
-    WalletModule,
+    AppointmentsModule,
+    BabalawoClientModule,
+    CacheModule,
+    CertificateModule,
+    CirclesModule,
+    DashboardModule,
+    DisputesModule,
+    DocumentsModule,
+    EventsModule,
+    ForumModule,
+    HealthModule,
+    ImageModule,
+    MarketplaceModule,
+    MessagingModule,
+    MetricsModule,
+    NotificationsModule,
     PaymentsModule,
     GuidancePlansModule,
-    TemplesModule,
-    TutorsModule,
+    PrismaModule,
     RecommendationsModule,
-    DisputesModule,
-    VideoCallModule,
-    NotificationsModule,
-    CirclesModule,
-    EventsModule,
     ReviewsModule,
-    SubscriptionsModule,
-    HealthModule,
-    MetricsModule,
-    // QueueModule, // DISABLED: see import comment above
     SearchModule,
-    DashboardModule,
-    DatabaseModule,
-    EncryptionModule,
     SecurityModule,
     SharedModule,
-    InfrastructureModule,
+    SubscriptionsModule,
+    TemplesModule,
+    TutorsModule,
+    VerificationModule,
+    EnhancedPractitionerOnboardingModule,
+    VideoCallModule,
+    WalletModule,
     WhatsAppModule,
+    AdminModule,
+    AnalyticsModule,
+    SecretsModule,
     SentryModule,
+    PractitionerAnalyticsModule,
+    ModerationModule,
+    LegalModule,
+    PerformanceModule,
+    ComplianceModule,
+    ElderOversightModule,
+    RbacModule,
+    AlertingModule,
   ],
-  controllers: [],
   providers: [
-    Reflector,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerBehindProxyFix,
+    },
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: LoggingInterceptor,
-    },
-    {
-      provide: APP_FILTER,
-      useClass: GlobalExceptionFilter,
-    },
+    SentryInitializerService, // Ensure Sentry initializer service is registered
+    OralHistorySeedService,  // Register the oral history seed service
   ],
 })
 export class AppModule implements NestModule {

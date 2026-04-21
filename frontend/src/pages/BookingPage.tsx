@@ -5,7 +5,6 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
 import { BookingForm } from '@/features/consultations/BookingForm';
-import { getDemoUserById } from '@/demo/index';
 
 interface BabalawoDetails {
   name: string;
@@ -30,25 +29,8 @@ const getBabalawoDetails = async (id: string): Promise<BabalawoDetails> => {
       specialties: response.data?.specialties,
     };
   } catch (error) {
-    const demoUser = getDemoUserById(id);
-    if (demoUser) {
-      return {
-        name: demoUser.name,
-        yorubaName: demoUser.yorubaName,
-        avatar: demoUser.avatar,
-        bio: demoUser.bio,
-        location: demoUser.location,
-        rating: 5.0,
-        specialties: demoUser.specialization || ['Ifa Divination'],
-      };
-    }
-    logger.warn('Failed to fetch babalawo details, using fallback');
-    return {
-      name: 'Babalawo Femi Sowande',
-      yorubaName: 'Babaláwo Fẹ́mi Ṣọwándé',
-      rating: 5.0,
-      specialties: ['Ifa Divination', 'Spiritual Guidance'],
-    };
+    logger.warn('Failed to fetch babalawo details', error);
+    throw error;
   }
 };
 

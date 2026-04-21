@@ -94,22 +94,18 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
         throw error;
       }
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id && !localStorage.getItem('dev_mode_role'),
     refetchInterval: 30000,
   });
 
-  // Fetch escrows with demo fallback
+  // Fetch escrows
   const { data: escrows = [] } = useQuery<Escrow[]>({
     queryKey: ['escrows', user?.id],
     queryFn: async () => {
-      try {
-        const response = await api.get(`/wallet/${user?.id}/escrows`);
-        return response.data || [];
-      } catch (error) {
-        throw error;
-      }
+      const response = await api.get(`/wallet/${user?.id}/escrows`);
+      return response.data || [];
     },
-    enabled: !!user?.id
+    enabled: !!user?.id && !localStorage.getItem('dev_mode_role'),
   });
 
   const { data: transactionsData, isLoading: transactionsLoading } = useQuery<RecentTransactionsResponse>({

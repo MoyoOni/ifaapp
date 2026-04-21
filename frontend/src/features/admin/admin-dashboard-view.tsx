@@ -3,8 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, Shield, MessageSquare,
-  AlertTriangle, DollarSign, BarChart3,
-  Building2, Store, Activity, XCircle, Crown, Flag, ScrollText, Lock
+  AlertTriangle, DollarSign, BarChart3, TrendingUp,
+  Building2, Store, Activity, XCircle, Crown, Flag, ScrollText, Lock, Hash, Megaphone, RotateCcw, Settings, BookOpen, Star, Award, ShieldAlert, Mail, Tag
 } from 'lucide-react';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { usePrompt } from '@/hooks/use-prompt';
@@ -26,8 +26,39 @@ import AdminManagementView from './admin-management-view';
 import PaymentVerificationView from './payment-verification-view';
 import AdminSubscriptionTab from './admin-subscription-tab';
 import AdminForumReportsTab from './admin-forum-reports-tab';
+import AdminForumManagementTab from './admin-forum-management-tab';
+import AdminAnnouncementsTab from './admin-announcements-tab';
+import FeaturedPractitionersTab from './featured-practitioners-tab'; // Added new import for Featured Practitioners tab
 import AdminAuditLogTab from './admin-audit-log-tab';
 import AdminSacredContentTab from './admin-sacred-content-tab';
+import PractitionerPerformanceTab from './practitioner-performance-tab'; // New import for Practitioner Performance tab
+import PractitionerComplaintsTab from './practitioner-complaints-tab'; // New import for Practitioner Complaints tab
+import InactivePractitionerTab from './inactive-practitioner-tab'; // New import for Inactive Practitioner tab
+import FinancialCommandCentreTab from './financial-command-centre-tab'; // New import for Financial Command Centre tab
+import TrustScoreManagementTab from './trust-score-management-tab';
+import AdminMorningBriefTab from './admin-morning-brief-tab';
+import AdminRefundsTab from './admin-refunds-tab';
+import AdminSettingsTab from './admin-settings-tab';
+import AdminCulturalContentTab from './admin-cultural-content-tab';
+import { AdminFeaturedContentTab } from './admin-featured-content-tab';
+import { AdminCommunityTab } from './admin-community-tab';
+import { AdminForumIntelligenceTab } from './admin-forum-intelligence-tab';
+import { AdminIntegrityTab } from './admin-integrity-tab';
+import { AdminCampaignsTab } from './admin-campaigns-tab';
+import { AdminPromosTab } from './admin-promos-tab';
+import { AdminReferralsTab } from './admin-referrals-tab';
+import { AdminMarketIntelligenceTab } from './admin-market-intelligence-tab';
+import { AdminForecastingTab } from './admin-forecasting-tab';
+import { AdminLifecycleTab } from './admin-lifecycle-tab'; // New import for User Lifecycle Analytics tab
+import AdminSecurityTab from './admin-security-tab';
+import AdminCulturalQuizTab from './admin-cultural-quiz-tab';
+import AdminTrustScoreAuditTab from './admin-trust-score-audit-tab';
+import AdminPlatformSettingsTab from './admin-platform-settings-tab';
+import AdminMarketplaceTab from './admin-marketplace-tab';
+import AdminAcademyTab from './admin-academy-tab';
+import AdminComplianceTab from './admin-compliance-tab';
+import AdminCrisisAlertsTab from './admin-crisis-alerts-tab';
+
 import { AdminUser, VerificationApplication } from './admin-shared-components';
 import { useToast } from '@/shared/components/toast';
 import { TabErrorBoundary } from '@/shared/components/tab-error-boundary';
@@ -43,11 +74,16 @@ interface PlatformStats {
 }
 
 type AdminTab =
-  | 'overview' | 'verification' | 'temples' | 'vendors'
+  | 'morning-brief' | 'overview' | 'verification' | 'temples' | 'vendors'
   | 'disputes' | 'withdrawals' | 'analytics' | 'fraud'
   | 'content' | 'users' | 'circles' | 'quality' | 'health'
   | 'admin-management' | 'payment-verification' | 'subscriptions'
-  | 'forum-reports' | 'audit-log' | 'sacred-content';
+  | 'forum-reports' | 'forum' | 'forum-management' | 'audit-log' | 'sacred-content'
+  | 'inactive-practitioners' | 'financial-command'
+  | 'practitioners' | 'featured' | 'complaints' | 'roles' | 'announcements'
+  | 'trust-scores' | 'refunds' | 'settings' | 'cultural-content' | 'featured-content' | 'community' | 'forum-intelligence' | 'integrity'
+  | 'campaigns' | 'promos' | 'referrals' | 'market-intelligence' | 'forecasting' | 'lifecycle' | 'security' | 'cultural-quiz'
+  | 'trust-score-audit' | 'platform-settings' | 'marketplace-admin' | 'academy-admin' | 'compliance' | 'crisis-alerts';
 
 interface AdminDashboardViewProps {
   initialTab?: AdminTab;
@@ -96,6 +132,7 @@ const ImpersonationBanner: React.FC<{ userName: string; onStop: () => void }> = 
         </div>
       </div>
       <button
+        type="button"
         onClick={onStop}
         className="px-4 py-2 bg-destructive text-white rounded-xl font-bold text-sm hover:bg-error transition-colors flex items-center gap-2"
       >
@@ -168,6 +205,7 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ initialTab }) =
   });
 
   const tabs = [
+    { id: 'morning-brief' as AdminTab, label: 'Morning Brief', icon: Activity },
     { id: 'overview' as AdminTab, label: 'Overview', icon: BarChart3 },
     { id: 'verification' as AdminTab, label: 'Verification Queue', icon: Shield },
     { id: 'users' as AdminTab, label: 'User Management', icon: Users },
@@ -185,12 +223,45 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ initialTab }) =
     { id: 'payment-verification' as AdminTab, label: 'Payment Verification', icon: DollarSign },
     { id: 'subscriptions' as AdminTab, label: 'Subscriptions', icon: Crown },
     { id: 'forum-reports' as AdminTab, label: 'Forum Reports', icon: Flag },
+    { id: 'forum' as AdminTab, label: 'Forum Management', icon: Hash },
+    { id: 'forum-management' as AdminTab, label: 'Forum Management', icon: Hash },
     { id: 'sacred-content' as AdminTab, label: 'Sacred Content', icon: Lock },
     { id: 'audit-log' as AdminTab, label: 'Audit Log', icon: ScrollText },
+    { id: 'roles' as AdminTab, label: 'Role Management', icon: Shield }, // New tab for role management
+    { id: 'announcements' as AdminTab, label: 'Announcements', icon: Megaphone }, // New tab for announcements
+    { id: 'practitioners' as AdminTab, label: 'Practitioner Performance', icon: Activity }, // New tab for practitioner performance
+    { id: 'featured' as AdminTab, label: 'Featured Practitioners', icon: Crown }, // Added new tab for featured practitioners
+    { id: 'complaints' as AdminTab, label: 'Practitioner Complaints', icon: AlertTriangle }, // New tab for practitioner complaints
+    { id: 'inactive-practitioners' as AdminTab, label: 'Inactive Practitioners', icon: Activity }, // New tab for inactive practitioners
+    { id: 'financial-command' as AdminTab, label: 'Financial Command', icon: DollarSign },
+    { id: 'trust-scores' as AdminTab, label: 'Trust Score Management', icon: Shield },
+    { id: 'refunds' as AdminTab, label: 'Refund Management', icon: RotateCcw },
+    { id: 'settings' as AdminTab, label: 'Platform Settings', icon: Settings },
+    { id: 'cultural-content' as AdminTab, label: 'Cultural Content', icon: BookOpen },
+    { id: 'featured-content' as AdminTab, label: 'Featured Content', icon: Star },
+    { id: 'community' as AdminTab, label: 'Community Recognition', icon: Award },
+    { id: 'forum-intelligence' as AdminTab, label: 'Forum Intelligence', icon: BarChart3 },
+    { id: 'integrity' as AdminTab, label: 'Cultural Integrity', icon: ShieldAlert },
+    { id: 'campaigns' as AdminTab, label: 'Email Campaigns', icon: Mail },
+    { id: 'promos' as AdminTab, label: 'Promo Codes', icon: Tag },
+    { id: 'referrals' as AdminTab, label: 'Referral Program', icon: Users },
+    { id: 'market-intelligence' as AdminTab, label: 'Market Intelligence', icon: TrendingUp },
+    { id: 'forecasting' as AdminTab, label: 'Revenue Forecasting', icon: BarChart3 },
+    { id: 'lifecycle' as AdminTab, label: 'User Lifecycle Analytics', icon: TrendingUp }, // New tab for user lifecycle analytics
+    { id: 'security' as AdminTab, label: 'Security & Sessions', icon: Shield },
+    { id: 'compliance' as AdminTab, label: 'Data & Compliance', icon: Shield },
+    { id: 'crisis-alerts' as AdminTab, label: 'Crisis Alerts', icon: AlertTriangle },
+    { id: 'cultural-quiz' as AdminTab, label: 'Cultural Quiz', icon: BookOpen },
+    { id: 'trust-score-audit' as AdminTab, label: 'Trust Score Audit', icon: Shield },
+    { id: 'platform-settings' as AdminTab, label: 'Platform Settings', icon: Settings },
+    { id: 'marketplace-admin' as AdminTab, label: 'Marketplace', icon: Store },
+    { id: 'academy-admin' as AdminTab, label: 'Academy', icon: BookOpen },
   ];
 
   const renderTabContent = () => {
     switch (activeTab) {
+      case 'morning-brief':
+        return <AdminMorningBriefTab onNavigate={(tab) => setActiveTab(tab as AdminTab)} />;
       case 'overview':
         return (
           <AdminOverviewTab
@@ -241,16 +312,75 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ initialTab }) =
         return <TabErrorBoundary fallback={<TabFallback icon={Crown} label="Subscriptions" />} tabName="subscriptions"><AdminSubscriptionTab /></TabErrorBoundary>;
       case 'forum-reports':
         return <TabErrorBoundary fallback={<TabFallback icon={Flag} label="Forum Reports" />} tabName="forum-reports"><AdminForumReportsTab /></TabErrorBoundary>;
+      case 'forum-management':
+        return <TabErrorBoundary fallback={<TabFallback icon={Hash} label="Forum Management" />} tabName="forum-management"><AdminForumManagementTab /></TabErrorBoundary>;
       case 'sacred-content':
         return <TabErrorBoundary fallback={<TabFallback icon={Lock} label="Sacred Content" />} tabName="sacred-content"><AdminSacredContentTab /></TabErrorBoundary>;
+      case 'announcements':
+        return <TabErrorBoundary fallback={<TabFallback icon={Megaphone} label="Announcements" />} tabName="announcements"><AdminAnnouncementsTab /></TabErrorBoundary>;
       case 'audit-log':
         return <TabErrorBoundary fallback={<TabFallback icon={ScrollText} label="Audit Log" />} tabName="audit-log"><AdminAuditLogTab /></TabErrorBoundary>;
+      case 'practitioners':
+        return <TabErrorBoundary fallback={<TabFallback icon={Activity} label="Practitioner Performance" />} tabName="practitioners"><PractitionerPerformanceTab /></TabErrorBoundary>;
+      case 'featured':
+        return <TabErrorBoundary fallback={<TabFallback icon={Crown} label="Featured Practitioners" />} tabName="featured"><FeaturedPractitionersTab /></TabErrorBoundary>;
+      case 'complaints':
+        return <TabErrorBoundary fallback={<TabFallback icon={AlertTriangle} label="Practitioner Complaints" />} tabName="complaints"><PractitionerComplaintsTab /></TabErrorBoundary>;
+      case 'inactive-practitioners':
+        return <TabErrorBoundary fallback={<TabFallback icon={Activity} label="Inactive Practitioners" />} tabName="inactive-practitioners"><InactivePractitionerTab /></TabErrorBoundary>;
+      case 'financial-command':
+        return <TabErrorBoundary fallback={<TabFallback icon={DollarSign} label="Financial Command" />} tabName="financial-command"><FinancialCommandCentreTab /></TabErrorBoundary>;
+      case 'trust-scores':
+        return <TabErrorBoundary fallback={<TabFallback icon={Shield} label="Trust Score Management" />} tabName="trust-scores"><TrustScoreManagementTab /></TabErrorBoundary>;
+      case 'refunds':
+        return <TabErrorBoundary fallback={<TabFallback icon={RotateCcw} label="Refund Management" />} tabName="refunds"><AdminRefundsTab /></TabErrorBoundary>;
+      case 'settings':
+        return <TabErrorBoundary fallback={<TabFallback icon={Settings} label="Platform Settings" />} tabName="settings"><AdminSettingsTab /></TabErrorBoundary>;
+      case 'cultural-content':
+        return <TabErrorBoundary fallback={<TabFallback icon={BookOpen} label="Cultural Content" />} tabName="cultural-content"><AdminCulturalContentTab /></TabErrorBoundary>;
+      case 'featured-content':
+        return <TabErrorBoundary fallback={<TabFallback icon={Star} label="Featured Content" />} tabName="featured-content"><AdminFeaturedContentTab /></TabErrorBoundary>;
+      case 'community':
+        return <TabErrorBoundary fallback={<TabFallback icon={Award} label="Community Recognition" />} tabName="community"><AdminCommunityTab /></TabErrorBoundary>;
+      case 'forum-intelligence':
+        return <TabErrorBoundary fallback={<TabFallback icon={BarChart3} label="Forum Intelligence" />} tabName="forum-intelligence"><AdminForumIntelligenceTab /></TabErrorBoundary>;
+      case 'integrity':
+        return <TabErrorBoundary fallback={<TabFallback icon={ShieldAlert} label="Cultural Integrity" />} tabName="integrity"><AdminIntegrityTab /></TabErrorBoundary>;
+      case 'campaigns':
+        return <TabErrorBoundary fallback={<TabFallback icon={Mail} label="Email Campaigns" />} tabName="campaigns"><AdminCampaignsTab /></TabErrorBoundary>;
+      case 'promos':
+        return <TabErrorBoundary fallback={<TabFallback icon={Tag} label="Promo Codes" />} tabName="promos"><AdminPromosTab /></TabErrorBoundary>;
+      case 'referrals':
+        return <TabErrorBoundary fallback={<TabFallback icon={Users} label="Referral Program" />} tabName="referrals"><AdminReferralsTab /></TabErrorBoundary>;
+      case 'market-intelligence':
+        return <TabErrorBoundary fallback={<TabFallback icon={TrendingUp} label="Market Intelligence" />} tabName="market-intelligence"><AdminMarketIntelligenceTab /></TabErrorBoundary>;
+      case 'forecasting':
+        return <TabErrorBoundary fallback={<TabFallback icon={BarChart3} label="Revenue Forecasting" />} tabName="forecasting"><AdminForecastingTab /></TabErrorBoundary>;
+      case 'lifecycle':
+        return <TabErrorBoundary fallback={<TabFallback icon={TrendingUp} label="User Lifecycle Analytics" />} tabName="lifecycle"><AdminLifecycleTab /></TabErrorBoundary>;
+      case 'security':
+        return <TabErrorBoundary fallback={<TabFallback icon={Shield} label="Security & Sessions" />} tabName="security"><AdminSecurityTab /></TabErrorBoundary>;
+      case 'cultural-quiz':
+        return <TabErrorBoundary fallback={<TabFallback icon={BookOpen} label="Cultural Quiz" />} tabName="cultural-quiz"><AdminCulturalQuizTab /></TabErrorBoundary>;
+      case 'trust-score-audit':
+        return <TabErrorBoundary fallback={<TabFallback icon={Shield} label="Trust Score Audit" />} tabName="trust-score-audit"><AdminTrustScoreAuditTab /></TabErrorBoundary>;
+      case 'platform-settings':
+        return <TabErrorBoundary fallback={<TabFallback icon={Settings} label="Platform Settings" />} tabName="platform-settings"><AdminPlatformSettingsTab /></TabErrorBoundary>;
+      case 'marketplace-admin':
+        return <TabErrorBoundary fallback={<TabFallback icon={Store} label="Marketplace" />} tabName="marketplace-admin"><AdminMarketplaceTab /></TabErrorBoundary>;
+      case 'academy-admin':
+        return <TabErrorBoundary fallback={<TabFallback icon={BookOpen} label="Academy" />} tabName="academy-admin"><AdminAcademyTab /></TabErrorBoundary>;
+      case 'compliance':
+        return <TabErrorBoundary fallback={<TabFallback icon={Shield} label="Data & Compliance" />} tabName="compliance"><AdminComplianceTab /></TabErrorBoundary>;
+      case 'crisis-alerts':
+        return <TabErrorBoundary fallback={<TabFallback icon={AlertTriangle} label="Crisis Alerts" />} tabName="crisis-alerts"><AdminCrisisAlertsTab /></TabErrorBoundary>;
       default:
         return (
           <div className="bg-card rounded-2xl p-6 border border-border">
             <h2 className="text-[1.125rem] font-[700] text-foreground">Page Not Found</h2>
             <p className="text-muted-foreground text-sm py-8">The requested section does not exist or is under construction.</p>
             <button
+              type="button"
               onClick={() => setActiveTab('overview')}
               className="px-4 py-2 bg-highlight text-white rounded-xl font-medium hover:bg-warning transition-colors"
             >
@@ -272,7 +402,12 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ initialTab }) =
           {activeTab !== 'overview' && (
             <Breadcrumb items={[
               { label: 'Admin', onClick: () => setActiveTab('overview') },
-              { label: tabs.find(t => t.id === activeTab)?.label || activeTab },
+              { 
+                label: tabs.find(t => t.id === activeTab)?.label || activeTab,
+                onClick: ['forum', 'forum-management', 'announcements'].includes(activeTab) 
+                  ? undefined 
+                  : () => setActiveTab('overview')
+              },
             ]} />
           )}
         </div>

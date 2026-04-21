@@ -42,7 +42,7 @@ const EarningsReportView: React.FC = () => {
       });
       return res.data;
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id && !localStorage.getItem('dev_mode_role'),
   });
 
   const transactions: EarningRecord[] = ((data?.transactions ?? []) as Record<string, unknown>[]).map((tx) => ({
@@ -69,7 +69,7 @@ const EarningsReportView: React.FC = () => {
   if (isError) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
-        <AlertCircle size={48} className="text-red-400 mb-4" />
+        <AlertCircle size={48} className="text-destructive mb-4" />
         <p className="text-foreground font-medium mb-2">Could not load earnings data</p>
         <p className="text-muted-foreground text-sm mb-6">Check your connection and try again.</p>
         <button type="button" onClick={() => refetch()} className="px-4 py-2 bg-highlight text-white rounded-xl font-medium hover:opacity-90">

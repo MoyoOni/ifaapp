@@ -61,7 +61,7 @@ const MyCoursesView: React.FC<MyCoursesViewProps> = ({ onSelectEnrollment: _onSe
         throw e;
       }
     },
-    enabled: !!user,
+    enabled: !!user && !localStorage.getItem('dev_mode_role'),
   });
 
   if (enrollmentsLoading) {

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
 import api from '@/lib/api';
-import { getDemoAppointmentById, getDemoUserById, type DemoUser } from '@/demo';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { useSubscription } from '@/features/subscription/use-subscription';
 
@@ -10,6 +9,7 @@ interface Appointment {
   id: string;
   confirmationCode: string;
   babalawo: {
+    id?: string;
     name: string;
     avatar: string;
     specialty: string;
@@ -40,38 +40,27 @@ export const BookingConfirmation: React.FC = () => {
 
     const fetchAppointment = async () => {
       try {
-        const cached = sessionStorage.getItem(`demo-appointment:${appointmentId}`);
-        if (cached) {
-          setAppointment(JSON.parse(cached));
-          setLoading(false);
-          return;
-        }
-
         const response = await api.get(`/appointments/${appointmentId}`);
         const data = response.data;
-        setAppointment(data);
+        // Normalise API response — backend returns babalawo as a user object,
+        // not the flat shape the component expects
+        setAppointment({
+          id: data.id,
+          confirmationCode: data.confirmationCode ?? `CONF-${data.id.slice(-6).toUpperCase()}`,
+          babalawo: {
+            name: data.babalawo?.name ?? 'Babalawo',
+            avatar: data.babalawo?.avatar ?? '',
+            specialty: data.babalawo?.culturalLevel ?? 'Ifá Practitioner',
+          },
+          date: data.date,
+          time: data.time,
+          duration: data.duration ?? 60,
+          topic: data.topic ?? 'Consultation',
+          preferredMethod: data.preferredMethod ?? 'VIDEO',
+          price: data.price ?? 0,
+        });
       } catch (err) {
-        const demoAppointment = getDemoAppointmentById(appointmentId);
-        if (demoAppointment) {
-          const demoBaba = getDemoUserById(demoAppointment.babalawoId) as DemoUser | null;
-          setAppointment({
-            id: demoAppointment.id,
-            confirmationCode: `CONF-${demoAppointment.id.slice(-4).toUpperCase()}`,
-            babalawo: {
-              name: demoBaba?.name || 'Babalawo',
-              avatar: demoBaba?.avatar || '',
-              specialty: demoBaba?.specialization?.[0] || 'Ifa Divination',
-            },
-            date: demoAppointment.date,
-            time: demoAppointment.time,
-            duration: demoAppointment.duration,
-            topic: demoAppointment.notes || 'Consultation',
-            preferredMethod: demoAppointment.preferredMethod,
-            price: 0,
-          });
-        } else {
-          setError('Appointment not found.');
-        }
+        setError('Appointment not found.');
       } finally {
         setLoading(false);
       }
@@ -96,10 +85,10 @@ export const BookingConfirmation: React.FC = () => {
   if (error) {
     return (
       <div className="max-w-md mx-auto p-6 space-y-4">
-        <div className="p-4 text-sm text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/30 rounded-lg" role="alert">{error}</div>
+        <div className="p-4 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg" role="alert">{error}</div>
         <div className="flex gap-3">
-          <button onClick={() => navigate('/client/consultations')} className="px-4 py-2 font-semibold text-white bg-primary rounded-lg hover:bg-primary/90">View My Consultations</button>
-          <button onClick={() => navigate('/babalawo')} className="px-4 py-2 font-semibold text-stone-700 dark:text-stone-300 bg-muted rounded-lg hover:bg-stone-300">Find a Babalawo</button>
+          <button type="button" onClick={() => navigate('/client/consultations')} className="px-4 py-2 font-semibold text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors">View My Consultations</button>
+          <button type="button" onClick={() => navigate('/babalawo')} className="px-4 py-2 font-semibold text-foreground bg-muted rounded-lg hover:bg-muted/80 transition-colors">Find a Babalawo</button>
         </div>
       </div>
     );
@@ -108,7 +97,7 @@ export const BookingConfirmation: React.FC = () => {
 
   return (
     <div className="confirmation-page space-y-6">
-      <div className="p-4 my-4 text-sm text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30 rounded-lg" role="alert">
+      <div className="p-4 my-4 text-sm text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-lg" role="alert">
         ✓ Consultation Booked Successfully!
       </div>
 
@@ -121,54 +110,69 @@ export const BookingConfirmation: React.FC = () => {
         </div>
       )}
 
-      <div className="p-4 bg-card rounded-lg shadow">
-        <h3 className="text-lg font-semibold">Confirmation Code</h3>
+      <div className="p-4 bg-card rounded-lg shadow border border-border">
+        <h3 className="text-lg font-semibold text-foreground mb-3">Confirmation Code</h3>
         <div className="flex items-center space-x-4">
-          <code className="text-lg font-bold">{appointment.confirmationCode}</code>
-          <button onClick={copyCode} className="px-3 py-1 text-sm font-semibold text-white bg-gray-500 rounded-lg hover:bg-gray-700">
+          <code className="text-lg font-bold text-foreground">{appointment.confirmationCode}</code>
+          <button
+            type="button"
+            onClick={copyCode}
+            className="px-3 py-1 text-sm font-semibold text-foreground bg-muted rounded-lg hover:bg-muted/80 transition-colors border border-border"
+          >
             {copied ? 'Copied!' : 'Copy'}
           </button>
         </div>
       </div>
 
-      <div className="p-4 bg-card rounded-lg shadow">
-        <h3 className="text-lg font-semibold">Consultation Details</h3>
+      <div className="p-4 bg-card rounded-lg shadow border border-border">
+        <h3 className="text-lg font-semibold text-foreground mb-3">Consultation Details</h3>
         <div className="flex items-center space-x-4">
-          <img src={appointment.babalawo.avatar} alt={appointment.babalawo.name} className="w-16 h-16 rounded-full" />
+          <div className="w-16 h-16 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center shrink-0">
+            {appointment.babalawo.avatar ? (
+              <img src={appointment.babalawo.avatar} alt={appointment.babalawo.name} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-2xl font-bold text-primary brand-font">
+                {appointment.babalawo.name?.[0]?.toUpperCase() ?? '?'}
+              </span>
+            )}
+          </div>
           <div>
-            <p className="font-bold">{appointment.babalawo.name}</p>
+            <p className="font-bold text-foreground">{appointment.babalawo.name}</p>
             <p className="text-sm text-muted-foreground">{appointment.babalawo.specialty}</p>
           </div>
         </div>
-        <div className="mt-4 space-y-2">
-          <div><span>Date & Time:</span> <span>{new Date(`${appointment.date}T${appointment.time}`).toLocaleString()}</span></div>
-          <div><span>Duration:</span> <span>{appointment.duration} minutes</span></div>
-          <div><span>Topic:</span> <span>{appointment.topic}</span></div>
-          <div><span>Contact Method:</span> <span>{appointment.preferredMethod}</span></div>
+        <div className="mt-4 space-y-2 text-sm">
+          <div className="flex justify-between"><span className="text-muted-foreground">Date & Time</span> <span className="text-foreground font-medium">{new Date(`${appointment.date}T${appointment.time}`).toLocaleString()}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Duration</span> <span className="text-foreground font-medium">{appointment.duration} minutes</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Topic</span> <span className="text-foreground font-medium">{appointment.topic}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Contact Method</span> <span className="text-foreground font-medium">{appointment.preferredMethod}</span></div>
         </div>
       </div>
 
-      <div className="p-4 bg-card rounded-lg shadow">
-        <h3 className="text-lg font-semibold">Cost Breakdown</h3>
-        <div><span>Consultation Fee:</span> <span>₦{Number(appointment.price || 0).toLocaleString()}</span></div>
-        <div><span>Escrow Held:</span> <span>₦{Number(appointment.price || 0).toLocaleString()}</span></div>
-        <p className="text-sm text-muted-foreground">Payment will be released to the babalawo after the consultation is completed.</p>
+      <div className="p-4 bg-card rounded-lg shadow border border-border">
+        <h3 className="text-lg font-semibold text-foreground mb-3">Cost Breakdown</h3>
+        <div className="flex justify-between text-sm mb-1"><span className="text-muted-foreground">Consultation Fee</span> <span className="text-foreground font-medium">₦{Number(appointment.price || 0).toLocaleString()}</span></div>
+        <div className="flex justify-between text-sm mb-3"><span className="text-muted-foreground">Escrow Held</span> <span className="text-foreground font-medium">₦{Number(appointment.price || 0).toLocaleString()}</span></div>
+        <p className="text-xs text-muted-foreground">Payment will be released to the Babalawo after the consultation is completed.</p>
       </div>
-      
-      <div className="p-4 bg-card rounded-lg shadow">
-        <h3 className="text-lg font-semibold">What Happens Next</h3>
-        <ol className="list-decimal list-inside">
-            <li>{appointment.babalawo.name} will confirm within 24 hours</li>
-            <li>You'll receive a confirmation notification</li>
-            <li>Join the consultation via your preferred contact method</li>
-            <li>Receive your guidance plan after the consultation</li>
-            <li>Payment is released when consultation is marked complete</li>
+
+      <div className="p-4 bg-card rounded-lg shadow border border-border">
+        <h3 className="text-lg font-semibold text-foreground mb-3">What Happens Next</h3>
+        <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
+          <li>{appointment.babalawo.name} will confirm within 24 hours</li>
+          <li>You'll receive a confirmation notification</li>
+          <li>Join the consultation via your preferred contact method</li>
+          <li>Receive your guidance plan after the consultation</li>
+          <li>Payment is released when consultation is marked complete</li>
         </ol>
       </div>
 
-      <div className="flex space-x-4">
-        <button onClick={() => navigate('/client/consultations')} className="px-4 py-2 font-semibold text-white bg-blue-500 rounded-lg hover:bg-blue-700">View My Consultations</button>
-        <button onClick={() => navigate('/babalawo')} className="px-4 py-2 font-semibold text-foreground/90 bg-muted rounded-lg hover:bg-muted">Schedule Another</button>
+      <div className="flex flex-wrap gap-3">
+        <button type="button" onClick={() => navigate('/client/consultations')} className="px-4 py-2 font-semibold text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors">View My Consultations</button>
+        {appointment.babalawo.id && (
+          <button type="button" onClick={() => navigate(`/booking/${appointment.babalawo.id}`)} className="px-4 py-2 font-semibold text-foreground bg-muted rounded-lg hover:bg-muted/80 transition-colors border border-border">Book Again</button>
+        )}
+        <button type="button" onClick={() => navigate('/babalawo')} className="px-4 py-2 font-semibold text-muted-foreground bg-transparent rounded-lg hover:bg-muted/60 transition-colors text-sm">Find a different Babalawo</button>
       </div>
     </div>
   );

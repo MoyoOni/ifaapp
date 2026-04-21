@@ -59,11 +59,13 @@ export interface FeedPost {
   authorId: string;
   authorName: string;
   authorAvatar?: string;
+  authorRole?: string;
   content: string;
   createdAt: string;
   likes: number;
   comments: number;
   isPinned?: boolean;
+  patronOnly?: boolean;
 }
 
 export interface CircleDetailViewProps {

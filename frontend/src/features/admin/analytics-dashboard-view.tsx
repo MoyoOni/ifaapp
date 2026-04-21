@@ -30,6 +30,70 @@ interface Analytics {
  * Analytics Dashboard View
  * Platform analytics and metrics with configurable time periods
  */
+interface FunnelStep { step: string; count: number; }
+
+const OnboardingFunnelSection: React.FC = () => {
+  const [days, setDays] = useState(30);
+  const { data: funnel = [], isLoading } = useQuery<FunnelStep[]>({
+    queryKey: ['onboarding-funnel', days],
+    queryFn: async () => {
+      const r = await api.get(`/analytics/onboarding-funnel?days=${days}`);
+      return r.data;
+    },
+    staleTime: 5 * 60_000,
+  });
+
+  const maxCount = Math.max(...funnel.map((f) => f.count), 1);
+
+  const stepLabels: Record<string, string> = {
+    welcome: 'Welcome', intent: 'Intent', preferences: 'Preferences',
+    heritage: 'Heritage', 'role-setup': 'Role Setup', username: 'Username',
+    credentials: 'Credentials', 'discover-temples': 'Discover Temples',
+    form: 'Profile Form', avatar: 'Avatar', complete: 'Complete',
+  };
+
+  return (
+    <div className="bg-card border border-border rounded-2xl p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-bold text-foreground">Onboarding Funnel</h3>
+        <select
+          aria-label="Funnel time period"
+          value={days}
+          onChange={(e) => setDays(Number(e.target.value))}
+          className="text-xs bg-muted border border-border rounded-lg px-2 py-1 text-foreground"
+        >
+          <option value={7}>Last 7 days</option>
+          <option value={30}>Last 30 days</option>
+          <option value={90}>Last 90 days</option>
+        </select>
+      </div>
+      {isLoading ? (
+        <div className="py-8 flex justify-center"><LoadingSpinner /></div>
+      ) : (
+        <div className="space-y-2">
+          {funnel.map((step, i) => (
+            <div key={step.step} className="flex items-center gap-3">
+              <span className="text-xs text-muted-foreground w-32 truncate">{stepLabels[step.step] ?? step.step}</span>
+              <div className="flex-1 bg-muted rounded-full h-5 overflow-hidden">
+                <div
+                  className="h-5 rounded-full bg-primary/70 transition-all [width:var(--bar-w)]"
+                  style={{ '--bar-w': `${(step.count / maxCount) * 100}%` } as React.CSSProperties}
+                />
+              </div>
+              <span className="text-xs font-bold text-foreground w-8 text-right">{step.count}</span>
+              {i > 0 && funnel[i - 1].count > 0 && (
+                <span className="text-xs text-muted-foreground w-12 text-right">
+                  {Math.round((step.count / funnel[i - 1].count) * 100)}%
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const AnalyticsDashboardView: React.FC = () => {
   const [period, setPeriod] = useState<'7d' | '30d' | '90d'>('30d');
 
@@ -89,6 +153,7 @@ const AnalyticsDashboardView: React.FC = () => {
         <div className="flex items-center gap-2">
           {(['7d', '30d', '90d'] as const).map((p) => (
             <button
+              type="button"
               key={p}
               onClick={() => setPeriod(p)}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${period === p
@@ -214,6 +279,8 @@ const AnalyticsDashboardView: React.FC = () => {
           </div>
         )}
       </div>
+
+      <OnboardingFunnelSection />
     </div>
   );
 };

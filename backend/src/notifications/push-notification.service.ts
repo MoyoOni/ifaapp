@@ -1,333 +1,292 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as admin from 'firebase-admin';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
-
-export enum Platform {
-  ANDROID = 'ANDROID',
-  IOS = 'IOS',
-  WEB = 'WEB',
-}
-
-export interface DeviceTokenDto {
-  userId: string;
-  token: string;
-  platform: Platform;
-  deviceInfo?: any;
-}
-
-export interface PushNotificationPayload {
-  title: string;
-  body: string;
-  data?: Record<string, string>;
-  userId?: string; // If targeting specific user
-}
+import { User } from '@prisma/client';
+import * as admin from 'firebase-admin';
 
 @Injectable()
 export class PushNotificationService {
   private readonly logger = new Logger(PushNotificationService.name);
+  private fcm: admin.messaging.Messaging;
 
   constructor(
     private configService: ConfigService,
-    private prisma: PrismaService,
-    @InjectQueue('notifications') private readonly notificationsQueue: Queue
+    private prisma: PrismaService
   ) {
-    this.initializeFirebase();
-  }
-
-  private initializeFirebase() {
+    // Initialize Firebase Admin SDK
     try {
-      // Check if Firebase is already initialized
-      if (admin.apps.length > 0) {
-        this.logger.log('Firebase Admin already initialized');
-        return;
-      }
-
-      // Initialize Firebase Admin SDK
-      const serviceAccount = this.configService.get<string>('FIREBASE_SERVICE_ACCOUNT');
-
-      if (serviceAccount) {
-        // Parse service account from environment variable
-        const serviceAccountParsed = JSON.parse(serviceAccount);
-
-        admin.initializeApp({
-          credential: admin.credential.cert(serviceAccountParsed),
-        });
-
-        this.logger.log('Firebase Admin initialized successfully');
-      } else {
-        this.logger.warn('Firebase service account not configured - push notifications disabled');
-      }
-    } catch (error) {
-      this.logger.error('Failed to initialize Firebase Admin:', error);
-    }
-  }
-
-  /**
-   * Register or update device token for a user
-   */
-  async registerDeviceToken(dto: DeviceTokenDto): Promise<void> {
-    try {
-      // Deactivate existing tokens for this user and platform
-      await this.prisma.deviceToken.updateMany({
-        where: {
-          userId: dto.userId,
-          platform: dto.platform,
-          active: true,
-        },
-        data: {
-          active: false,
-        },
-      });
-
-      // Create or update device token
-      await this.prisma.deviceToken.upsert({
-        where: {
-          token: dto.token,
-        },
-        update: {
-          userId: dto.userId,
-          platform: dto.platform,
-          deviceInfo: dto.deviceInfo,
-          active: true,
-          updatedAt: new Date(),
-        },
-        create: {
-          userId: dto.userId,
-          token: dto.token,
-          platform: dto.platform,
-          deviceInfo: dto.deviceInfo,
-          active: true,
-        },
-      });
-
-      this.logger.log(`Device token registered for user ${dto.userId} (${dto.platform})`);
-    } catch (error) {
-      this.logger.error(`Failed to register device token: ${(error as any).message}`);
-      throw error;
-    }
-  }
-
-  /**
-   * Remove device token (logout or app uninstall)
-   */
-  async removeDeviceToken(token: string): Promise<void> {
-    try {
-      await this.prisma.deviceToken.update({
-        where: { token },
-        data: { active: false },
-      });
-
-      this.logger.log(`Device token removed: ${token.substring(0, 20)}...`);
-    } catch (error) {
-      this.logger.error(`Failed to remove device token: ${(error as any).message}`);
-      throw error;
-    }
-  }
-
-  /**
-   * Queue push notification to a specific user
-   */
-  async sendToUser(userId: string, payload: PushNotificationPayload): Promise<void> {
-    this.logger.log(`Queueing push notification for user ${userId}`);
-    await this.notificationsQueue.add('sendPush', { userId, payload });
-  }
-
-  /**
-   * Actual execution of push sending (called by worker)
-   */
-  async executeSendPush(userId: string, payload: PushNotificationPayload): Promise<void> {
-    try {
-      // Get active device tokens for user
-      const deviceTokens = await this.prisma.deviceToken.findMany({
-        where: {
-          userId,
-          active: true,
-        },
-        select: {
-          token: true,
-          platform: true,
-        },
-      });
-
-      if (deviceTokens.length === 0) {
-        this.logger.debug(`No active device tokens found for user ${userId}`);
-        return;
-      }
-
-      // Prepare FCM message
-      const message: any = {
-        notification: {
-          title: payload.title,
-          body: payload.body,
-        },
-        data: payload.data || {},
-        tokens: deviceTokens.map((dt: any) => dt.token),
-      };
-
-      // Send multicast message
-      let response;
-      try {
-        const messaging = admin.messaging();
-
-        // Access sendMulticast dynamically to handle different Firebase Admin versions
-        if (
-          'sendMulticast' in messaging &&
-          typeof (messaging as any).sendMulticast === 'function'
-        ) {
-          response = await (messaging as any).sendMulticast(message);
-        } else {
-          // Use sendEachForMulticast for newer Firebase Admin versions
-          response = await messaging.sendEachForMulticast(message);
-        }
-      } catch (error: any) {
-        // If sendMulticast fails, try sendEachForMulticast (newer versions)
-        if (
-          error.code === 'messaging/unknown-error' ||
-          error.code === 'messaging/unsupported-algorithm' ||
-          error.message?.includes('sendMulticast')
-        ) {
-          response = await admin.messaging().sendEachForMulticast(message);
-          // Ensure response has the expected properties
-          if (!response.hasOwnProperty('successCount')) {
-            response.successCount = response.responses.filter((r: any) => r.success).length;
-          }
-          if (!response.hasOwnProperty('failureCount')) {
-            response.failureCount = response.responses.filter((r: any) => !r.success).length;
-          }
-        } else {
-          this.logger.error(`Failed to send push notification: ${error.message}`);
-          throw error;
-        }
-      }
-
-      this.logger.log(
-        `Push notification sent to user ${userId}: ${response.successCount}/${response.responses.length} successful`
-      );
-
-      // Log failed tokens
-      if (response.failureCount > 0) {
-        response.responses.forEach((resp: any, idx: number) => {
-          if (!resp.success) {
-            this.logger.warn(
-              `Failed to send push to token ${deviceTokens[idx].token.substring(0, 20)}...: ${resp.error?.message}`
-            );
-
-            // Deactivate invalid tokens
-            if (
-              resp.error?.code === 'messaging/invalid-registration-token' ||
-              resp.error?.code === 'messaging/registration-token-not-registered'
-            ) {
-              this.removeDeviceToken(deviceTokens[idx].token).catch((err) =>
-                this.logger.error('Failed to remove invalid token:', err)
-              );
-            }
-          }
-        });
-      }
-    } catch (error) {
-      this.logger.error(
-        `Failed to send push notification to user ${userId}: ${(error as any).message}`
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * Send push notification to multiple users
-   */
-  async sendToUsers(userIds: string[], payload: PushNotificationPayload): Promise<void> {
-    try {
-      for (const userId of userIds) {
-        await this.sendToUser(userId, payload);
-      }
-    } catch (error) {
-      this.logger.error(`Failed to send push notifications to users: ${(error as any).message}`);
-      throw error;
-    }
-  }
-
-  /**
-   * Send broadcast notification to all users
-   */
-  async sendBroadcast(payload: PushNotificationPayload): Promise<void> {
-    try {
-      // Get all active device tokens (in batches to avoid memory issues)
-      const batchSize = 1000;
-      let skip = 0;
-      let hasMore = true;
-
-      while (hasMore) {
-        const deviceTokens = await this.prisma.deviceToken.findMany({
-          where: { active: true },
-          select: { token: true },
-          skip,
-          take: batchSize,
-        });
-
-        if (deviceTokens.length === 0) {
-          hasMore = false;
-          break;
-        }
-
-        // Prepare FCM message
-        const message: any = {
-          notification: {
-            title: payload.title,
-            body: payload.body,
-          },
-          data: payload.data || {},
-          tokens: deviceTokens.map((dt: any) => dt.token),
+      // Check if Firebase Admin is already initialized
+      if (admin.apps.length === 0) {
+        // Initialize Firebase Admin SDK with service account
+        const firebaseConfig = {
+          type: this.configService.get<string>('FIREBASE_TYPE'),
+          project_id: this.configService.get<string>('FIREBASE_PROJECT_ID'),
+          private_key_id: this.configService.get<string>('FIREBASE_PRIVATE_KEY_ID'),
+          private_key: this.configService.get<string>('FIREBASE_PRIVATE_KEY')?.replace(/\\n/g, '\n'),
+          client_email: this.configService.get<string>('FIREBASE_CLIENT_EMAIL'),
+          client_id: this.configService.get<string>('FIREBASE_CLIENT_ID'),
+          auth_uri: this.configService.get<string>('FIREBASE_AUTH_URI'),
+          token_uri: this.configService.get<string>('FIREBASE_TOKEN_URI'),
+          auth_provider_x509_cert_url: this.configService.get<string>('FIREBASE_AUTH_PROVIDER_X509_CERT_URL'),
+          client_x509_cert_url: this.configService.get<string>('FIREBASE_CLIENT_X509_CERT_URL'),
         };
 
-        // Send multicast message
-        const response: any = await (admin.messaging() as any).sendMulticast(message);
-
-        this.logger.log(
-          `Broadcast push batch sent: ${response.successCount}/${response.responses.length} successful`
-        );
-
-        skip += batchSize;
-        hasMore = deviceTokens.length === batchSize;
+        admin.initializeApp({
+          credential: admin.credential.cert(firebaseConfig),
+        });
       }
+
+      this.fcm = admin.messaging();
+      this.logger.log('Firebase Cloud Messaging initialized successfully');
     } catch (error) {
-      this.logger.error(`Failed to send broadcast push notification: ${(error as any).message}`);
-      throw error;
+      this.logger.error('Failed to initialize Firebase Admin SDK:', error);
+      throw new Error('Firebase initialization failed. Check your Firebase configuration.');
     }
   }
 
   /**
-   * Get active device tokens count for a user
+   * Subscribe a user to push notifications
    */
-  async getUserDeviceCount(userId: string): Promise<number> {
-    return this.prisma.deviceToken.count({
-      where: {
-        userId,
-        active: true,
-      },
+  async subscribeUser(userId: string, token: string): Promise<{ success: boolean; message: string }> {
+    this.logger.log(`Subscribing user ${userId} to push notifications`);
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
     });
+
+    if (!user) {
+      throw new BadRequestException(`User with ID ${userId} not found`);
+    }
+
+    try {
+      // Verify the token is valid
+      await this.fcm.subscribeToTopic([token], 'all-users');
+      
+      // Store the token in the user's record
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { 
+          fcmTokens: {
+            push: token
+          }
+        },
+      });
+
+      this.logger.log(`User ${userId} subscribed to push notifications successfully`);
+      return {
+        success: true,
+        message: 'Successfully subscribed to push notifications'
+      };
+    } catch (error) {
+      this.logger.error(`Failed to subscribe user ${userId}:`, error);
+      return {
+        success: false,
+        message: 'Failed to subscribe to push notifications'
+      };
+    }
   }
 
   /**
-   * Get user's active device tokens
+   * Unsubscribe a user from push notifications
    */
-  async getUserDevices(userId: string): Promise<any[]> {
-    return this.prisma.deviceToken.findMany({
+  async unsubscribeUser(userId: string, token: string): Promise<{ success: boolean; message: string }> {
+    this.logger.log(`Unsubscribing user ${userId} from push notifications`);
+
+    try {
+      await this.fcm.unsubscribeFromTopic([token], 'all-users');
+      
+      // Remove the token from the user's record
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (user && user.fcmTokens) {
+        const updatedTokens = user.fcmTokens.filter(t => t !== token);
+        await this.prisma.user.update({
+          where: { id: userId },
+          data: { 
+            fcmTokens: updatedTokens
+          },
+        });
+      }
+
+      this.logger.log(`User ${userId} unsubscribed from push notifications successfully`);
+      return {
+        success: true,
+        message: 'Successfully unsubscribed from push notifications'
+      };
+    } catch (error) {
+      this.logger.error(`Failed to unsubscribe user ${userId}:`, error);
+      return {
+        success: false,
+        message: 'Failed to unsubscribe from push notifications'
+      };
+    }
+  }
+
+  /**
+   * Send a push notification to a specific user
+   */
+  async sendNotificationToUser(
+    userId: string, 
+    title: string, 
+    body: string,
+    data?: Record<string, string>
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    this.logger.log(`Sending push notification to user ${userId}`);
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user || !user.fcmTokens || user.fcmTokens.length === 0) {
+      return {
+        success: false,
+        error: 'User has no registered push notification tokens'
+      };
+    }
+
+    try {
+      const message: admin.messaging.Message = {
+        notification: {
+          title,
+          body,
+        },
+        data: data || {},
+        tokens: user.fcmTokens,
+      };
+
+      const response = await this.fcm.sendMulticast(message);
+      
+      this.logger.log(`Push notification sent to user ${userId} successfully`);
+      return {
+        success: true,
+        messageId: response.successCount > 0 ? 'messageId' : undefined
+      };
+    } catch (error) {
+      this.logger.error(`Failed to send push notification to user ${userId}:`, error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Send a push notification to multiple users
+   */
+  async sendNotificationToManyUsers(
+    userIds: string[], 
+    title: string, 
+    body: string,
+    data?: Record<string, string>
+  ): Promise<{ success: boolean; successCount: number; failureCount: number }> {
+    this.logger.log(`Sending push notification to ${userIds.length} users`);
+
+    // Get all users with their FCM tokens
+    const users = await this.prisma.user.findMany({
       where: {
-        userId,
-        active: true,
+        id: {
+          in: userIds
+        }
       },
       select: {
         id: true,
-        platform: true,
-        deviceInfo: true,
-        createdAt: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
+        fcmTokens: true
+      }
     });
+
+    // Collect all valid tokens
+    const allTokens: string[] = [];
+    for (const user of users) {
+      if (user.fcmTokens && user.fcmTokens.length > 0) {
+        allTokens.push(...user.fcmTokens);
+      }
+    }
+
+    if (allTokens.length === 0) {
+      this.logger.warn('No valid FCM tokens found for the specified users');
+      return {
+        success: false,
+        successCount: 0,
+        failureCount: userIds.length
+      };
+    }
+
+    try {
+      const message: admin.messaging.MulticastMessage = {
+        notification: {
+          title,
+          body,
+        },
+        data: data || {},
+        tokens: allTokens,
+      };
+
+      const response = await this.fcm.sendMulticast(message);
+      
+      this.logger.log(`Push notification sent to multiple users successfully`);
+      return {
+        success: true,
+        successCount: response.successCount,
+        failureCount: response.failureCount
+      };
+    } catch (error) {
+      this.logger.error('Failed to send multicast push notification:', error);
+      return {
+        success: false,
+        successCount: 0,
+        failureCount: allTokens.length
+      };
+    }
+  }
+
+  /**
+   * Send booking reminder notifications
+   */
+  async sendBookingReminderNotification(
+    userId: string,
+    appointmentId: string,
+    appointmentTitle: string,
+    appointmentTime: Date
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    const title = 'Appointment Reminder';
+    const body = `Your "${appointmentTitle}" appointment is coming up at ${appointmentTime.toLocaleTimeString()}`;
+    const data = {
+      type: 'appointment_reminder',
+      appointmentId,
+      userId
+    };
+
+    return this.sendNotificationToUser(userId, title, body, data);
+  }
+
+  /**
+   * Send message received notifications
+   */
+  async sendMessageReceivedNotification(
+    userId: string,
+    senderName: string,
+    messagePreview: string
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    const title = 'New Message';
+    const body = `${senderName}: ${messagePreview.substring(0, 50)}${messagePreview.length > 50 ? '...' : ''}`;
+    const data = {
+      type: 'new_message',
+      userId
+    };
+
+    return this.sendNotificationToUser(userId, title, body, data);
+  }
+
+  /**
+   * Send system notifications
+   */
+  async sendSystemNotification(
+    userIds: string[],
+    title: string,
+    body: string
+  ): Promise<{ success: boolean; successCount: number; failureCount: number }> {
+    return this.sendNotificationToManyUsers(userIds, title, body, { type: 'system_notification' });
   }
 }

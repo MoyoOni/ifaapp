@@ -78,12 +78,120 @@ Before working on production launch tasks, AI agents MUST read:
 
 ---
 
-## Current Status (Last Updated: March 16, 2026)
+## Current Status (Last Updated: April 17, 2026)
 
 **Production is LIVE at https://iluase.com**
-**ALL 10 SPRINTS COMPLETE — 241/241 SP. Target: April 1 Launch.**
+**ALL 10 SPRINTS COMPLETE — 241/241 SP. V9 FORUM LAUNCH: 4/5 Stories DONE.**
 
-### Infrastructure (March 16, 2026)
+### Experience Backlog — 🔵 IN PROGRESS (April 18, 2026)
+
+Active work tracked in **[EXPERIENCE_BACKLOG.md](EXPERIENCE_BACKLOG.md)**.
+
+**Completed stories (April 18, 2026):**
+- ✅ EXP-028 · Smart Dashboard CTAs — `JourneyCtaCard` + `deriveDashboardState()`, wired to client dashboard
+- ✅ EXP-015 · Guidance Plan Templates — `GuidancePlanTemplate` model, 3 endpoints, template chips UI in prescription form
+- ✅ EXP-014 · Client Relationship Timeline — merged appointments + guidance plans endpoint, `ClientTimeline` in My Seekers
+- ✅ EXP-017 · Advanced Availability Rules — extended availability JSON (blackout dates, advance booking window, min notice), full SetAvailability UI
+- ✅ EXP-018 · Post-Session Follow-Up Prompt — `scheduledAt` on Notification, 24h delayed follow-up, action buttons in notification dropdown
+- ✅ EXP-022 · Rebooking Shortcuts — real-data client consultations view, "Book Again" buttons, weekly cron nudge service
+- ✅ EXP-027 · Referral Programme (All Clients) — universal referral panel, ₦500 first-booking reward, WhatsApp/Email share, reward on appointment complete
+- ✅ EXP-029 · Spiritual Milestones & Badges — `GET /users/:id/badges` (7 computed milestones), badge strip with hover tooltips on profile
+
+**Schema migrations added:**
+- `20260418000003_add_guidance_plan_templates` — `GuidancePlanTemplate` table
+- `20260418000004_add_notification_scheduled_at` — `scheduledAt` column on `Notification`
+
+**Next:** EXP-030 (Onboarding A/B Test Infrastructure) or any Sprint 9 story
+
+---
+
+### Admin Operations Backlog — 🔵 IN PROGRESS (April 17, 2026)
+
+Active work tracked in **[ADMIN_BACKLOG.md](ADMIN_BACKLOG.md)** — 32 stories (ADM-001 through ADM-032).
+
+**Sprint 1 (Daily Operations) — ✅ COMPLETE:**
+- ✅ ADM-001 Morning Dashboard — `GET /admin/morning-brief`, signups/revenue/pending-actions/forum/health
+- ✅ ADM-002 User Role Management UI — role change dialog with mandatory reason, ADMIN sub-role picker, audit log
+- ✅ ADM-003 User Suspension & Ban System — `suspendedUntil`/`bannedAt`/`banReason`/`warnCount` in schema, service wired, frontend modals
+- ✅ ADM-004 Forum Category & Thread Management — backend API + frontend tab (category create/archive/reorder wired)
+- ✅ ADM-005 Platform Announcement System — `Announcement` model + migration, full CRUD wired to DB
+
+**Sprint 2 (Practitioner Operations) — ✅ COMPLETE:**
+- ✅ ADM-006 Practitioner Performance Dashboard — service + frontend tab
+- ✅ ADM-007 Featured Practitioners — `isFeatured`/`featuredOrder`/`featuredExpiry` in schema + migration, fully wired
+- ✅ ADM-008 Practitioner Complaint Handling — `PractitionerComplaint` model + migration, full CRUD wired to DB
+- ✅ ADM-009 Trust Score Management — `trustScoreOverride` fields, breakdown/update/history endpoints, frontend tab
+- ✅ ADM-010 Inactive Practitioner Re-engagement — threshold control, mark-on-leave/deactivate/reactivate actions
+- ✅ ADM-011 Financial Command Centre — 7 metrics + 6-month Recharts revenue chart, ₦ NGN
+
+**Sprint 3 (Revenue Operations) — ✅ COMPLETE:**
+- ✅ ADM-012 Refund Management UI — `RefundRequest` model + migration, full CRUD endpoints, `admin-refunds-tab.tsx`
+- ✅ ADM-013 Subscription Management — active/churn/failed-payment views, cancel/extend/send-reminder actions
+- ✅ ADM-014 Commission Rate Settings — `PlatformSettings` singleton model + migration, `admin-settings-tab.tsx` with live preview
+
+**Sprint 4 (Content & Community Management) — ✅ COMPLETE:**
+- ✅ ADM-015 Cultural Content Calendar — `OralHistoryEntry` + `SacredCalendarEvent` models, 12 endpoints, `admin-cultural-content-tab.tsx`
+- ✅ ADM-016 Featured Content Management — `isFeatured`/`featuredUntil` on ForumThread/Product/Course/Circle, 3 endpoints, `admin-featured-content-tab.tsx`
+- ✅ ADM-017 Community Recognition System — `UserBadge` model + migration, getCommunityStars/awardBadge/revokeBadge endpoints, `admin-community-tab.tsx`
+- ✅ ADM-018 Cultural Integrity Review Queue — `heldForReview` on ForumPost + `ContentFlagRule` model, 7 endpoints, `admin-integrity-tab.tsx`
+- ✅ ADM-023 Forum Intelligence Dashboard — wired `GET /forum/admin/metrics` to `admin-forum-intelligence-tab.tsx`
+
+**Sprint 5 (Growth & Marketing Tools) — ✅ COMPLETE:**
+- ✅ ADM-019 Segmented Email Campaigns — `EmailCampaign` model + migration, getCampaigns/createCampaign/sendCampaign/deleteCampaign endpoints, `admin-campaigns-tab.tsx`
+- ✅ ADM-020 Promo Code & Discount System — `PromoCode` + `PromoRedemption` models + migration, CRUD endpoints, `admin-promos-tab.tsx`
+- ✅ ADM-021 Referral Program Management — uses existing `Referral` model, stats/list/credit endpoints, `admin-referrals-tab.tsx`
+
+**Sprint 6 (Deep Analytics & Intelligence) — ✅ COMPLETE:**
+- ✅ ADM-023 Forum Intelligence Dashboard — wired `GET /forum/admin/metrics` to `admin-forum-intelligence-tab.tsx`
+- ✅ ADM-024 Practitioner Leaderboard & Market Intelligence — `getPractitionerLeaderboard()`, `getMarketIntelligence()` service methods, controller endpoints, `admin-market-intelligence-tab.tsx` with leaderboard + demand signals
+- ✅ ADM-025 Revenue Forecasting — `getRevenueForecasts()` service method, controller endpoint, `admin-forecasting-tab.tsx` with scenario modeling + trend charts
+
+**Schema migrations (April 16–17):**
+- `20260416000003_add_admin_suspension_featured_complaint` — `suspendedUntil`, `bannedAt`, `banReason`, `warnCount`, `isFeatured`, `featuredOrder`, `featuredExpiry` on `users`; `Announcement`, `PractitionerComplaint` tables
+- `20260416000005_add_platform_settings` — `PlatformSettings` singleton table
+- `20260417000001_add_cultural_content` — `OralHistoryEntry`, `SacredCalendarEvent` tables
+- `20260417000002_add_featured_content` — `isFeatured`/`featuredUntil` on ForumThread/Product/Course/Circle
+- `20260417000003_add_user_badges` — `UserBadge` table
+- `20260417000004_add_cultural_integrity_queue` — `heldForReview`/`reviewReason`/`reviewedBy`/`reviewedAt` on ForumPost; `ContentFlagRule` table
+- `20260417000005_add_sprint5_campaigns_promos_referrals` — `EmailCampaign`, `PromoCode`, `PromoRedemption` tables
+
+**Next:** ADM-022 User Lifecycle Analytics (Sprint 7 — TBD)
+
+### Demo Data Cleanup — ✅ COMPLETE (March 24, 2026)
+
+All demo data fallbacks (TYPE 2) and missing dev-mode query guards (TYPE 1) have been removed across the frontend. All four roles verified working cleanly:
+
+**What was done:**
+- Removed demo data fallbacks from: `temple-detail-view.tsx`, `circle-detail-view.tsx`, `thread-view.tsx`, `lesson-player-view.tsx`, `course-detail-view.tsx`, `prescription-creation-form.tsx`, `BookingConfirmation.tsx`, `BookingPage.tsx`, `BookingForm.tsx`
+- Added `enabled: !localStorage.getItem('dev_mode_role')` guards to: `academy-view.tsx`, `babalawo-discovery-view.tsx`, `temple-connection-view.tsx` (both queries)
+- Fixed React Rules of Hooks violation in `BookingForm.tsx` (hooks now declared before conditional return)
+- Removed fake `demo-apt-*` sessionStorage appointment creation from booking flow
+
+**Platform health (all roles verified — March 24, 2026):**
+- ✅ **CLIENT** — Booking flow, consultations, academy, marketplace all working with real data
+- ✅ **BABALAWO** — Discovery, profile, booking management working
+- ✅ **VENDOR** — Marketplace, orders working
+- ✅ **ADMIN** — Dashboard, reports, forum moderation working
+- ✅ No 401 spam in dev mode (all queries properly gated)
+- ✅ No demo content surfacing as real data to users
+
+### V9 Forum Launch — Sprint 9 (Just Completed March 23, 2026)
+
+✅ **F9-901: Practitioner Trust Score** — `trustScore` field added to User, `recomputeTrustScore()` and `getTrustScoreTier()` methods implemented, `trust-score-badge.tsx` component created
+
+✅ **F9-902: Cultural Onboarding Gate** — `passedCulturalOrientation` field added, validation in `createPost()`, modal with 3 questions requiring 2/3 correct, `PATCH /users/:id/cultural-orientation` endpoint
+
+✅ **F9-903: Forum Health Metrics** — `getDetailedMetrics(period)` method implemented, `GET /forum/admin/metrics?period=7d|30d|90d` endpoint for admin analytics
+
+🟡 **F9-904: Oral History Archive** — Deferred to separate seeding task (structure ready)
+
+✅ **F9-905: Youth Corner Category** — 10th category added to seed script, will appear after `npm run seed:forum-categories`
+
+**Database:** Migration `20260323000010_add_sprint9_trust_and_onboarding` applied ✅  
+**Backend Build:** PASS ✅  
+**Frontend Build:** PASS ✅
+
+### Infrastructure (March 16, 2026) — Still Valid
 
 ✅ **Staging** — EC2 t3.small, Docker Compose, http://100.52.200.113:4040
 ✅ **Production** — ECS Fargate (2×backend task def :8 / 2×frontend), multi-AZ RDS Postgres 16, Redis 7 cluster, ALB, ACM wildcard cert, Route53 DNS
@@ -347,31 +455,23 @@ All V1 EPICs routed and complete. Focus is now Sprint 10 infrastructure tasks.
 
 ---
 
-## V2 Status (Production Readiness Progress)
+## V2 Status (Production Readiness Progress) — ✅ CONSOLIDATED
 
-**Current Phase:** Phase 1 — Foundation (CORE Priority)
+**Status:** All V2 production readiness work has been consolidated into Z1_BACKLOG.md with detailed sprint planning and implementation priorities.
 
-| Epic | Focus | Progress | Status |
-|------|-------|----------|--------|
-| **EPIC-201** | Testing & QA 🧪 | 0/5 items | ⚪ NOT STARTED |
-| **EPIC-202** | Error Handling 🔍 | 0/5 items | 🟠 PARTIAL (logger exists) |
-| **EPIC-203** | Code Quality 🏗️ | 0/5 items | ⚪ NOT STARTED |
-| **EPIC-204** | Security 🔒 | 0/5 items | ⚪ NOT STARTED |
-| **EPIC-205** | Performance ⚡ | 0/5 items | ⚪ NOT STARTED |
-| **EPIC-206** | Unfinished TODOs 🚧 | 0/5 items | ⚪ NOT STARTED |
+**New Location:** See Z1_BACKLOG.md for complete V2 work breakdown:
+- Sprint Z1-1: Foundation (Testing & Observability)
+- Sprint Z1-4: Security & Performance Hardening
+- Sprint Z1-6: Testing Coverage Ramp-Up
+- Sprint Z1-7: Observability & Monitoring
+- Sprint Z1-9: Performance & Scale
 
-**Production Metrics:**
+**Previous Status (for reference):**
 - Backend unit test coverage: **3%** (target: 80%)
 - Frontend component coverage: **0%** (target: 60%)
 - E2E critical flows: **0 scenarios** (target: 20+)
 - Error tracking: **❌ None** (target: ✅ Sentry)
 - Unfinished TODOs: **20+** (target: 0)
-- Largest file: **12,481 LOC** (target: <1,000 LOC)
-
-**Next V2 Actions:**
-1. ⚪ PB-201.1 — Unit Test Coverage (auth, appointments, payments, prescriptions, wallet)
-2. ⚪ PB-202.1 — Sentry Integration (frontend + backend)
-3. ⚪ PB-206.1 — Complete Payment Refunds
 
 ---
 
@@ -385,7 +485,12 @@ All V1 EPICs routed and complete. Focus is now Sprint 10 infrastructure tasks.
 - Cultural authenticity maintained (Yoruba terminology)
 - The spiritual journey feature is DEFERRED to post-MVP (see SPIRITUAL_JOURNEY_EVALUATION.md)
 
-### V2 Phase (Production Readiness) — 🚧 ACTIVE
+### V2 Phase (Production Readiness) — ✅ CONSOLIDATED into Z1_BACKLOG.md
+**Date:** April 19, 2026
+**Status:** All V2 production readiness work catalogued and prioritized in Z1_BACKLOG.md
+**Remaining:** 6 epics (testing, error handling, code quality, security, performance, TODOs)
+**New Location:** See Z1_BACKLOG.md for complete V2 work breakdown with sprint planning.
+
 - Focus on depth, not breadth
 - Test-Driven Development required
 - Complete 20+ TODO items (refunds, email notifications, push notifications, etc.)

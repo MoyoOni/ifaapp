@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Gift, Copy, CheckCircle, Users, Loader2, Sparkles } from 'lucide-react';
+import { Gift, Copy, CheckCircle, Users, Loader2, Sparkles, MessageCircle, Mail } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 
@@ -8,6 +8,7 @@ interface ReferralStats {
   referralCode: string;
   referralCount: number;
   rewardedCount: number;
+  isCommunityBuilder?: boolean;
   referrals: {
     id: string;
     name: string;
@@ -23,7 +24,7 @@ const ReferralPanel: React.FC = () => {
   const { data, isLoading } = useQuery<ReferralStats>({
     queryKey: ['referral-stats', user?.id],
     queryFn: () => api.get('/users/referral-stats').then(r => r.data),
-    enabled: !!user,
+    enabled: !!user && !localStorage.getItem('dev_mode_role'),
   });
 
   const referralUrl = data?.referralCode
@@ -53,23 +54,41 @@ const ReferralPanel: React.FC = () => {
       </div>
 
       <p className="text-sm text-muted-foreground">
-        When a friend joins using your link and becomes Devoted, you both earn 30 days free.
+        Invite a friend to Ìlú Àṣẹ. When they complete their first booking, you both receive ₦500 wallet credit.
       </p>
 
       {/* Referral link */}
       {referralUrl && (
-        <div className="flex items-center gap-2">
-          <div className="flex-1 bg-muted/60 border border-border rounded-xl px-4 py-3 text-sm text-muted-foreground font-mono truncate">
-            {referralUrl}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <div className="flex-1 bg-muted/60 border border-border rounded-xl px-4 py-3 text-sm text-muted-foreground font-mono truncate">
+              {referralUrl}
+            </div>
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="flex items-center gap-1.5 px-4 py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold transition-colors flex-shrink-0"
+            >
+              {copied ? <CheckCircle size={14} /> : <Copy size={14} />}
+              {copied ? 'Copied!' : 'Copy'}
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={handleCopy}
-            className="flex items-center gap-1.5 px-4 py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold transition-colors flex-shrink-0"
-          >
-            {copied ? <CheckCircle size={14} /> : <Copy size={14} />}
-            {copied ? 'Copied!' : 'Copy'}
-          </button>
+          <div className="flex gap-2">
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(`Join me on Ìlú Àṣẹ, the digital sanctuary for Ifá culture. Sign up here: ${referralUrl}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white text-xs font-semibold transition-colors"
+            >
+              <MessageCircle size={12} /> WhatsApp
+            </a>
+            <a
+              href={`mailto:?subject=${encodeURIComponent('Join me on Ìlú Àṣẹ')}&body=${encodeURIComponent(`I'd like to invite you to Ìlú Àṣẹ — a digital sanctuary for Ifá culture and spiritual guidance.\n\nSign up here: ${referralUrl}`)}`}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-muted border border-border text-foreground text-xs font-semibold hover:bg-muted/80 transition-colors"
+            >
+              <Mail size={12} /> Email
+            </a>
+          </div>
         </div>
       )}
 
@@ -89,6 +108,34 @@ const ReferralPanel: React.FC = () => {
         </div>
       </div>
 
+      {/* F9-703: Community Builder badge progress */}
+      {!data?.isCommunityBuilder && (
+        <div className="bg-teal-50 dark:bg-teal-900/20 rounded-xl border border-teal-200 dark:border-teal-800 p-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-teal-700 dark:text-teal-300">🏗️ Community Builder Badge</p>
+            <span className="text-xs text-teal-600 dark:text-teal-400 font-bold">
+              {Math.min(data?.rewardedCount ?? 0, 3)} / 3
+            </span>
+          </div>
+          <div className="w-full bg-teal-100 dark:bg-teal-900/50 rounded-full h-2">
+            <div
+              className="bg-teal-500 h-2 rounded-full transition-all duration-500"
+              style={{ width: `${Math.min(((data?.rewardedCount ?? 0) / 3) * 100, 100)}%` }}
+            />
+          </div>
+          <p className="text-xs text-teal-600 dark:text-teal-400">
+            {3 - Math.min(data?.rewardedCount ?? 0, 3)} more rewarded referrals to unlock your Community Builder badge
+          </p>
+        </div>
+      )}
+      {data?.isCommunityBuilder && (
+        <div className="bg-teal-50 dark:bg-teal-900/20 rounded-xl border border-teal-400 p-4 text-center">
+          <p className="text-lg">🏗️</p>
+          <p className="font-bold text-teal-700 dark:text-teal-300 text-sm">Community Builder</p>
+          <p className="text-xs text-teal-600 dark:text-teal-400 mt-1">Your contributions are building this community.</p>
+        </div>
+      )}
+
       {/* Referral list */}
       {data && data.referrals.length > 0 && (
         <div className="bg-card border border-border rounded-xl divide-y divide-border">
@@ -102,10 +149,10 @@ const ReferralPanel: React.FC = () => {
               </div>
               {ref.rewardGranted ? (
                 <span className="inline-flex items-center gap-1 text-xs font-semibold text-green-600 dark:text-green-400">
-                  <CheckCircle size={12} /> +30 days
+                  <CheckCircle size={12} /> ₦500 earned
                 </span>
               ) : (
-                <span className="text-xs text-muted-foreground">Pending</span>
+                <span className="text-xs text-muted-foreground">Pending first booking</span>
               )}
             </div>
           ))}

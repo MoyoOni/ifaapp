@@ -1,7 +1,5 @@
-import { Controller, Get, Header, Res } from '@nestjs/common';
-import { SkipThrottle } from '@nestjs/throttler';
-import { Response } from 'express';
-import { MetricsService } from './metrics.service';
+import { Controller, Get } from '@nestjs/common';
+import { EnhancedMetricsService } from './enhanced-metrics.service';
 
 /**
  * Prometheus metrics endpoint for monitoring (PB-202.4).
@@ -10,12 +8,10 @@ import { MetricsService } from './metrics.service';
 @SkipThrottle()
 @Controller('metrics')
 export class MetricsController {
-  constructor(private readonly metrics: MetricsService) {}
+  constructor(private readonly metricsService: EnhancedMetricsService) {}
 
   @Get()
-  @Header('Content-Type', 'text/plain; charset=utf-8')
-  async getMetrics(@Res() res: Response): Promise<void> {
-    const output = await this.metrics.getMetrics();
-    res.send(output);
+  async getMetrics(): Promise<string> {
+    return this.metricsService.getMetrics();
   }
 }

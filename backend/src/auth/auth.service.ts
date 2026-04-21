@@ -13,6 +13,7 @@ import { OAuth2Client } from 'google-auth-library';
 import { PrismaService } from '@/prisma/prisma.service';
 import { MessagingService } from '../messaging/messaging.service';
 import { LoginDto } from './dto/login.dto';
+import { Request } from 'express';
 import { RegisterDto } from './dto/register.dto';
 import { JwtPayload } from './strategies/jwt.strategy';
 import { UserRole } from '@common/enums/user-role.enum';
@@ -262,9 +263,14 @@ Aboru Aboye.`;
     };
   }
 
-  async login(dto: LoginDto) {
+  async login(dto: LoginDto, req?: Request) {
+    const ip = req ? (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ?? req.socket?.remoteAddress : undefined;
+    const ua = req?.headers['user-agent'];
+
     const user = await this.validateUser(dto.email, dto.password); // dto.email accepts email or phone
     if (!user) {
+      // Log failed attempt
+      this.logSessionSilently({ userId: null, email: dto.email, ip, ua, success: false, failReason: 'Invalid credentials' });
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -274,6 +280,9 @@ Aboru Aboye.`;
       role: user.role as any,
       verified: user.verified,
     });
+
+    // Log successful session
+    this.logSessionSilently({ userId: user.id, email: user.email, ip, ua, success: true });
 
     return {
       user: {
@@ -289,6 +298,19 @@ Aboru Aboye.`;
       },
       ...tokens,
     };
+  }
+
+  private logSessionSilently(opts: { userId: string | null; email: string; ip?: string; ua?: string; success: boolean; failReason?: string }) {
+    if (!opts.userId) return; // Only log sessions for known users
+    this.prisma.userSession.create({
+      data: {
+        userId: opts.userId,
+        ipAddress: opts.ip ?? null,
+        userAgent: opts.ua ?? null,
+        success: opts.success,
+        failReason: opts.failReason ?? null,
+      },
+    }).catch((err: Error) => this.logger.warn(`Session log failed: ${err.message}`));
   }
 
   /**
@@ -475,5 +497,13 @@ Aboru Aboye.`;
       accessToken,
       refreshToken,
     };
+  }
+
+  async setPassword(userId: string, newPassword: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { id: true, passwordHash: true } });
+    if (!user) throw new Error('User not found');
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+    return { ok: true };
   }
 }

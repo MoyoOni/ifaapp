@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, BadRequestException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { GuidancePlansService } from './prescriptions.service';
 import { CreateGuidancePlanDto } from './dto/create-prescription.dto';
 import { ApproveGuidancePlanDto } from './dto/approve-prescription.dto';
+import { UpdateItemCompletionDto } from './dto/update-item-completion.dto';
+import { SaveTemplateDto } from './dto/save-template.dto';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 
 @Controller('guidance-plans')
@@ -103,13 +105,13 @@ export class GuidancePlansController {
   async updateItemCompletion(
     @Param('id') guidancePlanId: string,
     @Param('itemIndex') itemIndex: string,
-    @Body() body: { completed: boolean },
+    @Body() dto: UpdateItemCompletionDto,
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
     return this.guidancePlansService.updateItemCompletion(
       guidancePlanId,
       parseInt(itemIndex, 10),
-      body.completed,
+      dto.completed,
       currentUser
     );
   }
@@ -124,5 +126,61 @@ export class GuidancePlansController {
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
     return this.guidancePlansService.getCompletionProgress(guidancePlanId, currentUser);
+  }
+
+  @Get('templates/:babalawoId')
+  async getTemplates(
+    @Param('babalawoId') babalawoId: string,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.guidancePlansService.getTemplates(babalawoId, currentUser);
+  }
+
+  @Post('templates/:babalawoId')
+  async saveTemplate(
+    @Param('babalawoId') babalawoId: string,
+    @Body() dto: SaveTemplateDto,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.guidancePlansService.saveTemplate(babalawoId, dto, currentUser);
+  }
+
+  @Delete('templates/:templateId')
+  async deleteTemplate(
+    @Param('templateId') templateId: string,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.guidancePlansService.deleteTemplate(templateId, currentUser);
+  }
+
+  @Patch(':id/items/:itemIndex/completion')
+  async toggleItemCompletion(
+    @Param('id') guidancePlanId: string,
+    @Param('itemIndex') itemIndex: string,
+    @Body('completed') completed: boolean,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    const parsedIndex = parseInt(itemIndex, 10);
+    if (isNaN(parsedIndex) || parsedIndex < 0) {
+      throw new BadRequestException('Valid item index is required');
+    }
+    
+    return this.guidancePlansService.toggleItemCompletion(
+      guidancePlanId,
+      parsedIndex,
+      completed,
+      currentUser
+    );
+  }
+
+  @Get(':id/tracking')
+  async getDetailedGuidancePlan(
+    @Param('id') guidancePlanId: string,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.guidancePlansService.getDetailedGuidancePlan(
+      guidancePlanId,
+      currentUser
+    );
   }
 }

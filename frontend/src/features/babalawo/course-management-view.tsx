@@ -111,7 +111,7 @@ const CourseManagementView: React.FC = () => {
       const res = await api.get('/academy/courses', { params: { instructorId: user?.id } });
       return res.data;
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id && !localStorage.getItem('dev_mode_role'),
     staleTime: 10 * 60 * 1000, // Courses: 10 minutes
   });
 
@@ -190,7 +190,7 @@ const CourseManagementView: React.FC = () => {
       const res = await api.get(`/academy/courses/${expandedCourseId}/lessons`);
       return res.data;
     },
-    enabled: !!expandedCourseId,
+    enabled: !!expandedCourseId && !localStorage.getItem('dev_mode_role'),
   });
 
   const resetCourseForm = () => {

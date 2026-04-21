@@ -69,7 +69,7 @@ const AppointmentsCalendar: React.FC<AppointmentsCalendarProps> = ({ userId, use
       const response = await api.get(endpoint);
       return response.data;
     },
-    enabled: !!userId,
+    enabled: !!userId && !localStorage.getItem('dev_mode_role'),
   });
 
   const invalidate = () => {

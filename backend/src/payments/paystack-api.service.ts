@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { SecretsService } from '../secrets/secrets.service';
 import axios, { AxiosInstance } from 'axios';
 
 const PAYSTACK_BASE_URL = 'https://api.paystack.co';
@@ -47,8 +48,15 @@ export interface PaystackRefundResponse {
 export class PaystackApiService {
   private client: AxiosInstance | null = null;
 
-  constructor(private configService: ConfigService) {
-    const secretKey = this.configService.get<string>('PAYSTACK_SECRET_KEY');
+  constructor(
+    private configService: ConfigService,
+    private secretsService: SecretsService,
+  ) {}
+
+  private async initializeClient(): Promise<void> {
+    if (this.client) return;
+
+    const secretKey = await this.secretsService.getSecret('iluase/prod/paystack-secret-key');
     if (secretKey) {
       this.client = axios.create({
         baseURL: PAYSTACK_BASE_URL,

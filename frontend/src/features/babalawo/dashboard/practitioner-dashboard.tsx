@@ -6,6 +6,8 @@ import PractitionerAnalyticsView from './practitioner-analytics-view';
 import { useBabalawoDashboard } from '@/shared/hooks/dashboard';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { Button } from '@/shared/components/ui/button';
+import { FirstStepsChecklist } from '@/shared/components/first-steps-checklist';
+import { WelcomeBanner } from '@/shared/components/welcome-banner';
 
 interface PractitionerDashboardProps {
     userId?: string;
@@ -116,6 +118,19 @@ const PractitionerDashboard: React.FC<PractitionerDashboardProps> = ({ userId, i
             default:
                 return (
                   <div className="p-6 max-w-7xl mx-auto">
+                    {user && (
+                      <>
+                        <WelcomeBanner
+                          role={user.role}
+                          intentTags={user.intentTags}
+                          joinedAt={user.createdAt}
+                        />
+                        <FirstStepsChecklist
+                          userId={user.id}
+                          role={user.role}
+                        />
+                      </>
+                    )}
                     <div className="mb-8">
                       <h1 className="text-[1.5rem] font-[700] text-foreground">My Dashboard</h1>
                       <p className="text-[0.875rem] text-muted-foreground">Manage your practice and appointments</p>

@@ -6,7 +6,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { NotificationService } from '../notifications/notification.service';
+import { NotificationService, NotificationType, NotificationCategory } from '../notifications/notification.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { CheckAvailabilityDto } from './dto/check-availability.dto';
@@ -244,6 +244,23 @@ export class AppointmentsService {
           );
         }
       }
+
+      this.maybeAssignPersonalAwo(appointment.clientId, appointment.babalawoId).catch(() => {});
+      this.maybeGrantReferralReward(appointment.clientId).catch(() => {});
+      this.notificationService.scheduleFollowUpReminder(
+        appointment.babalawoId,
+        appointment.id,
+        appointment.client.name,
+      ).catch(() => {});
+      
+      // Schedule a review request for the client 24 hours after appointment completion
+      if (status === 'COMPLETED') {
+        this.notificationService.scheduleReviewRequest(
+          appointment.clientId,
+          appointment.id,
+          appointment.babalawo.name,
+        ).catch(() => {});
+      }
     }
 
     const updatedAppointment = await this.prisma.appointment.update({
@@ -359,8 +376,9 @@ export class AppointmentsService {
         babalawo: {
           select: { id: true, name: true, yorubaName: true, avatar: true },
         },
+        guidancePlan: { select: { id: true } },
       },
-      orderBy: { date: 'asc', time: 'asc' },
+      orderBy: [{ date: 'desc' }, { time: 'desc' }],
     });
   }
 
@@ -377,20 +395,48 @@ export class AppointmentsService {
       throw new BadRequestException('Invalid babalawo ID');
     }
 
-    const availability = babalawo.availability as unknown as AvailabilitySlot[];
+    const raw = babalawo.availability as unknown;
 
-    if (!availability) {
+    if (!raw) {
       return [];
     }
+
+    // Support extended format: { schedule, blackoutDates, timezone, advanceBookingDays, minNoticeHours }
+    // as well as legacy flat array format
+    let schedule: AvailabilitySlot[];
+    let blackoutDates: string[] = [];
+    let advanceBookingDays = 60;
+    let minNoticeHours = 24;
+
+    if (Array.isArray(raw)) {
+      schedule = raw as AvailabilitySlot[];
+    } else {
+      const ext = raw as { schedule?: AvailabilitySlot[]; blackoutDates?: string[]; advanceBookingDays?: number; minNoticeHours?: number };
+      schedule = ext.schedule ?? [];
+      blackoutDates = ext.blackoutDates ?? [];
+      advanceBookingDays = ext.advanceBookingDays ?? 60;
+      minNoticeHours = ext.minNoticeHours ?? 24;
+    }
+
+    // Enforce advance booking window
+    const nowCheck = new Date();
+    const requestDate = new Date(date);
+    const diffDays = Math.floor((requestDate.getTime() - nowCheck.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays > advanceBookingDays) return [];
+
+    // Enforce minimum notice
+    const diffHours = (requestDate.getTime() - nowCheck.getTime()) / (1000 * 60 * 60);
+    if (diffHours < minNoticeHours) return [];
+
+    // Enforce blackout dates
+    if (blackoutDates.includes(date)) return [];
 
     const dateObj = new Date(date);
     const dayOfWeek = dateObj.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
 
-    const dailyAvailability = Array.isArray(availability)
-      ? (availability as AvailabilitySlot[]).find(
-          (avail: AvailabilitySlot) => avail.day === dayOfWeek
-        )
-      : undefined;
+    const dailyAvailability = schedule.find(
+      (avail: AvailabilitySlot) => avail.day === dayOfWeek
+    );
 
     if (!dailyAvailability || !dailyAvailability.slots || dailyAvailability.slots.length === 0) {
       return [];
@@ -681,6 +727,183 @@ export class AppointmentsService {
         },
       },
       orderBy: [{ date: 'asc' }, { time: 'asc' }],
+    });
+  }
+
+  private async maybeAssignPersonalAwo(clientId: string, babalawoId: string) {
+    const client = await this.prisma.user.findUnique({
+      where: { id: clientId },
+      select: { personalAwoId: true },
+    });
+    if (client?.personalAwoId) return; // already set
+
+    const count = await this.prisma.appointment.count({
+      where: { clientId, babalawoId, status: 'COMPLETED' },
+    });
+
+    if (count >= 3) {
+      await this.prisma.user.update({
+        where: { id: clientId },
+        data: { personalAwoId: babalawoId },
+      });
+    }
+  }
+
+  private async maybeGrantReferralReward(clientId: string) {
+    // Only reward on the very first completed booking
+    const completedCount = await this.prisma.appointment.count({
+      where: { clientId, status: 'COMPLETED' },
+    });
+    if (completedCount !== 1) return; // 1 = this is the first completion
+
+    const referral = await this.prisma.referral.findUnique({
+      where: { referredId: clientId },
+    });
+    if (!referral || referral.rewardGranted) return;
+
+    const REWARD_NGN = 500;
+
+    const rewardDto = { amount: REWARD_NGN, currency: 'NGN' as any, reference: `referral_reward_${referral.id}` };
+    // Credit referrer wallet
+    await this.walletService.depositFunds(referral.referrerId, rewardDto);
+    // Credit referee wallet
+    await this.walletService.depositFunds(clientId, { ...rewardDto, reference: `referral_welcome_${referral.id}` });
+
+    await this.prisma.referral.update({
+      where: { id: referral.id },
+      data: { rewardGranted: true },
+    });
+
+    // Notify both parties
+    await this.notificationService.createNotification({
+      userId: referral.referrerId,
+      type: NotificationType.SYSTEM,
+      category: NotificationCategory.SUCCESS,
+      title: '🎉 Referral reward earned!',
+      message: `Your friend completed their first booking. ₦${REWARD_NGN} has been added to your wallet.`,
+      data: { action: 'referral_reward', amount: REWARD_NGN },
+      sendEmail: false,
+      sendPush: false,
+    });
+    await this.notificationService.createNotification({
+      userId: clientId,
+      type: NotificationType.SYSTEM,
+      category: NotificationCategory.SUCCESS,
+      title: '🎉 Welcome bonus earned!',
+      message: `₦${REWARD_NGN} has been added to your wallet as a welcome gift from your referral.`,
+      data: { action: 'referral_reward', amount: REWARD_NGN },
+      sendEmail: false,
+      sendPush: false,
+    });
+  }
+
+  /**
+   * Get completed appointments for a client (session history)
+   * GET /appointments/client/:clientId/history
+   */
+  async getSessionHistory(clientId: string, currentUser: CurrentUserPayload) {
+    if (currentUser.id !== clientId && currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('You can only view your own session history');
+    }
+
+    return this.prisma.appointment.findMany({
+      where: { 
+        clientId, 
+        status: 'COMPLETED' // Only completed appointments in session history
+      },
+      include: {
+        babalawo: {
+          select: { id: true, name: true, yorubaName: true, avatar: true },
+        },
+        guidancePlan: { select: { id: true } },
+      },
+      orderBy: [{ date: 'desc' }, { time: 'desc' }], // Most recent first
+    });
+  }
+
+  /**
+   * Generate a receipt for a completed appointment
+   */
+  async generateReceipt(id: string, currentUser: CurrentUserPayload) {
+    const appointment = await this.prisma.appointment.findUnique({
+      where: { id },
+      include: {
+        babalawo: {
+          select: { id: true, name: true, yorubaName: true, avatar: true },
+        },
+        client: {
+          select: { id: true, name: true, yorubaName: true, avatar: true },
+        },
+      },
+    });
+
+    if (!appointment) {
+      throw new NotFoundException('Appointment not found');
+    }
+
+    // Check if user is authorized to access this appointment
+    const isClient = currentUser.id === appointment.clientId;
+    const isBabalawo = currentUser.id === appointment.babalawoId;
+    const isAdmin = currentUser.role === 'ADMIN';
+
+    if (!isClient && !isBabalawo && !isAdmin) {
+      throw new ForbiddenException('You are not authorized to download this receipt');
+    }
+
+    if (appointment.status !== 'COMPLETED') {
+      throw new BadRequestException('Receipts can only be generated for completed appointments');
+    }
+
+    // Import PDF generation library
+    const PDFDocument = require('pdfkit');
+
+    // Create a new PDF document
+    const doc = new PDFDocument();
+    const chunks: Uint8Array[] = [];
+
+    // Stream events to capture the PDF data
+    doc.on('data', (chunk: Uint8Array) => chunks.push(chunk));
+    
+    // Add content to the PDF
+    doc.fontSize(20).text('Ìlú Àṣẹ Receipt', { align: 'center' });
+    doc.moveDown();
+
+    doc.fontSize(12);
+    doc.text(`Receipt ID: ${appointment.id}`, { align: 'right' });
+    doc.text(`Date Generated: ${new Date().toLocaleDateString()}`, { align: 'right' });
+    doc.moveDown();
+
+    doc.text(`Client: ${appointment.client.name}${appointment.client.yorubaName ? ` (${appointment.client.yorubaName})` : ''}`);
+    doc.text(`Babalawo: ${appointment.babalawo.name}${appointment.babalawo.yorubaName ? ` (${appointment.babalawo.yorubaName})` : ''}`);
+    doc.moveDown();
+
+    doc.text(`Date: ${new Date(appointment.date).toLocaleDateString()}`);
+    doc.text(`Time: ${appointment.time}`);
+    doc.text(`Duration: ${appointment.duration} minutes`);
+    doc.text(`Service: ${appointment.topic || 'Spiritual Consultation'}`);
+    doc.moveDown();
+
+    if (appointment.price && appointment.price > 0) {
+      doc.text(`Amount Paid: ₦${Number(appointment.price).toLocaleString()}`);
+      doc.text(`Payment Method: Wallet`); // Assuming wallet payment for now
+    } else {
+      doc.text('Amount Paid: Free Session');
+    }
+    doc.moveDown();
+
+    doc.text('For spiritual services — not a medical document');
+    doc.moveDown();
+
+    doc.text('Ìlú Àṣẹ Platform', { align: 'center' });
+    doc.text('Connecting the Yoruba diaspora with authentic spiritual guidance', { align: 'center' });
+
+    // End the PDF document
+    doc.end();
+
+    // Wait for the stream to finish and return the PDF buffer
+    return new Promise<Buffer>((resolve, reject) => {
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
     });
   }
 }

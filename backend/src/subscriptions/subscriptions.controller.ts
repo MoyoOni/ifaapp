@@ -8,7 +8,6 @@ import {
   UseGuards,
   HttpCode,
   UnauthorizedException,
-  ForbiddenException,
   Logger,
 } from '@nestjs/common';
 import { Request } from 'express';
@@ -16,6 +15,12 @@ import * as crypto from 'crypto';
 import { AuthGuard } from '@nestjs/passport';
 import { SubscriptionsService } from './subscriptions.service';
 import { InitiateSubscriptionDto } from './dto/initiate-subscription.dto';
+import { AdminGrantSubscriptionDto, WinBackDto } from './dto/admin-subscription.dto';
+import { JwtAuthGuard } from '../shared/guards/auth.guard';
+import { RolesGuard } from '../shared/guards/roles.guard';
+import { Roles } from '@/shared/decorators/roles.decorator';
+import { UserRole } from '@common/enums/user-role.enum';
+import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 
 // Extend Request to include rawBody (enabled in main.ts via { rawBody: true })
 interface RawBodyRequest extends Request {
@@ -31,13 +36,12 @@ export class SubscriptionsController {
   // ─── POST /subscriptions/initiate ───────────────────────────────────────
   // Authenticated — returns Paystack checkout URL
   @Post('initiate')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   async initiateSubscription(
-    @Req() req: any,
+    @CurrentUser() currentUser: CurrentUserPayload,
     @Body() dto: InitiateSubscriptionDto,
   ) {
-    const userId = req.user?.id ?? req.user?.sub;
-    return this.subscriptionsService.initiateSubscription(userId, dto.plan);
+    return this.subscriptionsService.initiateSubscription(currentUser.id, dto.plan);
   }
 
   // ─── GET /subscriptions/public-stats ────────────────────────────────────
@@ -50,57 +54,50 @@ export class SubscriptionsController {
   // ─── GET /subscriptions/me ──────────────────────────────────────────────
   // Authenticated — returns current subscription status
   @Get('me')
-  @UseGuards(AuthGuard('jwt'))
-  async getMySubscription(@Req() req: any) {
-    const userId = req.user?.id ?? req.user?.sub;
-    return this.subscriptionsService.getMySubscription(userId);
+  @UseGuards(JwtAuthGuard)
+  async getMySubscription(@CurrentUser() currentUser: CurrentUserPayload) {
+    return this.subscriptionsService.getMySubscription(currentUser.id);
   }
 
   // ─── POST /subscriptions/cancel ─────────────────────────────────────────
   // Authenticated — cancels at end of period
   @Post('cancel')
-  @UseGuards(AuthGuard('jwt'))
-  async cancelSubscription(@Req() req: any) {
-    const userId = req.user?.id ?? req.user?.sub;
-    return this.subscriptionsService.cancelSubscription(userId);
+  @UseGuards(JwtAuthGuard)
+  async cancelSubscription(@CurrentUser() currentUser: CurrentUserPayload) {
+    return this.subscriptionsService.cancelSubscription(currentUser.id);
   }
 
   // ─── POST /subscriptions/pause ──────────────────────────────────────────
   // Authenticated — extends endDate by 30 days, no charge
   @Post('pause')
-  @UseGuards(AuthGuard('jwt'))
-  async pauseSubscription(@Req() req: any) {
-    const userId = req.user?.id ?? req.user?.sub;
-    return this.subscriptionsService.pauseSubscription(userId);
+  @UseGuards(JwtAuthGuard)
+  async pauseSubscription(@CurrentUser() currentUser: CurrentUserPayload) {
+    return this.subscriptionsService.pauseSubscription(currentUser.id);
   }
 
   // ─── GET /subscriptions/history ─────────────────────────────────────────
   // Authenticated — billing history
   @Get('history')
-  @UseGuards(AuthGuard('jwt'))
-  async getBillingHistory(@Req() req: any) {
-    const userId = req.user?.id ?? req.user?.sub;
-    return this.subscriptionsService.getBillingHistory(userId);
+  @UseGuards(JwtAuthGuard)
+  async getBillingHistory(@CurrentUser() currentUser: CurrentUserPayload) {
+    return this.subscriptionsService.getBillingHistory(currentUser.id);
   }
 
   // ─── POST /subscriptions/admin/grant ─────────────────────────────────────
   // Admin only — manually grant Devoted to a user (comps, gifts, influencer)
   @Post('admin/grant')
-  @UseGuards(AuthGuard('jwt'))
-  async adminGrantSubscription(
-    @Req() req: any,
-    @Body() body: { userId: string; plan: 'QUARTERLY' | 'ANNUAL'; reason?: string },
-  ) {
-    if (req.user?.role !== 'ADMIN') throw new ForbiddenException('Admin only');
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async adminGrantSubscription(@Body() body: AdminGrantSubscriptionDto) {
     return this.subscriptionsService.adminGrantSubscription(body.userId, body.plan, body.reason);
   }
 
   // ─── POST /subscriptions/admin/send-winback ──────────────────────────────
   // Admin only — sends win-back email to a specific expired subscriber
   @Post('admin/send-winback')
-  @UseGuards(AuthGuard('jwt'))
-  async sendWinBack(@Req() req: any, @Body() body: { userId: string }) {
-    if (req.user?.role !== 'ADMIN') throw new ForbiddenException('Admin only');
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async sendWinBack(@Body() body: WinBackDto) {
     await this.subscriptionsService.sendWinBackEmail(body.userId);
     return { sent: true };
   }

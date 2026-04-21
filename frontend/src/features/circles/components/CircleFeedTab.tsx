@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   MessageSquare,
@@ -7,15 +8,18 @@ import {
   Heart,
   MessageCircle,
   Loader2,
+  Crown,
+  Lock,
 } from 'lucide-react';
 import { FeedPost } from '../types/circle.types';
 
 interface CircleFeedTabProps {
   feedPosts: FeedPost[];
   isMember: boolean;
+  isPatron: boolean;
   newPost: string;
   onPostChange: (content: string) => void;
-  onPostSubmit: () => void;
+  onPostSubmit: (patronOnly?: boolean) => void;
   isCreatingPost: boolean;
   userInitial: string;
 }
@@ -37,12 +41,16 @@ const formatDate = (dateString: string) => {
 export const CircleFeedTab: React.FC<CircleFeedTabProps> = ({
   feedPosts,
   isMember,
+  isPatron,
   newPost,
   onPostChange,
   onPostSubmit,
   isCreatingPost,
   userInitial,
 }) => {
+  const navigate = useNavigate();
+  const [patronOnly, setPatronOnly] = useState(false);
+
   return (
     <div className="space-y-6">
       {/* New Post Input */}
@@ -59,9 +67,22 @@ export const CircleFeedTab: React.FC<CircleFeedTabProps> = ({
               className="w-full p-3 bg-muted/50 border border-border rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:bg-card transition-all"
               rows={3}
             />
-            <div className="flex justify-end mt-2">
+            <div className="flex items-center justify-between mt-2">
+              {isPatron && (
+                <label className="flex items-center gap-2 cursor-pointer text-sm text-muted-foreground select-none">
+                  <input
+                    type="checkbox"
+                    checked={patronOnly}
+                    onChange={(e) => setPatronOnly(e.target.checked)}
+                    className="accent-amber-500"
+                  />
+                  <Crown size={14} className="text-amber-500" />
+                  Patron-only post
+                </label>
+              )}
+              {!isPatron && <span />}
               <button
-                onClick={onPostSubmit}
+                onClick={() => { onPostSubmit(patronOnly); setPatronOnly(false); }}
                 disabled={!newPost.trim() || isCreatingPost}
                 className="px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-green-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
@@ -93,32 +114,46 @@ export const CircleFeedTab: React.FC<CircleFeedTabProps> = ({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
               className={`p-4 rounded-xl ${
-                post.isPinned ? 'bg-highlight/5 border border-highlight/20' : 'bg-muted/50'
+                post.isPinned
+                  ? 'bg-highlight/5 border border-highlight/20'
+                  : post.patronOnly
+                  ? 'bg-amber-50/40 dark:bg-amber-950/10 border border-amber-200/50 dark:border-amber-800/30'
+                  : 'bg-muted/50'
               }`}
             >
-              {post.isPinned && (
-                <div className="flex items-center gap-1 text-highlight text-xs font-medium mb-2">
-                  <Pin size={12} />
-                  Pinned Post
-                </div>
-              )}
-              <div className="flex gap-3">
-                {post.authorAvatar ? (
-                  <img
-                    src={post.authorAvatar}
-                    alt={post.authorName}
-                    className="w-10 h-10 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="text-primary font-bold text-sm">
-                      {post.authorName.charAt(0)}
-                    </span>
+              <div className="flex items-center gap-2 mb-2">
+                {post.isPinned && (
+                  <div className="flex items-center gap-1 text-highlight text-xs font-medium">
+                    <Pin size={12} />
+                    Pinned
                   </div>
                 )}
+                {post.patronOnly && (
+                  <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 text-xs font-semibold">
+                    <Crown size={12} />
+                    Patron exclusive
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-3">
+                <button type="button" onClick={() => navigate(`/profile/${post.authorId}`)} className="flex-shrink-0 hover:opacity-80 transition-opacity">
+                  {post.authorAvatar ? (
+                    <img
+                      src={post.authorAvatar}
+                      alt={post.authorName}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <span className="text-primary font-bold text-sm">
+                        {post.authorName.charAt(0)}
+                      </span>
+                    </div>
+                  )}
+                </button>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-semibold text-foreground">{post.authorName}</span>
+                    <button type="button" onClick={() => navigate(`/profile/${post.authorId}`)} className="font-semibold text-foreground hover:underline">{post.authorName}</button>
                     <span className="text-xs text-muted-foreground">{formatDate(post.createdAt)}</span>
                   </div>
                   <p className="text-foreground whitespace-pre-wrap">{post.content}</p>
@@ -136,6 +171,14 @@ export const CircleFeedTab: React.FC<CircleFeedTabProps> = ({
               </div>
             </motion.div>
           ))}
+        </div>
+      )}
+
+      {/* Non-member patron teaser */}
+      {!isMember && feedPosts.some(p => p.patronOnly) && (
+        <div className="flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-2xl text-sm text-amber-800 dark:text-amber-300">
+          <Lock size={16} className="flex-shrink-0" />
+          <span>Some posts in this circle are exclusive to Patrons. Join and become a Patron to unlock them.</span>
         </div>
       )}
     </div>

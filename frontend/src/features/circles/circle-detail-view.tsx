@@ -103,10 +103,11 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({
 
   // Create post mutation
   const createPostMutation = useMutation({
-    mutationFn: async (content: string) => {
+    mutationFn: async ({ content, patronOnly }: { content: string; patronOnly?: boolean }) => {
       if (!circle) return;
       const response = await api.post(`/circles/${circle.id}/feed`, {
         content,
+        patronOnly: patronOnly ?? false,
       });
       return response.data;
     },
@@ -230,9 +231,9 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({
   const isCreator = circle?.creator.id === user?.id;
   const isPatron = circle?.userMembership?.role === 'PATRON';
 
-  const handleCreatePost = () => {
+  const handleCreatePost = (patronOnly?: boolean) => {
     if (newPost.trim()) {
-      createPostMutation.mutate(newPost.trim());
+      createPostMutation.mutate({ content: newPost.trim(), patronOnly });
     }
   };
 
@@ -313,6 +314,7 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({
           <CircleFeedTab
             feedPosts={feedPosts}
             isMember={isMember ?? false}
+            isPatron={isPatron ?? false}
             newPost={newPost}
             onPostChange={setNewPost}
             onPostSubmit={handleCreatePost}

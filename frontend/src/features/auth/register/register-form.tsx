@@ -6,6 +6,15 @@ import { UserRole } from '@common';
 import appLogo from '@/assets/logo.png';
 import GoogleAuthButton from '../components/google-auth-button';
 
+function getPasswordStrength(pw: string): { score: number; label: string; color: string } {
+  const checks = [pw.length >= 8, /[A-Z]/.test(pw), /[0-9]/.test(pw), /[^A-Za-z0-9]/.test(pw)];
+  const score = checks.filter(Boolean).length;
+  if (score <= 1) return { score, label: 'Weak', color: 'bg-red-500' };
+  if (score === 2) return { score, label: 'Fair', color: 'bg-amber-500' };
+  if (score === 3) return { score, label: 'Good', color: 'bg-yellow-400' };
+  return { score, label: 'Strong', color: 'bg-emerald-500' };
+}
+
 const ROLE_LABELS: Record<string, string> = {
   CLIENT: 'Seeker',
   BABALAWO: 'Babalawo',
@@ -24,15 +33,21 @@ interface RegisterFormProps {
 const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, onSwitchToLogin, onBack }) => {
   const { register } = useAuth();
   const [searchParams] = useSearchParams();
-  const referredByCode = searchParams.get('ref') || undefined;
+  const urlRef = searchParams.get('ref') || '';
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [refCode, setRefCode] = useState(urlRef);
+  const [refExpanded, setRefExpanded] = useState(!!urlRef);
+  const [refValid, setRefValid] = useState<boolean | null>(null);
+  const [refValidationMsg, setRefValidationMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
+
+  const referredByCode = refCode.trim() || undefined;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +60,22 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, on
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
+    }
+
+    // Validate referral code if provided
+    if (refCode.trim()) {
+      try {
+        const response = await fetch(`/api/users/referral/validate/${refCode.trim()}`);
+        const result = await response.json();
+        
+        if (!result.valid) {
+          setError(result.message || 'Referral code is invalid');
+          return;
+        }
+      } catch (err) {
+        // If validation fails, we'll still allow registration but log the error
+        console.warn('Referral code validation failed:', err);
+      }
     }
 
     setIsSubmitting(true);
@@ -170,20 +201,75 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, on
           />
         </div>
 
+        {/* Referral code (collapsible) */}
+        <div>
+          <button
+            type="button"
+            onClick={() => setRefExpanded(e => !e)}
+            className="text-xs text-stone-400 hover:text-highlight transition-colors flex items-center gap-1 font-medium"
+          >
+            {refExpanded ? '▾' : '▸'} Have a referral code?
+            {refCode && !refExpanded && <span className="text-primary font-bold ml-1">({refCode})</span>}
+          </button>
+          {refExpanded && (
+            <div className="mt-2 relative group">
+              <input
+                type="text"
+                value={refCode}
+                onChange={e => setRefCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                placeholder="e.g. MOYOONI"
+                maxLength={20}
+                className="w-full bg-muted/40 border border-border p-3 pl-4 rounded-2xl text-stone-800 dark:text-stone-200 outline-none focus:bg-card focus:border-highlight focus:ring-4 focus:ring-highlight/10 transition-all font-mono text-sm placeholder:text-stone-300 uppercase tracking-widest"
+              />
+              {refCode && (
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                  {refValid === null ? (
+                    <span className="text-xs text-primary font-semibold">✓ Applied</span>
+                  ) : refValid ? (
+                    <>
+                      <CheckCircle size={14} className="text-green-500" />
+                      <span className="text-xs text-green-500">Valid</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-xs text-red-500">{refValidationMsg || 'Invalid'}</span>
+                    </>
+                  )}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Password */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="relative group">
-            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-300 group-focus-within:text-highlight transition-colors" size={18} />
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={8}
-              autoComplete="new-password"
-              placeholder="Password"
-              className="w-full bg-muted/40 border border-border p-4 pl-12 rounded-2xl text-stone-800 dark:text-stone-200 outline-none focus:bg-card focus:border-highlight focus:ring-4 focus:ring-highlight/10 transition-all font-medium placeholder:text-stone-300"
-            />
+          <div className="space-y-1.5">
+            <div className="relative group">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-300 group-focus-within:text-highlight transition-colors" size={18} />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={8}
+                autoComplete="new-password"
+                placeholder="Password"
+                className="w-full bg-muted/40 border border-border p-4 pl-12 rounded-2xl text-stone-800 dark:text-stone-200 outline-none focus:bg-card focus:border-highlight focus:ring-4 focus:ring-highlight/10 transition-all font-medium placeholder:text-stone-300"
+              />
+            </div>
+            {password.length > 0 && (() => {
+              const { score, label, color } = getPasswordStrength(password);
+              return (
+                <div className="space-y-1 px-1">
+                  <div className="flex gap-1">
+                    {[1,2,3,4].map((i) => (
+                      <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${i <= score ? color : 'bg-border'}`} />
+                    ))}
+                  </div>
+                  <p className={`text-xs font-medium ${score <= 1 ? 'text-red-500' : score === 2 ? 'text-amber-500' : score === 3 ? 'text-yellow-500' : 'text-emerald-500'}`}>{label}</p>
+                </div>
+              );
+            })()}
           </div>
           <div className="relative group">
             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-300 group-focus-within:text-highlight transition-colors" size={18} />

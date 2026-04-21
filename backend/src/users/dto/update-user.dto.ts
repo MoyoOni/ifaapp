@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsEnum, IsArray, MinLength, IsNumber, IsUrl, IsBoolean, Matches } from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsArray, MinLength, IsNumber, IsUrl, IsBoolean, Matches, ValidateIf } from 'class-validator';
 import { CulturalLevel } from '@ile-ase/common';
 
 export class UpdateUserDto {
@@ -68,4 +68,12 @@ export class UpdateUserDto {
   @IsBoolean()
   @IsOptional()
   whatsappEnabled?: boolean;
+
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null)
+  @IsString()
+  personalAwoId?: string | null;
+
+  @IsOptional()
+  availability?: unknown;
 }

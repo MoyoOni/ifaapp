@@ -17,6 +17,8 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
+    "types": ["vitest/globals", "jest", "@testing-library/jest-dom", "node"],
+    "ignoreDeprecations": "6.0",
     "paths": {
       "@/*": ["src/*"],
       "@common": ["../common/src/index"],

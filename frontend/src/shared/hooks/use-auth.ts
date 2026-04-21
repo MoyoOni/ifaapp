@@ -23,6 +23,8 @@ interface User {
   isImpersonated?: boolean;
   impersonatorId?: string;
   passedCulturalOrientation?: boolean;
+  intentTags?: string[];
+  createdAt?: string;
 }
 
 interface AuthState {

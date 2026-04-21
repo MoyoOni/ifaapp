@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, Param, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, UseGuards, Query, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Roles, RolesGuard } from '../auth/guards/roles.guard';
 import { VerificationService } from './verification.service';
@@ -6,6 +6,7 @@ import { CreateVerificationApplicationDto } from './dto/create-verification-appl
 import { UpdateVerificationApplicationDto } from './dto/update-verification-application.dto';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { UserRole, VerificationStage } from '@ile-ase/common';
+import { UploadCredentialsDto } from './dto/upload-credentials.dto';
 
 @Controller('verification')
 @UseGuards(AuthGuard('jwt'))
@@ -32,6 +33,17 @@ export class VerificationController {
   @Roles(UserRole.ADMIN)
   async listApplications(@Query('stage') stage?: VerificationStage) {
     return this.verificationService.listApplications(stage);
+  }
+
+  @Post('upload-credentials')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.BABALAWO)
+  @HttpCode(HttpStatus.OK)
+  async uploadCredentials(
+    @Body() dto: UploadCredentialsDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.verificationService.uploadCredentials(user.id, dto.files);
   }
 
   @Patch('applications/:id')

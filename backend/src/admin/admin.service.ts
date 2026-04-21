@@ -1863,4 +1863,153 @@ export class AdminService {
       })),
     };
   }
+
+  // ADM-027: Session & Security Management
+
+  async getSecurityOverview() {
+    const now = new Date();
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const [activeSessions, loginsLast24h, failedLoginsLastHour, uniqueIPsLastHour] = await Promise.all([
+      this.prisma.userSession.count({ where: { isActive: true } }),
+      this.prisma.userSession.count({ where: { loginAt: { gte: oneDayAgo }, success: true } }),
+      this.prisma.userSession.count({ where: { loginAt: { gte: oneHourAgo }, success: false } }),
+      this.prisma.userSession.findMany({ where: { loginAt: { gte: oneHourAgo } }, select: { ipAddress: true }, distinct: ['ipAddress'] }),
+    ]);
+    const suspiciousIPs = await this.prisma.userSession.groupBy({
+      by: ['ipAddress'],
+      where: { loginAt: { gte: oneHourAgo }, success: false, ipAddress: { not: null } },
+      _count: { id: true },
+      having: { id: { _count: { gt: 5 } } },
+    });
+    return {
+      activeSessions, loginsLast24h, failedLoginsLastHour,
+      uniqueActiveIPs: uniqueIPsLastHour.length,
+      suspiciousIPs: suspiciousIPs.map((s) => ({ ip: s.ipAddress, failCount: s._count.id })),
+    };
+  }
+
+  async getUserSessions(userId: string) {
+    return this.prisma.userSession.findMany({ where: { userId }, orderBy: { loginAt: 'desc' }, take: 20 });
+  }
+
+  async forceLogoutUser(userId: string) {
+    await this.prisma.userSession.updateMany({ where: { userId, isActive: true }, data: { isActive: false, loggedOutAt: new Date() } });
+    return { success: true, message: 'All sessions invalidated' };
+  }
+
+  async getRecentLogins(limit = 50) {
+    return this.prisma.userSession.findMany({
+      orderBy: { loginAt: 'desc' }, take: limit,
+      include: { user: { select: { id: true, name: true, email: true, role: true } } },
+    });
+  }
+
+  // ADM-028: Cultural Orientation Quiz Management
+
+  async getQuizQuestions() {
+    return this.prisma.culturalQuizQuestion.findMany({ orderBy: { sortOrder: 'asc' } });
+  }
+
+  async createQuizQuestion(data: Record<string, any>) {
+    const count = await this.prisma.culturalQuizQuestion.count();
+    return this.prisma.culturalQuizQuestion.create({
+      data: { questionText: data.questionText, options: data.options, correctIndex: data.correctIndex, sortOrder: data.sortOrder ?? count },
+    });
+  }
+
+  async updateQuizQuestion(id: string, data: Record<string, any>) {
+    return this.prisma.culturalQuizQuestion.update({ where: { id }, data });
+  }
+
+  async deleteQuizQuestion(id: string) {
+    await this.prisma.culturalQuizQuestion.delete({ where: { id } });
+    return { success: true };
+  }
+
+  async getQuizStats() {
+    const [passed, failed, failCounts] = await Promise.all([
+      this.prisma.user.count({ where: { passedCulturalOrientation: true } }),
+      this.prisma.user.count({ where: { passedCulturalOrientation: false, culturalQuizFailCount: { gt: 0 } } }),
+      this.prisma.user.aggregate({ _avg: { culturalQuizFailCount: true }, _max: { culturalQuizFailCount: true } }),
+    ]);
+    const settings = await this.prisma.platformSettings.findUnique({ where: { id: 'singleton' } });
+    return {
+      totalAttempted: passed + failed, passed, failed,
+      passRate: (passed + failed) > 0 ? Math.round((passed / (passed + failed)) * 100) : 0,
+      avgFailsBeforePass: failCounts._avg.culturalQuizFailCount ?? 0,
+      maxFails: failCounts._max.culturalQuizFailCount ?? 0,
+      currentThreshold: settings?.quizPassThreshold ?? 2,
+    };
+  }
+
+  async updateQuizThreshold(threshold: number) {
+    return this.prisma.platformSettings.upsert({
+      where: { id: 'singleton' }, update: { quizPassThreshold: threshold }, create: { id: 'singleton', quizPassThreshold: threshold },
+    });
+  }
+
+  async resetUserQuizStatus(userId: string) {
+    await this.prisma.user.update({ where: { id: userId }, data: { passedCulturalOrientation: false, culturalQuizFailCount: 0 } });
+    return { success: true, message: 'Cultural orientation status reset' };
+  }
+
+
+  async getInactivePractitioners(currentUser: any, _daysInactive: number): Promise<any[]> {
+    return this.prisma.user.findMany({
+      where: { role: 'BABALAWO' },
+      select: { id: true, name: true, email: true, isOnLeave: true, isDeactivated: true },
+    });
+  }
+
+
+  async getLifecycleAnalytics() {
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+
+    const [totalUsers, newLast30, activeClients, activeBabalawos, activeVendors,
+      completedAppointments, totalRevenue, passedOrientation] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.user.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
+      this.prisma.user.count({ where: { role: 'CLIENT', createdAt: { gte: thirtyDaysAgo } } }),
+      this.prisma.user.count({ where: { role: 'BABALAWO' } }),
+      this.prisma.user.count({ where: { role: 'VENDOR' } }),
+      this.prisma.appointment.count({ where: { status: 'COMPLETED', createdAt: { gte: thirtyDaysAgo } } }),
+      this.prisma.payment.aggregate({ where: { status: 'COMPLETED', createdAt: { gte: thirtyDaysAgo } }, _sum: { amount: true } }),
+      this.prisma.user.count({ where: { passedCulturalOrientation: true } }),
+    ]);
+
+    const prevNewUsers = await this.prisma.user.count({ where: { createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo } } });
+    const growthRate = prevNewUsers > 0 ? Math.round(((newLast30 - prevNewUsers) / prevNewUsers) * 100) : 0;
+
+    // Monthly cohort — signups by month for last 6 months
+    const cohorts = [];
+    for (let i = 5; i >= 0; i--) {
+      const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
+      const signups = await this.prisma.user.count({ where: { createdAt: { gte: start, lte: end } } });
+      const converted = await this.prisma.appointment.count({
+        where: { createdAt: { gte: start, lte: end }, status: 'COMPLETED' },
+      });
+      cohorts.push({
+        month: start.toLocaleString('default', { month: 'short', year: '2-digit' }),
+        signups, converted,
+        conversionRate: signups > 0 ? Math.round((converted / signups) * 100) : 0,
+      });
+    }
+
+    return {
+      overview: {
+        totalUsers, newLast30, growthRate,
+        activeClients, activeBabalawos, activeVendors,
+        completedConsultations: completedAppointments,
+        revenueThisMonth: totalRevenue._sum.amount ?? 0,
+        culturalOrientationPassed: passedOrientation,
+        orientationRate: totalUsers > 0 ? Math.round((passedOrientation / totalUsers) * 100) : 0,
+      },
+      cohorts,
+    };
+  }
+
 }

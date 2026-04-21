@@ -40,6 +40,12 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    test: {
+      globals: true,
+      environment: 'jsdom',
+      setupFiles: './src/test/setup.ts',
+      include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    },
     build: {
       minify: 'esbuild',
       reportCompressedSize: true,
@@ -60,8 +66,33 @@ export default defineConfig(({ mode }) => {
             socket: ['socket.io-client'],
             utils: ['axios', 'zod', 'clsx', 'tailwind-merge', 'class-variance-authority'],
           },
+          // Enable code splitting for better caching
+          chunkFileNames: 'chunks/[name].[hash].js',
+          entryFileNames: '[name].[hash].js',
+          assetFileNames: (assetInfo) => {
+            if (assetInfo.name && assetInfo.name.endsWith('.css')) {
+              return 'css/[name].[hash].[ext]';
+            }
+            if (assetInfo.name && assetInfo.name.match(/\.(png|jpe?g|gif|svg)$/)) {
+              return 'images/[name].[hash].[ext]';
+            }
+            return 'assets/[name].[hash].[ext]';
+          }
         },
       },
+      // Enable compression for production builds
+      cssCodeSplit: true,
+      sourcemap: mode !== 'production', // Disable sourcemaps in production
+      target: 'es2015', // Target ES2015 for broader compatibility but good performance
+    },
+    esbuild: {
+      // Minify identifiers in production
+      legalComments: 'none', // Remove license comments in production
+    },
+    optimizeDeps: {
+      include: [
+        'react/jsx-runtime', // Prebundle JSX runtime
+      ],
     },
   };
 });

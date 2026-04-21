@@ -5,7 +5,6 @@ import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { logger } from '@/shared/utils/logger';
 
-import { getCourseById } from './course-data';
 import { AcademySkeleton } from '@/shared/components/skeleton';
 import { useToast } from '@/shared/components/toast';
 
@@ -95,7 +94,7 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({ courseId, onBack })
   const queryClient = useQueryClient();
 
   // Fetch course
-  const { data: course, isLoading, isError } = useQuery<Course>({
+  const { data: course, isLoading, isError, refetch } = useQuery<Course>({
     queryKey: ['course', courseId],
     queryFn: async () => {
       try {
@@ -139,30 +138,36 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({ courseId, onBack })
   }
 
   if (isError) {
-    // Instead of just showing an error message, provide a way back
     return (
       <div className="max-w-4xl mx-auto p-6">
         <div className="mb-8">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-2 text-primary hover:underline"
-          >
+          <button type="button" onClick={onBack} className="flex items-center gap-2 text-primary hover:underline">
             <ArrowLeft size={16} />
             Back to Courses
           </button>
         </div>
-        <div className="bg-card rounded-2xl border border-input p-8 text-center">
+        <div className="bg-destructive/10 border border-destructive/20 rounded-2xl p-8 text-center">
           <div className="text-destructive text-6xl mb-4">⚠️</div>
-          <h2 className="text-2xl font-bold text-foreground mb-2">Course Not Found</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-2">Could Not Load Course</h2>
           <p className="text-muted-foreground mb-6">
-            The course you're looking for doesn't exist or may have been removed.
+            There was a problem connecting to the server. Check your connection and try again.
           </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 transition-colors"
-          >
-            Refresh Page
-          </button>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => refetch()}
+              className="px-6 py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 transition-colors"
+            >
+              Try Again
+            </button>
+            <button
+              type="button"
+              onClick={onBack}
+              className="px-6 py-3 border border-border text-foreground rounded-xl font-bold hover:bg-muted transition-colors"
+            >
+              Back to Academy
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -172,25 +177,23 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({ courseId, onBack })
     return (
       <div className="max-w-4xl mx-auto p-6">
         <div className="mb-8">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-2 text-primary hover:underline"
-          >
+          <button type="button" onClick={onBack} className="flex items-center gap-2 text-primary hover:underline">
             <ArrowLeft size={16} />
             Back to Courses
           </button>
         </div>
         <div className="bg-card rounded-2xl border border-input p-8 text-center">
           <div className="text-destructive text-6xl mb-4">⚠️</div>
-          <h2 className="text-2xl font-bold text-foreground mb-2">No Course Data</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-2">Course Not Found</h2>
           <p className="text-muted-foreground mb-6">
-            There is no data available for this course.
+            This course doesn't exist or may have been removed.
           </p>
           <button
-            onClick={() => window.location.reload()}
+            type="button"
+            onClick={onBack}
             className="px-6 py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 transition-colors"
           >
-            Refresh Page
+            Back to Academy
           </button>
         </div>
       </div>
@@ -201,6 +204,7 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({ courseId, onBack })
     <div className="max-w-4xl mx-auto">
       <div className="mb-8">
         <button
+          type="button"
           onClick={onBack}
           className="flex items-center gap-2 text-primary hover:underline"
         >

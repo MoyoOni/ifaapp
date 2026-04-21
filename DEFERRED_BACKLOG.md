@@ -1,9 +1,34 @@
+# DEFERRED_BACKLOG.md — OBSOLETE
+
+**Status:** ✅ CONSOLIDATED into Z1_BACKLOG.md
+**Date:** April 19, 2026
+**Reason:** Deferred features catalogued and prioritized for completion.
+
+**What was here:**
+- D1 through D11: Features deferred during MVP development
+- Status: D3 and D4 completed, D1-D2,D5-D11 remaining
+- All items verified against current codebase status
+
+**Remaining Work:**
+- Z1-802 — Spiritual Journey Tracker (30 SP)
+- Z1-501 — Elder Oversight Panel (20 SP)
+- Z1-801 — Circle Patron Tier (20 SP)
+- Z1-502 — Granular RBAC Matrix (25 SP)
+- Z1-201 — Flutterwave Live Keys (5 SP)
+- Z1-503 — Push Notifications (15 SP)
+- Z1-101 — Sentry Production Integration (8 SP)
+- Z1-601 — Backend Unit Tests 80% (40 SP)
+- Z1-602 — Frontend Component Tests 60% (25 SP)
+
+**New Location:** See Z1_BACKLOG.md for all deferred feature work with implementation priorities.
+
+---
+
+*This document is now obsolete. All remaining work has been consolidated into Z1_BACKLOG.md with unique routing codes.*
+
+---
+
 # Deferred Feature Backlog — Ìlú Àṣẹ
-
-All features that were explicitly deferred during development. These are tracked here so nothing is lost. Each item has an origin reference, priority, and brief spec.
-
-**Last Updated:** March 24, 2026
-**Platform Status:** Live at https://iluase.com
 
 ---
 
@@ -34,21 +59,28 @@ All features that were explicitly deferred during development. These are tracked
 
 ---
 
-## D3 — Sentiment / Risk Alerts in Forum
+## D3 — Sentiment / Risk Alerts in Forum ✅ DONE
 **Origin:** Sprint M2 plan file (deferred section)
 **Priority:** P2
 
 **What it is:** Keyword/pattern matching on new forum posts to surface crisis signals (e.g. suicidal ideation, exploitation language) to admins in real-time. A `crisisSignal` flag already exists on `ForumPost` in the schema.
 
-**Why deferred:** Requires NLP/keyword engine design. False-positive tuning needed before going live.
+**Schema:** `hasCrisisSignal Boolean @default(false)` on `ForumPost` ✅
 
-**Schema:** `crisisSignal Boolean @default(false)` already on `ForumPost` ✅
+**What was built:**
+- `detectCrisis()` keyword engine in `forum.service.ts` (English + Yoruba patterns)
+- `hasCrisisSignal` set on flagged posts at creation time
+- `notifyAdmins()` fires in-app notifications to all ADMIN users on flag
+- `GET /forum/admin/crisis-signals` — paginated list of flagged posts
+- `PATCH /forum/admin/crisis-signals/:postId/clear` — mark reviewed
+- `admin-crisis-alerts-tab.tsx` — admin UI with post content, author, thread link, "Mark as Reviewed" action
+- Crisis resources modal in `thread-view.tsx` shown to the user who triggered the flag
 
 **Estimated effort:** 15 SP
 
 ---
 
-## D4 — Practitioner Performance Dashboard
+## D4 — Practitioner Performance Dashboard ✅ DONE
 **Origin:** Sprint M2 plan file (deferred section)
 **Priority:** P2
 
@@ -158,7 +190,7 @@ All features that were explicitly deferred during development. These are tracked
 |----|---------|----------|--------|-----------|
 | D1 | Spiritual Journey | P3 | 30–40 SP | No |
 | D2 | Elder Oversight Panel | P2 | 20 SP | No |
-| D3 | Forum Sentiment/Risk Alerts | P2 | 15 SP | No |
+| D3 | Forum Sentiment/Risk Alerts | P2 | 15 SP | No | ✅ DONE |
 | D4 | Practitioner Performance Dashboard | P2 | 12 SP | No |
 | D5 | Circle Patron Tier | P2 | 10 SP | No |
 | D6 | Granular RBAC Matrix | P2 | 25 SP | No |

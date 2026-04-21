@@ -1,0 +1,11 @@
+  // F9-903: Newsletter subscription
+  newsletterSubscriber      Boolean                  @default(false)
+
+  // Platform announcements created by this user
+  announcements             Announcement[]
+
+  @@index([slug])
+  @@index([subscriptionStatus])
+  @@map(\
+users\)
+}

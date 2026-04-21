@@ -1,0 +1,144 @@
+.metric-card {
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: white;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+body.dark-mode .metric-card {
+  background: #1f2937;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.metric-card:hover {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+body.dark-mode .metric-card:hover {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* Color variants */
+.metric-card-blue {
+  border-left: 4px solid #3b82f6;
+}
+
+.metric-card-purple {
+  border-left: 4px solid #a855f7;
+}
+
+.metric-card-green {
+  border-left: 4px solid #10b981;
+}
+
+.metric-card-orange {
+  border-left: 4px solid #f97316;
+}
+
+.metric-card-red {
+  border-left: 4px solid #ef4444;
+}
+
+.metric-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.metric-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+body.dark-mode .metric-label {
+  color: #9ca3af;
+}
+
+.metric-icon {
+  padding: 0.5rem;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.metric-card-purple .metric-icon {
+  background: rgba(168, 85, 247, 0.1);
+}
+
+.metric-card-green .metric-icon {
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.metric-card-orange .metric-icon {
+  background: rgba(249, 115, 22, 0.1);
+}
+
+.metric-card-red .metric-icon {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.metric-value-section {
+  margin-bottom: 0.75rem;
+}
+
+.metric-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1f2937;
+  line-height: 1;
+}
+
+body.dark-mode .metric-value {
+  color: #f3f4f6;
+}
+
+.metric-unit {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  margin-left: 0.25rem;
+  font-weight: 500;
+}
+
+.metric-change {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.metric-change-positive {
+  color: #10b981;
+}
+
+.metric-change-negative {
+  color: #ef4444;
+}
+
+.metric-change-neutral {
+  color: #6b7280;
+}
+
+body.dark-mode .metric-change-neutral {
+  color: #9ca3af;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .metric-card {
+    padding: 1rem;
+  }
+
+  .metric-value {
+    font-size: 1.5rem;
+  }
+}

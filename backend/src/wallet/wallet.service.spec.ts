@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
-import { Currency } from '@ile-ase/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Currency, TransactionType, TransactionStatus } from '@ile-ase/common'; // eslint-disable-line @typescript-eslint/no-unused-vars
 import { WalletService } from './wallet.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CurrencyService } from '../payments/currency.service';
@@ -455,6 +455,63 @@ describe('WalletService', () => {
     });
   });
 
+  describe('getWalletBalance', () => {
+    it('should return wallet balance information', async () => {
+      const mockWallet = {
+        id: 'wallet-1',
+        userId: 'user-1',
+        balance: 7500,
+        currency: 'NGN',
+        locked: false,
+      };
+
+      (prisma.wallet.findUnique as jest.Mock).mockResolvedValue(mockWallet);
+
+      const result = await service.getWalletBalance('user-1');
+
+      expect(result).toEqual({
+        balance: 7500,
+        currency: 'NGN',
+        locked: false,
+      });
+    });
+
+  });
+
+  describe('releaseEscrow', () => {
+    // ... existing tests ...
+
+    it('should reject release by non-owner', async () => {
+      const mockEscrow = {
+        id: 'escrow-1',
+        walletId: 'wallet-1',
+        userId: 'other-user',
+        recipientId: 'recipient-1',
+        amount: 5000,
+        type: 'BOOKING',
+        status: 'HOLD',
+        relatedId: 'booking-1',
+        currency: 'NGN',
+        releaseTiers: null,
+        releasedAt: null,
+      };
+
+      (prisma.escrow.findUnique as jest.Mock).mockResolvedValue({ ...mockEscrow, wallet: {} });
+
+      await expect(
+        service.releaseEscrow('user-1', { escrowId: 'escrow-1' }, mockUser)
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should reject release of non-existent escrow', async () => {
+      (prisma.escrow.findUnique as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        service.releaseEscrow('user-1', { escrowId: 'non-existent' }, mockUser)
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
   describe('getTransactions', () => {
     it('should return transaction history for user', async () => {
       const mockWallet = {
@@ -492,6 +549,68 @@ describe('WalletService', () => {
         transactions: mockTransactions,
         total: 1,
         limit: 50,
+        offset: 0,
+      });
+    });
+
+    it('should apply filters correctly', async () => {
+      const mockWallet = {
+        id: 'wallet-1',
+        userId: 'user-1',
+        balance: 5000,
+        currency: 'NGN',
+        locked: false,
+      };
+      
+      const mockTransactions = [
+        {
+          id: 'txn-1',
+          walletId: 'wallet-1',
+          userId: 'user-1',
+          type: 'DEPOSIT',
+          amount: 5000,
+          currency: 'NGN',
+          status: 'COMPLETED',
+          description: 'Bank transfer',
+          createdAt: new Date(),
+        },
+      ];
+
+      (prisma.wallet.findUnique as jest.Mock).mockResolvedValue(mockWallet);
+      (prisma.transaction.findMany as jest.Mock).mockResolvedValue(mockTransactions);
+      (prisma.transaction.count as jest.Mock).mockResolvedValue(1);
+
+      const filters = {
+        limit: 10,
+        offset: 0,
+        type: TransactionType.DEPOSIT,
+        status: TransactionStatus.COMPLETED,
+        startDate: new Date(Date.now() - 86400000).toISOString(),
+        endDate: new Date().toISOString(),
+      };
+
+      const result = await service.getTransactions('user-1', filters, mockUser as any);
+
+      expect(prisma.transaction.findMany).toHaveBeenCalledWith({
+        where: {
+          walletId: 'wallet-1',
+          userId: 'user-1',
+          type: 'DEPOSIT',
+          status: 'COMPLETED',
+          createdAt: {
+            gte: new Date(filters.startDate),
+            lte: new Date(filters.endDate),
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        skip: 0,
+      });
+      
+      expect(result).toEqual({
+        transactions: mockTransactions,
+        total: 1,
+        limit: 10,
         offset: 0,
       });
     });

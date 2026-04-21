@@ -13,6 +13,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { NotificationService } from './notification.service';
 import { PushNotificationService } from './push/push-notification.service';
 import { RegisterDeviceTokenDto } from './dto/register-device-token.dto';
+import { DeregisterDeviceTokenDto } from './dto/deregister-device-token.dto';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 
 @Controller('notifications')
@@ -87,7 +88,7 @@ export class NotificationsController {
    * POST /notifications/deregister-device-token
    */
   @Post('deregister-device-token')
-  async deregisterDeviceToken(@Body() body: { token: string }) {
+  async deregisterDeviceToken(@Body() body: DeregisterDeviceTokenDto) {
     return this.pushService.deregisterDeviceToken(body.token);
   }
 
