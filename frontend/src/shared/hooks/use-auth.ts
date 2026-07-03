@@ -214,6 +214,17 @@ export function useAuth(): AuthState & {
   };
 
   const devLogin = (role: UserRole) => {
+    // EMG (P0-02): devLogin fabricates a fully "authenticated" session
+    // entirely client-side — a fake accessToken, a mock User object, no
+    // backend call at all. It must never run in production. Previously only
+    // the /quick-access route's UI widget checked NODE_ENV; devLogin itself
+    // and the route registration in App.tsx did not, and QuickAccessPage's
+    // catch-block fallback would call this even after the backend correctly
+    // rejected /auth/quick-access via ENABLE_QUICK_ACCESS!=true.
+    if (process.env.NODE_ENV === 'production') {
+      logger.error('devLogin blocked: not available in production');
+      return;
+    }
     const mockUser = MOCK_USERS[role];
     if (mockUser) {
       logger.log('Orisa dev mode activated:', role);
@@ -231,8 +242,10 @@ export function useAuth(): AuthState & {
     }
   };
 
-  // Check for dev mode on mount
+  // Check for dev mode on mount (never rehydrate a fake session in production
+  // — see devLogin above)
   useEffect(() => {
+    if (process.env.NODE_ENV === 'production') return;
     const devRole = localStorage.getItem('dev_mode_role');
     if (devRole && MOCK_USERS[devRole]) {
       const devUser = { ...MOCK_USERS[devRole], hasOnboarded: true };

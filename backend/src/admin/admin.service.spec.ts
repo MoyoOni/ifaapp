@@ -127,7 +127,9 @@ describe('AdminService', () => {
             },
             circle: {
               findMany: jest.fn(),
+              findUnique: jest.fn(),
               update: jest.fn(),
+              delete: jest.fn(),
             },
             event: {
               findUnique: jest.fn(),
@@ -418,6 +420,46 @@ describe('AdminService', () => {
     it('should throw ForbiddenException for non-admin user', async () => {
       await expect(service.getPendingWithdrawals(mockNonAdminUser))
         .rejects.toThrow('Only admins can view withdrawal requests');
+    });
+  });
+
+  describe('moderateCircle (P0-03 soft delete)', () => {
+    const mockCircle = { id: 'circle-1', status: 'ACTIVE', active: true };
+
+    it('soft-deletes the circle on DELETE instead of removing the row', async () => {
+      (prisma.circle.findUnique as jest.Mock).mockResolvedValue(mockCircle);
+      const updateSpy = prisma.circle.update as jest.Mock;
+      updateSpy.mockResolvedValue({ ...mockCircle, status: 'DELETED', active: false });
+
+      const result = await service.moderateCircle('circle-1', 'DELETE', mockAdminUser as any);
+
+      expect(result.status).toBe('DELETED');
+      expect(updateSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'circle-1' },
+          data: { status: 'DELETED', active: false },
+        }),
+      );
+      expect(prisma.circle.delete).not.toHaveBeenCalled();
+    });
+
+    it('rejects moderation from a non-admin', async () => {
+      await expect(
+        service.moderateCircle('circle-1', 'DELETE', mockNonAdminUser as any),
+      ).rejects.toThrow('Only admins can moderate circles');
+      expect(prisma.circle.update).not.toHaveBeenCalled();
+    });
+
+    it('still supports ARCHIVE and ACTIVATE via the same status map', async () => {
+      (prisma.circle.findUnique as jest.Mock).mockResolvedValue(mockCircle);
+      const updateSpy = prisma.circle.update as jest.Mock;
+      updateSpy.mockResolvedValue({ ...mockCircle, status: 'ARCHIVED', active: false });
+
+      await service.moderateCircle('circle-1', 'ARCHIVE', mockAdminUser as any);
+
+      expect(updateSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { status: 'ARCHIVED', active: false } }),
+      );
     });
   });
 });

@@ -439,11 +439,17 @@ function App() {
                         <PricingPage />
                       </React.Suspense>
                     } />
-                    <Route path="/quick-access" element={
-                      <React.Suspense fallback={<LoadingSpinner />}>
-                        <QuickAccessPage />
-                      </React.Suspense>
-                    } />
+                    {/* P0-02: route itself is gated, not just the widget that links to it —
+                        previously /quick-access was reachable in production with no guard
+                        at all, and its devLogin() fallback could fabricate a fake session
+                        client-side even after the backend correctly rejected quick access. */}
+                    {process.env.NODE_ENV !== 'production' && (
+                      <Route path="/quick-access" element={
+                        <React.Suspense fallback={<LoadingSpinner />}>
+                          <QuickAccessPage />
+                        </React.Suspense>
+                      } />
+                    )}
                     <Route path="/test-sentry" element={
                       <React.Suspense fallback={<LoadingSpinner />}>
                         <SentryTestPage />

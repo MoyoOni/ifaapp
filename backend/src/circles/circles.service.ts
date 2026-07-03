@@ -319,7 +319,11 @@ export class CirclesService {
       },
     });
 
-    if (!circle) {
+    // P0-03: a soft-deleted circle must 404 the same way a hard-deleted one
+    // would have — findOne doesn't filter by status at the query level (it
+    // needs to still find ARCHIVED circles for admin/member contexts), so the
+    // DELETED check happens here instead.
+    if (!circle || circle.status === 'DELETED') {
       throw new NotFoundException('Circle not found');
     }
 
@@ -408,9 +412,14 @@ export class CirclesService {
       throw new ForbiddenException('Only the circle creator can delete the circle');
     }
 
-    // Delete circle (cascade will delete members)
-    await this.prisma.circle.delete({
+    // Soft delete (P0-03): a hard delete here cascades to destroy every
+    // CircleMember/CircleFeedPost row with no recovery path. `status` already
+    // has an 'ARCHIVED' value used by the admin moderation flow and is
+    // filtered out of every listing query via an `status: 'ACTIVE'`
+    // allowlist, so 'DELETED' is hidden the same way with zero schema change.
+    await this.prisma.circle.update({
       where: { id: circleId },
+      data: { status: 'DELETED', active: false },
     });
 
     return { success: true };

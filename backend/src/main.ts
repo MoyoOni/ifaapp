@@ -9,6 +9,7 @@ import { SecurityConfigService } from './security/security-config.service';
 import { SecurityHardeningService } from './security/security-hardening.service';
 import { InputSanitizationMiddleware } from './middleware/input-sanitization.middleware';
 import { SecurityHeadersMiddleware } from './middleware/security-headers.middleware';
+import { SensitiveFieldStripInterceptor } from './interceptors/sensitive-field-strip.interceptor';
 
 const logger = new Logger('Bootstrap');
 
@@ -65,6 +66,12 @@ async function bootstrap() {
       disableErrorMessages: false, // Keep error messages for debugging
     }),
   );
+
+  // P0-04: global response safety net — strips passwordHash/emailVerificationToken
+  // from every response body, however deeply nested, regardless of whether the
+  // specific controller remembered to do it by hand. See the interceptor's own
+  // doc comment for why this exists instead of a per-endpoint DTO layer.
+  app.useGlobalInterceptors(new SensitiveFieldStripInterceptor());
 
   // Swagger setup for development
   if (configService.get('NODE_ENV') !== 'production') {

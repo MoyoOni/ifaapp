@@ -19,6 +19,7 @@ describe('CirclesService', () => {
             circle: {
               findMany: jest.fn(),
               findUnique: jest.fn(),
+              findFirst: jest.fn(),
               create: jest.fn(),
               update: jest.fn(),
               delete: jest.fn(),
@@ -437,6 +438,50 @@ describe('CirclesService', () => {
 
       await expect(service.updateCircle('nonexistent-circle', { name: 'Updated Name' }, 'user1'))
         .rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('delete (P0-03 soft delete)', () => {
+    const currentUser = { id: 'creator-1', role: 'CLIENT', email: 'c@example.com', verified: true } as any;
+    const mockCircle = { id: 'circle-1', creatorId: 'creator-1', status: 'ACTIVE', active: true };
+
+    it('soft-deletes the circle instead of removing the row', async () => {
+      jest.spyOn(prisma.circle, 'findUnique').mockResolvedValue(mockCircle as any);
+      const updateSpy = jest.spyOn(prisma.circle, 'update').mockResolvedValue({
+        ...mockCircle,
+        status: 'DELETED',
+        active: false,
+      } as any);
+
+      const result = await service.delete('circle-1', currentUser);
+
+      expect(result).toEqual({ success: true });
+      expect(updateSpy).toHaveBeenCalledWith({
+        where: { id: 'circle-1' },
+        data: { status: 'DELETED', active: false },
+      });
+      expect(prisma.circle.delete).not.toHaveBeenCalled();
+    });
+
+    it('rejects deletion from a non-creator', async () => {
+      jest.spyOn(prisma.circle, 'findUnique').mockResolvedValue(mockCircle as any);
+      const otherUser = { ...currentUser, id: 'someone-else' };
+
+      await expect(service.delete('circle-1', otherUser)).rejects.toThrow(ForbiddenException);
+      expect(prisma.circle.update).not.toHaveBeenCalled();
+      expect(prisma.circle.delete).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('findOne — soft delete (P0-03)', () => {
+    it('treats a DELETED circle as not found', async () => {
+      jest.spyOn(prisma.circle, 'findFirst').mockResolvedValue({
+        id: 'circle-1',
+        slug: 'circle-1',
+        status: 'DELETED',
+      } as any);
+
+      await expect(service.findOne('circle-1')).rejects.toThrow(NotFoundException);
     });
   });
 });

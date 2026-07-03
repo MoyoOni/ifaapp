@@ -356,11 +356,15 @@ model Document {
   threatName       String?
   encrypted        Boolean   @default(true)
   createdAt        DateTime  @default(now())
+  deletedAt        DateTime? // P0-03: soft delete — Document had no existing
+                             // state field to reuse (unlike ForumThread/Circle's
+                             // `status`), so this is a real additive column.
   sharer           User      @relation("SharedDocuments", fields: [sharedWith], references: [id], onDelete: Cascade)
   uploader         User      @relation("UploadedDocuments", fields: [uploadedBy], references: [id], onDelete: Cascade)
 
   @@index([uploadedBy, sharedWith])
   @@index([s3Key])
+  @@index([deletedAt])
 }
 
 model Appointment {

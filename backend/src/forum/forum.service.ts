@@ -1647,9 +1647,13 @@ Share your reflections, questions, and experiences below. All levels welcome.
       },
     });
 
-    // Delete the secondary thread
-    await this.prisma.forumThread.delete({
+    // Soft delete the secondary thread (P0-03) — mirrors the existing
+    // deleteThread() convention (status: DELETED) instead of a hard delete,
+    // which would permanently destroy the thread and cascade-delete its
+    // posts with no recovery path if the merge turns out to be a mistake.
+    await this.prisma.forumThread.update({
       where: { id: secondaryThreadId },
+      data: { status: ThreadStatus.DELETED },
     });
 
     // Return the updated primary thread
@@ -1700,8 +1704,13 @@ Share your reflections, questions, and experiences below. All levels welcome.
       this.logger.log(`Thread ${threadId} deleted by admin ${currentUser.id} for reason: ${reason}`);
     }
 
-    return this.prisma.forumThread.delete({
+    // Soft delete (P0-03) — matches deleteThread()'s existing convention.
+    // This used to hard-delete the thread (and cascade-delete every post in
+    // it) with no recovery path, even for a mistaken or disputed moderation
+    // action.
+    return this.prisma.forumThread.update({
       where: { id: threadId },
+      data: { status: ThreadStatus.DELETED },
     });
   }
 
@@ -1728,8 +1737,13 @@ Share your reflections, questions, and experiences below. All levels welcome.
       this.logger.log(`Thread ${threadId} deleted by admin ${currentUser.id} for reason: ${reason}`);
     }
 
-    return this.prisma.forumThread.delete({
+    // Soft delete (P0-03) — matches deleteThread()'s existing convention.
+    // This used to hard-delete the thread (and cascade-delete every post in
+    // it) with no recovery path, even for a mistaken or disputed moderation
+    // action.
+    return this.prisma.forumThread.update({
       where: { id: threadId },
+      data: { status: ThreadStatus.DELETED },
     });
   }
 

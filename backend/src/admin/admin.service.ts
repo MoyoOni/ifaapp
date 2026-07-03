@@ -1476,15 +1476,14 @@ export class AdminService {
       throw new NotFoundException('Circle not found');
     }
 
-    if (action === 'DELETE') {
-      return this.prisma.circle.delete({
-        where: { id: circleId },
-      });
-    }
-
+    // Soft delete (P0-03): DELETE used to hard-delete the circle, cascading
+    // to destroy every member/feed-post row with no recovery path for an
+    // admin moderation action. Routed through the same status-update path as
+    // ARCHIVE/ACTIVATE below, just with its own status value.
     const statusMap = {
       ARCHIVE: 'ARCHIVED',
       ACTIVATE: 'ACTIVE',
+      DELETE: 'DELETED',
     };
 
     return this.prisma.circle.update({

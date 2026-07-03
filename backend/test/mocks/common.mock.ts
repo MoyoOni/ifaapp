@@ -74,3 +74,18 @@ export enum PrivacyLevel {
     PRIVATE = 'PRIVATE',
     CONFIDENTIAL = 'CONFIDENTIAL',
 }
+
+export enum ThreadStatus {
+    ACTIVE = 'ACTIVE',
+    LOCKED = 'LOCKED',
+    PINNED = 'PINNED',
+    ARCHIVED = 'ARCHIVED',
+    DELETED = 'DELETED',
+}
+
+export enum PostStatus {
+    ACTIVE = 'ACTIVE',
+    EDITED = 'EDITED',
+    DELETED = 'DELETED',
+    HIDDEN = 'HIDDEN',
+}

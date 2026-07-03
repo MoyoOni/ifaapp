@@ -147,6 +147,7 @@ export class DocumentsService {
     const documents = await this.prisma.document.findMany({
       where: {
         OR: [{ uploadedBy: userId }, { sharedWith: userId }],
+        deletedAt: null, // P0-03: exclude soft-deleted documents
       },
       include: {
         uploader: {
@@ -182,7 +183,7 @@ export class DocumentsService {
       where: { id: documentId },
     });
 
-    if (!document) {
+    if (!document || document.deletedAt) {
       throw new NotFoundException('Document not found');
     }
 
@@ -214,7 +215,7 @@ export class DocumentsService {
       where: { id: documentId },
     });
 
-    if (!document) {
+    if (!document || document.deletedAt) {
       throw new NotFoundException('Document not found');
     }
 
@@ -224,19 +225,15 @@ export class DocumentsService {
       throw new ForbiddenException('You can only delete your own documents');
     }
 
-    // Delete from S3
-    try {
-      await this.s3Service.deleteFile(document.s3Key);
-    } catch (error) {
-      this.logger.warn(
-        `Failed to delete file from S3: ${(error as Error).message}`,
-        (error as Error).stack
-      );
-    }
-
-    // Delete from database
-    await this.prisma.document.delete({
+    // Soft delete (P0-03): mark deletedAt instead of removing the row. The S3
+    // object is deliberately left in place — deleting it here would defeat
+    // the point of a soft delete (there'd be a metadata row but no file left
+    // to recover). Permanent S3 cleanup belongs to a separate retention job
+    // once the row has been soft-deleted past some grace period, not this
+    // request path.
+    await this.prisma.document.update({
       where: { id: documentId },
+      data: { deletedAt: new Date() },
     });
 
     return { success: true };

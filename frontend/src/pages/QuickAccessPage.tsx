@@ -37,25 +37,37 @@ const QuickAccessPage: React.FC = () => {
     setError(null);
     setLoggingInAs(key);
 
+    const isDev = process.env.NODE_ENV !== 'production';
+
     try {
       if (demoUser.email) {
         await quickAccess(demoUser.email);
-      } else {
+      } else if (isDev) {
         devLogin(demoUser.role);
+      } else {
+        throw new Error('Quick access requires a demo email in production');
       }
       goToDashboard(demoUser.role);
     } catch (err: any) {
-      // If backend quick-access fails, fall back to devLogin
-      logger.warn('Quick access API failed, falling back to dev login:', err.message);
-      try {
-        devLogin(demoUser.role);
-        goToDashboard(demoUser.role);
-      } catch {
-        const errorMessage = err instanceof Error ? err.message : 'Quick access failed. Please try again.';
-        setError(errorMessage);
-        setLoggingInAs(null);
-        logger.error('Quick Access Error:', err);
+      // Falling back to the fully client-side devLogin() must never happen in
+      // production (P0-02) — that would defeat the backend's own rejection of
+      // /auth/quick-access (ENABLE_QUICK_ACCESS!=true) by fabricating a fake
+      // session anyway. This route isn't even reachable in production (see
+      // App.tsx), but keep the check here too as defense in depth.
+      if (isDev) {
+        logger.warn('Quick access API failed, falling back to dev login:', err.message);
+        try {
+          devLogin(demoUser.role);
+          goToDashboard(demoUser.role);
+          return;
+        } catch {
+          // fall through to the error handling below
+        }
       }
+      const errorMessage = err instanceof Error ? err.message : 'Quick access failed. Please try again.';
+      setError(errorMessage);
+      setLoggingInAs(null);
+      logger.error('Quick Access Error:', err);
     }
   };
 
