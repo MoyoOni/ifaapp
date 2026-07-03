@@ -1,0 +1,95 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - main [ref=e5]:
+    - generic [ref=e6]:
+      - button "Toggle menu" [ref=e7] [cursor=pointer]:
+        - img [ref=e9]
+      - heading "Ilé Àṣẹ" [level=1] [ref=e10]
+      - button [ref=e11] [cursor=pointer]:
+        - img [ref=e12]
+    - generic [ref=e18]:
+      - button "Back" [ref=e19] [cursor=pointer]:
+        - img [ref=e20]
+        - generic [ref=e22]: Back
+      - generic [ref=e24]:
+        - generic [ref=e27]: B
+        - heading "Babalawo Adekunle" [level=1] [ref=e30]
+      - generic [ref=e31]:
+        - generic [ref=e32]:
+          - heading "Book Consultation" [level=2] [ref=e33]
+          - paragraph [ref=e34]: Schedule your spiritual guidance session with Babalawo Adekunle
+        - generic [ref=e35]:
+          - generic [ref=e36]:
+            - generic [ref=e37]:
+              - img [ref=e38]
+              - text: Consultation Date
+            - textbox [active] [ref=e40]: 2026-02-15
+          - generic [ref=e41]:
+            - generic [ref=e42]:
+              - img [ref=e43]
+              - text: Preferred Time
+            - textbox [ref=e46]: 14:00
+        - generic [ref=e47]:
+          - generic [ref=e48]:
+            - img [ref=e49]
+            - text: Duration
+          - generic [ref=e52]:
+            - button "30 min" [ref=e53] [cursor=pointer]
+            - button "60 min" [ref=e54] [cursor=pointer]
+            - button "90 min" [ref=e55] [cursor=pointer]
+          - paragraph [ref=e56]: "Price: ₦1500 (60 min × ₦25/min)"
+        - generic [ref=e57]:
+          - generic [ref=e58]:
+            - img [ref=e59]
+            - text: Consultation Topic
+          - textbox "What would you like guidance on? (e.g., Life direction, spiritual growth, divination)" [ref=e61]: Life path guidance
+        - generic [ref=e62]:
+          - generic [ref=e63]:
+            - img [ref=e64]
+            - text: Preferred Method
+          - generic [ref=e67]:
+            - button "Video Call Face-to-face consultation via video" [ref=e68] [cursor=pointer]:
+              - generic [ref=e69]:
+                - img [ref=e71]
+                - generic [ref=e74]:
+                  - generic [ref=e75]: Video Call
+                  - generic [ref=e76]: Face-to-face consultation via video
+                - img [ref=e77]
+            - button "Phone Call Audio-only consultation" [ref=e80] [cursor=pointer]:
+              - generic [ref=e81]:
+                - img [ref=e83]
+                - generic [ref=e85]:
+                  - generic [ref=e86]: Phone Call
+                  - generic [ref=e87]: Audio-only consultation
+            - button "In Person Physical meeting at temple" [ref=e88] [cursor=pointer]:
+              - generic [ref=e89]:
+                - img [ref=e91]
+                - generic [ref=e94]:
+                  - generic [ref=e95]: In Person
+                  - generic [ref=e96]: Physical meeting at temple
+        - generic [ref=e97]:
+          - generic [ref=e98]:
+            - img [ref=e99]
+            - text: Special Requests
+            - generic [ref=e101]: (Optional)
+          - textbox "Any special accommodations, dietary restrictions, or preferences?" [ref=e102]
+        - generic [ref=e103]:
+          - generic [ref=e104]:
+            - generic [ref=e105]:
+              - img [ref=e106]
+              - generic [ref=e108]: Total Amount
+            - generic [ref=e109]:
+              - generic [ref=e110]: ₦1,500
+              - generic [ref=e111]: 60 minutes × ₦25/min
+          - generic [ref=e112]:
+            - paragraph [ref=e113]: • Payment will be processed from your wallet
+            - paragraph [ref=e114]: • Full refund if cancelled 24 hours before appointment
+        - button "Confirm Booking" [ref=e115] [cursor=pointer]:
+          - img [ref=e116]
+          - generic [ref=e119]: Confirm Booking
+  - button "CLIENT" [ref=e121] [cursor=pointer]:
+    - img [ref=e122]
+    - generic [ref=e125]: CLIENT
+```

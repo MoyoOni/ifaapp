@@ -1,0 +1,425 @@
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, ShoppingCart, Package, Store, Star, Plus, Minus, Check, MessageSquare, Lock } from 'lucide-react';
+import api from '@/lib/api';
+import { useAuth } from '@/shared/hooks/use-auth';
+import { logger } from '@/shared/utils/logger';
+import { useCart } from '@/shared/contexts/cart-context';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { getCategoryBySlug, getSubcategoryLabel } from './marketplace-categories';
+
+interface Product {
+  id: string;
+  vendorId: string;
+  name: string;
+  category: string;
+  subcategory?: string;
+  requiresInitiation?: boolean;
+  type: string;
+  description: string;
+  longDescription?: string;
+  price: number;
+  currency: string;
+  stock?: number;
+  images: string[];
+  provenance?: string;
+  usageProtocol?: string;
+  verifiedTier: string;
+  status: string;
+  vendor: {
+    id: string;
+    businessName: string;
+    user: {
+      id: string;
+      name: string;
+      yorubaName?: string;
+      verified: boolean;
+    };
+  };
+  reviews: Array<{
+    id: string;
+    rating: number;
+    title?: string;
+    content?: string;
+    createdAt: string;
+    customer: {
+      id: string;
+      name: string;
+      yorubaName?: string;
+      verified: boolean;
+    };
+  }>;
+  _count: {
+    orders: number;
+    reviews: number;
+  };
+}
+
+interface ProductDetailViewProps {
+  productId: string;
+  onBack?: () => void;
+}
+
+/**
+ * Product Detail View Component
+ * Product details, reviews, and add to cart
+ */
+const ProductDetailView: React.FC<ProductDetailViewProps> = ({ productId, onBack }) => {
+  const navigate = useNavigate();
+  useAuth();
+  const { addItem } = useCart();
+  const [quantity, setQuantity] = useState(1);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [addedToCart, setAddedToCart] = useState(false);
+
+  // Fetch product
+  const { data: product, isLoading: productLoading } = useQuery<Product>({
+    queryKey: ['marketplace-product', productId],
+    queryFn: async () => {
+      const response = await api.get(`/marketplace/products/${productId}`);
+      return response.data;
+    },
+    enabled: !!productId && !localStorage.getItem('dev_mode_role'),
+  });
+
+  const handleAddToCart = () => {
+    if (product) {
+      addItem({
+        productId: product.id,
+        name: product.name,
+        price: product.price,
+        currency: product.currency,
+        quantity,
+        image: product.images?.[0],
+        vendorId: product.vendorId,
+        vendorName: product.vendor.businessName,
+        stock: product.stock,
+      });
+      setAddedToCart(true);
+      setTimeout(() => setAddedToCart(false), 2000);
+    }
+  };
+
+  if (productLoading) {
+    return (
+      <div className="min-h-screen bg-background p-6 flex items-center justify-center">
+        <LoadingSpinner size="lg" variant="highlight" />
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-background p-6">
+        <div className="max-w-4xl mx-auto text-center py-12">
+          <p className="text-muted-foreground">Product not found.</p>
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="mt-4 text-highlight hover:text-secondary transition-colors"
+            >
+              Back to Marketplace
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  const maxQuantity = (product.stock !== undefined && product.stock !== null) ? Math.min(product.stock, 10) : 10;
+  const averageRating =
+    product.reviews.length > 0
+      ? product.reviews.reduce((sum, review) => sum + review.rating, 0) / product.reviews.length
+      : 0;
+
+  return (
+    <div className="min-h-screen bg-background p-6">
+      <div className="max-w-6xl mx-auto space-y-6">
+        {/* Back Button */}
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft size={20} />
+            Back to Marketplace
+          </button>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Product Images */}
+          <div className="space-y-4">
+            {/* Main Image */}
+            <div className="relative h-96 bg-muted/50 border border-border rounded-xl overflow-hidden">
+              {product.images && product.images.length > 0 ? (
+                <img
+                  src={product.images[selectedImageIndex]}
+                  alt={product.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                  <Package size={64} />
+                </div>
+              )}
+            </div>
+
+            {/* Thumbnail Gallery */}
+            {product.images && product.images.length > 1 && (
+              <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar">
+                {product.images.map((image, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedImageIndex(index)}
+                    className={`flex-shrink-0 w-20 h-20 rounded-lg border-2 overflow-hidden ${selectedImageIndex === index
+                      ? 'border-highlight'
+                      : 'border-border hover:border-muted-foreground'
+                      }`}
+                  >
+                    <img src={image} alt={`${product.name} ${index + 1}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Product Info */}
+          <div className="space-y-6">
+            {/* Title and Vendor */}
+            <div>
+              <h1 className="text-3xl font-bold brand-font text-foreground mb-2">{product.name}</h1>
+              <div className="flex items-center gap-2 text-muted-foreground mb-4">
+                <Store size={16} />
+                <span>{product.vendor.businessName}</span>
+                {product.vendor.user.verified && (
+                  <span className="text-xs bg-highlight/20 text-highlight px-2 py-1 rounded">
+                    ✓ Verified Vendor
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {(() => {
+                  const cat = getCategoryBySlug(product.category);
+                  return cat ? (
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${cat.color}`}>
+                      {cat.icon} {cat.label}
+                    </span>
+                  ) : null;
+                })()}
+                {product.subcategory && (
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-muted text-muted-foreground">
+                    {getSubcategoryLabel(product.category, product.subcategory)}
+                  </span>
+                )}
+                {product.requiresInitiation && (
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 flex items-center gap-1">
+                    <Lock size={10} /> Initiated Practitioners Only
+                  </span>
+                )}
+                {product.verifiedTier === 'COUNCIL_APPROVED' && (
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-highlight/20 text-highlight">
+                    ✓ Council Approved
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Price */}
+            <div className="text-4xl font-bold text-highlight">
+              {product.currency === 'NGN' ? '₦' : '$'}
+              {product.price.toLocaleString()}
+            </div>
+
+            {/* Rating */}
+            {product.reviews.length > 0 && (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={i}
+                      size={20}
+                      className={i < Math.round(averageRating) ? 'fill-highlight text-highlight' : 'text-muted-foreground'}
+                    />
+                  ))}
+                </div>
+                <span className="text-muted-foreground">
+                  {averageRating.toFixed(1)} ({product.reviews.length} review{product.reviews.length !== 1 ? 's' : ''})
+                </span>
+              </div>
+            )}
+
+            {/* Stock Status */}
+            {(product.stock !== undefined && product.stock !== null) && (
+              <div className="text-sm">
+                {product.stock > 0 ? (
+                  <span className="text-primary">✓ {product.stock} in stock</span>
+                ) : (
+                  <span className="text-red-400">Out of stock</span>
+                )}
+              </div>
+            )}
+
+            {/* Quantity Selector */}
+            {product.type === 'PHYSICAL' && (product.stock !== undefined && product.stock !== null) && product.stock > 0 && (
+              <div className="flex items-center gap-4">
+                <label className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
+                  Quantity
+                </label>
+                <div className="flex items-center gap-2 border border-border rounded-lg">
+                  <button
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    disabled={quantity <= 1}
+                    className="p-2 hover:bg-muted transition-colors disabled:opacity-50"
+                    aria-label="Decrease quantity"
+                    title="Decrease quantity"
+                  >
+                    <Minus size={16} />
+                  </button>
+                  <span className="px-4 py-2 min-w-[60px] text-center">{quantity}</span>
+                  <button
+                    onClick={() => setQuantity(Math.min(maxQuantity, quantity + 1))}
+                    disabled={quantity >= maxQuantity}
+                    className="p-2 hover:bg-muted transition-colors disabled:opacity-50"
+                    aria-label="Increase quantity"
+                    title="Increase quantity"
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Add to Cart & Message Vendor Buttons */}
+            <div className="flex gap-4">
+              <button
+                onClick={handleAddToCart}
+                disabled={
+                  (product.stock !== undefined && product.stock !== null && product.stock === 0) ||
+                  product.type !== 'PHYSICAL' ||
+                  addedToCart
+                }
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-highlight text-foreground rounded-xl font-bold hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {addedToCart ? (
+                  <>
+                    <Check size={20} />
+                    Added to Cart!
+                  </>
+                ) : (
+                  <>
+                    <ShoppingCart size={20} />
+                    Add to Cart
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={() => {
+                  if (product?.vendor?.user?.id) {
+                    navigate(`/messages/${product.vendor.user.id}`);
+                  }
+                }}
+                className="px-6 py-4 bg-muted text-foreground rounded-xl font-bold hover:bg-muted/80 transition-colors flex items-center gap-2"
+              >
+                <MessageSquare className="w-5 h-5" />
+                Message Vendor
+              </button>
+            </div>
+
+            {/* Product Details */}
+            <div className="bg-muted/50 border border-border rounded-xl p-6 space-y-4">
+              <h3 className="text-lg font-bold text-foreground">Description</h3>
+              <p className="text-muted-foreground whitespace-pre-wrap">
+                {product.longDescription || product.description}
+              </p>
+
+              {product.provenance && (
+                <div>
+                  <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-2">
+                    Provenance
+                  </h4>
+                  <p className="text-muted-foreground">{product.provenance}</p>
+                </div>
+              )}
+
+              {product.usageProtocol && (
+                <div>
+                  <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-2">
+                    Usage Protocol
+                  </h4>
+                  <p className="text-muted-foreground whitespace-pre-wrap">{product.usageProtocol}</p>
+                </div>
+              )}
+
+              <div>
+                <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-2">
+                  Product Type
+                </h4>
+                <p className="text-muted-foreground capitalize">{product.type.toLowerCase()}</p>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-2">
+                  Category
+                </h4>
+                <p className="text-muted-foreground">
+                  {(() => {
+                    const cat = getCategoryBySlug(product.category);
+                    const catLabel = cat ? `${cat.icon} ${cat.label}` : product.category;
+                    const subLabel = product.subcategory ? ` › ${getSubcategoryLabel(product.category, product.subcategory)}` : '';
+                    return catLabel + subLabel;
+                  })()}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Reviews Section */}
+        {product.reviews.length > 0 && (
+          <div className="mt-12 pt-8 border-t border-border">
+            <h2 className="text-2xl font-bold text-foreground mb-6">Reviews ({product.reviews.length})</h2>
+            <div className="space-y-6">
+              {product.reviews.map((review) => (
+                <div key={review.id} className="bg-muted/50 border border-border rounded-xl p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-full bg-highlight/20 flex items-center justify-center text-highlight font-bold flex-shrink-0">
+                      {(review.customer.yorubaName || review.customer.name)[0].toUpperCase()}
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-3">
+                        <span className="font-bold">{review.customer.yorubaName || review.customer.name}</span>
+                        {review.customer.verified && (
+                          <span className="text-xs bg-highlight/20 text-highlight px-2 py-1 rounded">
+                            Verified
+                          </span>
+                        )}
+                        <div className="flex items-center gap-1">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              size={14}
+                              className={i < review.rating ? 'fill-highlight text-highlight' : 'text-muted-foreground'}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {new Date(review.createdAt).toLocaleDateString()}
+                      </div>
+                      {review.title && <h4 className="font-bold">{review.title}</h4>}
+                      {review.content && <p className="text-muted-foreground whitespace-pre-wrap">{review.content}</p>}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default ProductDetailView;

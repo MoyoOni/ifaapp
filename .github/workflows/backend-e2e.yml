@@ -1,0 +1,67 @@
+# Backend E2E & API contract tests (HC-201.5)
+# Requires Postgres; runs npm run test:e2e in backend.
+name: Backend E2E
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'backend/**'
+      - 'common/**'
+      - '.github/workflows/backend-e2e.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'backend/**'
+      - 'common/**'
+      - '.github/workflows/backend-e2e.yml'
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: ifa_e2e_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test -d ifa_e2e_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://test:test@localhost:5432/ifa_e2e_test
+      JWT_SECRET: super-secret-jwt-min-32-chars-for-e2e-ci
+      JWT_REFRESH_SECRET: super-secret-refresh-min-32-chars-e2e
+      ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prisma generate
+        working-directory: backend
+        run: npx prisma generate
+
+      - name: Prisma migrate deploy
+        working-directory: backend
+        run: npx prisma migrate deploy
+
+      - name: Run E2E tests
+        working-directory: backend
+        run: npm run test:e2e

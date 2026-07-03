@@ -1,0 +1,108 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - main [ref=e5]:
+    - generic [ref=e6]:
+      - button "Toggle menu" [ref=e7] [cursor=pointer]:
+        - img [ref=e9]
+      - heading "Ilé Àṣẹ" [level=1] [ref=e10]
+      - button [ref=e11] [cursor=pointer]:
+        - img [ref=e12]
+    - generic [ref=e18]:
+      - generic [ref=e24]:
+        - generic [ref=e25]:
+          - generic [ref=e26]:
+            - img [ref=e27]
+            - generic [ref=e33]: E kaasan
+          - heading "Good Afternoon, Friend" [level=1] [ref=e34]
+          - paragraph [ref=e35]: Welcome to your spiritual home. Explore, learn, and connect with the traditions of Ifá.
+        - generic [ref=e37]:
+          - generic [ref=e38]:
+            - img [ref=e40]
+            - generic [ref=e43]: Word of the Day
+          - paragraph [ref=e44]: No word available today
+      - generic [ref=e45]:
+        - heading "Quick Actions" [level=2] [ref=e47]
+        - generic [ref=e48]:
+          - button "Find a Temple Ilé Ifá" [ref=e49] [cursor=pointer]:
+            - img [ref=e51]
+            - paragraph [ref=e54]: Find a Temple
+            - paragraph [ref=e55]: Ilé Ifá
+          - button "Connect with Babalawo Awọn Babalawo" [ref=e56] [cursor=pointer]:
+            - img [ref=e58]
+            - paragraph [ref=e63]: Connect with Babalawo
+            - paragraph [ref=e64]: Awọn Babalawo
+          - button "Learn & Grow Ilé-ẹkọ" [ref=e65] [cursor=pointer]:
+            - img [ref=e67]
+            - paragraph [ref=e70]: Learn & Grow
+            - paragraph [ref=e71]: Ilé-ẹkọ
+          - button "Sacred Items Ọjà" [ref=e72] [cursor=pointer]:
+            - img [ref=e74]
+            - paragraph [ref=e78]: Sacred Items
+            - paragraph [ref=e79]: Ọjà
+          - button "Community Events Àjọ" [ref=e80] [cursor=pointer]:
+            - img [ref=e82]
+            - paragraph [ref=e84]: Community Events
+            - paragraph [ref=e85]: Àjọ
+          - button "Discussions Ìfọ̀rọ̀wérọ̀" [ref=e86] [cursor=pointer]:
+            - img [ref=e88]
+            - paragraph [ref=e90]: Discussions
+            - paragraph [ref=e91]: Ìfọ̀rọ̀wérọ̀
+      - generic [ref=e92]:
+        - button "Discover Find a Babalawo Connect with verified spiritual guides Browse Directory" [ref=e93] [cursor=pointer]:
+          - generic [ref=e94]:
+            - img [ref=e96]
+            - generic [ref=e99]: Discover
+          - heading "Find a Babalawo" [level=3] [ref=e100]
+          - paragraph [ref=e101]: Connect with verified spiritual guides
+          - generic [ref=e102]:
+            - text: Browse Directory
+            - img [ref=e103]
+        - generic [ref=e105]:
+          - generic [ref=e106]:
+            - generic [ref=e107]:
+              - img [ref=e109]
+              - generic [ref=e111]: Consultations
+            - button "View All" [ref=e112] [cursor=pointer]
+          - generic [ref=e113]:
+            - generic [ref=e114]:
+              - img [ref=e115]
+              - generic [ref=e118]:
+                - paragraph [ref=e119]: Baba Femi Sowande
+                - paragraph [ref=e120]: 2/10/2026
+              - generic [ref=e121]: COMPLETED
+            - generic [ref=e122]:
+              - img [ref=e123]
+              - generic [ref=e126]:
+                - paragraph [ref=e127]: Baba Femi Sowande
+                - paragraph [ref=e128]: 2/25/2026
+              - generic [ref=e129]: UPCOMING
+        - generic [ref=e130]:
+          - generic [ref=e132]:
+            - img [ref=e134]
+            - generic [ref=e137]: Guidance Plans
+          - generic [ref=e139]:
+            - img [ref=e140]
+            - generic [ref=e143]:
+              - paragraph [ref=e144]: AKOSE
+              - paragraph [ref=e145]: from Baba Femi Sowande
+            - generic [ref=e146]: PENDING
+        - generic [ref=e148]:
+          - button "Wallet Balance ₦50,000" [ref=e149] [cursor=pointer]:
+            - img [ref=e151]
+            - generic [ref=e154]:
+              - paragraph [ref=e155]: Wallet Balance
+              - paragraph [ref=e156]: ₦50,000
+            - img [ref=e157]
+          - button "2 Messages 2 unread" [ref=e159] [cursor=pointer]:
+            - generic [ref=e160]:
+              - img [ref=e161]
+              - generic [ref=e163]: "2"
+            - generic [ref=e164]:
+              - paragraph [ref=e165]: Messages
+              - paragraph [ref=e166]: 2 unread
+            - img [ref=e167]
+  - button "Dev Switcher" [ref=e170] [cursor=pointer]:
+    - img [ref=e171]
+```

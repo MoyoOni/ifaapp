@@ -1,0 +1,149 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e4]:
+    - complementary [ref=e5]:
+      - generic [ref=e7]:
+        - generic [ref=e8]:
+          - generic [ref=e9]: IÀ
+          - generic [ref=e10]:
+            - heading "Ilé Àṣẹ" [level=1] [ref=e11]
+            - paragraph [ref=e12]: Digital Sanctuary
+        - button "Collapse sidebar" [ref=e13] [cursor=pointer]:
+          - img [ref=e14]
+      - generic [ref=e16]:
+        - button "Home" [ref=e17] [cursor=pointer]:
+          - img [ref=e18]
+          - generic [ref=e21]: Home
+        - button "Marketplace" [ref=e22] [cursor=pointer]:
+          - img [ref=e23]
+          - generic [ref=e26]: Marketplace
+        - button "Academy" [ref=e27] [cursor=pointer]:
+          - img [ref=e28]
+          - generic [ref=e31]: Academy
+        - button "Find Babalawo" [ref=e32] [cursor=pointer]:
+          - img [ref=e33]
+          - generic [ref=e36]: Find Babalawo
+        - button "My Consultations" [ref=e37] [cursor=pointer]:
+          - img [ref=e38]
+          - generic [ref=e40]: My Consultations
+        - button "Temples" [ref=e41] [cursor=pointer]:
+          - img [ref=e42]
+          - generic [ref=e45]: Temples
+        - button "Circles" [ref=e46] [cursor=pointer]:
+          - img [ref=e47]
+          - generic [ref=e52]: Circles
+        - button "Events" [ref=e53] [cursor=pointer]:
+          - img [ref=e54]
+          - generic [ref=e56]: Events
+        - button "Forum" [ref=e57] [cursor=pointer]:
+          - img [ref=e58]
+          - generic [ref=e60]: Forum
+      - button "T Test Client Member" [ref=e63] [cursor=pointer]:
+        - generic [ref=e65]: T
+        - generic [ref=e66]:
+          - paragraph [ref=e67]: Test Client
+          - generic [ref=e68]: Member
+        - img [ref=e69]
+    - main [ref=e71]:
+      - generic [ref=e72]:
+        - generic [ref=e74]:
+          - heading "booking" [level=2] [ref=e75]
+          - paragraph [ref=e76]: "Monday, October 24th • Odu: Eji Ogbe"
+        - generic [ref=e77]:
+          - generic [ref=e78]:
+            - img
+            - textbox "Search..." [ref=e79]
+          - button [ref=e80] [cursor=pointer]:
+            - img [ref=e81]
+          - button "EN" [ref=e85] [cursor=pointer]:
+            - img [ref=e86]
+            - generic [ref=e89]: EN
+          - button "Toggle theme" [ref=e90] [cursor=pointer]:
+            - img [ref=e91]
+            - generic [ref=e93]: Toggle theme
+      - generic [ref=e96]:
+        - button "Back" [ref=e97] [cursor=pointer]:
+          - img [ref=e98]
+          - generic [ref=e100]: Back
+        - generic [ref=e102]:
+          - generic [ref=e105]: B
+          - heading "Babalawo Adekunle" [level=1] [ref=e108]
+        - generic [ref=e109]:
+          - generic [ref=e110]:
+            - heading "Book Consultation" [level=2] [ref=e111]
+            - paragraph [ref=e112]: Schedule your spiritual guidance session with Babalawo Adekunle
+          - generic [ref=e113]:
+            - generic [ref=e114]:
+              - generic [ref=e115]:
+                - img [ref=e116]
+                - text: Consultation Date
+              - textbox [active] [ref=e118]: 2026-02-15
+            - generic [ref=e119]:
+              - generic [ref=e120]:
+                - img [ref=e121]
+                - text: Preferred Time
+              - textbox [ref=e124]: 14:00
+          - generic [ref=e125]:
+            - generic [ref=e126]:
+              - img [ref=e127]
+              - text: Duration
+            - generic [ref=e130]:
+              - button "30 min" [ref=e131] [cursor=pointer]
+              - button "60 min" [ref=e132] [cursor=pointer]
+              - button "90 min" [ref=e133] [cursor=pointer]
+            - paragraph [ref=e134]: "Price: ₦1500 (60 min × ₦25/min)"
+          - generic [ref=e135]:
+            - generic [ref=e136]:
+              - img [ref=e137]
+              - text: Consultation Topic
+            - textbox "What would you like guidance on? (e.g., Life direction, spiritual growth, divination)" [ref=e139]: Life path guidance
+          - generic [ref=e140]:
+            - generic [ref=e141]:
+              - img [ref=e142]
+              - text: Preferred Method
+            - generic [ref=e145]:
+              - button "Video Call Face-to-face consultation via video" [ref=e146] [cursor=pointer]:
+                - generic [ref=e147]:
+                  - img [ref=e149]
+                  - generic [ref=e152]:
+                    - generic [ref=e153]: Video Call
+                    - generic [ref=e154]: Face-to-face consultation via video
+                  - img [ref=e155]
+              - button "Phone Call Audio-only consultation" [ref=e158] [cursor=pointer]:
+                - generic [ref=e159]:
+                  - img [ref=e161]
+                  - generic [ref=e163]:
+                    - generic [ref=e164]: Phone Call
+                    - generic [ref=e165]: Audio-only consultation
+              - button "In Person Physical meeting at temple" [ref=e166] [cursor=pointer]:
+                - generic [ref=e167]:
+                  - img [ref=e169]
+                  - generic [ref=e172]:
+                    - generic [ref=e173]: In Person
+                    - generic [ref=e174]: Physical meeting at temple
+          - generic [ref=e175]:
+            - generic [ref=e176]:
+              - img [ref=e177]
+              - text: Special Requests
+              - generic [ref=e179]: (Optional)
+            - textbox "Any special accommodations, dietary restrictions, or preferences?" [ref=e180]
+          - generic [ref=e181]:
+            - generic [ref=e182]:
+              - generic [ref=e183]:
+                - img [ref=e184]
+                - generic [ref=e186]: Total Amount
+              - generic [ref=e187]:
+                - generic [ref=e188]: ₦1,500
+                - generic [ref=e189]: 60 minutes × ₦25/min
+            - generic [ref=e190]:
+              - paragraph [ref=e191]: • Payment will be processed from your wallet
+              - paragraph [ref=e192]: • Full refund if cancelled 24 hours before appointment
+          - button "Confirm Booking" [ref=e193] [cursor=pointer]:
+            - img [ref=e194]
+            - generic [ref=e197]: Confirm Booking
+  - button "CLIENT" [ref=e199] [cursor=pointer]:
+    - img [ref=e200]
+    - generic [ref=e203]: CLIENT
+```

@@ -1,0 +1,75 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Environment variables (P3-04: wildcard, not a fixed list — the previous
+# exact-filename list missed .env.staging, .env.staging.local, and
+# scripts/.env.docker, all of which carry real-looking secret values).
+# frontend/.env.production is the one intentional exception: it holds only
+# VITE_-prefixed values, which Vite bundles into the client and are public by
+# construction (Firebase web config, Sentry DSN, OAuth client ID) — not secrets.
+.env*
+!**/.env*.example
+!frontend/.env.production
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Development logs
+*-dev.log
+*.log.*
+debug.log
+
+# Backup files
+*.backup
+*.bak
+*.old
+*.orig
+*.tmp
+*.temp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+coverage/
+.nyc_output/
+
+# Docker
+docker-compose.override.yml
+
+# Prisma - NOTE: migrations/ intentionally tracked (production schema history)
+# Do NOT add backend/prisma/migrations/ here
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Archived legacy files
+_archive/
+
+# Windows / OS files
+desktop.ini
+docker_check.txt

@@ -1,0 +1,129 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e4]:
+    - complementary [ref=e5]:
+      - generic [ref=e7]:
+        - generic [ref=e8]:
+          - generic [ref=e9]: IÀ
+          - generic [ref=e10]:
+            - heading "Ilé Àṣẹ" [level=1] [ref=e11]
+            - paragraph [ref=e12]: Digital Sanctuary
+        - button "Collapse sidebar" [ref=e13] [cursor=pointer]:
+          - img [ref=e14]
+      - generic [ref=e16]:
+        - button "Home" [ref=e17] [cursor=pointer]:
+          - img [ref=e18]
+          - generic [ref=e21]: Home
+        - button "Marketplace" [ref=e23] [cursor=pointer]:
+          - img [ref=e24]
+          - generic [ref=e27]: Marketplace
+        - button "Academy" [ref=e28] [cursor=pointer]:
+          - img [ref=e29]
+          - generic [ref=e32]: Academy
+        - button "Find Babalawo" [ref=e33] [cursor=pointer]:
+          - img [ref=e34]
+          - generic [ref=e37]: Find Babalawo
+        - button "My Consultations" [ref=e38] [cursor=pointer]:
+          - img [ref=e39]
+          - generic [ref=e41]: My Consultations
+        - button "Temples" [ref=e42] [cursor=pointer]:
+          - img [ref=e43]
+          - generic [ref=e46]: Temples
+        - button "Circles" [ref=e47] [cursor=pointer]:
+          - img [ref=e48]
+          - generic [ref=e53]: Circles
+        - button "Events" [ref=e54] [cursor=pointer]:
+          - img [ref=e55]
+          - generic [ref=e57]: Events
+        - button "Forum" [ref=e58] [cursor=pointer]:
+          - img [ref=e59]
+          - generic [ref=e61]: Forum
+      - button "C Client User Member" [ref=e64] [cursor=pointer]:
+        - generic [ref=e66]: C
+        - generic [ref=e67]:
+          - paragraph [ref=e68]: Client User
+          - generic [ref=e69]: Member
+        - img [ref=e70]
+    - main [ref=e72]:
+      - generic [ref=e73]:
+        - generic [ref=e75]:
+          - heading "client" [level=2] [ref=e76]
+          - paragraph [ref=e77]: "Monday, October 24th • Odu: Eji Ogbe"
+        - generic [ref=e78]:
+          - generic [ref=e79]:
+            - img
+            - textbox "Search..." [ref=e80]
+          - button [ref=e81] [cursor=pointer]:
+            - img [ref=e82]
+          - button "EN" [ref=e86] [cursor=pointer]:
+            - img [ref=e87]
+            - generic [ref=e90]: EN
+          - button "Toggle theme" [ref=e91] [cursor=pointer]:
+            - img [ref=e92]
+            - generic [ref=e94]: Toggle theme
+      - generic [ref=e97]:
+        - generic [ref=e98]:
+          - generic [ref=e99]:
+            - heading "Welcome, Client" [level=1] [ref=e100]
+            - paragraph [ref=e101]: Your personalized spiritual journey hub.
+          - generic [ref=e102]:
+            - button "Find Babalawo" [ref=e103] [cursor=pointer]:
+              - img [ref=e104]
+              - text: Find Babalawo
+            - button "Book Consultation" [ref=e109] [cursor=pointer]:
+              - img [ref=e110]
+              - text: Book Consultation
+        - generic [ref=e112]:
+          - button "My Consultations 0" [ref=e113] [cursor=pointer]:
+            - generic [ref=e114]:
+              - paragraph [ref=e115]: My Consultations
+              - heading "0" [level=3] [ref=e116]
+            - img [ref=e118]
+          - button "Guidance Plans 0" [ref=e120] [cursor=pointer]:
+            - generic [ref=e121]:
+              - paragraph [ref=e122]: Guidance Plans
+              - heading "0" [level=3] [ref=e123]
+            - img [ref=e125]
+          - button "Unread Messages 0" [ref=e128] [cursor=pointer]:
+            - generic [ref=e129]:
+              - paragraph [ref=e130]: Unread Messages
+              - heading "0" [level=3] [ref=e131]
+            - img [ref=e133]
+          - button "Wallet Balance ₦0" [ref=e135] [cursor=pointer]:
+            - generic [ref=e136]:
+              - paragraph [ref=e137]: Wallet Balance
+              - heading "₦0" [level=3] [ref=e138]
+            - img [ref=e140]
+        - generic [ref=e143]:
+          - generic [ref=e146]:
+            - img [ref=e149]
+            - heading "Begin Your Journey" [level=1] [ref=e152]
+            - paragraph [ref=e153]: The path to destiny is rarely walked alone. Connect with a verified Babaláwo to unlock the full potential of your dashboard, receive guidance, and align with your true self.
+            - button "Find a Spiritual Guide" [ref=e155] [cursor=pointer]:
+              - img [ref=e156]
+              - text: Find a Spiritual Guide
+          - generic [ref=e160]:
+            - generic [ref=e161]:
+              - generic [ref=e162]:
+                - heading "My Communities" [level=3] [ref=e163]
+                - button "View All" [ref=e164] [cursor=pointer]
+              - generic [ref=e165]:
+                - paragraph [ref=e166]: Not yet part of any temples.
+                - paragraph [ref=e167]: Not yet part of any circles.
+            - generic [ref=e168]:
+              - generic [ref=e169]:
+                - heading "Recent Consultations" [level=3] [ref=e170]
+                - button "View All" [ref=e171] [cursor=pointer]
+              - paragraph [ref=e173]: No recent consultations.
+            - generic [ref=e174]:
+              - heading "Marketplace" [level=3] [ref=e175]
+              - paragraph [ref=e176]: Recommended items for your journey
+              - button "Browse Sacred Items" [ref=e177] [cursor=pointer]:
+                - img [ref=e178]
+                - text: Browse Sacred Items
+  - button "CLIENT" [ref=e182] [cursor=pointer]:
+    - img [ref=e183]
+    - generic [ref=e186]: CLIENT
+```

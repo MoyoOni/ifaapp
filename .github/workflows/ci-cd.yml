@@ -1,0 +1,191 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, v4/quality]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: '20.x'
+
+jobs:
+  # --- Build & test the shared common package first ---
+  build-common:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'common/package-lock.json'
+
+      - name: Install common dependencies
+        run: cd common && npm ci
+
+  # --- Backend: lint, test, build ---
+  test-backend:
+    needs: [build-common]
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'backend/package-lock.json'
+
+      - name: Install dependencies
+        run: |
+          cd common && npm ci
+          cd ../backend && npm ci
+
+      - name: Generate Prisma client
+        run: cd backend && npx prisma generate
+
+      - name: Run database migrations
+        run: cd backend && npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+
+      - name: Build backend
+        run: cd backend && npm run build
+
+      - name: Run unit tests
+        run: cd backend && npm test -- --passWithNoTests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: ci-test-secret-that-is-at-least-32-characters-long
+          JWT_REFRESH_SECRET: ci-test-refresh-secret-that-is-at-least-32-characters
+          JWT_EXPIRES_IN: 15m
+          JWT_REFRESH_EXPIRES_IN: 7d
+          PORT: 3000
+          NODE_ENV: test
+          FRONTEND_URL: http://localhost:5173
+
+      - name: Run integration tests (wallet, auth, payments)
+        run: cd backend && npm run test:integration -- --passWithNoTests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: ci-test-secret-that-is-at-least-32-characters-long
+          JWT_REFRESH_SECRET: ci-test-refresh-secret-that-is-at-least-32-characters
+          JWT_EXPIRES_IN: 15m
+          JWT_REFRESH_EXPIRES_IN: 7d
+          PORT: 3000
+          NODE_ENV: test
+          FRONTEND_URL: http://localhost:5173
+
+  # --- Frontend: lint, typecheck, test, build ---
+  test-frontend:
+    needs: [build-common]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Install dependencies
+        run: |
+          cd common && npm ci
+          cd ../frontend && npm ci
+
+      - name: TypeScript type check
+        run: cd frontend && npx tsc --noEmit
+
+      - name: Build frontend
+        run: cd frontend && npm run build
+        env:
+          VITE_API_URL: http://localhost:3000/api
+          VITE_DEMO_MODE: 'true'
+
+      - name: Run tests
+        run: cd frontend && npm run test:run -- --passWithNoTests
+        continue-on-error: true
+
+  # --- Security: npm audit ---
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Audit backend dependencies
+        run: cd backend && npm audit --audit-level=high || true
+        continue-on-error: true
+
+      - name: Audit frontend dependencies
+        run: cd frontend && npm audit --audit-level=high || true
+        continue-on-error: true
+
+  # --- Deploy to EC2 (main branch only) ---
+  deploy:
+    needs: [test-backend, test-frontend]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to production via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          # Secrets configured in GitHub repository settings
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ubuntu/ifa_app
+
+            # Create pre-deploy backup
+            ./scripts/backup-db.sh
+
+            # Pull and deploy
+            ./scripts/deploy.sh
+
+            # Verify health
+            sleep 5
+            curl -sf http://localhost:3000/api/health || echo "WARNING: Health check failed"
+
+      - name: Verify deployment
+        if: success()
+        run: |
+          echo "Deployment to production complete"
+          echo "Commit: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref_name }}"

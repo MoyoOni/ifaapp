@@ -1,0 +1,25 @@
+<svg width="500" height="500" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="250" cy="250" r="240" fill="#2E294E"/>
+  
+  <!-- Outer Ring (Gold) -->
+  <circle cx="250" cy="250" r="220" fill="none" stroke="#D4AF37" stroke-width="4"/>
+  
+  <!-- The Gate/Archway (Stylized) -->
+  <path d="M150 250 L150 180 A100 100 0 0 1 350 180 L350 250" fill="none" stroke="#C15B3D" stroke-width="12" stroke-linecap="round"/>
+  
+  <!-- The Central Àṣẹ (Dot/Source) -->
+  <circle cx="250" cy="200" r="15" fill="#D4AF37"/>
+  
+  <!-- Base/Foundation (Earth) -->
+  <rect x="140" y="250" width="220" height="10" fill="#C15B3D" rx="5"/>
+  
+  <!-- Subtle Pattern Lines (Community/Connection) -->
+  <line x1="250" y1="260" x2="250" y2="350" stroke="#FFFFFF" stroke-width="2" opacity="0.3"/>
+  <line x1="210" y1="260" x2="210" y2="350" stroke="#FFFFFF" stroke-width="2" opacity="0.3"/>
+  <line x1="290" y1="260" x2="290" y2="350" stroke="#FFFFFF" stroke-width="2" opacity="0.3"/>
+  
+  <!-- Typography -->
+  <text x="250" y="420" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#FFFFFF" text-anchor="middle" letter-spacing="2">ÌLÚ ÀṢẸ</text>
+  <text x="250" y="450" font-family="Arial, sans-serif" font-size="14" fill="#D4AF37" text-anchor="middle" letter-spacing="4">CITY OF AUTHORITY</text>
+</svg>

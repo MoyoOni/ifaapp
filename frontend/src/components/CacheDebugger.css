@@ -1,0 +1,255 @@
+.cache-debugger {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  font-family: monospace;
+  font-size: 12px;
+  z-index: 10000;
+}
+
+.cache-debugger.closed .cache-debugger-toggle {
+  display: flex;
+}
+
+.cache-debugger.closed .cache-debugger-panel {
+  display: none;
+}
+
+.cache-debugger-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.cache-debugger-toggle:hover {
+  background: #2563eb;
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+}
+
+.cache-debugger-toggle:active {
+  transform: scale(0.95);
+}
+
+.cache-debugger-panel {
+  position: absolute;
+  bottom: 60px;
+  right: 0;
+  width: 320px;
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  color: #f3f4f6;
+  overflow: hidden;
+  animation: slideUp 0.2s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cache-debugger-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #111827;
+  border-bottom: 1px solid #374151;
+}
+
+.cache-debugger-header h4 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #3b82f6;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.close-btn:hover {
+  color: #f3f4f6;
+}
+
+.cache-debugger-stats {
+  padding: 12px 16px;
+  border-bottom: 1px solid #374151;
+}
+
+.stat-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.stat-row:last-child {
+  margin-bottom: 0;
+}
+
+.stat-label {
+  color: #9ca3af;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  color: #3b82f6;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: #374151;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+  border-radius: 3px;
+  transition: width 0.3s ease-out;
+}
+
+.cache-debugger-actions {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  background: #111827;
+}
+
+.action-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #374151;
+  border-radius: 4px;
+  background: #1f2937;
+  color: #f3f4f6;
+  font-size: 11px;
+  font-family: monospace;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.action-btn:hover {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+.action-btn.refresh {
+  color: #3b82f6;
+  border-color: #3b82f6;
+}
+
+.action-btn.refresh:hover {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.action-btn.clear {
+  color: #ef4444;
+  border-color: #ef4444;
+}
+
+.action-btn.clear:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.cache-debugger-info {
+  padding: 12px 16px;
+  background: rgba(59, 130, 246, 0.05);
+  border-top: 1px solid #374151;
+}
+
+.info-text {
+  margin: 0 0 8px 0;
+  color: #9ca3af;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.info-text:last-child {
+  margin-bottom: 0;
+}
+
+.info-text code {
+  background: #374151;
+  color: #3b82f6;
+  padding: 2px 4px;
+  border-radius: 2px;
+  font-family: monospace;
+}
+
+/* Dark mode (should already be dark, but explicit for safety) */
+body.dark-mode .cache-debugger-panel {
+  background: #1f2937;
+}
+
+body.dark-mode .cache-debugger-header {
+  background: #111827;
+}
+
+/* Mobile responsive */
+@media (max-width: 640px) {
+  .cache-debugger {
+    bottom: 16px;
+    right: 16px;
+  }
+
+  .cache-debugger-toggle {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+
+  .cache-debugger-panel {
+    width: 280px;
+    font-size: 11px;
+  }
+}
+
+/* Prevent overlap with other UI */
+@media (max-width: 480px) {
+  .cache-debugger-panel {
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+}
