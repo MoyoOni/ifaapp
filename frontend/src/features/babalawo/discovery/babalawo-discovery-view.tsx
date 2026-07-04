@@ -154,7 +154,7 @@ const BabalawoDiscoveryView: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState('all');
 
   // Fetch all Babalawos
-  const { data: babalawos = [], isLoading, isError, error, refetch } = useQuery<Babalawo[]>({
+  const { data: babalawos = [], isLoading, error, refetch } = useQuery<Babalawo[]>({
     queryKey: ['babalawos-discovery', filters],
     queryFn: async () => {
       const response = await api.get('/users', {

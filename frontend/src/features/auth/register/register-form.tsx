@@ -42,8 +42,6 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, on
   const [confirmPassword, setConfirmPassword] = useState('');
   const [refCode, setRefCode] = useState(urlRef);
   const [refExpanded, setRefExpanded] = useState(!!urlRef);
-  const [refValid, setRefValid] = useState<boolean | null>(null);
-  const [refValidationMsg, setRefValidationMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
@@ -222,22 +220,6 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, on
                 maxLength={20}
                 className="w-full bg-muted/40 border border-border p-3 pl-4 rounded-2xl text-stone-800 dark:text-stone-200 outline-none focus:bg-card focus:border-highlight focus:ring-4 focus:ring-highlight/10 transition-all font-mono text-sm placeholder:text-stone-300 uppercase tracking-widest"
               />
-              {refCode && (
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                  {refValid === null ? (
-                    <span className="text-xs text-primary font-semibold">✓ Applied</span>
-                  ) : refValid ? (
-                    <>
-                      <CheckCircle size={14} className="text-green-500" />
-                      <span className="text-xs text-green-500">Valid</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-xs text-red-500">{refValidationMsg || 'Invalid'}</span>
-                    </>
-                  )}
-                </span>
-              )}
             </div>
           )}
         </div>

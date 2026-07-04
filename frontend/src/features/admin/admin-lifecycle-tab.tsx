@@ -92,13 +92,6 @@ export function AdminLifecycleTab() {
     return <div>No data available</div>;
   }
 
-  // Funnel data for visualization
-  const funnelData = [
-    { stage: 'Registered', users: data.funnel.registered },
-    { stage: 'Consultation Booker', users: data.funnel.consultationBookers },
-    { stage: 'Devoted Subscriber', users: data.funnel.devoutSubscribers },
-  ];
-
   // Cohort retention data
   const cohortData = [
     { cohort: 'M-3', signups: data.cohorts.threeMonthsAgoSignups },

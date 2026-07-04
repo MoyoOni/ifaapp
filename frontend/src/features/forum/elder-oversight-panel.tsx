@@ -38,7 +38,6 @@ const ElderOversightPanel: React.FC = () => {
   const [tab, setTab] = useState<Tab>('flags');
   const [flagReason, setFlagReason] = useState('');
   const [flagPostId, setFlagPostId] = useState<string | null>(null);
-  const [reactionPostId, setReactionPostId] = useState<string | null>(null);
 
   const isBabalawo = user?.role === 'BABALAWO';
 
@@ -66,17 +65,6 @@ const ElderOversightPanel: React.FC = () => {
       showSuccess('Moderators will review your concern.', 'Elder flag raised');
     },
     onError: () => showError('Failed to raise flag'),
-  });
-
-  const reactionMutation = useMutation({
-    mutationFn: ({ postId, emoji }: { postId: string; emoji: string }) =>
-      api.post(`/forum/posts/${postId}/elder-reactions`, { emoji }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['elder-reactions'] });
-      setReactionPostId(null);
-      showSuccess('Endorsement added');
-    },
-    onError: () => showError('Failed to add endorsement'),
   });
 
   if (!isBabalawo) {

@@ -23,7 +23,7 @@ export const AvatarUploadStep: React.FC<AvatarUploadStepProps> = ({
   onSkip,
   showSkip = true,
 }) => {
-  const { isLoading, error, preview, progress, handleInputChange, triggerFilePicker, uploadAvatar, skipUpload, reset } = useAvatarUpload({
+  const { error, preview, progress, handleInputChange, triggerFilePicker, uploadAvatar, skipUpload, reset } = useAvatarUpload({
     userId,
   });
 
@@ -31,7 +31,6 @@ export const AvatarUploadStep: React.FC<AvatarUploadStepProps> = ({
   const [cropArea, setCropArea] = useState<CropArea>({ x: 0, y: 0, width: 200, height: 200 });
   const [isDragging, setIsDragging] = useState(false);
   const imageRef = useRef<HTMLImageElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // Handle image selection and move to crop mode

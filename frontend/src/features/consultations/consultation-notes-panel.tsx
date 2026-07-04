@@ -22,7 +22,7 @@ const ConsultationNotesPanel: React.FC<ConsultationNotesPanelProps> = ({ babalaw
   const [editContent, setEditContent] = useState({ title: '', content: '' });
 
   // Fetch notes for the client
-  const { data: notes = [], isLoading, isError, refetch } = useQuery<ConsultationNote[]>({
+  const { data: notes = [], isLoading, isError } = useQuery<ConsultationNote[]>({
     queryKey: ['consultation-notes', babalawoId, clientId],
     queryFn: async () => {
       const response = await api.get(`/consultation-notes/babalawo/${babalawoId}/client/${clientId}`);

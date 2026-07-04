@@ -20,7 +20,7 @@ import {
   Move,
   Merge
 } from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Textarea } from '@/shared/components/ui/textarea';
@@ -85,7 +85,6 @@ interface ForumThread {
 const ForumManagementTab: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'categories' | 'threads'>('categories');
   const [editingCategory, setEditingCategory] = useState<ForumCategory | null>(null);
-  const [editingThread, setEditingThread] = useState<ForumThread | null>(null);
   const [movingThread, setMovingThread] = useState<{ thread: ForumThread; targetCategoryId?: string } | null>(null);
   const [mergingThreads, setMergingThreads] = useState<{ 
     primaryThread?: ForumThread; 
@@ -107,7 +106,6 @@ const ForumManagementTab: React.FC = () => {
   const [showMergeThreadsModal, setShowMergeThreadsModal] = useState(false);
   
   const toast = useToast();
-  const qc = useQueryClient();
 
   // Fetch forum categories
   const { data: categories = [], isLoading: categoriesLoading, refetch: refetchCategories } = useQuery({
@@ -200,7 +198,7 @@ const ForumManagementTab: React.FC = () => {
       toast.success('Thread moved successfully');
       setMovingThread(null);
       setShowMoveThreadModal(false);
-      // We'll need to refetch threads when we have the endpoint
+      refetchThreads();
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || 'Failed to move thread');
@@ -219,7 +217,7 @@ const ForumManagementTab: React.FC = () => {
       toast.success('Threads merged successfully');
       setMergingThreads(null);
       setShowMergeThreadsModal(false);
-      // We'll need to refetch threads when we have the endpoint
+      refetchThreads();
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || 'Failed to merge threads');

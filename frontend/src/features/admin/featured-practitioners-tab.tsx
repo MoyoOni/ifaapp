@@ -73,7 +73,7 @@ const FeaturedPractitionersTab: React.FC = () => {
     }
   });
 
-  const { data: featuredPractitioners = [], isLoading: loadingFeatured } = useQuery<Practitioner[]>({
+  const { data: featuredPractitioners = [] } = useQuery<Practitioner[]>({
     queryKey: ['featured-practitioners'],
     queryFn: async () => {
       const response = await api.get('/admin/practitioners/featured');

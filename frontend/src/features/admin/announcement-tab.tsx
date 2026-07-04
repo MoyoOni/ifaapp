@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { 
-  Megaphone, 
-  Mail, 
-  Bell, 
-  Calendar, 
+import {
+  Megaphone,
+  Mail,
+  Bell,
   Send,
   Clock,
   User,
@@ -15,11 +14,9 @@ import {
   AlertTriangle,
   Info,
   Loader2,
-  Plus,
-  Edit3,
-  Trash2
+  Plus
 } from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Textarea } from '@/shared/components/ui/textarea';
@@ -68,7 +65,6 @@ interface Announcement {
 
 const AnnouncementTab: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'compose' | 'history'>('compose');
-  const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
   const [newAnnouncement, setNewAnnouncement] = useState({
     title: '',
     content: '',
@@ -86,7 +82,6 @@ const AnnouncementTab: React.FC = () => {
   const [previewData, setPreviewData] = useState<any>(null);
   
   const toast = useToast();
-  const qc = useQueryClient();
 
   // Fetch announcements
   const { data: announcements = [], isLoading: announcementsLoading, refetch } = useQuery({
@@ -326,9 +321,20 @@ const AnnouncementTab: React.FC = () => {
                 />
               </div>
               
-              <div className="pt-4">
-                <Button 
-                  className="w-full" 
+              <div className="pt-4 flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setPreviewData(newAnnouncement);
+                    setShowPreview(true);
+                  }}
+                  disabled={!newAnnouncement.title || !newAnnouncement.content}
+                >
+                  Preview
+                </Button>
+                <Button
+                  className="flex-1"
                   onClick={handleCreateAnnouncement}
                   disabled={creatingAnnouncement || !newAnnouncement.title || !newAnnouncement.content}
                 >

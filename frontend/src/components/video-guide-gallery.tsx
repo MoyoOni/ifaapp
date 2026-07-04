@@ -31,8 +31,6 @@ const VideoGuideGallery: React.FC<VideoGuideGalleryProps> = ({
   className = ''
 }) => {
   const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
-  const [volume, setVolume] = useState(0.8);
-  const [isMuted, setIsMuted] = useState(false);
 
   const filteredVideos = categoryFilter 
     ? videos.filter(video => video.category.toLowerCase().includes(categoryFilter.toLowerCase()))

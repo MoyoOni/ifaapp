@@ -119,6 +119,15 @@ const AcademyView: React.FC<AcademyViewProps> = ({ onSelectCourse }) => {
               <p className="text-muted-foreground">Expand your knowledge of Ifá and Isese</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <div className="relative w-full sm:w-[220px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search courses..."
+                  className="pl-9"
+                />
+              </div>
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                 <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder="All Categories" />
@@ -155,7 +164,25 @@ const AcademyView: React.FC<AcademyViewProps> = ({ onSelectCourse }) => {
             </div>
           </div>
           
-          {filteredCourses.length > 0 ? (
+          {coursesLoading ? (
+            <AcademySkeleton />
+          ) : coursesError ? (
+            <div className="text-center py-12 bg-muted/20 rounded-2xl border border-border/50">
+              <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                <AlertCircle size={32} className="text-destructive" />
+              </div>
+              <h3 className="text-lg font-bold text-foreground mb-2">Couldn't load courses</h3>
+              <p className="text-muted-foreground max-w-md mx-auto">
+                Something went wrong while fetching the course catalog.
+              </p>
+              <button
+                onClick={() => refetchCourses()}
+                className="mt-4 text-primary font-bold hover:underline"
+              >
+                Try again
+              </button>
+            </div>
+          ) : filteredCourses.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredCourses.map((course) => (
                 <div 

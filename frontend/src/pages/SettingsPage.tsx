@@ -172,7 +172,7 @@ const SettingsPage: React.FC = () => {
     saveSettingsMutation.mutate(updated);
   };
 
-  const { isDevoted, isFree, plan, endDate, daysRemaining, status, autoRenew } = useSubscription();
+  const { isDevoted, plan, endDate, daysRemaining, status, autoRenew } = useSubscription();
 
   const cancelSubscriptionMutation = useMutation({
     mutationFn: () => api.post('/subscriptions/cancel'),

@@ -158,15 +158,6 @@ const AdminUserManagementTab: React.FC<AdminUserManagementTabProps> = ({
         },
     });
 
-    const handleSuspendUser = (userId: string) => {
-        toggleSuspend({ 
-            userId, 
-            suspend: true, 
-            reason: suspendReason || undefined, 
-            durationDays: selectedDuration 
-        });
-    };
-
     const handleShowWarningModal = (userId: string) => {
         setCurrentUserId(userId);
         setShowWarningModal(true);

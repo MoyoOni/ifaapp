@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, X, Globe, Users, UsersRound, ShoppingCart, BookOpen, Calendar, FileText } from 'lucide-react'; // Added missing icons
-import { useSearch, SearchCategory } from '../../contexts/search-context';
+import { Search, X } from 'lucide-react';
+import { useSearch } from '../../contexts/search-context';
 
 interface SearchInputProps {
   placeholder?: string;
@@ -17,7 +17,6 @@ const SearchInput: React.FC<SearchInputProps> = ({
 }) => {
   const { query, performSearch, clearSearch, isLoading } = useSearch();
   const [localQuery, setLocalQuery] = useState(query);
-  const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Update local query when context query changes
@@ -46,17 +45,6 @@ const SearchInput: React.FC<SearchInputProps> = ({
     setLocalQuery(value);
   };
 
-  const categoryIcons: Record<SearchCategory, React.ReactNode> = {
-    all: <Globe className="w-4 h-4" />,
-    temples: <Globe className="w-4 h-4" />,
-    babalawos: <Users className="w-4 h-4" />,
-    circles: <UsersRound className="w-4 h-4" />,
-    products: <ShoppingCart className="w-4 h-4" />,
-    courses: <BookOpen className="w-4 h-4" />,
-    events: <Calendar className="w-4 h-4" />,
-    articles: <FileText className="w-4 h-4" />
-  };
-
   return (
     <form data-testid="search-form" onSubmit={handleSearch} className={`relative ${className}`}>
       <div className="relative">
@@ -74,8 +62,6 @@ const SearchInput: React.FC<SearchInputProps> = ({
           type="text"
           value={localQuery}
           onChange={handleInputChange}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setTimeout(() => setIsFocused(false), 200)}
           placeholder={placeholder}
           autoFocus={autoFocus}
           className="w-full pl-10 pr-10 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"

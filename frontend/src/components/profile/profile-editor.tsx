@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { User, Camera, MapPin, Phone, Mail, Calendar, Briefcase, Building2, Globe, Hash, Lock } from 'lucide-react';
-import { useAuth } from '../../shared/hooks/use-auth';
 import { logger } from '@/shared/utils/logger';
 
 interface UserProfile {
@@ -28,7 +27,6 @@ interface ProfileEditorProps {
 }
 
 const ProfileEditor: React.FC<ProfileEditorProps> = ({ initialProfile, onSave, onCancel }) => {
-  const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile>({ ...initialProfile });
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});

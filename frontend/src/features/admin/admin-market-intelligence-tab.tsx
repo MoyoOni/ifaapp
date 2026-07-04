@@ -3,8 +3,6 @@ import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { TrendingUp, Award, BarChart2, DollarSign } from 'lucide-react';
 
-const fmt = new Intl.DateTimeFormat('en-NG', { dateStyle: 'medium' });
-
 type SortBy = 'bookings' | 'revenue' | 'rating';
 
 interface Practitioner {

@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Lock, Pin, X, Flame, MessageSquare, HelpCircle, BookOpen } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import api from '@/lib/api';
-import { logger } from '@/shared/utils/logger';
 import CreateThreadForm from './create-thread-form';
 import ForumRoleBadge from './forum-role-badge';
 import { useAuth } from '@/shared/hooks/use-auth';
@@ -63,18 +62,6 @@ interface ForumHomeViewProps {
   onSelectThread?: (threadId: string) => void;
   onCreateThread?: (categoryId: string) => void;
 }
-
-const getSessionThreads = (): ForumThread[] => {
-  if (typeof sessionStorage === 'undefined') return [];
-  const stored = sessionStorage.getItem('demo-forum-threads');
-  if (!stored) return [];
-  try {
-    return JSON.parse(stored) as ForumThread[];
-  } catch (error) {
-    logger.warn('Failed to parse forum threads cache', error);
-    return [];
-  }
-};
 
 function relativeTime(dateStr?: string | null): string {
   if (!dateStr) return '';

@@ -23,7 +23,7 @@ const SubscriptionManagePage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { isDevoted, isFree, plan, endDate, daysRemaining, status, autoRenew } = useSubscription();
+  const { isDevoted, plan, endDate, daysRemaining, status, autoRenew } = useSubscription();
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [pauseUsed, setPauseUsed] = useState(false);
 

@@ -25,7 +25,7 @@ export const useSearch = (initialQuery: string = '') => {
   }, []);
 
   // Fetch search results
-  const { data, isLoading, error, refetch } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['search', debouncedQuery, filters],
     queryFn: () =>
       debouncedQuery

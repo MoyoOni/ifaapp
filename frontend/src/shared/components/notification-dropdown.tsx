@@ -42,15 +42,6 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ onClose }) 
     enabled: !!user,
   });
 
-  const { data: unreadCount = { count: 0 } } = useQuery<{ count: number }>({
-    queryKey: ['notifications-unread-count', user?.id],
-    queryFn: async () => {
-      const response = await api.get('/notifications/unread-count');
-      return response.data;
-    },
-    enabled: !!user,
-  });
-
   const markAsReadMutation = useMutation({
     mutationFn: (notificationId: string) => api.patch(`/notifications/${notificationId}/read`),
     onSuccess: () => {

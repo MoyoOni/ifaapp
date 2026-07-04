@@ -33,7 +33,6 @@ const SearchBar: React.FC<SearchBarProps> = ({
     query,
     setQuery,
     filters,
-    updateFilters,
     clearFilters,
     results,
     totalCount,
@@ -46,7 +45,6 @@ const SearchBar: React.FC<SearchBarProps> = ({
 
   const [isOpen, setIsOpen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedType, setSelectedType] = useState<string[]>([]);
   const searchRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown on outside click
@@ -65,15 +63,6 @@ const SearchBar: React.FC<SearchBarProps> = ({
     setQuery(q);
     setIsOpen(true);
     onSearch?.(q);
-  };
-
-  const handleTypeToggle = (type: string) => {
-    const newTypes = selectedType.includes(type)
-      ? selectedType.filter(t => t !== type)
-      : [...selectedType, type];
-
-    setSelectedType(newTypes);
-    updateFilters({ type: newTypes as any });
   };
 
   const displayResults = query ? results : [];

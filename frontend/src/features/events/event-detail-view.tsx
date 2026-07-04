@@ -101,7 +101,18 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ eventSlug, onBack }) 
     queryKey: ['event', eventSlug, user?.id],
     queryFn: async () => {
       const response = await api.get(`/events/${eventSlug}`);
-      return response.data;
+      const data = response.data as EventDetail;
+      // If the backend doesn't report a registration, fall back to the
+      // session-stored one from a previous registration-endpoint failure
+      // (see registerMutation below) -- otherwise it wouldn't survive a
+      // page reload.
+      if (!data.userRegistration) {
+        const sessionRegistration = getSessionRegistration(data.id);
+        if (sessionRegistration) {
+          return { ...data, userRegistration: sessionRegistration };
+        }
+      }
+      return data;
     },
   });
 

@@ -3,7 +3,7 @@ import { Globe, Languages } from 'lucide-react';
 import { useLanguage } from '@/shared/contexts/language-context';
 
 export const LanguageSwitcher: React.FC = () => {
-    const { language, toggleLanguage, t } = useLanguage();
+    const { language, toggleLanguage } = useLanguage();
 
     return (
         <div className="relative">
