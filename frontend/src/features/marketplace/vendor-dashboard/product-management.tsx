@@ -31,12 +31,8 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ vendorId, activeT
   const { data: productsData = [], isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ['vendor-products', vendorId],
     queryFn: async () => {
-      try {
-        const response = await api.get(`/vendors/${vendorId}/products`);
-        return response.data;
-      } catch (error) {
-        throw error;
-      }
+      const response = await api.get(`/vendors/${vendorId}/products`);
+      return response.data;
     },
   });
 

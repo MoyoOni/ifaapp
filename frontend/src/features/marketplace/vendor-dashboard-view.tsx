@@ -33,12 +33,8 @@ const VendorDashboardView: React.FC<VendorDashboardViewProps> = ({ initialTab = 
   const { data: vendorData, isLoading } = useQuery<Vendor>({
     queryKey: ['vendor-profile', user?.id],
     queryFn: async () => {
-      try {
-        const response = await api.get(`/vendors/profile/${user?.id}`);
-        return response.data;
-      } catch (error) {
-        throw error;
-      }
+      const response = await api.get(`/vendors/profile/${user?.id}`);
+      return response.data;
     },
     enabled: !!user?.id && !isDevModeActive(),
   });

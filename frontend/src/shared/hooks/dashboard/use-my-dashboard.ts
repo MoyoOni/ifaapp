@@ -17,12 +17,8 @@ export function useMyDashboard() {
         return null;
       }
 
-      try {
-        const response = await api.get('/dashboard/me/summary');
-        return response.data;
-      } catch (err) {
-        throw err;
-      }
+      const response = await api.get('/dashboard/me/summary');
+      return response.data;
     },
     enabled: !!user?.id && !isDevModeActive(),
     staleTime: 30000,

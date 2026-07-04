@@ -33,13 +33,9 @@ const ClientList: React.FC<ClientListProps> = ({ babalawoId, onSelectClient, onM
   const { data: clients = [], isLoading } = useQuery<Array<{ client: Client }>>({
     queryKey: ['babalawo-clients', babalawoId],
     queryFn: async () => {
-      try {
-        const response = await api.get(`/babalawo-client/${babalawoId}/clients`);
-        const payload = response.data as Array<{ client: Client } | Client>;
-        return payload.map((item) => ('client' in item ? item : { client: item }));
-      } catch (error) {
-        throw error;
-      }
+      const response = await api.get(`/babalawo-client/${babalawoId}/clients`);
+      const payload = response.data as Array<{ client: Client } | Client>;
+      return payload.map((item) => ('client' in item ? item : { client: item }));
     },
     enabled: !!babalawoId && !isDevModeActive(),
   });

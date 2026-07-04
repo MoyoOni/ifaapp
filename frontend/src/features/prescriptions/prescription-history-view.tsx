@@ -56,13 +56,9 @@ const GuidancePlanHistoryView: React.FC<GuidancePlanHistoryViewProps> = ({
   const { data: guidancePlans, isLoading } = useQuery<GuidancePlan[]>({
     queryKey: ['guidance-plans', targetUserId, statusFilter],
     queryFn: async () => {
-      try {
-        const params: Record<string, string> = statusFilter ? { status: statusFilter } : {};
-        const response = await api.get(`/guidance-plans/user/${targetUserId}`, { params });
-        return response.data;
-      } catch (error) {
-        throw error;
-      }
+      const params: Record<string, string> = statusFilter ? { status: statusFilter } : {};
+      const response = await api.get(`/guidance-plans/user/${targetUserId}`, { params });
+      return response.data;
     },
     enabled: !!targetUserId && !isDevModeActive(),
   });

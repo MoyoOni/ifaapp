@@ -60,14 +60,10 @@ const VendorProductListView: React.FC<VendorProductListViewProps> = ({
     const { data: products = [], isLoading } = useQuery<Product[]>({
         queryKey: ['vendor-products', user?.id],
         queryFn: async () => {
-            try {
-                const response = await api.get('/marketplace/products', {
-                    params: { vendorId: user?.id }
-                });
-                return response.data;
-            } catch (error) {
-                throw error;
-            }
+            const response = await api.get('/marketplace/products', {
+                params: { vendorId: user?.id }
+            });
+            return response.data;
         },
         enabled: !!user?.id && !isDevModeActive(),
     });

@@ -10,6 +10,7 @@ import { cacheService } from '../services/cacheService';
 import './CacheDebugger.css';
 import { isDevModeActive } from '@/shared/utils/dev-mode';
 import { logger } from '@/shared/utils/logger';
+import { useToast } from '@/shared/components/toast';
 
 interface CacheDebuggerProps {
   className?: string;
@@ -19,6 +20,7 @@ export const CacheDebugger: React.FC<CacheDebuggerProps> = ({ className = '' }) 
   const stats = useCacheStats();
   const { clear: clearCache, getStats } = useCacheManager();
   const [isOpen, setIsOpen] = useState(false);
+  const { success } = useToast();
 
   // Only show in dev mode
   const isDev = isDevModeActive();
@@ -29,7 +31,7 @@ export const CacheDebugger: React.FC<CacheDebuggerProps> = ({ className = '' }) 
 
   const handleClear = () => {
     clearCache();
-    alert('Cache cleared');
+    success('Cache cleared');
   };
 
   const handleRefresh = () => {

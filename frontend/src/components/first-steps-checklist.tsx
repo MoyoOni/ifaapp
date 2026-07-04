@@ -3,6 +3,7 @@ import { CheckCircle, Circle, User, MapPin, MessageSquare, Calendar, Camera, Sta
 import { useAuth } from '@/shared/hooks/use-auth';
 import api from '@/lib/api'; // Changed to default import
 import { logger } from '@/shared/utils/logger';
+import { useToast } from '@/shared/components/toast';
 
 interface ChecklistItem {
   id: string;
@@ -25,6 +26,7 @@ const FirstStepsChecklist: React.FC<FirstStepsChecklistProps> = ({
   const { user } = useAuth();
   const [items, setItems] = useState<ChecklistItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const { info, error: showError } = useToast();
 
   useEffect(() => {
     if (!user) return;
@@ -175,7 +177,7 @@ const FirstStepsChecklist: React.FC<FirstStepsChecklistProps> = ({
         case 'profile-photo':
           // For profile photo, we would normally open a modal or navigate to profile edit
           // For now, we'll just show a message indicating action needed
-          alert(`Please update your profile photo in the settings section.`);
+          info(`Please update your profile photo in the settings section.`);
           return;
         case 'yoruba-name':
           updateData = { yorubaName: newValue ? user.name : null };
@@ -212,7 +214,7 @@ const FirstStepsChecklist: React.FC<FirstStepsChecklistProps> = ({
       }
     } catch (error) {
       logger.error(`Error updating ${item.id}:`, error);
-      alert(`Failed to update ${item.title}. Please try again.`);
+      showError(`Failed to update ${item.title}. Please try again.`);
     }
   };
 

@@ -62,12 +62,8 @@ const TempleManagementView: React.FC = () => {
       } else if (filter === 'rejected') {
         params.status = 'REJECTED';
       }
-      try {
-        const response = await api.get('/temples', { params });
-        return response.data;
-      } catch (error) {
-        throw error;
-      }
+      const response = await api.get('/temples', { params });
+      return response.data;
     },
   });
 

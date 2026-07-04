@@ -80,12 +80,8 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
   const { data: enrollment, isLoading: enrollmentLoading } = useQuery<Enrollment>({
     queryKey: ['academy-enrollment', enrollmentId],
     queryFn: async () => {
-      try {
-        const response = await api.get(`/academy/enrollments/${enrollmentId}`);
-        return response.data;
-      } catch (e) {
-        throw e;
-      }
+      const response = await api.get(`/academy/enrollments/${enrollmentId}`);
+      return response.data;
     },
     enabled: !!enrollmentId && !isDevModeActive(),
   });
@@ -104,12 +100,8 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
   const { data: course } = useQuery<Course>({
     queryKey: ['academy-course', enrollment?.courseId],
     queryFn: async () => {
-      try {
-        const response = await api.get(`/academy/courses/${enrollment?.courseId}`);
-        return response.data;
-      } catch (e) {
-        throw e;
-      }
+      const response = await api.get(`/academy/courses/${enrollment?.courseId}`);
+      return response.data;
     },
     enabled: !!enrollment?.courseId && !isDevModeActive(),
   });
@@ -118,12 +110,8 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
   const { data: currentLesson } = useQuery<Lesson>({
     queryKey: ['academy-lesson', currentLessonId],
     queryFn: async () => {
-      try {
-        const response = await api.get(`/academy/lessons/${currentLessonId}`);
-        return response.data;
-      } catch (e) {
-        throw e;
-      }
+      const response = await api.get(`/academy/lessons/${currentLessonId}`);
+      return response.data;
     },
     enabled: !!currentLessonId && !isDevModeActive(),
   });
@@ -132,12 +120,8 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
   const { data: completedLessons = [] } = useQuery<LessonCompletion[]>({
     queryKey: ['academy-lesson-completions', enrollmentId],
     queryFn: async () => {
-      try {
-        const response = await api.get(`/academy/enrollments/${enrollmentId}/completions`);
-        return response.data || [];
-      } catch (e) {
-        throw e;
-      }
+      const response = await api.get(`/academy/enrollments/${enrollmentId}/completions`);
+      return response.data || [];
     },
     enabled: !!enrollmentId && !isDevModeActive(),
   });

@@ -55,12 +55,8 @@ const MyCoursesView: React.FC<MyCoursesViewProps> = ({ onSelectEnrollment: _onSe
   const { data: enrollments = [], isLoading: enrollmentsLoading } = useQuery<Enrollment[]>({
     queryKey: ['academy-my-enrollments', user?.id],
     queryFn: async () => {
-      try {
-        const response = await api.get('/academy/enrollments');
-        return response.data || [];
-      } catch (e) {
-        throw e;
-      }
+      const response = await api.get('/academy/enrollments');
+      return response.data || [];
     },
     enabled: !!user && !isDevModeActive(),
   });

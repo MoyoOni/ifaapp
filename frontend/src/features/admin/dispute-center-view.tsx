@@ -64,19 +64,15 @@ const DisputeCenterView: React.FC = () => {
   const { data: disputes = [], isLoading } = useQuery<Dispute[]>({
     queryKey: ['admin-disputes', statusFilter, routeFilter],
     queryFn: async () => {
-      try {
-        const params: any = {};
-        if (statusFilter !== 'ALL') {
-          params.status = statusFilter;
-        }
-        if (routeFilter !== 'ALL') {
-          params.routedTo = routeFilter;
-        }
-        const response = await api.get('/disputes', { params });
-        return response.data;
-      } catch (error) {
-        throw error;
+      const params: any = {};
+      if (statusFilter !== 'ALL') {
+        params.status = statusFilter;
       }
+      if (routeFilter !== 'ALL') {
+        params.routedTo = routeFilter;
+      }
+      const response = await api.get('/disputes', { params });
+      return response.data;
     },
   });
 

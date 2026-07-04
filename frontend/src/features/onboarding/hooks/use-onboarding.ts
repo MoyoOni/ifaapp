@@ -8,6 +8,7 @@ import { UserRole } from '@common';
 import { useNavigate } from 'react-router-dom';
 import { getDashboardPathForRole } from '@/shared/config/navigation';
 import { useAuth } from '@/shared/hooks/use-auth';
+import { useToast } from '@/shared/components/toast';
 
 export interface UseOnboardingProps {
   userId?: string;
@@ -31,6 +32,7 @@ export function useOnboarding({ userId: userIdProp, userRole: userRoleProp, onCo
   const { t } = useLanguage();
   const navigate = useNavigate();
   const { user: authUser, setUser } = useAuth();
+  const { error: showError } = useToast();
 
   // Fall back to auth context when not passed as props (e.g. routed directly to /onboarding)
   const userId = userIdProp ?? authUser?.id;
@@ -136,7 +138,7 @@ export function useOnboarding({ userId: userIdProp, userRole: userRoleProp, onCo
   const handleCredentialSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     files.forEach(file => {
-      if (file.size > 10 * 1024 * 1024) { alert(`${file.name} exceeds 10MB`); return; }
+      if (file.size > 10 * 1024 * 1024) { showError(`${file.name} exceeds 10MB`); return; }
       const reader = new FileReader();
       reader.onload = ev => {
         setCredentialFiles(prev => [...prev, { name: file.name, data: ev.target?.result as string }]);
@@ -170,7 +172,7 @@ export function useOnboarding({ userId: userIdProp, userRole: userRoleProp, onCo
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      alert('Image must be under 5MB');
+      showError('Image must be under 5MB');
       return;
     }
     const reader = new FileReader();

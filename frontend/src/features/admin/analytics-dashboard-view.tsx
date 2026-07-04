@@ -101,14 +101,10 @@ const AnalyticsDashboardView: React.FC = () => {
   const { data: analytics, isLoading } = useQuery<Analytics>({
     queryKey: ['admin-analytics', period],
     queryFn: async () => {
-      try {
-        const response = await api.get('/admin/analytics', {
-          params: { period },
-        });
-        return response.data;
-      } catch (error) {
-        throw error;
-      }
+      const response = await api.get('/admin/analytics', {
+        params: { period },
+      });
+      return response.data;
     },
   });
 

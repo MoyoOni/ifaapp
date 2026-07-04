@@ -72,12 +72,8 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
   const { data: guidancePlan, isLoading } = useQuery<GuidancePlan | null>({
     queryKey: ['guidance-plan', guidancePlanId],
     queryFn: async () => {
-      try {
-        const response = await api.get(`/guidance-plans/${guidancePlanId}`);
-        return response.data;
-      } catch (error) {
-        throw error;
-      }
+      const response = await api.get(`/guidance-plans/${guidancePlanId}`);
+      return response.data;
     },
   });
 

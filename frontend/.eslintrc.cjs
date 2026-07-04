@@ -26,7 +26,7 @@ module.exports = {
     }],
     'no-restricted-globals': ['error', {
       name: 'alert',
-      message: 'Use useToast() from @/components/common/ToastProvider instead of alert().',
+      message: 'Use useToast() from @/shared/components/toast instead of alert().',
     }, {
       name: 'confirm',
       message: 'Use useConfirm() from @/hooks/use-confirm or useModal() from @/components/common/ModalProvider instead of confirm().',

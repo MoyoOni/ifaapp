@@ -97,12 +97,8 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({ courseId, onBack })
   const { data: course, isLoading, isError, refetch } = useQuery<Course>({
     queryKey: ['course', courseId],
     queryFn: async () => {
-      try {
-        const response = await api.get(`/academy/courses/${courseId}`);
-        return response.data;
-      } catch (e) {
-        throw e;
-      }
+      const response = await api.get(`/academy/courses/${courseId}`);
+      return response.data;
     },
   });
 

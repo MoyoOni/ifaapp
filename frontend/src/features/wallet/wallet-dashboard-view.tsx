@@ -88,12 +88,8 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
   const { data: walletBalance } = useQuery<WalletBalance>({
     queryKey: ['wallet-balance', user?.id],
     queryFn: async () => {
-      try {
-        const response = await api.get(`/wallet/${user?.id}/balance`);
-        return response.data;
-      } catch (error) {
-        throw error;
-      }
+      const response = await api.get(`/wallet/${user?.id}/balance`);
+      return response.data;
     },
     enabled: !!user?.id && !isDevModeActive(),
     refetchInterval: 30000,
@@ -112,14 +108,10 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
   const { data: transactionsData, isLoading: transactionsLoading } = useQuery<RecentTransactionsResponse>({
     queryKey: ['recent-tx', user?.id],
     queryFn: async () => {
-      try {
-        const response = await api.get(`/wallet/${user?.id}/transactions`, {
-          params: { limit: 5, offset: 0 },
-        });
-        return response.data;
-      } catch (error) {
-        throw error;
-      }
+      const response = await api.get(`/wallet/${user?.id}/transactions`, {
+        params: { limit: 5, offset: 0 },
+      });
+      return response.data;
     },
     initialData: { transactions: [] },
   });

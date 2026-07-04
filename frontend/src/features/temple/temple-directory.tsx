@@ -108,20 +108,16 @@ const TempleDirectory: React.FC<TempleDirectoryProps> = ({ onSelectTemple }) => 
   const { data: temples = [], isLoading } = useQuery<Temple[]>({
     queryKey: ['temples', { search: searchQuery, type: selectedType, status: selectedStatus, verified: verifiedFilter }],
     queryFn: async () => {
-      try {
-        const response = await api.get('/temples', {
-          params: {
-            search: searchQuery || undefined,
-            type: selectedType !== 'ALL' ? selectedType : undefined,
-            status: selectedStatus !== 'ALL' ? selectedStatus : undefined,
-            verified: verifiedFilter !== 'ALL' ? verifiedFilter : undefined,
-            city: locationFilter || undefined,
-          },
-        });
-        return response.data || [];
-      } catch (error) {
-        throw error;
-      }
+      const response = await api.get('/temples', {
+        params: {
+          search: searchQuery || undefined,
+          type: selectedType !== 'ALL' ? selectedType : undefined,
+          status: selectedStatus !== 'ALL' ? selectedStatus : undefined,
+          verified: verifiedFilter !== 'ALL' ? verifiedFilter : undefined,
+          city: locationFilter || undefined,
+        },
+      });
+      return response.data || [];
     },
   });
 

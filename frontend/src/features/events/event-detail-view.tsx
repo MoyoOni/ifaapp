@@ -100,12 +100,8 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ eventSlug, onBack }) 
   const { data: event, isLoading } = useQuery<EventDetail>({
     queryKey: ['event', eventSlug, user?.id],
     queryFn: async () => {
-      try {
-        const response = await api.get(`/events/${eventSlug}`);
-        return response.data;
-      } catch (error) {
-        throw error;
-      }
+      const response = await api.get(`/events/${eventSlug}`);
+      return response.data;
     },
   });
 

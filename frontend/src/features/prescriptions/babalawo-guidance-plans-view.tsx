@@ -78,13 +78,9 @@ const BabalawoGuidancePlansView: React.FC<BabalawoGuidancePlansViewProps> = ({
   const { data: guidancePlans, isLoading } = useQuery<GuidancePlan[]>({
     queryKey: ['babalawo-guidance-plans', user?.id, statusFilter],
     queryFn: async () => {
-      try {
-        const params = statusFilter ? { status: statusFilter } : {};
-        const response = await api.get(`/guidance-plans/user/${user?.id}`, { params });
-        return response.data;
-      } catch (error) {
-        throw error;
-      }
+      const params = statusFilter ? { status: statusFilter } : {};
+      const response = await api.get(`/guidance-plans/user/${user?.id}`, { params });
+      return response.data;
     },
     enabled: !!user?.id && !isDevModeActive(),
   });
