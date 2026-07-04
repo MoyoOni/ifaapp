@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ThemeProvider } from '../../contexts/theme-context';
 import ProductDetail from './product-detail';
+import { marketplaceApi } from '../../../services/api';
 
 // Mock the API module
 jest.mock('../../../services/api', () => ({
@@ -12,7 +13,6 @@ jest.mock('../../../services/api', () => ({
   },
 }));
 
-const { marketplaceApi } = require('../../../services/api');
 
 describe('ProductDetail Component', () => {
   const mockProduct = {

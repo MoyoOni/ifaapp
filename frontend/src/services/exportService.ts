@@ -20,27 +20,16 @@ export interface ExportableData {
   columns?: string[];
 }
 
-// Default notification handlers
+// Fallback notification handlers used only when a caller doesn't supply its
+// own onSuccess/onError (e.g. ExportButton.tsx wires real toasts via
+// useToast() -- this is a static service class outside the React tree, so it
+// can only log, not render UI).
 const defaultNotify = {
   success: (message: string) => {
     logger.log('✓', message);
-    // Try to show toast if available
-    try {
-      const { toast } = require('react-toastify');
-      if (toast) toast.success(message);
-    } catch (e) {
-      // Silently fail if react-toastify is not available
-    }
   },
   error: (message: string) => {
     logger.error('✗', message);
-    // Try to show toast if available
-    try {
-      const { toast } = require('react-toastify');
-      if (toast) toast.error(message);
-    } catch (e) {
-      // Silently fail if react-toastify is not available
-    }
   },
 };
 

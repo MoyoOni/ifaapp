@@ -13,6 +13,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import useSearch from '@/hooks/useSearch';
 import SearchResultCard from './SearchResultCard';
+import { seededRandomInt } from '@/shared/utils/seeded-random';
 import './SearchBar.css';
 
 interface SearchBarProps {
@@ -152,7 +153,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
                 <div className="section-header">
                   <span className="section-title">{displayLabel}</span>
                   <span className="execution-time">
-                    {Math.round(Math.random() * 100)}ms
+                    {seededRandomInt(query, 1, 100)}ms
                   </span>
                 </div>
 

@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from '../contexts/theme-context';
 import ThreadView from './thread-view';
+import { forumApi } from '../../services/api';
 
 // Mock the API module
 jest.mock('../../services/api', () => ({
@@ -14,7 +15,6 @@ jest.mock('../../services/api', () => ({
   },
 }));
 
-const { forumApi } = require('../../services/api');
 
 describe('ThreadView Component', () => {
   const mockThread = {

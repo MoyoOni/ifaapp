@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from '../contexts/theme-context';
 import ThreadCreate from './thread-create';
+import { forumApi } from '../../services/api';
 
 // Mock the API module
 jest.mock('../../services/api', () => ({
@@ -12,7 +13,6 @@ jest.mock('../../services/api', () => ({
   },
 }));
 
-const { forumApi } = require('../../services/api');
 
 describe('ThreadCreate Component', () => {
   beforeEach(() => {

@@ -100,7 +100,6 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ vendorId, activ
                       <div
                         className="w-full relative group"
                         // dynamic height must use CSS var — Tailwind can't do runtime percentages
-                        // eslint-disable-next-line react/forbid-dom-props
                         style={{ ['--bar-h' as string]: `${pct}%`, height: 'var(--bar-h)' }}
                       >
                         <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-popover border border-border rounded px-1.5 py-0.5 text-[10px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10">

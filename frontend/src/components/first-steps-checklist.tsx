@@ -171,7 +171,7 @@ const FirstStepsChecklist: React.FC<FirstStepsChecklistProps> = ({
     try {
       // Determine what needs to be updated based on the item ID
       let updateData: any = {};
-      let newValue = !item.completed;
+      const newValue = !item.completed;
 
       switch (item.id) {
         case 'profile-photo':

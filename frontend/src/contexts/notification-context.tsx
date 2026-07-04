@@ -3,6 +3,14 @@ import React, { createContext, useContext, useReducer, ReactNode } from 'react';
 // Define constants
 const MAX_NOTIFICATIONS = 50;
 
+let notificationIdCounter = 0;
+function generateNotificationId(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${(++notificationIdCounter).toString(36)}`;
+}
+
 // Define types
 type NotificationType = 'info' | 'warning' | 'success' | 'urgent' | 'error';
 type NotificationCategory = 'booking' | 'reminder' | 'plan' | 'messages' | 'general';
@@ -44,7 +52,7 @@ const notificationReducer = (state: NotificationState, action: NotificationActio
     case 'ADD_NOTIFICATION': {
       const newNotification: Notification = {
         ...action.payload,
-        id: Math.random().toString(36).substring(2, 9),
+        id: generateNotificationId(),
         read: false,
       };
       

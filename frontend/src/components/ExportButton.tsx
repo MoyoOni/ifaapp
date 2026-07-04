@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Download } from 'lucide-react';
 import ExportService, { ExportableData, ExportOptions } from '@/services/exportService';
+import { useToast } from '@/shared/components/toast';
 import './ExportButton.css';
 
 interface ExportButtonProps {
@@ -20,11 +21,14 @@ const ExportButton: React.FC<ExportButtonProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { success, error: showError } = useToast();
 
   const handleExport = (format: 'json' | 'csv' | 'pdf') => {
     const options: ExportOptions = {
       format,
       includeTimestamp: true,
+      onSuccess: success,
+      onError: showError,
     };
 
     if (format === 'pdf' && pdfElementRef?.current) {

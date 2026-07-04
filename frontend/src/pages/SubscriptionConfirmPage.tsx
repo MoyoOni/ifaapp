@@ -7,6 +7,7 @@ import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { getDashboardPathForRole } from '@/shared/config/navigation';
 import { STAGGER_DELAY_3 } from '@/shared/constants/motion';
+import { seededRandom } from '@/shared/utils/seeded-random';
 
 const BENEFITS = [
   { icon: Zap,           text: 'Priority consultations — your bookings go to the top' },
@@ -17,10 +18,10 @@ const BENEFITS = [
 ];
 
 /** Floating particle for celebration effect */
-const Particle: React.FC<{ delay: number; x: number; color: string }> = ({ delay, x, color }) => (
+const Particle: React.FC<{ index: number; delay: number; x: number; color: string }> = ({ index, delay, x, color }) => (
   <motion.div
     initial={{ opacity: 0, y: 0, x }}
-    animate={{ opacity: [0, 1, 0], y: -120, x: x + (Math.random() > 0.5 ? 40 : -40) }}
+    animate={{ opacity: [0, 1, 0], y: -120, x: x + (seededRandom(`particle-${index}`) > 0.5 ? 40 : -40) }}
     transition={{ duration: 1.6, delay, ease: 'easeOut' }}
     className={`absolute bottom-0 w-2 h-2 rounded-full ${color} pointer-events-none`}
   />
@@ -144,6 +145,7 @@ const SubscriptionConfirmPage: React.FC = () => {
                 {[...Array(12)].map((_, i) => (
                   <Particle
                     key={i}
+                    index={i}
                     delay={i * 0.08}
                     x={(i - 6) * 20}
                     color={['bg-amber-400', 'bg-primary', 'bg-highlight', 'bg-green-400'][i % 4]}

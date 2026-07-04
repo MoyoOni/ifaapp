@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ThemeProvider } from '../../contexts/theme-context';
 import EventDetails from './event-details';
+import { eventsApi } from '../../../services/api';
 
 // Mock the API module
 jest.mock('../../../services/api', () => ({
@@ -13,7 +14,6 @@ jest.mock('../../../services/api', () => ({
   },
 }));
 
-const { eventsApi } = require('../../../services/api');
 
 describe('EventDetails Component', () => {
   const mockEvent = {

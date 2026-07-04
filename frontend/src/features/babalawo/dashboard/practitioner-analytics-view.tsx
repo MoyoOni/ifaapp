@@ -207,7 +207,6 @@ const PractitionerAnalyticsView: React.FC<PractitionerAnalyticsViewProps> = ({ u
               <div className="h-2 bg-border rounded-full overflow-hidden">
                 <div
                   className="h-full bg-emerald-500 rounded-full transition-all"
-                  /* eslint-disable-next-line react/forbid-dom-props */
                   style={{ width: `${gp.avgItemsCompleted}%` }}
                 />
               </div>
