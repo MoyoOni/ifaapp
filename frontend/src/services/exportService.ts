@@ -4,6 +4,7 @@
  */
 
 import html2pdf from 'html2pdf.js';
+import { logger } from '@/shared/utils/logger';
 
 export interface ExportOptions {
   format: 'json' | 'csv' | 'pdf';
@@ -22,7 +23,7 @@ export interface ExportableData {
 // Default notification handlers
 const defaultNotify = {
   success: (message: string) => {
-    console.log('✓', message);
+    logger.log('✓', message);
     // Try to show toast if available
     try {
       const { toast } = require('react-toastify');
@@ -32,7 +33,7 @@ const defaultNotify = {
     }
   },
   error: (message: string) => {
-    console.error('✗', message);
+    logger.error('✗', message);
     // Try to show toast if available
     try {
       const { toast } = require('react-toastify');
@@ -66,7 +67,7 @@ class ExportService {
     } catch (error) {
       const message = 'Failed to export as JSON';
       options.onError?.(message) || defaultNotify.error(message);
-      console.error('Export JSON error:', error);
+      logger.error('Export JSON error:', error);
     }
   }
 
@@ -100,7 +101,7 @@ class ExportService {
     } catch (error) {
       const message = 'Failed to export as CSV';
       options.onError?.(message) || defaultNotify.error(message);
-      console.error('Export CSV error:', error);
+      logger.error('Export CSV error:', error);
     }
   }
 
@@ -124,7 +125,7 @@ class ExportService {
     } catch (error) {
       const message = 'Failed to export as PDF';
       options.onError?.(message) || defaultNotify.error(message);
-      console.error('Export PDF error:', error);
+      logger.error('Export PDF error:', error);
     }
   }
 

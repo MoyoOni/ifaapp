@@ -24,6 +24,7 @@ import { WelcomeBanner } from '@/shared/components/welcome-banner';
 import { PersonalAwoPanel } from '@/shared/components/personal-awo-panel';
 import { JourneyCtaCard } from '@/shared/components/journey-cta-card';
 import ReferralPanel from '@/features/devoted/referral-panel';
+import { STAGGER_DELAY_1, STAGGER_DELAY_3, STAGGER_DELAY_4 } from '@/shared/constants/motion';
 
 const PersonalDashboardView: React.FC = () => {
   const navigate = useNavigate();
@@ -164,7 +165,7 @@ const PersonalDashboardView: React.FC = () => {
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+          transition={{ delay: STAGGER_DELAY_1 }}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
         >
           <button
@@ -224,7 +225,7 @@ const PersonalDashboardView: React.FC = () => {
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: STAGGER_DELAY_3 }}
               className="bg-card rounded-2xl p-6 border border-emerald-100 dark:border-emerald-900/50 shadow-sm"
             >
               <div className="flex items-center justify-between mb-6">
@@ -353,7 +354,7 @@ const PersonalDashboardView: React.FC = () => {
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
+              transition={{ delay: STAGGER_DELAY_4 }}
               className="bg-card rounded-2xl p-6 border border-emerald-100 dark:border-emerald-900/50 shadow-sm"
             >
               <h2 className="text-2xl font-bold text-emerald-900 dark:text-emerald-100 mb-6">Recent Activity</h2>
@@ -397,7 +398,7 @@ const PersonalDashboardView: React.FC = () => {
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: STAGGER_DELAY_3 }}
               className="bg-card rounded-2xl p-6 border border-emerald-100 dark:border-emerald-900/50 shadow-sm"
             >
               <div className="flex items-center justify-between mb-4">
@@ -483,7 +484,7 @@ const PersonalDashboardView: React.FC = () => {
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
+              transition={{ delay: STAGGER_DELAY_4 }}
               className="bg-card rounded-2xl p-6 border border-emerald-100 dark:border-emerald-900/50 shadow-sm"
             >
               <h3 className="font-bold text-xl text-emerald-900 dark:text-emerald-100 mb-4">Quick Actions</h3>

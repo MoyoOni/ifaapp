@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { User, Camera, MapPin, Phone, Mail, Calendar, Briefcase, Building2, Globe, Hash, Lock } from 'lucide-react';
 import { useAuth } from '../../shared/hooks/use-auth';
+import { logger } from '@/shared/utils/logger';
 
 interface UserProfile {
   id: string;
@@ -76,7 +77,7 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({ initialProfile, onSave, o
     try {
       await onSave(profile);
     } catch (err) {
-      console.error('Error saving profile:', err);
+      logger.error('Error saving profile:', err);
     } finally {
       setIsSaving(false);
     }

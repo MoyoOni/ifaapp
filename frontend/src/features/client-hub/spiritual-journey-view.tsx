@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { cn } from '@/lib/utils';
+import { STAGGER_DELAY_1, STAGGER_DELAY_3, STAGGER_DELAY_4 } from '@/shared/constants/motion';
 
 const SpiritualJourneyView: React.FC = () => {
   const navigate = useNavigate();
@@ -96,7 +97,7 @@ const SpiritualJourneyView: React.FC = () => {
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+          transition={{ delay: STAGGER_DELAY_1 }}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8"
         >
           {/* Find My Guide */}
@@ -164,7 +165,7 @@ const SpiritualJourneyView: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: STAGGER_DELAY_3 }}
             className="lg:col-span-2 bg-card rounded-2xl p-6 border border-border"
           >
             <h3 className="text-xl font-bold text-foreground mb-6">Journey Overview</h3>
@@ -198,7 +199,7 @@ const SpiritualJourneyView: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
+            transition={{ delay: STAGGER_DELAY_4 }}
             className="bg-card rounded-2xl p-6 border border-border"
           >
             <h3 className="text-xl font-bold text-foreground mb-6">Recent Activity</h3>

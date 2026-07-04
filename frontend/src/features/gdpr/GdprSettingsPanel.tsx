@@ -3,6 +3,7 @@ import { Download, Trash2, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { useToast } from '@/shared/components/toast';
 import api from '@/lib/api';
+import { logger } from '@/shared/utils/logger';
 
 interface ConsentPreferences {
   marketingEmails: boolean;
@@ -40,7 +41,7 @@ export const GdprSettingsPanel: React.FC = () => {
       document.body.removeChild(a);
       success('Data export downloaded successfully');
     } catch (err) {
-      console.error('Export error:', err);
+      logger.error('Export error:', err);
       error('Failed to export data. Please try again.');
     }
   };
@@ -55,7 +56,7 @@ export const GdprSettingsPanel: React.FC = () => {
       const { data } = await api.delete('/gdpr/delete-account');
       success(data.message || 'Account deletion initiated');
     } catch (err) {
-      console.error('Deletion error:', err);
+      logger.error('Deletion error:', err);
       error('Failed to delete account. Please try again.');
     } finally {
       setIsDeleting(false);
@@ -68,7 +69,7 @@ export const GdprSettingsPanel: React.FC = () => {
       await api.post('/gdpr/consent-preferences', { forumDigest: consentPrefs.forumDigest });
       success('Preferences updated successfully');
     } catch (err) {
-      console.error('Update error:', err);
+      logger.error('Update error:', err);
       error('Failed to update preferences. Please try again.');
     } finally {
       setSavingPrefs(false);

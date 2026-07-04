@@ -4,6 +4,7 @@
  */
 
 import api from '@/lib/api';
+import { logger } from '@/shared/utils/logger';
 
 export interface AnalyticsMetric {
   label: string;
@@ -71,7 +72,7 @@ class AnalyticsService {
       this.cache.set(cacheKey, { data, timestamp: Date.now() });
       return data;
     } catch (error) {
-      console.error('Failed to fetch analytics data:', error);
+      logger.error('Failed to fetch analytics data:', error);
       throw error;
     }
   }
@@ -99,7 +100,7 @@ class AnalyticsService {
       this.cache.set(cacheKey, { data, timestamp: Date.now() });
       return data;
     } catch (error) {
-      console.error('Failed to fetch timeline data:', error);
+      logger.error('Failed to fetch timeline data:', error);
       throw error;
     }
   }
@@ -122,7 +123,7 @@ class AnalyticsService {
       this.cache.set(cacheKey, { data, timestamp: Date.now() });
       return data;
     } catch (error) {
-      console.error(`Failed to fetch top ${type}:`, error);
+      logger.error(`Failed to fetch top ${type}:`, error);
       throw error;
     }
   }
@@ -135,7 +136,7 @@ class AnalyticsService {
       const response = await api.get('/analytics/retention', { params: { days } });
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch retention data:', error);
+      logger.error('Failed to fetch retention data:', error);
       throw error;
     }
   }

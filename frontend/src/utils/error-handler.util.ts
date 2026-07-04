@@ -2,6 +2,7 @@
  * Error Handler Utility
  * Provides centralized error handling and logging capabilities for the IFA application
  */
+import { logger } from '@/shared/utils/logger';
 
 interface ErrorDetails {
   message: string;
@@ -47,7 +48,7 @@ class ErrorHandler {
 
     // Log to console in development
     if (process.env.NODE_ENV === 'development') {
-      console.error('Error Details:', errorDetails);
+      logger.error('Error Details:', errorDetails);
     }
 
     // Call all registered loggers
@@ -85,7 +86,7 @@ class ErrorHandler {
    */
   public reportError(error: Error | string, customData?: Record<string, unknown>): void {
     // In a real implementation, this would send errors to services like Sentry, Bugsnag, etc.
-    console.warn('Reporting error to external service (placeholder)', {
+    logger.warn('Reporting error to external service (placeholder)', {
       error: typeof error === 'string' ? error : error.message,
       customData,
     });

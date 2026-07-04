@@ -1,6 +1,7 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getMessaging, getToken, onMessage, type Messaging } from 'firebase/messaging';
 import api from './api';
+import { logger } from '@/shared/utils/logger';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -62,7 +63,7 @@ export async function registerPushNotifications(): Promise<void> {
     }
   } catch (err) {
     // Never break the app — push is non-critical
-    console.warn('[FCM] Failed to register push notifications:', err);
+    logger.warn('[FCM] Failed to register push notifications:', err);
   }
 }
 

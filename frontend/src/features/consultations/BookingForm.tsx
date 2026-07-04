@@ -16,6 +16,7 @@ import {
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { cn } from '@/lib/utils';
+import { STAGGER_DELAY_1 } from '@/shared/constants/motion';
 
 interface BookingFormProps {
   babalawoId: string;
@@ -110,7 +111,7 @@ export const BookingForm: React.FC<BookingFormProps> = ({ babalawoId, babalawoNa
       onSubmit={handleSubmit}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.1 }}
+      transition={{ delay: STAGGER_DELAY_1 }}
       className="bg-card rounded-[2.5rem] p-8 md:p-10 shadow-elevation-2 border border-border space-y-8"
     >
       {/* Header */}

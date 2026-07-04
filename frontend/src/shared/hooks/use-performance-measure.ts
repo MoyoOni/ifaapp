@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { logger } from '@/shared/utils/logger';
 
 /**
  * Performance measurement hook to measure rendering performance
@@ -20,7 +21,7 @@ export const usePerformanceMeasure = (componentName: string, condition: boolean 
         
         // Only log in development
         if (process.env.NODE_ENV === 'development') {
-          console.log(`[Performance] ${componentName} render time: ${renderTime.toFixed(2)}ms`);
+          logger.log(`[Performance] ${componentName} render time: ${renderTime.toFixed(2)}ms`);
         }
         
         // Send to analytics in production if needed
@@ -56,7 +57,7 @@ export const useOperationMeasurement = (operationName: string) => {
       const duration = performance.now() - startTimeRef.current;
       
       if (process.env.NODE_ENV === 'development') {
-        console.log(`[Performance] ${operationName} took: ${duration.toFixed(2)}ms`);
+        logger.log(`[Performance] ${operationName} took: ${duration.toFixed(2)}ms`);
       }
       
       // Report to analytics in production if needed
@@ -92,7 +93,7 @@ export const useApiPerformanceMeasure = (apiCallName: string) => {
       const duration = performance.now() - startTimeRef.current;
       
       if (process.env.NODE_ENV === 'development') {
-        console.log(`[Performance] ${apiCallName} (${status}) took: ${duration.toFixed(2)}ms`);
+        logger.log(`[Performance] ${apiCallName} (${status}) took: ${duration.toFixed(2)}ms`);
       }
       
       // Report to analytics in production

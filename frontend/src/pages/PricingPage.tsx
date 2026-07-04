@@ -4,6 +4,7 @@ import { CheckCircle2, ArrowRight, Heart, Shield, Building2, Users, Zap, Star, L
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
+import { logger } from '@/shared/utils/logger';
 
 const seekerFeatures = [
   'Browse the Babalawo directory',
@@ -92,7 +93,7 @@ const PricingPage: React.FC = () => {
         window.location.href = data.checkoutUrl;
       }
     } catch (err) {
-      console.error('Checkout failed', err);
+      logger.error('Checkout failed', err);
       setIsCheckingOut(false);
     }
   };

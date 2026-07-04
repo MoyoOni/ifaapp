@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
+import { logger } from '@/shared/utils/logger';
 
 // Define types for user preferences
 export interface UserPreferences {
@@ -202,7 +203,7 @@ export const PreferencesProvider: React.FC<PreferencesProviderProps> = ({ childr
     try {
       localStorage.setItem('user-preferences', JSON.stringify(state));
     } catch (error) {
-      console.error('Failed to save preferences to localStorage:', error);
+      logger.error('Failed to save preferences to localStorage:', error);
     }
   };
 
@@ -214,7 +215,7 @@ export const PreferencesProvider: React.FC<PreferencesProviderProps> = ({ childr
         dispatch({ type: 'LOAD_PREFERENCES', payload: parsedPreferences });
       }
     } catch (error) {
-      console.error('Failed to load preferences from localStorage:', error);
+      logger.error('Failed to load preferences from localStorage:', error);
     }
   };
 

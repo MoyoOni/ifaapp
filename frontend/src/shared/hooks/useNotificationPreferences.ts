@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
+import { logger } from '@/shared/utils/logger';
 
 export interface NotificationPreferences {
   id?: string;
@@ -36,7 +37,7 @@ export const useNotificationPreferences = () => {
       setPreferences(response.data);
     } catch (err) {
       setError('Failed to load notification preferences');
-      console.error('Error fetching notification preferences:', err);
+      logger.error('Error fetching notification preferences:', err);
     } finally {
       setLoading(false);
     }
@@ -50,7 +51,7 @@ export const useNotificationPreferences = () => {
       return response.data;
     } catch (err) {
       setError('Failed to update notification preferences');
-      console.error('Error updating notification preferences:', err);
+      logger.error('Error updating notification preferences:', err);
       throw err;
     } finally {
       setSaving(false);

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { User, Star, Heart, Sparkles, Calendar } from 'lucide-react';
 import { useAuth } from '@/shared/hooks/use-auth';
 import api from '@/lib/api'; // Changed to default import
+import { logger } from '@/shared/utils/logger';
 
 interface PersonalizedWelcomeMessageProps {
   className?: string;
@@ -111,7 +112,7 @@ const PersonalizedWelcomeMessage: React.FC<PersonalizedWelcomeMessageProps> = ({
           }, delay);
         }
       } catch (error) {
-        console.error('Error fetching user data for welcome message:', error);
+        logger.error('Error fetching user data for welcome message:', error);
         
         // Fallback to general message if API call fails
         const generalMessage = welcomeMessageConfigs.find(c => c.id === 'general-welcome');

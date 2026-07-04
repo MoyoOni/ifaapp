@@ -1,6 +1,7 @@
 /**
  * FirstStepsChecklistService - Manage post-onboarding checklist
  */
+import { logger } from '@/shared/utils/logger';
 
 export interface ChecklistItem {
   id: string;
@@ -337,7 +338,7 @@ class FirstStepsChecklistService {
       const stored = localStorage.getItem(key);
       return stored ? JSON.parse(stored) : null;
     } catch (error) {
-      console.warn('[FirstStepsChecklistService] Failed to retrieve checklist', error);
+      logger.warn('[FirstStepsChecklistService] Failed to retrieve checklist', error);
       return null;
     }
   }
@@ -347,7 +348,7 @@ class FirstStepsChecklistService {
       const key = `${this.STORAGE_PREFIX}:${checklist.userId}`;
       localStorage.setItem(key, JSON.stringify(checklist));
     } catch (error) {
-      console.warn('[FirstStepsChecklistService] Failed to save checklist', error);
+      logger.warn('[FirstStepsChecklistService] Failed to save checklist', error);
     }
   }
 }

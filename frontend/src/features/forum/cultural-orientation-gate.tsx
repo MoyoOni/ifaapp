@@ -10,6 +10,7 @@ import { Button } from '@/shared/components/ui/button';
 import { Card } from '@/shared/components/ui/card';
 import { Label } from '@/shared/components/ui/label';
 import api from '@/lib/api';
+import { logger } from '@/shared/utils/logger';
 
 interface CulturalOrientationGateProps {
   open: boolean;
@@ -111,7 +112,7 @@ export const CulturalOrientationGate = ({ open, onComplete, categoryName }: Cult
         await api.post(`/users/${userId}/quiz-attempt`, { passed });
       }
     } catch (error) {
-      console.error('Error recording quiz attempt:', error);
+      logger.error('Error recording quiz attempt:', error);
     } finally {
       setLoading(false);
       setCompleted(true);

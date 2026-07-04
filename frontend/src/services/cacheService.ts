@@ -2,6 +2,7 @@
  * CacheService - Intelligent multi-tier caching strategy
  * Combines localStorage, memory caching, and smart invalidation
  */
+import { logger } from '@/shared/utils/logger';
 
 interface CacheEntry<T> {
   data: T;
@@ -49,7 +50,7 @@ class CacheService {
         }
       }
     } catch (error) {
-      console.warn(`[CacheService] Failed to read from localStorage for key: ${key}`, error);
+      logger.warn(`[CacheService] Failed to read from localStorage for key: ${key}`, error);
     }
 
     // Cache miss or expired
@@ -93,7 +94,7 @@ class CacheService {
           try {
             localStorage.setItem(`cache:${key}`, JSON.stringify(entry));
           } catch {
-            console.warn(`[CacheService] Failed to store in localStorage: ${key}`);
+            logger.warn(`[CacheService] Failed to store in localStorage: ${key}`);
           }
         }
       }
@@ -126,7 +127,7 @@ class CacheService {
               }
             }
           } catch (error) {
-            console.warn(`[CacheService] Failed to check localStorage key: ${key}`, error);
+            logger.warn(`[CacheService] Failed to check localStorage key: ${key}`, error);
           }
         }
       }
@@ -150,7 +151,7 @@ class CacheService {
         }
       }
     } catch (error) {
-      console.warn('[CacheService] Failed to clear localStorage', error);
+      logger.warn('[CacheService] Failed to clear localStorage', error);
     }
   }
 
@@ -278,7 +279,7 @@ class CacheService {
         }
       }
     } catch (error) {
-      console.warn('[CacheService] Failed to calculate storage size', error);
+      logger.warn('[CacheService] Failed to calculate storage size', error);
     }
     return size;
   }

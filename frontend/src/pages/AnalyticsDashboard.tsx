@@ -12,6 +12,7 @@ import {
 import AnalyticsService from '@/services/analyticsService';
 import ExportButton from '@/components/ExportButton';
 import './AnalyticsDashboard.css';
+import { STAGGER_DELAY_1, STAGGER_DELAY_3, STAGGER_DELAY_4 } from '@/shared/constants/motion';
 
 interface DateRange {
   startDate: string;
@@ -130,7 +131,7 @@ const AnalyticsDashboard: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
+            transition={{ delay: STAGGER_DELAY_1 }}
           >
             <MetricCard
               label="Active Users"
@@ -144,7 +145,7 @@ const AnalyticsDashboard: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: STAGGER_DELAY_3 }}
           >
             <MetricCard
               label="Total Sessions"
@@ -158,7 +159,7 @@ const AnalyticsDashboard: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
+            transition={{ delay: STAGGER_DELAY_4 }}
           >
             <MetricCard
               label="Conversion Rate"

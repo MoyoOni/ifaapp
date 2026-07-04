@@ -14,6 +14,9 @@ module.exports = {
       'warn',
       { allowConstantExport: true },
     ],
+    // P3-01: use logger (shared/utils/logger.ts) instead of console.* directly,
+    // so log level, context tagging, and prod/dev gating stay consistent.
+    'no-console': 'error',
     '@typescript-eslint/no-explicit-any': 'warn',
     '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
     'no-restricted-properties': ['error', {
@@ -39,4 +42,11 @@ module.exports = {
       }
     ],
   },
+  overrides: [
+    {
+      // logger.ts is the one place console.* is the actual implementation.
+      files: ['src/shared/utils/logger.ts'],
+      rules: { 'no-console': 'off' },
+    },
+  ],
 };

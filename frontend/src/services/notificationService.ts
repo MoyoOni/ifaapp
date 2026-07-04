@@ -4,6 +4,7 @@
  */
 
 import io from 'socket.io-client';
+import { logger } from '@/shared/utils/logger';
 
 export interface Notification {
   id: string;
@@ -72,7 +73,7 @@ class NotificationService {
         this.socket.on('disconnect', () => {});
 
         this.socket.on('error', (error) => {
-          console.error('Notification service error:', error);
+          logger.error('Notification service error:', error);
           reject(error);
         });
 
@@ -104,7 +105,7 @@ class NotificationService {
           this.subscribeToPushNotifications();
         }
       } catch (error) {
-        console.error('Push notification permission error:', error);
+        logger.error('Push notification permission error:', error);
       }
     }
   }
@@ -127,7 +128,7 @@ class NotificationService {
         this.socket.emit('push:subscribe', subscription);
       }
     } catch (error) {
-      console.error('Push subscription error:', error);
+      logger.error('Push subscription error:', error);
     }
   }
 
@@ -198,7 +199,7 @@ class NotificationService {
           requireInteraction: notification.type === 'alert',
         });
       } catch (error) {
-        console.error('Browser notification error:', error);
+        logger.error('Browser notification error:', error);
       }
     }
   }
@@ -228,7 +229,7 @@ class NotificationService {
       oscillator.start(ctx.currentTime);
       oscillator.stop(ctx.currentTime + 0.5);
     } catch (error) {
-      console.warn('Notification sound error:', error);
+      logger.warn('Notification sound error:', error);
     }
   }
 

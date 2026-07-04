@@ -9,6 +9,7 @@ import { useCacheStats, useCacheManager } from '../hooks/useCache';
 import { cacheService } from '../services/cacheService';
 import './CacheDebugger.css';
 import { isDevModeActive } from '@/shared/utils/dev-mode';
+import { logger } from '@/shared/utils/logger';
 
 interface CacheDebuggerProps {
   className?: string;
@@ -33,7 +34,7 @@ export const CacheDebugger: React.FC<CacheDebuggerProps> = ({ className = '' }) 
 
   const handleRefresh = () => {
     const freshStats = getStats();
-    console.log('[CacheDebugger] Current stats:', freshStats);
+    logger.log('[CacheDebugger] Current stats:', freshStats);
   };
 
   return (

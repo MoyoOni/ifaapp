@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { getDashboardPathForRole } from '@/shared/config/navigation';
+import { STAGGER_DELAY_3 } from '@/shared/constants/motion';
 
 const BENEFITS = [
   { icon: Zap,           text: 'Priority consultations — your bookings go to the top' },
@@ -164,7 +165,7 @@ const SubscriptionConfirmPage: React.FC = () => {
           <motion.h1
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: STAGGER_DELAY_3 }}
             className="brand-font text-4xl sm:text-5xl font-bold text-foreground mb-3"
           >
             {firstName ? `${firstName}, you're` : "You're"} now{' '}

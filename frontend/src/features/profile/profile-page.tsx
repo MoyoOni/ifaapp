@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../shared/hooks/use-auth';
 import ProfileView from '../../components/profile/profile-view';
 import ProfileEditor from '../../components/profile/profile-editor';
+import { logger } from '@/shared/utils/logger';
 
 // Define UserProfile type
 type UserProfile = {
@@ -51,7 +52,7 @@ const ProfilePage: React.FC = () => {
   };
 
   const handleSave = (updatedProfile: typeof mockProfile) => {
-    console.log('Saving profile:', updatedProfile);
+    logger.log('Saving profile:', updatedProfile);
     // In a real app, we would save the profile to an API
     setIsEditing(false);
   };

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CheckCircle, Circle, User, MapPin, MessageSquare, Calendar, Camera, Star } from 'lucide-react';
 import { useAuth } from '@/shared/hooks/use-auth';
 import api from '@/lib/api'; // Changed to default import
+import { logger } from '@/shared/utils/logger';
 
 interface ChecklistItem {
   id: string;
@@ -96,7 +97,7 @@ const FirstStepsChecklist: React.FC<FirstStepsChecklistProps> = ({
           onCompletionChange(percentage);
         }
       } catch (error) {
-        console.error('Error fetching checklist status:', error);
+        logger.error('Error fetching checklist status:', error);
         
         // Set default checklist items in case of error
         const defaultItems: ChecklistItem[] = [
@@ -210,7 +211,7 @@ const FirstStepsChecklist: React.FC<FirstStepsChecklistProps> = ({
         onCompletionChange(percentage);
       }
     } catch (error) {
-      console.error(`Error updating ${item.id}:`, error);
+      logger.error(`Error updating ${item.id}:`, error);
       alert(`Failed to update ${item.title}. Please try again.`);
     }
   };

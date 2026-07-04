@@ -4,6 +4,7 @@
  */
 
 import api from '@/lib/api';
+import { logger } from '@/shared/utils/logger';
 
 export interface SearchResult {
   id: string;
@@ -93,7 +94,7 @@ class SearchService {
 
       return result;
     } catch (error) {
-      console.error('Search error:', error);
+      logger.error('Search error:', error);
       throw error;
     }
   }
@@ -112,7 +113,7 @@ class SearchService {
 
       return response.data.suggestions || [];
     } catch (error) {
-      console.error('Suggestions error:', error);
+      logger.error('Suggestions error:', error);
       return [];
     }
   }
@@ -128,7 +129,7 @@ class SearchService {
 
       return response.data.trending || [];
     } catch (error) {
-      console.error('Trending error:', error);
+      logger.error('Trending error:', error);
       return [];
     }
   }
@@ -159,7 +160,7 @@ class SearchService {
     try {
       localStorage.setItem('search_history', JSON.stringify(this.searchHistory));
     } catch (e) {
-      console.warn('Failed to persist search history');
+      logger.warn('Failed to persist search history');
     }
   }
 
@@ -173,7 +174,7 @@ class SearchService {
         this.searchHistory = JSON.parse(stored);
       }
     } catch (e) {
-      console.warn('Failed to load search history');
+      logger.warn('Failed to load search history');
     }
   }
 
@@ -185,7 +186,7 @@ class SearchService {
     try {
       localStorage.removeItem('search_history');
     } catch (e) {
-      console.warn('Failed to clear search history');
+      logger.warn('Failed to clear search history');
     }
   }
 

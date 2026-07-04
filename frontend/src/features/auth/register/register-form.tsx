@@ -5,6 +5,7 @@ import { useSearchParams } from 'react-router-dom';
 import { UserRole } from '@common';
 import appLogo from '@/assets/logo.png';
 import GoogleAuthButton from '../components/google-auth-button';
+import { logger } from '@/shared/utils/logger';
 
 function getPasswordStrength(pw: string): { score: number; label: string; color: string } {
   const checks = [pw.length >= 8, /[A-Z]/.test(pw), /[0-9]/.test(pw), /[^A-Za-z0-9]/.test(pw)];
@@ -74,7 +75,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, on
         }
       } catch (err) {
         // If validation fails, we'll still allow registration but log the error
-        console.warn('Referral code validation failed:', err);
+        logger.warn('Referral code validation failed:', err);
       }
     }
 

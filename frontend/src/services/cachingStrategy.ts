@@ -4,6 +4,7 @@
  */
 
 import { CacheConfig } from '../services/cacheService';
+import { logger } from '@/shared/utils/logger';
 
 /**
  * Cache TTL presets (time-to-live durations)
@@ -247,7 +248,7 @@ export const CACHE_EXAMPLES = {
       cacheKey: \`babalawo-\${id}\`,
       fetchFn: () => api.get(\`/users/\${id}/profile\`),
       ...CACHE_STRATEGIES.BABALAWO_PROFILE,
-      onSuccess: (data) => console.log('Profile loaded:', data),
+      onSuccess: (data) => logger.log('Profile loaded:', data),
     });
 
     // Invalidate when profile updates
@@ -287,7 +288,7 @@ export const CACHE_EXAMPLES = {
   WATCH_EXAMPLE: `
     useCacheWatch(\`wallet-\${userId}\`, (newWalletData) => {
       // React whenever wallet data is cached/updated
-      console.log('Wallet updated:', newWalletData);
+      logger.log('Wallet updated:', newWalletData);
     });
   `,
 };

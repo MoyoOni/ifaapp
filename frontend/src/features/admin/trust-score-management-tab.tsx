@@ -42,6 +42,7 @@ import { Textarea } from '@/shared/components/ui/textarea';
 import { Label } from '@/shared/components/ui/label';
 import { Skeleton } from '@/shared/components/ui/skeleton';
 import api from '@/lib/api';
+import { logger } from '@/shared/utils/logger';
 
 interface TrustScoreBreakdown {
   userId: string;
@@ -123,7 +124,7 @@ const TrustScoreManagementTab: React.FC = () => {
         
         return breakdowns;
       } catch (err) {
-        console.error('Error fetching practitioners:', err);
+        logger.error('Error fetching practitioners:', err);
         return [];
       }
     }

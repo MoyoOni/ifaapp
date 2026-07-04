@@ -415,27 +415,41 @@ These fix the 🔴🔴 EXPLOITABLE NOW findings. They should be hotfixed directl
 
 ### P3-01: Finish Console-to-Logger Migration on Frontend
 - **Priority**: P3
-- **Status**: 🟡 IN PROGRESS — `shared/utils/logger.ts` exists and is used in most places
+- **Status**: ✅ DONE — plus a much bigger discovery surfaced while adding the lint rule (see below)
 - **Owner**: Frontend Team
 - **Story Points**: 2
-- **Description**: CLAUDE.md claims "all console replaced with logger," but ~23 files still call `console.log`/`console.error` directly, including `profile-page.tsx`, `preferences-context.tsx`, `use-performance-measure.ts`, and `error-handler.util.ts`.
-- **Acceptance Criteria**:
-  - [ ] Remaining `console.*` calls in the 23 identified files replaced with the existing `logger` utility
-  - [ ] ESLint rule added (`no-console`) to prevent regressions, with an explicit override only inside `logger.ts` itself
+- **Implementation notes**:
+  - All 22 remaining files with direct `console.*` calls converted to `logger.*` (mechanical, verified with a before/after grep showing zero `console.*` call sites left outside `logger.ts` itself).
+  - Added `no-console: 'error'` to `.eslintrc.cjs`, with an `overrides` entry exempting `shared/utils/logger.ts` (the one legitimate implementation).
+- **Real, much bigger discovery while verifying the lint rule actually works**: running `eslint` at all failed — `frontend/node_modules/eslint` was a corrupted, stray **4.0.0** install (deprecated, YAML-based legacy config format) silently shadowing the correct `^8.57.1` declared in `package.json` and already present at the repo root. Root-caused to a stale, orphaned entry in the root `package-lock.json` itself (not just a local install glitch — a fresh `npm ci` would have reintroduced it). Fixed by removing the stale lockfile entry and letting npm recompute resolution, which also pruned 97 packages of eslint@4.0.0's own now-unnecessary transitive dependencies (chalk@1, debug@2, espree@3, etc.). Verified backend + frontend builds, full test suites, and production build all still pass after the dependency change.
+  - Once eslint actually ran, it surfaced that **`npm run lint` itself has apparently never worked** for this reason, and — separately — **CI never calls it at all** (`test-frontend`'s steps are typecheck → build → test; no lint step exists despite the job's own "lint, typecheck, test, build" comment). Net effect: none of `.eslintrc.cjs`'s existing custom rules (the Tailwind-hardcoded-color restriction, `no-restricted-globals` for `alert`/`confirm`, etc.) have ever actually been enforced, locally or in CI. Running it for real surfaces **2853 problems, 2614 of them errors** — see new item **P3-07** below, logged separately per the product owner's explicit choice not to bulk-fix this now.
 - **Dependencies**: None
-- **Notes**: Small, mechanical. Add the lint rule so this doesn't need re-auditing next quarter.
+- **Notes**: Confirmed `no-console` itself has zero violations project-wide — this story's own literal scope is fully clean. The 2614 pre-existing errors are overwhelmingly (2304 of them) one single rule (`no-restricted-syntax` for hardcoded Tailwind colors) that was seemingly added aspirationally and never actually run against the real codebase — the same "vibe coding" pattern found elsewhere this session, just for lint instead of tests.
 
 ### P3-02: Config Extraction for Remaining Inline Literals
 - **Priority**: P3
-- **Status**: 🟢 MOSTLY DONE — most business literals already load from API/config
+- **Status**: ✅ DONE
 - **Owner**: Frontend Team
 - **Story Points**: 1
-- **Description**: Sentry sample rates (`shared/config/sentry.ts`) and a handful of animation-delay values are hardcoded inline. Low risk, but worth sweeping into the existing config pattern for consistency.
-- **Acceptance Criteria**:
-  - [ ] Sentry sample rates moved to env-driven config (already partially true for DSN — extend to sample rate)
-  - [ ] Repeated animation-delay magic numbers (`0.1`, `0.15`) consolidated into a shared motion-constants file if reused across 3+ components
+- **Implementation notes**:
+  - `shared/config/sentry.ts`'s three sample rates (`tracesSampleRate`, `replaysOnErrorSampleRate`, `replaysSessionSampleRate`) are now read from `VITE_SENTRY_TRACES_SAMPLE_RATE`/`VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE`/`VITE_SENTRY_REPLAYS_SESSION_SAMPLE_RATE`, falling back to the exact previous hardcoded values if unset (validated to `[0, 1]`, ignoring malformed input) — same env-driven pattern already used for the DSN. Documented in `.env.example` and `vite-env.d.ts`.
+  - New `shared/constants/motion.ts` exports `STAGGER_DELAY_1..4` (`0.1`/`0.15`/`0.2`/`0.3` — all four appear in 3+ components' `transition={{ delay }}` framer-motion props). Wired into the 7 files that used these exact values; less-common delay values (`0.25`, `0.35`, `0.4`, `0.5`, `0.6`, and one dynamic `0.6 + i * 0.07` stagger) were left alone since they don't meet the "reused across 3+ components" bar the acceptance criteria set.
 - **Dependencies**: None
-- **Notes**: Genuinely minor — most of the sin #10 pattern from the manifesto (hardcoded fees/FX rates) does **not** apply here; this platform's business numbers are already config/API-driven.
+- **Notes**: Genuinely minor, as originally scoped — most of the sin #10 pattern from the manifesto (hardcoded fees/FX rates) does **not** apply here; this platform's business numbers are already config/API-driven.
+
+### P3-07: Fix and Enforce Frontend Lint in CI (new, found via P3-01)
+- **Priority**: P3
+- **Status**: ❌ NOT STARTED — logged, not fixed, per explicit product-owner choice when this was discovered
+- **Owner**: Frontend Team / DevOps
+- **Story Points**: 8+ (dominated by one rule; see breakdown)
+- **Description**: Fixing P3-01's lint tooling (see that item's notes) revealed `eslint` has effectively never run successfully against this codebase, and CI never invokes `npm run lint` despite the job comment claiming it does. A real run surfaces 2853 problems (2614 errors): **2304 `no-restricted-syntax`** (hardcoded Tailwind color classes, e.g. `text-red-500`, instead of design tokens), **259 `@typescript-eslint/no-unused-vars`**, **215 `@typescript-eslint/no-explicit-any`** (currently a warning, but `npm run lint --max-warnings 0` would still fail the build on these), **21 `no-useless-catch`**, plus small counts of `react-hooks/rules-of-hooks` (5 — worth checking first, this rule catches real bugs, not style), `no-restricted-globals` (5, `alert`/`confirm` usage — includes the two `alert()` calls in the just-created `use-onboarding.ts`, relocated verbatim from `onboarding-view.tsx` in P2-04, not new violations), and others.
+- **Acceptance Criteria**:
+  - [ ] Decide the hardcoded-Tailwind-color rule's fate: keep and bulk-fix (large, mechanical-but-risky sweep across ~292 components), keep and suppress existing violations with a tracked follow-up, or reconsider whether the rule is worth its enforcement cost given 2304 pre-existing violations
+  - [ ] Triage the 5 `react-hooks/rules-of-hooks` violations first — this rule flags genuine bugs (hooks called conditionally/in loops), not style, and is worth checking regardless of what happens to the Tailwind rule
+  - [ ] Fix or suppress the remaining ~300 non-Tailwind errors (unused vars, useless-catch, restricted globals)
+  - [ ] Add a `Lint` step to `test-frontend` in `ci-cd.yml` once the codebase is actually clean enough to pass it
+- **Dependencies**: P3-01 (this is where the broken tooling was found)
+- **Notes**: This is the same shape of discovery as P1-03's 164 TypeScript build errors — a checking tool that looked configured but had never actually run for real. Deliberately not bulk-fixed in the same session it was found: 2300+ Tailwind-color changes across ~292 components is a large, separate, visually-risky sweep (color changes are easy to eyeball-verify wrong even when they typecheck), not a quick cleanup pass.
 
 ### P3-03: CI Enforcement of Lockfile & Audit
 - **Priority**: P3

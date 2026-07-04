@@ -10,6 +10,7 @@ import { SkeletonStat, SkeletonTable } from '@/shared/components/skeleton';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { isDevModeActive } from '@/shared/utils/dev-mode';
+import { STAGGER_DELAY_2, STAGGER_DELAY_3, STAGGER_DELAY_4 } from '@/shared/constants/motion';
 
 function getGreeting(): { text: string; Icon: React.ElementType } {
     const hour = new Date().getHours();
@@ -198,7 +199,7 @@ const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.15 }}
+                    transition={{ delay: STAGGER_DELAY_2 }}
                     className="bg-card rounded-2xl p-6 border border-border space-y-4 shadow-sm"
                 >
                     <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
@@ -243,7 +244,7 @@ const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
+                transition={{ delay: STAGGER_DELAY_3 }}
                 className="bg-card rounded-2xl p-6 border border-border space-y-6 shadow-sm"
             >
                 <div className="flex items-center justify-between">
@@ -285,7 +286,7 @@ const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
+                transition={{ delay: STAGGER_DELAY_4 }}
                 className="bg-card rounded-2xl p-6 border border-border space-y-6 shadow-sm"
             >
                 <div className="flex items-center justify-between">

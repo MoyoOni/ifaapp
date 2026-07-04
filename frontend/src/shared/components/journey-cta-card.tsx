@@ -5,6 +5,7 @@ import { ArrowRight, Calendar, BookOpen, RefreshCw, Sparkles } from 'lucide-reac
 import { useAuth } from '@/shared/hooks/use-auth';
 import { useClientDashboard } from '@/shared/hooks/dashboard';
 import { deriveDashboardState, type DashboardState } from '@/shared/hooks/use-dashboard-state';
+import { STAGGER_DELAY_1 } from '@/shared/constants/motion';
 
 const stateIcon: Record<DashboardState, React.ReactNode> = {
   has_upcoming: <Calendar size={20} className="text-emerald-400" />,
@@ -47,7 +48,7 @@ export const JourneyCtaCard: React.FC = () => {
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.1 }}
+      transition={{ delay: STAGGER_DELAY_1 }}
       className={`rounded-2xl border bg-gradient-to-br p-5 flex items-center justify-between gap-4 mb-6 ${stateGradient[cta.state]}`}
     >
       <div className="flex items-center gap-3 min-w-0">
