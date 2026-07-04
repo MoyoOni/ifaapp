@@ -23,6 +23,7 @@ import { Payment } from '../shared/types/prisma-models';
 const Flutterwave = require('flutterwave-node-v3');
 import { NotificationService } from '../notifications/notification.service';
 import { PaystackApiService } from './paystack-api.service';
+import { PaymentWebhookPayload, PaystackWebhookPayload, FlutterwaveWebhookPayload } from './types/webhook-payloads';
 
 /**
  * Payment Gateway Provider Enum
@@ -355,12 +356,16 @@ export class PaymentsService {
   /**
    * Handle payment webhook
    */
-  async handleWebhook(payload: any, provider: PaymentProvider, signature?: string) {
+  async handleWebhook(payload: PaymentWebhookPayload, provider: PaymentProvider, signature?: string) {
     try {
+      // The `provider` param (set by which controller route received the
+      // request — see payments.controller.ts) is the actual discriminant
+      // here, not anything inspectable on `payload` itself, so TypeScript
+      // can't narrow the union automatically between these two branches.
       if (provider === PaymentProvider.PAYSTACK) {
-        return await this.handlePaystackWebhook(payload, signature);
+        return await this.handlePaystackWebhook(payload as PaystackWebhookPayload, signature);
       } else {
-        return await this.handleFlutterwaveWebhook(payload, signature);
+        return await this.handleFlutterwaveWebhook(payload as FlutterwaveWebhookPayload, signature);
       }
     } catch (error) {
       // Preserve the real status (e.g. 401 for a bad/missing signature) instead of
@@ -401,7 +406,7 @@ export class PaymentsService {
   /**
    * Handle Paystack webhook
    */
-  private async handlePaystackWebhook(payload: any, signature?: string) {
+  private async handlePaystackWebhook(payload: PaystackWebhookPayload, signature?: string) {
     // Verify webhook signature — mandatory, no bypass (EMG-02).
     // A missing signature header used to skip verification entirely; a forged
     // `charge.success` payload with no header was trusted outright.
@@ -492,7 +497,7 @@ export class PaymentsService {
   /**
    * Handle Flutterwave webhook
    */
-  private async handleFlutterwaveWebhook(payload: any, signature?: string) {
+  private async handleFlutterwaveWebhook(payload: FlutterwaveWebhookPayload, signature?: string) {
     // Verify webhook signature — mandatory, no bypass (EMG-02).
     // Previously this only checked `if (signature && secretHash)`, so an unset
     // FLUTTERWAVE_SECRET_HASH silently allowed every request through unverified.

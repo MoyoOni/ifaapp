@@ -6,6 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { CreateDepositDto } from './dto/create-deposit.dto';
 import { CreateWithdrawalRequestDto } from './dto/create-withdrawal-request.dto';
@@ -193,7 +194,7 @@ export class WalletService {
       throw new BadRequestException('Wallet is locked. Please contact support.');
     }
 
-    return this.prisma.$transaction(async (tx: any) => {
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const transaction = await tx.transaction.create({
         data: {
           walletId: wallet.id,
@@ -259,7 +260,7 @@ export class WalletService {
       );
     }
 
-    return this.prisma.$transaction(async (tx: any) => {
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const updatedWallet = await tx.wallet.update({
         where: { id: wallet.id },
         data: { balance: { decrement: amount } },
@@ -304,7 +305,7 @@ export class WalletService {
     const limit = filters.limit || 50;
     const offset = filters.offset || 0;
 
-    const where: any = {
+    const where: Prisma.TransactionWhereInput = {
       walletId: wallet.id,
       userId,
     };
@@ -387,7 +388,7 @@ export class WalletService {
       : null;
 
     // All escrow creation steps must be atomic
-    return this.prisma.$transaction(async (tx: any) => {
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // EMG-06: conditional atomic decrement — the WHERE clause's
       // `balance: { gte: dto.amount }` is checked and applied in the same
       // statement, so two concurrent requests against the same wallet can no
@@ -535,7 +536,7 @@ export class WalletService {
     }
 
     // All escrow release steps must be atomic
-    return this.prisma.$transaction(async (tx: any) => {
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const updatedEscrow = await tx.escrow.update({
         where: { id: escrow.id },
         data: {
@@ -643,7 +644,7 @@ export class WalletService {
     // All cancellation steps must be atomic
     const remainingAmount = escrow.amount;
 
-    return this.prisma.$transaction(async (tx: any) => {
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       if (remainingAmount > 0) {
         await tx.wallet.update({
           where: { id: escrow.walletId },
@@ -726,7 +727,7 @@ export class WalletService {
 
     // Restore to previous status (HOLD or PARTIALLY_RELEASED)
     const previousStatus =
-      escrow.releaseTiers && (escrow.releaseTiers as any).releasedTier1
+      escrow.releaseTiers && (escrow.releaseTiers as EscrowReleaseTiers).releasedTier1
         ? EscrowStatus.PARTIALLY_RELEASED
         : EscrowStatus.HOLD;
 
@@ -790,7 +791,7 @@ export class WalletService {
         }
 
         // Wallet update, transaction creation, and escrow status update must be atomic
-        await this.prisma.$transaction(async (tx: any) => {
+        await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
           await tx.wallet.update({
             where: { id: escrow.walletId },
             data: {
@@ -874,12 +875,14 @@ export class WalletService {
             }
           }
         } catch (notifError) {
-          this.logger.error(`Failed to send expiry notifications: ${(notifError as any).message}`);
+          const msg = notifError instanceof Error ? notifError.message : String(notifError);
+          this.logger.error(`Failed to send expiry notifications: ${msg}`);
         }
 
         results.push({ escrowId: escrow.id, status: 'expired', refunded: remainingAmount });
       } catch (error) {
-        results.push({ escrowId: escrow.id, status: 'error', error: (error as any).message });
+        const msg = error instanceof Error ? error.message : String(error);
+        results.push({ escrowId: escrow.id, status: 'error', error: msg });
       }
     }
 
@@ -942,7 +945,7 @@ export class WalletService {
       throw new ForbiddenException('You can only view your own escrows');
     }
 
-    const where: any = {
+    const where: Prisma.EscrowWhereInput = {
       OR: [{ userId }, { recipientId: userId }],
     };
 
@@ -1052,7 +1055,11 @@ export class WalletService {
       type: string;
       endpoint: string;
       method: 'POST' | 'PATCH' | 'DELETE';
-      payload: any;
+      // Shape genuinely varies per endpoint (this method dispatches on
+      // action.endpoint) and is never actually read below — unknown forces
+      // any future real usage to narrow explicitly instead of allowing
+      // free-form property access.
+      payload: unknown;
     }>,
     currentUser: CurrentUserPayload
   ) {

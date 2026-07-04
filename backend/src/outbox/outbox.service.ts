@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Queue, Worker, ConnectionOptions } from 'bullmq';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from '../notifications/notification.service';
 import { captureException } from '../sentry';
@@ -87,9 +88,14 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
    * transaction client passed into a `prisma.$transaction(async (tx) => ...)`
    * callback elsewhere (e.g. WalletService.depositFunds).
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async createEventInTx(tx: any, input: OutboxEventInput) {
-    return tx.outboxEvent.create({ data: input });
+  async createEventInTx(tx: Prisma.TransactionClient, input: OutboxEventInput) {
+    // Prisma's Json input type doesn't structurally accept Record<string, unknown>
+    // (it wants a specific JSON-serializable recursive union) — payload here is
+    // always a plain object literal built by the caller, never containing
+    // functions/undefined/circular references, so this cast is safe.
+    return tx.outboxEvent.create({
+      data: { ...input, payload: input.payload as Prisma.InputJsonValue },
+    });
   }
 
   /**

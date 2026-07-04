@@ -24,6 +24,7 @@ import { JwtAuthGuard } from '../shared/guards/auth.guard';
 import { RolesGuard } from '../shared/guards/roles.guard';
 import { Roles } from '@/shared/decorators/roles.decorator';
 import { UserRole } from '@common/enums/user-role.enum';
+import { PaystackWebhookPayload, FlutterwaveWebhookPayload } from './types/webhook-payloads';
 
 @Controller('payments')
 export class PaymentsController {
@@ -118,7 +119,7 @@ export class PaymentsController {
   @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Post('webhook/paystack')
   @HttpCode(HttpStatus.OK)
-  async paystackWebhook(@Body() payload: any, @Headers('x-paystack-signature') signature?: string) {
+  async paystackWebhook(@Body() payload: PaystackWebhookPayload, @Headers('x-paystack-signature') signature?: string) {
     return this.paymentsService.handleWebhook(payload, PaymentProvider.PAYSTACK, signature);
   }
 
@@ -130,7 +131,7 @@ export class PaymentsController {
   @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Post('webhook/flutterwave')
   @HttpCode(HttpStatus.OK)
-  async flutterwaveWebhook(@Body() payload: any, @Headers('verif-hash') signature?: string) {
+  async flutterwaveWebhook(@Body() payload: FlutterwaveWebhookPayload, @Headers('verif-hash') signature?: string) {
     return this.paymentsService.handleWebhook(payload, PaymentProvider.FLUTTERWAVE, signature);
   }
 
