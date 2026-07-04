@@ -65,6 +65,8 @@ export const ProfileCompletenessCard: React.FC<ProfileCompletenessCardProps> = (
     [userData, userRole],
   );
 
+  const groupedItems = useMemo(() => groupBySection(score.missingItems), [score.missingItems]);
+
   // Don't show for admins
   if (userRole === 'ADMIN') {
     return null;
@@ -77,8 +79,6 @@ export const ProfileCompletenessCard: React.FC<ProfileCompletenessCardProps> = (
   const handleItemClick = (item: MissingItem) => {
     onMissingItemClick?.(item);
   };
-
-  const groupedItems = useMemo(() => groupBySection(score.missingItems), [score.missingItems]);
 
   return (
     <div className={`profile-completeness-card ${compact ? 'compact' : ''} ${className}`}>

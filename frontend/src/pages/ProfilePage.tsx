@@ -128,6 +128,53 @@ const ProfilePage: React.FC = () => {
     navigate(-1);
   };
 
+  // Fetch user data for tabs that need it. Declared unconditionally (and every
+  // hook below it) so hook call order stays identical across renders --
+  // the early returns for the "not found"/loading/error states happen only
+  // after every hook in this component has already been called (P3-07,
+  // react-hooks/rules-of-hooks).
+  const { data: user, isLoading, isError } = useQuery<ProfileData>({
+    queryKey: ['profile', targetUserId],
+    queryFn: async () => {
+      const response = await api.get(`/users/${targetUserId}`);
+      return response.data;
+    },
+    enabled: !!targetUserId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  const isOwnProfile = targetUserId === currentUser?.id;
+
+  // Define tabs based on user role and permissions. `user` may still be
+  // undefined while the query is loading -- that's fine, it just means fewer
+  // tabs are shown until it resolves, which matches the previous behavior.
+  const tabs: Tab[] = [
+    { id: 'overview', label: 'Overview', icon: User },
+    ...(user?.role === UserRole.BABALAWO || isOwnProfile ? [{ id: 'schedule', label: 'Schedule', icon: Clock }] : []),
+    ...(user?.role === UserRole.BABALAWO || isOwnProfile ? [{ id: 'consultations', label: 'Consultations', icon: UsersIcon }] : []),
+    ...(isOwnProfile ? [{ id: 'settings', label: 'Settings', icon: Info }] : []),
+  ];
+
+  const [activeTab, setActiveTab] = useState(tabs[0].id);
+
+  // Check for pending consultations to show in badge
+  const [pendingConsultationsCount, setPendingConsultationsCount] = useState(0);
+  useEffect(() => {
+    if (activeTab === 'consultations' && user?.id) {
+      // Fetch pending consultations count
+      const fetchPendingCount = async () => {
+        try {
+          const response = await api.get(`/appointments/pending-count/${user.id}`);
+          setPendingConsultationsCount(response.data.count || 0);
+        } catch (error) {
+          // If there's an error, set count to 0 but don't show error to user
+          setPendingConsultationsCount(0);
+        }
+      };
+      fetchPendingCount();
+    }
+  }, [activeTab, user?.id]);
+
   if (!targetUserId) {
     return (
       <div className="min-h-screen bg-muted/40 flex items-center justify-center">
@@ -144,17 +191,6 @@ const ProfilePage: React.FC = () => {
       </div>
     );
   }
-
-  // Fetch user data for tabs that need it
-  const { data: user, isLoading, isError } = useQuery<ProfileData>({
-    queryKey: ['profile', targetUserId],
-    queryFn: async () => {
-      const response = await api.get(`/users/${targetUserId}`);
-      return response.data;
-    },
-    enabled: !!targetUserId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
 
   if (isLoading) {
     return (
@@ -193,36 +229,6 @@ const ProfilePage: React.FC = () => {
       </div>
     );
   }
-
-  const isOwnProfile = targetUserId === currentUser?.id;
-
-  // Define tabs based on user role and permissions
-  const tabs: Tab[] = [
-    { id: 'overview', label: 'Overview', icon: User },
-    ...(user.role === UserRole.BABALAWO || isOwnProfile ? [{ id: 'schedule', label: 'Schedule', icon: Clock }] : []),
-    ...(user.role === UserRole.BABALAWO || isOwnProfile ? [{ id: 'consultations', label: 'Consultations', icon: UsersIcon }] : []),
-    ...(isOwnProfile ? [{ id: 'settings', label: 'Settings', icon: Info }] : []),
-  ];
-
-  const [activeTab, setActiveTab] = useState(tabs[0].id);
-
-  // Check for pending consultations to show in badge
-  const [pendingConsultationsCount, setPendingConsultationsCount] = useState(0);
-  useEffect(() => {
-    if (activeTab === 'consultations' && user?.id) {
-      // Fetch pending consultations count
-      const fetchPendingCount = async () => {
-        try {
-          const response = await api.get(`/appointments/pending-count/${user.id}`);
-          setPendingConsultationsCount(response.data.count || 0);
-        } catch (error) {
-          // If there's an error, set count to 0 but don't show error to user
-          setPendingConsultationsCount(0);
-        }
-      };
-      fetchPendingCount();
-    }
-  }, [activeTab, user?.id]);
 
   return (
     <ErrorBoundary
