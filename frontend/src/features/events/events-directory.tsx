@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query';
 import { Search, Calendar, MapPin, Video, Globe, Users, Loader2, Plus } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
-import { logger } from '@/shared/utils/logger';
 
 import { UserRole } from '@common';
 

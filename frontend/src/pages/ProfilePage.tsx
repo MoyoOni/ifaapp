@@ -1,9 +1,8 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import PublicProfileView from '@/features/profile/public-profile-view';
-import { ProfileViewsPanel } from '@/features/devoted/profile-views-panel';
 import { useAuth } from '@/shared/hooks/use-auth';
-import { User, MapPin, Heart, Clock, Info, Award, ShieldCheck, CheckCircle, UserCheck, AlertTriangle, Star, Building2, Users as UsersIcon } from 'lucide-react';
+import { User, MapPin, Heart, Clock, Info, Award, ShieldCheck, CheckCircle, AlertTriangle, Users as UsersIcon } from 'lucide-react';
 import { UserRole } from '@common';
 import { TabErrorBoundary } from '@/shared/components/tab-error-boundary';
 import ErrorBoundary from '@/shared/components/error-boundary';

@@ -4,24 +4,10 @@ import { useParams } from 'react-router-dom';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { 
-  Calendar, 
-  User, 
   CheckCircle, 
   Circle, 
   MessageCircle,
-  Star,
-  BadgeCheck,
-  Flag,
-  Flame,
-  Trophy,
   RotateCcw,
-  Edit3,
-  Send,
-  XCircle,
-  AlertCircle,
-  Award,
-  Heart,
-  Sparkles
 } from 'lucide-react';
 
 interface GuidancePlanItem {

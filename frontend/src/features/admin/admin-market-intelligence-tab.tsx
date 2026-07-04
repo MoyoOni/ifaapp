@@ -130,7 +130,7 @@ export function AdminMarketIntelligenceTab() {
             ) : !signals?.topSpecialisations.length ? (
               <p className="px-4 py-6 text-center text-sm text-muted-foreground">No data</p>
             ) : (
-              signals.topSpecialisations.map((s, i) => {
+              signals.topSpecialisations.map((s) => {
                 const max = signals.topSpecialisations[0]?.count ?? 1;
                 const pct = Math.round((s.count / max) * 100);
                 return (

@@ -2,15 +2,6 @@ import { renderHook, act } from '@testing-library/react';
 import { vi } from 'vitest';
 import useApiError from './use-api-error';
 
-// Define setError for testing purposes
-interface ExtendedApiErrorHookResult {
-  error: any;
-  isLoading: boolean;
-  handleApiCall: any;
-  clearError: () => void;
-  setError: (error: any) => void;
-}
-
 describe('useApiError', () => {
   it('should initialize with no error and not loading', () => {
     const { result } = renderHook(() => useApiError());

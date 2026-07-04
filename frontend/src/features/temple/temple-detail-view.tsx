@@ -4,7 +4,6 @@ import { MapPin, Phone, Mail, Globe, Users, Calendar, CheckCircle, Building2, Ar
 import { VerificationTier } from '@common';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
-import { logger } from '@/shared/utils/logger';
 import BabalawoProfileCard from '../babalawo/profile/babalawo-profile-card';
 import BabalawoProfileModal from '@/shared/components/babalawo-profile-modal';
 import { seededRandomInt } from '@/shared/utils/seeded-random';

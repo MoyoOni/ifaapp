@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Calendar, Download, RefreshCw, Filter } from 'lucide-react';
+import React, { useState } from 'react';
+import { RefreshCw } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import MetricCard from '@/components/analytics/MetricCard';

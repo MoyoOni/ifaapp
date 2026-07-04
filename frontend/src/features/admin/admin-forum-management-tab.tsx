@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-    Hash, Pin, Lock, Unlock, Plus, Loader2, CheckCircle2, AlertTriangle,
+    Hash, Pin, Lock, Unlock, Plus, Loader2, CheckCircle2,
     MessageSquare, LayoutList, Archive, ChevronUp, ChevronDown
 } from 'lucide-react';
 import api from '@/lib/api';

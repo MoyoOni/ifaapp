@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Globe, ChevronDown, RefreshCw } from 'lucide-react';
 import api from '@/lib/api';
-import { logger } from '@/shared/utils/logger';
 import { Currency } from '@common';
 import { isDevModeActive } from '@/shared/utils/dev-mode';
 

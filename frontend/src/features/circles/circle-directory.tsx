@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Users, UserPlus, Lightbulb, Globe, Lock, MapPin, ChevronRight, Sparkles } from 'lucide-react';
+import { Users, UserPlus, Globe, Lock, MapPin, ChevronRight, Sparkles } from 'lucide-react';
 import { FeatureHeader } from '@/shared/components/feature-header';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/shared/hooks/use-auth';

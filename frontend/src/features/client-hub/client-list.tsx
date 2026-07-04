@@ -2,7 +2,6 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { User, MessageSquare, Calendar } from 'lucide-react';
 import api from '@/lib/api';
-import { logger } from '@/shared/utils/logger';
 
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { isDevModeActive } from '@/shared/utils/dev-mode';

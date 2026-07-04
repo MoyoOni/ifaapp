@@ -1,9 +1,7 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ErrorBoundary from './components/common/error-boundary';
-import FallbackErrorComponent from './components/common/fallback-error-component';
-import { AdminErrorPage, PractitionerErrorPage, VendorErrorPage, ClientErrorPage } from './shared/components/route-error-pages';
 import NotFound from './pages/not-found';
 import { ProtectedRoute, AdminRoute } from './shared/components/protected-route';
 import { UserRole } from '@common';
@@ -57,19 +55,7 @@ import {
   AdminDashboardView,
   AdvisoryBoardVotingView,
   VendorReviewView,
-  TempleDirectory,
-  TempleDetailView,
-  ForumHomeView,
-  ThreadView,
   ElderOversightPanel,
-  AcademyView,
-  CourseDetailView,
-  MyCoursesView,
-  LessonPlayerView,
-  ConsultationList,
-  AppointmentsCalendar,
-  EventCreationForm,
-  YorubaWordDetailView,
   VendorProductListView,
   VendorOrderListView,
   MySeekersView,

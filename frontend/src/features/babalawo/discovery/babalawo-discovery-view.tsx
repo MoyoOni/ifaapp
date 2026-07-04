@@ -5,10 +5,8 @@ import { motion } from 'framer-motion';
 import api from '@/lib/api';
 import { Button } from '@/shared/components/ui';
 
-import { logger } from '@/shared/utils/logger';
-import { BabalawoDirectorySkeleton } from '@/shared/components/skeleton';
 import { FeatureHeader } from '@/shared/components/feature-header';
-import { Search as SearchIcon, Users, AlertCircle, Star, MessageSquare, User, CheckCircle } from 'lucide-react';
+import { Search as SearchIcon, AlertCircle, Star, MessageSquare, User, CheckCircle } from 'lucide-react';
 import { OptimizedImage } from '@/components/common/optimized-image';
 import { isDevModeActive } from '@/shared/utils/dev-mode';
 

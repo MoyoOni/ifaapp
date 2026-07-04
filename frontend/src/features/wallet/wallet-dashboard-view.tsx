@@ -7,7 +7,6 @@ import {
   Lock,
   DollarSign,
   TrendingUp,
-  Loader2,
   CheckCircle,
 } from 'lucide-react';
 import api from '@/lib/api';

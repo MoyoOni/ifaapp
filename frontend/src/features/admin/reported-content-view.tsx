@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Flag, AlertCircle } from 'lucide-react';
+import { Flag } from 'lucide-react';
 import api from '@/lib/api';
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';

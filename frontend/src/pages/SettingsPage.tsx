@@ -8,7 +8,6 @@ import api from '@/lib/api';
 import { useSubscription } from '@/features/subscription/use-subscription';
 import ReferralPanel from '@/features/devoted/referral-panel';
 import { GdprSettingsPanel } from '@/features/gdpr/GdprSettingsPanel';
-import { useNotificationPreferences } from '@/shared/hooks/useNotificationPreferences';
 
 type SettingsState = {
   notifications: {
@@ -28,25 +27,6 @@ type SettingsState = {
     theme: string;
     language: string;
   };
-};
-
-// Define NotificationPreferences type locally
-type NotificationPreferences = {
-  id?: string;
-  userId: string;
-  emailBooking: boolean;
-  emailReminder: boolean;
-  emailDigest: boolean;
-  emailPlan: boolean;
-  emailMessages: boolean;
-  emailMarketing: boolean;
-  pushReminder: boolean;
-  pushMessages: boolean;
-  pushFollowup: boolean;
-  pushForum: boolean;
-  pushCircles: boolean;
-  createdAt?: string;
-  updatedAt?: string;
 };
 
 const DEFAULT_SETTINGS: SettingsState = {

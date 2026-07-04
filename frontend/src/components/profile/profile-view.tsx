@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, MapPin, Phone, Mail, Calendar, Briefcase, Building2, Globe, Hash, Lock } from 'lucide-react';
+import { User, MapPin, Phone, Mail, Calendar, Briefcase, Building2, Globe } from 'lucide-react';
 import { useAuth } from '../../shared/hooks/use-auth';
 
 interface UserProfile {

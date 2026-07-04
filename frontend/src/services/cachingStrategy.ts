@@ -4,7 +4,6 @@
  */
 
 import { CacheConfig } from '../services/cacheService';
-import { logger } from '@/shared/utils/logger';
 
 /**
  * Cache TTL presets (time-to-live durations)

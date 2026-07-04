@@ -1,20 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Star, 
-  Calendar, 
-  TrendingUp, 
-  DollarSign, 
-  Clock, 
-  UserCheck, 
-  AlertTriangle, 
-  Activity,
   Search,
-  Download,
-  Filter,
-  Eye,
-  Phone,
-  Mail,
-  MapPin,
   CalendarDays,
   Users,
   Crown,
@@ -33,7 +20,6 @@ import {
 import { Badge } from '@/shared/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import { Switch } from '@/shared/components/ui/switch';
 import { Label } from '@/shared/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/components/ui/dialog';

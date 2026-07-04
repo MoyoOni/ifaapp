@@ -2,23 +2,11 @@ import React, { useState } from 'react';
 import { 
   AlertTriangle, 
   User, 
-  Calendar, 
-  Mail, 
-  Phone, 
-  MapPin, 
   Clock, 
   CheckCircle, 
-  XCircle, 
   FileText,
   Search,
-  Download,
-  Filter,
-  Eye,
-  MessageSquare,
   Shield,
-  Users,
-  Ban,
-  UserX
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/shared/components/ui/button';
@@ -33,7 +21,6 @@ import {
 import { Badge } from '@/shared/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/components/ui/dialog';
 import { Textarea } from '@/shared/components/ui/textarea';
 import { Label } from '@/shared/components/ui/label';

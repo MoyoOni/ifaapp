@@ -7,11 +7,9 @@ import {
   Lock,
   DollarSign,
   Filter,
-  Loader2,
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
-import { logger } from '@/shared/utils/logger';
 import { TransactionType, TransactionStatus, Currency } from '@common';
 import { SkeletonTable } from '@/shared/components/skeleton';
 import { isDevModeActive } from '@/shared/utils/dev-mode';

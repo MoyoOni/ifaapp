@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { User, Star, Heart, Sparkles, Calendar } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { useAuth } from '@/shared/hooks/use-auth';
 import api from '@/lib/api'; // Changed to default import
 import { logger } from '@/shared/utils/logger';

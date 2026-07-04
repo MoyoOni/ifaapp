@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Users, Heart, ArrowRight, Shield, Sparkles, Globe2, Clock } from 'lucide-react';
+import { MapPin, Users, Heart, ArrowRight, Shield, Sparkles, Clock } from 'lucide-react';
 
 const PLACEHOLDER_PODS = [
   { city: 'London', country: 'UK', flag: '🇬🇧', region: 'UK', members: 47, steward: 'Elder Adewale', desc: 'Monthly gatherings in East London. Study groups, naming ceremonies, seasonal festivals.' },

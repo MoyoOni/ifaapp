@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, X, Check, AlertCircle, Info, CheckCircle } from 'lucide-react';
+import { Bell, X, AlertCircle, Info, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import useNotifications from '@/hooks/useNotifications';
 import './NotificationCenter.css';

@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import SearchService, { SearchFilters, SearchResult } from '@/services/searchService';
+import SearchService, { SearchFilters } from '@/services/searchService';
 
 /**
  * Hook for search functionality

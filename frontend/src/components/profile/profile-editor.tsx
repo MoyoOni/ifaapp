@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Camera, MapPin, Phone, Mail, Calendar, Briefcase, Building2, Globe, Hash, Lock } from 'lucide-react';
+import { User, Camera, MapPin, Phone, Mail, Briefcase, Building2, Globe } from 'lucide-react';
 import { logger } from '@/shared/utils/logger';
 
 interface UserProfile {

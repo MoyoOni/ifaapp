@@ -28,7 +28,7 @@ import { LanguageSwitcher } from './language-switcher';
 import { ModeToggle } from './mode-toggle';
 import NotificationDropdown from './notification-dropdown';
 import api from '@/lib/api';
-import { getNavItemsForRole, getRoleDisplayName, getRoleBadgeColor, getDashboardPathForRole, type NavItem } from '../config/navigation';
+import { getNavItemsForRole, getRoleDisplayName, getRoleBadgeColor, type NavItem } from '../config/navigation';
 import { logger } from '@/shared/utils/logger';
 import { useDailyOdu } from '@/shared/hooks/use-daily-odu';
 import { onForegroundMessage } from '@/lib/firebase-messaging';

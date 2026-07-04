@@ -2,7 +2,6 @@ import React, { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, CheckCircle, Clock, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
-import { logger } from '@/shared/utils/logger';
 import { useToast } from '@/shared/components/toast';
 import { isDevModeActive } from '@/shared/utils/dev-mode';
 // import { useAuth } from '@/shared/hooks/use-auth';

@@ -1,23 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Plus, 
-  Edit3, 
-  Trash2, 
-  ArrowUpDown, 
-  Pin, 
-  Lock, 
-  Unlock, 
-  FolderPlus, 
-  MessageSquare, 
+import React, { useState } from 'react';
+import {
+  Plus,
+  Edit3,
+  Trash2,
+  FolderPlus,
+  MessageSquare,
   Hash,
-  Eye,
-  EyeOff,
-  Users,
-  BarChart3,
   Loader2,
-  X,
-  Check,
-  Move,
   Merge
 } from 'lucide-react';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -41,7 +30,6 @@ import {
 import { Switch } from '@/shared/components/ui/switch';
 import { Badge } from '@/shared/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import api from '@/lib/api';
 import { useToast } from '@/shared/components/toast';
 

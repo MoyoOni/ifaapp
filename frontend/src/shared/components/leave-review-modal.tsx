@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2 } from 'lucide-react';
 import { StarRating } from './star-rating';
 import api from '@/lib/api';
-import { logger } from '@/shared/utils/logger';
 
 interface LeaveReviewModalProps {
   isOpen: boolean;

@@ -5,7 +5,6 @@ import { X, Loader2, Wand2 } from 'lucide-react';
 import { getTemplatesForCategory, ForumTemplate } from './forum-templates';
 import api from '@/lib/api';
 import { useToast } from '@/shared/components/toast';
-import { logger } from '@/shared/utils/logger';
 
 interface ForumCategory {
   id: string;

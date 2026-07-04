@@ -2,20 +2,11 @@ import React, { useState, useMemo } from 'react';
 import { 
   Star, 
   Calendar, 
-  TrendingUp, 
   DollarSign, 
-  Clock, 
   UserCheck, 
   AlertTriangle, 
   Activity,
   Search,
-  Download,
-  Filter,
-  Eye,
-  Phone,
-  Mail,
-  MapPin,
-  CalendarDays,
   Users
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -31,7 +22,6 @@ import {
 import { Badge } from '@/shared/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import { Skeleton } from '@/shared/components/ui/skeleton';
 import api from '@/lib/api';
 

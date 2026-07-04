@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ShoppingCart, Package, Store, Star, Plus, Minus, Check, MessageSquare, Lock } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
-import { logger } from '@/shared/utils/logger';
 import { useCart } from '@/shared/contexts/cart-context';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { getCategoryBySlug, getSubcategoryLabel } from './marketplace-categories';

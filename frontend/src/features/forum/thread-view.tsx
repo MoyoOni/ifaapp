@@ -1,10 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Lock, Pin, Send, Loader2, Shield, Trash2, BookOpen, Eye, Share2, Bookmark, BookmarkCheck, UserCircle2, MoreHorizontal, Flag, Bell, BellOff, AlertTriangle, Stethoscope, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Lock, Pin, Send, Loader2, Shield, Trash2, BookOpen, Eye, Share2, Bookmark, BookmarkCheck, UserCircle2, MoreHorizontal, Flag, Bell, BellOff, AlertTriangle, Stethoscope } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
-import { logger } from '@/shared/utils/logger';
 import { UserRole } from '@common';
 import AseAcknowledgmentButton from './ase-acknowledgment-button';
 import ForumRoleBadge from './forum-role-badge';

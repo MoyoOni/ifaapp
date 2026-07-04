@@ -1,10 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Search, BookOpen, GraduationCap, Play, Clock, CheckCircle, Users, Filter, AlertCircle, Lock, Sparkles } from 'lucide-react';
-import { FeatureHeader } from '@/shared/components/feature-header';
-import { PageTransition } from '@/components/common/page-transition';
-import { Button } from '@/shared/components/ui/button';
-import { Badge } from '@/shared/components/ui/badge';
+import { Search, BookOpen, Clock, CheckCircle, Users, AlertCircle } from 'lucide-react';
 import { Input } from '@/shared/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
 import { useNavigate } from 'react-router-dom';

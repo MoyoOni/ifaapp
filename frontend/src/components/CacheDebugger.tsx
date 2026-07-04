@@ -6,7 +6,6 @@
 
 import React, { useState } from 'react';
 import { useCacheStats, useCacheManager } from '../hooks/useCache';
-import { cacheService } from '../services/cacheService';
 import './CacheDebugger.css';
 import { isDevModeActive } from '@/shared/utils/dev-mode';
 import { logger } from '@/shared/utils/logger';

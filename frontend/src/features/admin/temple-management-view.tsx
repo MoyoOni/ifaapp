@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Building2, CheckCircle, XCircle, Clock, MapPin, Loader2 } from 'lucide-react';
+import { Building2, CheckCircle, XCircle, Clock, MapPin } from 'lucide-react';
 import api from '@/lib/api';
-import { logger } from '@/shared/utils/logger';
 import { SkeletonTable } from '@/shared/components/skeleton';
 import { useToast } from '@/shared/components/toast';
 

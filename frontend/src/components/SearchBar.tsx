@@ -5,10 +5,6 @@ import {
   Filter,
   Clock,
   Zap,
-  Star,
-  MapPin,
-  DollarSign,
-  ChevronDown,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import useSearch from '@/hooks/useSearch';
