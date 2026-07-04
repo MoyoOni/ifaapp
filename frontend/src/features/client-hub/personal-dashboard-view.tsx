@@ -20,6 +20,7 @@ import { useClientDashboard } from '@/shared/hooks/dashboard';
 import { useUserStats } from '@/shared/hooks/use-user-stats';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { FirstStepsChecklist } from '@/shared/components/first-steps-checklist';
+import ProfileCompletenessCard from '@/components/ProfileCompletenessCard';
 import { WelcomeBanner } from '@/shared/components/welcome-banner';
 import { PersonalAwoPanel } from '@/shared/components/personal-awo-panel';
 import { JourneyCtaCard } from '@/shared/components/journey-cta-card';
@@ -91,6 +92,12 @@ const PersonalDashboardView: React.FC = () => {
             userId={user.id}
             role={user.role}
           />
+        )}
+        {/* Profile completeness nudge */}
+        {user && (
+          <div className="mb-6">
+            <ProfileCompletenessCard userData={user} userRole={user.role} compact />
+          </div>
         )}
         {/* Smart Journey CTA — context-aware next step */}
         <JourneyCtaCard />

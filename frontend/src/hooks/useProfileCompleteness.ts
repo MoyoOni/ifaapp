@@ -4,10 +4,11 @@
 
 import { useMemo, useCallback } from 'react';
 import { profileCompletenessService, type CompletionScore, type MissingItem } from '../services/profileCompletenessService';
+import { UserRole } from '@common';
 
 interface UseProfileCompletenessOptions {
   userData: any;
-  userRole: 'CLIENT' | 'BABALAWO' | 'VENDOR' | 'ADMIN';
+  userRole: UserRole;
 }
 
 /**
@@ -102,7 +103,7 @@ export const useProfileCompleteness = ({
 /**
  * Hook for tracking completeness changes
  */
-export const useCompletionProgress = (userRole: 'CLIENT' | 'BABALAWO' | 'VENDOR' | 'ADMIN') => {
+export const useCompletionProgress = (userRole: UserRole) => {
   // Get stored progress from localStorage
   const getStoredProgress = useCallback(() => {
     const stored = localStorage.getItem(`completion-progress-${userRole}`);

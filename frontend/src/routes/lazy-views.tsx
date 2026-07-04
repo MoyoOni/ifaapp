@@ -77,3 +77,7 @@ export const CourseManagementView = React.lazy(() => import('../features/babalaw
 export const ClientTempleBrowseView = React.lazy(() => import('../features/client-hub/client-temple-browse-view'));
 export const BabalawoDiscoveryView = React.lazy(() => import('../features/babalawo/discovery/babalawo-discovery-view'));
 export const OnboardingView = React.lazy(() => import('../features/onboarding/onboarding-view'));
+export const WalletDashboardView = React.lazy(() => import('../features/wallet/wallet-dashboard-view'));
+export const TransactionHistoryView = React.lazy(() => import('../features/wallet/transaction-history-view'));
+export const PersonalAwoDashboard = React.lazy(() => import('../features/client-hub/personal-awo-dashboard'));
+export const GuidancePlanTrackingView = React.lazy(() => import('../features/prescriptions/guidance-plan-tracking-view'));

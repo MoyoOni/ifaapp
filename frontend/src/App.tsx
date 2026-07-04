@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ErrorBoundary from './components/common/error-boundary';
+import FallbackErrorComponent from './components/common/fallback-error-component';
 import NotFound from './pages/not-found';
 import { ProtectedRoute, AdminRoute } from './shared/components/protected-route';
 import { UserRole } from '@common';
@@ -96,14 +97,18 @@ import {
   ForumHomePage,
   LoadingSpinner,
   SubdomainRedirect,
+  WalletPage,
+  WalletTransactionsPage,
+  PersonalAwoDashboardPage,
 } from './routes/page-wrappers';
+import { GuidancePlanTrackingView } from './routes/lazy-views';
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router basename={import.meta.env.BASE_URL}>
         <SubdomainRedirect />
-        <ErrorBoundary>
+        <ErrorBoundary fallback={FallbackErrorComponent}>
           <AppWrapper>
             <div className="App bg-background text-foreground" role="main"> {/* Apply theme variables globally */}
               <OfflineIndicator />
@@ -445,6 +450,29 @@ function App() {
                           </ErrorBoundary>
                         </React.Suspense>
                       } />
+                      <Route path="/wallet" element={
+                        <React.Suspense fallback={<LoadingSpinner />}>
+                          <ErrorBoundary>
+                            <WalletPage />
+                          </ErrorBoundary>
+                        </React.Suspense>
+                      } />
+                      <Route path="/wallet/transactions" element={
+                        <React.Suspense fallback={<LoadingSpinner />}>
+                          <ErrorBoundary>
+                            <WalletTransactionsPage />
+                          </ErrorBoundary>
+                        </React.Suspense>
+                      } />
+                      <Route path="/client/my-awo" element={
+                        <React.Suspense fallback={<LoadingSpinner />}>
+                          <ErrorBoundary>
+                            <ProtectedRoute allowedRoles={['CLIENT'] as UserRole[]}>
+                              <PersonalAwoDashboardPage />
+                            </ProtectedRoute>
+                          </ErrorBoundary>
+                        </React.Suspense>
+                      } />
                       <Route path="/client/session-history" element={
                         <React.Suspense fallback={<LoadingSpinner />}>
                           <ErrorBoundary>
@@ -778,6 +806,13 @@ function App() {
                         <React.Suspense fallback={<LoadingSpinner />}>
                           <ErrorBoundary>
                             <GuidancePlansPage />
+                          </ErrorBoundary>
+                        </React.Suspense>
+                      } />
+                      <Route path="/guidance-plans/:guidancePlanId" element={
+                        <React.Suspense fallback={<LoadingSpinner />}>
+                          <ErrorBoundary>
+                            <GuidancePlanTrackingView />
                           </ErrorBoundary>
                         </React.Suspense>
                       } />

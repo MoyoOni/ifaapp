@@ -11,6 +11,7 @@ import CircleDetailView from '../features/circles/circle-detail-view';
 import { NotificationProvider } from '../contexts/notification-context';
 import { SearchProvider } from '../contexts/search-context';
 import { PreferencesProvider } from '../contexts/preferences-context';
+import { CacheDebugger } from '@/components/CacheDebugger';
 import {
   TempleDetailView,
   ThreadView,
@@ -24,6 +25,9 @@ import {
   EventCreationForm,
   TempleDirectory,
   ForumHomeView,
+  WalletDashboardView,
+  TransactionHistoryView,
+  PersonalAwoDashboard,
 } from './lazy-views';
 
 // P2-04: route-wiring "glue" components extracted verbatim from App.tsx —
@@ -35,6 +39,7 @@ export const LayoutWrapper: React.FC = () => {
   return (
     <SidebarLayout>
       <Outlet />
+      <CacheDebugger />
     </SidebarLayout>
   );
 };
@@ -280,4 +285,39 @@ export const SubdomainRedirect: React.FC = () => {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   return null;
+};
+
+export const WalletPage: React.FC = () => {
+  const navigate = useNavigate();
+  return (
+    <WalletDashboardView onViewTransactions={() => navigate('/wallet/transactions')} />
+  );
+};
+
+export const WalletTransactionsPage: React.FC = () => {
+  const navigate = useNavigate();
+  return <TransactionHistoryView onBack={() => navigate('/wallet')} />;
+};
+
+export const PersonalAwoDashboardPage: React.FC = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  if (!user?.id) {
+    return (
+      <div className="min-h-[400px] flex items-center justify-center">
+        <p className="text-stone-500">Sign in to view your spiritual guide relationship.</p>
+      </div>
+    );
+  }
+
+  return (
+    <PersonalAwoDashboard
+      clientId={user.id}
+      onMessage={() => navigate('/messages')}
+      onRequestConsultation={() => navigate('/babalawo')}
+      onViewDocuments={() => navigate('/guidance-plans')}
+      onChangeAwo={() => navigate('/discovery')}
+    />
+  );
 };

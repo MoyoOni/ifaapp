@@ -6,11 +6,12 @@
 import React, { useMemo } from 'react';
 import { CheckCircle2, AlertCircle, ChevronRight } from 'lucide-react';
 import { profileCompletenessService, type CompletionScore, type MissingItem } from '../services/profileCompletenessService';
+import { UserRole } from '@common';
 import './ProfileCompletenessCard.css';
 
 interface ProfileCompletenessCardProps {
   userData: any;
-  userRole: 'CLIENT' | 'BABALAWO' | 'VENDOR' | 'ADMIN';
+  userRole: UserRole;
   onMissingItemClick?: (item: MissingItem) => void;
   compact?: boolean;
   expandable?: boolean;

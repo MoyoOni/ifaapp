@@ -3,6 +3,8 @@
  * Different calculation logic for each user role
  */
 
+import { UserRole } from '@common';
+
 export interface CompletionScore {
   overall: number; // 0-100%
   tier: 'incomplete' | 'partial' | 'complete';
@@ -20,8 +22,6 @@ export interface MissingItem {
   ctaText: string;
   ctaRoute: string;
 }
-
-type UserRole = 'CLIENT' | 'BABALAWO' | 'VENDOR' | 'ADMIN';
 
 class ProfileCompletenessService {
   /**

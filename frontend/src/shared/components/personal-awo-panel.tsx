@@ -115,12 +115,20 @@ export function PersonalAwoPanel() {
           <MessageCircle size={14} /> Message
         </button>
       </div>
-      <button type="button"
-        onClick={() => navigate(awo.slug ? `/${awo.slug}` : `/profile/${awo.id}`)}
-        className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors"
-      >
-        View Full Profile →
-      </button>
+      <div className="flex items-center justify-center gap-4">
+        <button type="button"
+          onClick={() => navigate(awo.slug ? `/${awo.slug}` : `/profile/${awo.id}`)}
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          View Full Profile →
+        </button>
+        <button type="button"
+          onClick={() => navigate('/client/my-awo')}
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Relationship Details →
+        </button>
+      </div>
     </div>
   );
 }

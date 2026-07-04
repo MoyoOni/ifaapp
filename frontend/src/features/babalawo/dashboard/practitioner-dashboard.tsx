@@ -7,6 +7,7 @@ import { useBabalawoDashboard } from '@/shared/hooks/dashboard';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { Button } from '@/shared/components/ui/button';
 import { FirstStepsChecklist } from '@/shared/components/first-steps-checklist';
+import ProfileCompletenessCard from '@/components/ProfileCompletenessCard';
 import { WelcomeBanner } from '@/shared/components/welcome-banner';
 
 interface PractitionerDashboardProps {
@@ -129,6 +130,9 @@ const PractitionerDashboard: React.FC<PractitionerDashboardProps> = ({ userId, i
                           userId={user.id}
                           role={user.role}
                         />
+                        <div className="mb-6">
+                          <ProfileCompletenessCard userData={user} userRole={user.role} compact />
+                        </div>
                       </>
                     )}
                     <div className="mb-8">
