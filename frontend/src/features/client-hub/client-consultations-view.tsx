@@ -7,6 +7,7 @@ import { useAuth } from '@/shared/hooks/use-auth';
 import { FeatureHeader } from '@/shared/components/feature-header';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface Appointment {
   id: string;
@@ -40,7 +41,7 @@ const ClientConsultationsView: React.FC = () => {
       const res = await api.get(`/appointments/client/${user!.id}`);
       return res.data;
     },
-    enabled: !!user?.id && !localStorage.getItem('dev_mode_role'),
+    enabled: !!user?.id && !isDevModeActive(),
   });
 
   const now = new Date();

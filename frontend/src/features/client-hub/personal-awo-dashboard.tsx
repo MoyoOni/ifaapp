@@ -4,6 +4,7 @@ import { MessageSquare, Calendar, FileText, UserPlus, Building2, AlertCircle } f
 import api from '@/lib/api';
 import VerificationBadge from '@/shared/components/verification-badge';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface PersonalAwo {
   id: string;
@@ -68,7 +69,7 @@ const PersonalAwoDashboard: React.FC<PersonalAwoDashboardProps> = ({
       const response = await api.get(`/babalawo-client/personal-awo/${clientId}`);
       return response.data ?? null;
     },
-    enabled: !!clientId && !localStorage.getItem('dev_mode_role'),
+    enabled: !!clientId && !isDevModeActive(),
     retry: 1,
   });
 

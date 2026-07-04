@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 export interface SubscriptionStatus {
   status: 'FREE' | 'DEVOTED' | 'EXPIRED';
@@ -19,7 +20,7 @@ export function useSubscription() {
       const r = await api.get('/subscriptions/me');
       return r.data;
     },
-    enabled: !!user && !localStorage.getItem('dev_mode_role'),
+    enabled: !!user && !isDevModeActive(),
     staleTime: 5 * 60 * 1000,  // 5 minutes
     // Fail open — if API errors, treat as FREE (never accidentally lock Devoted users)
     retry: 1,

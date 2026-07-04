@@ -11,6 +11,7 @@ import OrdersManagement from './vendor-dashboard/orders-management';
 import AnalyticsDashboard from './vendor-dashboard/analytics-dashboard';
 import PayoutManagement from './vendor-dashboard/payout-management';
 import { useNewOrderNotifications } from '@/shared/hooks/use-new-order-notifications';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface Vendor {
   id: string;
@@ -39,7 +40,7 @@ const VendorDashboardView: React.FC<VendorDashboardViewProps> = ({ initialTab = 
         throw error;
       }
     },
-    enabled: !!user?.id && !localStorage.getItem('dev_mode_role'),
+    enabled: !!user?.id && !isDevModeActive(),
   });
 
   // Poll for new orders and show toast notifications

@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Building2, Calendar, MapPin, Globe, Star, Heart, Search, Loader2, AlertCircle } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/shared/components/toast';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface Temple {
   id: string;
@@ -35,7 +36,7 @@ const TempleConnectionView: React.FC = () => {
       return Array.isArray(payload) ? payload : (payload.temples ?? payload.data ?? []);
     },
     staleTime: 30000,
-    enabled: !localStorage.getItem('dev_mode_role'),
+    enabled: !isDevModeActive(),
   });
 
   const { data: followedTemples = [], refetch: refetchFollowed } = useQuery<Temple[]>({
@@ -46,7 +47,7 @@ const TempleConnectionView: React.FC = () => {
       return Array.isArray(payload) ? payload : (payload.temples ?? payload.data ?? []);
     },
     staleTime: 30000,
-    enabled: !localStorage.getItem('dev_mode_role'),
+    enabled: !isDevModeActive(),
   });
 
   const followedIds = new Set<string>(followedTemples.map(t => t.id));

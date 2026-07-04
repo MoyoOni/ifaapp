@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface Appointment {
   id: string;
@@ -47,7 +48,7 @@ export const useClientAppointments = (clientId?: string) => {
       const response = await api.get(`/appointments/client/${clientId}`);
       return response.data;
     },
-    enabled: !!clientId && !localStorage.getItem('dev_mode_role'),
+    enabled: !!clientId && !isDevModeActive(),
     staleTime: 30000, // 30 seconds
     refetchOnWindowFocus: true,
   });

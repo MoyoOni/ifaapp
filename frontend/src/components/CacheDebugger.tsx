@@ -8,6 +8,7 @@ import React, { useState } from 'react';
 import { useCacheStats, useCacheManager } from '../hooks/useCache';
 import { cacheService } from '../services/cacheService';
 import './CacheDebugger.css';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface CacheDebuggerProps {
   className?: string;
@@ -19,7 +20,7 @@ export const CacheDebugger: React.FC<CacheDebuggerProps> = ({ className = '' }) 
   const [isOpen, setIsOpen] = useState(false);
 
   // Only show in dev mode
-  const isDev = localStorage.getItem('dev_mode_role') !== null;
+  const isDev = isDevModeActive();
   if (!isDev) return null;
 
   const memoryMB = (stats.memorySize / 1024 / 1024).toFixed(2);

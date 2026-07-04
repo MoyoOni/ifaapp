@@ -8,6 +8,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { useSubscription } from '@/features/subscription/use-subscription';
 import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface Conversation {
   id: string;
@@ -94,7 +95,7 @@ const MessageInbox: React.FC<MessageInboxProps> = ({ userId, onSelectConversatio
         return [];
       }
     },
-    enabled: !!userId && !localStorage.getItem('dev_mode_role'),
+    enabled: !!userId && !isDevModeActive(),
   });
 
   const filteredConversations = conversations.filter((conv) => {

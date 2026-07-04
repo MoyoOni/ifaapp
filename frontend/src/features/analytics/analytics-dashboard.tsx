@@ -2,6 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { TrendingUp, DollarSign, Users, Calendar, Package, Loader2, BarChart3 } from 'lucide-react';
 import { useAuth } from '@/shared/hooks/use-auth';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 /**
  * Analytics Dashboard Component
@@ -42,7 +43,7 @@ const AnalyticsDashboard: React.FC = () => {
         },
       };
     },
-    enabled: !!user && (user.role === 'BABALAWO' || user.role === 'VENDOR') && !localStorage.getItem('dev_mode_role'),
+    enabled: !!user && (user.role === 'BABALAWO' || user.role === 'VENDOR') && !isDevModeActive(),
   });
 
   if (isLoading) {

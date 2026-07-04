@@ -8,6 +8,7 @@ import { Product } from '@common';
 import VendorProductForm from './vendor-product-form';
 import { getCategoryBySlug } from './marketplace-categories';
 import { useToast } from '@/shared/components/toast';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface VendorProductListViewProps {
     onCreateProduct?: () => void;
@@ -68,7 +69,7 @@ const VendorProductListView: React.FC<VendorProductListViewProps> = ({
                 throw error;
             }
         },
-        enabled: !!user?.id && !localStorage.getItem('dev_mode_role'),
+        enabled: !!user?.id && !isDevModeActive(),
     });
 
     return (

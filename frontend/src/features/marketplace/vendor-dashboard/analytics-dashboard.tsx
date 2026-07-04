@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { TrendingUp, TrendingDown } from 'lucide-react';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface MonthlyBucket { month: string; revenue: number; orders: number; }
 interface TopProduct { id: string; name: string; orderCount: number; }
@@ -33,7 +34,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ vendorId, activ
       const response = await api.get(`/marketplace/vendors/${vendorId}/analytics`);
       return response.data;
     },
-    enabled: !!vendorId && !localStorage.getItem('dev_mode_role'),
+    enabled: !!vendorId && !isDevModeActive(),
   });
 
   if (activeTab !== 'revenue' && activeTab !== 'analytics') return null;

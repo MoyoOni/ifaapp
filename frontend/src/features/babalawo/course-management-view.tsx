@@ -9,6 +9,7 @@ import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { useToast } from '@/shared/components/toast';
 import { useModal } from '@/components/common/ModalProvider';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface Lesson {
   id: string;
@@ -111,7 +112,7 @@ const CourseManagementView: React.FC = () => {
       const res = await api.get('/academy/courses', { params: { instructorId: user?.id } });
       return res.data;
     },
-    enabled: !!user?.id && !localStorage.getItem('dev_mode_role'),
+    enabled: !!user?.id && !isDevModeActive(),
     staleTime: 10 * 60 * 1000, // Courses: 10 minutes
   });
 
@@ -190,7 +191,7 @@ const CourseManagementView: React.FC = () => {
       const res = await api.get(`/academy/courses/${expandedCourseId}/lessons`);
       return res.data;
     },
-    enabled: !!expandedCourseId && !localStorage.getItem('dev_mode_role'),
+    enabled: !!expandedCourseId && !isDevModeActive(),
   });
 
   const resetCourseForm = () => {

@@ -14,6 +14,7 @@ import { useAuth } from '@/shared/hooks/use-auth';
 import { logger } from '@/shared/utils/logger';
 import { TransactionType, TransactionStatus, Currency } from '@common';
 import { SkeletonTable } from '@/shared/components/skeleton';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface Transaction {
   id: string;
@@ -61,7 +62,7 @@ const TransactionHistoryView: React.FC<TransactionHistoryViewProps> = ({ onBack 
       });
       return response.data;
     },
-    enabled: !!user?.id && !localStorage.getItem('dev_mode_role'),
+    enabled: !!user?.id && !isDevModeActive(),
   });
 
   const formatCurrency = (amount: number, currency: Currency = Currency.NGN) => {

@@ -18,6 +18,7 @@ import { useToast } from '@/shared/components/toast';
 import { TransactionType, TransactionStatus, Currency, PaymentPurpose } from '@common';
 import PaymentModal from '../payments/payment-modal';
 import MultiCurrencyBalance from './multi-currency-balance';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface WalletBalance {
   balance: number;
@@ -94,7 +95,7 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
         throw error;
       }
     },
-    enabled: !!user?.id && !localStorage.getItem('dev_mode_role'),
+    enabled: !!user?.id && !isDevModeActive(),
     refetchInterval: 30000,
   });
 
@@ -105,7 +106,7 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
       const response = await api.get(`/wallet/${user?.id}/escrows`);
       return response.data || [];
     },
-    enabled: !!user?.id && !localStorage.getItem('dev_mode_role'),
+    enabled: !!user?.id && !isDevModeActive(),
   });
 
   const { data: transactionsData, isLoading: transactionsLoading } = useQuery<RecentTransactionsResponse>({

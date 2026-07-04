@@ -349,17 +349,20 @@ These fix the 🔴🔴 EXPLOITABLE NOW findings. They should be hotfixed directl
 
 ### P2-02: Retire or Fully Remove `VITE_DEMO_MODE`
 - **Priority**: P2
-- **Status**: ❌ NOT STARTED
+- **Status**: ✅ DONE — product decision: **keep and formalize** (demo/quick-access mode is a permanent dev/QA feature, not legacy cruft)
 - **Owner**: Frontend Team
 - **Story Points**: 5
-- **Description**: CLAUDE.md states demo fallbacks were fully removed March 24, 2026. In the current tree, `VITE_DEMO_MODE` is still read live in `sidebar-layout.tsx`, documented in `.env.example`, and commented out only from `vite-env.d.ts`'s type declaration — a half-finished removal. `dev_mode_role` localStorage still gates queries in 50+ files, and `demo/demo-ecosystem.ts`, `demo/profiles/users.ts`, `features/messages/demo-messages.ts` remain in the tree and are imported by `QuickAccessPage.tsx`.
-- **Acceptance Criteria**:
-  - [ ] Decision made explicitly: is demo mode a permanent dev-only feature (fine, but must be unreachable in production builds) or should it be fully deleted?
-  - [ ] If kept: gate every `dev_mode_role`/`VITE_DEMO_MODE` read behind `import.meta.env.DEV`, remove from production bundle via build-time dead code elimination, restore the type declaration in `vite-env.d.ts` so it isn't silently untyped
-  - [ ] If removed: delete `demo/demo-ecosystem.ts`, `demo/profiles/users.ts`, `features/messages/demo-messages.ts`, `features/academy/course-data.ts`, and all 50+ call sites reading these flags
-  - [ ] Update CLAUDE.md's "Demo Data Cleanup — ✅ COMPLETE" claim to match whatever is actually decided
-- **Dependencies**: P0-02 (same code path as the dev-login bypass)
-- **Notes**: This overlaps directly with P0-02 — do them together, same investigation.
+- **Implementation notes**:
+  - New `frontend/src/shared/utils/dev-mode.ts` exports `isDevModeActive()` — the single point of truth, wrapping `!!localStorage.getItem('dev_mode_role')` in `import.meta.env.DEV`. Since Vite/Rollup statically replace and tree-shake `import.meta.env.DEV` in production builds, this branch cannot exist in a production bundle at all, regardless of what ends up in a user's localStorage.
+  - All 60 `!localStorage.getItem('dev_mode_role')` read sites across 44 files replaced with `!isDevModeActive()` (mechanical, verified by diffing before/after — same call sites, same logic, just routed through the DEV-gated helper). `CacheDebugger.tsx`'s `localStorage.getItem('dev_mode_role') !== null` form converted the same way.
+  - `use-auth.ts`'s one *value* read (`const devRole = localStorage.getItem('dev_mode_role')` inside the rehydration `useEffect`) was left untouched — it already sits behind an explicit `if (process.env.NODE_ENV === 'production') return;` guard on the line above, so it was already safe; converting it to the boolean-only helper would have lost the actual role value it needs.
+  - `sidebar-layout.tsx`'s separate `VITE_DEMO_MODE`/`VITE_ENABLE_DEMO_MODE` env-var check wrapped in `import.meta.env.DEV &&` for the same reason.
+  - `vite-env.d.ts`'s `VITE_DEMO_MODE`/`VITE_ENABLE_DEMO_MODE` type declarations restored (had been commented out, describing a `disabled in production` claim the code didn't actually enforce).
+  - CLAUDE.md's "Demo Data Cleanup — ✅ COMPLETE" section rewritten to distinguish the March 24 pass (real fallback-data removal from user-facing views — genuinely done, unrelated) from the separate quick-access/`devLogin()` mechanism (now formalized, not removed).
+  - Did **not** delete `demo/demo-ecosystem.ts`, `demo/profiles/users.ts`, `features/messages/demo-messages.ts`, or `QuickAccessPage.tsx` — those back the kept feature by design.
+  - Verified zero regressions: frontend `tsc --noEmit` clean; full Vitest suite diffed before/after (`git stash` both runs) — identical 21 pre-existing failing test files, none newly broken.
+- **Dependencies**: P0-02 ✅
+- **Notes**: Asked the product owner directly rather than guessing — this was a genuine three-way fork (keep-and-gate / fully-delete / defer) that code archaeology alone couldn't resolve.
 
 ### P2-03: Timezone-Aware Scheduling Fields
 - **Priority**: P2

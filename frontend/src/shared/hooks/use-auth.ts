@@ -6,6 +6,7 @@ import { DEMO_USERS } from '@/demo';
 import { logger, setLogContext, clearLogContext } from '@/shared/utils/logger';
 import * as Sentry from '@sentry/react';
 import { registerPushNotifications, deregisterPushNotifications } from '@/lib/firebase-messaging';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface User {
   id: string;
@@ -81,7 +82,7 @@ export function useAuth(): AuthState & {
         return null;
       }
     },
-    enabled: isAuthenticated && !!userId && !localStorage.getItem('dev_mode_role'),
+    enabled: isAuthenticated && !!userId && !isDevModeActive(),
   });
 
   // Update user state when data is fetched; set user in log context for tracing
@@ -258,7 +259,7 @@ export function useAuth(): AuthState & {
   return {
     user,
     isAuthenticated,
-    isLoading: isInitializing || (isLoading && !user && !localStorage.getItem('dev_mode_role')),
+    isLoading: isInitializing || (isLoading && !user && !isDevModeActive()),
     login,
     quickAccess,
     register,

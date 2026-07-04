@@ -5,6 +5,7 @@ import { FeatureHeader } from '@/shared/components/feature-header';
 import api from '@/lib/api';
 import { useCart } from '@/shared/contexts/cart-context';
 import { MARKETPLACE_CATEGORIES, getCategoryBySlug } from './marketplace-categories';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface Vendor {
   id: string;
@@ -90,7 +91,7 @@ const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onSelectProduct }) =>
       const response = await api.get(`/marketplace/products?${params.toString()}`);
       return response.data || [];
     },
-    enabled: !localStorage.getItem('dev_mode_role'),
+    enabled: !isDevModeActive(),
   });
 
   // Fetch vendors (used for vendor count display)
@@ -100,7 +101,7 @@ const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onSelectProduct }) =>
       const response = await api.get('/marketplace/vendors?status=APPROVED');
       return response.data || [];
     },
-    enabled: !localStorage.getItem('dev_mode_role'),
+    enabled: !isDevModeActive(),
   });
 
   // Client-side search filter for queries < 3 chars (server handles ≥ 3)

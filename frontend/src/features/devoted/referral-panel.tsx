@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Gift, Copy, CheckCircle, Users, Loader2, Sparkles, MessageCircle, Mail } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface ReferralStats {
   referralCode: string;
@@ -24,7 +25,7 @@ const ReferralPanel: React.FC = () => {
   const { data, isLoading } = useQuery<ReferralStats>({
     queryKey: ['referral-stats', user?.id],
     queryFn: () => api.get('/users/referral-stats').then(r => r.data),
-    enabled: !!user && !localStorage.getItem('dev_mode_role'),
+    enabled: !!user && !isDevModeActive(),
   });
 
   const referralUrl = data?.referralCode

@@ -6,6 +6,7 @@ import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface Appointment {
   id: string;
@@ -69,7 +70,7 @@ const AppointmentsCalendar: React.FC<AppointmentsCalendarProps> = ({ userId, use
       const response = await api.get(endpoint);
       return response.data;
     },
-    enabled: !!userId && !localStorage.getItem('dev_mode_role'),
+    enabled: !!userId && !isDevModeActive(),
   });
 
   const invalidate = () => {

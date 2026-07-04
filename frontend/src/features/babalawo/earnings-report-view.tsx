@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { BarChart, DollarSign, TrendingUp, Calendar, Loader2, AlertCircle } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface EarningRecord {
   id: string;
@@ -42,7 +43,7 @@ const EarningsReportView: React.FC = () => {
       });
       return res.data;
     },
-    enabled: !!user?.id && !localStorage.getItem('dev_mode_role'),
+    enabled: !!user?.id && !isDevModeActive(),
   });
 
   const transactions: EarningRecord[] = ((data?.transactions ?? []) as Record<string, unknown>[]).map((tx) => ({

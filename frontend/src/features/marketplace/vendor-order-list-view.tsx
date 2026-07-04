@@ -6,6 +6,7 @@ import { Filter, Search, ShoppingBag, Eye, Truck, CheckCircle, Clock } from 'luc
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import VendorOrderDetailPanel from './vendor-order-detail-panel';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface VendorOrderListViewProps {
     onViewOrder?: (orderId: string) => void;
@@ -32,7 +33,7 @@ const VendorOrderListView: React.FC<VendorOrderListViewProps> = ({
             const res = await api.get('/marketplace/orders', { params: { vendorId: user!.id } });
             return res.data ?? [];
         },
-        enabled: !!user?.id && !localStorage.getItem('dev_mode_role'),
+        enabled: !!user?.id && !isDevModeActive(),
     });
 
     const getStatusBadge = (status: string) => {

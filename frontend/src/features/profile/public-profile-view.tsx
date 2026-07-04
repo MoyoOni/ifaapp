@@ -27,6 +27,7 @@ import { useAuth } from '@/shared/hooks/use-auth';
 import { useProfileQuery } from './hooks/use-profile-query';
 import ProfileSkeleton from './components/profile-skeleton';
 import { UserRole, CulturalLevel } from '@common';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface MilestoneBadge {
   key: string;
@@ -138,7 +139,7 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
       const response = await api.get(`/babalawo-client/personal-awo/${currentUserId}`);
       return response.data;
     },
-    enabled: !isCurrentUser && isBabalawo && currentUserIsClient && !!currentUserId && !localStorage.getItem('dev_mode_role'),
+    enabled: !isCurrentUser && isBabalawo && currentUserIsClient && !!currentUserId && !isDevModeActive(),
     retry: 0,
     staleTime: 60_000,
   });

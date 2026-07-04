@@ -9,6 +9,7 @@ import { StatCard, UserListItem, VerificationListItem, AdminUser, VerificationAp
 import { SkeletonStat, SkeletonTable } from '@/shared/components/skeleton';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 function getGreeting(): { text: string; Icon: React.ElementType } {
     const hour = new Date().getHours();
@@ -32,7 +33,7 @@ const MorningBriefing: React.FC<{
             const disputes: Array<{ status: string }> = res.data?.disputes ?? res.data ?? [];
             return disputes.filter(d => d.status === 'OPEN' || d.status === 'DISPUTED').length;
         },
-        enabled: !localStorage.getItem('dev_mode_role'),
+        enabled: !isDevModeActive(),
         staleTime: 120000,
     });
 
@@ -43,7 +44,7 @@ const MorningBriefing: React.FC<{
             const items: unknown[] = res.data?.reports ?? res.data ?? [];
             return items.length;
         },
-        enabled: !localStorage.getItem('dev_mode_role'),
+        enabled: !isDevModeActive(),
         staleTime: 120000,
     });
 
@@ -155,7 +156,7 @@ const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
             const res = await api.get('/admin/audit-logs', { params: { limit: 5 } });
             return res.data;
         },
-        enabled: user?.adminSubRole === 'SUPER' && !localStorage.getItem('dev_mode_role'),
+        enabled: user?.adminSubRole === 'SUPER' && !isDevModeActive(),
         staleTime: 60000,
     });
 

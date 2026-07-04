@@ -8,6 +8,7 @@ import { logger } from '@/shared/utils/logger';
 import BabalawoProfileCard from '../babalawo/profile/babalawo-profile-card';
 import BabalawoProfileModal from '@/shared/components/babalawo-profile-modal';
 import { seededRandomInt } from '@/shared/utils/seeded-random';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 // import { DEMO_TEMPLES, getDemoUsersByRole } from '@/demo';
 
 interface TempleDetailViewProps {
@@ -475,7 +476,7 @@ const TempleEventsList: React.FC<{ templeId: string; onSelectEvent?: (eventId: s
       });
       return response.data as TempleEvent[];
     },
-    enabled: !!templeId && !localStorage.getItem('dev_mode_role'),
+    enabled: !!templeId && !isDevModeActive(),
   });
 
   if (isLoading) {

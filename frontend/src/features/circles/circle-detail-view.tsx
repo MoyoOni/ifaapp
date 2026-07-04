@@ -23,6 +23,7 @@ import { CircleFeedTab } from './components/CircleFeedTab';
 import { CircleMembersTab } from './components/CircleMembersTab';
 import { CircleEventsTab } from './components/CircleEventsTab';
 import { CircleResourcesTab } from './components/CircleResourcesTab';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 /**
  * Circle Detail View Component - Refactored
@@ -64,7 +65,7 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({
         return [];
       }
     },
-    enabled: !!circle?.id && !localStorage.getItem('dev_mode_role'),
+    enabled: !!circle?.id && !isDevModeActive(),
   });
 
   // Fetch feed posts
@@ -80,7 +81,7 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({
         throw e;
       }
     },
-    enabled: !!circle && !localStorage.getItem('dev_mode_role'),
+    enabled: !!circle && !isDevModeActive(),
   });
 
   // Approve circle event mutation

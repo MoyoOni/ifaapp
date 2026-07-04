@@ -10,6 +10,7 @@ import { BabalawoDirectorySkeleton } from '@/shared/components/skeleton';
 import { FeatureHeader } from '@/shared/components/feature-header';
 import { Search as SearchIcon, Users, AlertCircle, Star, MessageSquare, User, CheckCircle } from 'lucide-react';
 import { OptimizedImage } from '@/components/common/optimized-image';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface Babalawo {
   id: string;
@@ -172,7 +173,7 @@ const BabalawoDiscoveryView: React.FC = () => {
       }));
     },
     retry: 1,
-    enabled: !localStorage.getItem('dev_mode_role'),
+    enabled: !isDevModeActive(),
   });
 
   // Filter Babalawos based on criteria

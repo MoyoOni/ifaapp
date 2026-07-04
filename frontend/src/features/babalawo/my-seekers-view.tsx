@@ -6,6 +6,7 @@ import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { ConsultationNotepad } from '@/shared/components/consultation-notepad';
 import { ClientTimeline } from '@/shared/components/client-timeline';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface Client {
   id: string;
@@ -31,7 +32,7 @@ const MySeekersView: React.FC = () => {
       const payload = res.data as Array<{ client: Client } | Client>;
       return payload.map(item => ('client' in item ? item : { client: item }));
     },
-    enabled: !!user?.id && !localStorage.getItem('dev_mode_role'),
+    enabled: !!user?.id && !isDevModeActive(),
   });
 
   const handleCopyBookingLink = (clientId: string) => {

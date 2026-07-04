@@ -37,6 +37,7 @@ import { SearchModal } from './search-modal';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ProfileMenuDropdown } from './profile-menu-dropdown';
 import { User as UserType } from '@common';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface SidebarLayoutProps {
     children: React.ReactNode;
@@ -112,7 +113,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                 return response.data;
             } catch (error) {
                 // In demo mode, return a default value without logging the error
-                if (import.meta.env.VITE_DEMO_MODE === 'true' || import.meta.env.VITE_ENABLE_DEMO_MODE === 'true') {
+                if (import.meta.env.DEV && (import.meta.env.VITE_DEMO_MODE === 'true' || import.meta.env.VITE_ENABLE_DEMO_MODE === 'true')) {
                     logger.warn('[Ilé Àṣẹ] [user:demo-client-1] Failed to fetch unread notification count, using demo value');
                     return { count: 0 };
                 }
@@ -122,7 +123,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                 return { count: 0 };
             }
         },
-        enabled: !!user && !localStorage.getItem('dev_mode_role'),
+        enabled: !!user && !isDevModeActive(),
         refetchInterval: 30000, // Refresh every 30 seconds
         retry: 1, // Retry once on failure
         staleTime: 60000, // Consider data fresh for 1 minute

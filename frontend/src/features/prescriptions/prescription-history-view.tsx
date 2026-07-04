@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Clock, CheckCircle, XCircle, Package, Eye, Loader2, Calendar, Search } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface GuidancePlan {
   id: string;
@@ -63,7 +64,7 @@ const GuidancePlanHistoryView: React.FC<GuidancePlanHistoryViewProps> = ({
         throw error;
       }
     },
-    enabled: !!targetUserId && !localStorage.getItem('dev_mode_role'),
+    enabled: !!targetUserId && !isDevModeActive(),
   });
 
   // Filter plans based on view mode and other criteria

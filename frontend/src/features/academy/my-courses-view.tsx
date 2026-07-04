@@ -9,6 +9,7 @@ import { logger } from '@/shared/utils/logger';
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface Enrollment {
   id: string;
@@ -61,7 +62,7 @@ const MyCoursesView: React.FC<MyCoursesViewProps> = ({ onSelectEnrollment: _onSe
         throw e;
       }
     },
-    enabled: !!user && !localStorage.getItem('dev_mode_role'),
+    enabled: !!user && !isDevModeActive(),
   });
 
   if (enrollmentsLoading) {

@@ -11,6 +11,7 @@ import { useDraftMessage } from '@/shared/hooks/use-draft-message';
 import { useToast } from '@/shared/components/toast';
 import { useMessageSocket } from '../hooks/use-message-socket';
 import { sendMessage, getConversation, markAsRead } from '../message-service';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface Attachment {
   id: string;
@@ -126,7 +127,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({ userId, otherUserId, onBa
         return [];
       }
     },
-    enabled: !!userId && !!otherUserId && !localStorage.getItem('dev_mode_role'),
+    enabled: !!userId && !!otherUserId && !isDevModeActive(),
   });
 
   // Get other user info from first message

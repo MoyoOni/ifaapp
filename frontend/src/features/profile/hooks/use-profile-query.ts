@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 export interface PublicProfileViewProps {
   userId: string;
@@ -50,7 +51,7 @@ export function useProfileQuery(userId: string) {
       const response = await api.get(`/users/${userId}/profile`);
       return response.data;
     },
-    enabled: !!userId && !localStorage.getItem('dev_mode_role'),
+    enabled: !!userId && !isDevModeActive(),
     staleTime: 5 * 60 * 1000,
     retry: 1,
   });

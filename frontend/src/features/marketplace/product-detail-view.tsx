@@ -8,6 +8,7 @@ import { logger } from '@/shared/utils/logger';
 import { useCart } from '@/shared/contexts/cart-context';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { getCategoryBySlug, getSubcategoryLabel } from './marketplace-categories';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface Product {
   id: string;
@@ -80,7 +81,7 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ productId, onBack
       const response = await api.get(`/marketplace/products/${productId}`);
       return response.data;
     },
-    enabled: !!productId && !localStorage.getItem('dev_mode_role'),
+    enabled: !!productId && !isDevModeActive(),
   });
 
   const handleAddToCart = () => {

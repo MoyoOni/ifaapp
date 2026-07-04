@@ -6,6 +6,7 @@ import { useAuth } from '@/shared/hooks/use-auth';
 import { useSubscription } from '@/features/subscription/use-subscription';
 import { UpgradePrompt } from '@/features/subscription/feature-gate';
 import api from '@/lib/api';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface ProfileView {
   id: string;
@@ -45,7 +46,7 @@ export const ProfileViewsPanel: React.FC = () => {
   const { data: views = [], isLoading } = useQuery<ProfileView[]>({
     queryKey: ['profile-views-mine', user?.id],
     queryFn: () => api.get('/users/profile-views/mine').then(r => r.data),
-    enabled: !!user && isDevoted && !localStorage.getItem('dev_mode_role'),
+    enabled: !!user && isDevoted && !isDevModeActive(),
     staleTime: 5 * 60 * 1000,
     retry: 1,
   });

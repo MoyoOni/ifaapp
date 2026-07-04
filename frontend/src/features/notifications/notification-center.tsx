@@ -5,6 +5,7 @@ import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { SkeletonTable } from '@/shared/components/skeleton';
 import { useToast } from '@/shared/components/toast';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface Notification {
   id: string;
@@ -36,7 +37,7 @@ const NotificationCenter: React.FC = () => {
       const response = await api.get('/notifications', { params });
       return response.data;
     },
-    enabled: !!user && !localStorage.getItem('dev_mode_role'),
+    enabled: !!user && !isDevModeActive(),
   });
 
   // Fetch unread count
@@ -46,7 +47,7 @@ const NotificationCenter: React.FC = () => {
       const response = await api.get('/notifications/unread-count');
       return response.data;
     },
-    enabled: !!user && !localStorage.getItem('dev_mode_role'),
+    enabled: !!user && !isDevModeActive(),
   });
 
   // Fetch notification counts by type
@@ -56,7 +57,7 @@ const NotificationCenter: React.FC = () => {
       const response = await api.get('/notifications/count-by-type');
       return response.data;
     },
-    enabled: !!user && !localStorage.getItem('dev_mode_role'),
+    enabled: !!user && !isDevModeActive(),
   });
 
   // Mark as read mutation

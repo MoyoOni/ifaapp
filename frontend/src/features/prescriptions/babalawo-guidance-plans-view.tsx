@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface GuidancePlanItem {
   name: string;
@@ -85,7 +86,7 @@ const BabalawoGuidancePlansView: React.FC<BabalawoGuidancePlansViewProps> = ({
         throw error;
       }
     },
-    enabled: !!user?.id && !localStorage.getItem('dev_mode_role'),
+    enabled: !!user?.id && !isDevModeActive(),
   });
 
   // Mark as In Progress mutation

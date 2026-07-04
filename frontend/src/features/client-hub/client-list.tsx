@@ -5,6 +5,7 @@ import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
 
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface Client {
   id: string;
@@ -40,7 +41,7 @@ const ClientList: React.FC<ClientListProps> = ({ babalawoId, onSelectClient, onM
         throw error;
       }
     },
-    enabled: !!babalawoId && !localStorage.getItem('dev_mode_role'),
+    enabled: !!babalawoId && !isDevModeActive(),
   });
 
   if (isLoading) {

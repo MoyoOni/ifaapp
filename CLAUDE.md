@@ -157,11 +157,15 @@ Active work tracked in **[ADMIN_BACKLOG.md](ADMIN_BACKLOG.md)** — 32 stories (
 
 **Next:** ADM-022 User Lifecycle Analytics (Sprint 7 — TBD)
 
-### Demo Data Cleanup — ✅ COMPLETE (March 24, 2026)
+### Demo Data Cleanup — 🟢 Demo/Quick-Access Mode Is a Permanent Dev/QA Feature (P2-02, formalized July 4, 2026)
 
-All demo data fallbacks (TYPE 2) and missing dev-mode query guards (TYPE 1) have been removed across the frontend. All four roles verified working cleanly:
+The March 24 pass below removed demo *fallback data* from the real user-facing views. It did not remove — and was never intended to remove — the separate quick-access/dev-login mechanism (`devLogin()` in `use-auth.ts`, gated behind `dev_mode_role` in localStorage), which is an intentional, permanent internal tool for demos and local QA, not legacy cruft. As of July 4, 2026 that mechanism has been formalized rather than deleted:
 
-**What was done:**
+- Every read of `dev_mode_role`/`VITE_DEMO_MODE`/`VITE_ENABLE_DEMO_MODE` across the frontend (46 files) now goes through `isDevModeActive()` (`shared/utils/dev-mode.ts`), which wraps the check in `import.meta.env.DEV` — statically `false` in a production build, so Rollup tree-shakes the branch out entirely. A stray `dev_mode_role` value in a production user's localStorage (however it got there) can never have any effect.
+- `devLogin()` itself already refused to run under `NODE_ENV=production` (P0-02); this closes the same gap on every *read* site, not just the write site.
+- `vite-env.d.ts`'s `VITE_DEMO_MODE`/`VITE_ENABLE_DEMO_MODE` type declarations restored (were commented out, describing behavior that no longer matched the code).
+
+**What the March 24, 2026 pass originally did** (demo *fallback data* removal, separate from the above):
 - Removed demo data fallbacks from: `temple-detail-view.tsx`, `circle-detail-view.tsx`, `thread-view.tsx`, `lesson-player-view.tsx`, `course-detail-view.tsx`, `prescription-creation-form.tsx`, `BookingConfirmation.tsx`, `BookingPage.tsx`, `BookingForm.tsx`
 - Added `enabled: !localStorage.getItem('dev_mode_role')` guards to: `academy-view.tsx`, `babalawo-discovery-view.tsx`, `temple-connection-view.tsx` (both queries)
 - Fixed React Rules of Hooks violation in `BookingForm.tsx` (hooks now declared before conditional return)

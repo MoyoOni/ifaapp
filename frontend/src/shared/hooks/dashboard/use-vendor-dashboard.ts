@@ -7,6 +7,7 @@ import api from '@/lib/api';
 import { useAuth } from '../use-auth';
 import type { VendorDashboardSummary } from './types';
 import * as Sentry from '@sentry/react';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 export function useVendorDashboard(userId?: string) {
   const { user } = useAuth();
@@ -18,7 +19,7 @@ export function useVendorDashboard(userId?: string) {
       const response = await api.get(`/dashboard/vendor/${effectiveUserId}/summary`);
       return response.data;
     },
-    enabled: !!effectiveUserId && !localStorage.getItem('dev_mode_role'),
+    enabled: !!effectiveUserId && !isDevModeActive(),
     staleTime: 30000,
     refetchOnWindowFocus: true,
     throwOnError: (err) => {

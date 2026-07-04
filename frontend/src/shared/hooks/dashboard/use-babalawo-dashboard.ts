@@ -7,6 +7,7 @@ import api from '@/lib/api';
 import { useAuth } from '../use-auth';
 import type { BabalawoDashboardSummary } from './types';
 import * as Sentry from '@sentry/react';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 export function useBabalawoDashboard(userId?: string) {
   const { user } = useAuth();
@@ -26,7 +27,7 @@ export function useBabalawoDashboard(userId?: string) {
         throw err;
       }
     },
-    enabled: !!effectiveUserId && !localStorage.getItem('dev_mode_role'),
+    enabled: !!effectiveUserId && !isDevModeActive(),
     staleTime: 30000,
     refetchOnWindowFocus: true,
   });

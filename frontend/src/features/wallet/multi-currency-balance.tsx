@@ -4,6 +4,7 @@ import { Globe, ChevronDown, RefreshCw } from 'lucide-react';
 import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
 import { Currency } from '@common';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface CurrencyConversion {
   currency: Currency;
@@ -42,7 +43,7 @@ const MultiCurrencyBalance: React.FC<MultiCurrencyBalanceProps> = ({
       const response = await api.get(`/wallet/${userId}/balance?multiCurrency=true`);
       return response.data;
     },
-    enabled: !!userId && !localStorage.getItem('dev_mode_role'),
+    enabled: !!userId && !isDevModeActive(),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 

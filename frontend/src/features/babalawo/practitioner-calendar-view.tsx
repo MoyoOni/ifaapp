@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Calendar, Clock, ChevronLeft, ChevronRight, Grid3X3, CalendarDays, LayoutGrid, Loader2, AlertCircle, Sparkles } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface Appointment {
   id: string;
@@ -39,7 +40,7 @@ const PractitionerCalendarView: React.FC = () => {
       const res = await api.get(`/appointments/babalawo/${user!.id}`);
       return res.data;
     },
-    enabled: !!user?.id && !localStorage.getItem('dev_mode_role'),
+    enabled: !!user?.id && !isDevModeActive(),
   });
 
   const appointments: Appointment[] = (raw as Record<string, unknown>[]).map(apt => {

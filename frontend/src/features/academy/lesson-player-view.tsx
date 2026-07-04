@@ -4,6 +4,7 @@ import { ArrowLeft, CheckCircle, Clock, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
 import { useToast } from '@/shared/components/toast';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 // import { useAuth } from '@/shared/hooks/use-auth';
 
 interface Lesson {
@@ -86,7 +87,7 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
         throw e;
       }
     },
-    enabled: !!enrollmentId && !localStorage.getItem('dev_mode_role'),
+    enabled: !!enrollmentId && !isDevModeActive(),
   });
 
   // Load notes when course ID is available
@@ -110,7 +111,7 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
         throw e;
       }
     },
-    enabled: !!enrollment?.courseId && !localStorage.getItem('dev_mode_role'),
+    enabled: !!enrollment?.courseId && !isDevModeActive(),
   });
 
   // Fetch current lesson with demo fallback
@@ -124,7 +125,7 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
         throw e;
       }
     },
-    enabled: !!currentLessonId && !localStorage.getItem('dev_mode_role'),
+    enabled: !!currentLessonId && !isDevModeActive(),
   });
 
   // Fetch completed lessons with demo fallback
@@ -138,7 +139,7 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
         throw e;
       }
     },
-    enabled: !!enrollmentId && !localStorage.getItem('dev_mode_role'),
+    enabled: !!enrollmentId && !isDevModeActive(),
   });
 
   // Complete lesson mutation

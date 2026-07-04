@@ -5,6 +5,7 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuth } from '../use-auth';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 export function useMyDashboard() {
   const { user } = useAuth();
@@ -23,7 +24,7 @@ export function useMyDashboard() {
         throw err;
       }
     },
-    enabled: !!user?.id && !localStorage.getItem('dev_mode_role'),
+    enabled: !!user?.id && !isDevModeActive(),
     staleTime: 30000,
     refetchOnWindowFocus: true,
   });
