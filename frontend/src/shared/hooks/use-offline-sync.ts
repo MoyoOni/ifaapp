@@ -106,7 +106,10 @@ export function useOfflineSync() {
       unsubscribe();
       clearInterval(interval);
     };
-  }, [syncMutation]);
+    // user?.id is a real dependency: syncQueuedActions closes over it, and
+    // without it here the effect only ever saw the user present at mount,
+    // so sync silently never engaged if auth resolved after this ran.
+  }, [syncMutation, user?.id]);
 
   return { syncMutation };
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 interface CulturalTooltipProps {
   term: string;
@@ -30,13 +30,13 @@ const CulturalTooltip: React.FC<CulturalTooltipProps> = ({
     }
   };
 
-  const hideTooltip = () => {
+  const hideTooltip = useCallback(() => {
     if (!isControlled) {
       setInternalVisible(false);
     } else if (controlledVisible) {
       onVisibilityChange?.(false);
     }
-  };
+  }, [isControlled, controlledVisible, onVisibilityChange]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -55,7 +55,7 @@ const CulturalTooltip: React.FC<CulturalTooltipProps> = ({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isVisible]);
+  }, [isVisible, hideTooltip]);
 
   return (
     <div className="relative inline-block">

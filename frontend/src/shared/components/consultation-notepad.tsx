@@ -48,9 +48,13 @@ export const ConsultationNotepad: React.FC<ConsultationNotepadProps> = ({
     } catch { /* ignore */ }
   }, [key]);
 
-  // Populate draft when panel opens
+  // Populate draft when panel opens. Intentionally keyed only on `open` --
+  // this should fire once per open, not on every keystroke (`draft`) or
+  // every save (`saved`); the `!draft` guard already prevents clobbering
+  // in-progress edits.
   useEffect(() => {
     if (open && saved && !draft) setDraft(saved.text);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const handleSave = () => {

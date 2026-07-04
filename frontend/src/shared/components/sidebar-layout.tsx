@@ -129,7 +129,10 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
         staleTime: 60000, // Consider data fresh for 1 minute
     });
 
-    // Listen for foreground Firebase push messages and show browser notifications
+    // Listen for foreground Firebase push messages and show browser notifications.
+    // Deliberately depends on `user?.id`, not `user`, so this doesn't
+    // resubscribe every time an unrelated user field (e.g. profile edits)
+    // changes -- only login/logout should re-run it.
     useEffect(() => {
         if (!user) return;
         const unsub = onForegroundMessage(({ title, body }) => {
@@ -138,6 +141,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
             }
         });
         return unsub;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user?.id]);
 
     // Cmd+K / Ctrl+K global search shortcut

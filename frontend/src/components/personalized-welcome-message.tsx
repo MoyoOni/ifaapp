@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { User, Star, Heart, Sparkles, Calendar } from 'lucide-react';
 import { useAuth } from '@/shared/hooks/use-auth';
 import api from '@/lib/api'; // Changed to default import
@@ -23,8 +23,9 @@ const PersonalizedWelcomeMessage: React.FC<PersonalizedWelcomeMessageProps> = ({
   const [message, setMessage] = useState<{ title: string; message: string; emoji: string } | null>(null);
   const [isVisible, setIsVisible] = useState(false);
 
-  // Define possible welcome messages with conditions
-  const welcomeMessageConfigs: WelcomeMessageConfig[] = [
+  // Define possible welcome messages with conditions. Memoized on `user` so
+  // the effect below doesn't see a new array (and refetch) on every render.
+  const welcomeMessageConfigs: WelcomeMessageConfig[] = useMemo(() => [
     {
       id: 'first-login',
       title: 'Welcome Back!',
@@ -80,7 +81,7 @@ const PersonalizedWelcomeMessage: React.FC<PersonalizedWelcomeMessageProps> = ({
       priority: 5,
       condition: () => true, // Default message
     },
-  ];
+  ], [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -128,7 +129,7 @@ const PersonalizedWelcomeMessage: React.FC<PersonalizedWelcomeMessageProps> = ({
     };
 
     fetchUserData();
-  }, [user]);
+  }, [user, welcomeMessageConfigs]);
 
   if (!isVisible || !message) {
     return null;

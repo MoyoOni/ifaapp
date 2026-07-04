@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, ReactNode, useEffect, useCallback } from 'react';
 import { logger } from '@/shared/utils/logger';
 
 // Define types for user preferences
@@ -133,15 +133,35 @@ interface PreferencesProviderProps {
 export const PreferencesProvider: React.FC<PreferencesProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(preferencesReducer, initialPreferences);
 
+  const savePreferences = useCallback(() => {
+    try {
+      localStorage.setItem('user-preferences', JSON.stringify(state));
+    } catch (error) {
+      logger.error('Failed to save preferences to localStorage:', error);
+    }
+  }, [state]);
+
+  const loadPreferences = useCallback(() => {
+    try {
+      const storedPreferences = localStorage.getItem('user-preferences');
+      if (storedPreferences) {
+        const parsedPreferences = JSON.parse(storedPreferences);
+        dispatch({ type: 'LOAD_PREFERENCES', payload: parsedPreferences });
+      }
+    } catch (error) {
+      logger.error('Failed to load preferences from localStorage:', error);
+    }
+  }, []);
+
   // Load preferences from localStorage on initial render
   useEffect(() => {
     loadPreferences();
-  }, []);
+  }, [loadPreferences]);
 
   // Save preferences to localStorage whenever they change
   useEffect(() => {
     savePreferences();
-  }, [state]);
+  }, [state, savePreferences]);
 
   const updateTheme = (theme: UserPreferences['theme']) => {
     dispatch({ type: 'SET_THEME', payload: theme });
@@ -197,26 +217,6 @@ export const PreferencesProvider: React.FC<PreferencesProviderProps> = ({ childr
 
   const resetPreferences = () => {
     dispatch({ type: 'RESET_PREFERENCES' });
-  };
-
-  const savePreferences = () => {
-    try {
-      localStorage.setItem('user-preferences', JSON.stringify(state));
-    } catch (error) {
-      logger.error('Failed to save preferences to localStorage:', error);
-    }
-  };
-
-  const loadPreferences = () => {
-    try {
-      const storedPreferences = localStorage.getItem('user-preferences');
-      if (storedPreferences) {
-        const parsedPreferences = JSON.parse(storedPreferences);
-        dispatch({ type: 'LOAD_PREFERENCES', payload: parsedPreferences });
-      }
-    } catch (error) {
-      logger.error('Failed to load preferences from localStorage:', error);
-    }
   };
 
   return (

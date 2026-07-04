@@ -36,22 +36,21 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
   useEffect(() => {
     // Set up intersection observer for lazy loading if not priority
     if (!priority && imgRef.current) {
+      const node = imgRef.current;
       const observer = new IntersectionObserver(
         ([entry]) => {
           if (entry.isIntersecting) {
             setIsIntersecting(true);
-            observer.unobserve(imgRef.current!);
+            observer.unobserve(node);
           }
         },
         { threshold: 0.1, rootMargin: '50px' }
       );
 
-      observer.observe(imgRef.current);
+      observer.observe(node);
 
       return () => {
-        if (imgRef.current) {
-          observer.unobserve(imgRef.current);
-        }
+        observer.unobserve(node);
       };
     } else if (priority) {
       setIsIntersecting(true);

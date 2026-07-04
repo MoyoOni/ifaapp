@@ -12,6 +12,9 @@ export { deregisterPushNotifications };
 export function usePushNotifications() {
   const { user } = useAuth();
 
+  // Deliberately depends on `user?.id`, not `user`, so this doesn't
+  // re-register push notifications every time an unrelated user field
+  // (e.g. profile edits) changes -- only login/logout should re-run it.
   useEffect(() => {
     if (!user) return;
 
@@ -38,5 +41,9 @@ export function usePushNotifications() {
     });
 
     return () => unsub();
+    // Deliberately depends on `user?.id`, not `user`, so this doesn't
+    // re-register push notifications every time an unrelated user field
+    // (e.g. profile edits) changes -- only login/logout should re-run it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 }

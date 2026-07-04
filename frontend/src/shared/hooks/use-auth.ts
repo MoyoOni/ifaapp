@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { UserRole, AdminSubRole } from '@common';
 import api from '@/lib/api';
@@ -209,14 +209,20 @@ export function useAuth(): AuthState & {
   // (P2-01) — DemoUser doesn't structurally satisfy User (missing hasOnboarded,
   // optional email/verified where User requires them), so this is the one
   // explicit mapping boundary instead of the `as any` casts it replaces.
-  const vendorDemoUser =
-    Object.values(DEMO_USERS).find((u) => u.role === UserRole.VENDOR) || DEMO_USERS['demo-vendor-1'];
-  const MOCK_USERS: Record<string, User> = {
-    [UserRole.ADMIN]: mapDemoUserToUser(DEMO_USERS['demo-admin-1'], { adminSubRole: AdminSubRole.SUPER }),
-    [UserRole.BABALAWO]: mapDemoUserToUser(DEMO_USERS['demo-baba-1']),
-    [UserRole.CLIENT]: mapDemoUserToUser(DEMO_USERS['demo-client-1']),
-    [UserRole.VENDOR]: mapDemoUserToUser(vendorDemoUser),
-  };
+  // Derived entirely from the static DEMO_USERS constant, so this is memoized
+  // with an empty dep array to give it a stable reference across renders --
+  // otherwise a fresh object every render would defeat the mount-only effect
+  // below that depends on it.
+  const MOCK_USERS: Record<string, User> = useMemo(() => {
+    const vendorDemoUser =
+      Object.values(DEMO_USERS).find((u) => u.role === UserRole.VENDOR) || DEMO_USERS['demo-vendor-1'];
+    return {
+      [UserRole.ADMIN]: mapDemoUserToUser(DEMO_USERS['demo-admin-1'], { adminSubRole: AdminSubRole.SUPER }),
+      [UserRole.BABALAWO]: mapDemoUserToUser(DEMO_USERS['demo-baba-1']),
+      [UserRole.CLIENT]: mapDemoUserToUser(DEMO_USERS['demo-client-1']),
+      [UserRole.VENDOR]: mapDemoUserToUser(vendorDemoUser),
+    };
+  }, []);
 
   const devLogin = (role: UserRole) => {
     // EMG (P0-02): devLogin fabricates a fully "authenticated" session
@@ -258,7 +264,7 @@ export function useAuth(): AuthState & {
       setTokenCheck(true);
       setLogContext({ userId: devUser.id });
     }
-  }, []);
+  }, [MOCK_USERS]);
 
   return {
     user,

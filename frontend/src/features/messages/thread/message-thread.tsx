@@ -250,7 +250,13 @@ const MessageThread: React.FC<MessageThreadProps> = ({ userId, otherUserId, onBa
     if (unreadMessages.length > 0) {
       markAsReadMutation.mutate();
     }
-  }, [messages, userId]);
+    // markAsReadMutation.mutate is referentially stable (TanStack Query
+    // guarantee) -- depending on the mutation object itself would re-run
+    // this effect (and re-trigger the mutation) on every render. eslint's
+    // static analysis can't verify that library guarantee, hence the
+    // disable below rather than adding the whole object.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, userId, markAsReadMutation.mutate]);
 
   const renderAttachment = (att: Attachment) => {
     switch (att.type) {

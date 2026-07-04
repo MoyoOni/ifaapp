@@ -3,7 +3,7 @@
  */
 
 import { useMemo, useCallback } from 'react';
-import { profileCompletenessService, type CompletionScore } from '../services/profileCompletenessService';
+import { profileCompletenessService, type CompletionScore, type MissingItem } from '../services/profileCompletenessService';
 
 interface UseProfileCompletenessOptions {
   userData: any;
@@ -30,7 +30,7 @@ export const useProfileCompleteness = ({
 
   // Get items by section
   const itemsBySection = useMemo(() => {
-    const grouped: Record<string, typeof score.missingItems> = {};
+    const grouped: Record<string, MissingItem[]> = {};
 
     score.missingItems.forEach(item => {
       if (!grouped[item.section]) {
