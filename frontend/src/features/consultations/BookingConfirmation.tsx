@@ -4,6 +4,7 @@ import { Sparkles } from 'lucide-react';
 import api from '@/lib/api';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { useSubscription } from '@/features/subscription/use-subscription';
+import { formatScheduledAt } from '@/shared/utils/format-scheduled-at';
 
 interface Appointment {
   id: string;
@@ -16,6 +17,10 @@ interface Appointment {
   };
   date: string;
   time: string;
+  // P2-03: real UTC instant; falls back to the browser's own interpretation
+  // of date+time only for a legacy row a pre-migration backfill couldn't compute.
+  scheduledAt?: string | null;
+  timezone?: string;
   duration: number;
   topic: string;
   preferredMethod: string;
@@ -142,7 +147,7 @@ export const BookingConfirmation: React.FC = () => {
           </div>
         </div>
         <div className="mt-4 space-y-2 text-sm">
-          <div className="flex justify-between"><span className="text-muted-foreground">Date & Time</span> <span className="text-foreground font-medium">{new Date(`${appointment.date}T${appointment.time}`).toLocaleString()}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Date & Time</span> <span className="text-foreground font-medium">{appointment.scheduledAt ? formatScheduledAt(appointment.scheduledAt, appointment.timezone || 'Africa/Lagos') : new Date(`${appointment.date}T${appointment.time}`).toLocaleString()}</span></div>
           <div className="flex justify-between"><span className="text-muted-foreground">Duration</span> <span className="text-foreground font-medium">{appointment.duration} minutes</span></div>
           <div className="flex justify-between"><span className="text-muted-foreground">Topic</span> <span className="text-foreground font-medium">{appointment.topic}</span></div>
           <div className="flex justify-between"><span className="text-muted-foreground">Contact Method</span> <span className="text-foreground font-medium">{appointment.preferredMethod}</span></div>

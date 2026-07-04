@@ -1,4 +1,4 @@
-import { IsString, IsISO8601 } from 'class-validator';
+import { IsString, IsISO8601, IsOptional } from 'class-validator';
 
 export class CheckAvailabilityDto {
   @IsString()
@@ -13,4 +13,8 @@ export class CheckAvailabilityDto {
 
   @IsString()
   duration?: string; // Optional duration in minutes
+
+  @IsString()
+  @IsOptional()
+  timezone?: string; // Defaults to Africa/Lagos (WAT) — P2-03
 }

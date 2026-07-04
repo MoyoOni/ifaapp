@@ -9,6 +9,7 @@ import { CreateTutorDto } from './dto/create-tutor.dto';
 import { UpdateTutorDto } from './dto/update-tutor.dto';
 import { CreateTutorSessionDto } from './dto/create-tutor-session.dto';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
+import { combineDateTimeInZone } from '../utils/scheduling.util';
 
 /**
  * Tutors Service
@@ -189,6 +190,7 @@ export class TutorsService {
 
     // Calculate price based on duration
     const price = (tutor.hourlyRate / 60) * dto.duration;
+    const timezone = dto.timezone || 'Africa/Lagos';
 
     return this.prisma.tutorSession.create({
       data: {
@@ -196,7 +198,8 @@ export class TutorsService {
         studentId: currentUser.id,
         date: dto.date,
         time: dto.time,
-        timezone: dto.timezone || 'Africa/Lagos',
+        timezone,
+        scheduledAt: combineDateTimeInZone(dto.date, dto.time, timezone),
         duration: dto.duration,
         price,
         currency: tutor.currency,

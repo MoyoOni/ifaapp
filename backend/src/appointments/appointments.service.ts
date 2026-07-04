@@ -16,6 +16,9 @@ import { Appointment } from '../shared/types/prisma-models';
 import { EscrowType, EscrowStatus } from '@ile-ase/common';
 import { AvailabilitySlot } from './types';
 import { WhatsAppService } from '../whatsapp';
+import { combineDateTimeInZone } from '../utils/scheduling.util';
+
+const DEFAULT_TIMEZONE = 'Africa/Lagos';
 
 @Injectable()
 export class AppointmentsService {
@@ -49,12 +52,18 @@ export class AppointmentsService {
     existing: Appointment,
     newDate: string,
     newTime: string,
+    newTimezone: string,
     newDuration: number
   ): boolean {
-    const existingStart = new Date(`${existing.date}T${existing.time}`);
+    // P2-03: prefer the precomputed UTC instant; only pre-migration rows that
+    // couldn't be backfilled (see migration 20260704000001) fall back to a
+    // fresh timezone-aware combination of the legacy string fields.
+    const existingStart =
+      (existing as any).scheduledAt ??
+      combineDateTimeInZone(existing.date, existing.time, (existing as any).timezone || DEFAULT_TIMEZONE);
     const existingEnd = new Date(existingStart.getTime() + existing.duration * 60000);
 
-    const newStart = new Date(`${newDate}T${newTime}`);
+    const newStart = combineDateTimeInZone(newDate, newTime, newTimezone);
     const newEnd = new Date(newStart.getTime() + newDuration * 60000);
 
     return newStart < existingEnd && newEnd > existingStart;
@@ -65,7 +74,8 @@ export class AppointmentsService {
     date: string,
     time: string,
     duration: number,
-    client: Pick<PrismaService, 'user'> = this.prisma
+    client: Pick<PrismaService, 'user'> = this.prisma,
+    timezone: string = DEFAULT_TIMEZONE
   ): Promise<boolean> {
     const babalawo = await client.user.findUnique({
       where: { id: babalawoId },
@@ -82,7 +92,7 @@ export class AppointmentsService {
     if (!babalawo) throw new BadRequestException('Babalawo not found.');
 
     const conflicts = (babalawo as any).appointmentsAsBabalawo.some((appt: any) =>
-      this.timesOverlap(appt, date, time, duration)
+      this.timesOverlap(appt, date, time, timezone, duration)
     );
 
     return !conflicts;
@@ -107,13 +117,17 @@ export class AppointmentsService {
     currentUser: CurrentUserPayload
   ): Promise<Appointment> {
     const { babalawoId, clientId, date, time, duration = 60, price = 0 } = dto;
+    const timezone = dto.timezone || DEFAULT_TIMEZONE;
 
     if (currentUser.id !== clientId && currentUser.role !== 'ADMIN') {
       throw new ForbiddenException('You can only book appointments for yourself.');
     }
 
-    const appointmentStart = new Date(`${date}T${time}`);
-    if (appointmentStart <= new Date()) {
+    // P2-03: combine in the appointment's own timezone rather than the
+    // server's local time — a naive `new Date(...)` here silently assumed
+    // the server ran in the same zone as the appointment.
+    const scheduledAt = combineDateTimeInZone(date, time, timezone);
+    if (scheduledAt <= new Date()) {
       throw new BadRequestException('Appointment date and time must be in the future.');
     }
 
@@ -156,7 +170,7 @@ export class AppointmentsService {
     const appointment = await this.prisma.$transaction(async (tx: any) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(${this.lockKeyFor(babalawoId, date)})`;
 
-      const isAvailable = await this.isTimeSlotAvailable(babalawoId, date, time, duration, tx);
+      const isAvailable = await this.isTimeSlotAvailable(babalawoId, date, time, duration, tx, timezone);
       if (!isAvailable) {
         throw new ConflictException(
           'This time slot is already booked. Please choose another time.'
@@ -166,6 +180,7 @@ export class AppointmentsService {
       return tx.appointment.create({
         data: {
           ...dto,
+          scheduledAt,
           status: 'PENDING_CONFIRMATION',
           isPriority,
         },
@@ -552,10 +567,24 @@ export class AppointmentsService {
       throw new ForbiddenException('You can only update your own appointments');
     }
 
+    // P2-03: keep scheduledAt in sync whenever any of the three legacy
+    // fields it's derived from actually changes.
+    const scheduledAtUpdate =
+      dto.date || dto.time || dto.timezone
+        ? {
+            scheduledAt: combineDateTimeInZone(
+              dto.date ?? appointment.date,
+              dto.time ?? appointment.time,
+              dto.timezone ?? appointment.timezone
+            ),
+          }
+        : {};
+
     return this.prisma.appointment.update({
       where: { id },
       data: {
         ...dto,
+        ...scheduledAtUpdate,
       },
       include: {
         babalawo: {
@@ -621,6 +650,7 @@ export class AppointmentsService {
     dto: CheckAvailabilityDto
   ): Promise<{ available: boolean; message: string }> {
     const { babalawoId, date, time, duration = '60' } = dto;
+    const timezone = dto.timezone || DEFAULT_TIMEZONE;
 
     const durationNum = parseInt(duration, 10);
 
@@ -636,8 +666,8 @@ export class AppointmentsService {
       };
     }
 
-    // Check if date/time is in the future
-    const appointmentDateTime = new Date(`${date}T${time}`);
+    // Check if date/time is in the future (P2-03: timezone-aware, not server-local)
+    const appointmentDateTime = combineDateTimeInZone(date, time, timezone);
     if (appointmentDateTime <= new Date()) {
       return {
         available: false,
@@ -646,7 +676,7 @@ export class AppointmentsService {
     }
 
     // Check time slot availability
-    const isAvailable = await this.isTimeSlotAvailable(babalawoId, date, time, durationNum);
+    const isAvailable = await this.isTimeSlotAvailable(babalawoId, date, time, durationNum, this.prisma, timezone);
 
     if (!isAvailable) {
       return {

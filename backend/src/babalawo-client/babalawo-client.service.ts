@@ -6,6 +6,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBabalawoClientDto } from './dto/create-babalawo-client.dto';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
+import { combineDateTimeInZone } from '../utils/scheduling.util';
 
 @Injectable()
 export class BabalawoClientService {
@@ -347,7 +348,7 @@ export class BabalawoClientService {
       this.prisma.appointment.findMany({
         where: { babalawoId, clientId },
         select: {
-          id: true, date: true, time: true, status: true,
+          id: true, date: true, time: true, timezone: true, scheduledAt: true, status: true,
           duration: true, topic: true, notes: true, createdAt: true,
         },
         orderBy: { date: 'desc' },
@@ -366,7 +367,8 @@ export class BabalawoClientService {
       ...appointments.map((a) => ({
         kind: 'consultation' as const,
         id: a.id,
-        date: `${a.date}T${a.time ?? '00:00'}`,
+        // P2-03: timezone-aware instant rather than a server-local-parsed string.
+        date: (a.scheduledAt ?? combineDateTimeInZone(a.date, a.time, a.timezone || 'Africa/Lagos')).toISOString(),
         status: a.status,
         duration: a.duration,
         topic: a.topic,

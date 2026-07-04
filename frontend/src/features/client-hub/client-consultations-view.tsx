@@ -13,6 +13,12 @@ interface Appointment {
   id: string;
   date: string;
   time: string;
+  // P2-03: scheduledAt is the UTC instant derived from date+time+timezone —
+  // comparing against it (rather than re-parsing date+time in the browser's
+  // own local timezone) gives the correct answer regardless of where the
+  // viewer is physically located relative to the appointment's timezone.
+  scheduledAt?: string | null;
+  timezone?: string;
   duration: number;
   status: string;
   topic?: string | null;
@@ -46,11 +52,17 @@ const ClientConsultationsView: React.FC = () => {
 
   const now = new Date();
 
+  // P2-03: scheduledAt is a real UTC instant; only fall back to re-parsing
+  // date+time (in the browser's own local timezone, an approximation) for
+  // any legacy row a pre-migration backfill couldn't compute.
+  const resolveScheduledAt = (a: Appointment) =>
+    a.scheduledAt ? new Date(a.scheduledAt) : new Date(`${a.date}T${a.time}`);
+
   const filtered = appointments.filter((a) => {
     if (filter === 'UPCOMING') {
       return (
         (a.status === 'CONFIRMED' || a.status === 'PENDING_CONFIRMATION') &&
-        new Date(`${a.date}T${a.time}`) > now
+        resolveScheduledAt(a) > now
       );
     }
     if (filter === 'COMPLETED') return a.status === 'COMPLETED';
@@ -59,7 +71,7 @@ const ClientConsultationsView: React.FC = () => {
 
   const isUpcoming = (a: Appointment) =>
     (a.status === 'CONFIRMED' || a.status === 'PENDING_CONFIRMATION') &&
-    new Date(`${a.date}T${a.time}`) > now;
+    resolveScheduledAt(a) > now;
 
   if (isLoading) {
     return (

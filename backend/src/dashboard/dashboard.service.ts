@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { combineDateTimeInZone } from '../utils/scheduling.util';
 import {
   ClientDashboardSummary,
   BabalawoDashboardSummary,
@@ -7,6 +8,15 @@ import {
   ConsultationSummary,
   GuidancePlanSummary,
 } from './dto/dashboard-summary.dto';
+
+/**
+ * P2-03: prefer the precomputed UTC instant; only pre-migration rows that
+ * couldn't be backfilled fall back to a fresh timezone-aware combination —
+ * see the matching helper in appointments.service.ts.
+ */
+function resolveScheduledAt(apt: { date: string; time: string; timezone?: string; scheduledAt?: Date | null }): Date {
+  return apt.scheduledAt ?? combineDateTimeInZone(apt.date, apt.time, apt.timezone || 'Africa/Lagos');
+}
 
 @Injectable()
 export class DashboardService {
@@ -34,7 +44,7 @@ export class DashboardService {
       clientName: '',
       babalawoId: apt.babalawoId,
       babalawoName: apt.babalawo?.name || 'Unknown',
-      scheduledDate: new Date(`${apt.date}T${apt.time}`),
+      scheduledDate: resolveScheduledAt(apt),
       duration: apt.duration,
       topic: apt.notes || '',
       status: apt.status,
@@ -168,7 +178,7 @@ export class DashboardService {
       clientAvatar: apt.client?.avatar || undefined,
       babalawoId: apt.babalawoId,
       babalawoName: '',
-      scheduledDate: new Date(`${apt.date}T${apt.time}`),
+      scheduledDate: resolveScheduledAt(apt),
       duration: apt.duration,
       topic: apt.notes || '',
       status: apt.status,

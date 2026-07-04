@@ -366,17 +366,23 @@ These fix the 🔴🔴 EXPLOITABLE NOW findings. They should be hotfixed directl
 
 ### P2-03: Timezone-Aware Scheduling Fields
 - **Priority**: P2
-- **Status**: ❌ NOT STARTED
+- **Status**: ✅ DONE
 - **Owner**: Backend Team
 - **Story Points**: 8
-- **Description**: `Appointment` and `TutorSession` store `date` and `time` as separate `String` fields plus a `timezone` string default `"Africa/Lagos"`, rather than a single UTC `DateTime`. `dashboard.service.ts` parses these with `new Date(apt.date)`, which is fragile across diaspora client timezones and DST-adjacent locales.
-- **Acceptance Criteria**:
-  - [ ] Migration adds `scheduledAt DateTime @db.Timestamptz` to `Appointment` and `TutorSession`, computed from existing `date`+`time`+`timezone` at migration time
-  - [ ] All booking/availability logic reads/writes `scheduledAt` instead of the three separate fields
-  - [ ] Display formatting moved to the component layer using `Intl.DateTimeFormat` with `Africa/Lagos` as the practitioner-side default and the client's local timezone for diaspora users
-  - [ ] Old `date`/`time` string fields deprecated (kept read-only for one release, then dropped)
-- **Dependencies**: P0-01, P0-03 (touches the same migration surface)
-- **Notes**: Low urgency until diaspora client volume grows, but every sprint this waits makes the migration touch more live rows.
+- **Real bug this surfaced**: `appointments.service.ts::createBooking` validated "is this appointment in the future" via `` new Date(`${date}T${time}`) <= new Date() `` — a date-time string with no offset is parsed by the JS `Date` constructor as the *server's* local time, not the appointment's `timezone`. For the default `Africa/Lagos` (UTC+1) on a server running in UTC (the normal case), every booking's future-check and every conflict/overlap check (`timesOverlap`) was silently off by an hour. This wasn't hypothetical — verified directly: `combineDateTimeInZone('2026-08-01','14:30','Africa/Lagos')` → `13:30:00Z`, while the old `new Date('2026-08-01T14:30')` on a UTC server returns `14:30:00Z`, a real hour of drift on every single booking.
+- **Implementation notes**:
+  - Added `date-fns-tz@1.3.8` (matching the existing `date-fns@2.30.0` major version already in use) rather than hand-rolling IANA timezone arithmetic.
+  - New `backend/src/utils/scheduling.util.ts`: `combineDateTimeInZone(date, time, timezone)` — the single point of truth for this conversion, `formatScheduledAt()` for the reverse direction. 6 unit tests, including a DST-crossing case (`America/New_York` in January vs. August) and a same-wall-clock-different-instant regression guard.
+  - Migration `20260704000001_add_scheduled_at` adds `scheduledAt DateTime? @db.Timestamptz` to `Appointment` and `TutorSession` and backfills it from existing `date`+`time`+`timezone` — **per-row inside a `DO $$` exception-handling loop**, not a single bulk `UPDATE`, so any pre-existing row with a malformed date/time string or an unrecognized timezone name is left with `scheduledAt = NULL` (logged via `RAISE WARNING`) instead of aborting the whole migration on a live financial platform's booking data. Verified directly against Postgres with deliberately malformed rows before removing them.
+  - Field is nullable, not `NOT NULL` as originally scoped — deliberately more conservative for a live-money-adjacent migration whose real backfill success rate against production data couldn't be verified from this environment. All new code paths always populate it; tightening to `NOT NULL` is a safe follow-up once 100% backfill is confirmed in production.
+  - `appointments.service.ts`: `createBooking` computes and stores `scheduledAt`; the future-date check and `timesOverlap`'s conflict detection both now use it (`existing.scheduledAt ?? combineDateTimeInZone(...)` for pre-migration rows); `update()` recomputes `scheduledAt` whenever `date`/`time`/`timezone` changes; `checkAvailability` gained a `timezone` field on `CheckAvailabilityDto` and uses the same timezone-aware future-check.
+  - `tutors.service.ts::createTutorSession` populates `scheduledAt` on create (same pattern).
+  - `dashboard.service.ts`: the `scheduledDate: new Date(\`${apt.date}T${apt.time}\`)` construction (client and babalawo dashboard summaries) replaced with a `resolveScheduledAt()` helper preferring the real column.
+  - `babalawo-client.service.ts::getClientTimeline`: same fix for the merged appointment/guidance-plan relationship timeline.
+  - Frontend: `shared/utils/format-scheduled-at.ts` (`Intl.DateTimeFormat` with an explicit `timeZone`, so display is correct regardless of the *viewer's* browser timezone) wired into `BookingConfirmation.tsx`. `client-consultations-view.tsx`'s upcoming/completed filtering — previously `` new Date(`${a.date}T${a.time}`) > now ``, the same server/browser-local-time bug on the client side — now prefers `scheduledAt` too.
+  - Did not touch: `dashboard.service.ts`'s week-bucketing trend chart (`new Date(apt.date)`, date-only string — correctly parsed as UTC per spec, no time component involved, low-precision aggregate use case) and `prescriptions.service.ts`'s 30-day-overdue check (same date-only, non-bug pattern). Left 9 of the frontend's originally-flagged files alone after confirming their `.date`/`.time` references were unrelated (different fields, e.g. `createdAt`) once actually inspected — only 3 frontend files had the real bug.
+- **Dependencies**: P0-01 ✅, P0-03 ✅
+- **Notes**: Verified via a real Postgres run (not just unit tests): inserted two valid appointments (`Africa/Lagos` and `America/New_York`, the latter during EDT) plus two deliberately malformed rows, ran the actual migration SQL, and confirmed both valid conversions matched the `date-fns-tz` computation exactly and both malformed rows were safely skipped with a warning rather than aborting.
 
 ### P2-04: File Size Reduction on Remaining Monoliths
 - **Priority**: P2

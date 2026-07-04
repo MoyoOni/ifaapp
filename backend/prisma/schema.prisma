@@ -375,6 +375,12 @@ model Appointment {
   date         String
   time         String
   timezone     String        @default("Africa/Lagos")
+  // P2-03: UTC instant derived from date+time+timezone at write time. date/time/timezone
+  // are kept (read-only going forward) for one release as a rollback safety net; all new
+  // booking/availability/display logic reads scheduledAt instead. Nullable rather than
+  // required because a handful of pre-migration rows with malformed date/time strings
+  // couldn't be safely backfilled — see migration 20260704000001_add_scheduled_at.
+  scheduledAt  DateTime?     @db.Timestamptz
   duration     Int           @default(60)
   status       String        @default("UPCOMING")
   price        Float?
@@ -399,6 +405,7 @@ model Appointment {
   @@index([clientId])
   @@index([date])
   @@index([status])
+  @@index([scheduledAt])
 }
 
 model ConsultationNote {
@@ -739,6 +746,8 @@ model TutorSession {
   date        String
   time        String
   timezone    String    @default("Africa/Lagos")
+  // P2-03: see the matching field on Appointment for rationale.
+  scheduledAt DateTime? @db.Timestamptz
   duration    Int       @default(60)
   status      String    @default("UPCOMING")
   price       Float
@@ -754,6 +763,7 @@ model TutorSession {
   @@index([tutorId, date])
   @@index([studentId])
   @@index([status])
+  @@index([scheduledAt])
 }
 
 model Product {
