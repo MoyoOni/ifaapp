@@ -181,12 +181,18 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Audit backend dependencies
-        run: cd backend && npm audit --audit-level=high || true
-        continue-on-error: true
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Audit frontend dependencies
-        run: cd frontend && npm audit --audit-level=high || true
+      # P3-03: real npm audit --workspaces, no longer double-suppressed with
+      # `|| true` (which made the step report success unconditionally,
+      # hiding the actual result even from the job's own annotations).
+      # continue-on-error still keeps this non-blocking for now — there are
+      # 87 pre-existing high/critical vulnerabilities to triage first (see
+      # ProBacklog-v1.md P3-03) — but the real pass/fail is now visible in
+      # the Actions UI instead of silently discarded.
+      - name: Audit dependencies (high/critical)
+        run: npm audit --workspaces --audit-level=high
         continue-on-error: true
 
   # --- Deploy to EC2 (main branch only) ---

@@ -24,10 +24,13 @@ cd "$APP_DIR"
 git pull origin v4/quality
 
 # --- 2. Install dependencies ---
+# P3-03: npm ci (not npm install) so a deploy always gets exactly what
+# package-lock.json pins — it also hard-fails if package.json and the
+# lockfile have drifted out of sync, instead of silently re-resolving.
 echo ""
 echo "[2/6] Installing dependencies..."
-cd "$APP_DIR/backend" && npm install --production
-cd "$APP_DIR/frontend" && npm install
+cd "$APP_DIR/backend" && npm ci --omit=dev
+cd "$APP_DIR/frontend" && npm ci
 
 # --- 3. Run database migrations ---
 echo ""

@@ -1,0 +1,47 @@
+version: 2
+updates:
+  # Root workspace manifest (npm workspaces: frontend, backend, common)
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      production-dependencies:
+        dependency-type: production
+      development-dependencies:
+        dependency-type: development
+
+  - package-ecosystem: npm
+    directory: "/backend"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      production-dependencies:
+        dependency-type: production
+      development-dependencies:
+        dependency-type: development
+
+  - package-ecosystem: npm
+    directory: "/frontend"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      production-dependencies:
+        dependency-type: production
+      development-dependencies:
+        dependency-type: development
+
+  - package-ecosystem: npm
+    directory: "/common"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+
+  # Keep the CI workflow's own actions (checkout, setup-node, ssh-action) current
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
