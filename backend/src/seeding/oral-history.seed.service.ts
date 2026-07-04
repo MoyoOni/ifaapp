@@ -2,6 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import { SecretsService } from '../secrets/secrets.service';
+import * as fs from 'fs';
+import * as path from 'path';
 
 interface OralHistoryRecord {
   id: string;
@@ -164,8 +166,6 @@ export class OralHistorySeedService {
       // Load from local JSON file
       try {
         // This assumes we have a seed data file
-        const fs = require('fs');
-        const path = require('path');
         const filePath = path.join(process.cwd(), 'data', 'oral-history-data.json');
 
         if (fs.existsSync(filePath)) {

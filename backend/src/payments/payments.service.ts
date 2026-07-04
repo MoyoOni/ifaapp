@@ -19,7 +19,10 @@ import { InitializePaymentDto } from './dto/initialize-payment.dto';
 import { Currency, PaymentPurpose, EscrowType } from '@ile-ase/common';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { Payment } from '../shared/types/prisma-models';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+// flutterwave-node-v3 is CJS-only without esModuleInterop configured; `import Flutterwave
+// from` would risk a runtime interop mismatch for a payment SDK client, so require() stays
+// here deliberately.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const Flutterwave = require('flutterwave-node-v3');
 import { NotificationService } from '../notifications/notification.service';
 import { PaystackApiService } from './paystack-api.service';

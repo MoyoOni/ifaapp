@@ -21,6 +21,7 @@ import { EscrowType, EscrowStatus } from '@ile-ase/common';
 import { AvailabilitySlot } from './types';
 import { WhatsAppService } from '../whatsapp';
 import { combineDateTimeInZone } from '../utils/scheduling.util';
+import PDFDocument from 'pdfkit';
 
 const DEFAULT_TIMEZONE = 'Africa/Lagos';
 
@@ -550,7 +551,8 @@ export class AppointmentsService {
 
       return availableSlots.filter((slot) => {
         const [timePart, period] = slot.split(' ');
-        let [hour, minute] = timePart.split(':').map(Number);
+        const [rawHour, minute] = timePart.split(':').map(Number);
+        let hour = rawHour;
 
         if (period === 'PM' && hour !== 12) {
           hour += 12;
@@ -949,9 +951,6 @@ export class AppointmentsService {
     if (appointment.status !== 'COMPLETED') {
       throw new BadRequestException('Receipts can only be generated for completed appointments');
     }
-
-    // Import PDF generation library
-    const PDFDocument = require('pdfkit');
 
     // Create a new PDF document
     const doc = new PDFDocument();

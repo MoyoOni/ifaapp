@@ -7,8 +7,7 @@ import { INestApplication } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { Controller, Get } from '@nestjs/common';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const request = require('supertest');
+import * as request from 'supertest';
 
 @Controller()
 class PingController {
