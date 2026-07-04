@@ -30,7 +30,7 @@ export class OralHistorySeedService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
-    private readonly secretsService: SecretsService,
+    private readonly secretsService: SecretsService
   ) {}
 
   /**
@@ -38,14 +38,10 @@ export class OralHistorySeedService {
    */
   async validateStructure(data: OralHistoryRecord[]): Promise<boolean> {
     for (const record of data) {
-      if (
-        !record.id ||
-        !record.title ||
-        !record.category ||
-        !record.content ||
-        !record.createdBy
-      ) {
-        this.logger.error(`Invalid record structure: missing required field in record ${record.id}`);
+      if (!record.id || !record.title || !record.category || !record.content || !record.createdBy) {
+        this.logger.error(
+          `Invalid record structure: missing required field in record ${record.id}`
+        );
         return false;
       }
 
@@ -77,13 +73,13 @@ export class OralHistorySeedService {
     try {
       // Load seed data (we'll load from a JSON file or API)
       const seedData = await this.loadSeedData();
-      
+
       if (!(await this.validateStructure(seedData))) {
         return {
           totalRecords: 0,
           dryRun,
           validated: false,
-          errors: ['Seed data validation failed']
+          errors: ['Seed data validation failed'],
         };
       }
 
@@ -98,9 +94,9 @@ export class OralHistorySeedService {
         const batchSize = 10;
         for (let i = 0; i < seedData.length; i += batchSize) {
           const batch = seedData.slice(i, i + batchSize);
-          
+
           await this.prisma.$transaction(
-            batch.map(record => 
+            batch.map((record) =>
               this.prisma.oralHistoryEntry.upsert({
                 where: { id: record.id },
                 update: {
@@ -129,17 +125,21 @@ export class OralHistorySeedService {
               })
             )
           );
-          
-          this.logger.log(`Seeded batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(seedData.length / batchSize)}`);
+
+          this.logger.log(
+            `Seeded batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(seedData.length / batchSize)}`
+          );
         }
       }
 
-      this.logger.log(`${dryRun ? 'Dry run completed' : 'Seeding completed'} with ${seedData.length} records`);
+      this.logger.log(
+        `${dryRun ? 'Dry run completed' : 'Seeding completed'} with ${seedData.length} records`
+      );
 
       return {
         totalRecords: seedData.length,
         dryRun,
-        validated: true
+        validated: true,
       };
     } catch (error: any) {
       this.logger.error(`Error during seeding: ${error.message}`, error.stack);
@@ -147,7 +147,7 @@ export class OralHistorySeedService {
         totalRecords: 0,
         dryRun,
         validated: false,
-        errors: [error.message]
+        errors: [error.message],
       };
     }
   }
@@ -159,7 +159,7 @@ export class OralHistorySeedService {
     // Determine the source of the seed data
     // Could be from a JSON file or from a remote API
     const dataSource = this.configService.get<string>('ORAL_HISTORY_DATA_SOURCE') || 'local';
-    
+
     if (dataSource === 'local') {
       // Load from local JSON file
       try {
@@ -167,7 +167,7 @@ export class OralHistorySeedService {
         const fs = require('fs');
         const path = require('path');
         const filePath = path.join(process.cwd(), 'data', 'oral-history-data.json');
-        
+
         if (fs.existsSync(filePath)) {
           const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
           this.logger.log(`Loaded ${data.length} oral history records from local file`);
@@ -194,7 +194,7 @@ export class OralHistorySeedService {
     // Find a valid admin user to assign as the creator
     // In a real scenario, this would be passed as a parameter or fetched from config
     const defaultCreatorId = 'admin-user-id'; // This should be replaced with an actual user ID
-    
+
     return [
       {
         id: 'oh-001',
@@ -229,7 +229,7 @@ export class OralHistorySeedService {
         content: 'Sacrifices in our tradition are not about taking life but about giving back...',
         publishedAt: new Date('2024-07-25'),
         createdBy: defaultCreatorId,
-      }
+      },
     ];
   }
 }

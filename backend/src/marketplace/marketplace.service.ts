@@ -15,7 +15,13 @@ import { UpdateOrderDto } from './dto/update-order.dto';
 import { RefundOrderDto } from './dto/refund-order.dto';
 import { CreateProductReviewDto } from './dto/create-product-review.dto';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
-import { VendorStatus, ProductStatus, OrderStatus, VerifiedTier, EscrowType } from '@ile-ase/common';
+import {
+  VendorStatus,
+  ProductStatus,
+  OrderStatus,
+  VerifiedTier,
+  EscrowType,
+} from '@ile-ase/common';
 import { OrderNotificationService } from './order-notification.service';
 import { SearchService } from '../search/search.service';
 import { WhatsAppService } from '../whatsapp';
@@ -36,7 +42,7 @@ export class MarketplaceService {
     private orderNotificationService: OrderNotificationService,
     private searchService: SearchService,
     private whatsapp: WhatsAppService,
-    private walletService: WalletService,
+    private walletService: WalletService
   ) {}
 
   // ==================== Vendors ====================
@@ -562,12 +568,18 @@ export class MarketplaceService {
     }
 
     // Fire email notifications (non-blocking — don't fail the order if email fails)
-    this.orderNotificationService.notifyOrderCreated({
-      ...order,
-      customer: (order as any).customer ?? { id: currentUser.id, name: (currentUser as any).name ?? 'Customer', email: currentUser.email ?? '' },
-    } as any).catch((err: Error) => {
-      this.logger.warn(`Order created email failed for ${order.id}: ${err.message}`);
-    });
+    this.orderNotificationService
+      .notifyOrderCreated({
+        ...order,
+        customer: (order as any).customer ?? {
+          id: currentUser.id,
+          name: (currentUser as any).name ?? 'Customer',
+          email: currentUser.email ?? '',
+        },
+      } as any)
+      .catch((err: Error) => {
+        this.logger.warn(`Order created email failed for ${order.id}: ${err.message}`);
+      });
 
     return { ...order, devotedFreeDelivery };
   }
@@ -741,9 +753,11 @@ export class MarketplaceService {
 
     // Fire status-change email notifications (non-blocking)
     if (dto.status && dto.status !== previousStatus) {
-      this.orderNotificationService.notifyOrderStatusChange(updatedOrder as any, previousStatus).catch((err: Error) => {
-        this.logger.warn(`Order status email failed for ${orderId}: ${err.message}`);
-      });
+      this.orderNotificationService
+        .notifyOrderStatusChange(updatedOrder as any, previousStatus)
+        .catch((err: Error) => {
+          this.logger.warn(`Order status email failed for ${orderId}: ${err.message}`);
+        });
     }
 
     // Fire tracking notification when tracking number is added
@@ -763,8 +777,11 @@ export class MarketplaceService {
     // just "status is SHIPPED/DELIVERED") so a redundant re-save of the same
     // status — a retried request, or an update that only changes the tracking
     // number — can't trigger a second release of the same tier.
-    if (dto.status && dto.status !== previousStatus &&
-        (dto.status === OrderStatus.SHIPPED || dto.status === OrderStatus.DELIVERED)) {
+    if (
+      dto.status &&
+      dto.status !== previousStatus &&
+      (dto.status === OrderStatus.SHIPPED || dto.status === OrderStatus.DELIVERED)
+    ) {
       this.releaseOrderEscrowTier(orderId, dto.status, currentUser).catch((err: Error) => {
         this.logger.warn(`Escrow release failed for order ${orderId}: ${err.message}`);
       });
@@ -793,7 +810,10 @@ export class MarketplaceService {
       return;
     }
 
-    const releaseTiers = escrow.releaseTiers as { releasedTier1?: boolean; releasedTier2?: boolean } | null;
+    const releaseTiers = escrow.releaseTiers as {
+      releasedTier1?: boolean;
+      releasedTier2?: boolean;
+    } | null;
     const tier = status === OrderStatus.SHIPPED ? ReleaseTier.TIER_1 : ReleaseTier.TIER_2;
     const alreadyReleased =
       tier === ReleaseTier.TIER_1 ? releaseTiers?.releasedTier1 : releaseTiers?.releasedTier2;
@@ -860,9 +880,11 @@ export class MarketplaceService {
     });
 
     // Notify customer via email (non-blocking)
-    this.orderNotificationService.notifyOrderStatusChange(refunded as any, order.status).catch((err: Error) => {
-      this.logger.warn(`Refund notification email failed for ${orderId}: ${err.message}`);
-    });
+    this.orderNotificationService
+      .notifyOrderStatusChange(refunded as any, order.status)
+      .catch((err: Error) => {
+        this.logger.warn(`Refund notification email failed for ${orderId}: ${err.message}`);
+      });
 
     return refunded;
   }
@@ -928,7 +950,9 @@ export class MarketplaceService {
       this.prisma.product.count({ where: { vendorId } }),
     ]);
 
-    const completedOrders = allOrders.filter(o => o.status === 'COMPLETED' || o.status === 'DELIVERED');
+    const completedOrders = allOrders.filter(
+      (o) => o.status === 'COMPLETED' || o.status === 'DELIVERED'
+    );
     const totalRevenue = completedOrders.reduce((s, o) => s + Number(o.totalAmount), 0);
     const totalOrders = allOrders.length;
     const totalSales = completedOrders.length;
@@ -940,7 +964,7 @@ export class MarketplaceService {
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const end = new Date(d.getFullYear(), d.getMonth() + 1, 1);
-      const monthOrders = completedOrders.filter(o => {
+      const monthOrders = completedOrders.filter((o) => {
         const created = new Date(o.createdAt);
         return created >= d && created < end;
       });
@@ -953,9 +977,10 @@ export class MarketplaceService {
 
     // Revenue growth: compare current month vs previous month
     const [curr, prev] = monthlyRevenue.slice(-2);
-    const revenueGrowth = prev && prev.revenue > 0
-      ? Math.round(((curr.revenue - prev.revenue) / prev.revenue) * 100)
-      : 0;
+    const revenueGrowth =
+      prev && prev.revenue > 0
+        ? Math.round(((curr.revenue - prev.revenue) / prev.revenue) * 100)
+        : 0;
 
     // Top products by order count
     const productOrderCounts: Record<string, number> = {};
@@ -972,7 +997,7 @@ export class MarketplaceService {
       .sort(([, a], [, b]) => b - a)
       .slice(0, 5)
       .map(([productId, count]) => {
-        const item = orderItems.find(i => i.product.id === productId);
+        const item = orderItems.find((i) => i.product.id === productId);
         return { id: productId, name: item?.product.name ?? 'Unknown', orderCount: count };
       });
 

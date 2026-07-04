@@ -22,12 +22,7 @@ import { NotificationPreferencesService } from '../notifications/notification-pr
 // PushNotificationService, despite the similar name) — the same
 // pre-existing, wider DI gap noted in ProBacklog-v1.md.
 @Module({
-  imports: [
-    PrismaModule,
-    forwardRef(() => PaymentsModule),
-    NotificationsModule,
-    OutboxModule,
-  ],
+  imports: [PrismaModule, forwardRef(() => PaymentsModule), NotificationsModule, OutboxModule],
   providers: [
     WalletService,
     EscrowExpiryService,

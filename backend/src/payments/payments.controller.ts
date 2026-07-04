@@ -119,7 +119,10 @@ export class PaymentsController {
   @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Post('webhook/paystack')
   @HttpCode(HttpStatus.OK)
-  async paystackWebhook(@Body() payload: PaystackWebhookPayload, @Headers('x-paystack-signature') signature?: string) {
+  async paystackWebhook(
+    @Body() payload: PaystackWebhookPayload,
+    @Headers('x-paystack-signature') signature?: string
+  ) {
     return this.paymentsService.handleWebhook(payload, PaymentProvider.PAYSTACK, signature);
   }
 
@@ -131,7 +134,10 @@ export class PaymentsController {
   @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Post('webhook/flutterwave')
   @HttpCode(HttpStatus.OK)
-  async flutterwaveWebhook(@Body() payload: FlutterwaveWebhookPayload, @Headers('verif-hash') signature?: string) {
+  async flutterwaveWebhook(
+    @Body() payload: FlutterwaveWebhookPayload,
+    @Headers('verif-hash') signature?: string
+  ) {
     return this.paymentsService.handleWebhook(payload, PaymentProvider.FLUTTERWAVE, signature);
   }
 

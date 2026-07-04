@@ -32,10 +32,7 @@ export class PushNotificationController {
    */
   @Post('subscribe')
   @HttpCode(HttpStatus.OK)
-  async subscribeToNotifications(
-    @CurrentUser() user: User,
-    @Body('token') token: string
-  ) {
+  async subscribeToNotifications(@CurrentUser() user: User, @Body('token') token: string) {
     this.logger.log(`User ${user.id} subscribing to push notifications`);
     return this.pushNotificationService.subscribeUser(user.id, token);
   }
@@ -45,10 +42,7 @@ export class PushNotificationController {
    */
   @Post('unsubscribe')
   @HttpCode(HttpStatus.OK)
-  async unsubscribeFromNotifications(
-    @CurrentUser() user: User,
-    @Body('token') token: string
-  ) {
+  async unsubscribeFromNotifications(@CurrentUser() user: User, @Body('token') token: string) {
     this.logger.log(`User ${user.id} unsubscribing from push notifications`);
     return this.pushNotificationService.unsubscribeUser(user.id, token);
   }
@@ -82,7 +76,7 @@ export class PushNotificationController {
     @Body('appointmentTime') appointmentTimeString: string
   ) {
     this.logger.log(`Sending booking reminder from ${currentUser.id} to ${userId}`);
-    
+
     const appointmentTime = new Date(appointmentTimeString);
     return this.pushNotificationService.sendBookingReminderNotification(
       userId,
@@ -126,12 +120,10 @@ export class PushNotificationController {
     @Body('title') title: string,
     @Body('body') body: string
   ) {
-    this.logger.log(`Sending system notification from ${currentUser.id} to ${userIds.length} users`);
-    return this.pushNotificationService.sendSystemNotification(
-      userIds,
-      title,
-      body
+    this.logger.log(
+      `Sending system notification from ${currentUser.id} to ${userIds.length} users`
     );
+    return this.pushNotificationService.sendSystemNotification(userIds, title, body);
   }
 
   /**
@@ -141,12 +133,12 @@ export class PushNotificationController {
   @HttpCode(HttpStatus.OK)
   async getNotificationStatus(@CurrentUser() user: User) {
     this.logger.log(`Getting notification status for user ${user.id}`);
-    
+
     const hasTokens = user.fcmTokens && user.fcmTokens.length > 0;
     return {
       userId: user.id,
       hasSubscribed: hasTokens,
-      tokenCount: user.fcmTokens ? user.fcmTokens.length : 0
+      tokenCount: user.fcmTokens ? user.fcmTokens.length : 0,
     };
   }
 }

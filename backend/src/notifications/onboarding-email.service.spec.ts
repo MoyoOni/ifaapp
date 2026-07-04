@@ -77,7 +77,7 @@ describe('OnboardingEmailService', () => {
       expect(emailService.sendDirectEmail).toHaveBeenCalledWith(
         user.email,
         expect.any(String),
-        expect.any(String),
+        expect.any(String)
       );
       expect(prismaService.onboardingEmail.create).toHaveBeenCalledWith({
         data: {
@@ -91,7 +91,9 @@ describe('OnboardingEmailService', () => {
     it('should do nothing when the user does not exist', async () => {
       jest.spyOn(prismaService.user, 'findUnique').mockResolvedValue(null);
 
-      await expect(service.sendOnboardingCompletionEmail('non-existent-user-id')).resolves.not.toThrow();
+      await expect(
+        service.sendOnboardingCompletionEmail('non-existent-user-id')
+      ).resolves.not.toThrow();
       expect(emailService.sendDirectEmail).not.toHaveBeenCalled();
     });
 

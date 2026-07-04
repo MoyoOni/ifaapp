@@ -10,9 +10,15 @@ export class AdminTrustScoreService {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
-        id: true, name: true, email: true, role: true,
-        trustScore: true, trustScoreOverride: true,
-        trustScoreOverrideReason: true, trustScoreOverrideBy: true, trustScoreOverrideAt: true,
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        trustScore: true,
+        trustScoreOverride: true,
+        trustScoreOverrideReason: true,
+        trustScoreOverrideBy: true,
+        trustScoreOverrideAt: true,
       },
     });
     if (!user) throw new NotFoundException('User not found');
@@ -27,7 +33,11 @@ export class AdminTrustScoreService {
     // Score breakdown — mirrors recomputeTrustScore() logic for admin visibility
     const [appointments, reviews, posts, threads, referrals, certificates] = await Promise.all([
       this.prisma.appointment.count({ where: { babalawoId: userId, status: 'COMPLETED' } }),
-      this.prisma.babalawoReview.aggregate({ where: { babalawoId: userId }, _avg: { rating: true }, _count: { id: true } }),
+      this.prisma.babalawoReview.aggregate({
+        where: { babalawoId: userId },
+        _avg: { rating: true },
+        _count: { id: true },
+      }),
       this.prisma.forumPost.count({ where: { authorId: userId, status: 'PUBLISHED' } }),
       this.prisma.forumThread.count({ where: { authorId: userId } }),
       this.prisma.referral.count({ where: { referrerId: userId } }),
@@ -35,8 +45,16 @@ export class AdminTrustScoreService {
     ]);
 
     const breakdown = [
-      { component: 'Completed consultations', value: appointments, points: Math.min(appointments * 5, 30) },
-      { component: 'Average review rating', value: reviews._avg.rating?.toFixed(1) ?? 'N/A', points: reviews._count.id > 0 ? Math.round((reviews._avg.rating ?? 0) * 4) : 0 },
+      {
+        component: 'Completed consultations',
+        value: appointments,
+        points: Math.min(appointments * 5, 30),
+      },
+      {
+        component: 'Average review rating',
+        value: reviews._avg.rating?.toFixed(1) ?? 'N/A',
+        points: reviews._count.id > 0 ? Math.round((reviews._avg.rating ?? 0) * 4) : 0,
+      },
       { component: 'Forum posts', value: posts, points: Math.min(posts * 1, 10) },
       { component: 'Forum threads', value: threads, points: Math.min(threads * 2, 10) },
       { component: 'Referrals', value: referrals, points: Math.min(referrals * 3, 15) },
@@ -58,8 +76,10 @@ export class AdminTrustScoreService {
     });
     await this.prisma.auditLog.create({
       data: {
-        userId: adminId, action: 'TRUST_SCORE_OVERRIDE',
-        resourceType: 'TrustScore', resourceId: userId,
+        userId: adminId,
+        action: 'TRUST_SCORE_OVERRIDE',
+        resourceType: 'TrustScore',
+        resourceId: userId,
         newValues: { override, reason },
       },
     });

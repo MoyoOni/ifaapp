@@ -41,7 +41,7 @@ describe('WhatsAppService (P1-02: timeout + retry/backoff)', () => {
     expect(mockedAxios.post).toHaveBeenCalledWith(
       expect.any(String),
       expect.any(Object),
-      expect.objectContaining({ timeout: 15000 }),
+      expect.objectContaining({ timeout: 15000 })
     );
   });
 
@@ -73,7 +73,7 @@ describe('WhatsAppService (P1-02: timeout + retry/backoff)', () => {
         date: '2026-08-01',
         time: '10:00',
         url: 'https://iluase.com',
-      }),
+      })
     ).resolves.toBeUndefined();
 
     expect(mockedAxios.post).toHaveBeenCalledTimes(1);
@@ -88,7 +88,7 @@ describe('WhatsAppService (P1-02: timeout + retry/backoff)', () => {
         amount: '₦5,000',
         fromName: 'Client',
         url: 'https://iluase.com',
-      }),
+      })
     ).resolves.toBeUndefined();
 
     expect(mockedAxios.post).toHaveBeenCalledTimes(3);

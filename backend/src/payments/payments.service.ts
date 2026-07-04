@@ -23,7 +23,11 @@ import { Payment } from '../shared/types/prisma-models';
 const Flutterwave = require('flutterwave-node-v3');
 import { NotificationService } from '../notifications/notification.service';
 import { PaystackApiService } from './paystack-api.service';
-import { PaymentWebhookPayload, PaystackWebhookPayload, FlutterwaveWebhookPayload } from './types/webhook-payloads';
+import {
+  PaymentWebhookPayload,
+  PaystackWebhookPayload,
+  FlutterwaveWebhookPayload,
+} from './types/webhook-payloads';
 
 /**
  * Payment Gateway Provider Enum
@@ -356,7 +360,11 @@ export class PaymentsService {
   /**
    * Handle payment webhook
    */
-  async handleWebhook(payload: PaymentWebhookPayload, provider: PaymentProvider, signature?: string) {
+  async handleWebhook(
+    payload: PaymentWebhookPayload,
+    provider: PaymentProvider,
+    signature?: string
+  ) {
     try {
       // The `provider` param (set by which controller route received the
       // request — see payments.controller.ts) is the actual discriminant
@@ -503,9 +511,7 @@ export class PaymentsService {
     // FLUTTERWAVE_SECRET_HASH silently allowed every request through unverified.
     const secretHash = this.configService.get<string>('FLUTTERWAVE_SECRET_HASH');
     if (!secretHash) {
-      this.logger.error(
-        'FLUTTERWAVE_SECRET_HASH is not configured — refusing to process webhook'
-      );
+      this.logger.error('FLUTTERWAVE_SECRET_HASH is not configured — refusing to process webhook');
       throw new UnauthorizedException('Webhook processing is not configured');
     }
     if (!signature) {

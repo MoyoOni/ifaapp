@@ -6,7 +6,11 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { NotificationService, NotificationType, NotificationCategory } from '../notifications/notification.service';
+import {
+  NotificationService,
+  NotificationType,
+  NotificationCategory,
+} from '../notifications/notification.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { CheckAvailabilityDto } from './dto/check-availability.dto';
@@ -26,7 +30,7 @@ export class AppointmentsService {
     private prisma: PrismaService,
     private notificationService: NotificationService,
     private walletService: WalletService,
-    private whatsapp: WhatsAppService,
+    private whatsapp: WhatsAppService
   ) {}
 
   private async getAppointmentWithDetails(id: string) {
@@ -60,7 +64,11 @@ export class AppointmentsService {
     // fresh timezone-aware combination of the legacy string fields.
     const existingStart =
       (existing as any).scheduledAt ??
-      combineDateTimeInZone(existing.date, existing.time, (existing as any).timezone || DEFAULT_TIMEZONE);
+      combineDateTimeInZone(
+        existing.date,
+        existing.time,
+        (existing as any).timezone || DEFAULT_TIMEZONE
+      );
     const existingEnd = new Date(existingStart.getTime() + existing.duration * 60000);
 
     const newStart = combineDateTimeInZone(newDate, newTime, newTimezone);
@@ -170,7 +178,14 @@ export class AppointmentsService {
     const appointment = await this.prisma.$transaction(async (tx: any) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(${this.lockKeyFor(babalawoId, date)})`;
 
-      const isAvailable = await this.isTimeSlotAvailable(babalawoId, date, time, duration, tx, timezone);
+      const isAvailable = await this.isTimeSlotAvailable(
+        babalawoId,
+        date,
+        time,
+        duration,
+        tx,
+        timezone
+      );
       if (!isAvailable) {
         throw new ConflictException(
           'This time slot is already booked. Please choose another time.'
@@ -298,19 +313,15 @@ export class AppointmentsService {
 
       this.maybeAssignPersonalAwo(appointment.clientId, appointment.babalawoId).catch(() => {});
       this.maybeGrantReferralReward(appointment.clientId).catch(() => {});
-      this.notificationService.scheduleFollowUpReminder(
-        appointment.babalawoId,
-        appointment.id,
-        appointment.client.name,
-      ).catch(() => {});
-      
+      this.notificationService
+        .scheduleFollowUpReminder(appointment.babalawoId, appointment.id, appointment.client.name)
+        .catch(() => {});
+
       // Schedule a review request for the client 24 hours after appointment completion
       if (status === 'COMPLETED') {
-        this.notificationService.scheduleReviewRequest(
-          appointment.clientId,
-          appointment.id,
-          appointment.babalawo.name,
-        ).catch(() => {});
+        this.notificationService
+          .scheduleReviewRequest(appointment.clientId, appointment.id, appointment.babalawo.name)
+          .catch(() => {});
       }
     }
 
@@ -462,7 +473,12 @@ export class AppointmentsService {
     if (Array.isArray(raw)) {
       schedule = raw as AvailabilitySlot[];
     } else {
-      const ext = raw as { schedule?: AvailabilitySlot[]; blackoutDates?: string[]; advanceBookingDays?: number; minNoticeHours?: number };
+      const ext = raw as {
+        schedule?: AvailabilitySlot[];
+        blackoutDates?: string[];
+        advanceBookingDays?: number;
+        minNoticeHours?: number;
+      };
       schedule = ext.schedule ?? [];
       blackoutDates = ext.blackoutDates ?? [];
       advanceBookingDays = ext.advanceBookingDays ?? 60;
@@ -472,7 +488,9 @@ export class AppointmentsService {
     // Enforce advance booking window
     const nowCheck = new Date();
     const requestDate = new Date(date);
-    const diffDays = Math.floor((requestDate.getTime() - nowCheck.getTime()) / (1000 * 60 * 60 * 24));
+    const diffDays = Math.floor(
+      (requestDate.getTime() - nowCheck.getTime()) / (1000 * 60 * 60 * 24)
+    );
     if (diffDays > advanceBookingDays) return [];
 
     // Enforce minimum notice
@@ -485,9 +503,7 @@ export class AppointmentsService {
     const dateObj = new Date(date);
     const dayOfWeek = dateObj.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
 
-    const dailyAvailability = schedule.find(
-      (avail: AvailabilitySlot) => avail.day === dayOfWeek
-    );
+    const dailyAvailability = schedule.find((avail: AvailabilitySlot) => avail.day === dayOfWeek);
 
     if (!dailyAvailability || !dailyAvailability.slots || dailyAvailability.slots.length === 0) {
       return [];
@@ -676,7 +692,14 @@ export class AppointmentsService {
     }
 
     // Check time slot availability
-    const isAvailable = await this.isTimeSlotAvailable(babalawoId, date, time, durationNum, this.prisma, timezone);
+    const isAvailable = await this.isTimeSlotAvailable(
+      babalawoId,
+      date,
+      time,
+      durationNum,
+      this.prisma,
+      timezone
+    );
 
     if (!isAvailable) {
       return {
@@ -829,11 +852,18 @@ export class AppointmentsService {
 
     const REWARD_NGN = 500;
 
-    const rewardDto = { amount: REWARD_NGN, currency: 'NGN' as any, reference: `referral_reward_${referral.id}` };
+    const rewardDto = {
+      amount: REWARD_NGN,
+      currency: 'NGN' as any,
+      reference: `referral_reward_${referral.id}`,
+    };
     // Credit referrer wallet
     await this.walletService.depositFunds(referral.referrerId, rewardDto);
     // Credit referee wallet
-    await this.walletService.depositFunds(clientId, { ...rewardDto, reference: `referral_welcome_${referral.id}` });
+    await this.walletService.depositFunds(clientId, {
+      ...rewardDto,
+      reference: `referral_welcome_${referral.id}`,
+    });
 
     await this.prisma.referral.update({
       where: { id: referral.id },
@@ -873,9 +903,9 @@ export class AppointmentsService {
     }
 
     return this.prisma.appointment.findMany({
-      where: { 
-        clientId, 
-        status: 'COMPLETED' // Only completed appointments in session history
+      where: {
+        clientId,
+        status: 'COMPLETED', // Only completed appointments in session history
       },
       include: {
         babalawo: {
@@ -929,7 +959,7 @@ export class AppointmentsService {
 
     // Stream events to capture the PDF data
     doc.on('data', (chunk: Uint8Array) => chunks.push(chunk));
-    
+
     // Add content to the PDF
     doc.fontSize(20).text('Ìlú Àṣẹ Receipt', { align: 'center' });
     doc.moveDown();
@@ -939,8 +969,12 @@ export class AppointmentsService {
     doc.text(`Date Generated: ${new Date().toLocaleDateString()}`, { align: 'right' });
     doc.moveDown();
 
-    doc.text(`Client: ${appointment.client.name}${appointment.client.yorubaName ? ` (${appointment.client.yorubaName})` : ''}`);
-    doc.text(`Babalawo: ${appointment.babalawo.name}${appointment.babalawo.yorubaName ? ` (${appointment.babalawo.yorubaName})` : ''}`);
+    doc.text(
+      `Client: ${appointment.client.name}${appointment.client.yorubaName ? ` (${appointment.client.yorubaName})` : ''}`
+    );
+    doc.text(
+      `Babalawo: ${appointment.babalawo.name}${appointment.babalawo.yorubaName ? ` (${appointment.babalawo.yorubaName})` : ''}`
+    );
     doc.moveDown();
 
     doc.text(`Date: ${new Date(appointment.date).toLocaleDateString()}`);
@@ -961,7 +995,9 @@ export class AppointmentsService {
     doc.moveDown();
 
     doc.text('Ìlú Àṣẹ Platform', { align: 'center' });
-    doc.text('Connecting the Yoruba diaspora with authentic spiritual guidance', { align: 'center' });
+    doc.text('Connecting the Yoruba diaspora with authentic spiritual guidance', {
+      align: 'center',
+    });
 
     // End the PDF document
     doc.end();

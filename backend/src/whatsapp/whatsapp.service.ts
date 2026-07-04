@@ -32,7 +32,9 @@ export class WhatsAppService {
     this.apiUrl = `https://graph.facebook.com/v19.0/${this.phoneNumberId}/messages`;
     this.enabled = !!(this.phoneNumberId && this.accessToken);
     if (!this.enabled) {
-      this.logger.warn('WhatsApp not configured — WHATSAPP_PHONE_NUMBER_ID or WHATSAPP_ACCESS_TOKEN missing');
+      this.logger.warn(
+        'WhatsApp not configured — WHATSAPP_PHONE_NUMBER_ID or WHATSAPP_ACCESS_TOKEN missing'
+      );
     }
   }
 
@@ -50,7 +52,7 @@ export class WhatsAppService {
   async sendTemplateMessage(
     to: string,
     templateName: WhatsAppTemplate,
-    components: TemplateComponent[],
+    components: TemplateComponent[]
   ): Promise<void> {
     if (!this.enabled) {
       this.logger.debug(`[WhatsApp SKIP] ${templateName} → ${to} (not configured)`);
@@ -81,7 +83,7 @@ export class WhatsAppService {
               Authorization: `Bearer ${this.accessToken}`,
               'Content-Type': 'application/json',
             },
-          },
+          }
         )
       );
       this.logger.log(`[WhatsApp OK] ${templateName} → ${to}`);
@@ -92,7 +94,7 @@ export class WhatsAppService {
       // original finding now goes through the outbox pattern (P1-01)
       // instead, which is retried independently of this method's own retry.
       this.logger.error(
-        `[WhatsApp FAIL] ${templateName} → ${to}: ${err?.response?.data?.error?.message || err.message}`,
+        `[WhatsApp FAIL] ${templateName} → ${to}: ${err?.response?.data?.error?.message || err.message}`
       );
     }
   }
@@ -213,11 +215,7 @@ export class WhatsAppService {
 
   // ── Shared notifications ────────────────────────────────────────────────
 
-  async notifyNewMessage(opts: {
-    phone: string;
-    senderName: string;
-    url: string;
-  }): Promise<void> {
+  async notifyNewMessage(opts: { phone: string; senderName: string; url: string }): Promise<void> {
     await this.sendTemplateMessage(opts.phone, 'new_message_received', [
       {
         type: 'body',

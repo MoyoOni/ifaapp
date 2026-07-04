@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Patch, Param, Body, UseGuards, Query, ForbiddenException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Param,
+  Body,
+  UseGuards,
+  Query,
+  ForbiddenException,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
@@ -25,7 +35,11 @@ export class UsersController {
   }
 
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() dto: UpdateUserDto, @CurrentUser() currentUser?: CurrentUserPayload) {
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateUserDto,
+    @CurrentUser() currentUser?: CurrentUserPayload
+  ) {
     // Only allow users to update their own profile unless they're an admin
     if (currentUser?.sub !== id && currentUser?.role !== 'ADMIN') {
       throw new ForbiddenException();
@@ -58,13 +72,13 @@ export class UsersController {
     if (currentUser?.role !== 'ADMIN') {
       throw new ForbiddenException();
     }
-    
+
     // Create filters object without 'limit' property which doesn't exist in FindAllFilters
     const filters: any = {};
     if (search) filters.search = search;
     if (role) filters.role = role;
-    if (limit) filters.take = parseInt(limit, 10);  // Changed from 'limit' to 'take'
-    if (offset) filters.skip = parseInt(offset, 10);  // Changed from 'offset' to 'skip'
+    if (limit) filters.take = parseInt(limit, 10); // Changed from 'limit' to 'take'
+    if (offset) filters.skip = parseInt(offset, 10); // Changed from 'offset' to 'skip'
 
     return this.usersService.findAll(filters);
   }

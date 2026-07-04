@@ -315,7 +315,10 @@ export class GdprService {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      this.logger.error(`Error during user data export for user ID ${userId}: ${(error as Error).message}`, (error as Error).stack);
+      this.logger.error(
+        `Error during user data export for user ID ${userId}: ${(error as Error).message}`,
+        (error as Error).stack
+      );
       throw new BadRequestException(`Could not export user data: ${(error as Error).message}`);
     }
   }
@@ -329,7 +332,7 @@ export class GdprService {
     try {
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
-        select: { email: true, name: true, id: true }
+        select: { email: true, name: true, id: true },
       });
 
       if (!user) {
@@ -367,31 +370,28 @@ export class GdprService {
 
         // For related entities, we'll anonymize where possible or remove references
         // depending on business requirements and legal obligations
-        
+
         // For forum posts and threads, we'll keep them but anonymize author
         await tx.forumPost.updateMany({
           where: { authorId: userId },
           data: {
-            content: '[Content from deleted account]'
-          }
+            content: '[Content from deleted account]',
+          },
         });
 
         await tx.forumThread.updateMany({
           where: { authorId: userId },
           data: {
             title: '[Title from deleted account]',
-            content: '[Content from deleted account]'
-          }
+            content: '[Content from deleted account]',
+          },
         });
 
         // Delete messages where the user was involved (both sent and received)
         await tx.message.deleteMany({
           where: {
-            OR: [
-              { senderId: userId },
-              { receiverId: userId }
-            ]
-          }
+            OR: [{ senderId: userId }, { receiverId: userId }],
+          },
         });
 
         // Anonymize or remove other related data as appropriate
@@ -399,8 +399,8 @@ export class GdprService {
           where: { clientId: userId },
           data: {
             content: '[Review from deleted account]', // Using the correct field name instead of comment or review
-            rating: 0 // Reset rating
-          }
+            rating: 0, // Reset rating
+          },
         });
 
         // Log this action for audit purposes
@@ -416,21 +416,26 @@ export class GdprService {
               deletedUserEmail: user.email,
               deletedUserName: user.name,
               performedBy: admin.sub,
-              timestamp: new Date().toISOString()
+              timestamp: new Date().toISOString(),
             }, // Using correct field name instead of payload
-          }
+          },
         });
 
         return { success: true, message: 'User data has been anonymized and marked for deletion' };
       });
 
-      this.logger.log(`User data deletion/anonymization completed for user ID: ${userId}, performed by admin: ${admin.sub}`);
+      this.logger.log(
+        `User data deletion/anonymization completed for user ID: ${userId}, performed by admin: ${admin.sub}`
+      );
       return result;
     } catch (error) {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      this.logger.error(`Error during user data deletion for user ID ${userId}: ${(error as Error).message}`, (error as Error).stack);
+      this.logger.error(
+        `Error during user data deletion for user ID ${userId}: ${(error as Error).message}`,
+        (error as Error).stack
+      );
       throw new BadRequestException(`Could not delete user account: ${(error as Error).message}`);
     }
   }
@@ -440,11 +445,14 @@ export class GdprService {
    * @param userId The ID of the user updating preferences
    * @param preferences Consent preferences to update
    */
-  async updateConsentPreferences(userId: string, preferences: {
-    marketingEmails?: boolean;
-    dataProcessing?: boolean;
-    forumDigest?: boolean;
-  }) {
+  async updateConsentPreferences(
+    userId: string,
+    preferences: {
+      marketingEmails?: boolean;
+      dataProcessing?: boolean;
+      forumDigest?: boolean;
+    }
+  ) {
     try {
       // Since the schema doesn't have marketingEmailOptIn or dataProcessingConsent fields,
       // we'll only update the forumDigestOptIn which does exist
@@ -452,14 +460,14 @@ export class GdprService {
       if (preferences.forumDigest !== undefined) {
         updates.forumDigestOptIn = preferences.forumDigest;
       }
-      
+
       const updatedUser = await this.prisma.user.update({
         where: { id: userId },
         data: updates,
         select: {
           id: true,
           forumDigestOptIn: true,
-        }
+        },
       });
 
       this.logger.log(`Consent preferences updated for user ID: ${userId}`);
@@ -468,8 +476,13 @@ export class GdprService {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      this.logger.error(`Error updating consent preferences for user ID ${userId}: ${(error as Error).message}`, (error as Error).stack);
-      throw new BadRequestException(`Could not update consent preferences: ${(error as Error).message}`);
+      this.logger.error(
+        `Error updating consent preferences for user ID ${userId}: ${(error as Error).message}`,
+        (error as Error).stack
+      );
+      throw new BadRequestException(
+        `Could not update consent preferences: ${(error as Error).message}`
+      );
     }
   }
 

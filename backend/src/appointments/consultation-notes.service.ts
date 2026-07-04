@@ -39,11 +39,7 @@ export class ConsultationNotesService {
     });
   }
 
-  async findNotesForClient(
-    babalawoId: string,
-    clientId: string,
-    currentUser: CurrentUserPayload
-  ) {
+  async findNotesForClient(babalawoId: string, clientId: string, currentUser: CurrentUserPayload) {
     // Verify that the current user is the babalawo for this client
     if (currentUser.id !== babalawoId) {
       throw new ForbiddenException('You can only access notes for clients you serve');
@@ -76,10 +72,7 @@ export class ConsultationNotesService {
     });
   }
 
-  async findNotesByBabalawo(
-    babalawoId: string,
-    currentUser: CurrentUserPayload
-  ) {
+  async findNotesByBabalawo(babalawoId: string, currentUser: CurrentUserPayload) {
     // Verify that the current user is the babalawo
     if (currentUser.id !== babalawoId) {
       throw new ForbiddenException('You can only access notes for clients you serve');
@@ -134,10 +127,7 @@ export class ConsultationNotesService {
     });
   }
 
-  async deleteNote(
-    noteId: string,
-    currentUser: CurrentUserPayload
-  ) {
+  async deleteNote(noteId: string, currentUser: CurrentUserPayload) {
     // Find the note
     const note = await this.prisma.consultationNote.findUnique({
       where: { id: noteId },

@@ -21,9 +21,7 @@ interface UpdateNotificationPreferencesDto {
 @Controller('notifications/preferences')
 @UseGuards(JwtAuthGuard)
 export class NotificationPreferencesController {
-  constructor(
-    private notificationPreferencesService: NotificationPreferencesService,
-  ) {}
+  constructor(private notificationPreferencesService: NotificationPreferencesService) {}
 
   @Get()
   async get(@CurrentUser() user: any) {

@@ -87,7 +87,10 @@ export class AuthService {
       slug = generateSlug(user.name, Date.now().toString(36).slice(-4));
     }
     // Generate unique referral code: firstname-6chars e.g. 'adewale-3k9xp2'
-    const firstName = user.name.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+    const firstName = user.name
+      .split(' ')[0]
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '');
     const suffix = Math.random().toString(36).slice(2, 8);
     const referralCode = `${firstName}-${suffix}`;
     await this.prisma.user.update({ where: { id: user.id }, data: { slug, referralCode } });
@@ -139,7 +142,12 @@ export class AuthService {
     const referrer = await this.prisma.user.findUnique({ where: { referralCode } });
     if (!referrer || referrer.id === newUserId) return; // invalid or self-referral
     await this.prisma.referral.create({
-      data: { referrerId: referrer.id, referredId: newUserId, code: referralCode, rewardGranted: false },
+      data: {
+        referrerId: referrer.id,
+        referredId: newUserId,
+        code: referralCode,
+        rewardGranted: false,
+      },
     });
   }
 
@@ -264,13 +272,23 @@ Aboru Aboye.`;
   }
 
   async login(dto: LoginDto, req?: Request) {
-    const ip = req ? (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ?? req.socket?.remoteAddress : undefined;
+    const ip = req
+      ? ((req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ??
+        req.socket?.remoteAddress)
+      : undefined;
     const ua = req?.headers['user-agent'];
 
     const user = await this.validateUser(dto.email, dto.password); // dto.email accepts email or phone
     if (!user) {
       // Log failed attempt
-      this.logSessionSilently({ userId: null, email: dto.email, ip, ua, success: false, failReason: 'Invalid credentials' });
+      this.logSessionSilently({
+        userId: null,
+        email: dto.email,
+        ip,
+        ua,
+        success: false,
+        failReason: 'Invalid credentials',
+      });
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -300,17 +318,26 @@ Aboru Aboye.`;
     };
   }
 
-  private logSessionSilently(opts: { userId: string | null; email: string; ip?: string; ua?: string; success: boolean; failReason?: string }) {
+  private logSessionSilently(opts: {
+    userId: string | null;
+    email: string;
+    ip?: string;
+    ua?: string;
+    success: boolean;
+    failReason?: string;
+  }) {
     if (!opts.userId) return; // Only log sessions for known users
-    this.prisma.userSession.create({
-      data: {
-        userId: opts.userId,
-        ipAddress: opts.ip ?? null,
-        userAgent: opts.ua ?? null,
-        success: opts.success,
-        failReason: opts.failReason ?? null,
-      },
-    }).catch((err: Error) => this.logger.warn(`Session log failed: ${err.message}`));
+    this.prisma.userSession
+      .create({
+        data: {
+          userId: opts.userId,
+          ipAddress: opts.ip ?? null,
+          userAgent: opts.ua ?? null,
+          success: opts.success,
+          failReason: opts.failReason ?? null,
+        },
+      })
+      .catch((err: Error) => this.logger.warn(`Session log failed: ${err.message}`));
   }
 
   /**
@@ -500,7 +527,10 @@ Aboru Aboye.`;
   }
 
   async setPassword(userId: string, newPassword: string) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { id: true, passwordHash: true } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, passwordHash: true },
+    });
     if (!user) throw new Error('User not found');
     const passwordHash = await bcrypt.hash(newPassword, 10);
     await this.prisma.user.update({ where: { id: userId }, data: { passwordHash } });

@@ -8,7 +8,11 @@ import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 export class ClientSessionNotesService {
   constructor(private prisma: PrismaService) {}
 
-  async create(appointmentId: string, dto: CreateClientSessionNoteDto, currentUser: CurrentUserPayload) {
+  async create(
+    appointmentId: string,
+    dto: CreateClientSessionNoteDto,
+    currentUser: CurrentUserPayload
+  ) {
     const appointment = await this.prisma.appointment.findUnique({
       where: { id: appointmentId },
       select: { clientId: true },

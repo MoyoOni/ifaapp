@@ -117,8 +117,9 @@ describe('AdminFinanceService', () => {
     });
 
     it('should throw ForbiddenException for non-admin user', async () => {
-      await expect(service.getDisputes(mockNonAdminUser))
-        .rejects.toThrow('Only admins can view disputes');
+      await expect(service.getDisputes(mockNonAdminUser)).rejects.toThrow(
+        'Only admins can view disputes'
+      );
     });
   });
 
@@ -132,7 +133,7 @@ describe('AdminFinanceService', () => {
           currency: 'NGN',
           status: 'PENDING',
           createdAt: new Date(),
-        }
+        },
       ];
 
       (prisma.withdrawalRequest.findMany as jest.Mock).mockResolvedValue(mockWithdrawals);
@@ -166,8 +167,9 @@ describe('AdminFinanceService', () => {
     });
 
     it('should throw ForbiddenException for non-admin user', async () => {
-      await expect(service.getPendingWithdrawals(mockNonAdminUser))
-        .rejects.toThrow('Only admins can view withdrawal requests');
+      await expect(service.getPendingWithdrawals(mockNonAdminUser)).rejects.toThrow(
+        'Only admins can view withdrawal requests'
+      );
     });
   });
 });

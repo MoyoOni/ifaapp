@@ -40,7 +40,11 @@ import { ResolveReportedContentDto } from './dto/resolve-reported-content.dto';
 import { RejectWithReasonDto } from './dto/reject-with-reason.dto';
 import { ModerateCircleDto } from './dto/moderate-circle.dto';
 import { ManageAdminDto } from './dto/manage-admin.dto';
-import { CreateQuizQuestionDto, UpdateQuizQuestionDto, UpdateQuizThresholdDto } from './dto/quiz-question.dto';
+import {
+  CreateQuizQuestionDto,
+  UpdateQuizQuestionDto,
+  UpdateQuizThresholdDto,
+} from './dto/quiz-question.dto';
 import { TrustScoreOverrideDto } from './dto/trust-score-override.dto';
 import { FeatureItemDto } from './dto/feature-item.dto';
 import { UpdateCourseStatusDto } from './dto/update-course-status.dto';
@@ -60,7 +64,7 @@ export class AdminController {
     private readonly trustScoreService: AdminTrustScoreService,
     private readonly platformSettingsService: AdminPlatformSettingsService,
     private readonly gdprService: GdprService,
-    private readonly outboxService: OutboxService,
+    private readonly outboxService: OutboxService
   ) {}
 
   @Get('stats')
@@ -599,7 +603,10 @@ export class AdminController {
   @Patch('marketplace/products/:id/feature')
   @Roles(UserRole.ADMIN)
   async featureProduct(@Param('id') id: string, @Body() dto: FeatureItemDto) {
-    return this.marketplaceService.featureProduct(id, dto.featuredUntil ? new Date(dto.featuredUntil) : null);
+    return this.marketplaceService.featureProduct(
+      id,
+      dto.featuredUntil ? new Date(dto.featuredUntil) : null
+    );
   }
 
   @Get('marketplace/orders')
@@ -631,7 +638,10 @@ export class AdminController {
   @Patch('academy/courses/:id/feature')
   @Roles(UserRole.ADMIN)
   async featureCourse(@Param('id') id: string, @Body() dto: FeatureItemDto) {
-    return this.academyService.featureCourse(id, dto.featuredUntil ? new Date(dto.featuredUntil) : null);
+    return this.academyService.featureCourse(
+      id,
+      dto.featuredUntil ? new Date(dto.featuredUntil) : null
+    );
   }
 
   @Patch('academy/courses/:id/status')
@@ -658,13 +668,19 @@ export class AdminController {
 
   @Delete('academy/enrollments/:enrollmentId')
   @Roles(UserRole.ADMIN)
-  async removeEnrollment(@Param('enrollmentId') enrollmentId: string, @Body() dto: RemoveEnrollmentDto) {
+  async removeEnrollment(
+    @Param('enrollmentId') enrollmentId: string,
+    @Body() dto: RemoveEnrollmentDto
+  ) {
     return this.academyService.removeEnrollment(enrollmentId, dto.userId);
   }
 
   @Post('academy/certificates/:enrollmentId/issue')
   @Roles(UserRole.ADMIN)
-  async issueCertificate(@Param('enrollmentId') enrollmentId: string, @CurrentUser() admin: CurrentUserPayload) {
+  async issueCertificate(
+    @Param('enrollmentId') enrollmentId: string,
+    @CurrentUser() admin: CurrentUserPayload
+  ) {
     return this.academyService.issueCertificate(enrollmentId, admin.id);
   }
 
@@ -689,10 +705,7 @@ export class AdminController {
   @Delete('compliance/users/:userId/erase')
   @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.OK)
-  async adminEraseUser(
-    @Param('userId') userId: string,
-    @CurrentUser() admin: CurrentUserPayload,
-  ) {
+  async adminEraseUser(@Param('userId') userId: string, @CurrentUser() admin: CurrentUserPayload) {
     return this.gdprService.deleteUser(userId, admin);
   }
 
@@ -706,9 +719,9 @@ export class AdminController {
   @Roles(UserRole.ADMIN)
   async adminUpdateConsent(
     @Param('userId') userId: string,
-    @Body() preferences: { marketingEmails?: boolean; dataProcessing?: boolean; forumDigest?: boolean },
+    @Body()
+    preferences: { marketingEmails?: boolean; dataProcessing?: boolean; forumDigest?: boolean }
   ) {
     return this.gdprService.updateConsentPreferences(userId, preferences);
   }
-
 }

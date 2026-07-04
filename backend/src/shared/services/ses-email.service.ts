@@ -17,8 +17,7 @@ export class SesEmailService {
   constructor(private configService: ConfigService) {
     const region = this.configService.get<string>('AWS_REGION') || 'us-east-1';
     this.sesClient = new SESClient({ region });
-    this.fromEmail =
-      this.configService.get<string>('SES_FROM_EMAIL') || 'noreply@iluase.com';
+    this.fromEmail = this.configService.get<string>('SES_FROM_EMAIL') || 'noreply@iluase.com';
     this.isProduction = this.configService.get<string>('NODE_ENV') === 'production';
   }
 

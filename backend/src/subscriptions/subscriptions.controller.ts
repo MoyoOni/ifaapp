@@ -39,7 +39,7 @@ export class SubscriptionsController {
   @UseGuards(JwtAuthGuard)
   async initiateSubscription(
     @CurrentUser() currentUser: CurrentUserPayload,
-    @Body() dto: InitiateSubscriptionDto,
+    @Body() dto: InitiateSubscriptionDto
   ) {
     return this.subscriptionsService.initiateSubscription(currentUser.id, dto.plan);
   }
@@ -113,7 +113,7 @@ export class SubscriptionsController {
   @HttpCode(200)
   async handleWebhook(
     @Headers('x-paystack-signature') signature: string,
-    @Req() req: RawBodyRequest,
+    @Req() req: RawBodyRequest
   ) {
     const secret = process.env.PAYSTACK_WEBHOOK_SECRET;
     if (!secret) {
@@ -137,9 +137,7 @@ export class SubscriptionsController {
 
     let event: { event: string; data: any };
     try {
-      event = req.rawBody
-        ? JSON.parse(req.rawBody.toString())
-        : req.body;
+      event = req.rawBody ? JSON.parse(req.rawBody.toString()) : req.body;
     } catch {
       this.logger.warn('Could not parse webhook body');
       return { received: false };

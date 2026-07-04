@@ -80,7 +80,12 @@ export class NotificationsController {
     @CurrentUser() currentUser: CurrentUserPayload,
     @Body() body: RegisterDeviceTokenDto
   ) {
-    return this.pushService.registerDeviceToken(currentUser.id, body.token, body.deviceType, body.platform);
+    return this.pushService.registerDeviceToken(
+      currentUser.id,
+      body.token,
+      body.deviceType,
+      body.platform
+    );
   }
 
   /**

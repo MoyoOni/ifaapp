@@ -2,7 +2,16 @@ import { Test } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { RecommendationsService } from './recommendations.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { User, BabalawoProfile, Temple, Circle, ForumThread, Event, Product, Appointment } from '@prisma/client';
+import {
+  User,
+  BabalawoProfile,
+  Temple,
+  Circle,
+  ForumThread,
+  Event,
+  Product,
+  Appointment,
+} from '@prisma/client';
 import { UserRole } from '@common/enums/user-role.enum';
 
 describe('RecommendationsService', () => {
@@ -121,7 +130,9 @@ describe('RecommendationsService', () => {
     it('should throw NotFoundException if user does not exist', async () => {
       jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(null);
 
-      await expect(service.getPersonalizedRecommendations('nonexistent-user')).rejects.toThrow(NotFoundException);
+      await expect(service.getPersonalizedRecommendations('nonexistent-user')).rejects.toThrow(
+        NotFoundException
+      );
     });
   });
 
@@ -397,7 +408,9 @@ describe('RecommendationsService', () => {
       };
 
       jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
-      jest.spyOn(prisma.babalawoProfile, 'findMany').mockResolvedValue(mockRecommendedContent.babalawos);
+      jest
+        .spyOn(prisma.babalawoProfile, 'findMany')
+        .mockResolvedValue(mockRecommendedContent.babalawos);
       jest.spyOn(prisma.temple, 'findMany').mockResolvedValue(mockRecommendedContent.temples);
 
       const result = await service.getContentBasedRecommendations('user1');

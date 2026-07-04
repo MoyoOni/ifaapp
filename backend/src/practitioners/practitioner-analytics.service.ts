@@ -26,33 +26,37 @@ export class PractitionerAnalyticsService {
       this.prisma.appointment.count({
         where: {
           babalawoId,
-          status: 'COMPLETED'
-        }
+          status: 'COMPLETED',
+        },
       }),
 
       // Total unique clients - Fixed to use distinct properly
-      this.prisma.appointment.aggregate({
-        where: {
-          babalawoId,
-          status: 'COMPLETED'
-        },
-        _count: {
-          clientId: true
-        }
-      }).then(result => {
-        // To get unique clients, we need a separate query
-        return this.prisma.$queryRaw<Array<{ count: bigint }>>`
+      this.prisma.appointment
+        .aggregate({
+          where: {
+            babalawoId,
+            status: 'COMPLETED',
+          },
+          _count: {
+            clientId: true,
+          },
+        })
+        .then((result) => {
+          // To get unique clients, we need a separate query
+          return this.prisma.$queryRaw<Array<{ count: bigint }>>`
           SELECT COUNT(DISTINCT "clientId")::int AS count
           FROM "Appointment"
           WHERE "babalawoId" = ${babalawoId} AND status = 'COMPLETED'
-        `.then(res => Number(res[0].count));
-      }),
+        `.then((res) => Number(res[0].count));
+        }),
 
       // Average rating
-      this.prisma.babalawoReview.aggregate({
-        where: { babalawoId },
-        _avg: { rating: true }
-      }).then((result: any) => result._avg.rating),
+      this.prisma.babalawoReview
+        .aggregate({
+          where: { babalawoId },
+          _avg: { rating: true },
+        })
+        .then((result: any) => result._avg.rating),
 
       // Repeat client rate
       this.calculateRepeatClientRate(babalawoId),
@@ -99,7 +103,9 @@ export class PractitionerAnalyticsService {
     };
   }
 
-  private async getRatingOverTime(babalawoId: string): Promise<Array<{ month: string; rating: number }>> {
+  private async getRatingOverTime(
+    babalawoId: string
+  ): Promise<Array<{ month: string; rating: number }>> {
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
@@ -115,7 +121,7 @@ export class PractitionerAnalyticsService {
       ORDER BY year, month
     `;
 
-    return rows.map(r => ({
+    return rows.map((r) => ({
       month: `${r.year}-${String(r.month).padStart(2, '0')}`,
       rating: Math.round(r.avg * 10) / 10,
     }));
@@ -160,7 +166,7 @@ export class PractitionerAnalyticsService {
 
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const dayIndex = dayCounts[0]?.dayOfWeek;
-    
+
     return dayIndex !== undefined ? days[dayIndex] : 'Not available';
   }
 
@@ -204,7 +210,7 @@ export class PractitionerAnalyticsService {
     // Format the data for charts
     return monthlyData.map((row: any) => ({
       month: `${row.year}-${String(row.month).padStart(2, '0')}`,
-      sessions: Number(row.count)
+      sessions: Number(row.count),
     }));
   }
 
@@ -219,20 +225,22 @@ export class PractitionerAnalyticsService {
 
     return serviceCounts.map((row: any) => ({
       service: row.service,
-      count: Number(row.count)
+      count: Number(row.count),
     }));
   }
 
   private async getBabalawoJoinDate(babalawoId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: babalawoId },
-      select: { createdAt: true }
+      select: { createdAt: true },
     });
-    
+
     return user?.createdAt;
   }
 
-  private async getIncomeOverTime(babalawoId: string): Promise<Array<{ month: string; income: number }>> {
+  private async getIncomeOverTime(
+    babalawoId: string
+  ): Promise<Array<{ month: string; income: number }>> {
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
@@ -250,7 +258,7 @@ export class PractitionerAnalyticsService {
       ORDER BY year, month
     `;
 
-    return rows.map(r => ({
+    return rows.map((r) => ({
       month: `${r.year}-${String(r.month).padStart(2, '0')}`,
       income: Math.round(r.total),
     }));
@@ -263,22 +271,25 @@ export class PractitionerAnalyticsService {
     completionRate: number;
     avgItemsCompleted: number;
   }> {
-    const plans = await this.prisma.guidancePlan.findMany({
+    const plans = (await this.prisma.guidancePlan.findMany({
       where: { babalawoId },
       select: { status: true, items: true, completedItems: true },
-    }) as Array<{ status: string; items: unknown; completedItems: string[] }>;
+    })) as Array<{ status: string; items: unknown; completedItems: string[] }>;
 
     const total = plans.length;
-    const completed = plans.filter(p => p.status === 'COMPLETED').length;
-    const inProgress = plans.filter(p => p.status === 'IN_PROGRESS').length;
+    const completed = plans.filter((p) => p.status === 'COMPLETED').length;
+    const inProgress = plans.filter((p) => p.status === 'IN_PROGRESS').length;
 
-    const avgItemsCompleted = total > 0
-      ? plans.reduce((acc, p) => {
-          const itemCount = Array.isArray(p.items) ? (p.items as unknown[]).length : 0;
-          const doneCount = Array.isArray(p.completedItems) ? p.completedItems.length : 0;
-          return acc + (itemCount > 0 ? doneCount / itemCount : 0);
-        }, 0) / total * 100
-      : 0;
+    const avgItemsCompleted =
+      total > 0
+        ? (plans.reduce((acc, p) => {
+            const itemCount = Array.isArray(p.items) ? (p.items as unknown[]).length : 0;
+            const doneCount = Array.isArray(p.completedItems) ? p.completedItems.length : 0;
+            return acc + (itemCount > 0 ? doneCount / itemCount : 0);
+          }, 0) /
+            total) *
+          100
+        : 0;
 
     return {
       total,

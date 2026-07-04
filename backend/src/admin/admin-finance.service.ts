@@ -460,7 +460,9 @@ export class AdminFinanceService {
       this.prisma.subscription.count({ where: { status: 'ACTIVE', plan: 'QUARTERLY' } }),
       this.prisma.subscription.count({ where: { status: 'ACTIVE', plan: 'ANNUAL' } }),
       this.prisma.subscription.count({ where: { createdAt: { gte: startOfMonth } } }),
-      this.prisma.subscription.count({ where: { status: 'CANCELLED', updatedAt: { gte: startOfMonth } } }),
+      this.prisma.subscription.count({
+        where: { status: 'CANCELLED', updatedAt: { gte: startOfMonth } },
+      }),
       this.prisma.subscription.findMany({
         where: { status: 'ACTIVE' },
         orderBy: { createdAt: 'desc' },
@@ -474,7 +476,9 @@ export class AdminFinanceService {
     const arr = quarterlyCount * 2_500_000 + annualCount * 10_000_000;
 
     const churnRate =
-      totalDevoted > 0 ? Math.round((cancelledThisMonth / Math.max(totalDevoted, 1)) * 1000) / 10 : 0;
+      totalDevoted > 0
+        ? Math.round((cancelledThisMonth / Math.max(totalDevoted, 1)) * 1000) / 10
+        : 0;
 
     return {
       totalDevoted,
@@ -498,5 +502,4 @@ export class AdminFinanceService {
   }
 
   // ADM-027: Session & Security Management
-
 }

@@ -73,10 +73,7 @@ describe('SubscriptionsService', () => {
         expect.objectContaining({
           where: expect.objectContaining({
             userId: 'user-1',
-            OR: expect.arrayContaining([
-              { paystackSubId: 'SUB_123' },
-              { paystackRef: 'ref-abc' },
-            ]),
+            OR: expect.arrayContaining([{ paystackSubId: 'SUB_123' }, { paystackRef: 'ref-abc' }]),
           }),
         })
       );

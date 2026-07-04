@@ -34,7 +34,7 @@ export class ConsultationNotesController {
     if (!babalawoId || !clientId) {
       throw new BadRequestException('Babalawo ID and Client ID are required');
     }
-    
+
     return this.consultationNotesService.createNote(babalawoId, clientId, dto, currentUser);
   }
 
@@ -51,7 +51,7 @@ export class ConsultationNotesController {
     if (!babalawoId || !clientId) {
       throw new BadRequestException('Babalawo ID and Client ID are required');
     }
-    
+
     return this.consultationNotesService.findNotesForClient(babalawoId, clientId, currentUser);
   }
 
@@ -67,7 +67,7 @@ export class ConsultationNotesController {
     if (!babalawoId) {
       throw new BadRequestException('Babalawo ID is required');
     }
-    
+
     return this.consultationNotesService.findNotesByBabalawo(babalawoId, currentUser);
   }
 
@@ -84,7 +84,7 @@ export class ConsultationNotesController {
     if (!noteId) {
       throw new BadRequestException('Note ID is required');
     }
-    
+
     return this.consultationNotesService.updateNote(noteId, dto, currentUser);
   }
 
@@ -100,7 +100,7 @@ export class ConsultationNotesController {
     if (!noteId) {
       throw new BadRequestException('Note ID is required');
     }
-    
+
     return this.consultationNotesService.deleteNote(noteId, currentUser);
   }
 }

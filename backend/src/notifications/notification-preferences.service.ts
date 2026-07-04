@@ -53,26 +53,37 @@ export class NotificationPreferencesService {
     }
   }
 
-  async isNotificationEnabled(userId: string, typeKey: string, channel: 'email' | 'push'): Promise<boolean> {
+  async isNotificationEnabled(
+    userId: string,
+    typeKey: string,
+    channel: 'email' | 'push'
+  ): Promise<boolean> {
     const prefs = await this.getPreferences(userId);
 
     // Define valid preference keys to prevent indexing errors
     const validEmailKeys = [
-      'emailBooking', 'emailReminder', 'emailDigest', 'emailPlan', 
-      'emailMessages', 'emailMarketing'
+      'emailBooking',
+      'emailReminder',
+      'emailDigest',
+      'emailPlan',
+      'emailMessages',
+      'emailMarketing',
     ];
-    
+
     const validPushKeys = [
-      'pushReminder', 'pushMessages', 'pushFollowup', 
-      'pushForum', 'pushCircles'
+      'pushReminder',
+      'pushMessages',
+      'pushFollowup',
+      'pushForum',
+      'pushCircles',
     ];
-    
+
     // Construct the preference key based on type and channel
     const prefKey = `${channel}${typeKey.charAt(0).toUpperCase() + typeKey.slice(1)}`;
-    
+
     // Check if the constructed key is valid
     const validKeys = channel === 'email' ? validEmailKeys : validPushKeys;
-    
+
     if (validKeys.includes(prefKey) && typeof (prefs as any)[prefKey] === 'boolean') {
       return (prefs as any)[prefKey];
     }

@@ -183,18 +183,24 @@ describe('WalletService', () => {
       });
     });
 
-    it('rejects reading another user\'s wallet balance (EMG-05)', async () => {
+    it("rejects reading another user's wallet balance (EMG-05)", async () => {
       const attacker = { ...mockUser, id: 'attacker-user' };
 
       await expect(service.getWalletBalance('user-1', attacker as any)).rejects.toThrow(
-        ForbiddenException,
+        ForbiddenException
       );
       expect(prisma.wallet.findUnique).not.toHaveBeenCalled();
     });
 
-    it('allows an ADMIN to read another user\'s wallet balance', async () => {
+    it("allows an ADMIN to read another user's wallet balance", async () => {
       const admin = { ...mockUser, id: 'admin-user', role: 'ADMIN' };
-      const mockWallet = { id: 'wallet-1', userId: 'user-1', balance: 7500, currency: 'NGN', locked: false };
+      const mockWallet = {
+        id: 'wallet-1',
+        userId: 'user-1',
+        balance: 7500,
+        currency: 'NGN',
+        locked: false,
+      };
       (prisma.wallet.findUnique as jest.Mock).mockResolvedValue(mockWallet);
 
       const result = await service.getWalletBalance('user-1', admin as any);
@@ -204,11 +210,11 @@ describe('WalletService', () => {
   });
 
   describe('getWalletBalanceMultiCurrency (EMG-05)', () => {
-    it('rejects reading another user\'s multi-currency balance', async () => {
+    it("rejects reading another user's multi-currency balance", async () => {
       const attacker = { ...mockUser, id: 'attacker-user' };
 
       await expect(
-        service.getWalletBalanceMultiCurrency('user-1', attacker as any),
+        service.getWalletBalanceMultiCurrency('user-1', attacker as any)
       ).rejects.toThrow(ForbiddenException);
       expect(prisma.wallet.findUnique).not.toHaveBeenCalled();
     });
@@ -286,7 +292,7 @@ describe('WalletService', () => {
           aggregateId: 'wallet-1',
           eventType: 'PAYMENT_RECEIVED',
           payload: notifyOnDeposit.payload,
-        }),
+        })
       );
     });
 
@@ -294,13 +300,10 @@ describe('WalletService', () => {
       const existingTxn = { ...mockTransaction, wallet: mockWallet };
       (prisma.transaction.findUnique as jest.Mock).mockResolvedValue(existingTxn);
 
-      await service.depositFunds(
-        'user-1',
-        depositDto,
-        mockUser,
-        'idem-key-123',
-        { eventType: 'PAYMENT_RECEIVED', payload: { userId: 'user-1' } },
-      );
+      await service.depositFunds('user-1', depositDto, mockUser, 'idem-key-123', {
+        eventType: 'PAYMENT_RECEIVED',
+        payload: { userId: 'user-1' },
+      });
 
       // The idempotency check returns early, before the $transaction (and
       // therefore before the outbox write) is ever reached.
@@ -310,9 +313,9 @@ describe('WalletService', () => {
     it('should reject deposit to another users wallet', async () => {
       const otherUser = { ...mockUser, id: 'other-user' };
 
-      await expect(
-        service.depositFunds('user-1', depositDto, otherUser),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.depositFunds('user-1', depositDto, otherUser)).rejects.toThrow(
+        ForbiddenException
+      );
     });
 
     it('should reject deposit to locked wallet', async () => {
@@ -321,21 +324,16 @@ describe('WalletService', () => {
         locked: true,
       });
 
-      await expect(
-        service.depositFunds('user-1', depositDto, mockUser),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.depositFunds('user-1', depositDto, mockUser)).rejects.toThrow(
+        BadRequestException
+      );
     });
 
     it('should return existing transaction for duplicate idempotency key', async () => {
       const existingTxn = { ...mockTransaction, wallet: mockWallet };
       (prisma.transaction.findUnique as jest.Mock).mockResolvedValue(existingTxn);
 
-      const result = await service.depositFunds(
-        'user-1',
-        depositDto,
-        mockUser,
-        'idem-key-123',
-      );
+      const result = await service.depositFunds('user-1', depositDto, mockUser, 'idem-key-123');
 
       expect(result).toEqual({
         wallet: existingTxn.wallet,
@@ -348,12 +346,7 @@ describe('WalletService', () => {
     it('should process new deposit with idempotency key', async () => {
       (prisma.transaction.findUnique as jest.Mock).mockResolvedValue(null);
 
-      const result = await service.depositFunds(
-        'user-1',
-        depositDto,
-        mockUser,
-        'new-idem-key',
-      );
+      const result = await service.depositFunds('user-1', depositDto, mockUser, 'new-idem-key');
 
       expect(result).toEqual({
         wallet: mockUpdatedWallet,
@@ -436,8 +429,9 @@ describe('WalletService', () => {
         notes: 'Consultation booking',
       };
 
-      await expect(service.createEscrow('user-1', escrowDto, mockUser))
-        .rejects.toThrow('Insufficient funds');
+      await expect(service.createEscrow('user-1', escrowDto, mockUser)).rejects.toThrow(
+        'Insufficient funds'
+      );
     });
 
     it('rejects a concurrent second escrow that would drive the balance negative (EMG-06)', async () => {
@@ -446,7 +440,13 @@ describe('WalletService', () => {
       // first commits and the conditional update reflects that on the second
       // call by returning count: 0 (the DB-level guard the real Postgres
       // instance would enforce via the same WHERE clause).
-      const mockWallet = { id: 'wallet-1', userId: 'user-1', balance: 10000, currency: 'NGN', locked: false };
+      const mockWallet = {
+        id: 'wallet-1',
+        userId: 'user-1',
+        balance: 10000,
+        currency: 'NGN',
+        locked: false,
+      };
       (prisma.wallet.findUnique as jest.Mock).mockResolvedValue(mockWallet);
       (txClient.wallet.updateMany as jest.Mock).mockResolvedValue({ count: 0 });
 
@@ -458,7 +458,7 @@ describe('WalletService', () => {
       };
 
       await expect(service.createEscrow('user-1', escrowDto, mockUser)).rejects.toThrow(
-        'Insufficient funds',
+        'Insufficient funds'
       );
       expect(txClient.escrow.create).not.toHaveBeenCalled();
     });
@@ -529,7 +529,10 @@ describe('WalletService', () => {
       (prisma.escrow.findUnique as jest.Mock).mockResolvedValue(mockEscrow);
       (txClient.wallet.update as jest.Mock).mockResolvedValue({});
       (txClient.transaction.create as jest.Mock).mockResolvedValue({});
-      (txClient.escrow.update as jest.Mock).mockResolvedValue({ ...mockEscrow, status: 'CANCELLED' });
+      (txClient.escrow.update as jest.Mock).mockResolvedValue({
+        ...mockEscrow,
+        status: 'CANCELLED',
+      });
 
       const result = await service.cancelEscrow('user-1', 'escrow-1', mockUser as any);
 
@@ -557,9 +560,9 @@ describe('WalletService', () => {
 
       (prisma.escrow.findUnique as jest.Mock).mockResolvedValue(mockEscrow);
 
-      await expect(
-        service.cancelEscrow('user-1', 'escrow-1', mockUser as any),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.cancelEscrow('user-1', 'escrow-1', mockUser as any)).rejects.toThrow(
+        ForbiddenException
+      );
     });
   });
 
@@ -583,7 +586,6 @@ describe('WalletService', () => {
         locked: false,
       });
     });
-
   });
 
   describe('releaseEscrow', () => {
@@ -650,7 +652,7 @@ describe('WalletService', () => {
       const result = await service.getTransactions(
         'user-1',
         { limit: 50, offset: 0 },
-        mockUser as any,
+        mockUser as any
       );
 
       expect(result).toEqual({
@@ -669,7 +671,7 @@ describe('WalletService', () => {
         currency: 'NGN',
         locked: false,
       };
-      
+
       const mockTransactions = [
         {
           id: 'txn-1',
@@ -714,7 +716,7 @@ describe('WalletService', () => {
         take: 10,
         skip: 0,
       });
-      
+
       expect(result).toEqual({
         transactions: mockTransactions,
         total: 1,
@@ -756,7 +758,11 @@ describe('WalletService', () => {
         bankName: 'Test Bank',
       };
 
-      const result = await service.createWithdrawalRequest('user-1', withdrawalDto, mockUser as any);
+      const result = await service.createWithdrawalRequest(
+        'user-1',
+        withdrawalDto,
+        mockUser as any
+      );
 
       expect(result).toEqual(mockWithdrawalRequest);
     });
@@ -780,8 +786,9 @@ describe('WalletService', () => {
         bankName: 'Test Bank',
       };
 
-      await expect(service.createWithdrawalRequest('user-1', withdrawalDto, mockUser as any))
-        .rejects.toThrow('Insufficient available balance');
+      await expect(
+        service.createWithdrawalRequest('user-1', withdrawalDto, mockUser as any)
+      ).rejects.toThrow('Insufficient available balance');
     });
   });
 });

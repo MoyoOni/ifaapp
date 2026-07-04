@@ -150,15 +150,17 @@ describe('EventRegistrationService', () => {
       jest.spyOn(prisma.event, 'findUnique').mockResolvedValue(mockEvent);
       jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockDifferentUser);
 
-      await expect(service.confirmRegistration('reg1', 'different-user'))
-        .rejects.toThrow(ForbiddenException);
+      await expect(service.confirmRegistration('reg1', 'different-user')).rejects.toThrow(
+        ForbiddenException
+      );
     });
 
     it('should throw NotFoundException if registration does not exist', async () => {
       jest.spyOn(prisma.eventRegistration, 'findUnique').mockResolvedValue(null);
 
-      await expect(service.confirmRegistration('nonexistent-reg', 'organizer1'))
-        .rejects.toThrow(NotFoundException);
+      await expect(service.confirmRegistration('nonexistent-reg', 'organizer1')).rejects.toThrow(
+        NotFoundException
+      );
     });
 
     it('should throw BadRequestException if registration is already confirmed', async () => {
@@ -208,8 +210,9 @@ describe('EventRegistrationService', () => {
       jest.spyOn(prisma.event, 'findUnique').mockResolvedValue(mockEvent);
       jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockOrganizer);
 
-      await expect(service.confirmRegistration('reg1', 'organizer1'))
-        .rejects.toThrow(BadRequestException);
+      await expect(service.confirmRegistration('reg1', 'organizer1')).rejects.toThrow(
+        BadRequestException
+      );
     });
   });
 
@@ -267,14 +270,18 @@ describe('EventRegistrationService', () => {
       jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockOrganizer);
       jest.spyOn(prisma.eventRegistration, 'update').mockResolvedValue(updatedRegistration);
 
-      const result = await service.cancelRegistrationByOrganizer('reg1', 'organizer1', 'Event schedule changed');
+      const result = await service.cancelRegistrationByOrganizer(
+        'reg1',
+        'organizer1',
+        'Event schedule changed'
+      );
 
       expect(result).toEqual(updatedRegistration);
       expect(prisma.eventRegistration.update).toHaveBeenCalledWith({
         where: { id: 'reg1' },
-        data: { 
+        data: {
           status: 'CANCELLED_BY_ORGANIZER',
-          cancellationReason: 'Event schedule changed'
+          cancellationReason: 'Event schedule changed',
         },
       });
     });
@@ -326,15 +333,17 @@ describe('EventRegistrationService', () => {
       jest.spyOn(prisma.event, 'findUnique').mockResolvedValue(mockEvent);
       jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockDifferentUser);
 
-      await expect(service.cancelRegistrationByOrganizer('reg1', 'different-user', 'Reason'))
-        .rejects.toThrow(ForbiddenException);
+      await expect(
+        service.cancelRegistrationByOrganizer('reg1', 'different-user', 'Reason')
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw NotFoundException if registration does not exist', async () => {
       jest.spyOn(prisma.eventRegistration, 'findUnique').mockResolvedValue(null);
 
-      await expect(service.cancelRegistrationByOrganizer('nonexistent-reg', 'organizer1', 'Reason'))
-        .rejects.toThrow(NotFoundException);
+      await expect(
+        service.cancelRegistrationByOrganizer('nonexistent-reg', 'organizer1', 'Reason')
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -440,15 +449,17 @@ describe('EventRegistrationService', () => {
       jest.spyOn(prisma.event, 'findUnique').mockResolvedValue(mockEvent);
       jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockDifferentUser);
 
-      await expect(service.getRegistrationsForEvent('event1', 'different-user'))
-        .rejects.toThrow(ForbiddenException);
+      await expect(service.getRegistrationsForEvent('event1', 'different-user')).rejects.toThrow(
+        ForbiddenException
+      );
     });
 
     it('should throw NotFoundException if event does not exist', async () => {
       jest.spyOn(prisma.event, 'findUnique').mockResolvedValue(null);
 
-      await expect(service.getRegistrationsForEvent('nonexistent-event', 'organizer1'))
-        .rejects.toThrow(NotFoundException);
+      await expect(
+        service.getRegistrationsForEvent('nonexistent-event', 'organizer1')
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -494,7 +505,7 @@ describe('EventRegistrationService', () => {
         { _count: 2, status: 'PENDING' },
         { _count: 1, status: 'CANCELLED' },
       ];
-      
+
       jest.spyOn(prisma.event, 'findUnique').mockResolvedValue(mockEvent);
       jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockOrganizer);
       jest.spyOn(prisma.eventRegistration, 'findMany').mockResolvedValue([]);
@@ -550,8 +561,9 @@ describe('EventRegistrationService', () => {
       jest.spyOn(prisma.event, 'findUnique').mockResolvedValue(mockEvent);
       jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockDifferentUser);
 
-      await expect(service.getRegistrationStats('event1', 'different-user'))
-        .rejects.toThrow(ForbiddenException);
+      await expect(service.getRegistrationStats('event1', 'different-user')).rejects.toThrow(
+        ForbiddenException
+      );
     });
   });
 });

@@ -98,7 +98,9 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
   handleForumLeave(@ConnectedSocket() client: Socket, @MessageBody() threadId: string) {
     void client.leave(`forum_thread:${threadId}`);
     const count = this.server.sockets.adapter.rooms.get(`forum_thread:${threadId}`)?.size ?? 0;
-    this.server.to(`forum_thread:${threadId}`).emit('forum:viewers', { threadId, count: Math.max(0, count) });
+    this.server
+      .to(`forum_thread:${threadId}`)
+      .emit('forum:viewers', { threadId, count: Math.max(0, count) });
   }
 
   @UseGuards(WsJwtGuard)

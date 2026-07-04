@@ -31,8 +31,14 @@ export class PushNotificationService {
           clientEmail: this.configService.get<string>('FIREBASE_CLIENT_EMAIL'),
         };
 
-        if (!firebaseConfig.projectId || !firebaseConfig.privateKey || !firebaseConfig.clientEmail) {
-          this.logger.warn('Firebase credentials not fully configured — push notifications disabled');
+        if (
+          !firebaseConfig.projectId ||
+          !firebaseConfig.privateKey ||
+          !firebaseConfig.clientEmail
+        ) {
+          this.logger.warn(
+            'Firebase credentials not fully configured — push notifications disabled'
+          );
           return;
         }
 
@@ -44,14 +50,20 @@ export class PushNotificationService {
       this.fcm = admin.messaging();
       this.logger.log('Firebase Cloud Messaging initialized successfully');
     } catch (error) {
-      this.logger.error('Failed to initialize Firebase Admin SDK — push notifications disabled:', error);
+      this.logger.error(
+        'Failed to initialize Firebase Admin SDK — push notifications disabled:',
+        error
+      );
     }
   }
 
   /**
    * Subscribe a user to push notifications
    */
-  async subscribeUser(userId: string, token: string): Promise<{ success: boolean; message: string }> {
+  async subscribeUser(
+    userId: string,
+    token: string
+  ): Promise<{ success: boolean; message: string }> {
     this.logger.log(`Subscribing user ${userId} to push notifications`);
 
     const user = await this.prisma.user.findUnique({
@@ -81,13 +93,13 @@ export class PushNotificationService {
       this.logger.log(`User ${userId} subscribed to push notifications successfully`);
       return {
         success: true,
-        message: 'Successfully subscribed to push notifications'
+        message: 'Successfully subscribed to push notifications',
       };
     } catch (error) {
       this.logger.error(`Failed to subscribe user ${userId}:`, error);
       return {
         success: false,
-        message: 'Failed to subscribe to push notifications'
+        message: 'Failed to subscribe to push notifications',
       };
     }
   }
@@ -95,7 +107,10 @@ export class PushNotificationService {
   /**
    * Unsubscribe a user from push notifications
    */
-  async unsubscribeUser(userId: string, token: string): Promise<{ success: boolean; message: string }> {
+  async unsubscribeUser(
+    userId: string,
+    token: string
+  ): Promise<{ success: boolean; message: string }> {
     this.logger.log(`Unsubscribing user ${userId} from push notifications`);
 
     if (!this.fcm) {
@@ -111,11 +126,11 @@ export class PushNotificationService {
       });
 
       if (user && user.fcmTokens) {
-        const updatedTokens = user.fcmTokens.filter(t => t !== token);
+        const updatedTokens = user.fcmTokens.filter((t) => t !== token);
         await this.prisma.user.update({
           where: { id: userId },
-          data: { 
-            fcmTokens: updatedTokens
+          data: {
+            fcmTokens: updatedTokens,
           },
         });
       }
@@ -123,13 +138,13 @@ export class PushNotificationService {
       this.logger.log(`User ${userId} unsubscribed from push notifications successfully`);
       return {
         success: true,
-        message: 'Successfully unsubscribed from push notifications'
+        message: 'Successfully unsubscribed from push notifications',
       };
     } catch (error) {
       this.logger.error(`Failed to unsubscribe user ${userId}:`, error);
       return {
         success: false,
-        message: 'Failed to unsubscribe from push notifications'
+        message: 'Failed to unsubscribe from push notifications',
       };
     }
   }
@@ -138,8 +153,8 @@ export class PushNotificationService {
    * Send a push notification to a specific user
    */
   async sendNotificationToUser(
-    userId: string, 
-    title: string, 
+    userId: string,
+    title: string,
     body: string,
     data?: Record<string, string>
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
@@ -152,7 +167,7 @@ export class PushNotificationService {
     if (!user || !user.fcmTokens || user.fcmTokens.length === 0) {
       return {
         success: false,
-        error: 'User has no registered push notification tokens'
+        error: 'User has no registered push notification tokens',
       };
     }
 
@@ -178,13 +193,13 @@ export class PushNotificationService {
       this.logger.log(`Push notification sent to user ${userId} successfully`);
       return {
         success: true,
-        messageId: response.successCount > 0 ? 'messageId' : undefined
+        messageId: response.successCount > 0 ? 'messageId' : undefined,
       };
     } catch (error) {
       this.logger.error(`Failed to send push notification to user ${userId}:`, error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       };
     }
   }
@@ -193,8 +208,8 @@ export class PushNotificationService {
    * Send a push notification to multiple users
    */
   async sendNotificationToManyUsers(
-    userIds: string[], 
-    title: string, 
+    userIds: string[],
+    title: string,
     body: string,
     data?: Record<string, string>
   ): Promise<{ success: boolean; successCount: number; failureCount: number }> {
@@ -204,13 +219,13 @@ export class PushNotificationService {
     const users = await this.prisma.user.findMany({
       where: {
         id: {
-          in: userIds
-        }
+          in: userIds,
+        },
       },
       select: {
         id: true,
-        fcmTokens: true
-      }
+        fcmTokens: true,
+      },
     });
 
     // Collect all valid tokens
@@ -226,7 +241,7 @@ export class PushNotificationService {
       return {
         success: false,
         successCount: 0,
-        failureCount: userIds.length
+        failureCount: userIds.length,
       };
     }
 
@@ -250,14 +265,14 @@ export class PushNotificationService {
       return {
         success: true,
         successCount: response.successCount,
-        failureCount: response.failureCount
+        failureCount: response.failureCount,
       };
     } catch (error) {
       this.logger.error('Failed to send multicast push notification:', error);
       return {
         success: false,
         successCount: 0,
-        failureCount: allTokens.length
+        failureCount: allTokens.length,
       };
     }
   }
@@ -276,7 +291,7 @@ export class PushNotificationService {
     const data = {
       type: 'appointment_reminder',
       appointmentId,
-      userId
+      userId,
     };
 
     return this.sendNotificationToUser(userId, title, body, data);
@@ -294,7 +309,7 @@ export class PushNotificationService {
     const body = `${senderName}: ${messagePreview.substring(0, 50)}${messagePreview.length > 50 ? '...' : ''}`;
     const data = {
       type: 'new_message',
-      userId
+      userId,
     };
 
     return this.sendNotificationToUser(userId, title, body, data);

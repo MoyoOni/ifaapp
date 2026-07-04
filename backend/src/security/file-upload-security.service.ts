@@ -4,22 +4,26 @@ import { ConfigService } from '@nestjs/config';
 @Injectable()
 export class FileUploadSecurityService {
   private readonly logger = new Logger(FileUploadSecurityService.name);
-  
+
   // Security constants
   private readonly MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
   private readonly ALLOWED_IMAGE_TYPES = [
-    'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'image/webp',
+    'image/svg+xml',
   ];
   private readonly ALLOWED_DOCUMENT_TYPES = [
-    'application/pdf', 
+    'application/pdf',
     'application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'text/plain',
-    'application/zip'
+    'application/zip',
   ];
   private readonly ALLOWED_MEDIA_TYPES = [
     ...this.ALLOWED_IMAGE_TYPES,
-    ...this.ALLOWED_DOCUMENT_TYPES
+    ...this.ALLOWED_DOCUMENT_TYPES,
   ];
 
   constructor(private configService: ConfigService) {
@@ -40,9 +44,11 @@ export class FileUploadSecurityService {
 
     // Check file size
     if (file.size > (options?.maxSize || this.MAX_FILE_SIZE)) {
-      this.logger.warn(`File upload rejected: Size ${file.size} exceeds limit ${(options?.maxSize || this.MAX_FILE_SIZE)}`);
+      this.logger.warn(
+        `File upload rejected: Size ${file.size} exceeds limit ${options?.maxSize || this.MAX_FILE_SIZE}`
+      );
       throw new BadRequestException(
-        `File size ${file.size} bytes exceeds maximum allowed size of ${(options?.maxSize || this.MAX_FILE_SIZE)} bytes`
+        `File size ${file.size} bytes exceeds maximum allowed size of ${options?.maxSize || this.MAX_FILE_SIZE} bytes`
       );
     }
 
@@ -67,9 +73,11 @@ export class FileUploadSecurityService {
     // Check file extension matches mime type
     const fileExtension = this.getFileExtension(file.originalname);
     const expectedExtensions = this.getMimeExtensions(file.mimetype);
-    
-    if (expectedExtensions && !expectedExtensions.some(ext => ext === fileExtension)) {
-      this.logger.warn(`File upload rejected: Extension ${fileExtension} doesn't match mimetype ${file.mimetype}`);
+
+    if (expectedExtensions && !expectedExtensions.some((ext) => ext === fileExtension)) {
+      this.logger.warn(
+        `File upload rejected: Extension ${fileExtension} doesn't match mimetype ${file.mimetype}`
+      );
       throw new BadRequestException(
         `File extension "${fileExtension}" doesn't match detected file type "${file.mimetype}"`
       );
@@ -77,11 +85,15 @@ export class FileUploadSecurityService {
 
     // Check for potentially malicious content in filename
     if (this.hasMaliciousFilename(file.originalname)) {
-      this.logger.warn(`File upload rejected: Potentially malicious filename detected: ${file.originalname}`);
+      this.logger.warn(
+        `File upload rejected: Potentially malicious filename detected: ${file.originalname}`
+      );
       throw new BadRequestException('Potentially malicious filename detected');
     }
 
-    this.logger.log(`File upload validated successfully: ${file.originalname}, size: ${file.size}, type: ${file.mimetype}`);
+    this.logger.log(
+      `File upload validated successfully: ${file.originalname}, size: ${file.size}, type: ${file.mimetype}`
+    );
     return true;
   }
 
@@ -89,7 +101,7 @@ export class FileUploadSecurityService {
    * Get file extension from filename
    */
   private getFileExtension(filename: string): string {
-    return filename.slice((filename.lastIndexOf('.') - 1 >>> 0) + 2).toLowerCase();
+    return filename.slice(((filename.lastIndexOf('.') - 1) >>> 0) + 2).toLowerCase();
   }
 
   /**
@@ -106,7 +118,7 @@ export class FileUploadSecurityService {
       'application/msword': ['doc'],
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['docx'],
       'text/plain': ['txt'],
-      'application/zip': ['zip']
+      'application/zip': ['zip'],
     };
 
     return mimeToExt[mimeType] || null;
@@ -123,7 +135,7 @@ export class FileUploadSecurityService {
       /<script|javascript:|vbscript:|onload=|onerror=/i, // HTML/JS injection
     ];
 
-    return maliciousPatterns.some(pattern => pattern.test(filename));
+    return maliciousPatterns.some((pattern) => pattern.test(filename));
   }
 
   /**
@@ -132,17 +144,17 @@ export class FileUploadSecurityService {
   sanitizeFilename(filename: string): string {
     // Remove path traversal attempts
     filename = filename.replace(/\.\./g, '');
-    
+
     // Remove potentially dangerous characters
     filename = filename.replace(/[<>:"/\\|?*]/g, '_');
-    
+
     // Limit filename length
     if (filename.length > 255) {
       const ext = this.getFileExtension(filename);
       const name = filename.substring(0, 255 - ext.length - 1);
       filename = `${name}.${ext}`;
     }
-    
+
     return filename;
   }
 
@@ -151,31 +163,32 @@ export class FileUploadSecurityService {
    */
   getSecurityRecommendations(): SecurityRecommendation[] {
     const recommendations: SecurityRecommendation[] = [];
-    
+
     // File size recommendation
-    if (this.MAX_FILE_SIZE > 10 * 1024 * 1024) { // 10MB
+    if (this.MAX_FILE_SIZE > 10 * 1024 * 1024) {
+      // 10MB
       recommendations.push({
         severity: 'medium',
         category: 'file-upload',
         message: 'Maximum file upload size is greater than 10MB, consider reducing for security',
-        currentSetting: `${this.MAX_FILE_SIZE / (1024 * 1024)} MB`
+        currentSetting: `${this.MAX_FILE_SIZE / (1024 * 1024)} MB`,
       });
     }
-    
+
     // Check if we're allowing executable file types (dangerous)
-    const dangerousTypes = this.ALLOWED_MEDIA_TYPES.filter(type => 
+    const dangerousTypes = this.ALLOWED_MEDIA_TYPES.filter((type) =>
       /executable|application\/(x-)?(msdownload|octet-stream|zip|x-zip-compressed)/.test(type)
     );
-    
+
     if (dangerousTypes.length > 0) {
       recommendations.push({
         severity: 'high',
         category: 'file-upload',
         message: `Dangerous file types are allowed: ${dangerousTypes.join(', ')}`,
-        currentSetting: dangerousTypes.join(', ')
+        currentSetting: dangerousTypes.join(', '),
       });
     }
-    
+
     return recommendations;
   }
 }

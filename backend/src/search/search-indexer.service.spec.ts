@@ -2,7 +2,16 @@ import { Test } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { SearchIndexerService } from './search-indexer.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { User, BabalawoProfile, Temple, Circle, ForumThread, ForumPost, Event, Product } from '@prisma/client';
+import {
+  User,
+  BabalawoProfile,
+  Temple,
+  Circle,
+  ForumThread,
+  ForumPost,
+  Event,
+  Product,
+} from '@prisma/client';
 import { UserRole } from '@common/enums/user-role.enum';
 
 describe('SearchIndexerService', () => {
@@ -258,7 +267,9 @@ describe('SearchIndexerService', () => {
     it('should throw NotFoundException if forum thread does not exist', async () => {
       jest.spyOn(prisma.forumThread, 'findUnique').mockResolvedValue(null);
 
-      await expect(service.indexForumThread('nonexistent-thread')).rejects.toThrow(NotFoundException);
+      await expect(service.indexForumThread('nonexistent-thread')).rejects.toThrow(
+        NotFoundException
+      );
     });
   });
 

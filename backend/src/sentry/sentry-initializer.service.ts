@@ -25,7 +25,7 @@ export class SentryInitializerService implements OnModuleInit {
 
   constructor(
     private secretsService: SecretsService,
-    private configService: ConfigService,
+    private configService: ConfigService
   ) {}
 
   async onModuleInit() {
@@ -38,7 +38,7 @@ export class SentryInitializerService implements OnModuleInit {
 
     try {
       const dsn = await this.secretsService.getSecret('iluase/prod/sentry-dsn');
-      
+
       if (!dsn || dsn.trim() === '') {
         this.logger.warn('Sentry DSN is not set, skipping Sentry initialization');
         return;

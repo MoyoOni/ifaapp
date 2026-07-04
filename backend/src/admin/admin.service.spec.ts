@@ -98,8 +98,8 @@ describe('AdminService', () => {
   describe('getPlatformStats', () => {
     it('should return platform statistics for admin user', async () => {
       (prisma.user.count as jest.Mock)
-        .mockResolvedValueOnce(100)  // totalUsers
-        .mockResolvedValueOnce(25);   // verifiedBabalawos
+        .mockResolvedValueOnce(100) // totalUsers
+        .mockResolvedValueOnce(25); // verifiedBabalawos
 
       (prisma.verificationApplication.count as jest.Mock).mockResolvedValueOnce(5);
       (prisma.babalawoClient.count as jest.Mock).mockResolvedValueOnce(50);
@@ -125,8 +125,9 @@ describe('AdminService', () => {
     });
 
     it('should throw ForbiddenException for non-admin user', async () => {
-      await expect(service.getPlatformStats(mockNonAdminUser))
-        .rejects.toThrow('Only admins can access platform statistics');
+      await expect(service.getPlatformStats(mockNonAdminUser)).rejects.toThrow(
+        'Only admins can access platform statistics'
+      );
     });
   });
 

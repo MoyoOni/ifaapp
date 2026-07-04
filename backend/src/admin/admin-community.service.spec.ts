@@ -83,14 +83,14 @@ describe('AdminCommunityService', () => {
         expect.objectContaining({
           where: { id: 'circle-1' },
           data: { status: 'DELETED', active: false },
-        }),
+        })
       );
       expect(prisma.circle.delete).not.toHaveBeenCalled();
     });
 
     it('rejects moderation from a non-admin', async () => {
       await expect(
-        service.moderateCircle('circle-1', 'DELETE', mockNonAdminUser as any),
+        service.moderateCircle('circle-1', 'DELETE', mockNonAdminUser as any)
       ).rejects.toThrow('Only admins can moderate circles');
       expect(prisma.circle.update).not.toHaveBeenCalled();
     });
@@ -103,7 +103,7 @@ describe('AdminCommunityService', () => {
       await service.moderateCircle('circle-1', 'ARCHIVE', mockAdminUser as any);
 
       expect(updateSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ data: { status: 'ARCHIVED', active: false } }),
+        expect.objectContaining({ data: { status: 'ARCHIVED', active: false } })
       );
     });
   });

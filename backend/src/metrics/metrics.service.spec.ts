@@ -43,7 +43,7 @@ describe('MetricsService', () => {
 describe('normalizePath', () => {
   it('replaces UUID with :id', () => {
     expect(normalizePath('/api/appointments/550e8400-e29b-41d4-a716-446655440000')).toBe(
-      '/api/appointments/:id',
+      '/api/appointments/:id'
     );
   });
 

@@ -1,4 +1,13 @@
-import { IsString, IsUUID, IsBoolean, IsOptional, IsArray, ArrayMaxSize, MaxLength, MinLength } from 'class-validator';
+import {
+  IsString,
+  IsUUID,
+  IsBoolean,
+  IsOptional,
+  IsArray,
+  ArrayMaxSize,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 export class CreateThreadDto {
   @IsUUID()

@@ -16,12 +16,13 @@ export class InputSanitizationMiddleware implements NestMiddleware {
     if (typeof obj !== 'object' || obj === null) {
       return this.sanitizeValue(obj);
     }
-    
+
     const sanitized: any = {};
     for (const [key, value] of Object.entries(obj)) {
-      sanitized[key] = typeof value === 'object' && value !== null 
-        ? this.sanitizeObject(value) 
-        : this.sanitizeValue(value);
+      sanitized[key] =
+        typeof value === 'object' && value !== null
+          ? this.sanitizeObject(value)
+          : this.sanitizeValue(value);
     }
     return sanitized;
   }

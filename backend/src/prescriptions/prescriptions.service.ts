@@ -665,7 +665,7 @@ export class GuidancePlansService {
     // Update completedItems array based on the toggle action
     const completedItems = [...(guidancePlan.completedItems as string[])];
     const itemId = `${guidancePlanId}_item_${itemIndex}`;
-    
+
     if (completed) {
       // Add item to completed if not already there
       if (!completedItems.includes(itemId)) {
@@ -910,7 +910,7 @@ export class GuidancePlansService {
   async saveTemplate(
     babalawoId: string,
     body: { name: string; type: string; items: unknown[]; instructions?: string; notes?: string },
-    currentUser: CurrentUserPayload,
+    currentUser: CurrentUserPayload
   ) {
     if (currentUser.id !== babalawoId && currentUser.role !== 'ADMIN') {
       throw new ForbiddenException('Access denied');

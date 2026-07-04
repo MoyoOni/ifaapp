@@ -1,7 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
-import { NotificationService, NotificationType, NotificationCategory } from '../notifications/notification.service';
+import {
+  NotificationService,
+  NotificationType,
+  NotificationCategory,
+} from '../notifications/notification.service';
 
 @Injectable()
 export class RebookingNudgeService {
@@ -9,7 +13,7 @@ export class RebookingNudgeService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly notificationService: NotificationService,
+    private readonly notificationService: NotificationService
   ) {}
 
   @Cron(CronExpression.EVERY_WEEK)

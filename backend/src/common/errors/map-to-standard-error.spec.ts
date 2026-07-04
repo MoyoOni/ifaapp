@@ -22,22 +22,30 @@ describe('mapToStandardError', () => {
   });
 
   it('uses object response message and optional userMessage', () => {
-    const out = mapToStandardError(400, {
-      message: 'Validation failed',
-      userMessage: 'Please fix the form.',
-    }, undefined);
+    const out = mapToStandardError(
+      400,
+      {
+        message: 'Validation failed',
+        userMessage: 'Please fix the form.',
+      },
+      undefined
+    );
     expect(out.code).toBe(ErrorCode.BAD_REQUEST);
     expect(out.message).toBe('Validation failed');
     expect(out.userMessage).toBe('Please fix the form.');
   });
 
   it('uses object code and details when provided', () => {
-    const out = mapToStandardError(400, {
-      message: 'Insufficient funds',
-      code: ErrorCode.INSUFFICIENT_FUNDS,
-      userMessage: 'Add funds to continue.',
-      details: { required: 10000, available: 5000 },
-    }, 'req-abc');
+    const out = mapToStandardError(
+      400,
+      {
+        message: 'Insufficient funds',
+        code: ErrorCode.INSUFFICIENT_FUNDS,
+        userMessage: 'Add funds to continue.',
+        details: { required: 10000, available: 5000 },
+      },
+      'req-abc'
+    );
     expect(out.code).toBe(ErrorCode.INSUFFICIENT_FUNDS);
     expect(out.details).toEqual({ required: 10000, available: 5000 });
   });

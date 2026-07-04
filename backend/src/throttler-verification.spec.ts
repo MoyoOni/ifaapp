@@ -23,15 +23,9 @@ describe('Rate limiting (PB-204.3)', () => {
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
-      imports: [
-        ThrottlerModule.forRoot([
-          { ttl: 60000, limit: 3 },
-        ]),
-      ],
+      imports: [ThrottlerModule.forRoot([{ ttl: 60000, limit: 3 }])],
       controllers: [PingController],
-      providers: [
-        { provide: APP_GUARD, useClass: ThrottlerGuard },
-      ],
+      providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
     }).compile();
 
     app = moduleRef.createNestApplication();

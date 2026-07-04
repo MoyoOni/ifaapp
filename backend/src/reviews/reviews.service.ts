@@ -563,7 +563,9 @@ export class ReviewsService {
       data: { averageRating },
     });
 
-    this.logger.log(`Babalawo ${babalawoId} average rating updated to: ${averageRating.toFixed(2)}`);
+    this.logger.log(
+      `Babalawo ${babalawoId} average rating updated to: ${averageRating.toFixed(2)}`
+    );
   }
 
   /**

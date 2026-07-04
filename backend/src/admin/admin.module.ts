@@ -33,7 +33,14 @@ import { CirclesModule } from '../circles/circles.module';
 // content) to bring it under BACKLOG_STATUS.md's 1000-LOC target — see
 // admin.service.ts's own comment and ProBacklog-v1.md for the rationale.
 @Module({
-  imports: [GdprModule, OutboxModule, NotificationsModule, WalletModule, PaymentsModule, CirclesModule],
+  imports: [
+    GdprModule,
+    OutboxModule,
+    NotificationsModule,
+    WalletModule,
+    PaymentsModule,
+    CirclesModule,
+  ],
   controllers: [AdminController],
   providers: [
     AdminService,

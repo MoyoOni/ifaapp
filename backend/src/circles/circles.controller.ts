@@ -115,7 +115,10 @@ export class CirclesController {
    */
   @Post(':id/become-patron')
   @UseGuards(AuthGuard('jwt'))
-  async becomePatron(@Param('id') circleId: string, @CurrentUser() currentUser: CurrentUserPayload) {
+  async becomePatron(
+    @Param('id') circleId: string,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
     return this.circlesService.becomePatron(circleId, currentUser);
   }
 
@@ -134,7 +137,7 @@ export class CirclesController {
   @UseGuards(AuthGuard('jwt'))
   async getCircleFeed(
     @Param('id') circleId: string,
-    @CurrentUser() currentUser: CurrentUserPayload,
+    @CurrentUser() currentUser: CurrentUserPayload
   ) {
     return this.circlesService.getCircleFeed(circleId, currentUser.id);
   }
@@ -144,13 +147,13 @@ export class CirclesController {
   async createCircleFeedPost(
     @Param('id') circleId: string,
     @Body() body: { content: string; patronOnly?: boolean },
-    @CurrentUser() currentUser: CurrentUserPayload,
+    @CurrentUser() currentUser: CurrentUserPayload
   ) {
     return this.circlesService.createCircleFeedPost(
       circleId,
       body.content,
       body.patronOnly ?? false,
-      currentUser,
+      currentUser
     );
   }
 }

@@ -16,7 +16,7 @@ export class OwaspSecurityAuditService {
    */
   async performSecurityAudit(): Promise<any> {
     this.logger.log('Starting OWASP Top 10 security audit...');
-    
+
     const results = {
       'A01:2021-Broken Access Control': await this.checkBrokenAccessControl(),
       'A02:2021-Cryptographic Failures': await this.checkCryptographicFailures(),
@@ -24,17 +24,21 @@ export class OwaspSecurityAuditService {
       'A04:2021-Insecure Design': await this.checkInsecureDesign(),
       'A05:2021-Security Misconfiguration': await this.checkSecurityMisconfiguration(),
       'A06:2021-Vulnerable and Outdated Components': await this.checkVulnerableComponents(),
-      'A07:2021-Identification and Authentication Failures': await this.checkAuthenticationFailures(),
+      'A07:2021-Identification and Authentication Failures':
+        await this.checkAuthenticationFailures(),
       'A08:2021-Software and Data Integrity Failures': await this.checkIntegrityFailures(),
-      'A09:2021-Security Logging and Monitoring Failures': await this.checkLoggingMonitoringFailures(),
+      'A09:2021-Security Logging and Monitoring Failures':
+        await this.checkLoggingMonitoringFailures(),
       'A10:2021-Server-Side Request Forgery': await this.checkSSRF(),
     };
 
-    const compliantControls = Object.values(results).filter(result => result.compliant).length;
+    const compliantControls = Object.values(results).filter((result) => result.compliant).length;
     const totalControls = Object.keys(results).length;
 
-    this.logger.log(`OWASP Top 10 audit completed. ${compliantControls}/${totalControls} controls compliant.`);
-    
+    this.logger.log(
+      `OWASP Top 10 audit completed. ${compliantControls}/${totalControls} controls compliant.`
+    );
+
     return {
       summary: {
         compliantControls,
@@ -48,7 +52,11 @@ export class OwaspSecurityAuditService {
   /**
    * A01:2021-Broken Access Control
    */
-  private async checkBrokenAccessControl(): Promise<{ compliant: boolean; issues: string[]; details: string }> {
+  private async checkBrokenAccessControl(): Promise<{
+    compliant: boolean;
+    issues: string[];
+    details: string;
+  }> {
     const issues: string[] = [];
 
     // Check for role-based access controls
@@ -73,7 +81,11 @@ export class OwaspSecurityAuditService {
   /**
    * A02:2021-Cryptographic Failures
    */
-  private async checkCryptographicFailures(): Promise<{ compliant: boolean; issues: string[]; details: string }> {
+  private async checkCryptographicFailures(): Promise<{
+    compliant: boolean;
+    issues: string[];
+    details: string;
+  }> {
     const issues: string[] = [];
 
     // Check JWT secret strength
@@ -104,7 +116,11 @@ export class OwaspSecurityAuditService {
   /**
    * A03:2021-Injection
    */
-  private async checkInjection(): Promise<{ compliant: boolean; issues: string[]; details: string }> {
+  private async checkInjection(): Promise<{
+    compliant: boolean;
+    issues: string[];
+    details: string;
+  }> {
     const issues: string[] = [];
 
     // Check if using parameterized queries (Prisma ORM mitigates this)
@@ -129,7 +145,11 @@ export class OwaspSecurityAuditService {
   /**
    * A04:2021-Insecure Design
    */
-  private async checkInsecureDesign(): Promise<{ compliant: boolean; issues: string[]; details: string }> {
+  private async checkInsecureDesign(): Promise<{
+    compliant: boolean;
+    issues: string[];
+    details: string;
+  }> {
     const issues: string[] = [];
 
     // Check for proper authentication workflow
@@ -154,7 +174,11 @@ export class OwaspSecurityAuditService {
   /**
    * A05:2021-Security Misconfiguration
    */
-  private async checkSecurityMisconfiguration(): Promise<{ compliant: boolean; issues: string[]; details: string }> {
+  private async checkSecurityMisconfiguration(): Promise<{
+    compliant: boolean;
+    issues: string[];
+    details: string;
+  }> {
     const issues: string[] = [];
 
     // Check for debug mode in production
@@ -185,7 +209,11 @@ export class OwaspSecurityAuditService {
   /**
    * A06:2021-Vulnerable and Outdated Components
    */
-  private async checkVulnerableComponents(): Promise<{ compliant: boolean; issues: string[]; details: string }> {
+  private async checkVulnerableComponents(): Promise<{
+    compliant: boolean;
+    issues: string[];
+    details: string;
+  }> {
     const issues: string[] = [];
 
     // This would typically integrate with a dependency scanning tool
@@ -205,7 +233,11 @@ export class OwaspSecurityAuditService {
   /**
    * A07:2021-Identification and Authentication Failures
    */
-  private async checkAuthenticationFailures(): Promise<{ compliant: boolean; issues: string[]; details: string }> {
+  private async checkAuthenticationFailures(): Promise<{
+    compliant: boolean;
+    issues: string[];
+    details: string;
+  }> {
     const issues: string[] = [];
 
     // Check password requirements
@@ -236,7 +268,11 @@ export class OwaspSecurityAuditService {
   /**
    * A08:2021-Software and Data Integrity Failures
    */
-  private async checkIntegrityFailures(): Promise<{ compliant: boolean; issues: string[]; details: string }> {
+  private async checkIntegrityFailures(): Promise<{
+    compliant: boolean;
+    issues: string[];
+    details: string;
+  }> {
     const issues: string[] = [];
 
     // Check for secure deserialization
@@ -261,7 +297,11 @@ export class OwaspSecurityAuditService {
   /**
    * A09:2021-Security Logging and Monitoring Failures
    */
-  private async checkLoggingMonitoringFailures(): Promise<{ compliant: boolean; issues: string[]; details: string }> {
+  private async checkLoggingMonitoringFailures(): Promise<{
+    compliant: boolean;
+    issues: string[];
+    details: string;
+  }> {
     const issues: string[] = [];
 
     // Check for audit logging
@@ -307,13 +347,13 @@ export class OwaspSecurityAuditService {
    */
   async performAdditionalSecurityChecks(): Promise<any> {
     this.logger.log('Performing additional security checks...');
-    
+
     // Check rate limiting configuration
     const rateLimitResults = await this.verifyRateLimitingConfiguration();
-    
+
     // Check GDPR compliance
     const gdprResults = await this.performGDPRComplianceCheck();
-    
+
     return {
       rateLimiting: rateLimitResults,
       gdprCompliance: gdprResults,
@@ -323,20 +363,23 @@ export class OwaspSecurityAuditService {
   /**
    * Verify rate limiting configuration
    */
-  private async verifyRateLimitingConfiguration(): Promise<{ compliant: boolean; details: string }> {
+  private async verifyRateLimitingConfiguration(): Promise<{
+    compliant: boolean;
+    details: string;
+  }> {
     const defaultTtl = this.configService.get<number>('THROTTLE_DEFAULT_TTL', 60000); // 1 minute default
     const defaultLimit = this.configService.get<number>('THROTTLE_DEFAULT_LIMIT', 100); // 100 requests default
-    
+
     const authTtl = this.configService.get<number>('THROTTLE_AUTH_TTL', 60000); // 1 minute default
     const authLimit = this.configService.get<number>('THROTTLE_AUTH_LIMIT', 10); // 10 requests default
-    
+
     // More restrictive settings for auth endpoints
     const isAuthRestrictive = authLimit <= 10 && authTtl <= 60000;
     // Reasonable settings for general API endpoints
     const isGeneralReasonable = defaultLimit <= 500 && defaultTtl <= 60000;
-    
+
     const compliant = isAuthRestrictive && isGeneralReasonable;
-    
+
     return {
       compliant,
       details: `Rate limiting: General (${defaultLimit}/min), Auth (${authLimit}/min)`,
@@ -346,7 +389,11 @@ export class OwaspSecurityAuditService {
   /**
    * Perform GDPR compliance check
    */
-  private async performGDPRComplianceCheck(): Promise<{ compliant: boolean; issues: string[]; details: string }> {
+  private async performGDPRComplianceCheck(): Promise<{
+    compliant: boolean;
+    issues: string[];
+    details: string;
+  }> {
     const issues: string[] = [];
 
     // Verify right to erasure (account deletion) functionality

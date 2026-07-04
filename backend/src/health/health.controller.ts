@@ -1,5 +1,10 @@
 import { Controller, Get } from '@nestjs/common';
-import { HealthCheck, HealthCheckService, HttpHealthIndicator, TypeOrmHealthIndicator } from '@nestjs/terminus';
+import {
+  HealthCheck,
+  HealthCheckService,
+  HttpHealthIndicator,
+  TypeOrmHealthIndicator,
+} from '@nestjs/terminus';
 import { EnhancedMetricsService } from '../metrics/enhanced-metrics.service';
 
 @Controller('health')
@@ -8,7 +13,7 @@ export class HealthController {
     private health: HealthCheckService,
     private http: HttpHealthIndicator,
     private db: TypeOrmHealthIndicator,
-    private metricsService: EnhancedMetricsService,
+    private metricsService: EnhancedMetricsService
   ) {}
 
   @Get()
@@ -21,7 +26,7 @@ export class HealthController {
 
     // Add custom metrics to the health check
     const metrics = await this.metricsService.getMetrics();
-    
+
     return {
       ...healthCheckResult,
       timestamp: new Date().toISOString(),

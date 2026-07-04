@@ -12,10 +12,10 @@ export class ProductSalesSummary {
 }
 
 export class VendorEarningsReportDto {
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Time period for the report',
     enum: ['today', 'week', 'month', 'year', 'all_time'],
-    required: false
+    required: false,
   })
   period?: 'today' | 'week' | 'month' | 'year' | 'all_time';
 
@@ -31,9 +31,9 @@ export class VendorEarningsReportDto {
   @ApiProperty({ description: 'Total number of orders completed' })
   totalOrders!: number;
 
-  @ApiProperty({ 
+  @ApiProperty({
     type: [ProductSalesSummary],
-    description: 'Sales breakdown by product' 
+    description: 'Sales breakdown by product',
   })
   productBreakdown!: ProductSalesSummary[];
 
@@ -46,9 +46,9 @@ export class VendorEarningsReportDto {
   @ApiProperty({ description: 'Total amount paid out' })
   paidOutAmount!: number;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Date when vendor is next eligible for payout',
-    type: Date
+    type: Date,
   })
   nextPayoutEligibility!: Date;
 }

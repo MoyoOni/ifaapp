@@ -8,7 +8,7 @@ export class OnboardingEmailService {
 
   constructor(
     private prisma: PrismaService,
-    private emailService: EmailService, // Renamed to reflect actual service
+    private emailService: EmailService // Renamed to reflect actual service
   ) {}
 
   /**
@@ -33,10 +33,10 @@ export class OnboardingEmailService {
       }
 
       const subject = 'Welcome to Ìlú Àṣẹ - Your Spiritual Journey Begins!';
-      
+
       // Prepare personalized content based on user role
       const roleSpecificContent = this.getRoleSpecificContent(user.role);
-      
+
       const htmlContent = `
         <!DOCTYPE html>
         <html>
@@ -91,7 +91,7 @@ export class OnboardingEmailService {
       await this.emailService.sendDirectEmail(user.email, subject, htmlContent);
 
       this.logger.log(`Onboarding completion email sent to user ${userId}`);
-      
+
       // Record the email sending in the database
       await this.prisma.onboardingEmail.create({
         data: {

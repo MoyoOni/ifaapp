@@ -1,13 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Body,
-  Param,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { WalletService } from './wallet.service';
 import { CreateWithdrawalRequestDto } from './dto/create-withdrawal-request.dto';

@@ -34,7 +34,7 @@ export class ImageOptimizationService {
     this.logger.log(`Image optimization requested for: ${filename} (sharp not yet installed)`);
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const { maxWidth = 1920, maxHeight = 1080, quality = 80, format = 'auto' } = options;
+    const { maxWidth = 1920, maxHeight = 1080, quality = 80, format = 'auto' } = options;
 
     // Simulate metadata extraction
     const simulatedWidth = Math.min(maxWidth, 1920);

@@ -223,9 +223,9 @@ describe('PaymentsService', () => {
     });
 
     it('rejects a Paystack webhook with no signature header instead of skipping verification (EMG-02)', async () => {
-      await expect(
-        service.handleWebhook(payload, PaymentProvider.PAYSTACK)
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.handleWebhook(payload, PaymentProvider.PAYSTACK)).rejects.toThrow(
+        UnauthorizedException
+      );
 
       expect(mockWalletService.depositFunds).not.toHaveBeenCalled();
     });
@@ -317,9 +317,9 @@ describe('PaymentsService', () => {
         },
       };
 
-      await expect(
-        service.handleWebhook(fwPayload, PaymentProvider.FLUTTERWAVE)
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.handleWebhook(fwPayload, PaymentProvider.FLUTTERWAVE)).rejects.toThrow(
+        UnauthorizedException
+      );
 
       expect(mockWalletService.depositFunds).not.toHaveBeenCalled();
     });
@@ -546,7 +546,7 @@ describe('PaymentsService', () => {
       expect(mockWalletService.recordRefundFromGateway).not.toHaveBeenCalled();
     });
 
-    it('rejects a refund attempt against another user\'s payment (EMG-05)', async () => {
+    it("rejects a refund attempt against another user's payment (EMG-05)", async () => {
       mockPrismaService.transaction.findFirst.mockResolvedValue(mockTransaction); // owned by 'user-1'
       const attacker = { id: 'attacker-user', role: 'CLIENT' } as any;
 
@@ -814,4 +814,3 @@ describe('PaymentsService', () => {
     });
   });
 });
-

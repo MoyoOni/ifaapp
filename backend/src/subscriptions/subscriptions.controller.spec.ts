@@ -21,7 +21,9 @@ describe('SubscriptionsController — webhook signature verification (EMG-02)', 
     // Instantiated directly (no Nest TestingModule) — the webhook route has no
     // guards, and pulling in the full DI graph would require unrelated
     // providers (JwtAuthGuard's dependencies) that this unit test doesn't need.
-    controller = new SubscriptionsController(mockSubscriptionsService as unknown as SubscriptionsService);
+    controller = new SubscriptionsController(
+      mockSubscriptionsService as unknown as SubscriptionsService
+    );
   });
 
   afterEach(() => {
@@ -32,9 +34,9 @@ describe('SubscriptionsController — webhook signature verification (EMG-02)', 
     delete process.env.PAYSTACK_WEBHOOK_SECRET;
     const rawBody = Buffer.from(JSON.stringify({ event: 'subscription.create', data: {} }));
 
-    await expect(
-      controller.handleWebhook('any-signature', { rawBody } as any)
-    ).rejects.toThrow(UnauthorizedException);
+    await expect(controller.handleWebhook('any-signature', { rawBody } as any)).rejects.toThrow(
+      UnauthorizedException
+    );
 
     expect(mockSubscriptionsService.handleWebhookEvent).not.toHaveBeenCalled();
   });
@@ -43,9 +45,9 @@ describe('SubscriptionsController — webhook signature verification (EMG-02)', 
     process.env.PAYSTACK_WEBHOOK_SECRET = WEBHOOK_SECRET;
     const rawBody = Buffer.from(JSON.stringify({ event: 'subscription.create', data: {} }));
 
-    await expect(
-      controller.handleWebhook(undefined as any, { rawBody } as any)
-    ).rejects.toThrow(UnauthorizedException);
+    await expect(controller.handleWebhook(undefined as any, { rawBody } as any)).rejects.toThrow(
+      UnauthorizedException
+    );
 
     expect(mockSubscriptionsService.handleWebhookEvent).not.toHaveBeenCalled();
   });
@@ -64,16 +66,19 @@ describe('SubscriptionsController — webhook signature verification (EMG-02)', 
     process.env.PAYSTACK_WEBHOOK_SECRET = WEBHOOK_SECRET;
     const rawBody = Buffer.from(JSON.stringify({ event: 'subscription.create', data: {} }));
 
-    await expect(
-      controller.handleWebhook('forged-signature', { rawBody } as any)
-    ).rejects.toThrow(UnauthorizedException);
+    await expect(controller.handleWebhook('forged-signature', { rawBody } as any)).rejects.toThrow(
+      UnauthorizedException
+    );
 
     expect(mockSubscriptionsService.handleWebhookEvent).not.toHaveBeenCalled();
   });
 
   it('processes the webhook when the signature matches the raw body', async () => {
     process.env.PAYSTACK_WEBHOOK_SECRET = WEBHOOK_SECRET;
-    const payload = { event: 'subscription.create', data: { metadata: { userId: 'u1', plan: 'QUARTERLY' } } };
+    const payload = {
+      event: 'subscription.create',
+      data: { metadata: { userId: 'u1', plan: 'QUARTERLY' } },
+    };
     const rawBody = Buffer.from(JSON.stringify(payload));
 
     const result = await controller.handleWebhook(signRawBody(rawBody), { rawBody } as any);

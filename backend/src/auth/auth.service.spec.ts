@@ -145,7 +145,7 @@ describe('AuthService', () => {
             passwordHash: hashedPassword,
             name: registerDto.name,
           }),
-        }),
+        })
       );
       expect(result).toMatchObject({
         user: expect.objectContaining({
@@ -237,10 +237,7 @@ describe('AuthService', () => {
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
       await expect(service.login(loginDto)).rejects.toThrow(UnauthorizedException);
-      expect(bcrypt.compare).toHaveBeenCalledWith(
-        loginDto.password,
-        user.passwordHash,
-      );
+      expect(bcrypt.compare).toHaveBeenCalledWith(loginDto.password, user.passwordHash);
     });
 
     it('should throw UnauthorizedException when user does not exist', async () => {

@@ -1,4 +1,3 @@
-
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
@@ -65,7 +64,7 @@ async function bootstrap() {
       forbidNonWhitelisted: false, // Allows properties not in DTOs but strips them
       transform: true, // Transforms payloads to DTO instances
       disableErrorMessages: false, // Keep error messages for debugging
-    }),
+    })
   );
 
   // P0-04: global response safety net — strips passwordHash/emailVerificationToken
@@ -98,7 +97,7 @@ async function bootstrap() {
 
   const port = configService.get('PORT') || 3000;
   await app.listen(port);
-  
+
   logger.log(`Application is running on: http://localhost:${port}`);
   if (configService.get('NODE_ENV') !== 'production') {
     logger.log(`Swagger documentation available at: http://localhost:${port}/api-docs`);

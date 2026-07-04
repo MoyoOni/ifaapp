@@ -167,11 +167,11 @@ export class AppointmentsController {
     @Res() res: Response
   ) {
     const receiptData = await this.appointmentsService.generateReceipt(id, currentUser);
-    
+
     // Set headers for PDF download
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="receipt-${id}.pdf"`);
-    
+
     res.send(receiptData);
   }
 

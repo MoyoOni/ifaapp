@@ -26,7 +26,7 @@ export class ClientSessionNotesController {
   async create(
     @Param('appointmentId') appointmentId: string,
     @Body() dto: CreateClientSessionNoteDto,
-    @CurrentUser() currentUser: CurrentUserPayload,
+    @CurrentUser() currentUser: CurrentUserPayload
   ) {
     return this.clientSessionNotesService.create(appointmentId, dto, currentUser);
   }
@@ -35,17 +35,14 @@ export class ClientSessionNotesController {
   @HttpCode(HttpStatus.OK)
   async getAll(
     @Param('appointmentId') appointmentId: string,
-    @CurrentUser() currentUser: CurrentUserPayload,
+    @CurrentUser() currentUser: CurrentUserPayload
   ) {
     return this.clientSessionNotesService.findByAppointment(appointmentId, currentUser);
   }
 
   @Get(':noteId')
   @HttpCode(HttpStatus.OK)
-  async get(
-    @Param('noteId') noteId: string,
-    @CurrentUser() currentUser: CurrentUserPayload,
-  ) {
+  async get(@Param('noteId') noteId: string, @CurrentUser() currentUser: CurrentUserPayload) {
     return this.clientSessionNotesService.findOne(noteId, currentUser);
   }
 
@@ -54,17 +51,14 @@ export class ClientSessionNotesController {
   async update(
     @Param('noteId') noteId: string,
     @Body() dto: UpdateClientSessionNoteDto,
-    @CurrentUser() currentUser: CurrentUserPayload,
+    @CurrentUser() currentUser: CurrentUserPayload
   ) {
     return this.clientSessionNotesService.update(noteId, currentUser, dto);
   }
 
   @Delete(':noteId')
   @HttpCode(HttpStatus.OK)
-  async delete(
-    @Param('noteId') noteId: string,
-    @CurrentUser() currentUser: CurrentUserPayload,
-  ) {
+  async delete(@Param('noteId') noteId: string, @CurrentUser() currentUser: CurrentUserPayload) {
     return this.clientSessionNotesService.remove(noteId, currentUser);
   }
 }

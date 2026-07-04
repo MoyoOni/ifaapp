@@ -83,14 +83,17 @@ describe('EventsService', () => {
       jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
       jest.spyOn(prisma.event, 'create').mockResolvedValue(newEvent);
 
-      const result = await service.createEvent({
-        title: 'Test Event',
-        description: 'Test event description',
-        startDate: new Date('2025-01-01'),
-        endDate: new Date('2025-01-02'),
-        location: 'Test Location',
-        maxAttendees: 100,
-      }, 'user1');
+      const result = await service.createEvent(
+        {
+          title: 'Test Event',
+          description: 'Test event description',
+          startDate: new Date('2025-01-01'),
+          endDate: new Date('2025-01-02'),
+          location: 'Test Location',
+          maxAttendees: 100,
+        },
+        'user1'
+      );
 
       expect(result).toEqual(newEvent);
       expect(prisma.event.create).toHaveBeenCalledWith({
@@ -110,14 +113,19 @@ describe('EventsService', () => {
     it('should throw an exception if user does not exist', async () => {
       jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(null);
 
-      await expect(service.createEvent({
-        title: 'Test Event',
-        description: 'Test event description',
-        startDate: new Date('2025-01-01'),
-        endDate: new Date('2025-01-02'),
-        location: 'Test Location',
-        maxAttendees: 100,
-      }, 'nonexistent-user')).rejects.toThrow(NotFoundException);
+      await expect(
+        service.createEvent(
+          {
+            title: 'Test Event',
+            description: 'Test event description',
+            startDate: new Date('2025-01-01'),
+            endDate: new Date('2025-01-02'),
+            location: 'Test Location',
+            maxAttendees: 100,
+          },
+          'nonexistent-user'
+        )
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw an exception if end date is before start date', async () => {
@@ -142,14 +150,19 @@ describe('EventsService', () => {
 
       jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
 
-      await expect(service.createEvent({
-        title: 'Test Event',
-        description: 'Test event description',
-        startDate: new Date('2025-01-02'), // Later date
-        endDate: new Date('2025-01-01'), // Earlier date
-        location: 'Test Location',
-        maxAttendees: 100,
-      }, 'user1')).rejects.toThrow(BadRequestException);
+      await expect(
+        service.createEvent(
+          {
+            title: 'Test Event',
+            description: 'Test event description',
+            startDate: new Date('2025-01-02'), // Later date
+            endDate: new Date('2025-01-01'), // Earlier date
+            location: 'Test Location',
+            maxAttendees: 100,
+          },
+          'user1'
+        )
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -219,7 +232,9 @@ describe('EventsService', () => {
     it('should throw an exception if event does not exist', async () => {
       jest.spyOn(prisma.event, 'findUnique').mockResolvedValue(null);
 
-      await expect(service.registerForEvent('nonexistent-event', 'user1')).rejects.toThrow(NotFoundException);
+      await expect(service.registerForEvent('nonexistent-event', 'user1')).rejects.toThrow(
+        NotFoundException
+      );
     });
 
     it('should throw an exception if event is full', async () => {
@@ -272,7 +287,9 @@ describe('EventsService', () => {
       jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
       jest.spyOn(prisma.eventRegistration, 'findMany').mockResolvedValue(registrations);
 
-      await expect(service.registerForEvent('event1', 'user1')).rejects.toThrow(BadRequestException);
+      await expect(service.registerForEvent('event1', 'user1')).rejects.toThrow(
+        BadRequestException
+      );
     });
 
     it('should throw an exception if user is already registered', async () => {
@@ -324,7 +341,9 @@ describe('EventsService', () => {
       jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
       jest.spyOn(prisma.eventRegistration, 'findMany').mockResolvedValue(existingRegistrations);
 
-      await expect(service.registerForEvent('event1', 'user1')).rejects.toThrow(BadRequestException);
+      await expect(service.registerForEvent('event1', 'user1')).rejects.toThrow(
+        BadRequestException
+      );
     });
   });
 
@@ -364,15 +383,15 @@ describe('EventsService', () => {
 
       jest.spyOn(prisma.eventRegistration, 'findUnique').mockResolvedValue(mockRegistration);
 
-      await expect(service.cancelRegistration('reg1', 'user1'))
-        .rejects.toThrow(ForbiddenException);
+      await expect(service.cancelRegistration('reg1', 'user1')).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw NotFoundException if registration does not exist', async () => {
       jest.spyOn(prisma.eventRegistration, 'findUnique').mockResolvedValue(null);
 
-      await expect(service.cancelRegistration('nonexistent-reg', 'user1'))
-        .rejects.toThrow(NotFoundException);
+      await expect(service.cancelRegistration('nonexistent-reg', 'user1')).rejects.toThrow(
+        NotFoundException
+      );
     });
   });
 

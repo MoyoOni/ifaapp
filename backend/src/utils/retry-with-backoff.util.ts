@@ -21,7 +21,9 @@ export interface RetryOptions {
  */
 export function isNetworkLevelFailure(error: unknown): boolean {
   const code = (error as { code?: string })?.code;
-  return code === 'ECONNREFUSED' || code === 'ECONNRESET' || code === 'ENOTFOUND' || code === 'EAI_AGAIN';
+  return (
+    code === 'ECONNREFUSED' || code === 'ECONNRESET' || code === 'ENOTFOUND' || code === 'EAI_AGAIN'
+  );
 }
 
 /** True for a client-side timeout (axios gives up waiting) — the request may or may not have reached the server. */

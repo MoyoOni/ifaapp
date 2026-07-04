@@ -550,7 +550,9 @@ export class AcademyService {
       }
 
       // Award XP for course completion (100 XP base, 2× for Devoted)
-      this.usersService.awardXP(enrollment.studentId, 100).catch(() => {/* ignore */});
+      this.usersService.awardXP(enrollment.studentId, 100).catch(() => {
+        /* ignore */
+      });
     }
 
     return this.prisma.enrollment.update({
@@ -616,7 +618,9 @@ export class AcademyService {
     });
 
     // Award XP for lesson completion (10 XP base, 2× for Devoted)
-    this.usersService.awardXP(currentUser.id, 10).catch(() => {/* ignore */});
+    this.usersService.awardXP(currentUser.id, 10).catch(() => {
+      /* ignore */
+    });
 
     // Calculate and update progress
     const totalLessons = await this.prisma.lesson.count({

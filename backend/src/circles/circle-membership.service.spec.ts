@@ -198,8 +198,9 @@ describe('CircleMembershipService', () => {
       });
       jest.spyOn(prisma.circleMembership, 'findUnique').mockResolvedValue(mockNonAdminMembership);
 
-      await expect(service.addMember('circle1', 'target1', 'user1', CircleRole.MEMBER))
-        .rejects.toThrow(ForbiddenException);
+      await expect(
+        service.addMember('circle1', 'target1', 'user1', CircleRole.MEMBER)
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw BadRequestException if user is already a member', async () => {
@@ -279,12 +280,14 @@ describe('CircleMembershipService', () => {
       });
       jest.spyOn(prisma.circleMembership, 'findUnique').mockImplementation(({ where }) => {
         if (where.id === 'adminMembership') return Promise.resolve(mockAdminMembership);
-        if (where.userId_circleId === { userId: 'target1', circleId: 'circle1' }) return Promise.resolve(existingMembership);
+        if (where.userId_circleId === { userId: 'target1', circleId: 'circle1' })
+          return Promise.resolve(existingMembership);
         return Promise.resolve(null);
       });
 
-      await expect(service.addMember('circle1', 'target1', 'admin1', CircleRole.MEMBER))
-        .rejects.toThrow(BadRequestException);
+      await expect(
+        service.addMember('circle1', 'target1', 'admin1', CircleRole.MEMBER)
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -366,7 +369,8 @@ describe('CircleMembershipService', () => {
       });
       jest.spyOn(prisma.circleMembership, 'findUnique').mockImplementation(({ where }) => {
         if (where.id === 'adminMembership') return Promise.resolve(mockAdminMembership);
-        if (where.userId_circleId === { userId: 'target1', circleId: 'circle1' }) return Promise.resolve(targetMembership);
+        if (where.userId_circleId === { userId: 'target1', circleId: 'circle1' })
+          return Promise.resolve(targetMembership);
         return Promise.resolve(null);
       });
       jest.spyOn(prisma.circleMembership, 'delete').mockResolvedValue(targetMembership);
@@ -456,12 +460,14 @@ describe('CircleMembershipService', () => {
       });
       jest.spyOn(prisma.circleMembership, 'findUnique').mockImplementation(({ where }) => {
         if (where.id === 'regularMembership') return Promise.resolve(mockRegularMembership);
-        if (where.userId_circleId === { userId: 'target1', circleId: 'circle1' }) return Promise.resolve(targetMembership);
+        if (where.userId_circleId === { userId: 'target1', circleId: 'circle1' })
+          return Promise.resolve(targetMembership);
         return Promise.resolve(null);
       });
 
-      await expect(service.removeMember('circle1', 'target1', 'user1'))
-        .rejects.toThrow(ForbiddenException);
+      await expect(service.removeMember('circle1', 'target1', 'user1')).rejects.toThrow(
+        ForbiddenException
+      );
     });
 
     it('should throw NotFoundException if target user is not a member', async () => {
@@ -532,12 +538,14 @@ describe('CircleMembershipService', () => {
       });
       jest.spyOn(prisma.circleMembership, 'findUnique').mockImplementation(({ where }) => {
         if (where.id === 'adminMembership') return Promise.resolve(mockAdminMembership);
-        if (where.userId_circleId === { userId: 'target1', circleId: 'circle1' }) return Promise.resolve(null);
+        if (where.userId_circleId === { userId: 'target1', circleId: 'circle1' })
+          return Promise.resolve(null);
         return Promise.resolve(null);
       });
 
-      await expect(service.removeMember('circle1', 'target1', 'admin1'))
-        .rejects.toThrow(NotFoundException);
+      await expect(service.removeMember('circle1', 'target1', 'admin1')).rejects.toThrow(
+        NotFoundException
+      );
     });
   });
 
@@ -625,12 +633,18 @@ describe('CircleMembershipService', () => {
       });
       jest.spyOn(prisma.circleMembership, 'findUnique').mockImplementation(({ where }) => {
         if (where.id === 'ownerMembership') return Promise.resolve(mockOwnerMembership);
-        if (where.userId_circleId === { userId: 'target1', circleId: 'circle1' }) return Promise.resolve(targetMembership);
+        if (where.userId_circleId === { userId: 'target1', circleId: 'circle1' })
+          return Promise.resolve(targetMembership);
         return Promise.resolve(null);
       });
       jest.spyOn(prisma.circleMembership, 'update').mockResolvedValue(updatedMembership);
 
-      const result = await service.updateMemberRole('circle1', 'target1', CircleRole.MODERATOR, 'owner1');
+      const result = await service.updateMemberRole(
+        'circle1',
+        'target1',
+        CircleRole.MODERATOR,
+        'owner1'
+      );
 
       expect(result).toEqual(updatedMembership);
       expect(prisma.circleMembership.update).toHaveBeenCalledWith({
@@ -719,12 +733,14 @@ describe('CircleMembershipService', () => {
       });
       jest.spyOn(prisma.circleMembership, 'findUnique').mockImplementation(({ where }) => {
         if (where.id === 'regularMembership') return Promise.resolve(mockRegularMembership);
-        if (where.userId_circleId === { userId: 'target1', circleId: 'circle1' }) return Promise.resolve(targetMembership);
+        if (where.userId_circleId === { userId: 'target1', circleId: 'circle1' })
+          return Promise.resolve(targetMembership);
         return Promise.resolve(null);
       });
 
-      await expect(service.updateMemberRole('circle1', 'target1', CircleRole.MODERATOR, 'user1'))
-        .rejects.toThrow(ForbiddenException);
+      await expect(
+        service.updateMemberRole('circle1', 'target1', CircleRole.MODERATOR, 'user1')
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 });

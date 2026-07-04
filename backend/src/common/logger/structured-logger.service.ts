@@ -25,13 +25,13 @@ export class StructuredLoggerService implements LoggerService {
 
   constructor(
     @Inject(REQUEST) private readonly request?: Request,
-    private readonly sentryService?: SentryService,
+    private readonly sentryService?: SentryService
   ) {}
 
   log(message: any, context?: LogContext): any {
     const logEntry = this.buildLogEntry('log', message, context);
     this.logger.log(JSON.stringify(logEntry));
-    
+
     // For informational messages, we might not want to send to Sentry
     if (this.sentryService && typeof message === 'object' && message.level === 'error') {
       this.sentryService.captureMessage(JSON.stringify(logEntry));
@@ -41,7 +41,7 @@ export class StructuredLoggerService implements LoggerService {
   error(message: any, context?: LogContext): any {
     const logEntry = this.buildLogEntry('error', message, context);
     this.logger.error(JSON.stringify(logEntry));
-    
+
     // Send errors to Sentry if available
     if (this.sentryService) {
       this.sentryService.captureException(message, {
@@ -54,7 +54,7 @@ export class StructuredLoggerService implements LoggerService {
   warn(message: any, context?: LogContext): any {
     const logEntry = this.buildLogEntry('warn', message, context);
     this.logger.warn(JSON.stringify(logEntry));
-    
+
     // Optionally send warnings to Sentry as well
     if (this.sentryService) {
       this.sentryService.captureMessage(JSON.stringify(logEntry), 'warning');
@@ -65,7 +65,7 @@ export class StructuredLoggerService implements LoggerService {
     if (process.env.NODE_ENV === 'production') {
       return; // Skip debug logs in production
     }
-    
+
     const logEntry = this.buildLogEntry('debug', message, context);
     this.logger.debug(JSON.stringify(logEntry));
   }
@@ -74,7 +74,7 @@ export class StructuredLoggerService implements LoggerService {
     if (process.env.NODE_ENV === 'production') {
       return; // Skip verbose logs in production
     }
-    
+
     const logEntry = this.buildLogEntry('verbose', message, context);
     this.logger.log(JSON.stringify(logEntry)); // Using console.log for verbose since there's no console.verbose
   }

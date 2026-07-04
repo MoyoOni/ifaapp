@@ -180,12 +180,17 @@ export class AdminService {
     const now = new Date();
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
     const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    const [activeSessions, loginsLast24h, failedLoginsLastHour, uniqueIPsLastHour] = await Promise.all([
-      this.prisma.userSession.count({ where: { isActive: true } }),
-      this.prisma.userSession.count({ where: { loginAt: { gte: oneDayAgo }, success: true } }),
-      this.prisma.userSession.count({ where: { loginAt: { gte: oneHourAgo }, success: false } }),
-      this.prisma.userSession.findMany({ where: { loginAt: { gte: oneHourAgo } }, select: { ipAddress: true }, distinct: ['ipAddress'] }),
-    ]);
+    const [activeSessions, loginsLast24h, failedLoginsLastHour, uniqueIPsLastHour] =
+      await Promise.all([
+        this.prisma.userSession.count({ where: { isActive: true } }),
+        this.prisma.userSession.count({ where: { loginAt: { gte: oneDayAgo }, success: true } }),
+        this.prisma.userSession.count({ where: { loginAt: { gte: oneHourAgo }, success: false } }),
+        this.prisma.userSession.findMany({
+          where: { loginAt: { gte: oneHourAgo } },
+          select: { ipAddress: true },
+          distinct: ['ipAddress'],
+        }),
+      ]);
     const suspiciousIPs = await this.prisma.userSession.groupBy({
       by: ['ipAddress'],
       where: { loginAt: { gte: oneHourAgo }, success: false, ipAddress: { not: null } },
@@ -193,7 +198,9 @@ export class AdminService {
       having: { id: { _count: { gt: 5 } } },
     });
     return {
-      activeSessions, loginsLast24h, failedLoginsLastHour,
+      activeSessions,
+      loginsLast24h,
+      failedLoginsLastHour,
       uniqueActiveIPs: uniqueIPsLastHour.length,
       suspiciousIPs: suspiciousIPs.map((s) => ({ ip: s.ipAddress, failCount: s._count.id })),
     };
@@ -308,7 +315,7 @@ export class AdminService {
     return this.adminUsersService.getRecentLogins(limit);
   }
 
-  async getInactivePractitioners(currentUser: any, _daysInactive: number) : Promise<any[]> {
+  async getInactivePractitioners(currentUser: any, _daysInactive: number): Promise<any[]> {
     return this.adminUsersService.getInactivePractitioners(currentUser, _daysInactive);
   }
 
@@ -326,8 +333,14 @@ export class AdminService {
     entityId: string,
     fieldLabel: string,
     reason: string
-  ) : Promise<void> {
-    return this.adminUsersService.logPiiReveal(adminUserId, entityType, entityId, fieldLabel, reason);
+  ): Promise<void> {
+    return this.adminUsersService.logPiiReveal(
+      adminUserId,
+      entityType,
+      entityId,
+      fieldLabel,
+      reason
+    );
   }
 
   /**
@@ -455,7 +468,11 @@ export class AdminService {
     circleData: CreateCircleDto,
     currentUser: CurrentUserPayload
   ) {
-    return this.adminCommunityService.approveCircleSuggestion(suggestionId, circleData, currentUser);
+    return this.adminCommunityService.approveCircleSuggestion(
+      suggestionId,
+      circleData,
+      currentUser
+    );
   }
 
   /**

@@ -40,7 +40,7 @@ export class UsersService {
     private cacheManager: CacheManagerService,
     private searchService: SearchService,
     private onboardingEmailService: OnboardingEmailService,
-    private imageOptimizationService: ImageOptimizationService, // Add this dependency
+    private imageOptimizationService: ImageOptimizationService // Add this dependency
   ) {}
 
   async findAll(filters: FindAllFilters = {}) {
@@ -100,7 +100,9 @@ export class UsersService {
   async findOne(id: string, viewerId?: string) {
     // Log profile view (fire-and-forget — never blocks the response)
     if (viewerId && viewerId !== id) {
-      this.logProfileView(id, viewerId).catch(() => {/* ignore errors */});
+      this.logProfileView(id, viewerId).catch(() => {
+        /* ignore errors */
+      });
     }
 
     // Try to get from cache first
@@ -170,8 +172,8 @@ export class UsersService {
                 },
               },
             },
-          }
-        })
+          },
+        }),
       },
     });
 
@@ -181,15 +183,19 @@ export class UsersService {
 
     // Strip sensitive fields before caching and returning
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { passwordHash: _ph, emailVerificationToken: _evt, ...safeUser } = user as Record<string, unknown> & typeof user;
+    const {
+      passwordHash: _ph,
+      emailVerificationToken: _evt,
+      ...safeUser
+    } = user as Record<string, unknown> & typeof user;
 
     // Expose whether the account has a password (Google-only accounts don't)
     // Add personalAwo data to the response if this is the user's own profile
     let safeUserWithMeta;
     if (isOwnProfile && (user as any).personalAwo) {
       const personalAwo = (user as any).personalAwo;
-      safeUserWithMeta = { 
-        ...safeUser, 
+      safeUserWithMeta = {
+        ...safeUser,
         hasPassword: !!(user as any).passwordHash,
         personalAwo: {
           id: personalAwo.id,
@@ -200,7 +206,7 @@ export class UsersService {
           trustScore: personalAwo.trustScore,
           verified: personalAwo.verified,
           sessionCount: personalAwo._count.appointmentsAsBabalawo,
-        }
+        },
       };
     } else {
       safeUserWithMeta = { ...safeUser, hasPassword: !!(user as any).passwordHash };
@@ -253,15 +259,18 @@ export class UsersService {
     // F9-703: Award Community Builder badge when 3+ rewarded referrals
     if (rewardedCount >= 3 && user && !user.isCommunityBuilder) {
       await this.prisma.user.update({ where: { id: userId }, data: { isCommunityBuilder: true } });
-      await this.prisma.notification.create({
-        data: {
-          userId,
-          type: 'SYSTEM',
-          category: 'INFO',
-          title: '🏗️ Community Builder Badge Earned!',
-          message: "You've earned the Community Builder badge! Your contribution is building this community.",
-        },
-      }).catch(() => {});
+      await this.prisma.notification
+        .create({
+          data: {
+            userId,
+            type: 'SYSTEM',
+            category: 'INFO',
+            title: '🏗️ Community Builder Badge Earned!',
+            message:
+              "You've earned the Community Builder badge! Your contribution is building this community.",
+          },
+        })
+        .catch(() => {});
     }
 
     return {
@@ -292,10 +301,10 @@ export class UsersService {
       return { valid: false, message: 'Code not recognised — you can continue without one' };
     }
 
-    return { 
-      valid: true, 
-      message: 'Welcome bonus applied', 
-      referrerName: user.name 
+    return {
+      valid: true,
+      message: 'Welcome bonus applied',
+      referrerName: user.name,
     };
   }
 
@@ -372,19 +381,52 @@ export class UsersService {
     const badges: { key: string; emoji: string; label: string; description: string }[] = [];
 
     if (completedCount >= 1)
-      badges.push({ key: 'first_step', emoji: '🌱', label: 'First Step', description: 'Completed your first consultation' });
+      badges.push({
+        key: 'first_step',
+        emoji: '🌱',
+        label: 'First Step',
+        description: 'Completed your first consultation',
+      });
     if (completedCount >= 5)
-      badges.push({ key: 'seeker', emoji: '🔮', label: 'Seeker', description: 'Completed 5 consultations' });
+      badges.push({
+        key: 'seeker',
+        emoji: '🔮',
+        label: 'Seeker',
+        description: 'Completed 5 consultations',
+      });
     if (user.templesJoined.length >= 1)
       badges.push({ key: 'rooted', emoji: '🏛️', label: 'Rooted', description: 'Joined a Temple' });
-    if (user.guidancePlansReceived.length >= 1 && user.guidancePlansReceived[0].createdAt <= thirtyDaysAgo)
-      badges.push({ key: 'devoted', emoji: '⚡', label: 'Devoted', description: 'Active guidance plan for 30+ days' });
+    if (
+      user.guidancePlansReceived.length >= 1 &&
+      user.guidancePlansReceived[0].createdAt <= thirtyDaysAgo
+    )
+      badges.push({
+        key: 'devoted',
+        emoji: '⚡',
+        label: 'Devoted',
+        description: 'Active guidance plan for 30+ days',
+      });
     if (user.circleMemberships.length >= 1)
-      badges.push({ key: 'connected', emoji: '🤝', label: 'Connected', description: 'Joined a Circle' });
+      badges.push({
+        key: 'connected',
+        emoji: '🤝',
+        label: 'Connected',
+        description: 'Joined a Circle',
+      });
     if (user.createdAt <= oneYearAgo)
-      badges.push({ key: 'elder_training', emoji: '🌳', label: 'Elder in Training', description: '1 year on the platform' });
+      badges.push({
+        key: 'elder_training',
+        emoji: '🌳',
+        label: 'Elder in Training',
+        description: '1 year on the platform',
+      });
     if (reviewCount >= 3)
-      badges.push({ key: 'voice', emoji: '📣', label: 'Voice of the Community', description: 'Left 3 or more reviews' });
+      badges.push({
+        key: 'voice',
+        emoji: '📣',
+        label: 'Voice of the Community',
+        description: 'Left 3 or more reviews',
+      });
 
     return badges;
   }
@@ -392,11 +434,7 @@ export class UsersService {
   /**
    * Update user profile including avatar upload
    */
-  async update(
-    id: string,
-    dto: UpdateUserDto,
-    currentUser: CurrentUserPayload
-  ) {
+  async update(id: string, dto: UpdateUserDto, currentUser: CurrentUserPayload) {
     // Authorization: users can only update their own profile
     if (currentUser.id !== id && currentUser.role !== 'ADMIN') {
       throw new UnauthorizedException('You can only update your own profile');
@@ -421,7 +459,7 @@ export class UsersService {
 
     // Prepare update data, handling special fields
     const updateData: any = { ...dto, updatedAt: new Date() };
-    
+
     // Handle personalAwoId field specifically
     if ('personalAwoId' in updateData) {
       updateData.personalAwoId = updateData.personalAwoId ?? null; // Convert undefined to null
@@ -448,19 +486,19 @@ export class UsersService {
   private async storeOptimizedAvatar(optResult: OptimizedImage, userId: string): Promise<string> {
     // In a production environment, you would upload to S3 or another storage service
     // For now, we'll simulate by storing in a public folder or returning a CDN URL
-    
+
     // Generate a unique filename
     const filename = `avatars/${userId}_${Date.now()}.${optResult.format}`;
-    
+
     // In a real implementation, you'd upload the optResult.buffer to your storage
     // For now, we'll return a placeholder URL
-    
+
     // If CDN is enabled, return CDN URL
     const cdnUrl = this.imageOptimizationService.generateCdnUrl(filename);
     if (cdnUrl) {
       return cdnUrl;
     }
-    
+
     // Otherwise, return a local URL (would need to implement actual file saving)
     return `/uploads/${filename}`;
   }
@@ -580,7 +618,9 @@ export class UsersService {
     if (user.templeId) score += 10;
 
     // -20 Active dispute
-    const activeDispute = user.disputesAsRespondent.some((d) => d.status === 'PENDING' || d.status === 'UNDER_REVIEW');
+    const activeDispute = user.disputesAsRespondent.some(
+      (d) => d.status === 'PENDING' || d.status === 'UNDER_REVIEW'
+    );
     if (activeDispute) score -= 20;
 
     score = Math.max(0, score); // Floor at 0
@@ -611,16 +651,25 @@ export class UsersService {
         orderBy: { sortOrder: 'asc' },
         select: { id: true, questionText: true, options: true, correctIndex: true },
       }),
-      this.prisma.platformSettings.findUnique({ where: { id: 'singleton' }, select: { quizPassThreshold: true } }),
+      this.prisma.platformSettings.findUnique({
+        where: { id: 'singleton' },
+        select: { quizPassThreshold: true },
+      }),
     ]);
     return { questions, passThreshold: settings?.quizPassThreshold ?? 2 };
   }
 
   async recordQuizAttempt(userId: string, passed: boolean) {
     if (passed) {
-      await this.prisma.user.update({ where: { id: userId }, data: { passedCulturalOrientation: true } });
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { passedCulturalOrientation: true },
+      });
     } else {
-      await this.prisma.user.update({ where: { id: userId }, data: { culturalQuizFailCount: { increment: 1 } } });
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { culturalQuizFailCount: { increment: 1 } },
+      });
     }
   }
 }

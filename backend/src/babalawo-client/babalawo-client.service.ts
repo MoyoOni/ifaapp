@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  ForbiddenException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBabalawoClientDto } from './dto/create-babalawo-client.dto';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
@@ -348,16 +344,29 @@ export class BabalawoClientService {
       this.prisma.appointment.findMany({
         where: { babalawoId, clientId },
         select: {
-          id: true, date: true, time: true, timezone: true, scheduledAt: true, status: true,
-          duration: true, topic: true, notes: true, createdAt: true,
+          id: true,
+          date: true,
+          time: true,
+          timezone: true,
+          scheduledAt: true,
+          status: true,
+          duration: true,
+          topic: true,
+          notes: true,
+          createdAt: true,
         },
         orderBy: { date: 'desc' },
       }),
       this.prisma.guidancePlan.findMany({
         where: { babalawoId, clientId },
         select: {
-          id: true, type: true, status: true, instructions: true,
-          totalCost: true, currency: true, createdAt: true,
+          id: true,
+          type: true,
+          status: true,
+          instructions: true,
+          totalCost: true,
+          currency: true,
+          createdAt: true,
         },
         orderBy: { createdAt: 'desc' },
       }),
@@ -368,7 +377,9 @@ export class BabalawoClientService {
         kind: 'consultation' as const,
         id: a.id,
         // P2-03: timezone-aware instant rather than a server-local-parsed string.
-        date: (a.scheduledAt ?? combineDateTimeInZone(a.date, a.time, a.timezone || 'Africa/Lagos')).toISOString(),
+        date: (
+          a.scheduledAt ?? combineDateTimeInZone(a.date, a.time, a.timezone || 'Africa/Lagos')
+        ).toISOString(),
         status: a.status,
         duration: a.duration,
         topic: a.topic,

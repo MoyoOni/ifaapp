@@ -98,7 +98,7 @@ describe('OutboxService (P1-01)', () => {
       expect(mockQueueAdd).toHaveBeenCalledWith(
         'PAYMENT_RECEIVED',
         { eventId: 'evt-1' },
-        { jobId: 'evt-1' },
+        { jobId: 'evt-1' }
       );
       expect(mockQueueAdd).toHaveBeenCalledTimes(2);
     });
@@ -146,7 +146,10 @@ describe('OutboxService (P1-01)', () => {
       await callback({ data: { eventId: 'evt-1' } });
 
       expect(mockNotificationService.notifyPaymentReceived).toHaveBeenCalledWith(
-        'user-1', 5000, 'NGN', 'ref-1',
+        'user-1',
+        5000,
+        'NGN',
+        'ref-1'
       );
       expect(mockPrismaService.outboxEvent.update).toHaveBeenCalledWith({
         where: { id: 'evt-1' },
@@ -208,7 +211,7 @@ describe('OutboxService (P1-01)', () => {
       });
       expect(captureException).toHaveBeenCalledWith(
         expect.any(Error),
-        expect.objectContaining({ outboxEventId: 'evt-1', eventType: 'PAYMENT_RECEIVED' }),
+        expect.objectContaining({ outboxEventId: 'evt-1', eventType: 'PAYMENT_RECEIVED' })
       );
     });
 
@@ -223,7 +226,7 @@ describe('OutboxService (P1-01)', () => {
 
       const callback = getWorkerCallback();
       await expect(callback({ data: { eventId: 'evt-1' } })).rejects.toThrow(
-        'Unknown outbox event type: SOMETHING_UNKNOWN',
+        'Unknown outbox event type: SOMETHING_UNKNOWN'
       );
     });
   });

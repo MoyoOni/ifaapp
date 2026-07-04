@@ -15,7 +15,7 @@ export class MetricsModule implements NestModule {
       .exclude(
         { path: 'metrics', method: RequestMethod.ALL },
         { path: 'health', method: RequestMethod.ALL },
-        { path: 'api-docs', method: RequestMethod.ALL },
+        { path: 'api-docs', method: RequestMethod.ALL }
       )
       .forRoutes('*');
   }

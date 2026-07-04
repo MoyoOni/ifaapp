@@ -5,13 +5,7 @@ import { LoggerMiddleware } from './logger.middleware';
 
 @Global()
 @Module({
-  providers: [
-    LoggingConfigService,
-    StructuredLoggerService,
-  ],
-  exports: [
-    LoggingConfigService,
-    StructuredLoggerService,
-  ],
+  providers: [LoggingConfigService, StructuredLoggerService],
+  exports: [LoggingConfigService, StructuredLoggerService],
 })
 export class LoggerModule {}

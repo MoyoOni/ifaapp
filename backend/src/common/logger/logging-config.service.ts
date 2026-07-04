@@ -12,7 +12,7 @@ export class LoggingConfigService {
         winston.format.timestamp(),
         winston.format.errors({ stack: true }),
         winston.format.splat(),
-        winston.format.json(),
+        winston.format.json()
       ),
       transports: [
         new winston.transports.Console({
@@ -20,7 +20,7 @@ export class LoggingConfigService {
             winston.format.colorize(),
             nestWinstonModuleUtilities.format.nestLike('IFA-APP', {
               prettyPrint: true,
-            }),
+            })
           ),
         }),
         ...(process.env.NODE_ENV === 'production'
@@ -28,17 +28,11 @@ export class LoggingConfigService {
               new winston.transports.File({
                 filename: 'logs/error.log',
                 level: 'error',
-                format: winston.format.combine(
-                  winston.format.timestamp(),
-                  winston.format.json(),
-                ),
+                format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
               }),
               new winston.transports.File({
                 filename: 'logs/combined.log',
-                format: winston.format.combine(
-                  winston.format.timestamp(),
-                  winston.format.json(),
-                ),
+                format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
               }),
             ]
           : []),

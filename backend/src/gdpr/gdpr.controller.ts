@@ -33,16 +33,16 @@ export class GdprController {
    * @param response Express response object to send JSON file
    */
   @Get('data-export')
-  async exportUserData(
-    @CurrentUser() user: CurrentUserPayload,
-    @Res() response: Response
-  ) {
+  async exportUserData(@CurrentUser() user: CurrentUserPayload, @Res() response: Response) {
     try {
       const userData = await this.gdprService.exportUserData(user.id);
-      
+
       // Send as downloadable JSON file
       response.setHeader('Content-Type', 'application/json');
-      response.setHeader('Content-Disposition', `attachment; filename=user-data-${user.id}-${new Date().toISOString().split('T')[0]}.json`);
+      response.setHeader(
+        'Content-Disposition',
+        `attachment; filename=user-data-${user.id}-${new Date().toISOString().split('T')[0]}.json`
+      );
       response.status(HttpStatus.OK).send(userData);
     } catch (error) {
       if (error instanceof BadRequestException) {
@@ -58,9 +58,7 @@ export class GdprController {
    */
   @HttpCode(HttpStatus.OK)
   @Delete('delete-account')
-  async deleteAccount(
-    @CurrentUser() user: CurrentUserPayload
-  ) {
+  async deleteAccount(@CurrentUser() user: CurrentUserPayload) {
     try {
       // Note: In a real implementation, we'd probably want to trigger this through a queue
       // and send confirmation email before actually deleting, but for this implementation:
@@ -89,7 +87,9 @@ export class GdprController {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new BadRequestException(`Could not update consent preferences: ${(error as Error).message}`);
+      throw new BadRequestException(
+        `Could not update consent preferences: ${(error as Error).message}`
+      );
     }
   }
 }

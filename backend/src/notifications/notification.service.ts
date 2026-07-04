@@ -85,7 +85,7 @@ export class NotificationService {
         // For types not specifically controlled, allow them by default
         return true;
     }
-    
+
     return this.notificationPreferencesService.isNotificationEnabled(userId, typeKey, channel);
   }
 
@@ -96,22 +96,14 @@ export class NotificationService {
     try {
       // Check preferences before creating notification
       if (dto.sendEmail) {
-        const shouldSendEmail = await this.shouldSendNotification(
-          dto.userId,
-          dto.type,
-          'email'
-        );
+        const shouldSendEmail = await this.shouldSendNotification(dto.userId, dto.type, 'email');
         if (!shouldSendEmail) {
           dto.sendEmail = false;
         }
       }
-      
+
       if (dto.sendPush) {
-        const shouldSendPush = await this.shouldSendNotification(
-          dto.userId,
-          dto.type,
-          'push'
-        );
+        const shouldSendPush = await this.shouldSendNotification(dto.userId, dto.type, 'push');
         if (!shouldSendPush) {
           dto.sendPush = false;
         }
@@ -551,7 +543,7 @@ export class NotificationService {
     babalawoId: string,
     appointmentId: string,
     clientName: string,
-    delayMs: number = 24 * 60 * 60 * 1000,
+    delayMs: number = 24 * 60 * 60 * 1000
   ) {
     const scheduledAt = new Date(Date.now() + delayMs);
     await this.prisma.notification.create({
@@ -577,7 +569,7 @@ export class NotificationService {
     clientId: string,
     appointmentId: string,
     babalawoName: string,
-    delayMs: number = 24 * 60 * 60 * 1000, // 24 hours default
+    delayMs: number = 24 * 60 * 60 * 1000 // 24 hours default
   ) {
     const scheduledAt = new Date(Date.now() + delayMs);
     await this.prisma.notification.create({
@@ -587,10 +579,10 @@ export class NotificationService {
         category: NotificationCategory.INFO,
         title: 'How was your session?',
         message: `How was your session with ${babalawoName}? Share your experience.`,
-        data: { 
-          appointmentId, 
-          babalawoName, 
-          action: 'request_review' 
+        data: {
+          appointmentId,
+          babalawoName,
+          action: 'request_review',
         },
         scheduledAt,
         emailSent: false,

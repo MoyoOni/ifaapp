@@ -21,7 +21,9 @@ export class SecretsService {
         this.secretsManagerClient = null;
       }
     } else {
-      this.logger.log('Skipping AWS Secrets Manager client initialization (not in production/staging)');
+      this.logger.log(
+        'Skipping AWS Secrets Manager client initialization (not in production/staging)'
+      );
     }
   }
 
@@ -42,7 +44,10 @@ export class SecretsService {
           return response.SecretString;
         }
       } catch (error) {
-        this.logger.warn(`Failed to retrieve secret from AWS Secrets Manager: ${secretName}`, error);
+        this.logger.warn(
+          `Failed to retrieve secret from AWS Secrets Manager: ${secretName}`,
+          error
+        );
         // Fall back to environment variables
       }
     }
@@ -71,8 +76,6 @@ export class SecretsService {
     const lastPart = parts[parts.length - 1];
 
     // Convert to uppercase and replace non-alphanumeric characters with underscores
-    return lastPart
-      .toUpperCase()
-      .replace(/[^A-Z0-9_]/g, '_');
+    return lastPart.toUpperCase().replace(/[^A-Z0-9_]/g, '_');
   }
 }

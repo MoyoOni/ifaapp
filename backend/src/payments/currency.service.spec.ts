@@ -54,19 +54,19 @@ describe('CurrencyService', () => {
 
     it('rejects an unsupported currency pair instead of silently using a 1:1 rate', async () => {
       await expect(service.getExchangeRate(Currency.GBP, Currency.NGN)).rejects.toThrow(
-        BadRequestException,
+        BadRequestException
       );
     });
 
     it('rejects convertAmount for an unsupported pair — no silent wrong-rate conversion', async () => {
-      await expect(
-        service.convertAmount(1000, Currency.EUR, Currency.NGN),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.convertAmount(1000, Currency.EUR, Currency.NGN)).rejects.toThrow(
+        BadRequestException
+      );
     });
 
     it('never caches a rate of 1 for an unsupported pair', async () => {
       await expect(service.getExchangeRate(Currency.EUR, Currency.USD)).rejects.toThrow(
-        BadRequestException,
+        BadRequestException
       );
       // The old behavior would have cached `rate: 1` here — assert it never
       // reaches the point of writing that value to Redis or the DB cache.

@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  BadRequestException,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { GuidancePlansService } from './prescriptions.service';
 import { CreateGuidancePlanDto } from './dto/create-prescription.dto';
@@ -164,7 +175,7 @@ export class GuidancePlansController {
     if (isNaN(parsedIndex) || parsedIndex < 0) {
       throw new BadRequestException('Valid item index is required');
     }
-    
+
     return this.guidancePlansService.toggleItemCompletion(
       guidancePlanId,
       parsedIndex,
@@ -178,9 +189,6 @@ export class GuidancePlansController {
     @Param('id') guidancePlanId: string,
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
-    return this.guidancePlansService.getDetailedGuidancePlan(
-      guidancePlanId,
-      currentUser
-    );
+    return this.guidancePlansService.getDetailedGuidancePlan(guidancePlanId, currentUser);
   }
 }

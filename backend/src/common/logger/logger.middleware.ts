@@ -9,7 +9,7 @@ export class LoggerMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
     const startTime = Date.now();
     const { method, originalUrl, ip, headers } = req;
-    
+
     // Generate a unique request ID for tracing
     const requestId = this.generateRequestId();
     req.headers['x-request-id'] = requestId;
@@ -19,7 +19,9 @@ export class LoggerMiddleware implements NestMiddleware {
       requestId,
       method,
       path: originalUrl,
-      userAgent: Array.isArray(headers['user-agent']) ? headers['user-agent'][0] : headers['user-agent'],
+      userAgent: Array.isArray(headers['user-agent'])
+        ? headers['user-agent'][0]
+        : headers['user-agent'],
       ip,
     });
 
@@ -32,7 +34,9 @@ export class LoggerMiddleware implements NestMiddleware {
         path: originalUrl,
         statusCode: res.statusCode,
         durationMs: duration,
-        userAgent: Array.isArray(headers['user-agent']) ? headers['user-agent'][0] : headers['user-agent'],
+        userAgent: Array.isArray(headers['user-agent'])
+          ? headers['user-agent'][0]
+          : headers['user-agent'],
         ip,
       };
 
@@ -47,11 +51,6 @@ export class LoggerMiddleware implements NestMiddleware {
   }
 
   private generateRequestId(): string {
-    return (
-      Date.now().toString(36) +
-      Math.random()
-        .toString(36)
-        .substr(2, 5)
-    ).toUpperCase();
+    return (Date.now().toString(36) + Math.random().toString(36).substr(2, 5)).toUpperCase();
   }
 }

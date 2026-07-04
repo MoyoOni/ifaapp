@@ -71,14 +71,18 @@ describe('GuidancePlansService', () => {
       (mockPrismaService.guidancePlan.findUnique as jest.Mock).mockResolvedValue(null);
 
       const currentUser = { sub: 'client-1', id: 'client-1', role: UserRole.CLIENT } as any;
-      await expect(service.getGuidancePlan('nonexistent', currentUser)).rejects.toThrow(NotFoundException);
+      await expect(service.getGuidancePlan('nonexistent', currentUser)).rejects.toThrow(
+        NotFoundException
+      );
     });
 
     it('should throw ForbiddenException when user is not participant', async () => {
       (mockPrismaService.guidancePlan.findUnique as jest.Mock).mockResolvedValue(mockPlan);
 
       const currentUser = { sub: 'other-user', id: 'other-user', role: UserRole.CLIENT } as any;
-      await expect(service.getGuidancePlan('plan-1', currentUser)).rejects.toThrow(ForbiddenException);
+      await expect(service.getGuidancePlan('plan-1', currentUser)).rejects.toThrow(
+        ForbiddenException
+      );
     });
 
     it('should return plan when user is the seeker', async () => {

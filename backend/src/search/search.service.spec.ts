@@ -2,7 +2,16 @@ import { Test } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { SearchService } from './search.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { User, BabalawoProfile, Temple, Circle, ForumThread, ForumPost, Event, Product } from '@prisma/client';
+import {
+  User,
+  BabalawoProfile,
+  Temple,
+  Circle,
+  ForumThread,
+  ForumPost,
+  Event,
+  Product,
+} from '@prisma/client';
 import { UserRole } from '@common/enums/user-role.enum';
 
 describe('SearchService', () => {
@@ -53,7 +62,7 @@ describe('SearchService', () => {
   describe('searchAll', () => {
     it('should search across all entities successfully', async () => {
       const query = 'test';
-      
+
       const mockUsers: User[] = [
         {
           id: 'user1',
@@ -160,7 +169,7 @@ describe('SearchService', () => {
   describe('searchUsers', () => {
     it('should search users by name successfully', async () => {
       const query = 'John';
-      
+
       const mockUsers: User[] = [
         {
           id: 'user1',
@@ -212,7 +221,7 @@ describe('SearchService', () => {
   describe('searchBabalawos', () => {
     it('should search babalawos by expertise successfully', async () => {
       const query = 'healing';
-      
+
       const mockBabalawoProfiles = [
         {
           id: 'profile1',
@@ -267,7 +276,7 @@ describe('SearchService', () => {
   describe('searchTemples', () => {
     it('should search temples by name successfully', async () => {
       const query = 'Traditional';
-      
+
       const mockTemples = [
         {
           id: 'temple1',
@@ -313,7 +322,7 @@ describe('SearchService', () => {
   describe('searchCircles', () => {
     it('should search circles by name successfully', async () => {
       const query = 'Study';
-      
+
       const mockCircles = [
         {
           id: 'circle1',
@@ -357,7 +366,7 @@ describe('SearchService', () => {
   describe('searchEvents', () => {
     it('should search events by title successfully', async () => {
       const query = 'Workshop';
-      
+
       const mockEvents = [
         {
           id: 'event1',

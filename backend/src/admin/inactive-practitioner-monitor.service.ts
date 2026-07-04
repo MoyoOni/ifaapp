@@ -2,7 +2,11 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { AdminService } from './admin.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { NotificationService, NotificationType, NotificationCategory } from '../notifications/notification.service';
+import {
+  NotificationService,
+  NotificationType,
+  NotificationCategory,
+} from '../notifications/notification.service';
 
 @Injectable()
 export class InactivePractitionerMonitorService implements OnModuleInit {
@@ -11,7 +15,7 @@ export class InactivePractitionerMonitorService implements OnModuleInit {
   constructor(
     private readonly adminService: AdminService,
     private readonly prisma: PrismaService,
-    private readonly notificationService: NotificationService,
+    private readonly notificationService: NotificationService
   ) {}
 
   async onModuleInit() {
@@ -35,7 +39,9 @@ export class InactivePractitionerMonitorService implements OnModuleInit {
       );
 
       // Filter to only include practitioners who are currently active (not on leave or deactivated)
-      const trulyInactivePractitioners = inactivePractitioners.filter(p => !p.isOnLeave && !p.isDeactivated);
+      const trulyInactivePractitioners = inactivePractitioners.filter(
+        (p) => !p.isOnLeave && !p.isDeactivated
+      );
 
       this.logger.log(`Found ${trulyInactivePractitioners.length} inactive practitioners`);
 
@@ -43,10 +49,10 @@ export class InactivePractitionerMonitorService implements OnModuleInit {
       if (trulyInactivePractitioners.length > 0) {
         // In a real implementation, we would notify admins about these practitioners
         // For now, we'll just log the findings
-        trulyInactivePractitioners.forEach(practitioner => {
+        trulyInactivePractitioners.forEach((practitioner) => {
           this.logger.log(
             `Inactive practitioner: ${practitioner.name} (${practitioner.email}), ` +
-            `on leave: ${practitioner.isOnLeave}`
+              `on leave: ${practitioner.isOnLeave}`
           );
         });
       }
@@ -85,14 +91,14 @@ export class InactivePractitionerMonitorService implements OnModuleInit {
         where: {
           role: 'BABALAWO',
           isOnLeave: true,
-        }
+        },
       }),
       totalDeactivated: await this.prisma.user.count({
         where: {
           role: 'BABALAWO',
           isDeactivated: true,
-        }
-      })
+        },
+      }),
     };
   }
 
@@ -117,7 +123,7 @@ export class InactivePractitionerMonitorService implements OnModuleInit {
 
     // Filter to only those who haven't had a completed/confirmed appointment in the threshold period
     const filteredPractitioners = [];
-    
+
     for (const practitioner of allPractitioners) {
       const recentAppointment = await this.prisma.appointment.findFirst({
         where: {
@@ -139,7 +145,10 @@ export class InactivePractitionerMonitorService implements OnModuleInit {
   /**
    * Get practitioners who haven't logged in for specified days AND haven't accepted a booking in 30 days
    */
-  async getHighRiskInactivePractitioners(loginThresholdDays: number = 14, bookingThresholdDays: number = 30) {
+  async getHighRiskInactivePractitioners(
+    loginThresholdDays: number = 14,
+    bookingThresholdDays: number = 30
+  ) {
     // Get practitioners who haven't logged in for the specified days
     const inactiveByLogin = await this.adminService.getInactivePractitioners(
       { role: 'ADMIN', id: 'SYSTEM_MONITOR' } as any,

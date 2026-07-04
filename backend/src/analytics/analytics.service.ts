@@ -9,9 +9,17 @@ export interface TrackEventDto {
 }
 
 const ONBOARDING_STEPS = [
-  'welcome', 'intent', 'preferences', 'heritage',
-  'role-setup', 'username', 'credentials',
-  'discover-temples', 'form', 'avatar', 'complete',
+  'welcome',
+  'intent',
+  'preferences',
+  'heritage',
+  'role-setup',
+  'username',
+  'credentials',
+  'discover-temples',
+  'form',
+  'avatar',
+  'complete',
 ];
 
 @Injectable()
@@ -24,7 +32,7 @@ export class AnalyticsService {
         event: dto.event,
         userId: dto.userId ?? null,
         role: dto.role ?? null,
-        data: dto.data as object ?? undefined,
+        data: (dto.data as object) ?? undefined,
       },
     });
   }

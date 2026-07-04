@@ -37,9 +37,7 @@ describe('PaystackApiService (P1-02: timeout + retry/backoff)', () => {
 
   it('initializes the client (and reports configured) via onModuleInit — the actual P1-02 bug fix', () => {
     expect(service.isConfigured()).toBe(true);
-    expect(mockedAxios.create).toHaveBeenCalledWith(
-      expect.objectContaining({ timeout: 20000 }),
-    );
+    expect(mockedAxios.create).toHaveBeenCalledWith(expect.objectContaining({ timeout: 20000 }));
   });
 
   it('leaves the client unconfigured (and warns) if the secret store returns nothing', async () => {
@@ -122,16 +120,16 @@ describe('PaystackApiService (P1-02: timeout + retry/backoff)', () => {
     it('does NOT retry on a timeout — a duplicate refund is a real-money risk', async () => {
       mockClient.post.mockRejectedValue({ code: 'ETIMEDOUT' });
 
-      await expect(
-        service.createRefund({ transaction: 'ref-1', amount: 1000 }),
-      ).rejects.toEqual({ code: 'ETIMEDOUT' });
+      await expect(service.createRefund({ transaction: 'ref-1', amount: 1000 })).rejects.toEqual({
+        code: 'ETIMEDOUT',
+      });
       expect(mockClient.post).toHaveBeenCalledTimes(1);
     });
 
     it('retries a confirmed network-level failure', async () => {
-      mockClient.post
-        .mockRejectedValueOnce({ code: 'ECONNRESET' })
-        .mockResolvedValueOnce({ data: { status: true, data: { transaction: { reference: 'ref-1', amount: 100000 } } } });
+      mockClient.post.mockRejectedValueOnce({ code: 'ECONNRESET' }).mockResolvedValueOnce({
+        data: { status: true, data: { transaction: { reference: 'ref-1', amount: 100000 } } },
+      });
 
       const result = await service.createRefund({ transaction: 'ref-1' });
 
@@ -151,7 +149,7 @@ describe('PaystackApiService (P1-02: timeout + retry/backoff)', () => {
     const unconfiguredService = unconfiguredModule.get<PaystackApiService>(PaystackApiService);
 
     await expect(unconfiguredService.verifyTransaction('ref-1')).rejects.toThrow(
-      'Paystack is not configured',
+      'Paystack is not configured'
     );
   });
 });

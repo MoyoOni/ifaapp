@@ -91,7 +91,9 @@ describe('VideoCallService', () => {
 
       jest.spyOn(prisma.appointment, 'findUnique').mockResolvedValue(mockAppointment);
 
-      await expect(service.generateToken('apt1', 'user3', 'channel1')).rejects.toThrow(ForbiddenException);
+      await expect(service.generateToken('apt1', 'user3', 'channel1')).rejects.toThrow(
+        ForbiddenException
+      );
     });
 
     it('should throw BadRequestException if appointment is not confirmed', async () => {
@@ -129,7 +131,9 @@ describe('VideoCallService', () => {
       jest.spyOn(prisma.appointment, 'findUnique').mockResolvedValue(mockAppointment);
       jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
 
-      await expect(service.generateToken('apt1', 'user1', 'channel1')).rejects.toThrow(BadRequestException);
+      await expect(service.generateToken('apt1', 'user1', 'channel1')).rejects.toThrow(
+        BadRequestException
+      );
     });
 
     it('should throw BadRequestException if appointment is not within valid time window', async () => {
@@ -167,13 +171,17 @@ describe('VideoCallService', () => {
       jest.spyOn(prisma.appointment, 'findUnique').mockResolvedValue(mockAppointment);
       jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
 
-      await expect(service.generateToken('apt1', 'user1', 'channel1')).rejects.toThrow(BadRequestException);
+      await expect(service.generateToken('apt1', 'user1', 'channel1')).rejects.toThrow(
+        BadRequestException
+      );
     });
 
     it('should throw NotFoundException if appointment does not exist', async () => {
       jest.spyOn(prisma.appointment, 'findUnique').mockResolvedValue(null);
 
-      await expect(service.generateToken('nonexistent-apt', 'user1', 'channel1')).rejects.toThrow(NotFoundException);
+      await expect(service.generateToken('nonexistent-apt', 'user1', 'channel1')).rejects.toThrow(
+        NotFoundException
+      );
     });
 
     it('should throw NotFoundException if user does not exist', async () => {
@@ -192,7 +200,9 @@ describe('VideoCallService', () => {
       jest.spyOn(prisma.appointment, 'findUnique').mockResolvedValue(mockAppointment);
       jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(null);
 
-      await expect(service.generateToken('apt1', 'nonexistent-user', 'channel1')).rejects.toThrow(NotFoundException);
+      await expect(service.generateToken('apt1', 'nonexistent-user', 'channel1')).rejects.toThrow(
+        NotFoundException
+      );
     });
   });
 
@@ -269,7 +279,9 @@ describe('VideoCallService', () => {
 
       jest.spyOn(prisma.appointment, 'findUnique').mockResolvedValue(mockAppointment);
 
-      await expect(service.validateAppointmentForCall('apt1', 'user1')).rejects.toThrow(BadRequestException);
+      await expect(service.validateAppointmentForCall('apt1', 'user1')).rejects.toThrow(
+        BadRequestException
+      );
     });
 
     it('should return false for appointment outside time window', async () => {
@@ -287,7 +299,9 @@ describe('VideoCallService', () => {
 
       jest.spyOn(prisma.appointment, 'findUnique').mockResolvedValue(mockAppointment);
 
-      await expect(service.validateAppointmentForCall('apt1', 'user1')).rejects.toThrow(BadRequestException);
+      await expect(service.validateAppointmentForCall('apt1', 'user1')).rejects.toThrow(
+        BadRequestException
+      );
     });
   });
 

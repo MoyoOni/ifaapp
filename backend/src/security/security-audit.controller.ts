@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Get,
-  UseGuards,
-  HttpCode,
-  HttpStatus,
-  Logger,
-} from '@nestjs/common';
+import { Controller, Get, UseGuards, HttpCode, HttpStatus, Logger } from '@nestjs/common';
 import { OwaspSecurityAuditService } from './owasp-security-audit.service';
 import { JwtAuthGuard } from '../shared/guards/auth.guard';
 import { RolesGuard } from '../shared/guards/roles.guard';
@@ -52,10 +45,10 @@ export class SecurityAuditController {
   @HttpCode(HttpStatus.OK)
   async performFullSecurityAudit() {
     this.logger.log('Initiating full security audit');
-    
+
     const owaspResults = await this.securityAuditService.performSecurityAudit();
     const additionalResults = await this.securityAuditService.performAdditionalSecurityChecks();
-    
+
     return {
       timestamp: new Date().toISOString(),
       owaspTop10: owaspResults,

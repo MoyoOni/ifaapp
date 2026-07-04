@@ -51,18 +51,44 @@ export class EmailService {
 
   private getEmailTemplate(notification: any): { subject: string; body: string; greeting: string } {
     const templates: Record<string, { subject: string; body: string; greeting: string }> = {
-      APPOINTMENT: { subject: 'Appointment Update - Ilé Àṣẹ', body: notification.message, greeting: 'Àṣẹ' },
+      APPOINTMENT: {
+        subject: 'Appointment Update - Ilé Àṣẹ',
+        body: notification.message,
+        greeting: 'Àṣẹ',
+      },
       MESSAGE: { subject: 'New Message - Ilé Àṣẹ', body: notification.message, greeting: 'Àṣẹ' },
       ORDER: { subject: 'Order Update - Ilé Àṣẹ', body: notification.message, greeting: 'Àṣẹ' },
-      PAYMENT: { subject: 'Payment Confirmation - Ilé Àṣẹ', body: notification.message, greeting: 'Àṣẹ' },
-      GUIDANCE_PLAN: { subject: 'Guidance Plan Update - Ilé Àṣẹ', body: notification.message, greeting: 'Àṣẹ' },
-      VERIFICATION: { subject: 'Verification Status Update - Ilé Àṣẹ', body: notification.message, greeting: 'Àṣẹ' },
+      PAYMENT: {
+        subject: 'Payment Confirmation - Ilé Àṣẹ',
+        body: notification.message,
+        greeting: 'Àṣẹ',
+      },
+      GUIDANCE_PLAN: {
+        subject: 'Guidance Plan Update - Ilé Àṣẹ',
+        body: notification.message,
+        greeting: 'Àṣẹ',
+      },
+      VERIFICATION: {
+        subject: 'Verification Status Update - Ilé Àṣẹ',
+        body: notification.message,
+        greeting: 'Àṣẹ',
+      },
       DISPUTE: { subject: 'Dispute Update - Ilé Àṣẹ', body: notification.message, greeting: 'Àṣẹ' },
-      SYSTEM: { subject: 'System Notification - Ilé Àṣẹ', body: notification.message, greeting: 'Àṣẹ' },
+      SYSTEM: {
+        subject: 'System Notification - Ilé Àṣẹ',
+        body: notification.message,
+        greeting: 'Àṣẹ',
+      },
       TEMPLE: { subject: 'Temple Update - Ilé Àṣẹ', body: notification.message, greeting: 'Àṣẹ' },
     };
 
-    return templates[notification.type] || { subject: 'Notification - Ilé Àṣẹ', body: notification.message, greeting: 'Àṣẹ' };
+    return (
+      templates[notification.type] || {
+        subject: 'Notification - Ilé Àṣẹ',
+        body: notification.message,
+        greeting: 'Àṣẹ',
+      }
+    );
   }
 
   private renderEmailTemplate(

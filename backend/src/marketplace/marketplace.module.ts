@@ -13,13 +13,7 @@ import { WalletModule } from '../wallet/wallet.module';
  * Vendor verification, product listings, orders, and reviews
  */
 @Module({
-  imports: [
-    PrismaModule,
-    AuthModule,
-    SearchModule,
-    WhatsAppModule,
-    forwardRef(() => WalletModule),
-  ],
+  imports: [PrismaModule, AuthModule, SearchModule, WhatsAppModule, forwardRef(() => WalletModule)],
   controllers: [MarketplaceController],
   providers: [MarketplaceService, OrderNotificationService],
   exports: [MarketplaceService],

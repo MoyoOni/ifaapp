@@ -16,7 +16,11 @@ import { UpdatePostDto } from './dto/update-post.dto';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { ThreadStatus, PostStatus } from '@ile-ase/common';
 import { MessagingGateway } from '../messaging/messaging.gateway';
-import { NotificationService, NotificationType, NotificationCategory } from '../notifications/notification.service';
+import {
+  NotificationService,
+  NotificationType,
+  NotificationCategory,
+} from '../notifications/notification.service';
 import { EmailService } from '../notifications/email.service';
 
 @Injectable()
@@ -28,15 +32,21 @@ export class ForumService {
     @Inject(forwardRef(() => MessagingGateway))
     private readonly messagingGateway: MessagingGateway,
     private readonly notificationService: NotificationService,
-    private readonly emailService: EmailService,
+    private readonly emailService: EmailService
   ) {}
 
   // ==================== Categories ====================
 
   // F9-602: Crisis keyword list for mental health detection
   private readonly CRISIS_KEYWORDS = [
-    'suicide', 'kill myself', 'end my life', 'hurt myself',
-    "can't go on", 'want to die', 'harm myself', 'no reason to live',
+    'suicide',
+    'kill myself',
+    'end my life',
+    'hurt myself',
+    "can't go on",
+    'want to die',
+    'harm myself',
+    'no reason to live',
   ];
 
   private detectCrisis(content: string): boolean {
@@ -46,21 +56,23 @@ export class ForumService {
 
   private isSameUtcDay(a: Date, b: Date): boolean {
     return (
-      a.getUTCFullYear() === b.getUTCFullYear()
-      && a.getUTCMonth() === b.getUTCMonth()
-      && a.getUTCDate() === b.getUTCDate()
+      a.getUTCFullYear() === b.getUTCFullYear() &&
+      a.getUTCMonth() === b.getUTCMonth() &&
+      a.getUTCDate() === b.getUTCDate()
     );
   }
 
   private async updateContributionStreak(userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        contributionStreak: true,
-        lastContributionDate: true,
-        longestStreak: true,
-      },
-    }).catch(() => null);
+    const user = await this.prisma.user
+      .findUnique({
+        where: { id: userId },
+        select: {
+          contributionStreak: true,
+          lastContributionDate: true,
+          longestStreak: true,
+        },
+      })
+      .catch(() => null);
 
     if (!user) return;
 
@@ -74,23 +86,26 @@ export class ForumService {
     const yesterday = new Date(now);
     yesterday.setUTCDate(yesterday.getUTCDate() - 1);
 
-    const nextStreak =
-      last && this.isSameUtcDay(last, yesterday)
-        ? user.contributionStreak + 1
-        : 1;
+    const nextStreak = last && this.isSameUtcDay(last, yesterday) ? user.contributionStreak + 1 : 1;
     const nextLongest = Math.max(user.longestStreak, nextStreak);
 
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        contributionStreak: nextStreak,
-        longestStreak: nextLongest,
-        lastContributionDate: now,
-      },
-    }).catch(() => {});
+    await this.prisma.user
+      .update({
+        where: { id: userId },
+        data: {
+          contributionStreak: nextStreak,
+          longestStreak: nextLongest,
+          lastContributionDate: now,
+        },
+      })
+      .catch(() => {});
   }
 
-  private async isFirstResponderReply(threadId: string, threadAuthorId: string, replierId: string): Promise<boolean> {
+  private async isFirstResponderReply(
+    threadId: string,
+    threadAuthorId: string,
+    replierId: string
+  ): Promise<boolean> {
     if (replierId === threadAuthorId) return false;
 
     const existingReply = await this.prisma.forumPost.findFirst({
@@ -154,16 +169,29 @@ export class ForumService {
   // ==================== Odù of the Week ====================
 
   private readonly ODU_LIST = [
-    'Ogbe', 'Oyeku', 'Iwori', 'Odi', 'Irosun', 'Owonrin',
-    'Obara', 'Okanran', 'Ogunda', 'Osa', 'Ika', 'Oturupon',
-    'Otura', 'Irete', 'Ose', 'Ofun',
+    'Ogbe',
+    'Oyeku',
+    'Iwori',
+    'Odi',
+    'Irosun',
+    'Owonrin',
+    'Obara',
+    'Okanran',
+    'Ogunda',
+    'Osa',
+    'Ika',
+    'Oturupon',
+    'Otura',
+    'Irete',
+    'Ose',
+    'Ofun',
   ];
 
   private getIsoWeek(date: Date): number {
     const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
     d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+    return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
   }
 
   async ensureOduOfWeek() {
@@ -242,12 +270,12 @@ Share your reflections, questions, and experiences below. All levels welcome.
       Iwori: 'inner sight, intuition, and the mirror of the soul',
       Odi: 'hidden things, the womb, and what gestates in darkness',
       Irosun: 'blood, lineage, sacrifice, and the price of growth',
-      Owonrin: 'sudden change, divine disruption, and the trickster\'s gift',
+      Owonrin: "sudden change, divine disruption, and the trickster's gift",
       Obara: 'royalty, pride, generosity, and the wisdom of kings',
       Okanran: 'conflict, confrontation, and the courage to face truth',
       Ogunda: 'the forge, obstacles cleared, and the path made open',
       Osa: 'witchcraft, hidden enemies, and the protection of Ogun',
-      Ika: 'character, integrity, and the consequences of one\'s choices',
+      Ika: "character, integrity, and the consequences of one's choices",
       Oturupon: 'illness, healing, and the body as a spiritual vessel',
       Otura: 'the divine covenant, promises kept, and sacred oath',
       Irete: 'longevity, patience, and the fruit of sustained effort',
@@ -267,10 +295,7 @@ Share your reflections, questions, and experiences below. All levels welcome.
         status: { not: 'DELETED' },
         isApproved: true,
         postCount: { gt: 0 },
-        OR: [
-          { lastPostAt: { gte: since } },
-          { createdAt: { gte: since } },
-        ],
+        OR: [{ lastPostAt: { gte: since } }, { createdAt: { gte: since } }],
       },
       include: {
         author: {
@@ -293,7 +318,12 @@ Share your reflections, questions, and experiences below. All levels welcome.
 
   // ==================== Threads ====================
 
-  async findAllThreads(categoryId?: string, status?: string, tag?: string, currentUser?: CurrentUserPayload | null) {
+  async findAllThreads(
+    categoryId?: string,
+    status?: string,
+    tag?: string,
+    currentUser?: CurrentUserPayload | null
+  ) {
     const where: any = {};
 
     if (categoryId) {
@@ -400,7 +430,9 @@ Share your reflections, questions, and experiences below. All levels welcome.
 
     // F9-601: Sacred threads require authentication
     if ((thread as any).isSacred && !currentUser) {
-      throw new ForbiddenException('This discussion contains sacred knowledge. Please sign in to participate respectfully.');
+      throw new ForbiddenException(
+        'This discussion contains sacred knowledge. Please sign in to participate respectfully.'
+      );
     }
 
     // Increment view count
@@ -512,7 +544,7 @@ Share your reflections, questions, and experiences below. All levels welcome.
       this.notifyAdmins(
         'Thread flagged for welfare review',
         `A newly created thread may contain a distress signal. Thread: "${thread.title}"`,
-        { threadId: thread.id },
+        { threadId: thread.id }
       );
     }
 
@@ -529,14 +561,16 @@ Share your reflections, questions, and experiences below. All levels welcome.
         take: 5,
       });
       admins.forEach(({ id }) => {
-        this.notificationService.createNotification({
-          userId: id,
-          type: NotificationType.SYSTEM,
-          category: NotificationCategory.WARNING,
-          title,
-          message,
-          data,
-        }).catch(() => {});
+        this.notificationService
+          .createNotification({
+            userId: id,
+            type: NotificationType.SYSTEM,
+            category: NotificationCategory.WARNING,
+            title,
+            message,
+            data,
+          })
+          .catch(() => {});
       });
     } catch {
       // Non-blocking; never interrupt the user flow
@@ -871,7 +905,9 @@ Share your reflections, questions, and experiences below. All levels welcome.
     // Validate anonymous posting — only allowed in seeker-questions category
     if (dto.isAnonymous) {
       if (thread.category?.slug !== 'seeker-questions') {
-        throw new BadRequestException('Anonymous posting is only available in the Seeker Questions category');
+        throw new BadRequestException(
+          'Anonymous posting is only available in the Seeker Questions category'
+        );
       }
     }
 
@@ -890,7 +926,11 @@ Share your reflections, questions, and experiences below. All levels welcome.
       }
     }
 
-    const isFirstResponder = await this.isFirstResponderReply(thread.id, thread.authorId, currentUser.id);
+    const isFirstResponder = await this.isFirstResponderReply(
+      thread.id,
+      thread.authorId,
+      currentUser.id
+    );
 
     // Create post
     const post = await this.prisma.forumPost.create({
@@ -953,14 +993,16 @@ Share your reflections, questions, and experiences below. All levels welcome.
     // F9-602: Crisis detection
     const crisisDetected = this.detectCrisis(dto.content);
     if (crisisDetected) {
-      await this.prisma.forumPost.update({
-        where: { id: post.id },
-        data: { hasCrisisSignal: true },
-      }).catch(() => {});
+      await this.prisma.forumPost
+        .update({
+          where: { id: post.id },
+          data: { hasCrisisSignal: true },
+        })
+        .catch(() => {});
       this.notifyAdmins(
         'Post flagged for welfare review',
         `A forum post may contain a distress signal. Thread: "${thread.title}"`,
-        { postId: post.id, threadId: thread.id },
+        { postId: post.id, threadId: thread.id }
       );
     }
 
@@ -980,7 +1022,7 @@ Share your reflections, questions, and experiences below. All levels welcome.
         this.notifyAdmins(
           'High-volume healing post activity',
           `User ${currentUser.id} has posted more than 5 times in Healing & Herbs category in 24h`,
-          { userId: currentUser.id, threadId: thread.id },
+          { userId: currentUser.id, threadId: thread.id }
         );
       }
     }
@@ -991,40 +1033,44 @@ Share your reflections, questions, and experiences below. All levels welcome.
   // ==================== XP & Cultural Level ====================
 
   private readonly XP_THRESHOLDS: Array<{ level: string; xp: number }> = [
-    { level: 'Omo Awo',  xp: 5000 },
-    { level: 'Aremo',    xp: 1500 },
-    { level: 'Oye',      xp: 500  },
-    { level: 'Akeko',    xp: 100  },
-    { level: 'Omo Ilé',  xp: 0    },
+    { level: 'Omo Awo', xp: 5000 },
+    { level: 'Aremo', xp: 1500 },
+    { level: 'Oye', xp: 500 },
+    { level: 'Akeko', xp: 100 },
+    { level: 'Omo Ilé', xp: 0 },
   ];
 
   private async incrementXP(userId: string, amount: number) {
-    const updated = await this.prisma.user.update({
-      where: { id: userId },
-      data: { rankXP: { increment: amount } },
-      select: { rankXP: true, culturalLevel: true },
-    }).catch(() => null);
+    const updated = await this.prisma.user
+      .update({
+        where: { id: userId },
+        data: { rankXP: { increment: amount } },
+        select: { rankXP: true, culturalLevel: true },
+      })
+      .catch(() => null);
 
     if (!updated) return;
 
     const newLevel = this.XP_THRESHOLDS.find((t) => updated.rankXP >= t.xp)?.level ?? 'Omo Ilé';
     if (newLevel !== updated.culturalLevel) {
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: { culturalLevel: newLevel },
-      }).catch(() => {});
+      await this.prisma.user
+        .update({
+          where: { id: userId },
+          data: { culturalLevel: newLevel },
+        })
+        .catch(() => {});
     }
   }
 
   private async sendForumNotifications(
     post: { id: string; threadId: string; content: string; authorId: string },
     thread: { id: string; title: string; authorId: string },
-    poster: CurrentUserPayload,
+    poster: CurrentUserPayload
   ) {
-    const posterName = (await this.prisma.user.findUnique({
+    const posterName = await this.prisma.user.findUnique({
       where: { id: poster.id },
       select: { name: true, yorubaName: true },
-    }));
+    });
     const displayName = posterName?.yorubaName ?? posterName?.name ?? 'A community member';
 
     // ── F9-301: Collect FORUM_REPLY recipients ────────────────────────────────
@@ -1038,14 +1084,16 @@ Share your reflections, questions, and experiences below. All levels welcome.
     if (thread.authorId !== poster.id) recipientIds.add(thread.authorId);
 
     recipientIds.forEach((userId) => {
-      this.notificationService.createNotification({
-        userId,
-        type: NotificationType.FORUM_REPLY,
-        category: NotificationCategory.INFO,
-        title: 'New reply in your discussion',
-        message: `${displayName} replied to "${thread.title}"`,
-        data: { threadId: thread.id, postId: post.id },
-      }).catch(() => {});
+      this.notificationService
+        .createNotification({
+          userId,
+          type: NotificationType.FORUM_REPLY,
+          category: NotificationCategory.INFO,
+          title: 'New reply in your discussion',
+          message: `${displayName} replied to "${thread.title}"`,
+          data: { threadId: thread.id, postId: post.id },
+        })
+        .catch(() => {});
     });
 
     // ── F9-302: Parse @mentions ───────────────────────────────────────────────
@@ -1065,14 +1113,16 @@ Share your reflections, questions, and experiences below. All levels welcome.
       });
 
       mentionedUsers.forEach(({ id: userId }) => {
-        this.notificationService.createNotification({
-          userId,
-          type: NotificationType.MENTION,
-          category: NotificationCategory.INFO,
-          title: 'You were mentioned',
-          message: `${displayName} mentioned you in "${thread.title}"`,
-          data: { threadId: thread.id, postId: post.id },
-        }).catch(() => {});
+        this.notificationService
+          .createNotification({
+            userId,
+            type: NotificationType.MENTION,
+            category: NotificationCategory.INFO,
+            title: 'You were mentioned',
+            message: `${displayName} mentioned you in "${thread.title}"`,
+            data: { threadId: thread.id, postId: post.id },
+          })
+          .catch(() => {});
       });
     }
   }
@@ -1150,7 +1200,7 @@ Share your reflections, questions, and experiences below. All levels welcome.
     postId: string,
     reason: string,
     note: string | undefined,
-    currentUser: CurrentUserPayload,
+    currentUser: CurrentUserPayload
   ) {
     const post = await this.prisma.forumPost.findUnique({ where: { id: postId } });
     if (!post || post.status === 'DELETED') throw new NotFoundException('Post not found');
@@ -1187,7 +1237,7 @@ Share your reflections, questions, and experiences below. All levels welcome.
   async reviewReport(
     reportId: string,
     action: 'dismiss' | 'hide_post' | 'warn_user' | 'ban_user',
-    currentUser: CurrentUserPayload,
+    currentUser: CurrentUserPayload
   ) {
     if (currentUser.role !== 'ADMIN') throw new ForbiddenException('Admins only');
 
@@ -1205,16 +1255,19 @@ Share your reflections, questions, and experiences below. All levels welcome.
     }
 
     if (action === 'warn_user' || action === 'ban_user') {
-      await this.notificationService.createNotification({
-        userId: report.post.authorId,
-        type: NotificationType.SYSTEM,
-        category: NotificationCategory.WARNING,
-        title: action === 'ban_user' ? 'Account action taken' : 'Community guidelines reminder',
-        message: action === 'ban_user'
-          ? 'Your account has been restricted due to a community guideline violation.'
-          : 'A moderator has reviewed a report about your post. Please review our community guidelines.',
-        data: { postId: report.postId, threadId: report.post.threadId },
-      }).catch(() => {});
+      await this.notificationService
+        .createNotification({
+          userId: report.post.authorId,
+          type: NotificationType.SYSTEM,
+          category: NotificationCategory.WARNING,
+          title: action === 'ban_user' ? 'Account action taken' : 'Community guidelines reminder',
+          message:
+            action === 'ban_user'
+              ? 'Your account has been restricted due to a community guideline violation.'
+              : 'A moderator has reviewed a report about your post. Please review our community guidelines.',
+          data: { postId: report.postId, threadId: report.post.threadId },
+        })
+        .catch(() => {});
     }
 
     return this.prisma.forumReport.update({
@@ -1285,9 +1338,7 @@ Share your reflections, questions, and experiences below. All levels welcome.
       orderBy: { createdAt: 'desc' },
     });
 
-    return bookmarks
-      .filter((b) => b.thread.status !== 'DELETED')
-      .map((b) => b.thread);
+    return bookmarks.filter((b) => b.thread.status !== 'DELETED').map((b) => b.thread);
   }
 
   // ==================== Subscriptions ====================
@@ -1387,12 +1438,12 @@ Share your reflections, questions, and experiences below. All levels welcome.
   // ==================== Admin Forum Management ====================
 
   async createForumCategory(
-    data: { 
-      name: string; 
-      description?: string; 
-      icon?: string; 
-      order?: number; 
-      isTeachings?: boolean 
+    data: {
+      name: string;
+      description?: string;
+      icon?: string;
+      order?: number;
+      isTeachings?: boolean;
     },
     currentUser: CurrentUserPayload
   ) {
@@ -1403,8 +1454,8 @@ Share your reflections, questions, and experiences below. All levels welcome.
     // Generate slug from name
     const slug = data.name
       .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')  // Remove special characters
-      .replace(/\s+/g, '-')           // Replace spaces with hyphens
+      .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
       .trim();
 
     return this.prisma.forumCategory.create({
@@ -1422,11 +1473,11 @@ Share your reflections, questions, and experiences below. All levels welcome.
 
   async updateForumCategory(
     id: string,
-    data: { 
-      name?: string; 
-      description?: string; 
-      icon?: string; 
-      order?: number; 
+    data: {
+      name?: string;
+      description?: string;
+      icon?: string;
+      order?: number;
       isTeachings?: boolean;
       isActive?: boolean;
     },
@@ -1460,21 +1511,20 @@ Share your reflections, questions, and experiences below. All levels welcome.
     });
   }
 
-  async deleteForumCategory(
-    id: string,
-    currentUser: CurrentUserPayload
-  ) {
+  async deleteForumCategory(id: string, currentUser: CurrentUserPayload) {
     if (currentUser.role !== 'ADMIN') {
       throw new ForbiddenException('Only admins can delete forum categories');
     }
 
     // Check if category has threads
     const threadCount = await this.prisma.forumThread.count({
-      where: { categoryId: id }
+      where: { categoryId: id },
     });
 
     if (threadCount > 0) {
-      throw new BadRequestException('Cannot delete category with existing threads. Move threads to another category first.');
+      throw new BadRequestException(
+        'Cannot delete category with existing threads. Move threads to another category first.'
+      );
     }
 
     return this.prisma.forumCategory.delete({
@@ -1482,11 +1532,7 @@ Share your reflections, questions, and experiences below. All levels welcome.
     });
   }
 
-  async reorderForumCategory(
-    id: string,
-    newPosition: number,
-    currentUser: CurrentUserPayload
-  ) {
+  async reorderForumCategory(id: string, newPosition: number, currentUser: CurrentUserPayload) {
     if (currentUser.role !== 'ADMIN') {
       throw new ForbiddenException('Only admins can reorder forum categories');
     }
@@ -1517,9 +1563,9 @@ Share your reflections, questions, and experiences below. All levels welcome.
 
     // Verify target category exists and is active
     const category = await this.prisma.forumCategory.findFirst({
-      where: { 
+      where: {
         id: targetCategoryId,
-        isActive: true 
+        isActive: true,
       },
     });
 
@@ -1552,11 +1598,7 @@ Share your reflections, questions, and experiences below. All levels welcome.
     });
   }
 
-  async featureThread(
-    threadId: string,
-    isFeatured: boolean,
-    currentUser: CurrentUserPayload
-  ) {
+  async featureThread(threadId: string, isFeatured: boolean, currentUser: CurrentUserPayload) {
     if (currentUser.role !== 'ADMIN') {
       throw new ForbiddenException('Only admins can feature threads');
     }
@@ -1681,11 +1723,7 @@ Share your reflections, questions, and experiences below. All levels welcome.
     });
   }
 
-  async deleteThreadForAdmin(
-    threadId: string,
-    currentUser: CurrentUserPayload,
-    reason?: string
-  ) {
+  async deleteThreadForAdmin(threadId: string, currentUser: CurrentUserPayload, reason?: string) {
     if (currentUser.role !== 'ADMIN') {
       throw new ForbiddenException('Only admins can delete threads');
     }
@@ -1701,7 +1739,9 @@ Share your reflections, questions, and experiences below. All levels welcome.
     // Log the deletion with reason if provided
     // In a real implementation, we might want to store this in an audit log
     if (reason) {
-      this.logger.log(`Thread ${threadId} deleted by admin ${currentUser.id} for reason: ${reason}`);
+      this.logger.log(
+        `Thread ${threadId} deleted by admin ${currentUser.id} for reason: ${reason}`
+      );
     }
 
     // Soft delete (P0-03) — matches deleteThread()'s existing convention.
@@ -1714,11 +1754,7 @@ Share your reflections, questions, and experiences below. All levels welcome.
     });
   }
 
-  async adminDeleteThread(
-    threadId: string,
-    currentUser: CurrentUserPayload,
-    reason?: string
-  ) {
+  async adminDeleteThread(threadId: string, currentUser: CurrentUserPayload, reason?: string) {
     if (currentUser.role !== 'ADMIN') {
       throw new ForbiddenException('Only admins can delete threads');
     }
@@ -1734,7 +1770,9 @@ Share your reflections, questions, and experiences below. All levels welcome.
     // Log the deletion with reason if provided
     // In a real implementation, we might want to store this in an audit log
     if (reason) {
-      this.logger.log(`Thread ${threadId} deleted by admin ${currentUser.id} for reason: ${reason}`);
+      this.logger.log(
+        `Thread ${threadId} deleted by admin ${currentUser.id} for reason: ${reason}`
+      );
     }
 
     // Soft delete (P0-03) — matches deleteThread()'s existing convention.
@@ -1754,19 +1792,14 @@ Share your reflections, questions, and experiences below. All levels welcome.
   }
 
   async getForumManagementStats() {
-    const [
-      totalCategories,
-      totalThreads,
-      totalPosts,
-      lockedThreads,
-      pinnedThreads,
-    ] = await Promise.all([
-      this.prisma.forumCategory.count(),
-      this.prisma.forumThread.count(),
-      this.prisma.forumPost.count(),
-      this.prisma.forumThread.count({ where: { isLocked: true } }),
-      this.prisma.forumThread.count({ where: { isPinned: true } }),
-    ]);
+    const [totalCategories, totalThreads, totalPosts, lockedThreads, pinnedThreads] =
+      await Promise.all([
+        this.prisma.forumCategory.count(),
+        this.prisma.forumThread.count(),
+        this.prisma.forumPost.count(),
+        this.prisma.forumThread.count({ where: { isLocked: true } }),
+        this.prisma.forumThread.count({ where: { isPinned: true } }),
+      ]);
 
     return {
       totalCategories,
@@ -1887,7 +1920,9 @@ Share your reflections, questions, and experiences below. All levels welcome.
 
     for (const u of users) {
       const displayName = u.yorubaName || u.name;
-      const threadCards = threads.map((t) => `
+      const threadCards = threads
+        .map(
+          (t) => `
         <div style="border:1px solid #e2d9c8;border-radius:12px;padding:16px;margin-bottom:16px;">
           <p style="margin:0 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#8b7355;">${t.category}</p>
           <h3 style="margin:0 0 8px;font-size:16px;color:#2d1f0e;">${t.title}</h3>
@@ -1895,7 +1930,9 @@ Share your reflections, questions, and experiences below. All levels welcome.
           <p style="margin:0 0 12px;font-size:12px;color:#a08060;">${t.postCount} replies · by ${t.authorName}</p>
           <a href="${t.threadUrl}" style="display:inline-block;padding:8px 20px;background:#c8973a;color:#fff;border-radius:8px;text-decoration:none;font-size:13px;font-weight:bold;">Join the dialogue →</a>
         </div>
-      `).join('');
+      `
+        )
+        .join('');
 
       const html = `
         <!DOCTYPE html><html><body style="font-family:Georgia,serif;background:#fdf8f0;margin:0;padding:20px;">
@@ -1931,12 +1968,7 @@ Share your reflections, questions, and experiences below. All levels welcome.
 
   // ==================== F9-705: Micro-Tip ====================
 
-  async tipPost(
-    postId: string,
-    amount: number,
-    currency: string,
-    currentUser: CurrentUserPayload,
-  ) {
+  async tipPost(postId: string, amount: number, currency: string, currentUser: CurrentUserPayload) {
     if (!amount || amount <= 0) {
       throw new BadRequestException('Tip amount must be greater than zero');
     }
@@ -1975,14 +2007,16 @@ Share your reflections, questions, and experiences below. All levels welcome.
     });
 
     // Notify the author
-    await this.notificationService.createNotification({
-      userId: post.authorId,
-      type: NotificationType.SYSTEM,
-      category: NotificationCategory.INFO,
-      title: 'You received a tip! 🙏🏾',
-      message: `Someone appreciated your forum post with a ${currency} ${amount.toLocaleString()} tip!`,
-      data: { postId, tipId: tip.id },
-    }).catch(() => {});
+    await this.notificationService
+      .createNotification({
+        userId: post.authorId,
+        type: NotificationType.SYSTEM,
+        category: NotificationCategory.INFO,
+        title: 'You received a tip! 🙏🏾',
+        message: `Someone appreciated your forum post with a ${currency} ${amount.toLocaleString()} tip!`,
+        data: { postId, tipId: tip.id },
+      })
+      .catch(() => {});
 
     return {
       success: true,
@@ -2045,16 +2079,20 @@ Share your reflections, questions, and experiences below. All levels welcome.
         where: { createdAt: { gte: cutoff }, status: { not: 'DELETED' } },
       }),
       // Active users in period
-      this.prisma.forumPost.findMany({
-        where: { createdAt: { gte: cutoff }, status: { not: 'DELETED' } },
-        select: { authorId: true },
-        distinct: ['authorId'],
-      }).then((p) => p.length),
+      this.prisma.forumPost
+        .findMany({
+          where: { createdAt: { gte: cutoff }, status: { not: 'DELETED' } },
+          select: { authorId: true },
+          distinct: ['authorId'],
+        })
+        .then((p) => p.length),
       // Avg replies per thread
-      this.prisma.forumThread.aggregate({
-        where: { createdAt: { gte: cutoff }, status: { not: 'DELETED' } },
-        _avg: { postCount: true },
-      }).then((a) => a._avg.postCount || 0),
+      this.prisma.forumThread
+        .aggregate({
+          where: { createdAt: { gte: cutoff }, status: { not: 'DELETED' } },
+          _avg: { postCount: true },
+        })
+        .then((a) => a._avg.postCount || 0),
       // Total acknowledges
       this.prisma.postAcknowledgment.count({
         where: { createdAt: { gte: cutoff } },
@@ -2105,11 +2143,7 @@ Share your reflections, questions, and experiences below. All levels welcome.
           status: { not: 'DELETED' },
           // F9-601: Sacred threads hidden from unauthenticated users
           ...(!currentUser ? { isSacred: false } : {}),
-          OR: [
-            { title: ilike },
-            { content: ilike },
-            { tags: { has: query } },
-          ],
+          OR: [{ title: ilike }, { content: ilike }, { tags: { has: query } }],
         },
         orderBy: { lastPostAt: 'desc' },
         take: 10,
@@ -2172,10 +2206,14 @@ Share your reflections, questions, and experiences below. All levels welcome.
     this.notifyAdmins(
       'New Elder Flag raised',
       `A verified Babaláwo has flagged a post as culturally inaccurate`,
-      { elderFlagId: flag.id, postId },
+      { elderFlagId: flag.id, postId }
     );
 
-    return { flagged: true, message: 'Your concern will be reviewed by our moderation team. This flag is not visible to the post author or community.' };
+    return {
+      flagged: true,
+      message:
+        'Your concern will be reviewed by our moderation team. This flag is not visible to the post author or community.',
+    };
   }
 
   // ==================== F9-803: Elder Reactions ====================
@@ -2304,7 +2342,7 @@ Share your reflections, questions, and experiences below. All levels welcome.
       externalUrl: string;
       preThreadId?: string;
     },
-    currentUser: CurrentUserPayload,
+    currentUser: CurrentUserPayload
   ) {
     if (currentUser.role !== 'ADMIN') {
       throw new ForbiddenException('Admins only');
@@ -2329,9 +2367,7 @@ Share your reflections, questions, and experiences below. All levels welcome.
       }
     }
 
-    const hostIds = Array.isArray(data.hostIds)
-      ? [...new Set(data.hostIds.filter(Boolean))]
-      : [];
+    const hostIds = Array.isArray(data.hostIds) ? [...new Set(data.hostIds.filter(Boolean))] : [];
 
     return this.prisma.liveSession.create({
       data: {
@@ -2387,7 +2423,7 @@ Share your reflections, questions, and experiences below. All levels welcome.
   async reviewElderFlag(
     flagId: string,
     action: 'acknowledge' | 'remove_post' | 'request_edit' | 'dismiss',
-    currentUser: CurrentUserPayload,
+    currentUser: CurrentUserPayload
   ) {
     if (currentUser.role !== 'ADMIN') throw new ForbiddenException('Admins only');
 
@@ -2406,14 +2442,17 @@ Share your reflections, questions, and experiences below. All levels welcome.
 
     if (action === 'request_edit') {
       // Notify post author to revise their content
-      await this.notificationService.createNotification({
-        userId: flag.post.authorId,
-        type: NotificationType.SYSTEM,
-        category: NotificationCategory.WARNING,
-        title: 'Request to revise your post',
-        message: 'A community elder has raised a concern about the cultural accuracy of one of your posts. Please review and revise.',
-        data: { postId: flag.postId, threadId: flag.post.threadId },
-      }).catch(() => {});
+      await this.notificationService
+        .createNotification({
+          userId: flag.post.authorId,
+          type: NotificationType.SYSTEM,
+          category: NotificationCategory.WARNING,
+          title: 'Request to revise your post',
+          message:
+            'A community elder has raised a concern about the cultural accuracy of one of your posts. Please review and revise.',
+          data: { postId: flag.postId, threadId: flag.post.threadId },
+        })
+        .catch(() => {});
     }
 
     return this.prisma.elderFlag.update({

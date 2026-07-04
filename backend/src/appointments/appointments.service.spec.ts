@@ -127,16 +127,14 @@ describe('AppointmentsService', () => {
           amount: 5000,
           type: EscrowType.BOOKING,
         }),
-        mockUser,
+        mockUser
       );
       expect(mockNotificationService.notifyAppointmentCreated).toHaveBeenCalledTimes(2);
     });
 
     it('should throw BadRequestException for past date', async () => {
       const pastDto = { ...dto, date: '2020-01-01' };
-      await expect(service.createBooking(pastDto, mockUser)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.createBooking(pastDto, mockUser)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw ConflictException if time slot is taken', async () => {
@@ -153,9 +151,7 @@ describe('AppointmentsService', () => {
         ],
       });
 
-      await expect(service.createBooking(dto, mockUser)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.createBooking(dto, mockUser)).rejects.toThrow(ConflictException);
     });
 
     it('serializes booking creation through a per-babalawo/date advisory lock inside a transaction (EMG-06)', async () => {
@@ -185,9 +181,7 @@ describe('AppointmentsService', () => {
       prisma.user.findUnique.mockResolvedValue(mockBabalawo);
       walletService.getWalletBalance.mockResolvedValue({ balance: 0 });
 
-      await expect(service.createBooking(dto, mockUser)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.createBooking(dto, mockUser)).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -216,11 +210,7 @@ describe('AppointmentsService', () => {
         status: 'CONFIRMED',
       });
 
-      const result = await service.updateStatus(
-        'appt-1',
-        'CONFIRMED',
-        mockUser,
-      );
+      const result = await service.updateStatus('appt-1', 'CONFIRMED', mockUser);
 
       expect(result.status).toBe('CONFIRMED');
       expect(mockNotificationService.notifyAppointmentConfirmed).toHaveBeenCalled();
@@ -235,11 +225,7 @@ describe('AppointmentsService', () => {
 
       await service.updateStatus('appt-1', 'CANCELLED', mockClient);
 
-      expect(walletService.cancelEscrow).toHaveBeenCalledWith(
-        'client-1',
-        'escrow-1',
-        mockClient,
-      );
+      expect(walletService.cancelEscrow).toHaveBeenCalledWith('client-1', 'escrow-1', mockClient);
       expect(mockNotificationService.notifyAppointmentCancelled).toHaveBeenCalledTimes(2);
     });
 
@@ -255,14 +241,14 @@ describe('AppointmentsService', () => {
       expect(walletService.releaseEscrow).toHaveBeenCalledWith(
         'client-1',
         { escrowId: 'escrow-1' },
-        mockUser,
+        mockUser
       );
     });
 
     it('should throw ForbiddenException if client tries to confirm', async () => {
-      await expect(
-        service.updateStatus('appt-1', 'CONFIRMED', mockClient),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.updateStatus('appt-1', 'CONFIRMED', mockClient)).rejects.toThrow(
+        ForbiddenException
+      );
     });
   });
 
@@ -340,9 +326,7 @@ describe('AppointmentsService', () => {
 
       // Test with 90 minute duration
       const hourAndHalfSlots = await service.getAvailableTimeSlots('babalawo-1', futureMonday);
-      expect(hourAndHalfSlots).toEqual(
-        expect.arrayContaining(['9:00 AM', '1:00 PM'])
-      );
+      expect(hourAndHalfSlots).toEqual(expect.arrayContaining(['9:00 AM', '1:00 PM']));
     });
 
     it('should return empty array if babalawo has no availability', async () => {
@@ -493,9 +477,7 @@ describe('AppointmentsService', () => {
       const clientId = 'client-1';
       const mockUser = { id: 'other-user', role: 'BABALAWO' } as any;
 
-      await expect(service.findByClient(clientId, mockUser)).rejects.toThrow(
-        ForbiddenException
-      );
+      await expect(service.findByClient(clientId, mockUser)).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -562,9 +544,7 @@ describe('AppointmentsService', () => {
     it('should throw ForbiddenException if user is not authorized', async () => {
       const mockUser = { id: 'other-user', role: 'CLIENT' } as any;
 
-      await expect(service.findOne('appt-1', mockUser)).rejects.toThrow(
-        ForbiddenException
-      );
+      await expect(service.findOne('appt-1', mockUser)).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw NotFoundException if appointment does not exist', async () => {
@@ -572,9 +552,7 @@ describe('AppointmentsService', () => {
 
       const mockUser = { id: 'client-1', role: 'CLIENT' } as any;
 
-      await expect(service.findOne('appt-1', mockUser)).rejects.toThrow(
-        NotFoundException
-      );
+      await expect(service.findOne('appt-1', mockUser)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -642,7 +620,7 @@ describe('AppointmentsService', () => {
 
       expect(result).toEqual({
         available: false,
-        message: 'Selected time is outside Babalawo\'s available hours',
+        message: "Selected time is outside Babalawo's available hours",
       });
     });
 
@@ -708,90 +686,90 @@ describe('AppointmentsService', () => {
 
       expect(result).toEqual({
         available: false,
-        message: 'Selected time is outside Babalawo\'s available hours',
+        message: "Selected time is outside Babalawo's available hours",
       });
     });
   });
 
-    it('should return not available if babalawo does not exist', async () => {
-      const dto = {
-        babalawoId: 'non-existent',
-        date: '2027-12-25',
-        time: '14:00',
-        duration: '60',
-      };
+  it('should return not available if babalawo does not exist', async () => {
+    const dto = {
+      babalawoId: 'non-existent',
+      date: '2027-12-25',
+      time: '14:00',
+      duration: '60',
+    };
 
-      prisma.user.findFirst.mockResolvedValue(null);
+    prisma.user.findFirst.mockResolvedValue(null);
 
-      const result = await service.checkAvailability(dto);
+    const result = await service.checkAvailability(dto);
 
-      expect(result).toEqual({
-        available: false,
-        message: 'Invalid Babalawo ID',
-      });
+    expect(result).toEqual({
+      available: false,
+      message: 'Invalid Babalawo ID',
+    });
+  });
+
+  it('should return not available if time is in the past', async () => {
+    const dto = {
+      babalawoId: 'babalawo-1',
+      date: '2020-01-01',
+      time: '14:00',
+      duration: '60',
+    };
+
+    const mockBabalawo = {
+      id: 'babalawo-1',
+      role: 'BABALAWO',
+    };
+
+    prisma.user.findFirst.mockResolvedValue(mockBabalawo);
+
+    const result = await service.checkAvailability(dto);
+
+    expect(result).toEqual({
+      available: false,
+      message: 'Appointment time must be in the future',
+    });
+  });
+
+  it('should return not available if time slot is already booked', async () => {
+    const dto = {
+      babalawoId: 'babalawo-1',
+      date: '2027-12-25',
+      time: '14:00',
+      duration: '60',
+    };
+
+    const mockBabalawo = {
+      id: 'babalawo-1',
+      role: 'BABALAWO',
+      availability: [
+        {
+          day: 'SUNDAY',
+          slots: ['13:00-16:00'],
+        },
+      ],
+    };
+
+    prisma.user.findFirst.mockResolvedValue(mockBabalawo);
+    prisma.user.findUnique.mockResolvedValue({
+      ...mockBabalawo,
+      appointmentsAsBabalawo: [
+        {
+          date: '2027-12-25',
+          time: '14:00',
+          duration: 60,
+        },
+      ],
     });
 
-    it('should return not available if time is in the past', async () => {
-      const dto = {
-        babalawoId: 'babalawo-1',
-        date: '2020-01-01',
-        time: '14:00',
-        duration: '60',
-      };
+    const result = await service.checkAvailability(dto);
 
-      const mockBabalawo = {
-        id: 'babalawo-1',
-        role: 'BABALAWO',
-      };
-
-      prisma.user.findFirst.mockResolvedValue(mockBabalawo);
-
-      const result = await service.checkAvailability(dto);
-
-      expect(result).toEqual({
-        available: false,
-        message: 'Appointment time must be in the future',
-      });
+    expect(result).toEqual({
+      available: false,
+      message: 'This time slot is already booked',
     });
-
-    it('should return not available if time slot is already booked', async () => {
-      const dto = {
-        babalawoId: 'babalawo-1',
-        date: '2027-12-25',
-        time: '14:00',
-        duration: '60',
-      };
-
-      const mockBabalawo = {
-        id: 'babalawo-1',
-        role: 'BABALAWO',
-        availability: [
-          {
-            day: 'SUNDAY',
-            slots: ['13:00-16:00'],
-          },
-        ],
-      };
-
-      prisma.user.findFirst.mockResolvedValue(mockBabalawo);
-      prisma.user.findUnique.mockResolvedValue({
-        ...mockBabalawo,
-        appointmentsAsBabalawo: [
-          {
-            date: '2027-12-25',
-            time: '14:00',
-            duration: 60,
-          },
-        ],
-      });
-
-      const result = await service.checkAvailability(dto);
-
-      expect(result).toEqual({
-        available: false,
-        message: 'This time slot is already booked',
-      });
-    });
+  });
 
   describe('getClientUpcomingAppointments', () => {
     it('should return upcoming appointments for the authenticated client', async () => {
@@ -861,9 +839,9 @@ describe('AppointmentsService', () => {
       const clientId = 'client-1';
       const mockUser = { id: 'other-user', role: 'BABALAWO' } as any;
 
-      await expect(
-        service.getClientUpcomingAppointments(clientId, mockUser)
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.getClientUpcomingAppointments(clientId, mockUser)).rejects.toThrow(
+        ForbiddenException
+      );
     });
   });
 
@@ -934,9 +912,9 @@ describe('AppointmentsService', () => {
       const babalawoId = 'babalawo-1';
       const mockUser = { id: 'other-user', role: 'CLIENT' } as any;
 
-      await expect(
-        service.getBabalawoUpcomingAppointments(babalawoId, mockUser)
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.getBabalawoUpcomingAppointments(babalawoId, mockUser)).rejects.toThrow(
+        ForbiddenException
+      );
     });
   });
 
@@ -997,7 +975,7 @@ describe('AppointmentsService', () => {
       const mockUser = { id: 'client-1', role: 'CLIENT' } as any;
       const updateDto = {
         status: 'CANCELLED', // Trying to update status which clients shouldn't be able to do
-        notes: 'Updated notes'
+        notes: 'Updated notes',
       } as any;
 
       prisma.appointment.update.mockResolvedValue({
@@ -1034,5 +1012,4 @@ describe('AppointmentsService', () => {
       });
     });
   });
-
 });

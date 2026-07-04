@@ -52,7 +52,7 @@ export class PaystackApiService implements OnModuleInit {
 
   constructor(
     private configService: ConfigService,
-    private secretsService: SecretsService,
+    private secretsService: SecretsService
   ) {}
 
   // P1-02 discovery: initializeClient() was defined but never actually

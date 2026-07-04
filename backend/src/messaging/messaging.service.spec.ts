@@ -111,10 +111,13 @@ describe('MessagingService', () => {
       jest.spyOn(prisma.conversation, 'findUnique').mockResolvedValue(mockConversation);
       jest.spyOn(prisma.message, 'create').mockResolvedValue(newMessage);
 
-      const result = await service.sendMessage({
-        recipientId: 'user2',
-        content: 'Hello there!',
-      }, 'user1');
+      const result = await service.sendMessage(
+        {
+          recipientId: 'user2',
+          content: 'Hello there!',
+        },
+        'user1'
+      );
 
       expect(result).toEqual(newMessage);
       expect(prisma.message.create).toHaveBeenCalledWith({
@@ -151,10 +154,15 @@ describe('MessagingService', () => {
     it('should throw an exception if sender does not exist', async () => {
       jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(null);
 
-      await expect(service.sendMessage({
-        recipientId: 'user2',
-        content: 'Hello there!',
-      }, 'nonexistent-sender')).rejects.toThrow(NotFoundException);
+      await expect(
+        service.sendMessage(
+          {
+            recipientId: 'user2',
+            content: 'Hello there!',
+          },
+          'nonexistent-sender'
+        )
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw an exception if recipient does not exist', async () => {
@@ -182,10 +190,15 @@ describe('MessagingService', () => {
         return Promise.resolve(null);
       });
 
-      await expect(service.sendMessage({
-        recipientId: 'nonexistent-recipient',
-        content: 'Hello there!',
-      }, 'user1')).rejects.toThrow(NotFoundException);
+      await expect(
+        service.sendMessage(
+          {
+            recipientId: 'nonexistent-recipient',
+            content: 'Hello there!',
+          },
+          'user1'
+        )
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw an exception if content is empty', async () => {
@@ -233,10 +246,15 @@ describe('MessagingService', () => {
         return Promise.resolve(null);
       });
 
-      await expect(service.sendMessage({
-        recipientId: 'user2',
-        content: '', // Empty content
-      }, 'user1')).rejects.toThrow(BadRequestException);
+      await expect(
+        service.sendMessage(
+          {
+            recipientId: 'user2',
+            content: '', // Empty content
+          },
+          'user1'
+        )
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -373,8 +391,9 @@ describe('MessagingService', () => {
     it('should throw NotFoundException if message does not exist', async () => {
       jest.spyOn(prisma.message, 'findUnique').mockResolvedValue(null);
 
-      await expect(service.markAsRead('nonexistent-msg', 'user2'))
-        .rejects.toThrow(NotFoundException);
+      await expect(service.markAsRead('nonexistent-msg', 'user2')).rejects.toThrow(
+        NotFoundException
+      );
     });
   });
 

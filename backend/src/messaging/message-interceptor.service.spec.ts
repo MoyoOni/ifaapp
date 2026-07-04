@@ -41,17 +41,23 @@ describe('MessageInterceptorService', () => {
     });
 
     it('should detect potentially harmful content', async () => {
-      const result = service.validateMessageContent('This message contains <script>alert("harmful")</script>');
+      const result = service.validateMessageContent(
+        'This message contains <script>alert("harmful")</script>'
+      );
       expect(result).toBe(false);
     });
 
     it('should detect potentially harmful JavaScript content', async () => {
-      const result = service.validateMessageContent('Click here onclick="javascript:alert(\'harmful\')"');
+      const result = service.validateMessageContent(
+        'Click here onclick="javascript:alert(\'harmful\')"'
+      );
       expect(result).toBe(false);
     });
 
     it('should allow legitimate content with script-like text', async () => {
-      const result = service.validateMessageContent('The software has many scripts that run safely');
+      const result = service.validateMessageContent(
+        'The software has many scripts that run safely'
+      );
       expect(result).toBe(true);
     });
   });
@@ -185,8 +191,9 @@ describe('MessageInterceptorService', () => {
 
       jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(null);
 
-      await expect(service.processIncomingMessage(rawMessage, 'nonexistent-user'))
-        .rejects.toThrow(NotFoundException);
+      await expect(service.processIncomingMessage(rawMessage, 'nonexistent-user')).rejects.toThrow(
+        NotFoundException
+      );
     });
 
     it('should reject messages with empty content after sanitization', async () => {
@@ -224,8 +231,9 @@ describe('MessageInterceptorService', () => {
 
       jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
 
-      await expect(service.processIncomingMessage(rawMessage, 'user1'))
-        .rejects.toThrow(BadRequestException);
+      await expect(service.processIncomingMessage(rawMessage, 'user1')).rejects.toThrow(
+        BadRequestException
+      );
     });
   });
 

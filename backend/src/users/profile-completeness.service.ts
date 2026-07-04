@@ -51,7 +51,7 @@ export class ProfileCompletenessService {
     let totalWeight = 0;
     let completedWeight = 0;
 
-    profileElements.forEach(element => {
+    profileElements.forEach((element) => {
       totalWeight += element.weight;
       if (element.value) {
         completedWeight += element.weight;
@@ -73,12 +73,12 @@ export class ProfileCompletenessService {
     return {
       percentage: completenessPercentage,
       tier,
-      elements: profileElements.map(el => ({
+      elements: profileElements.map((el) => ({
         id: el.key,
         completed: el.value,
         weight: el.weight,
       })),
-      completedCount: profileElements.filter(el => el.value).length,
+      completedCount: profileElements.filter((el) => el.value).length,
       totalCount: profileElements.length,
     };
   }
@@ -91,10 +91,10 @@ export class ProfileCompletenessService {
 
     // Filter for uncompleted elements and sort by weight (priority)
     const uncompletedElements = completeness.elements
-      .filter(el => !el.completed)
+      .filter((el) => !el.completed)
       .sort((a, b) => b.weight - a.weight);
 
     // Return top 3 recommended next steps
-    return uncompletedElements.slice(0, 3).map(el => el.id);
+    return uncompletedElements.slice(0, 3).map((el) => el.id);
   }
 }

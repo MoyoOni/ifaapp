@@ -21,7 +21,15 @@ import { SetThreadSacredDto } from './dto/set-thread-sacred.dto';
 import { ReportPostDto } from './dto/report-post.dto';
 import { ReviewReportDto } from './dto/review-report.dto';
 import { TipPostDto } from './dto/tip-post.dto';
-import { CreateForumCategoryDto, UpdateForumCategoryDto, ReorderForumCategoryDto, MoveThreadToCategoryDto, FeatureThreadDto, MergeThreadsDto, DeleteThreadAdminDto } from './dto/forum-category-admin.dto';
+import {
+  CreateForumCategoryDto,
+  UpdateForumCategoryDto,
+  ReorderForumCategoryDto,
+  MoveThreadToCategoryDto,
+  FeatureThreadDto,
+  MergeThreadsDto,
+  DeleteThreadAdminDto,
+} from './dto/forum-category-admin.dto';
 import { CreateElderFlagDto, ReactToPostDto, ReviewElderFlagDto } from './dto/elder-actions.dto';
 import { CreateLiveSessionDto, UpdateLiveSessionStatusDto } from './dto/live-session.dto';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
@@ -61,10 +69,7 @@ export class ForumController {
 
   @Public()
   @Get('search')
-  async searchForum(
-    @Query('q') q: string,
-    @CurrentUser() currentUser?: CurrentUserPayload,
-  ) {
+  async searchForum(@Query('q') q: string, @CurrentUser() currentUser?: CurrentUserPayload) {
     return this.forumService.searchForum(q ?? '', currentUser ?? null);
   }
 
@@ -98,17 +103,14 @@ export class ForumController {
     @Query('categoryId') categoryId?: string,
     @Query('status') status?: string,
     @Query('tag') tag?: string,
-    @CurrentUser() currentUser?: CurrentUserPayload,
+    @CurrentUser() currentUser?: CurrentUserPayload
   ) {
     return this.forumService.findAllThreads(categoryId, status, tag, currentUser ?? null);
   }
 
   @Public()
   @Get('threads/:id')
-  async findThreadById(
-    @Param('id') id: string,
-    @CurrentUser() currentUser?: CurrentUserPayload,
-  ) {
+  async findThreadById(@Param('id') id: string, @CurrentUser() currentUser?: CurrentUserPayload) {
     return this.forumService.findThreadById(id, currentUser ?? null);
   }
 
@@ -206,7 +208,7 @@ export class ForumController {
   async reportPost(
     @Param('postId') postId: string,
     @Body() dto: ReportPostDto,
-    @CurrentUser() currentUser: CurrentUserPayload,
+    @CurrentUser() currentUser: CurrentUserPayload
   ) {
     return this.forumService.reportPost(postId, dto.reason, dto.note, currentUser);
   }
@@ -214,7 +216,7 @@ export class ForumController {
   @Get('reports')
   async getReports(
     @Query('status') status: string,
-    @CurrentUser() currentUser: CurrentUserPayload,
+    @CurrentUser() currentUser: CurrentUserPayload
   ) {
     return this.forumService.getReports(currentUser, status);
   }
@@ -223,7 +225,7 @@ export class ForumController {
   async reviewReport(
     @Param('id') id: string,
     @Body() dto: ReviewReportDto,
-    @CurrentUser() currentUser: CurrentUserPayload,
+    @CurrentUser() currentUser: CurrentUserPayload
   ) {
     return this.forumService.reviewReport(id, dto.action, currentUser);
   }
@@ -290,13 +292,16 @@ export class ForumController {
   async tipPost(
     @Param('postId') postId: string,
     @Body() dto: TipPostDto,
-    @CurrentUser() currentUser: CurrentUserPayload,
+    @CurrentUser() currentUser: CurrentUserPayload
   ) {
     return this.forumService.tipPost(postId, dto.amount, dto.currency ?? 'NGN', currentUser);
   }
 
   @Get('threads/:id/subscribe')
-  async getSubscriptionStatus(@Param('id') id: string, @CurrentUser() currentUser: CurrentUserPayload) {
+  async getSubscriptionStatus(
+    @Param('id') id: string,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
     return this.forumService.getSubscriptionStatus(id, currentUser);
   }
 
@@ -362,10 +367,7 @@ export class ForumController {
   }
 
   @Post('admin/threads/merge')
-  async mergeThreads(
-    @Body() dto: MergeThreadsDto,
-    @CurrentUser() currentUser: CurrentUserPayload
-  ) {
+  async mergeThreads(@Body() dto: MergeThreadsDto, @CurrentUser() currentUser: CurrentUserPayload) {
     return this.forumService.mergeThreads(dto.primaryThreadId, dto.secondaryThreadId, currentUser);
   }
 
@@ -402,7 +404,7 @@ export class ForumController {
   async createElderFlag(
     @Param('postId') postId: string,
     @Body() dto: CreateElderFlagDto,
-    @CurrentUser() currentUser: CurrentUserPayload,
+    @CurrentUser() currentUser: CurrentUserPayload
   ) {
     return this.forumService.createElderFlag(postId, dto.reason, currentUser);
   }
@@ -416,7 +418,7 @@ export class ForumController {
   async reactToPost(
     @Param('postId') postId: string,
     @Body() dto: ReactToPostDto,
-    @CurrentUser() currentUser: CurrentUserPayload,
+    @CurrentUser() currentUser: CurrentUserPayload
   ) {
     return this.forumService.reactToPost(postId, dto.emoji, currentUser);
   }
@@ -424,7 +426,7 @@ export class ForumController {
   @Delete('posts/:postId/elder-reactions')
   async removeElderReaction(
     @Param('postId') postId: string,
-    @CurrentUser() currentUser: CurrentUserPayload,
+    @CurrentUser() currentUser: CurrentUserPayload
   ) {
     return this.forumService.removeElderReaction(postId, currentUser);
   }
@@ -442,7 +444,7 @@ export class ForumController {
   @Get('elder-flags')
   async getElderFlags(
     @Query('status') status: string,
-    @CurrentUser() currentUser: CurrentUserPayload,
+    @CurrentUser() currentUser: CurrentUserPayload
   ) {
     return this.forumService.getElderFlags(currentUser, status);
   }
@@ -451,7 +453,7 @@ export class ForumController {
   async reviewElderFlag(
     @Param('id') id: string,
     @Body() dto: ReviewElderFlagDto,
-    @CurrentUser() currentUser: CurrentUserPayload,
+    @CurrentUser() currentUser: CurrentUserPayload
   ) {
     return this.forumService.reviewElderFlag(id, dto.action, currentUser);
   }
@@ -467,13 +469,10 @@ export class ForumController {
   @Get('admin/crisis-signals')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
-  async getCrisisSignalPosts(
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-  ) {
+  async getCrisisSignalPosts(@Query('page') page?: string, @Query('limit') limit?: string) {
     return this.forumService.getCrisisSignalPosts(
       page ? parseInt(page, 10) : 1,
-      limit ? parseInt(limit, 10) : 20,
+      limit ? parseInt(limit, 10) : 20
     );
   }
 
@@ -487,19 +486,16 @@ export class ForumController {
   @Post('live-sessions')
   async createLiveSession(
     @Body() dto: CreateLiveSessionDto,
-    @CurrentUser() currentUser: CurrentUserPayload,
+    @CurrentUser() currentUser: CurrentUserPayload
   ) {
-    return this.forumService.createLiveSession(
-      { ...dto, hostIds: dto.hostIds ?? [] },
-      currentUser,
-    );
+    return this.forumService.createLiveSession({ ...dto, hostIds: dto.hostIds ?? [] }, currentUser);
   }
 
   @Patch('live-sessions/:id/status')
   async updateLiveSessionStatus(
     @Param('id') id: string,
     @Body() dto: UpdateLiveSessionStatusDto,
-    @CurrentUser() currentUser: CurrentUserPayload,
+    @CurrentUser() currentUser: CurrentUserPayload
   ) {
     return this.forumService.updateLiveSessionStatus(id, dto.status, currentUser);
   }

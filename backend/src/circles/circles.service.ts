@@ -44,7 +44,9 @@ export class CirclesService {
         select: { subscriptionStatus: true },
       });
       if (user?.subscriptionStatus !== 'DEVOTED') {
-        throw new ForbiddenException('Creating circles is a Devoted member benefit. Join and participate in any existing circle for free.');
+        throw new ForbiddenException(
+          'Creating circles is a Devoted member benefit. Join and participate in any existing circle for free.'
+        );
       }
     }
 
@@ -448,7 +450,9 @@ export class CirclesService {
         select: { subscriptionStatus: true },
       });
       if (user?.subscriptionStatus !== 'DEVOTED') {
-        throw new ForbiddenException('This circle is exclusive to Devoted members. Upgrade at /pricing.');
+        throw new ForbiddenException(
+          'This circle is exclusive to Devoted members. Upgrade at /pricing.'
+        );
       }
     }
 
@@ -676,7 +680,7 @@ export class CirclesService {
     circleId: string,
     content: string,
     patronOnly: boolean,
-    currentUser: CurrentUserPayload,
+    currentUser: CurrentUserPayload
   ) {
     const membership = await this.prisma.circleMember.findUnique({
       where: { circleId_userId: { circleId, userId: currentUser.id } },

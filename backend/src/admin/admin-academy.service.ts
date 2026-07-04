@@ -36,7 +36,13 @@ export class AdminAcademyService {
     if (status === 'PUBLISHED') data.approvedBy = adminId;
     await this.prisma.course.update({ where: { id: courseId }, data });
     await this.prisma.auditLog.create({
-      data: { userId: adminId, action: 'COURSE_STATUS_CHANGE', resourceType: 'Course', resourceId: courseId, newValues: { status, reason: reason ?? null } },
+      data: {
+        userId: adminId,
+        action: 'COURSE_STATUS_CHANGE',
+        resourceType: 'Course',
+        resourceId: courseId,
+        newValues: { status, reason: reason ?? null },
+      },
     });
     return { success: true, status };
   }
@@ -45,14 +51,18 @@ export class AdminAcademyService {
     const courses = await this.prisma.course.findMany({
       where: { status: 'PUBLISHED' },
       select: {
-        id: true, title: true, price: true, currency: true, enrolledCount: true,
+        id: true,
+        title: true,
+        price: true,
+        currency: true,
+        enrolledCount: true,
         _count: { select: { enrollments: true } },
         enrollments: { select: { status: true, completedAt: true } },
       },
       orderBy: { enrolledCount: 'desc' },
     });
-    return courses.map(c => {
-      const completed = c.enrollments.filter(e => e.completedAt).length;
+    return courses.map((c) => {
+      const completed = c.enrollments.filter((e) => e.completedAt).length;
       const total = c.enrollments.length;
       return {
         id: c.id,
@@ -68,10 +78,17 @@ export class AdminAcademyService {
   }
 
   async manualEnroll(courseId: string, userId: string) {
-    const existing = await this.prisma.enrollment.findUnique({ where: { courseId_studentId: { courseId, studentId: userId } } });
+    const existing = await this.prisma.enrollment.findUnique({
+      where: { courseId_studentId: { courseId, studentId: userId } },
+    });
     if (existing) return existing;
-    const enrollment = await this.prisma.enrollment.create({ data: { courseId, studentId: userId, status: 'ACTIVE' } });
-    await this.prisma.course.update({ where: { id: courseId }, data: { enrolledCount: { increment: 1 } } });
+    const enrollment = await this.prisma.enrollment.create({
+      data: { courseId, studentId: userId, status: 'ACTIVE' },
+    });
+    await this.prisma.course.update({
+      where: { id: courseId },
+      data: { enrolledCount: { increment: 1 } },
+    });
     return enrollment;
   }
 
@@ -89,7 +106,12 @@ export class AdminAcademyService {
       data: { enrollmentId, certificateUrl: '' },
     });
     await this.prisma.auditLog.create({
-      data: { userId: adminId, action: 'CERTIFICATE_ISSUED', resourceType: 'Enrollment', resourceId: enrollmentId },
+      data: {
+        userId: adminId,
+        action: 'CERTIFICATE_ISSUED',
+        resourceType: 'Enrollment',
+        resourceId: enrollmentId,
+      },
     });
     return cert;
   }
@@ -100,7 +122,13 @@ export class AdminAcademyService {
     // Log revocation — CourseCertificate doesn't have a revokedAt field so we delete the record
     await this.prisma.courseCertificate.delete({ where: { enrollmentId } });
     await this.prisma.auditLog.create({
-      data: { userId: adminId, action: 'CERTIFICATE_REVOKED', resourceType: 'Enrollment', resourceId: enrollmentId, newValues: { reason } },
+      data: {
+        userId: adminId,
+        action: 'CERTIFICATE_REVOKED',
+        resourceType: 'Enrollment',
+        resourceId: enrollmentId,
+        newValues: { reason },
+      },
     });
     return { success: true };
   }

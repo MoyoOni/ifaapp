@@ -1,6 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { initSentry, captureException, captureMessage as sentryCaptureMessage, setUser as sentrySetUser, addBreadcrumb as sentryAddBreadcrumb } from '../sentry';
+import {
+  initSentry,
+  captureException,
+  captureMessage as sentryCaptureMessage,
+  setUser as sentrySetUser,
+  addBreadcrumb as sentryAddBreadcrumb,
+} from '../sentry';
 
 @Injectable()
 export class SentryService {

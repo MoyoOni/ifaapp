@@ -176,10 +176,7 @@ export class AuthController {
   @Post('set-password')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  async setPassword(
-    @CurrentUser() currentUser: { id: string },
-    @Body() body: SetPasswordDto,
-  ) {
+  async setPassword(@CurrentUser() currentUser: { id: string }, @Body() body: SetPasswordDto) {
     return this.authService.setPassword(currentUser.id, body.password);
   }
 }

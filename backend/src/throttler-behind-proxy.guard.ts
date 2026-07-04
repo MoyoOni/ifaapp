@@ -8,7 +8,7 @@ export class ThrottlerBehindProxyFix extends ThrottlerGuard {
     const http = context.switchToHttp();
     const request = http.getRequest();
     const response = http.getResponse();
-    
+
     // Return both req and res as expected by the parent class
     return { req: request, res: response };
   }

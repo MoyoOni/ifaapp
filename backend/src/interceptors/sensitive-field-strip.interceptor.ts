@@ -53,7 +53,7 @@ export class SensitiveFieldStripInterceptor implements NestInterceptor {
   // `any` is the established way this codebase already routes around it.
   intercept(_context: ExecutionContext, next: CallHandler) {
     return (next.handle() as any).pipe(
-      map((data: unknown) => stripSensitiveFields(data, new WeakSet())),
+      map((data: unknown) => stripSensitiveFields(data, new WeakSet()))
     ) as any;
   }
 }

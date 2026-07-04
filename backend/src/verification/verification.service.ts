@@ -135,9 +135,15 @@ export class VerificationService {
       throw new BadRequestException('Maximum 3 credential documents allowed');
     }
 
-    const allowed = ['data:application/pdf', 'data:image/jpeg', 'data:image/jpg', 'data:image/png', 'data:image/webp'];
+    const allowed = [
+      'data:application/pdf',
+      'data:image/jpeg',
+      'data:image/jpg',
+      'data:image/png',
+      'data:image/webp',
+    ];
     for (const file of files) {
-      if (!allowed.some(prefix => file.data.startsWith(prefix))) {
+      if (!allowed.some((prefix) => file.data.startsWith(prefix))) {
         throw new BadRequestException(`File "${file.name}" must be PDF, JPG, PNG, or WebP`);
       }
       const base64 = file.data.split(',')[1] ?? '';
@@ -155,7 +161,7 @@ export class VerificationService {
           lineage: '',
           mentorEndorsements: [],
           yearsOfService: 0,
-          documentation: files.map(f => f.data),
+          documentation: files.map((f) => f.data),
           specialization: [],
           languages: [],
           currentStage: VerificationStage.APPLICATION,
@@ -172,7 +178,7 @@ export class VerificationService {
     } else {
       application = await this.prisma.verificationApplication.update({
         where: { userId },
-        data: { documentation: files.map(f => f.data) },
+        data: { documentation: files.map((f) => f.data) },
         include: { history: { orderBy: { timestamp: 'desc' } } },
       });
     }

@@ -580,17 +580,25 @@ export class AdminUsersService {
   }
 
   async getUserSessions(userId: string) {
-    return this.prisma.userSession.findMany({ where: { userId }, orderBy: { loginAt: 'desc' }, take: 20 });
+    return this.prisma.userSession.findMany({
+      where: { userId },
+      orderBy: { loginAt: 'desc' },
+      take: 20,
+    });
   }
 
   async forceLogoutUser(userId: string) {
-    await this.prisma.userSession.updateMany({ where: { userId, isActive: true }, data: { isActive: false, loggedOutAt: new Date() } });
+    await this.prisma.userSession.updateMany({
+      where: { userId, isActive: true },
+      data: { isActive: false, loggedOutAt: new Date() },
+    });
     return { success: true, message: 'All sessions invalidated' };
   }
 
   async getRecentLogins(limit = 50) {
     return this.prisma.userSession.findMany({
-      orderBy: { loginAt: 'desc' }, take: limit,
+      orderBy: { loginAt: 'desc' },
+      take: limit,
       include: { user: { select: { id: true, name: true, email: true, role: true } } },
     });
   }
@@ -609,41 +617,64 @@ export class AdminUsersService {
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
-    const [totalUsers, newLast30, activeClients, activeBabalawos, activeVendors,
-      completedAppointments, totalRevenue, passedOrientation] = await Promise.all([
+    const [
+      totalUsers,
+      newLast30,
+      activeClients,
+      activeBabalawos,
+      activeVendors,
+      completedAppointments,
+      totalRevenue,
+      passedOrientation,
+    ] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.user.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
       this.prisma.user.count({ where: { role: 'CLIENT', createdAt: { gte: thirtyDaysAgo } } }),
       this.prisma.user.count({ where: { role: 'BABALAWO' } }),
       this.prisma.user.count({ where: { role: 'VENDOR' } }),
-      this.prisma.appointment.count({ where: { status: 'COMPLETED', createdAt: { gte: thirtyDaysAgo } } }),
-      this.prisma.payment.aggregate({ where: { status: 'COMPLETED', createdAt: { gte: thirtyDaysAgo } }, _sum: { amount: true } }),
+      this.prisma.appointment.count({
+        where: { status: 'COMPLETED', createdAt: { gte: thirtyDaysAgo } },
+      }),
+      this.prisma.payment.aggregate({
+        where: { status: 'COMPLETED', createdAt: { gte: thirtyDaysAgo } },
+        _sum: { amount: true },
+      }),
       this.prisma.user.count({ where: { passedCulturalOrientation: true } }),
     ]);
 
-    const prevNewUsers = await this.prisma.user.count({ where: { createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo } } });
-    const growthRate = prevNewUsers > 0 ? Math.round(((newLast30 - prevNewUsers) / prevNewUsers) * 100) : 0;
+    const prevNewUsers = await this.prisma.user.count({
+      where: { createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo } },
+    });
+    const growthRate =
+      prevNewUsers > 0 ? Math.round(((newLast30 - prevNewUsers) / prevNewUsers) * 100) : 0;
 
     // Monthly cohort — signups by month for last 6 months
     const cohorts = [];
     for (let i = 5; i >= 0; i--) {
       const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
-      const signups = await this.prisma.user.count({ where: { createdAt: { gte: start, lte: end } } });
+      const signups = await this.prisma.user.count({
+        where: { createdAt: { gte: start, lte: end } },
+      });
       const converted = await this.prisma.appointment.count({
         where: { createdAt: { gte: start, lte: end }, status: 'COMPLETED' },
       });
       cohorts.push({
         month: start.toLocaleString('default', { month: 'short', year: '2-digit' }),
-        signups, converted,
+        signups,
+        converted,
         conversionRate: signups > 0 ? Math.round((converted / signups) * 100) : 0,
       });
     }
 
     return {
       overview: {
-        totalUsers, newLast30, growthRate,
-        activeClients, activeBabalawos, activeVendors,
+        totalUsers,
+        newLast30,
+        growthRate,
+        activeClients,
+        activeBabalawos,
+        activeVendors,
         completedConsultations: completedAppointments,
         revenueThisMonth: totalRevenue._sum.amount ?? 0,
         culturalOrientationPassed: passedOrientation,
@@ -680,5 +711,4 @@ export class AdminUsersService {
       },
     });
   }
-
 }

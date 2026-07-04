@@ -1,7 +1,11 @@
 import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SesEmailService } from '../shared/services/ses-email.service';
-import { NotificationService, NotificationType, NotificationCategory } from '../notifications/notification.service';
+import {
+  NotificationService,
+  NotificationType,
+  NotificationCategory,
+} from '../notifications/notification.service';
 import { addMonths, addDays, differenceInDays } from 'date-fns';
 
 @Injectable()
@@ -11,7 +15,7 @@ export class SubscriptionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly sesEmailService: SesEmailService,
-    private readonly notificationService: NotificationService,
+    private readonly notificationService: NotificationService
   ) {}
 
   // ─── Initiate Subscription (returns Paystack checkout URL) ───────────────
@@ -84,21 +88,39 @@ export class SubscriptionsService {
     const daysRemaining = differenceInDays(activeSub.endDate, new Date());
 
     // Fire renewal reminder if within 3 days and not yet sent
-    if (daysRemaining <= 3 && daysRemaining >= 0 && !activeSub.reminderSent && activeSub.autoRenew) {
-      const fullUser = await this.prisma.user.findUnique({ where: { id: userId }, select: { email: true, name: true } });
+    if (
+      daysRemaining <= 3 &&
+      daysRemaining >= 0 &&
+      !activeSub.reminderSent &&
+      activeSub.autoRenew
+    ) {
+      const fullUser = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true, name: true },
+      });
       if (fullUser) {
-        this.sendRenewalReminder(fullUser.email, fullUser.name, activeSub.plan, activeSub.endDate, daysRemaining).catch((err) => {
+        this.sendRenewalReminder(
+          fullUser.email,
+          fullUser.name,
+          activeSub.plan,
+          activeSub.endDate,
+          daysRemaining
+        ).catch((err) => {
           this.logger.error(`Failed to send renewal reminder to ${fullUser.email}`, err);
         });
         const dayWord = daysRemaining === 1 ? 'day' : 'days';
-        this.notificationService.createNotification({
-          userId,
-          type: NotificationType.SYSTEM,
-          category: NotificationCategory.WARNING,
-          title: `Devoted renews in ${daysRemaining} ${dayWord}`,
-          message: `Your Devoted plan renews on ${activeSub.endDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}. Your subscription will auto-renew.`,
-        }).catch(() => {});
-        this.prisma.subscription.update({ where: { id: activeSub.id }, data: { reminderSent: true } }).catch(() => {});
+        this.notificationService
+          .createNotification({
+            userId,
+            type: NotificationType.SYSTEM,
+            category: NotificationCategory.WARNING,
+            title: `Devoted renews in ${daysRemaining} ${dayWord}`,
+            message: `Your Devoted plan renews on ${activeSub.endDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}. Your subscription will auto-renew.`,
+          })
+          .catch(() => {});
+        this.prisma.subscription
+          .update({ where: { id: activeSub.id }, data: { reminderSent: true } })
+          .catch(() => {});
       }
     }
 
@@ -123,20 +145,17 @@ export class SubscriptionsService {
     // Cancel in Paystack (disable subscription)
     if (activeSub.paystackSubId) {
       try {
-        await fetch(
-          `https://api.paystack.co/subscription/disable`,
-          {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              code: activeSub.paystackSubId,
-              token: activeSub.paystackSubId, // Paystack requires email token — stored separately in production
-            }),
+        await fetch(`https://api.paystack.co/subscription/disable`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+            'Content-Type': 'application/json',
           },
-        );
+          body: JSON.stringify({
+            code: activeSub.paystackSubId,
+            token: activeSub.paystackSubId, // Paystack requires email token — stored separately in production
+          }),
+        });
       } catch (err) {
         this.logger.warn('Failed to cancel in Paystack, proceeding locally', err);
       }
@@ -148,7 +167,9 @@ export class SubscriptionsService {
       data: { autoRenew: false, status: 'CANCELLED' },
     });
 
-    this.logger.log(`Subscription cancelled for user ${userId} — access until ${activeSub.endDate}`);
+    this.logger.log(
+      `Subscription cancelled for user ${userId} — access until ${activeSub.endDate}`
+    );
 
     return {
       message: 'Subscription cancelled. You keep Devoted access until your period ends.',
@@ -281,18 +302,29 @@ export class SubscriptionsService {
     await this.rewardReferrer(userId);
 
     // In-app notification — subscription activated
-    this.notificationService.createNotification({
-      userId,
-      type: NotificationType.SYSTEM,
-      category: NotificationCategory.SUCCESS,
-      title: 'Welcome to Devoted!',
-      message: `Your ${plan === 'ANNUAL' ? 'Annual' : 'Quarterly'} Devoted plan is now active. Access expires ${endDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}.`,
-    }).catch(() => {});
+    this.notificationService
+      .createNotification({
+        userId,
+        type: NotificationType.SYSTEM,
+        category: NotificationCategory.SUCCESS,
+        title: 'Welcome to Devoted!',
+        message: `Your ${plan === 'ANNUAL' ? 'Annual' : 'Quarterly'} Devoted plan is now active. Access expires ${endDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}.`,
+      })
+      .catch(() => {});
 
     // Send billing confirmation email (fire-and-forget)
-    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { email: true, name: true } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, name: true },
+    });
     if (user) {
-      this.sendBillingConfirmation(user.email, user.name, plan, endDate, data.amount ?? (plan === 'QUARTERLY' ? 2_500_000 : 10_000_000)).catch((err) => {
+      this.sendBillingConfirmation(
+        user.email,
+        user.name,
+        plan,
+        endDate,
+        data.amount ?? (plan === 'QUARTERLY' ? 2_500_000 : 10_000_000)
+      ).catch((err) => {
         this.logger.error(`Failed to send billing confirmation to ${user.email}`, err);
       });
     }
@@ -323,13 +355,16 @@ export class SubscriptionsService {
     });
 
     // In-app notification — payment failed
-    this.notificationService.createNotification({
-      userId,
-      type: NotificationType.SYSTEM,
-      category: NotificationCategory.ERROR,
-      title: 'Devoted payment failed',
-      message: 'Your Devoted subscription payment could not be processed. Please update your payment method to keep your access.',
-    }).catch(() => {});
+    this.notificationService
+      .createNotification({
+        userId,
+        type: NotificationType.SYSTEM,
+        category: NotificationCategory.ERROR,
+        title: 'Devoted payment failed',
+        message:
+          'Your Devoted subscription payment could not be processed. Please update your payment method to keep your access.',
+      })
+      .catch(() => {});
 
     this.logger.warn(`Payment failed for user ${userId} — marked PAST_DUE`);
   }
@@ -353,13 +388,15 @@ export class SubscriptionsService {
     });
 
     // In-app notification — renewal
-    this.notificationService.createNotification({
-      userId,
-      type: NotificationType.SYSTEM,
-      category: NotificationCategory.SUCCESS,
-      title: 'Devoted plan renewed',
-      message: `Your ${plan === 'ANNUAL' ? 'Annual' : 'Quarterly'} Devoted plan has been renewed. Access until ${newEnd.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}.`,
-    }).catch(() => {});
+    this.notificationService
+      .createNotification({
+        userId,
+        type: NotificationType.SYSTEM,
+        category: NotificationCategory.SUCCESS,
+        title: 'Devoted plan renewed',
+        message: `Your ${plan === 'ANNUAL' ? 'Annual' : 'Quarterly'} Devoted plan has been renewed. Access until ${newEnd.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}.`,
+      })
+      .catch(() => {});
 
     this.logger.log(`Renewal successful for user ${userId} — extended to ${newEnd.toISOString()}`);
   }
@@ -413,7 +450,9 @@ export class SubscriptionsService {
       data: { rewardGranted: true },
     });
 
-    this.logger.log(`Referral reward granted: ${referral.referrerId} gets 30 days for referring ${newSubscriberId}`);
+    this.logger.log(
+      `Referral reward granted: ${referral.referrerId} gets 30 days for referring ${newSubscriberId}`
+    );
   }
 
   // ─── Admin Manual Grant ───────────────────────────────────────────────────
@@ -444,15 +483,19 @@ export class SubscriptionsService {
     });
 
     // In-app notification
-    this.notificationService.createNotification({
-      userId,
-      type: NotificationType.SYSTEM,
-      category: NotificationCategory.SUCCESS,
-      title: 'Devoted access granted',
-      message: `Your Devoted ${plan === 'ANNUAL' ? 'Annual' : 'Quarterly'} plan has been activated by the Ilé Àṣẹ team.${reason ? ` Note: ${reason}` : ''} Access until ${endDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}.`,
-    }).catch(() => {});
+    this.notificationService
+      .createNotification({
+        userId,
+        type: NotificationType.SYSTEM,
+        category: NotificationCategory.SUCCESS,
+        title: 'Devoted access granted',
+        message: `Your Devoted ${plan === 'ANNUAL' ? 'Annual' : 'Quarterly'} plan has been activated by the Ilé Àṣẹ team.${reason ? ` Note: ${reason}` : ''} Access until ${endDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}.`,
+      })
+      .catch(() => {});
 
-    this.logger.log(`Admin granted ${plan} Devoted to user ${userId}${reason ? ` — reason: ${reason}` : ''}`);
+    this.logger.log(
+      `Admin granted ${plan} Devoted to user ${userId}${reason ? ` — reason: ${reason}` : ''}`
+    );
     return { granted: true, plan, endDate: endDate.toISOString() };
   }
 
@@ -463,11 +506,19 @@ export class SubscriptionsService {
     name: string,
     plan: string,
     endDate: Date,
-    amountKobo: number,
+    amountKobo: number
   ): Promise<void> {
     const planLabel = plan === 'ANNUAL' ? 'Annual (1 year)' : 'Quarterly (3 months)';
-    const amountNaira = new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(amountKobo / 100);
-    const endFormatted = endDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    const amountNaira = new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
+      maximumFractionDigits: 0,
+    }).format(amountKobo / 100);
+    const endFormatted = endDate.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
     const frontendUrl = process.env.FRONTEND_URL ?? 'https://iluase.com';
 
     const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
@@ -503,10 +554,14 @@ export class SubscriptionsService {
     name: string,
     plan: string,
     endDate: Date,
-    daysRemaining: number,
+    daysRemaining: number
   ): Promise<void> {
     const planLabel = plan === 'ANNUAL' ? 'Annual' : 'Quarterly';
-    const endFormatted = endDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    const endFormatted = endDate.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
     const frontendUrl = process.env.FRONTEND_URL ?? 'https://iluase.com';
     const dayWord = daysRemaining === 1 ? 'day' : 'days';
 
@@ -527,7 +582,11 @@ export class SubscriptionsService {
   </div>
 </body></html>`;
 
-    await this.sesEmailService.sendEmail(email, `Your Devoted membership renews in ${daysRemaining} ${dayWord} — Ilé Àṣẹ`, html);
+    await this.sesEmailService.sendEmail(
+      email,
+      `Your Devoted membership renews in ${daysRemaining} ${dayWord} — Ilé Àṣẹ`,
+      html
+    );
     this.logger.log(`Renewal reminder sent to ${email} (${daysRemaining} days remaining)`);
   }
 

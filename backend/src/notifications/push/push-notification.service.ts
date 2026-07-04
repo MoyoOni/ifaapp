@@ -26,7 +26,7 @@ export class PushNotificationService implements OnModuleInit {
 
   constructor(
     private configService: ConfigService,
-    private prisma: PrismaService,
+    private prisma: PrismaService
   ) {
     const projectId = configService.get<string>('FIREBASE_PROJECT_ID');
     const clientEmail = configService.get<string>('FIREBASE_CLIENT_EMAIL');
@@ -36,7 +36,9 @@ export class PushNotificationService implements OnModuleInit {
 
   onModuleInit() {
     if (!this.enabled) {
-      this.logger.warn('Push notifications disabled — FIREBASE_PROJECT_ID / FIREBASE_CLIENT_EMAIL / FIREBASE_PRIVATE_KEY not configured');
+      this.logger.warn(
+        'Push notifications disabled — FIREBASE_PROJECT_ID / FIREBASE_CLIENT_EMAIL / FIREBASE_PRIVATE_KEY not configured'
+      );
       return;
     }
 
@@ -44,7 +46,9 @@ export class PushNotificationService implements OnModuleInit {
     if (!admin.apps.length) {
       const projectId = this.configService.get<string>('FIREBASE_PROJECT_ID')!;
       const clientEmail = this.configService.get<string>('FIREBASE_CLIENT_EMAIL')!;
-      const privateKey = this.configService.get<string>('FIREBASE_PRIVATE_KEY')!.replace(/\\n/g, '\n');
+      const privateKey = this.configService
+        .get<string>('FIREBASE_PRIVATE_KEY')!
+        .replace(/\\n/g, '\n');
 
       admin.initializeApp({
         credential: admin.credential.cert({ projectId, clientEmail, privateKey }),
@@ -69,7 +73,7 @@ export class PushNotificationService implements OnModuleInit {
       if (!tokens.length) return;
 
       const message: admin.messaging.MulticastMessage = {
-        tokens: tokens.map(t => t.token),
+        tokens: tokens.map((t) => t.token),
         notification: { title: payload.title, body: payload.body, imageUrl: payload.imageUrl },
         data: {
           ...(payload.data || {}),
@@ -92,7 +96,10 @@ export class PushNotificationService implements OnModuleInit {
       response.responses.forEach((r, i) => {
         if (!r.success && r.error) {
           const code = r.error.code;
-          if (code === 'messaging/invalid-registration-token' || code === 'messaging/registration-token-not-registered') {
+          if (
+            code === 'messaging/invalid-registration-token' ||
+            code === 'messaging/registration-token-not-registered'
+          ) {
             invalidTokenIds.push(tokens[i].id);
           }
         }
@@ -105,18 +112,31 @@ export class PushNotificationService implements OnModuleInit {
         });
       }
 
-      this.logger.log(`Push sent to user ${payload.userId}: ${response.successCount} ok, ${response.failureCount} failed`);
+      this.logger.log(
+        `Push sent to user ${payload.userId}: ${response.successCount} ok, ${response.failureCount} failed`
+      );
     } catch (err) {
-      this.logger.error(`Push notification failed for user ${payload.userId}: ${err instanceof Error ? err.message : String(err)}`);
+      this.logger.error(
+        `Push notification failed for user ${payload.userId}: ${err instanceof Error ? err.message : String(err)}`
+      );
     }
   }
 
   /** Register or refresh a device FCM token */
-  async registerDeviceToken(userId: string, token: string, deviceType?: string, platform?: string): Promise<void> {
+  async registerDeviceToken(
+    userId: string,
+    token: string,
+    deviceType?: string,
+    platform?: string
+  ): Promise<void> {
     try {
       await this.prisma.deviceToken.upsert({
         where: { token },
-        update: { active: true, updatedAt: new Date(), deviceInfo: deviceType ? { deviceType } : undefined },
+        update: {
+          active: true,
+          updatedAt: new Date(),
+          deviceInfo: deviceType ? { deviceType } : undefined,
+        },
         create: {
           userId,
           token,
@@ -127,7 +147,9 @@ export class PushNotificationService implements OnModuleInit {
       });
       this.logger.log(`Device token registered for user ${userId}`);
     } catch (err) {
-      this.logger.error(`Failed to register device token: ${err instanceof Error ? err.message : String(err)}`);
+      this.logger.error(
+        `Failed to register device token: ${err instanceof Error ? err.message : String(err)}`
+      );
     }
   }
 
@@ -136,29 +158,64 @@ export class PushNotificationService implements OnModuleInit {
     try {
       await this.prisma.deviceToken.updateMany({ where: { token }, data: { active: false } });
     } catch (err) {
-      this.logger.error(`Failed to deregister token: ${err instanceof Error ? err.message : String(err)}`);
+      this.logger.error(
+        `Failed to deregister token: ${err instanceof Error ? err.message : String(err)}`
+      );
     }
   }
 
   // ─── Convenience helpers ──────────────────────────────────────────────────
 
   async notifyBookingConfirmed(userId: string, babalawoName: string, bookingId: string) {
-    await this.sendToUser({ userId, title: 'Booking Confirmed ✓', body: `Your session with ${babalawoName} is confirmed.`, data: { type: 'booking_confirmed', bookingId }, clickAction: `/client/consultations`, priority: 'high' });
+    await this.sendToUser({
+      userId,
+      title: 'Booking Confirmed ✓',
+      body: `Your session with ${babalawoName} is confirmed.`,
+      data: { type: 'booking_confirmed', bookingId },
+      clickAction: `/client/consultations`,
+      priority: 'high',
+    });
   }
 
   async notifyNewBooking(userId: string, clientName: string, bookingId: string) {
-    await this.sendToUser({ userId, title: 'New Booking Request', body: `${clientName} has requested a session.`, data: { type: 'new_booking', bookingId }, clickAction: `/practitioner/consultations`, priority: 'high' });
+    await this.sendToUser({
+      userId,
+      title: 'New Booking Request',
+      body: `${clientName} has requested a session.`,
+      data: { type: 'new_booking', bookingId },
+      clickAction: `/practitioner/consultations`,
+      priority: 'high',
+    });
   }
 
   async notifyNewMessage(userId: string, senderName: string, preview: string, senderId: string) {
-    await this.sendToUser({ userId, title: `Message from ${senderName}`, body: preview || 'You have a new message', data: { type: 'new_message', senderId }, clickAction: `/messages/${senderId}` });
+    await this.sendToUser({
+      userId,
+      title: `Message from ${senderName}`,
+      body: preview || 'You have a new message',
+      data: { type: 'new_message', senderId },
+      clickAction: `/messages/${senderId}`,
+    });
   }
 
   async notifyNewOrder(userId: string, orderId: string) {
-    await this.sendToUser({ userId, title: 'New Order Received', body: 'A customer just placed an order in your shop.', data: { type: 'new_order', orderId }, clickAction: `/vendor/dashboard`, priority: 'high' });
+    await this.sendToUser({
+      userId,
+      title: 'New Order Received',
+      body: 'A customer just placed an order in your shop.',
+      data: { type: 'new_order', orderId },
+      clickAction: `/vendor/dashboard`,
+      priority: 'high',
+    });
   }
 
   async notifyGuidancePlanReady(userId: string, planTitle: string, planId: string) {
-    await this.sendToUser({ userId, title: 'Guidance Plan Ready', body: `Your plan "${planTitle}" is ready for review.`, data: { type: 'guidance_plan', planId }, clickAction: `/client/guidance-plans` });
+    await this.sendToUser({
+      userId,
+      title: 'Guidance Plan Ready',
+      body: `Your plan "${planTitle}" is ready for review.`,
+      data: { type: 'guidance_plan', planId },
+      clickAction: `/client/guidance-plans`,
+    });
   }
 }

@@ -30,7 +30,7 @@ describe('combineDateTimeInZone (P2-03)', () => {
 
   it('throws BadRequestException for an unparseable date/time', () => {
     expect(() => combineDateTimeInZone('not-a-date', '99:99', 'Africa/Lagos')).toThrow(
-      BadRequestException,
+      BadRequestException
     );
   });
 });

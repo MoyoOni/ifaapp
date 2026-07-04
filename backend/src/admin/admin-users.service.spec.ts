@@ -76,7 +76,7 @@ describe('AdminUsersService', () => {
           verified: true,
           hasOnboarded: true,
           culturalLevel: 'OMO_ILE',
-        }
+        },
       ];
 
       (prisma.user.findMany as jest.Mock).mockResolvedValue(mockUsers);
@@ -124,8 +124,9 @@ describe('AdminUsersService', () => {
     });
 
     it('should throw ForbiddenException for non-admin user', async () => {
-      await expect(service.getAllUsers(mockNonAdminUser))
-        .rejects.toThrow('Only admins can view all users');
+      await expect(service.getAllUsers(mockNonAdminUser)).rejects.toThrow(
+        'Only admins can view all users'
+      );
     });
   });
 
@@ -144,7 +145,7 @@ describe('AdminUsersService', () => {
             role: 'CLIENT',
           },
           history: [],
-        }
+        },
       ];
 
       (prisma.verificationApplication.findMany as jest.Mock).mockResolvedValue(mockApplications);
@@ -185,8 +186,9 @@ describe('AdminUsersService', () => {
     });
 
     it('should throw ForbiddenException for non-admin user', async () => {
-      await expect(service.getVerificationApplications(mockNonAdminUser))
-        .rejects.toThrow('Only admins can review verification applications');
+      await expect(service.getVerificationApplications(mockNonAdminUser)).rejects.toThrow(
+        'Only admins can review verification applications'
+      );
     });
   });
 });

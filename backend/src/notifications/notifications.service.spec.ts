@@ -98,12 +98,14 @@ describe('NotificationsService', () => {
     it('should throw an exception if user does not exist', async () => {
       jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(null);
 
-      await expect(service.createNotification({
-        userId: 'nonexistent-user',
-        title: 'Test Notification',
-        message: 'This is a test notification',
-        type: NotificationType.GENERAL,
-      })).rejects.toThrow(NotFoundException);
+      await expect(
+        service.createNotification({
+          userId: 'nonexistent-user',
+          title: 'Test Notification',
+          message: 'This is a test notification',
+          type: NotificationType.GENERAL,
+        })
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw an exception if notification type is invalid', async () => {
@@ -128,12 +130,14 @@ describe('NotificationsService', () => {
 
       jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
 
-      await expect(service.createNotification({
-        userId: 'user1',
-        title: 'Test Notification',
-        message: 'This is a test notification',
-        type: 'INVALID_TYPE' as any,
-      })).rejects.toThrow(BadRequestException);
+      await expect(
+        service.createNotification({
+          userId: 'user1',
+          title: 'Test Notification',
+          message: 'This is a test notification',
+          type: 'INVALID_TYPE' as any,
+        })
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -238,15 +242,15 @@ describe('NotificationsService', () => {
 
       jest.spyOn(prisma.notification, 'findUnique').mockResolvedValue(mockNotification);
 
-      await expect(service.markAsRead('notif1', 'user1'))
-        .rejects.toThrow(ForbiddenException);
+      await expect(service.markAsRead('notif1', 'user1')).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw NotFoundException if notification does not exist', async () => {
       jest.spyOn(prisma.notification, 'findUnique').mockResolvedValue(null);
 
-      await expect(service.markAsRead('nonexistent-notif', 'user1'))
-        .rejects.toThrow(NotFoundException);
+      await expect(service.markAsRead('nonexistent-notif', 'user1')).rejects.toThrow(
+        NotFoundException
+      );
     });
   });
 
@@ -292,8 +296,7 @@ describe('NotificationsService', () => {
     it('should throw NotFoundException if user does not exist', async () => {
       jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(null);
 
-      await expect(service.markAllAsRead('nonexistent-user'))
-        .rejects.toThrow(NotFoundException);
+      await expect(service.markAllAsRead('nonexistent-user')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -339,15 +342,17 @@ describe('NotificationsService', () => {
 
       jest.spyOn(prisma.notification, 'findUnique').mockResolvedValue(mockNotification);
 
-      await expect(service.deleteNotification('notif1', 'user1'))
-        .rejects.toThrow(ForbiddenException);
+      await expect(service.deleteNotification('notif1', 'user1')).rejects.toThrow(
+        ForbiddenException
+      );
     });
 
     it('should throw NotFoundException if notification does not exist', async () => {
       jest.spyOn(prisma.notification, 'findUnique').mockResolvedValue(null);
 
-      await expect(service.deleteNotification('nonexistent-notif', 'user1'))
-        .rejects.toThrow(NotFoundException);
+      await expect(service.deleteNotification('nonexistent-notif', 'user1')).rejects.toThrow(
+        NotFoundException
+      );
     });
   });
 });

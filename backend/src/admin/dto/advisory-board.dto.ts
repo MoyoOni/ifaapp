@@ -1,10 +1,4 @@
-import {
-  IsString,
-  IsNotEmpty,
-  IsArray,
-  IsEnum,
-  IsDateString,
-} from 'class-validator';
+import { IsString, IsNotEmpty, IsArray, IsEnum, IsDateString } from 'class-validator';
 
 export enum RequiredMajority {
   SIMPLE = 'SIMPLE', // 50%

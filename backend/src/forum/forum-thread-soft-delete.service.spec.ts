@@ -18,7 +18,12 @@ describe('ForumService — thread soft delete (P0-03)', () => {
   let service: ForumService;
 
   const mockAdmin = { id: 'admin-1', role: 'ADMIN', email: 'a@example.com', verified: true } as any;
-  const mockNonAdmin = { id: 'user-1', role: 'CLIENT', email: 'u@example.com', verified: true } as any;
+  const mockNonAdmin = {
+    id: 'user-1',
+    role: 'CLIENT',
+    email: 'u@example.com',
+    verified: true,
+  } as any;
 
   const mockPrismaService = {
     forumThread: {
@@ -52,8 +57,14 @@ describe('ForumService — thread soft delete (P0-03)', () => {
 
   describe('deleteThreadForAdmin', () => {
     it('soft-deletes the thread instead of removing the row', async () => {
-      mockPrismaService.forumThread.findUnique.mockResolvedValue({ id: 'thread-1', status: 'ACTIVE' });
-      mockPrismaService.forumThread.update.mockResolvedValue({ id: 'thread-1', status: ThreadStatus.DELETED });
+      mockPrismaService.forumThread.findUnique.mockResolvedValue({
+        id: 'thread-1',
+        status: 'ACTIVE',
+      });
+      mockPrismaService.forumThread.update.mockResolvedValue({
+        id: 'thread-1',
+        status: ThreadStatus.DELETED,
+      });
 
       const result = await service.deleteThreadForAdmin('thread-1', mockAdmin, 'spam');
 
@@ -66,25 +77,31 @@ describe('ForumService — thread soft delete (P0-03)', () => {
     });
 
     it('rejects a non-admin caller', async () => {
-      await expect(
-        service.deleteThreadForAdmin('thread-1', mockNonAdmin),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.deleteThreadForAdmin('thread-1', mockNonAdmin)).rejects.toThrow(
+        ForbiddenException
+      );
       expect(mockPrismaService.forumThread.update).not.toHaveBeenCalled();
     });
 
     it('throws NotFoundException for a missing thread', async () => {
       mockPrismaService.forumThread.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.deleteThreadForAdmin('missing-thread', mockAdmin),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.deleteThreadForAdmin('missing-thread', mockAdmin)).rejects.toThrow(
+        NotFoundException
+      );
     });
   });
 
   describe('adminDeleteThread', () => {
     it('soft-deletes the thread instead of removing the row', async () => {
-      mockPrismaService.forumThread.findUnique.mockResolvedValue({ id: 'thread-2', status: 'ACTIVE' });
-      mockPrismaService.forumThread.update.mockResolvedValue({ id: 'thread-2', status: ThreadStatus.DELETED });
+      mockPrismaService.forumThread.findUnique.mockResolvedValue({
+        id: 'thread-2',
+        status: 'ACTIVE',
+      });
+      mockPrismaService.forumThread.update.mockResolvedValue({
+        id: 'thread-2',
+        status: ThreadStatus.DELETED,
+      });
 
       const result = await service.adminDeleteThread('thread-2', mockAdmin, 'off-topic');
 
@@ -97,7 +114,8 @@ describe('ForumService — thread soft delete (P0-03)', () => {
     it('soft-deletes the secondary thread after merging (P0-03)', async () => {
       // Both lookups resolve to same-category threads so the merge proceeds.
       mockPrismaService.forumThread.findUnique.mockResolvedValue({
-        id: 'thread', categoryId: 'cat-1',
+        id: 'thread',
+        categoryId: 'cat-1',
       });
       mockPrismaService.forumPost.updateMany.mockResolvedValue({ count: 2 });
       mockPrismaService.forumPost.findMany.mockResolvedValue([
@@ -112,7 +130,7 @@ describe('ForumService — thread soft delete (P0-03)', () => {
         expect.objectContaining({
           where: { id: 'secondary-thread' },
           data: { status: ThreadStatus.DELETED },
-        }),
+        })
       );
       expect(mockPrismaService.forumThread.delete).not.toHaveBeenCalled();
     });

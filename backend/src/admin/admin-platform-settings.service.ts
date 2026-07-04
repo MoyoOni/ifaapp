@@ -21,9 +21,12 @@ export class AdminPlatformSettingsService {
     });
     await this.prisma.auditLog.create({
       data: {
-        userId: adminId, action: 'PLATFORM_SETTINGS_UPDATED',
-        resourceType: 'PlatformSettings', resourceId: 'singleton',
-        previousValues: prev as any, newValues: data as any,
+        userId: adminId,
+        action: 'PLATFORM_SETTINGS_UPDATED',
+        resourceType: 'PlatformSettings',
+        resourceId: 'singleton',
+        previousValues: prev as any,
+        newValues: data as any,
       },
     });
     return updated;

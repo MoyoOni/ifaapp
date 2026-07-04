@@ -117,7 +117,7 @@ import { RequestIdMiddleware } from './middleware/request-id.middleware';
       useClass: ThrottlerGuard,
     },
     SentryInitializerService, // Ensure Sentry initializer service is registered
-    OralHistorySeedService,  // Register the oral history seed service
+    OralHistorySeedService, // Register the oral history seed service
   ],
 })
 export class AppModule implements NestModule {

@@ -20,9 +20,12 @@ export class AdminMarketplaceService {
       this.prisma.product.count(),
     ]);
     return {
-      products: products.map(p => ({
+      products: products.map((p) => ({
         ...p,
-        avgRating: p.reviews.length > 0 ? p.reviews.reduce((s, r) => s + r.rating, 0) / p.reviews.length : null,
+        avgRating:
+          p.reviews.length > 0
+            ? p.reviews.reduce((s, r) => s + r.rating, 0) / p.reviews.length
+            : null,
         reviewCount: p.reviews.length,
         reviews: undefined,
       })),
@@ -37,7 +40,13 @@ export class AdminMarketplaceService {
     if (!product) throw new NotFoundException('Product not found');
     await this.prisma.product.update({ where: { id: productId }, data: { status: 'REMOVED' } });
     await this.prisma.auditLog.create({
-      data: { userId: adminId, action: 'PRODUCT_REMOVED', resourceType: 'Product', resourceId: productId, newValues: { reason } },
+      data: {
+        userId: adminId,
+        action: 'PRODUCT_REMOVED',
+        resourceType: 'Product',
+        resourceId: productId,
+        newValues: { reason },
+      },
     });
     return { success: true };
   }
@@ -79,16 +88,16 @@ export class AdminMarketplaceService {
         user: { select: { id: true, name: true, email: true, updatedAt: true } },
       },
     });
-    return vendors.map(v => {
+    return vendors.map((v) => {
       const total = v.orders.length;
-      const fulfilled = v.orders.filter(o => o.status === 'DELIVERED').length;
+      const fulfilled = v.orders.filter((o) => o.status === 'DELIVERED').length;
       const lastLogin = v.user.updatedAt;
-      const inactive = (Date.now() - lastLogin.getTime()) > 30 * 24 * 60 * 60 * 1000;
+      const inactive = Date.now() - lastLogin.getTime() > 30 * 24 * 60 * 60 * 1000;
       return {
         id: v.id,
         name: v.businessName,
         email: v.user.email,
-        activeProducts: v.products.filter(p => p.status === 'ACTIVE').length,
+        activeProducts: v.products.filter((p) => p.status === 'ACTIVE').length,
         ordersLast30d: total,
         fulfillmentRate: total > 0 ? Math.round((fulfilled / total) * 100) : null,
         inactive,
@@ -102,6 +111,6 @@ export class AdminMarketplaceService {
       _count: { id: true },
       orderBy: { _count: { id: 'desc' } },
     });
-    return categories.map(c => ({ name: c.category, productCount: c._count.id }));
+    return categories.map((c) => ({ name: c.category, productCount: c._count.id }));
   }
 }

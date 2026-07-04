@@ -1,4 +1,12 @@
-import { IsArray, IsDateString, IsEnum, IsOptional, IsString, IsUUID, MinLength } from 'class-validator';
+import {
+  IsArray,
+  IsDateString,
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MinLength,
+} from 'class-validator';
 
 export enum LiveSessionPlatform {
   ZOOM = 'ZOOM',

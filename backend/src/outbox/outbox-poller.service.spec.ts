@@ -12,10 +12,7 @@ describe('OutboxPollerService (P1-01)', () => {
     jest.clearAllMocks();
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        OutboxPollerService,
-        { provide: OutboxService, useValue: mockOutboxService },
-      ],
+      providers: [OutboxPollerService, { provide: OutboxService, useValue: mockOutboxService }],
     }).compile();
 
     service = module.get<OutboxPollerService>(OutboxPollerService);

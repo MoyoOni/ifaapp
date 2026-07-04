@@ -109,9 +109,7 @@ export class CurrencyService {
     if (from === Currency.USD && to === Currency.NGN) return 1500; // Example: 1 USD = 1500 NGN
     if (from === Currency.NGN && to === Currency.USD) return 0.00067; // Reverse of above
 
-    throw new BadRequestException(
-      `Currency conversion from ${from} to ${to} is not supported yet`
-    );
+    throw new BadRequestException(`Currency conversion from ${from} to ${to} is not supported yet`);
   }
 
   /**

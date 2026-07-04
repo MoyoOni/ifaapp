@@ -80,11 +80,14 @@ describe('CirclesService', () => {
       jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
       jest.spyOn(prisma.circle, 'create').mockResolvedValue(newCircle);
 
-      const result = await service.createCircle({
-        name: 'Test Circle',
-        description: 'A test circle',
-        isPublic: true,
-      }, 'user1');
+      const result = await service.createCircle(
+        {
+          name: 'Test Circle',
+          description: 'A test circle',
+          isPublic: true,
+        },
+        'user1'
+      );
 
       expect(result).toEqual(newCircle);
       expect(prisma.circle.create).toHaveBeenCalledWith({
@@ -100,11 +103,16 @@ describe('CirclesService', () => {
     it('should throw an exception if user does not exist', async () => {
       jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(null);
 
-      await expect(service.createCircle({
-        name: 'Test Circle',
-        description: 'A test circle',
-        isPublic: true,
-      }, 'nonexistent-user')).rejects.toThrow(NotFoundException);
+      await expect(
+        service.createCircle(
+          {
+            name: 'Test Circle',
+            description: 'A test circle',
+            isPublic: true,
+          },
+          'nonexistent-user'
+        )
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw an exception if circle name is too short', async () => {
@@ -129,11 +137,16 @@ describe('CirclesService', () => {
 
       jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(mockUser);
 
-      await expect(service.createCircle({
-        name: 'A', // Too short
-        description: 'A test circle',
-        isPublic: true,
-      }, 'user1')).rejects.toThrow(BadRequestException);
+      await expect(
+        service.createCircle(
+          {
+            name: 'A', // Too short
+            description: 'A test circle',
+            isPublic: true,
+          },
+          'user1'
+        )
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -216,7 +229,9 @@ describe('CirclesService', () => {
     it('should throw an exception if circle does not exist', async () => {
       jest.spyOn(prisma.circle, 'findUnique').mockResolvedValue(null);
 
-      await expect(service.joinCircle('nonexistent-circle', 'user1')).rejects.toThrow(NotFoundException);
+      await expect(service.joinCircle('nonexistent-circle', 'user1')).rejects.toThrow(
+        NotFoundException
+      );
     });
 
     it('should throw an exception if user does not exist', async () => {
@@ -235,7 +250,9 @@ describe('CirclesService', () => {
       jest.spyOn(prisma.circle, 'findUnique').mockResolvedValue(mockCircle);
       jest.spyOn(prisma.user, 'findUnique').mockResolvedValue(null);
 
-      await expect(service.joinCircle('circle1', 'nonexistent-user')).rejects.toThrow(NotFoundException);
+      await expect(service.joinCircle('circle1', 'nonexistent-user')).rejects.toThrow(
+        NotFoundException
+      );
     });
 
     it('should throw an exception if user is already a member', async () => {
@@ -349,7 +366,7 @@ describe('CirclesService', () => {
 
       jest.spyOn(prisma.circleMembership, 'findMany').mockResolvedValue(mockMemberships);
       jest.spyOn(prisma.user, 'findUnique').mockImplementation(({ where }) => {
-        const user = mockUsers.find(u => u.id === where.id);
+        const user = mockUsers.find((u) => u.id === where.id);
         return Promise.resolve(user);
       });
 
@@ -396,11 +413,15 @@ describe('CirclesService', () => {
       jest.spyOn(prisma.circle, 'findUnique').mockResolvedValue(mockCircle);
       jest.spyOn(prisma.circle, 'update').mockResolvedValue(updatedCircle);
 
-      const result = await service.updateCircle('circle1', { 
-        name: 'Updated Name',
-        description: 'Updated Description',
-        isPublic: false,
-      }, 'user1');
+      const result = await service.updateCircle(
+        'circle1',
+        {
+          name: 'Updated Name',
+          description: 'Updated Description',
+          isPublic: false,
+        },
+        'user1'
+      );
 
       expect(result).toEqual(updatedCircle);
       expect(prisma.circle.update).toHaveBeenCalledWith({
@@ -429,20 +450,27 @@ describe('CirclesService', () => {
 
       jest.spyOn(prisma.circle, 'findUnique').mockResolvedValue(mockCircle);
 
-      await expect(service.updateCircle('circle1', { name: 'Updated Name' }, 'different-user'))
-        .rejects.toThrow(ForbiddenException);
+      await expect(
+        service.updateCircle('circle1', { name: 'Updated Name' }, 'different-user')
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw NotFoundException if circle does not exist', async () => {
       jest.spyOn(prisma.circle, 'findUnique').mockResolvedValue(null);
 
-      await expect(service.updateCircle('nonexistent-circle', { name: 'Updated Name' }, 'user1'))
-        .rejects.toThrow(NotFoundException);
+      await expect(
+        service.updateCircle('nonexistent-circle', { name: 'Updated Name' }, 'user1')
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('delete (P0-03 soft delete)', () => {
-    const currentUser = { id: 'creator-1', role: 'CLIENT', email: 'c@example.com', verified: true } as any;
+    const currentUser = {
+      id: 'creator-1',
+      role: 'CLIENT',
+      email: 'c@example.com',
+      verified: true,
+    } as any;
     const mockCircle = { id: 'circle-1', creatorId: 'creator-1', status: 'ACTIVE', active: true };
 
     it('soft-deletes the circle instead of removing the row', async () => {

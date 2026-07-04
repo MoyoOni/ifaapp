@@ -4,7 +4,7 @@ export enum ComplaintReason {
   NO_SHOW = 'no-show',
   INAPPROPRIATE = 'inappropriate',
   FRAUD = 'fraud',
-  OTHER = 'other'
+  OTHER = 'other',
 }
 
 export class CreateComplaintDto {

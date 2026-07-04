@@ -66,31 +66,31 @@ export class VendorFinancialSummaryDto {
   @ApiProperty({ description: 'Total number of orders completed' })
   totalOrders!: number;
 
-  @ApiProperty({ 
+  @ApiProperty({
     type: [CustomerSpendingSummary],
-    description: 'Spending breakdown by customer' 
+    description: 'Spending breakdown by customer',
   })
   customerSpending!: CustomerSpendingSummary[];
 
-  @ApiProperty({ 
+  @ApiProperty({
     type: [ProductPerformanceSummary],
-    description: 'Performance breakdown by product' 
+    description: 'Performance breakdown by product',
   })
   topProducts!: ProductPerformanceSummary[];
 
-  @ApiProperty({ 
-    description: 'Transaction history for the period' 
+  @ApiProperty({
+    description: 'Transaction history for the period',
   })
   transactionHistory!: any[]; // Using any for now, could be typed more specifically
 
-  @ApiProperty({ 
-    description: 'Withdrawal requests for the period' 
+  @ApiProperty({
+    description: 'Withdrawal requests for the period',
   })
   withdrawalRequests!: any[]; // Using any for now, could be typed more specifically
 
-  @ApiProperty({ 
+  @ApiProperty({
     type: InvoiceData,
-    description: 'Invoice data for the period' 
+    description: 'Invoice data for the period',
   })
   invoiceData!: InvoiceData;
 }

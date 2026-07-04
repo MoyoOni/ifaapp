@@ -14,8 +14,15 @@ import {
  * couldn't be backfilled fall back to a fresh timezone-aware combination —
  * see the matching helper in appointments.service.ts.
  */
-function resolveScheduledAt(apt: { date: string; time: string; timezone?: string; scheduledAt?: Date | null }): Date {
-  return apt.scheduledAt ?? combineDateTimeInZone(apt.date, apt.time, apt.timezone || 'Africa/Lagos');
+function resolveScheduledAt(apt: {
+  date: string;
+  time: string;
+  timezone?: string;
+  scheduledAt?: Date | null;
+}): Date {
+  return (
+    apt.scheduledAt ?? combineDateTimeInZone(apt.date, apt.time, apt.timezone || 'Africa/Lagos')
+  );
 }
 
 @Injectable()
@@ -351,8 +358,9 @@ export class DashboardService {
       clientCounts[apt.clientId] = (clientCounts[apt.clientId] || 0) + 1;
     }
     const totalClients = Object.keys(clientCounts).length;
-    const repeatClients = Object.values(clientCounts).filter(c => c > 1).length;
-    const repeatClientRate = totalClients > 0 ? Math.round((repeatClients / totalClients) * 100) : 0;
+    const repeatClients = Object.values(clientCounts).filter((c) => c > 1).length;
+    const repeatClientRate =
+      totalClients > 0 ? Math.round((repeatClients / totalClients) * 100) : 0;
 
     // Income trend by week from escrow releases
     const escrows = await this.prisma.escrow.findMany({
@@ -372,7 +380,8 @@ export class DashboardService {
       const weekStart = new Date(d);
       weekStart.setDate(d.getDate() - d.getDay());
       const label = weekStart.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
-      if (!incomeMap[label]) incomeMap[label] = { week: label, income: 0, currency: e.currency || 'NGN' };
+      if (!incomeMap[label])
+        incomeMap[label] = { week: label, income: 0, currency: e.currency || 'NGN' };
       incomeMap[label].income += Number(e.amount);
     }
     const incomeTrend = Object.values(incomeMap);
@@ -382,15 +391,18 @@ export class DashboardService {
       where: { babalawoId: userId },
       select: { rating: true },
     });
-    const ratingBreakdown = [1, 2, 3, 4, 5].map(star => ({
+    const ratingBreakdown = [1, 2, 3, 4, 5].map((star) => ({
       stars: star,
       count: allReviews.filter((r: any) => r.rating === star).length,
     }));
 
     const totalReviews = allReviews.length;
-    const averageRating = totalReviews > 0
-      ? Math.round((allReviews.reduce((s: number, r: any) => s + r.rating, 0) / totalReviews) * 10) / 10
-      : 0;
+    const averageRating =
+      totalReviews > 0
+        ? Math.round(
+            (allReviews.reduce((s: number, r: any) => s + r.rating, 0) / totalReviews) * 10
+          ) / 10
+        : 0;
 
     return {
       period,

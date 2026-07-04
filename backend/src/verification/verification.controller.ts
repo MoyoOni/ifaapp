@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Patch, Body, Param, UseGuards, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Body,
+  Param,
+  UseGuards,
+  Query,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Roles, RolesGuard } from '../auth/guards/roles.guard';
 import { VerificationService } from './verification.service';
@@ -41,7 +52,7 @@ export class VerificationController {
   @HttpCode(HttpStatus.OK)
   async uploadCredentials(
     @Body() dto: UploadCredentialsDto,
-    @CurrentUser() user: CurrentUserPayload,
+    @CurrentUser() user: CurrentUserPayload
   ) {
     return this.verificationService.uploadCredentials(user.id, dto.files);
   }
