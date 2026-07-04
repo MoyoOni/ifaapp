@@ -35,9 +35,10 @@ import { CreateLiveSessionDto, UpdateLiveSessionStatusDto } from './dto/live-ses
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { JwtAuthGuard } from '../shared/guards/auth.guard';
-import { RolesGuard } from '../shared/guards/roles.guard';
+import { RolesGuard, AdminRoles } from '../auth/guards/roles.guard';
 import { Roles } from '@/shared/decorators/roles.decorator';
 import { UserRole } from '@common/enums/user-role.enum';
+import { AdminSubRole } from '@common/enums/admin-sub-role.enum';
 
 @Controller('forum')
 @UseGuards(JwtAuthGuard)
@@ -390,6 +391,9 @@ export class ForumController {
   // ==================== Moderation ====================
 
   @Patch('threads/:id/moderate/:action')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @AdminRoles(AdminSubRole.MODERATOR, AdminSubRole.SUPER)
   async moderateThread(
     @Param('id') id: string,
     @Param('action') action: 'approve' | 'lock' | 'unlock' | 'pin' | 'unpin',

@@ -1174,8 +1174,17 @@ Share your reflections, questions, and experiences below. All levels welcome.
       throw new NotFoundException('Post not found');
     }
 
-    // Only author or admin can delete
-    if (post.authorId !== currentUser.id && currentUser.role !== 'ADMIN') {
+    // Author can always delete their own post. A non-author needs to be an
+    // admin with the MODERATOR or SUPER sub-role -- a bootstrap/legacy admin
+    // with no sub-role assigned yet also passes, matching RolesGuard's own
+    // convention (see auth/guards/roles.guard.ts).
+    const isOwner = post.authorId === currentUser.id;
+    const isModerator =
+      currentUser.role === 'ADMIN' &&
+      (!currentUser.adminSubRole ||
+        currentUser.adminSubRole === 'MODERATOR' ||
+        currentUser.adminSubRole === 'SUPER');
+    if (!isOwner && !isModerator) {
       throw new ForbiddenException('You can only delete your own posts');
     }
 
