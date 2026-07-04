@@ -16,6 +16,7 @@ import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { CourseStatus, LessonType, EnrollmentStatus, CourseLevel } from '@ile-ase/common';
 import { CertificateService } from '../certificates/certificate.service';
 import { UsersService } from '../users/users.service';
+import { verifyEligibilityCheckConflictAndCreate } from '../utils/eligibility-scaffold.util';
 
 /**
  * Academy Service
@@ -364,53 +365,45 @@ export class AcademyService {
   // ==================== Enrollments ====================
 
   async createEnrollment(dto: CreateEnrollmentDto, currentUser: CurrentUserPayload) {
-    // Verify course exists and is approved
-    const course = await this.prisma.course.findUnique({
-      where: { id: dto.courseId },
-    });
-
-    if (!course) {
-      throw new NotFoundException('Course not found');
-    }
-
-    if (course.status !== CourseStatus.APPROVED) {
-      throw new BadRequestException('Course is not available for enrollment');
-    }
-
-    // Check if already enrolled
-    const existingEnrollment = await this.prisma.enrollment.findUnique({
-      where: {
-        courseId_studentId: {
-          courseId: dto.courseId,
-          studentId: currentUser.id,
-        },
+    const enrollment = await verifyEligibilityCheckConflictAndCreate({
+      fetchParent: () => this.prisma.course.findUnique({ where: { id: dto.courseId } }),
+      parentNotFoundMessage: 'Course not found',
+      validateStatus: (course) => course.status === CourseStatus.APPROVED,
+      invalidStatusMessage: 'Course is not available for enrollment',
+      checkConflict: async () => {
+        const existingEnrollment = await this.prisma.enrollment.findUnique({
+          where: {
+            courseId_studentId: {
+              courseId: dto.courseId,
+              studentId: currentUser.id,
+            },
+          },
+        });
+        return !!existingEnrollment;
       },
-    });
-
-    if (existingEnrollment) {
-      throw new BadRequestException('You are already enrolled in this course');
-    }
-
-    const enrollment = await this.prisma.enrollment.create({
-      data: {
-        courseId: dto.courseId,
-        studentId: currentUser.id,
-        status: EnrollmentStatus.ACTIVE,
-        progress: 0,
-      },
-      include: {
-        course: {
+      conflictMessage: 'You are already enrolled in this course',
+      create: () =>
+        this.prisma.enrollment.create({
+          data: {
+            courseId: dto.courseId,
+            studentId: currentUser.id,
+            status: EnrollmentStatus.ACTIVE,
+            progress: 0,
+          },
           include: {
-            instructor: {
-              select: {
-                id: true,
-                name: true,
-                yorubaName: true,
+            course: {
+              include: {
+                instructor: {
+                  select: {
+                    id: true,
+                    name: true,
+                    yorubaName: true,
+                  },
+                },
               },
             },
           },
-        },
-      },
+        }),
     });
 
     // Update course enrollment count

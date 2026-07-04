@@ -10,6 +10,7 @@ import { UpdateTutorDto } from './dto/update-tutor.dto';
 import { CreateTutorSessionDto } from './dto/create-tutor-session.dto';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { combineDateTimeInZone } from '../utils/scheduling.util';
+import { verifyEligibilityCheckConflictAndCreate } from '../utils/eligibility-scaffold.util';
 
 /**
  * Tutors Service
@@ -159,57 +160,57 @@ export class TutorsService {
   // ==================== Tutor Sessions ====================
 
   async createTutorSession(dto: CreateTutorSessionDto, currentUser: CurrentUserPayload) {
-    // Verify tutor exists and is approved
-    const tutor = await this.prisma.tutor.findUnique({
-      where: { id: dto.tutorId },
-    });
-
-    if (!tutor) {
-      throw new NotFoundException('Tutor not found');
-    }
-
-    if (tutor.status !== 'APPROVED') {
-      throw new BadRequestException('Tutor is not approved for bookings');
-    }
-
-    // Check for time conflicts
-    const conflicting = await this.prisma.tutorSession.findFirst({
-      where: {
-        tutorId: dto.tutorId,
-        date: dto.date,
-        time: dto.time,
-        status: {
-          in: ['UPCOMING', 'IN_SESSION'],
-        },
+    return verifyEligibilityCheckConflictAndCreate({
+      fetchParent: () => this.prisma.tutor.findUnique({ where: { id: dto.tutorId } }),
+      parentNotFoundMessage: 'Tutor not found',
+      validateStatus: (tutor) => tutor.status === 'APPROVED',
+      invalidStatusMessage: 'Tutor is not approved for bookings',
+      checkConflict: async () => {
+        const conflicting = await this.prisma.tutorSession.findFirst({
+          where: {
+            tutorId: dto.tutorId,
+            date: dto.date,
+            time: dto.time,
+            status: {
+              in: ['UPCOMING', 'IN_SESSION'],
+            },
+          },
+        });
+        return !!conflicting;
       },
-    });
+      conflictMessage: 'This time slot is already booked',
+      create: (tutor) => {
+        const price = (tutor.hourlyRate / 60) * dto.duration;
+        const timezone = dto.timezone || 'Africa/Lagos';
 
-    if (conflicting) {
-      throw new BadRequestException('This time slot is already booked');
-    }
-
-    // Calculate price based on duration
-    const price = (tutor.hourlyRate / 60) * dto.duration;
-    const timezone = dto.timezone || 'Africa/Lagos';
-
-    return this.prisma.tutorSession.create({
-      data: {
-        tutorId: dto.tutorId,
-        studentId: currentUser.id,
-        date: dto.date,
-        time: dto.time,
-        timezone,
-        scheduledAt: combineDateTimeInZone(dto.date, dto.time, timezone),
-        duration: dto.duration,
-        price,
-        currency: tutor.currency,
-        status: 'UPCOMING',
-        notes: dto.notes,
-      },
-      include: {
-        tutor: {
+        return this.prisma.tutorSession.create({
+          data: {
+            tutorId: dto.tutorId,
+            studentId: currentUser.id,
+            date: dto.date,
+            time: dto.time,
+            timezone,
+            scheduledAt: combineDateTimeInZone(dto.date, dto.time, timezone),
+            duration: dto.duration,
+            price,
+            currency: tutor.currency,
+            status: 'UPCOMING',
+            notes: dto.notes,
+          },
           include: {
-            user: {
+            tutor: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    yorubaName: true,
+                    avatar: true,
+                  },
+                },
+              },
+            },
+            student: {
               select: {
                 id: true,
                 name: true,
@@ -218,15 +219,7 @@ export class TutorsService {
               },
             },
           },
-        },
-        student: {
-          select: {
-            id: true,
-            name: true,
-            yorubaName: true,
-            avatar: true,
-          },
-        },
+        });
       },
     });
   }
