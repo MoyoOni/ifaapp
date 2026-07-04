@@ -11,6 +11,7 @@ import { AdminUsersService } from './admin-users.service';
 import { AdminFinanceService } from './admin-finance.service';
 import { AdminCommunityService } from './admin-community.service';
 import { AdminContentService } from './admin-content.service';
+import { AdminAnnouncementsService } from './admin-announcements.service';
 import { GdprModule } from '../gdpr/gdpr.module';
 import { OutboxModule } from '../outbox/outbox.module';
 import { NotificationsModule } from '../notifications/notifications.module';
@@ -48,6 +49,7 @@ import { CirclesModule } from '../circles/circles.module';
     AdminFinanceService,
     AdminCommunityService,
     AdminContentService,
+    AdminAnnouncementsService,
     AuditService,
     InactivePractitionerMonitorService,
     AdminMarketplaceService,

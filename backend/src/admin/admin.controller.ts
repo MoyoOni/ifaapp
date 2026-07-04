@@ -23,6 +23,7 @@ import { AdminMarketplaceService } from './admin-marketplace.service';
 import { AdminAcademyService } from './admin-academy.service';
 import { AdminTrustScoreService } from './admin-trust-score.service';
 import { AdminPlatformSettingsService } from './admin-platform-settings.service';
+import { AdminAnnouncementsService } from './admin-announcements.service';
 import { OutboxService } from '../outbox/outbox.service';
 import { GdprService } from '../gdpr/gdpr.service';
 import { AuditInterceptor } from './interceptors/audit.interceptor';
@@ -50,6 +51,7 @@ import { FeatureItemDto } from './dto/feature-item.dto';
 import { UpdateCourseStatusDto } from './dto/update-course-status.dto';
 import { ManualEnrollDto } from './dto/manual-enroll.dto';
 import { RemoveEnrollmentDto } from './dto/remove-enrollment.dto';
+import { CreateAnnouncementDto } from './dto/create-announcement.dto';
 
 @Controller('admin')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
@@ -64,13 +66,48 @@ export class AdminController {
     private readonly trustScoreService: AdminTrustScoreService,
     private readonly platformSettingsService: AdminPlatformSettingsService,
     private readonly gdprService: GdprService,
-    private readonly outboxService: OutboxService
+    private readonly outboxService: OutboxService,
+    private readonly announcementsService: AdminAnnouncementsService
   ) {}
 
   @Get('stats')
   @Roles(UserRole.ADMIN)
   async getPlatformStats(@CurrentUser() currentUser: CurrentUserPayload) {
     return this.adminService.getPlatformStats(currentUser);
+  }
+
+  // ADM-005: Platform Announcement System
+  @Post('announcements')
+  @Roles(UserRole.ADMIN)
+  async createAnnouncement(
+    @Body() dto: CreateAnnouncementDto,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.announcementsService.create(dto, currentUser);
+  }
+
+  @Get('announcements')
+  @Roles(UserRole.ADMIN)
+  async getAllAnnouncements(@CurrentUser() currentUser: CurrentUserPayload) {
+    return this.announcementsService.findAllForAdmin(currentUser);
+  }
+
+  // Deliberately no @Roles() here -- any authenticated user (not just
+  // admins) needs to see the announcements targeted at them for the
+  // banner. RolesGuard allows requests through when no roles metadata
+  // is set on the handler.
+  @Get('announcements/active')
+  async getActiveAnnouncements(@CurrentUser() currentUser: CurrentUserPayload) {
+    return this.announcementsService.findActiveForUser(currentUser);
+  }
+
+  @Patch('announcements/:id/deactivate')
+  @Roles(UserRole.ADMIN)
+  async deactivateAnnouncement(
+    @Param('id') id: string,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.announcementsService.deactivate(id, currentUser);
   }
 
   // P1-01: admin visibility into in-flight/stuck/failed outbox events.

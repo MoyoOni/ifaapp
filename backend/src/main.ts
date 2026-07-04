@@ -37,9 +37,16 @@ async function bootstrap() {
     process.exit(1); // Exit if security validation fails
   }
 
-  // Apply security middlewares in order
-  app.use(new InputSanitizationMiddleware().use);
-  app.use(new SecurityHeadersMiddleware().use);
+  // Apply security middlewares in order. Bind each instance's `use` method
+  // explicitly -- passing the bare method reference (as this did previously)
+  // strips its `this` binding once Express calls it as a plain function,
+  // so any middleware referencing `this` inside `use()` (e.g.
+  // InputSanitizationMiddleware.sanitizeObject) throws "Cannot read
+  // properties of undefined" on every single request.
+  const inputSanitizationMiddleware = new InputSanitizationMiddleware();
+  app.use(inputSanitizationMiddleware.use.bind(inputSanitizationMiddleware));
+  const securityHeadersMiddleware = new SecurityHeadersMiddleware();
+  app.use(securityHeadersMiddleware.use.bind(securityHeadersMiddleware));
 
   // Security middleware with enhanced configuration
   const helmetConfig = securityService.getHelmetConfig();

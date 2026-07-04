@@ -5,11 +5,25 @@ import * as validator from 'validator';
 @Injectable()
 export class InputSanitizationMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
-    // Sanitize all input parameters
+    // req.body is a plain writable property, but req.query is a getter-only
+    // accessor on this Express/router version -- reassigning it outright
+    // throws "Cannot set property query of #<IncomingMessage> which has
+    // only a getter". Mutate query/params in place instead.
     req.body = this.sanitizeObject(req.body);
-    req.query = this.sanitizeObject(req.query);
-    req.params = this.sanitizeObject(req.params);
+    this.sanitizeInPlace(req.query);
+    this.sanitizeInPlace(req.params);
     next();
+  }
+
+  private sanitizeInPlace(obj: Record<string, any>): void {
+    if (typeof obj !== 'object' || obj === null) return;
+    for (const key of Object.keys(obj)) {
+      const value = obj[key];
+      obj[key] =
+        typeof value === 'object' && value !== null
+          ? this.sanitizeObject(value)
+          : this.sanitizeValue(value);
+    }
   }
 
   private sanitizeObject(obj: any): any {

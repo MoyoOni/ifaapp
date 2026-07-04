@@ -38,6 +38,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { ProfileMenuDropdown } from './profile-menu-dropdown';
 import { User as UserType } from '@common';
 import { isDevModeActive } from '@/shared/utils/dev-mode';
+import { AnnouncementBanner } from './announcement-banner';
 
 interface SidebarLayoutProps {
     children: React.ReactNode;
@@ -644,6 +645,8 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                         <ModeToggle />
                     </div>
                 </header>
+
+                <AnnouncementBanner />
 
                 {/* Scrollable View Content */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-6 lg:p-8">

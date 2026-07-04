@@ -1,62 +1,53 @@
-import { IsString, IsEnum, IsOptional, IsBoolean, IsDate, IsArray } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsString, IsEnum, IsOptional, IsArray, IsDateString, MinLength } from 'class-validator';
 
-export enum AnnouncementType {
-  BANNER = 'BANNER',
-  IN_APP_NOTIFICATION = 'IN_APP_NOTIFICATION',
-  EMAIL_BROADCAST = 'EMAIL_BROADCAST',
+// Matches the real `Announcement` Prisma model exactly (schema.prisma) --
+// the previous version of this DTO (link/isDismissible/sendEmail/subject/
+// userIds) described a richer design that was never actually migrated to
+// the database; see ProBacklog-v1.md P3-10 for the full reconciliation.
+export enum AnnouncementSeverity {
+  INFO = 'info',
+  WARNING = 'warning',
+  SUCCESS = 'success',
+  CRITICAL = 'critical',
 }
 
 export enum AnnouncementTarget {
-  ALL_USERS = 'ALL_USERS',
-  CLIENTS = 'CLIENTS',
-  BABALAWOS = 'BABALAWOS',
-  VENDORS = 'VENDORS',
-  DEVOTED_SUBSCRIBERS = 'DEVOTED_SUBSCRIBERS',
-  SPECIFIC_USERS = 'SPECIFIC_USERS',
+  ALL = 'ALL',
+  CLIENT = 'CLIENT',
+  BABALAWO = 'BABALAWO',
+  VENDOR = 'VENDOR',
+  DEVOTED = 'DEVOTED',
+  SPECIFIC = 'SPECIFIC',
 }
 
 export class CreateAnnouncementDto {
   @IsString()
+  @MinLength(1)
   title!: string;
 
+  // Maps to the `content` column -- named `message` here to match the
+  // field name both existing frontend components already use.
   @IsString()
-  content!: string;
+  @MinLength(1)
+  message!: string;
 
-  @IsEnum(AnnouncementType)
-  type!: AnnouncementType;
+  @IsEnum(AnnouncementSeverity)
+  type!: AnnouncementSeverity;
 
+  @IsOptional()
   @IsEnum(AnnouncementTarget)
-  target!: AnnouncementTarget;
+  target?: AnnouncementTarget;
 
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  userIds?: string[];
+  targetIds?: string[];
 
   @IsOptional()
-  @IsString()
-  link?: string;
+  @IsDateString()
+  scheduledAt?: string;
 
   @IsOptional()
-  @IsBoolean()
-  isDismissible?: boolean;
-
-  @IsOptional()
-  @IsDate()
-  @Type(() => Date)
-  scheduledAt?: Date;
-
-  @IsOptional()
-  @IsDate()
-  @Type(() => Date)
-  expiresAt?: Date;
-
-  @IsOptional()
-  @IsBoolean()
-  sendEmail?: boolean;
-
-  @IsOptional()
-  @IsString()
-  subject?: string;
+  @IsDateString()
+  expiresAt?: string;
 }
