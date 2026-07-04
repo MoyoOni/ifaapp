@@ -1,13 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AdminService } from './admin.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { VerificationService } from '../verification/verification.service';
-import { WalletService } from '../wallet/wallet.service';
-import { PaymentsService } from '../payments/payments.service';
-import { CirclesService } from '../circles/circles.service';
-import { NotificationService } from '../notifications/notification.service';
+import { AdminUsersService } from './admin-users.service';
+import { AdminFinanceService } from './admin-finance.service';
+import { AdminCommunityService } from './admin-community.service';
+import { AdminContentService } from './admin-content.service';
 import { AuditService } from './audit.service';
 
+// P2-04: AdminService is now a thin facade delegating to domain services
+// (see admin-users/finance/community/content.service.spec.ts for the real
+// logic-level tests, moved there from here along with the code they cover).
+// This file only tests what's still directly in AdminService (platform
+// stats — genuinely cross-cutting, not owned by one domain) plus a
+// representative sample of delegation wiring, not every one of the 43
+// delegated methods.
 jest.mock('@ile-ase/common', () => {
   const actual = jest.requireActual('@ile-ase/common');
   return {
@@ -24,6 +30,7 @@ jest.mock('@ile-ase/common', () => {
 describe('AdminService', () => {
   let service: AdminService;
   let prisma: PrismaService;
+  let adminUsersService: AdminUsersService;
 
   const mockAdminUser = {
     id: 'admin-1',
@@ -46,95 +53,34 @@ describe('AdminService', () => {
       providers: [
         AdminService,
         {
-          provide: VerificationService,
-          useValue: { getApplication: jest.fn(), approve: jest.fn(), reject: jest.fn() },
+          provide: AdminUsersService,
+          useValue: { getAllUsers: jest.fn() },
         },
         {
-          provide: WalletService,
-          useValue: { releaseEscrow: jest.fn(), cancelEscrow: jest.fn() },
+          provide: AdminFinanceService,
+          useValue: { getDisputes: jest.fn() },
         },
         {
-          provide: PaymentsService,
-          useValue: { getUnverifiedPayments: jest.fn(), manuallyVerifyPayment: jest.fn() },
+          provide: AdminCommunityService,
+          useValue: { moderateCircle: jest.fn() },
         },
         {
-          provide: CirclesService,
-          useValue: { createFromSuggestion: jest.fn() },
-        },
-        {
-          provide: NotificationService,
-          useValue: { sendNotification: jest.fn(), createNotification: jest.fn() },
+          provide: AdminContentService,
+          useValue: { getQuizStats: jest.fn() },
         },
         {
           provide: AuditService,
-          useValue: { log: jest.fn(), getAuditLog: jest.fn() },
+          useValue: { log: jest.fn(), getAuditLogs: jest.fn() },
         },
         {
           provide: PrismaService,
           useValue: {
-            user: {
-              count: jest.fn(),
-              findMany: jest.fn(),
-              findUnique: jest.fn(),
-              update: jest.fn(),
-            },
-            verificationApplication: {
-              count: jest.fn(),
-              findMany: jest.fn(),
-              findUnique: jest.fn(),
-              update: jest.fn(),
-            },
-            babalawoClient: {
-              count: jest.fn(),
-            },
-            appointment: {
-              count: jest.fn(),
-            },
-            message: {
-              count: jest.fn(),
-            },
-            dispute: {
-              findMany: jest.fn(),
-            },
-            escrow: {
-              findMany: jest.fn(),
-              findUnique: jest.fn(),
-              update: jest.fn(),
-              aggregate: jest.fn(),
-              count: jest.fn(),
-            },
-            withdrawalRequest: {
-              findMany: jest.fn(),
-              findUnique: jest.fn(),
-            },
-            payment: {
-              findMany: jest.fn(),
-            },
-            vendor: {
-              findMany: jest.fn(),
-            },
-            reportedContent: {
-              findMany: jest.fn(),
-            },
-            advisoryBoardVote: {
-              findMany: jest.fn(),
-              findUnique: jest.fn(),
-              update: jest.fn(),
-              create: jest.fn(),
-            },
-            circleSuggestion: {
-              findMany: jest.fn(),
-            },
-            circle: {
-              findMany: jest.fn(),
-              findUnique: jest.fn(),
-              update: jest.fn(),
-              delete: jest.fn(),
-            },
-            event: {
-              findUnique: jest.fn(),
-              update: jest.fn(),
-            },
+            user: { count: jest.fn() },
+            verificationApplication: { count: jest.fn() },
+            babalawoClient: { count: jest.fn() },
+            appointment: { count: jest.fn() },
+            message: { count: jest.fn() },
+            auditLog: { count: jest.fn() },
           },
         },
       ],
@@ -142,6 +88,7 @@ describe('AdminService', () => {
 
     service = module.get<AdminService>(AdminService);
     prisma = module.get<PrismaService>(PrismaService);
+    adminUsersService = module.get<AdminUsersService>(AdminUsersService);
   });
 
   it('should be defined', () => {
@@ -150,21 +97,14 @@ describe('AdminService', () => {
 
   describe('getPlatformStats', () => {
     it('should return platform statistics for admin user', async () => {
-      // Mock all the count methods
       (prisma.user.count as jest.Mock)
         .mockResolvedValueOnce(100)  // totalUsers
         .mockResolvedValueOnce(25);   // verifiedBabalawos
-      
-      (prisma.verificationApplication.count as jest.Mock).mockResolvedValueOnce(5); // pendingVerifications (where: currentStage not ETHICS_AGREEMENT)
-      
-      (prisma.babalawoClient.count as jest.Mock)
-        .mockResolvedValueOnce(50);   // activeRelationships
-      
-      (prisma.appointment.count as jest.Mock)
-        .mockResolvedValueOnce(200);  // totalAppointments
-      
-      (prisma.message.count as jest.Mock)
-        .mockResolvedValueOnce(1000); // totalMessages
+
+      (prisma.verificationApplication.count as jest.Mock).mockResolvedValueOnce(5);
+      (prisma.babalawoClient.count as jest.Mock).mockResolvedValueOnce(50);
+      (prisma.appointment.count as jest.Mock).mockResolvedValueOnce(200);
+      (prisma.message.count as jest.Mock).mockResolvedValueOnce(1000);
 
       const result = await service.getPlatformStats(mockAdminUser);
 
@@ -177,7 +117,6 @@ describe('AdminService', () => {
         totalMessages: 1000,
       });
 
-      // Verify all methods were called
       expect(prisma.user.count).toHaveBeenCalledTimes(2);
       expect(prisma.verificationApplication.count).toHaveBeenCalledTimes(1);
       expect(prisma.babalawoClient.count).toHaveBeenCalledTimes(1);
@@ -191,275 +130,15 @@ describe('AdminService', () => {
     });
   });
 
-  describe('getAllUsers', () => {
-    it('should return all users for admin user', async () => {
-      const mockUsers = [
-        {
-          id: 'user-1',
-        sub: 'user-1',
-          email: 'user1@example.com',
-          name: 'User One',
-          role: 'CLIENT',
-          verified: true,
-          hasOnboarded: true,
-          culturalLevel: 'OMO_ILE',
-        }
-      ];
+  describe('delegation to domain services (P2-04)', () => {
+    it('getAllUsers delegates to AdminUsersService with the same arguments', async () => {
+      const expected = [{ id: 'user-1' }];
+      (adminUsersService.getAllUsers as jest.Mock).mockResolvedValue(expected);
 
-      (prisma.user.findMany as jest.Mock).mockResolvedValue(mockUsers);
+      const result = await service.getAllUsers(mockAdminUser, { role: 'CLIENT' });
 
-      const result = await service.getAllUsers(mockAdminUser);
-
-      expect(result).toEqual(mockUsers);
-      expect(prisma.user.findMany).toHaveBeenCalledWith({
-        where: {},
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          role: true,
-          verified: true,
-          hasOnboarded: true,
-          culturalLevel: true,
-        },
-        orderBy: { name: 'asc' },
-      });
-    });
-
-    it('should filter users by role when provided', async () => {
-      (prisma.user.findMany as jest.Mock).mockResolvedValue([]);
-
-      await service.getAllUsers(mockAdminUser, { role: 'CLIENT' });
-
-      expect(prisma.user.findMany).toHaveBeenCalledWith({
-        where: { role: 'CLIENT' },
-        select: expect.any(Object),
-        orderBy: { name: 'asc' },
-      });
-    });
-
-    it('should filter users by verification status when provided', async () => {
-      (prisma.user.findMany as jest.Mock).mockResolvedValue([]);
-
-      await service.getAllUsers(mockAdminUser, { verified: true });
-
-      expect(prisma.user.findMany).toHaveBeenCalledWith({
-        where: { verified: true },
-        select: expect.any(Object),
-        orderBy: { name: 'asc' },
-      });
-    });
-
-    it('should throw ForbiddenException for non-admin user', async () => {
-      await expect(service.getAllUsers(mockNonAdminUser))
-        .rejects.toThrow('Only admins can view all users');
-    });
-  });
-
-  describe('getVerificationApplications', () => {
-    it('should return verification applications for admin user', async () => {
-      const mockApplications = [
-        {
-          id: 'app-1',
-        sub: 'app-1',
-          userId: 'user-1',
-          currentStage: 'APPLICATION',
-          submittedAt: new Date(),
-          user: {
-            id: 'user-1',
-        sub: 'user-1',
-            name: 'John Doe',
-            email: 'john@example.com',
-            role: 'CLIENT',
-          },
-          history: [],
-        }
-      ];
-
-      (prisma.verificationApplication.findMany as jest.Mock).mockResolvedValue(mockApplications);
-
-      const result = await service.getVerificationApplications(mockAdminUser);
-
-      expect(result).toEqual(mockApplications);
-      expect(prisma.verificationApplication.findMany).toHaveBeenCalledWith({
-        where: {},
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              role: true,
-            },
-          },
-          history: {
-            orderBy: { timestamp: 'desc' },
-            take: 5,
-          },
-        },
-        orderBy: { submittedAt: 'desc' },
-      });
-    });
-
-    it('should filter applications by stage when provided', async () => {
-      (prisma.verificationApplication.findMany as jest.Mock).mockResolvedValue([]);
-
-      await service.getVerificationApplications(mockAdminUser, 'APPLICATION' as any);
-
-      expect(prisma.verificationApplication.findMany).toHaveBeenCalledWith({
-        where: { currentStage: 'APPLICATION' },
-        include: expect.any(Object),
-        orderBy: { submittedAt: 'desc' },
-      });
-    });
-
-    it('should throw ForbiddenException for non-admin user', async () => {
-      await expect(service.getVerificationApplications(mockNonAdminUser))
-        .rejects.toThrow('Only admins can review verification applications');
-    });
-  });
-
-  describe('getDisputes', () => {
-    it('should return disputes for admin user', async () => {
-      const mockEscrows = [
-        {
-          id: 'escrow-1',
-        sub: 'escrow-1',
-          status: 'DISPUTED',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          user: { id: 'u1', name: 'User', email: 'u@x.com' },
-          guidancePlan: { appointment: { id: 'apt-1', date: new Date(), time: '10:00' } },
-        },
-      ];
-
-      (prisma.escrow.findMany as jest.Mock).mockResolvedValue(mockEscrows);
-
-      const result = await service.getDisputes(mockAdminUser);
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toMatchObject({ id: 'escrow-1', status: 'DISPUTED' });
-      expect(prisma.escrow.findMany).toHaveBeenCalledWith({
-        where: { status: 'DISPUTED' },
-        include: {
-          user: { select: { id: true, name: true, email: true } },
-          guidancePlan: {
-            include: {
-              appointment: {
-                select: { id: true, date: true, time: true },
-              },
-            },
-          },
-        },
-        orderBy: { updatedAt: 'desc' },
-      });
-    });
-
-    it('should filter disputes by status when provided', async () => {
-      (prisma.escrow.findMany as jest.Mock).mockResolvedValue([]);
-
-      await service.getDisputes(mockAdminUser, 'RESOLVED');
-
-      expect(prisma.escrow.findMany).toHaveBeenCalledWith({
-        where: { status: 'RESOLVED' },
-        include: expect.any(Object),
-        orderBy: { updatedAt: 'desc' },
-      });
-    });
-
-    it('should throw ForbiddenException for non-admin user', async () => {
-      await expect(service.getDisputes(mockNonAdminUser))
-        .rejects.toThrow('Only admins can view disputes');
-    });
-  });
-
-  describe('getPendingWithdrawals', () => {
-    it('should return pending withdrawals for admin user', async () => {
-      const mockWithdrawals = [
-        {
-          id: 'withdrawal-1',
-        sub: 'withdrawal-1',
-          userId: 'user-1',
-          amount: 5000,
-          currency: 'NGN',
-          status: 'PENDING',
-          createdAt: new Date(),
-        }
-      ];
-
-      (prisma.withdrawalRequest.findMany as jest.Mock).mockResolvedValue(mockWithdrawals);
-
-      const result = await service.getPendingWithdrawals(mockAdminUser);
-
-      expect(result).toEqual(mockWithdrawals);
-      expect(prisma.withdrawalRequest.findMany).toHaveBeenCalledWith({
-        where: {
-          status: 'PENDING',
-          amount: { gte: 500 },
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
-          escrow: {
-            select: {
-              id: true,
-              type: true,
-              amount: true,
-            },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-      });
-    });
-
-    it('should throw ForbiddenException for non-admin user', async () => {
-      await expect(service.getPendingWithdrawals(mockNonAdminUser))
-        .rejects.toThrow('Only admins can view withdrawal requests');
-    });
-  });
-
-  describe('moderateCircle (P0-03 soft delete)', () => {
-    const mockCircle = { id: 'circle-1', status: 'ACTIVE', active: true };
-
-    it('soft-deletes the circle on DELETE instead of removing the row', async () => {
-      (prisma.circle.findUnique as jest.Mock).mockResolvedValue(mockCircle);
-      const updateSpy = prisma.circle.update as jest.Mock;
-      updateSpy.mockResolvedValue({ ...mockCircle, status: 'DELETED', active: false });
-
-      const result = await service.moderateCircle('circle-1', 'DELETE', mockAdminUser as any);
-
-      expect(result.status).toBe('DELETED');
-      expect(updateSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: 'circle-1' },
-          data: { status: 'DELETED', active: false },
-        }),
-      );
-      expect(prisma.circle.delete).not.toHaveBeenCalled();
-    });
-
-    it('rejects moderation from a non-admin', async () => {
-      await expect(
-        service.moderateCircle('circle-1', 'DELETE', mockNonAdminUser as any),
-      ).rejects.toThrow('Only admins can moderate circles');
-      expect(prisma.circle.update).not.toHaveBeenCalled();
-    });
-
-    it('still supports ARCHIVE and ACTIVATE via the same status map', async () => {
-      (prisma.circle.findUnique as jest.Mock).mockResolvedValue(mockCircle);
-      const updateSpy = prisma.circle.update as jest.Mock;
-      updateSpy.mockResolvedValue({ ...mockCircle, status: 'ARCHIVED', active: false });
-
-      await service.moderateCircle('circle-1', 'ARCHIVE', mockAdminUser as any);
-
-      expect(updateSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ data: { status: 'ARCHIVED', active: false } }),
-      );
+      expect(adminUsersService.getAllUsers).toHaveBeenCalledWith(mockAdminUser, { role: 'CLIENT' });
+      expect(result).toBe(expected);
     });
   });
 });
