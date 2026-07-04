@@ -7,26 +7,10 @@ import { logger, setLogContext, clearLogContext } from '@/shared/utils/logger';
 import * as Sentry from '@sentry/react';
 import { registerPushNotifications, deregisterPushNotifications } from '@/lib/firebase-messaging';
 import { isDevModeActive } from '@/shared/utils/dev-mode';
-
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  firstName?: string;
-  lastName?: string;
-  role: UserRole;
-  adminSubRole?: AdminSubRole;
-  verified: boolean;
-  yorubaName?: string;
-  avatar?: string;
-  hasOnboarded: boolean;
-  culturalLevel?: string;
-  isImpersonated?: boolean;
-  impersonatorId?: string;
-  passedCulturalOrientation?: boolean;
-  intentTags?: string[];
-  createdAt?: string;
-}
+import { decodeJwtPayload } from '@/shared/utils/jwt';
+import type { User } from '@/types/user';
+import type { AuthResponse } from '@/types/api/auth';
+import { mapAuthUserToUser, mapDemoUserToUser } from '@/types/api/mappers/auth.mapper';
 
 interface AuthState {
   user: User | null;
@@ -62,6 +46,11 @@ export function useAuth(): AuthState & {
       logger.info(`[useAuth] Fetching user ${userId}`);
       if (!userId) return null;
       try {
+        // P2-01: GET /users/:id returns a much richer, relational shape
+        // (babalawoReviews, templesJoined, circleMemberships, etc.) than the
+        // auth endpoints' embedded `user` object — it doesn't have a mapper
+        // yet. Left as an untyped passthrough rather than force-fitting it
+        // through mapAuthUserToUser, which would silently drop those fields.
         const response = await api.get(`/users/${userId}`);
         logger.info(`[useAuth] Fetched user data:`, response.data);
         return response.data;
@@ -88,7 +77,18 @@ export function useAuth(): AuthState & {
   // Update user state when data is fetched; set user in log context for tracing
   useEffect(() => {
     if (userData) {
-      setUser(userData);
+      // isImpersonated/impersonatedBy are JWT session claims, not persisted
+      // User fields — GET /users/:id can never return them. Read them off
+      // the current access token instead of silently leaving them unset.
+      const storedToken = localStorage.getItem('accessToken');
+      const claims = storedToken
+        ? decodeJwtPayload<{ isImpersonated?: boolean; impersonatedBy?: string }>(storedToken)
+        : null;
+      setUser({
+        ...userData,
+        isImpersonated: claims?.isImpersonated ?? false,
+        impersonatorId: claims?.impersonatedBy,
+      });
       localStorage.setItem('userId', userData.id);
       setLogContext({ userId: userData.id });
     }
@@ -113,16 +113,17 @@ export function useAuth(): AuthState & {
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await api.post('/auth/login', { email, password });
+      const response = await api.post<AuthResponse>('/auth/login', { email, password });
       const { user: userResponse, accessToken, refreshToken } = response.data;
+      const mappedUser = mapAuthUserToUser(userResponse);
 
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
-      localStorage.setItem('userId', userResponse.id);
+      localStorage.setItem('userId', mappedUser.id);
 
       setTokenCheck(true);
-      setUser(userResponse);
-      setLogContext({ userId: userResponse.id });
+      setUser(mappedUser);
+      setLogContext({ userId: mappedUser.id });
       registerPushNotifications().catch(() => {});
     } catch (error: any) {
       // Always capture authentication errors to Sentry
@@ -138,7 +139,7 @@ export function useAuth(): AuthState & {
   const quickAccess = async (email: string) => {
     try {
       logger.log('Quick Access: Attempting login for', email);
-      const response = await api.post('/auth/quick-access', { email });
+      const response = await api.post<AuthResponse>('/auth/quick-access', { email });
       logger.log('Quick Access: Response received', response.data);
 
       const { user: userResponse, accessToken, refreshToken } = response.data;
@@ -148,22 +149,21 @@ export function useAuth(): AuthState & {
         throw new Error('Invalid response from server');
       }
 
-      // Ensure hasOnboarded is set (default to true if missing for seeded users)
-      const userWithOnboarded = {
-        ...userResponse,
-        hasOnboarded: userResponse.hasOnboarded ?? true,
-      };
+      // mapAuthUserToUser already defaults hasOnboarded via the DTO's
+      // required field — quickAccessLogin always sets it server-side now,
+      // but this stays defensive against older seeded rows.
+      const mappedUser = { ...mapAuthUserToUser(userResponse), hasOnboarded: userResponse.hasOnboarded ?? true };
 
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
-      localStorage.setItem('userId', userWithOnboarded.id);
+      localStorage.setItem('userId', mappedUser.id);
 
       setTokenCheck(true);
-      setUser(userWithOnboarded);
-      setLogContext({ userId: userWithOnboarded.id });
+      setUser(mappedUser);
+      setLogContext({ userId: mappedUser.id });
       registerPushNotifications().catch(() => {});
 
-      logger.log('Quick Access: Successfully logged in', userWithOnboarded);
+      logger.log('Quick Access: Successfully logged in', mappedUser);
     } catch (error: any) {
       logger.error('Quick Access Error:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Quick access failed';
@@ -173,20 +173,21 @@ export function useAuth(): AuthState & {
 
   const register = async (email: string, password: string, name: string, role: UserRole, phone?: string, referredByCode?: string) => {
     try {
-      const response = await api.post('/auth/register', {
+      const response = await api.post<AuthResponse>('/auth/register', {
         email, password, name, role,
         ...(phone ? { phone } : {}),
         ...(referredByCode ? { referredByCode } : {}),
       });
       const { user: userResponse, accessToken, refreshToken } = response.data;
+      const mappedUser = mapAuthUserToUser(userResponse);
 
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
-      localStorage.setItem('userId', userResponse.id);
+      localStorage.setItem('userId', mappedUser.id);
 
       setTokenCheck(true);
-      setUser(userResponse);
-      setLogContext({ userId: userResponse.id });
+      setUser(mappedUser);
+      setLogContext({ userId: mappedUser.id });
       registerPushNotifications().catch(() => {});
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message || 'Registration failed';
@@ -204,14 +205,17 @@ export function useAuth(): AuthState & {
     setUser(null);
   };
 
-  // Dev mode Mock Users
-  // Dev mode Mock Users mapped from single source of truth
+  // Dev mode Mock Users mapped from single source of truth via mapDemoUserToUser
+  // (P2-01) — DemoUser doesn't structurally satisfy User (missing hasOnboarded,
+  // optional email/verified where User requires them), so this is the one
+  // explicit mapping boundary instead of the `as any` casts it replaces.
+  const vendorDemoUser =
+    Object.values(DEMO_USERS).find((u) => u.role === UserRole.VENDOR) || DEMO_USERS['demo-vendor-1'];
   const MOCK_USERS: Record<string, User> = {
-    [UserRole.ADMIN]: { ...(DEMO_USERS['demo-admin-1'] as any), adminSubRole: AdminSubRole.SUPER },
-    [UserRole.BABALAWO]: DEMO_USERS['demo-baba-1'] as any,
-    [UserRole.CLIENT]: DEMO_USERS['demo-client-1'] as any,
-    // Finding the first vendor in demo users (usually client-2 or vendor-1)
-    [UserRole.VENDOR]: Object.values(DEMO_USERS).find((u: any) => u.role === UserRole.VENDOR) as any || DEMO_USERS['demo-vendor-1'] as any
+    [UserRole.ADMIN]: mapDemoUserToUser(DEMO_USERS['demo-admin-1'], { adminSubRole: AdminSubRole.SUPER }),
+    [UserRole.BABALAWO]: mapDemoUserToUser(DEMO_USERS['demo-baba-1']),
+    [UserRole.CLIENT]: mapDemoUserToUser(DEMO_USERS['demo-client-1']),
+    [UserRole.VENDOR]: mapDemoUserToUser(vendorDemoUser),
   };
 
   const devLogin = (role: UserRole) => {
@@ -271,17 +275,34 @@ export function useAuth(): AuthState & {
     devLogin,
     impersonate: async (userId: string, reason: string) => {
       try {
-        const response = await api.post(`/admin/impersonate/${userId}`, { reason });
-        const { user: userResponse, accessToken, refreshToken } = response.data;
+        // P2-01 discovery: this used to call POST /admin/impersonate/:userId
+        // expecting { user, accessToken, refreshToken } back — but that route
+        // (admin.service.ts::impersonateUser) only logs an audit event and
+        // returns { impersonationLogged: true }, no tokens at all. The route
+        // that actually establishes an impersonation session is
+        // POST /auth/impersonate, which returns a single short-lived
+        // (30 min) { token } — no refresh token, by design.
+        const response = await api.post<{ token: string }>('/auth/impersonate', { userId, reason });
+        const { token } = response.data;
+        const claims = decodeJwtPayload<{ sub: string }>(token);
+        if (!claims?.sub) {
+          throw new Error('Invalid impersonation token returned by server');
+        }
 
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
-        localStorage.setItem('userId', userResponse.id);
+        localStorage.setItem('accessToken', token);
+        // No refresh token for an impersonation session — leaving the
+        // original admin's refresh token in place would let the axios 401
+        // interceptor silently swap back to the admin's own identity the
+        // moment the 30-minute impersonation token expires, without
+        // surfacing that transition anywhere. Ending impersonation is a
+        // full logout (see ImpersonationBanner's onStop) until a proper
+        // session-restore flow exists.
+        localStorage.removeItem('refreshToken');
+        localStorage.setItem('userId', claims.sub);
         localStorage.setItem('impersonationStartedAt', new Date().toISOString());
 
         setTokenCheck(true);
-        setUser(userResponse);
-        setLogContext({ userId: userResponse.id });
+        setLogContext({ userId: claims.sub });
 
         // Force a page reload to the root to clear any admin-specific states
         window.location.href = '/';
