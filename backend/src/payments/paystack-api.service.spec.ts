@@ -1,0 +1,157 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
+import axios from 'axios';
+import { PaystackApiService } from './paystack-api.service';
+import { SecretsService } from '../secrets/secrets.service';
+
+jest.mock('axios');
+const mockedAxios = axios as jest.Mocked<typeof axios>;
+
+describe('PaystackApiService (P1-02: timeout + retry/backoff)', () => {
+  let service: PaystackApiService;
+  const mockClient = { post: jest.fn(), get: jest.fn() };
+
+  const mockSecretsService = {
+    getSecret: jest.fn().mockResolvedValue('sk_test_123'),
+  };
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    mockedAxios.create.mockReturnValue(mockClient as any);
+    mockSecretsService.getSecret.mockResolvedValue('sk_test_123');
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        PaystackApiService,
+        { provide: ConfigService, useValue: { get: jest.fn() } },
+        { provide: SecretsService, useValue: mockSecretsService },
+      ],
+    }).compile();
+
+    service = module.get<PaystackApiService>(PaystackApiService);
+    // P1-02: onModuleInit() is what actually calls initializeClient() now —
+    // it previously wasn't invoked from anywhere, so this line matters: it's
+    // exercising the exact fix, not incidental test setup.
+    await service.onModuleInit();
+  });
+
+  it('initializes the client (and reports configured) via onModuleInit — the actual P1-02 bug fix', () => {
+    expect(service.isConfigured()).toBe(true);
+    expect(mockedAxios.create).toHaveBeenCalledWith(
+      expect.objectContaining({ timeout: 20000 }),
+    );
+  });
+
+  it('leaves the client unconfigured (and warns) if the secret store returns nothing', async () => {
+    const unconfiguredModule: TestingModule = await Test.createTestingModule({
+      providers: [
+        PaystackApiService,
+        { provide: ConfigService, useValue: { get: jest.fn() } },
+        { provide: SecretsService, useValue: { getSecret: jest.fn().mockResolvedValue('') } },
+      ],
+    }).compile();
+    const unconfiguredService = unconfiguredModule.get<PaystackApiService>(PaystackApiService);
+
+    await unconfiguredService.onModuleInit();
+
+    expect(unconfiguredService.isConfigured()).toBe(false);
+  });
+
+  describe('verifyTransaction (read-only — full retry policy)', () => {
+    it('retries on a timeout and succeeds on the 2nd attempt', async () => {
+      mockClient.get
+        .mockRejectedValueOnce({ code: 'ECONNABORTED' })
+        .mockResolvedValueOnce({ data: { status: true, data: {} } });
+
+      const result = await service.verifyTransaction('ref-1');
+
+      expect(result.status).toBe(true);
+      expect(mockClient.get).toHaveBeenCalledTimes(2);
+    });
+
+    it('retries on a 5xx', async () => {
+      mockClient.get
+        .mockRejectedValueOnce({ response: { status: 502 } })
+        .mockResolvedValueOnce({ data: { status: true, data: {} } });
+
+      await service.verifyTransaction('ref-1');
+
+      expect(mockClient.get).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('initializeTransaction (mutating — network-failure-only retry)', () => {
+    const params = {
+      amount: 5000,
+      email: 'a@example.com',
+      currency: 'NGN',
+      callback_url: 'https://iluase.com/callback',
+    };
+
+    it('retries on a confirmed network-level failure (request never reached Paystack)', async () => {
+      mockClient.post
+        .mockRejectedValueOnce({ code: 'ECONNREFUSED' })
+        .mockResolvedValueOnce({ data: { status: true, data: {} } });
+
+      const result = await service.initializeTransaction(params);
+
+      expect(result.status).toBe(true);
+      expect(mockClient.post).toHaveBeenCalledTimes(2);
+    });
+
+    it('does NOT retry on a timeout — the request may have already reached Paystack', async () => {
+      mockClient.post.mockRejectedValue({ code: 'ECONNABORTED' });
+
+      await expect(service.initializeTransaction(params)).rejects.toEqual({
+        code: 'ECONNABORTED',
+      });
+      expect(mockClient.post).toHaveBeenCalledTimes(1);
+    });
+
+    it('does NOT retry on a 5xx — same double-processing risk as a timeout', async () => {
+      mockClient.post.mockRejectedValue({ response: { status: 500 } });
+
+      await expect(service.initializeTransaction(params)).rejects.toEqual({
+        response: { status: 500 },
+      });
+      expect(mockClient.post).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('createRefund (mutating — network-failure-only retry)', () => {
+    it('does NOT retry on a timeout — a duplicate refund is a real-money risk', async () => {
+      mockClient.post.mockRejectedValue({ code: 'ETIMEDOUT' });
+
+      await expect(
+        service.createRefund({ transaction: 'ref-1', amount: 1000 }),
+      ).rejects.toEqual({ code: 'ETIMEDOUT' });
+      expect(mockClient.post).toHaveBeenCalledTimes(1);
+    });
+
+    it('retries a confirmed network-level failure', async () => {
+      mockClient.post
+        .mockRejectedValueOnce({ code: 'ECONNRESET' })
+        .mockResolvedValueOnce({ data: { status: true, data: { transaction: { reference: 'ref-1', amount: 100000 } } } });
+
+      const result = await service.createRefund({ transaction: 'ref-1' });
+
+      expect(result.status).toBe(true);
+      expect(mockClient.post).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it('throws immediately (no retry loop) when Paystack is not configured', async () => {
+    const unconfiguredModule: TestingModule = await Test.createTestingModule({
+      providers: [
+        PaystackApiService,
+        { provide: ConfigService, useValue: { get: jest.fn() } },
+        { provide: SecretsService, useValue: { getSecret: jest.fn().mockResolvedValue('') } },
+      ],
+    }).compile();
+    const unconfiguredService = unconfiguredModule.get<PaystackApiService>(PaystackApiService);
+
+    await expect(unconfiguredService.verifyTransaction('ref-1')).rejects.toThrow(
+      'Paystack is not configured',
+    );
+  });
+});

@@ -17,6 +17,7 @@ import {
   NotificationType,
   NotificationCategory,
 } from '../notifications/notification.service';
+import { OutboxService } from '../outbox/outbox.service';
 import {
   TransactionType,
   TransactionStatus,
@@ -39,7 +40,8 @@ export class WalletService {
   constructor(
     private prisma: PrismaService,
     private currencyService: CurrencyService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private outboxService: OutboxService
   ) {}
 
   // ==================== Wallet Management ====================
@@ -165,7 +167,8 @@ export class WalletService {
     userId: string,
     dto: CreateDepositDto,
     currentUser?: CurrentUserPayload,
-    idempotencyKey?: string
+    idempotencyKey?: string,
+    notifyOnDeposit?: { eventType: string; payload: Record<string, unknown> }
   ) {
     // If currentUser is provided, verify ownership
     if (currentUser && currentUser.id !== userId) {
@@ -213,6 +216,21 @@ export class WalletService {
           },
         },
       });
+
+      // P1-01: write the "notify the user" intent atomically with the
+      // balance change, inside the same transaction, instead of the caller
+      // awaiting a separate, unprotected notification send afterward — if
+      // that call failed, the money moved but the user was never told, with
+      // no way to retry it. The outbox poller (OutboxPollerService) picks
+      // this row up and dispatches it through a retryable BullMQ queue.
+      if (notifyOnDeposit) {
+        await this.outboxService.createEventInTx(tx, {
+          aggregateType: 'WALLET',
+          aggregateId: wallet.id,
+          eventType: notifyOnDeposit.eventType,
+          payload: notifyOnDeposit.payload,
+        });
+      }
 
       return { wallet: updatedWallet, transaction };
     });

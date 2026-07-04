@@ -10,6 +10,7 @@ import { SecurityHardeningService } from './security/security-hardening.service'
 import { InputSanitizationMiddleware } from './middleware/input-sanitization.middleware';
 import { SecurityHeadersMiddleware } from './middleware/security-headers.middleware';
 import { SensitiveFieldStripInterceptor } from './interceptors/sensitive-field-strip.interceptor';
+import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 
 const logger = new Logger('Bootstrap');
 
@@ -72,6 +73,16 @@ async function bootstrap() {
   // specific controller remembered to do it by hand. See the interceptor's own
   // doc comment for why this exists instead of a per-endpoint DTO layer.
   app.useGlobalInterceptors(new SensitiveFieldStripInterceptor());
+
+  // P1-03 discovery: three separate global exception filters existed
+  // (GlobalExceptionFilter, SentryExceptionFilter, FriendlyExceptionFilter)
+  // but none was ever registered — every error response has always used
+  // Nest's bare default shape ({statusCode, message}) instead of the
+  // { success: false, error: StandardApiError } shape the frontend's
+  // parseApiError() has been written against since PB-202.5. This wires up
+  // the one with the richest Prisma/JWT error mapping (now Sentry-reporting
+  // too); the other two were unused duplicates and have been removed.
+  app.useGlobalFilters(new GlobalExceptionFilter());
 
   // Swagger setup for development
   if (configService.get('NODE_ENV') !== 'production') {

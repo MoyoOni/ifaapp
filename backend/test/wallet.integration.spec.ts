@@ -10,6 +10,7 @@ import { PrismaService } from '../src/prisma/prisma.service';
 import { WalletService } from '../src/wallet/wallet.service';
 import { NotificationService } from '../src/notifications/notification.service';
 import { CurrencyService } from '../src/payments/currency.service';
+import { OutboxService } from '../src/outbox/outbox.service';
 import { CreateDepositDto } from '../src/wallet/dto/create-deposit.dto';
 import { Currency, TransactionStatus, TransactionType } from '@ile-ase/common';
 
@@ -38,6 +39,21 @@ describe('WalletService Integration Tests (V4-807)', () => {
           useValue: {
             convertCurrency: jest.fn().mockResolvedValue(100),
             getExchangeRate: jest.fn().mockResolvedValue(1.0),
+          },
+        },
+        {
+          // P1-01: WalletService now requires OutboxService. Mocked here
+          // (rather than provided for real) to avoid this wallet-focused
+          // integration test also standing up OutboxService's real BullMQ
+          // Queue/Worker (a Redis dependency) — but the mock's
+          // createEventInTx still performs the *real* write against the
+          // transaction client it's given, so the "does the outbox row
+          // really land in the same transaction as the balance change" test
+          // below is still a genuine integration assertion against Postgres,
+          // not a mocked one.
+          provide: OutboxService,
+          useValue: {
+            createEventInTx: jest.fn((tx: any, input: any) => tx.outboxEvent.create({ data: input })),
           },
         },
       ],
@@ -83,6 +99,17 @@ describe('WalletService Integration Tests (V4-807)', () => {
     await prismaService.user.deleteMany({
       where: { id: { in: [TEST_USER_ID, TEST_USER_2_ID] } },
     });
+    // P1-01: clean up any outbox rows this suite created — aggregateId is
+    // the wallet id (unknown ahead of time), so match on the userId stored
+    // inside the JSON payload instead.
+    await prismaService.outboxEvent.deleteMany({
+      where: {
+        OR: [
+          { payload: { path: ['userId'], equals: TEST_USER_ID } },
+          { payload: { path: ['userId'], equals: TEST_USER_2_ID } },
+        ],
+      },
+    });
     await module.close();
   });
 
@@ -101,6 +128,35 @@ describe('WalletService Integration Tests (V4-807)', () => {
       expect(result.wallet.balance).toBe(50000);
       expect(result.transaction.type).toBe(TransactionType.DEPOSIT);
       expect(result.transaction.status).toBe(TransactionStatus.COMPLETED);
+    });
+
+    it('AC-2: should write an outbox event atomically alongside the deposit (P1-01)', async () => {
+      const reference = 'OUTBOX-TEST-' + Date.now();
+      const dto: CreateDepositDto = {
+        amount: 30000,
+        currency: Currency.NGN,
+        reference,
+      };
+
+      const result = await walletService.depositFunds(TEST_USER_ID, dto, undefined, undefined, {
+        eventType: 'PAYMENT_RECEIVED',
+        payload: { userId: TEST_USER_ID, amount: 30000, currency: 'NGN', reference },
+      });
+
+      // This is the genuine integration-level proof of P1-01's atomicity claim:
+      // the mock OutboxService still writes through the *real* transaction
+      // client handed to it by depositFunds, so a row actually landing in
+      // Postgres here proves the write happened inside the same $transaction
+      // as the wallet/transaction rows above — not just that the mock was called.
+      const outboxEvent = await prismaService.outboxEvent.findFirst({
+        where: { aggregateId: result.wallet.id, eventType: 'PAYMENT_RECEIVED' },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      expect(outboxEvent).toBeDefined();
+      expect(outboxEvent?.status).toBe('PENDING');
+      expect(outboxEvent?.aggregateType).toBe('WALLET');
+      expect((outboxEvent?.payload as any).reference).toBe(reference);
     });
 
     it('AC-3: should handle multiple deposits to same wallet', async () => {

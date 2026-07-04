@@ -1,26 +1,62 @@
 /**
  * V4-807: Payment Idempotency Integration Tests
- * Verifies payment operations handle idempotency keys correctly and prevent double-charging.
+ * Verifies the Paystack/Flutterwave webhook handlers dedupe payment
+ * notifications by gateway reference and never double-credit a wallet.
+ *
+ * P1-03 rewrite: this file previously drove POST /api/wallet/deposit, a
+ * direct client-callable deposit route that was permanently removed in
+ * EMG-01 (money only ever enters a wallet via a verified payment-gateway
+ * webhook now). Idempotency is now tested through the actual current path:
+ * POST /payments/webhook/paystack, which requires a valid HMAC-SHA512
+ * `x-paystack-signature` (EMG-02) and dedupes via a `paystack:<reference>`
+ * idempotency key on the Transaction row (EMG-03).
  *
  * Run: npm run test:integration
- * Requires: Postgres at DATABASE_URL, JWT_SECRET in .env
+ * Requires: Postgres at DATABASE_URL, PAYSTACK_SECRET_KEY, FLUTTERWAVE_SECRET_HASH in .env
  */
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
+import * as crypto from 'crypto';
 import { AppModule } from '../src/app.module';
-import { Currency, TransactionType, TransactionStatus } from '@ile-ase/common';
+import { GlobalExceptionFilter } from '../src/common/filters/global-exception.filter';
+import { PrismaService } from '../src/prisma/prisma.service';
+import { Currency } from '@ile-ase/common';
 
 describe('Payment Idempotency Critical-Path Tests (V4-807)', () => {
   let app: INestApplication;
+  let prisma: PrismaService;
+  const paystackSecret = process.env.PAYSTACK_SECRET_KEY!;
 
   const TEST_EMAIL = `payment-test-${Date.now()}@example.com`;
   const TEST_PASSWORD = 'SecurePassword123!';
 
-  let accessToken: string;
   let userId: string;
 
+  function signPaystackPayload(payload: unknown): string {
+    return crypto
+      .createHmac('sha512', paystackSecret)
+      .update(JSON.stringify(payload))
+      .digest('hex');
+  }
+
+  function paystackChargeSuccess(reference: string, amountNaira: number, currency = Currency.NGN) {
+    return {
+      event: 'charge.success',
+      data: {
+        reference,
+        amount: amountNaira * 100, // Paystack sends amounts in kobo
+        currency,
+        metadata: { userId },
+      },
+    };
+  }
+
   beforeAll(async () => {
+    if (!paystackSecret) {
+      throw new Error('PAYSTACK_SECRET_KEY must be set in the environment for this suite to run');
+    }
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -31,12 +67,13 @@ describe('Payment Idempotency Critical-Path Tests (V4-807)', () => {
       forbidNonWhitelisted: false,
       transform: true,
     }));
+    app.useGlobalFilters(new GlobalExceptionFilter());
 
     await app.init();
+    prisma = app.get(PrismaService);
 
-    // Setup: Register and login test user
     const registerRes = await request(app.getHttpServer())
-      .post('/api/auth/register')
+      .post('/auth/register')
       .send({
         email: TEST_EMAIL,
         password: TEST_PASSWORD,
@@ -44,273 +81,138 @@ describe('Payment Idempotency Critical-Path Tests (V4-807)', () => {
         role: 'CLIENT',
       });
 
-    userId = registerRes.body.id;
-
-    const loginRes = await request(app.getHttpServer())
-      .post('/api/auth/login')
-      .send({
-        email: TEST_EMAIL,
-        password: TEST_PASSWORD,
-      });
-
-    accessToken = loginRes.body.access_token;
+    userId = registerRes.body.user.id;
   });
 
   afterAll(async () => {
+    await prisma.transaction.deleteMany({ where: { userId } });
+    await prisma.wallet.deleteMany({ where: { userId } });
+    await prisma.user.deleteMany({ where: { id: userId } });
     await app.close();
   });
 
-  describe('AC-2,4: Idempotency Key Handling', () => {
-    it('should handle deposit with Idempotency-Key header', async () => {
-      const idempotencyKey = 'DEP-' + Date.now();
-
+  describe('Webhook signature verification (EMG-02)', () => {
+    it('rejects a webhook with a missing signature', async () => {
       const response = await request(app.getHttpServer())
-        .post('/api/wallet/deposit')
-        .set('Authorization', `Bearer ${accessToken}`)
-        .set('Idempotency-Key', idempotencyKey)
-        .send({
-          amount: 50000,
-          currency: Currency.NGN,
-          reference: 'PAY-' + Date.now(),
-        });
+        .post('/payments/webhook/paystack')
+        .send(paystackChargeSuccess('NO-SIG-' + Date.now(), 100));
 
-      // Should succeed
-      expect([200, 201]).toContain(response.status);
-      expect(response.body).toHaveProperty('transaction');
-      expect(response.body.transaction).toHaveProperty('idempotencyKey', idempotencyKey);
-
-      const transactionId1 = response.body.transaction.id;
-
-      // Send same request again with same key
-      const response2 = await request(app.getHttpServer())
-        .post('/api/wallet/deposit')
-        .set('Authorization', `Bearer ${accessToken}`)
-        .set('Idempotency-Key', idempotencyKey)
-        .send({
-          amount: 50000,
-          currency: Currency.NGN,
-          reference: 'PAY-' + (Date.now() + 1000),
-        });
-
-      expect([200, 201]).toContain(response2.status);
-      expect(response2.body.transaction.id).toBe(transactionId1);
+      expect(response.status).toBe(401);
     });
 
-    it('should create separate transactions with different Idempotency-Keys', async () => {
-      const key1 = 'KEY-1-' + Date.now();
-      const key2 = 'KEY-2-' + Date.now();
+    it('rejects a webhook with an invalid signature', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/payments/webhook/paystack')
+        .set('x-paystack-signature', 'not-the-real-signature')
+        .send(paystackChargeSuccess('BAD-SIG-' + Date.now(), 100));
+
+      expect(response.status).toBe(401);
+    });
+  });
+
+  describe('Idempotent replay by gateway reference (EMG-03)', () => {
+    it('credits the wallet exactly once when the same reference is delivered twice', async () => {
+      const reference = 'IDEM-' + Date.now();
+      const payload = paystackChargeSuccess(reference, 500);
+      const signature = signPaystackPayload(payload);
 
       const response1 = await request(app.getHttpServer())
-        .post('/api/wallet/deposit')
-        .set('Authorization', `Bearer ${accessToken}`)
-        .set('Idempotency-Key', key1)
-        .send({
-          amount: 25000,
-          currency: Currency.NGN,
-          reference: 'REF-1-' + Date.now(),
-        });
+        .post('/payments/webhook/paystack')
+        .set('x-paystack-signature', signature)
+        .send(payload)
+        .expect(200);
 
-      const transactionId1 = response1.body.transaction.id;
+      expect(response1.body).toMatchObject({ success: true, reference });
 
+      // Simulate Paystack retrying the same webhook delivery (e.g. after a
+      // timeout on our end) with an identical, identically-signed payload.
       const response2 = await request(app.getHttpServer())
-        .post('/api/wallet/deposit')
-        .set('Authorization', `Bearer ${accessToken}`)
-        .set('Idempotency-Key', key2)
-        .send({
-          amount: 25000,
-          currency: Currency.NGN,
-          reference: 'REF-2-' + Date.now(),
-        });
+        .post('/payments/webhook/paystack')
+        .set('x-paystack-signature', signature)
+        .send(payload)
+        .expect(200);
 
-      const transactionId2 = response2.body.transaction.id;
+      expect(response2.body).toMatchObject({ success: true, reference });
 
-      // Should be different transactions
-      expect(transactionId1).not.toBe(transactionId2);
+      const transactions = await prisma.transaction.findMany({
+        where: { userId, reference },
+      });
+      // Only one Transaction row for this reference — the replay didn't create a second.
+      expect(transactions).toHaveLength(1);
+      expect(transactions[0].idempotencyKey).toBe(`paystack:${reference}`);
+      expect(transactions[0].status).toBe('COMPLETED');
     });
 
-    it('AC-5: should reject payment request without Idempotency-Key in production flow', async () => {
-      // Some implementations may require the header
-      // This test documents the behavior
-      const response = await request(app.getHttpServer())
-        .post('/api/wallet/deposit')
-        .set('Authorization', `Bearer ${accessToken}`)
-        .send({
-          amount: 10000,
-          currency: Currency.NGN,
-          reference: 'NO-KEY-' + Date.now(),
-        });
+    it('creates separate transactions for different references', async () => {
+      const reference1 = 'REF-1-' + Date.now();
+      const reference2 = 'REF-2-' + Date.now();
 
-      // May be 200/201 if header is optional, or 400 if required
-      // Document the actual behavior
-      expect([200, 201, 400]).toContain(response.status);
-    });
-  });
+      const payload1 = paystackChargeSuccess(reference1, 250);
+      await request(app.getHttpServer())
+        .post('/payments/webhook/paystack')
+        .set('x-paystack-signature', signPaystackPayload(payload1))
+        .send(payload1)
+        .expect(200);
 
-  describe('AC-3,4: Payment Success and Idempotency', () => {
-    it('should process payment and return transaction record first time', async () => {
-      const idempotencyKey = 'SUCCESS-' + Date.now();
+      const payload2 = paystackChargeSuccess(reference2, 250);
+      await request(app.getHttpServer())
+        .post('/payments/webhook/paystack')
+        .set('x-paystack-signature', signPaystackPayload(payload2))
+        .send(payload2)
+        .expect(200);
 
-      const response = await request(app.getHttpServer())
-        .post('/api/wallet/deposit')
-        .set('Authorization', `Bearer ${accessToken}`)
-        .set('Idempotency-Key', idempotencyKey)
-        .send({
-          amount: 100000,
-          currency: Currency.NGN,
-          reference: 'SUCCESS-PAY-' + Date.now(),
-        });
+      const tx1 = await prisma.transaction.findFirst({ where: { userId, reference: reference1 } });
+      const tx2 = await prisma.transaction.findFirst({ where: { userId, reference: reference2 } });
 
-      expect([200, 201]).toContain(response.status);
-      expect(response.body).toHaveProperty('transaction');
-      expect(response.body.transaction.status).toBe(TransactionStatus.COMPLETED);
-
-      return response.body.transaction.id;
+      expect(tx1).toBeDefined();
+      expect(tx2).toBeDefined();
+      expect(tx1!.id).not.toBe(tx2!.id);
     });
 
-    it('should return same transaction for repeated idempotent requests', async () => {
-      const idempotencyKey = 'REPEAT-' + Date.now();
-      let firstTxId: string;
+    it('reflects only one deposit in the wallet balance after a retried webhook', async () => {
+      const wallet = await prisma.wallet.findUnique({ where: { userId } });
+      const balanceBefore = wallet?.balance ?? 0;
 
-      // First request
-      const response1 = await request(app.getHttpServer())
-        .post('/api/wallet/deposit')
-        .set('Authorization', `Bearer ${accessToken}`)
-        .set('Idempotency-Key', idempotencyKey)
-        .send({
-          amount: 75000,
-          currency: Currency.NGN,
-          reference: 'REPEAT-' + Date.now(),
-        });
+      const reference = 'BALANCE-CHECK-' + Date.now();
+      const payload = paystackChargeSuccess(reference, 300);
+      const signature = signPaystackPayload(payload);
 
-      expect([200, 201]).toContain(response1.status);
-      firstTxId = response1.body.transaction.id;
+      await request(app.getHttpServer())
+        .post('/payments/webhook/paystack')
+        .set('x-paystack-signature', signature)
+        .send(payload)
+        .expect(200);
 
-      // Second request (simulating retry)
-      const response2 = await request(app.getHttpServer())
-        .post('/api/wallet/deposit')
-        .set('Authorization', `Bearer ${accessToken}`)
-        .set('Idempotency-Key', idempotencyKey)
-        .send({
-          amount: 75000,
-          currency: Currency.NGN,
-          reference: 'REPEAT-' + (Date.now() + 1),
-        });
+      // Retry with the identical signed payload.
+      await request(app.getHttpServer())
+        .post('/payments/webhook/paystack')
+        .set('x-paystack-signature', signature)
+        .send(payload)
+        .expect(200);
 
-      expect([200, 201]).toContain(response2.status);
-      expect(response2.body.transaction.id).toBe(firstTxId);
-
-      // Wallet balance should reflect only ONE deposit
-      const walletRes = await request(app.getHttpServer())
-        .get('/api/wallet')
-        .set('Authorization', `Bearer ${accessToken}`);
-
-      // The wallet should be retrievable
-      expect(walletRes.status).toBeLessThan(500);
+      const walletAfter = await prisma.wallet.findUnique({ where: { userId } });
+      expect(walletAfter!.balance).toBe(balanceBefore + 300);
     });
   });
 
-  describe('AC-1: Database Consistency', () => {
-    it('should maintain referential integrity between transaction and wallet', async () => {
-      const idempotencyKey = 'INTEGRITY-' + Date.now();
+  describe('Referential integrity', () => {
+    it('links the webhook-created transaction to the correct user and wallet', async () => {
+      const reference = 'INTEGRITY-' + Date.now();
+      const payload = paystackChargeSuccess(reference, 150);
 
-      const response = await request(app.getHttpServer())
-        .post('/api/wallet/deposit')
-        .set('Authorization', `Bearer ${accessToken}`)
-        .set('Idempotency-Key', idempotencyKey)
-        .send({
-          amount: 50000,
-          currency: Currency.NGN,
-          reference: 'INTEGRITY-' + Date.now(),
-        });
+      await request(app.getHttpServer())
+        .post('/payments/webhook/paystack')
+        .set('x-paystack-signature', signPaystackPayload(payload))
+        .send(payload)
+        .expect(200);
 
-      expect([200, 201]).toContain(response.status);
+      const transaction = await prisma.transaction.findFirst({ where: { userId, reference } });
+      const wallet = await prisma.wallet.findUnique({ where: { userId } });
 
-      const transaction = response.body.transaction;
-      const wallet = response.body.wallet;
-
-      // Verify transaction has wallet reference
-      expect(transaction).toHaveProperty('walletId', wallet.id);
-      expect(transaction).toHaveProperty('userId', userId);
-
-      // Verify wallet belongs to user
-      expect(wallet).toHaveProperty('userId', userId);
-    });
-  });
-
-  describe('AC-2: Header Validation', () => {
-    it('should accept valid UUID as Idempotency-Key', async () => {
-      const validUUID = '550e8400-e29b-41d4-a716-446655440000';
-
-      const response = await request(app.getHttpServer())
-        .post('/api/wallet/deposit')
-        .set('Authorization', `Bearer ${accessToken}`)
-        .set('Idempotency-Key', validUUID)
-        .send({
-          amount: 30000,
-          currency: Currency.NGN,
-          reference: 'UUID-' + Date.now(),
-        });
-
-      expect([200, 201, 400]).toContain(response.status);
-      if (response.status === 200 || response.status === 201) {
-        expect(response.body.transaction.idempotencyKey).toBe(validUUID);
-      }
-    });
-
-    it('should handle empty Idempotency-Key gracefully', async () => {
-      const response = await request(app.getHttpServer())
-        .post('/api/wallet/deposit')
-        .set('Authorization', `Bearer ${accessToken}`)
-        .set('Idempotency-Key', '')
-        .send({
-          amount: 20000,
-          currency: Currency.NGN,
-          reference: 'EMPTY-KEY-' + Date.now(),
-        });
-
-      // Should either accept it or reject with useful error
-      expect([200, 201, 400]).toContain(response.status);
-    });
-  });
-
-  describe('Integration: Full Payment Flow with Idempotency', () => {
-    it('should handle network retry scenario safely', async () => {
-      const idempotencyKey = 'NETWORK-RETRY-' + Date.now();
-      const reference = 'NET-REF-' + Date.now();
-      const amount = 60000;
-
-      // Simulate client sending payment request
-      const response1 = await request(app.getHttpServer())
-        .post('/api/wallet/deposit')
-        .set('Authorization', `Bearer ${accessToken}`)
-        .set('Idempotency-Key', idempotencyKey)
-        .send({
-          amount,
-          currency: Currency.NGN,
-          reference,
-        });
-
-      expect([200, 201]).toContain(response1.status);
-      const tx1 = response1.body.transaction;
-
-      // Simulate network timeout, client retries with same parameters
-      const response2 = await request(app.getHttpServer())
-        .post('/api/wallet/deposit')
-        .set('Authorization', `Bearer ${accessToken}`)
-        .set('Idempotency-Key', idempotencyKey)
-        .send({
-          amount,
-          currency: Currency.NGN,
-          reference,
-        });
-
-      expect([200, 201]).toContain(response2.status);
-      const tx2 = response2.body.transaction;
-
-      // Should be the same transaction (no double charge)
-      expect(tx1.id).toBe(tx2.id);
-      expect(tx1.amount).toBe(amount);
-      expect(tx1.status).toBe(TransactionStatus.COMPLETED);
+      expect(transaction).toBeDefined();
+      expect(transaction!.userId).toBe(userId);
+      expect(transaction!.walletId).toBe(wallet!.id);
+      expect(wallet!.userId).toBe(userId);
     });
   });
 });

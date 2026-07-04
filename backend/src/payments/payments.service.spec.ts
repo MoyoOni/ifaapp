@@ -199,7 +199,8 @@ describe('PaymentsService', () => {
           currency: Currency.NGN,
         }),
         undefined,
-        'paystack:ref-123'
+        'paystack:ref-123',
+        expect.objectContaining({ eventType: 'PAYMENT_RECEIVED' })
       );
     });
 
@@ -273,7 +274,8 @@ describe('PaymentsService', () => {
         'user-id',
         expect.objectContaining({ amount: 5000, currency: Currency.NGN }),
         undefined,
-        'flutterwave:ref-456'
+        'flutterwave:ref-456',
+        expect.objectContaining({ eventType: 'PAYMENT_RECEIVED' })
       );
     });
 

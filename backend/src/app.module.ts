@@ -1,5 +1,6 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard } from '@nestjs/throttler';
@@ -37,7 +38,6 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { TemplesModule } from './temples/temples.module';
 import { TutorsModule } from './tutors/tutors.module';
 import { VerificationModule } from './verification/verification.module';
-import { EnhancedPractitionerOnboardingModule } from './verification/enhanced-practitioner-onboarding.module';
 import { VideoCallModule } from './video-call/video-call.module';
 import { WalletModule } from './wallet/wallet.module';
 import { WhatsAppModule } from './whatsapp/whatsapp.module';
@@ -46,20 +46,22 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { SecretsModule } from './secrets/secrets.module';
 import { SentryModule } from './sentry/sentry.module';
 import { PractitionerAnalyticsModule } from './practitioners/practitioner-analytics.module';
-import { ModerationModule } from './moderation/moderation.module';
-import { LegalModule } from './legal/legal.module';
-import { PerformanceModule } from './performance/performance.module';
-import { ComplianceModule } from './compliance/compliance.module';
-import { ElderOversightModule } from './elders/elder-oversight.module';
-import { RbacModule } from './rbac/rbac.module';
 import { SentryInitializerService } from './sentry/sentry-initializer.service';
 import { OralHistorySeedService } from './seeding/oral-history.seed.service';
 import { RequestIdMiddleware } from './middleware/request-id.middleware';
-import { AlertingModule } from './alerts/alerting.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    // P1-01: ScheduleModule.forRoot() was never actually registered anywhere
+    // in the module tree — both prior references to it (wallet.module.ts,
+    // messaging.module.ts) are commented out. Every @Cron job in the app,
+    // including EscrowExpiryService's daily auto-expiry sweep, has been
+    // silently inert as a result: the decorator was there, but nothing ever
+    // initialized the scheduler that reads it. Registering it here (the root
+    // module) fixes that for every existing and future @Cron job at once,
+    // and is required for the new OutboxPollerService below.
+    ScheduleModule.forRoot(),
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -96,7 +98,6 @@ import { AlertingModule } from './alerts/alerting.module';
     TemplesModule,
     TutorsModule,
     VerificationModule,
-    EnhancedPractitionerOnboardingModule,
     VideoCallModule,
     WalletModule,
     WhatsAppModule,
@@ -105,13 +106,6 @@ import { AlertingModule } from './alerts/alerting.module';
     SecretsModule,
     SentryModule,
     PractitionerAnalyticsModule,
-    ModerationModule,
-    LegalModule,
-    PerformanceModule,
-    ComplianceModule,
-    ElderOversightModule,
-    RbacModule,
-    AlertingModule,
   ],
   providers: [
     {

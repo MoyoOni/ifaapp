@@ -89,3 +89,93 @@ export enum PostStatus {
     DELETED = 'DELETED',
     HIDDEN = 'HIDDEN',
 }
+
+// P1-03: added below — the full-program type check used by
+// test:integration (unlike the unit test config's isolatedModules mode)
+// loads AppModule's entire dependency graph, which pulls in every one of
+// these. Missing entries here surface as "Cannot read properties of
+// undefined" at decorator-evaluation time, not a normal type error.
+
+export enum AdminSubRole {
+    FINANCE = 'FINANCE',
+    MODERATOR = 'MODERATOR',
+    COMPLIANCE = 'COMPLIANCE',
+    SUPPORT = 'SUPPORT',
+    SUPER = 'SUPER',
+}
+
+export enum CourseLevel {
+    BEGINNER = 'BEGINNER',
+    INTERMEDIATE = 'INTERMEDIATE',
+    ADVANCED = 'ADVANCED',
+}
+
+export enum CourseStatus {
+    DRAFT = 'DRAFT',
+    PENDING_APPROVAL = 'PENDING_APPROVAL',
+    APPROVED = 'APPROVED',
+    REJECTED = 'REJECTED',
+    ARCHIVED = 'ARCHIVED',
+}
+
+export enum LessonType {
+    VIDEO = 'VIDEO',
+    AUDIO = 'AUDIO',
+    TEXT = 'TEXT',
+    QUIZ = 'QUIZ',
+}
+
+export enum EnrollmentStatus {
+    ACTIVE = 'ACTIVE',
+    COMPLETED = 'COMPLETED',
+    CANCELLED = 'CANCELLED',
+}
+
+export enum VendorStatus {
+    PENDING = 'PENDING',
+    APPROVED = 'APPROVED',
+    SUSPENDED = 'SUSPENDED',
+    REJECTED = 'REJECTED',
+}
+
+export enum OrderStatus {
+    PENDING = 'PENDING',
+    PAID = 'PAID',
+    SHIPPED = 'SHIPPED',
+    DELIVERED = 'DELIVERED',
+    CANCELLED = 'CANCELLED',
+    REFUNDED = 'REFUNDED',
+}
+
+export enum ProductType {
+    PHYSICAL = 'PHYSICAL',
+    DIGITAL = 'DIGITAL',
+    SERVICE = 'SERVICE',
+}
+
+export enum ProductStatus {
+    DRAFT = 'DRAFT',
+    ACTIVE = 'ACTIVE',
+    OUT_OF_STOCK = 'OUT_OF_STOCK',
+    ARCHIVED = 'ARCHIVED',
+    SUSPENDED = 'SUSPENDED',
+}
+
+export enum VerifiedTier {
+    COUNCIL_APPROVED = 'COUNCIL_APPROVED',
+    ARTISAN_DIRECT = 'ARTISAN_DIRECT',
+    COMMUNITY_LISTED = 'COMMUNITY_LISTED',
+}
+
+export enum VerificationStage {
+    APPLICATION = 'APPLICATION',
+    COUNCIL_REVIEW = 'COUNCIL_REVIEW',
+    CERTIFICATION = 'CERTIFICATION',
+    ETHICS_AGREEMENT = 'ETHICS_AGREEMENT',
+}
+
+export enum VerificationTier {
+    JUNIOR = 'JUNIOR',
+    SENIOR = 'SENIOR',
+    MASTER = 'MASTER',
+}

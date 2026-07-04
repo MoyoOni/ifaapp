@@ -7,29 +7,34 @@ import * as admin from 'firebase-admin';
 @Injectable()
 export class PushNotificationService {
   private readonly logger = new Logger(PushNotificationService.name);
-  private fcm: admin.messaging.Messaging;
+  private fcm: admin.messaging.Messaging | null = null;
 
   constructor(
     private configService: ConfigService,
     private prisma: PrismaService
   ) {
-    // Initialize Firebase Admin SDK
+    // Initialize Firebase Admin SDK. This used to rethrow on any init failure,
+    // which crashes the entire app at boot whenever Firebase env vars aren't
+    // configured — push notifications are a best-effort feature and must not
+    // be able to take down the whole API. Log and leave `fcm` null instead;
+    // callers below already check for that.
     try {
       // Check if Firebase Admin is already initialized
       if (admin.apps.length === 0) {
-        // Initialize Firebase Admin SDK with service account
-        const firebaseConfig = {
-          type: this.configService.get<string>('FIREBASE_TYPE'),
-          project_id: this.configService.get<string>('FIREBASE_PROJECT_ID'),
-          private_key_id: this.configService.get<string>('FIREBASE_PRIVATE_KEY_ID'),
-          private_key: this.configService.get<string>('FIREBASE_PRIVATE_KEY')?.replace(/\\n/g, '\n'),
-          client_email: this.configService.get<string>('FIREBASE_CLIENT_EMAIL'),
-          client_id: this.configService.get<string>('FIREBASE_CLIENT_ID'),
-          auth_uri: this.configService.get<string>('FIREBASE_AUTH_URI'),
-          token_uri: this.configService.get<string>('FIREBASE_TOKEN_URI'),
-          auth_provider_x509_cert_url: this.configService.get<string>('FIREBASE_AUTH_PROVIDER_X509_CERT_URL'),
-          client_x509_cert_url: this.configService.get<string>('FIREBASE_CLIENT_X509_CERT_URL'),
+        // Initialize Firebase Admin SDK with service account. admin.ServiceAccount
+        // only accepts camelCase projectId/clientEmail/privateKey — this used to
+        // build a snake_case service-account JSON shape that admin.credential.cert()
+        // has never accepted, so this constructor could never have succeeded.
+        const firebaseConfig: admin.ServiceAccount = {
+          projectId: this.configService.get<string>('FIREBASE_PROJECT_ID'),
+          privateKey: this.configService.get<string>('FIREBASE_PRIVATE_KEY')?.replace(/\\n/g, '\n'),
+          clientEmail: this.configService.get<string>('FIREBASE_CLIENT_EMAIL'),
         };
+
+        if (!firebaseConfig.projectId || !firebaseConfig.privateKey || !firebaseConfig.clientEmail) {
+          this.logger.warn('Firebase credentials not fully configured — push notifications disabled');
+          return;
+        }
 
         admin.initializeApp({
           credential: admin.credential.cert(firebaseConfig),
@@ -39,8 +44,7 @@ export class PushNotificationService {
       this.fcm = admin.messaging();
       this.logger.log('Firebase Cloud Messaging initialized successfully');
     } catch (error) {
-      this.logger.error('Failed to initialize Firebase Admin SDK:', error);
-      throw new Error('Firebase initialization failed. Check your Firebase configuration.');
+      this.logger.error('Failed to initialize Firebase Admin SDK — push notifications disabled:', error);
     }
   }
 
@@ -58,17 +62,19 @@ export class PushNotificationService {
       throw new BadRequestException(`User with ID ${userId} not found`);
     }
 
+    if (!this.fcm) {
+      return { success: false, message: 'Push notifications are not configured' };
+    }
+
     try {
       // Verify the token is valid
       await this.fcm.subscribeToTopic([token], 'all-users');
-      
+
       // Store the token in the user's record
       await this.prisma.user.update({
         where: { id: userId },
-        data: { 
-          fcmTokens: {
-            push: token
-          }
+        data: {
+          fcmTokens: { push: token },
         },
       });
 
@@ -92,9 +98,13 @@ export class PushNotificationService {
   async unsubscribeUser(userId: string, token: string): Promise<{ success: boolean; message: string }> {
     this.logger.log(`Unsubscribing user ${userId} from push notifications`);
 
+    if (!this.fcm) {
+      return { success: false, message: 'Push notifications are not configured' };
+    }
+
     try {
       await this.fcm.unsubscribeFromTopic([token], 'all-users');
-      
+
       // Remove the token from the user's record
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
@@ -146,8 +156,12 @@ export class PushNotificationService {
       };
     }
 
+    if (!this.fcm) {
+      return { success: false, error: 'Push notifications are not configured' };
+    }
+
     try {
-      const message: admin.messaging.Message = {
+      const message: admin.messaging.MulticastMessage = {
         notification: {
           title,
           body,
@@ -156,8 +170,11 @@ export class PushNotificationService {
         tokens: user.fcmTokens,
       };
 
-      const response = await this.fcm.sendMulticast(message);
-      
+      // sendMulticast was removed from the firebase-admin SDK (this file's
+      // pinned version only has sendEachForMulticast) — this call could
+      // never have type-checked or run.
+      const response = await this.fcm.sendEachForMulticast(message);
+
       this.logger.log(`Push notification sent to user ${userId} successfully`);
       return {
         success: true,
@@ -167,7 +184,7 @@ export class PushNotificationService {
       this.logger.error(`Failed to send push notification to user ${userId}:`, error);
       return {
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       };
     }
   }
@@ -213,6 +230,10 @@ export class PushNotificationService {
       };
     }
 
+    if (!this.fcm) {
+      return { success: false, successCount: 0, failureCount: userIds.length };
+    }
+
     try {
       const message: admin.messaging.MulticastMessage = {
         notification: {
@@ -223,8 +244,8 @@ export class PushNotificationService {
         tokens: allTokens,
       };
 
-      const response = await this.fcm.sendMulticast(message);
-      
+      const response = await this.fcm.sendEachForMulticast(message);
+
       this.logger.log(`Push notification sent to multiple users successfully`);
       return {
         success: true,

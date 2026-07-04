@@ -10,6 +10,28 @@ env:
   NODE_VERSION: '20.x'
 
 jobs:
+  # --- P1-04: fail fast if a stray schema file reappears next to schema.prisma.
+  # backend/prisma/schema_fixed.prisma and temp_schema.txt were both found to be
+  # stale, already-superseded snapshots left over from past manual schema edits
+  # made outside the migration pipeline — the kind of file that causes a future
+  # engineer to edit the wrong copy. This keeps schema.prisma + migrations/ as
+  # the only source of truth going forward.
+  schema-hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for stray schema-adjacent files
+        run: |
+          STRAY=$(find backend/prisma -maxdepth 1 -type f \
+            \( -name "*.prisma" -o -name "*.txt" \) \
+            ! -name "schema.prisma" )
+          if [ -n "$STRAY" ]; then
+            echo "Found stray schema file(s) outside the migration pipeline:"
+            echo "$STRAY"
+            echo "backend/prisma/schema.prisma is the only schema file that belongs here; real changes go through a migration under backend/prisma/migrations/."
+            exit 1
+          fi
+
   # --- Build & test the shared common package first ---
   build-common:
     runs-on: ubuntu-latest
@@ -78,8 +100,8 @@ jobs:
       - name: Build backend
         run: cd backend && npm run build
 
-      - name: Run unit tests
-        run: cd backend && npm test -- --passWithNoTests
+      - name: Run unit tests (with coverage gate — P1-03)
+        run: cd backend && npm test -- --passWithNoTests --coverage
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
           REDIS_URL: redis://localhost:6379
@@ -103,6 +125,18 @@ jobs:
           PORT: 3000
           NODE_ENV: test
           FRONTEND_URL: http://localhost:5173
+          # EMG-02 made these mandatory for webhook signature verification —
+          # without them, payment webhook integration tests can't run at all.
+          PAYSTACK_SECRET_KEY: sk_test_ci_dummy_secret_key_for_hmac_signing
+          FLUTTERWAVE_SECRET_HASH: ci_dummy_flutterwave_secret_hash
+          # P1-03: a single test file legitimately issues far more than the
+          # default 10 auth requests/min across its `it` blocks.
+          THROTTLE_AUTH_LIMIT: '1000'
+          THROTTLE_DEFAULT_LIMIT: '1000'
+          # db-relationships.integration.spec.ts (52 FK/cascade assertions)
+          # self-skips unless explicitly opted in — CI has a real Postgres,
+          # so opt in rather than silently skipping real coverage.
+          RUN_INTEGRATION_TESTS: '1'
 
   # --- Frontend: lint, typecheck, test, build ---
   test-frontend:

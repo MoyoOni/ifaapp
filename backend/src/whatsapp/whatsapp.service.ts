@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
+import { retryWithBackoff } from '../utils/retry-with-backoff.util';
 
 export type WhatsAppTemplate =
   | 'new_booking_babalawo'
@@ -56,28 +57,40 @@ export class WhatsAppService {
       return;
     }
     try {
-      await axios.post(
-        this.apiUrl,
-        {
-          messaging_product: 'whatsapp',
-          to: this.formatPhone(to),
-          type: 'template',
-          template: {
-            name: templateName,
-            language: { code: 'en' },
-            components,
+      // P1-02: 15s timeout (was unset — a slow WhatsApp Business API response
+      // used to hang this request thread indefinitely) + retry with
+      // exponential backoff on retryable failures (network errors, timeouts,
+      // 5xx). A 4xx (e.g. bad template params) fails on the first attempt —
+      // retrying it would just get the same rejection three times.
+      await retryWithBackoff(() =>
+        axios.post(
+          this.apiUrl,
+          {
+            messaging_product: 'whatsapp',
+            to: this.formatPhone(to),
+            type: 'template',
+            template: {
+              name: templateName,
+              language: { code: 'en' },
+              components,
+            },
           },
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${this.accessToken}`,
-            'Content-Type': 'application/json',
+          {
+            timeout: 15000,
+            headers: {
+              Authorization: `Bearer ${this.accessToken}`,
+              'Content-Type': 'application/json',
+            },
           },
-        },
+        )
       );
       this.logger.log(`[WhatsApp OK] ${templateName} → ${to}`);
     } catch (err: any) {
-      // Never throw — WhatsApp failure must not break main flow
+      // Never throw — WhatsApp failure must not break main flow. This is a
+      // best-effort, direct send (used by non-payment flows); the specific
+      // "payment received" WhatsApp notification path referenced in the
+      // original finding now goes through the outbox pattern (P1-01)
+      // instead, which is retried independently of this method's own retry.
       this.logger.error(
         `[WhatsApp FAIL] ${templateName} → ${to}: ${err?.response?.data?.error?.message || err.message}`,
       );

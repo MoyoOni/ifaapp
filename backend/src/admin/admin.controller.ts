@@ -23,6 +23,7 @@ import { AdminMarketplaceService } from './admin-marketplace.service';
 import { AdminAcademyService } from './admin-academy.service';
 import { AdminTrustScoreService } from './admin-trust-score.service';
 import { AdminPlatformSettingsService } from './admin-platform-settings.service';
+import { OutboxService } from '../outbox/outbox.service';
 import { GdprService } from '../gdpr/gdpr.service';
 import { AuditInterceptor } from './interceptors/audit.interceptor';
 import { ApproveVerificationDto } from './dto/approve-verification.dto';
@@ -59,12 +60,30 @@ export class AdminController {
     private readonly trustScoreService: AdminTrustScoreService,
     private readonly platformSettingsService: AdminPlatformSettingsService,
     private readonly gdprService: GdprService,
+    private readonly outboxService: OutboxService,
   ) {}
 
   @Get('stats')
   @Roles(UserRole.ADMIN)
   async getPlatformStats(@CurrentUser() currentUser: CurrentUserPayload) {
     return this.adminService.getPlatformStats(currentUser);
+  }
+
+  // P1-01: admin visibility into in-flight/stuck/failed outbox events.
+  @Get('outbox-events')
+  @Roles(UserRole.ADMIN)
+  async getOutboxEvents(@Query('status') status?: string, @Query('limit') limit?: string) {
+    return this.outboxService.getOutboxEvents({
+      status,
+      limit: limit ? parseInt(limit, 10) : undefined,
+    });
+  }
+
+  @Post('outbox-events/:id/retry')
+  @Roles(UserRole.ADMIN)
+  async retryOutboxEvent(@Param('id') id: string) {
+    await this.outboxService.retryEvent(id);
+    return { success: true };
   }
 
   @Get('subscription-stats')

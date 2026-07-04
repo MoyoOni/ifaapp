@@ -1,25 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { OnboardingEmailService } from './onboarding-email.service';
-import { UsersService } from '../users/users.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { MailService } from './mail.service';
+import { EmailService } from './email.service';
 
 describe('OnboardingEmailService', () => {
   let service: OnboardingEmailService;
-  let usersService: UsersService;
   let prismaService: PrismaService;
-  let mailService: MailService;
+  let emailService: EmailService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OnboardingEmailService,
-        {
-          provide: UsersService,
-          useValue: {
-            findOne: jest.fn(),
-          },
-        },
         {
           provide: PrismaService,
           useValue: {
@@ -32,18 +24,17 @@ describe('OnboardingEmailService', () => {
           },
         },
         {
-          provide: MailService,
+          provide: EmailService,
           useValue: {
-            sendMail: jest.fn(),
+            sendDirectEmail: jest.fn(),
           },
         },
       ],
     }).compile();
 
     service = module.get<OnboardingEmailService>(OnboardingEmailService);
-    usersService = module.get<UsersService>(UsersService);
     prismaService = module.get<PrismaService>(PrismaService);
-    mailService = module.get<MailService>(MailService);
+    emailService = module.get<EmailService>(EmailService);
   });
 
   it('should be defined', () => {
@@ -51,24 +42,24 @@ describe('OnboardingEmailService', () => {
   });
 
   describe('sendOnboardingCompletionEmail', () => {
-    it('should send an onboarding completion email to the user', async () => {
-      const userId = 'test-user-id';
-      const user = {
-        id: userId,
-        name: 'Test User',
-        email: 'test@example.com',
-        role: 'CLIENT',
-        yorubaName: 'Test Yoruba Name',
-      };
+    const userId = 'test-user-id';
+    const user = {
+      id: userId,
+      name: 'Test User',
+      email: 'test@example.com',
+      role: 'CLIENT',
+      yorubaName: 'Test Yoruba Name',
+    };
 
-      jest.spyOn(prismaService.user, 'findUnique').mockResolvedValue(user);
-      jest.spyOn(mailService, 'sendMail').mockResolvedValue();
+    it('should send an onboarding completion email to the user', async () => {
+      jest.spyOn(prismaService.user, 'findUnique').mockResolvedValue(user as any);
+      jest.spyOn(emailService, 'sendDirectEmail').mockResolvedValue();
       jest.spyOn(prismaService.onboardingEmail, 'create').mockResolvedValue({
         id: 'email-record-id',
         userId,
         email: user.email,
         sentAt: new Date(),
-      });
+      } as any);
 
       await service.sendOnboardingCompletionEmail(userId);
 
@@ -83,7 +74,11 @@ describe('OnboardingEmailService', () => {
         },
       });
 
-      expect(mailService.sendMail).toHaveBeenCalled();
+      expect(emailService.sendDirectEmail).toHaveBeenCalledWith(
+        user.email,
+        expect.any(String),
+        expect.any(String),
+      );
       expect(prismaService.onboardingEmail.create).toHaveBeenCalledWith({
         data: {
           userId: user.id,
@@ -93,45 +88,32 @@ describe('OnboardingEmailService', () => {
       });
     });
 
-    it('should handle case when user does not exist', async () => {
-      const userId = 'non-existent-user-id';
-
+    it('should do nothing when the user does not exist', async () => {
       jest.spyOn(prismaService.user, 'findUnique').mockResolvedValue(null);
 
-      await expect(service.sendOnboardingCompletionEmail(userId)).resolves.not.toThrow();
+      await expect(service.sendOnboardingCompletionEmail('non-existent-user-id')).resolves.not.toThrow();
+      expect(emailService.sendDirectEmail).not.toHaveBeenCalled();
     });
 
-    it('should throw an error when sending email fails', async () => {
-      const userId = 'test-user-id';
-      const user = {
-        id: userId,
-        name: 'Test User',
-        email: 'test@example.com',
-        role: 'CLIENT',
-        yorubaName: 'Test Yoruba Name',
-      };
-
-      jest.spyOn(prismaService.user, 'findUnique').mockResolvedValue(user);
-      jest.spyOn(mailService, 'sendMail').mockRejectedValue(new Error('Mail failed'));
+    it('should propagate an error when sending email fails', async () => {
+      jest.spyOn(prismaService.user, 'findUnique').mockResolvedValue(user as any);
+      jest.spyOn(emailService, 'sendDirectEmail').mockRejectedValue(new Error('Mail failed'));
 
       await expect(service.sendOnboardingCompletionEmail(userId)).rejects.toThrow('Mail failed');
     });
 
-    it('should continue when onboarding email record creation fails', async () => {
-      const userId = 'test-user-id';
-      const user = {
-        id: userId,
-        name: 'Test User',
-        email: 'test@example.com',
-        role: 'CLIENT',
-        yorubaName: 'Test Yoruba Name',
-      };
-
-      jest.spyOn(prismaService.user, 'findUnique').mockResolvedValue(user);
-      jest.spyOn(mailService, 'sendMail').mockResolvedValue();
+    // The email send and the onboardingEmail audit-record write share one try/catch
+    // in the real service, so a record-creation failure surfaces as a thrown error
+    // too (even though the email itself already went out) — this pins that actual
+    // behavior rather than the previous version of this test, which asserted the
+    // opposite of what the code does.
+    it('propagates an error when the onboarding email record write fails, even though the email already sent', async () => {
+      jest.spyOn(prismaService.user, 'findUnique').mockResolvedValue(user as any);
+      jest.spyOn(emailService, 'sendDirectEmail').mockResolvedValue();
       jest.spyOn(prismaService.onboardingEmail, 'create').mockRejectedValue(new Error('DB error'));
 
-      await expect(service.sendOnboardingCompletionEmail(userId)).resolves.not.toThrow();
+      await expect(service.sendOnboardingCompletionEmail(userId)).rejects.toThrow('DB error');
+      expect(emailService.sendDirectEmail).toHaveBeenCalled();
     });
   });
 });

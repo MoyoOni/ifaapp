@@ -169,7 +169,8 @@ export class EnhancedMetricsService {
       
       this.logger.debug(`Recorded HTTP request: ${method} ${path} -> ${status} (${durationMs}ms)`);
     } catch (error) {
-      this.logger.error(`Failed to record HTTP request metrics: ${error.message}`, error.stack);
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error(`Failed to record HTTP request metrics: ${err.message}`, err.stack);
     }
   }
   
@@ -182,7 +183,8 @@ export class EnhancedMetricsService {
       this.httpRequestInFlight.inc({ method, route });
       this.logger.debug(`Started request: ${method} ${path}`);
     } catch (error) {
-      this.logger.error(`Failed to record request start: ${error.message}`, error.stack);
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error(`Failed to record request start: ${err.message}`, err.stack);
     }
   }
   
@@ -195,7 +197,8 @@ export class EnhancedMetricsService {
       this.httpRequestInFlight.dec({ method, route });
       this.logger.debug(`Finished request: ${method} ${path}`);
     } catch (error) {
-      this.logger.error(`Failed to record request end: ${error.message}`, error.stack);
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error(`Failed to record request end: ${err.message}`, err.stack);
     }
   }
   
@@ -210,7 +213,8 @@ export class EnhancedMetricsService {
       );
       this.logger.debug(`Recorded service duration: ${service}.${operation} (${durationMs}ms)`);
     } catch (error) {
-      this.logger.error(`Failed to record service duration: ${error.message}`, error.stack);
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error(`Failed to record service duration: ${err.message}`, err.stack);
     }
   }
   
@@ -222,7 +226,8 @@ export class EnhancedMetricsService {
       this.register.resetMetrics();
       this.logger.log('All metrics have been reset');
     } catch (error) {
-      this.logger.error(`Failed to clear metrics: ${error.message}`, error.stack);
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error(`Failed to clear metrics: ${err.message}`, err.stack);
     }
   }
 

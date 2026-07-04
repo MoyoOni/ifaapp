@@ -10,8 +10,6 @@ export class PerformanceMonitoringMiddleware implements NestMiddleware {
     const startTime = Date.now();
     const method = req.method;
     const url = req.url;
-    const userAgent = req.get('User-Agent') || 'unknown';
-    const ip = req.ip || req.connection.remoteAddress || 'unknown';
 
     // Record the start of the request
     this.metricsService.recordRequestStart(method, url);
@@ -21,21 +19,12 @@ export class PerformanceMonitoringMiddleware implements NestMiddleware {
       const duration = Date.now() - startTime;
       const statusCode = res.statusCode;
 
-      // Record various metrics
-      this.metricsService.recordRequest({
-        method,
-        url,
-        statusCode,
-        duration,
-        userAgent,
-        ip,
-      });
-
-      // Record duration histogram
-      this.metricsService.recordResponseTime(method, url, duration);
-
-      // Record status code count
-      this.metricsService.recordStatusCode(statusCode);
+      // recordHttpRequest covers the requests-total counter, the duration
+      // histogram, and the status-code counter in one call — the three
+      // separate methods this used to call (recordRequest/recordResponseTime/
+      // recordStatusCode) never existed on EnhancedMetricsService.
+      this.metricsService.recordHttpRequest(method, url, statusCode, duration);
+      this.metricsService.recordRequestEnd(method, url);
     });
 
     next();

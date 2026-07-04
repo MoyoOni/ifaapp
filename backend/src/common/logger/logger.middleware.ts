@@ -15,33 +15,32 @@ export class LoggerMiddleware implements NestMiddleware {
     req.headers['x-request-id'] = requestId;
 
     // Log the incoming request
-    this.structuredLogger.logRequest({
-      level: 'info',
-      message: 'Incoming request',
-      timestamp: new Date().toISOString(),
+    this.structuredLogger.log('Incoming request', {
       requestId,
       method,
-      url: originalUrl,
-      userAgent: headers['user-agent'],
+      path: originalUrl,
+      userAgent: Array.isArray(headers['user-agent']) ? headers['user-agent'][0] : headers['user-agent'],
       ip,
     });
 
     // Capture response status and time when response finishes
     res.on('finish', () => {
       const duration = Date.now() - startTime;
-      
-      this.structuredLogger.logRequest({
-        level: res.statusCode >= 400 ? 'warn' : 'info',
-        message: 'Request completed',
-        timestamp: new Date().toISOString(),
+      const logContext = {
         requestId,
         method,
-        url: originalUrl,
+        path: originalUrl,
         statusCode: res.statusCode,
         durationMs: duration,
-        userAgent: headers['user-agent'],
+        userAgent: Array.isArray(headers['user-agent']) ? headers['user-agent'][0] : headers['user-agent'],
         ip,
-      });
+      };
+
+      if (res.statusCode >= 400) {
+        this.structuredLogger.warn('Request completed', logContext);
+      } else {
+        this.structuredLogger.log('Request completed', logContext);
+      }
     });
 
     next();

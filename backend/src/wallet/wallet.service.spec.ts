@@ -5,10 +5,12 @@ import { WalletService } from './wallet.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CurrencyService } from '../payments/currency.service';
 import { NotificationService } from '../notifications/notification.service';
+import { OutboxService } from '../outbox/outbox.service';
 
 describe('WalletService', () => {
   let service: WalletService;
   let prisma: PrismaService;
+  let outboxService: { createEventInTx: jest.Mock };
 
   const mockUser = {
     id: 'user-1',
@@ -94,11 +96,18 @@ describe('WalletService', () => {
             createNotification: jest.fn(),
           },
         },
+        {
+          provide: OutboxService,
+          useValue: {
+            createEventInTx: jest.fn().mockResolvedValue({ id: 'outbox-1' }),
+          },
+        },
       ],
     }).compile();
 
     service = module.get<WalletService>(WalletService);
     prisma = module.get<PrismaService>(PrismaService);
+    outboxService = module.get<OutboxService>(OutboxService) as any;
 
     jest.clearAllMocks();
   });
@@ -254,6 +263,48 @@ describe('WalletService', () => {
         where: { id: 'wallet-1' },
         data: { balance: { increment: 5000 } },
       });
+    });
+
+    it('does not write an outbox event when notifyOnDeposit is not provided', async () => {
+      await service.depositFunds('user-1', depositDto, mockUser);
+
+      expect(outboxService.createEventInTx).not.toHaveBeenCalled();
+    });
+
+    it('writes an outbox event atomically inside the transaction when notifyOnDeposit is provided (P1-01)', async () => {
+      const notifyOnDeposit = {
+        eventType: 'PAYMENT_RECEIVED',
+        payload: { userId: 'user-1', amount: 5000, currency: 'NGN', reference: 'ref-123' },
+      };
+
+      await service.depositFunds('user-1', depositDto, mockUser, undefined, notifyOnDeposit);
+
+      expect(outboxService.createEventInTx).toHaveBeenCalledWith(
+        txClient,
+        expect.objectContaining({
+          aggregateType: 'WALLET',
+          aggregateId: 'wallet-1',
+          eventType: 'PAYMENT_RECEIVED',
+          payload: notifyOnDeposit.payload,
+        }),
+      );
+    });
+
+    it('does not write a duplicate outbox event on an idempotent replay', async () => {
+      const existingTxn = { ...mockTransaction, wallet: mockWallet };
+      (prisma.transaction.findUnique as jest.Mock).mockResolvedValue(existingTxn);
+
+      await service.depositFunds(
+        'user-1',
+        depositDto,
+        mockUser,
+        'idem-key-123',
+        { eventType: 'PAYMENT_RECEIVED', payload: { userId: 'user-1' } },
+      );
+
+      // The idempotency check returns early, before the $transaction (and
+      // therefore before the outbox write) is ever reached.
+      expect(outboxService.createEventInTx).not.toHaveBeenCalled();
     });
 
     it('should reject deposit to another users wallet', async () => {

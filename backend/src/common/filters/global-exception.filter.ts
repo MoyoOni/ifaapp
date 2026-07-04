@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { mapToStandardError } from '../errors';
+import { captureException } from '../../sentry';
 
 /**
  * Global exception filter that catches ALL unhandled exceptions and maps them
@@ -41,6 +42,18 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       );
     } else if (status >= 400) {
       this.logger.warn(`${request.method} ${request.url} ${status} — ${message}`);
+    }
+
+    // Report unexpected (5xx / non-HttpException) failures to Sentry — this
+    // filter previously had no Sentry reporting at all (a separate,
+    // near-duplicate SentryExceptionFilter did, but neither filter was ever
+    // registered via app.useGlobalFilters()).
+    if (status >= 500 || !(exception instanceof HttpException)) {
+      captureException(exception, {
+        url: request.url,
+        method: request.method,
+        requestId,
+      });
     }
 
     const rawResponse = exception instanceof HttpException ? exception.getResponse() : message;

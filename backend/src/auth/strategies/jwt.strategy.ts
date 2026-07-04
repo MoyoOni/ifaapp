@@ -42,6 +42,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     return {
       id: user.id,
+      // CurrentUserPayload declares `sub` as a required field (and several
+      // ownership checks — UsersController.findOne/update, ClientSessionNotesService —
+      // read currentUser.sub, not currentUser.id) but this never set it, so
+      // `sub` was always undefined and every one of those self-access checks
+      // always failed for non-admins. This was a real, silent authorization bug.
+      sub: user.id,
       email: user.email,
       role: user.role,
       verified: user.verified,

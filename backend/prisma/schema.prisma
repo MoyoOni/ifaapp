@@ -14,6 +14,7 @@ model User {
   phone                     String?                  @unique
   whatsappNumber            String?
   whatsappEnabled           Boolean                  @default(true)
+  fcmTokens                 String[]                 @default([])
   googleId                  String?                  @unique
   name                      String
   passwordHash              String
@@ -1071,6 +1072,28 @@ model Transaction {
   @@index([userId, type])
   @@index([userId, status])
   @@index([walletId, createdAt])
+}
+
+// P1-01: Outbox pattern. Written inside the same $transaction as a wallet/
+// payment balance change so the "notify the user" intent is never lost even
+// if the actual WhatsApp/email/push send fails or the process crashes right
+// after the DB commit — a separate poller (OutboxPollerService) picks up
+// PENDING rows and dispatches them through a retryable BullMQ queue.
+model OutboxEvent {
+  id            String    @id @default(uuid())
+  aggregateType String // e.g. 'WALLET', 'PAYMENT'
+  aggregateId   String // e.g. walletId or transactionId
+  eventType     String // e.g. 'PAYMENT_RECEIVED', 'REFUND_PROCESSED'
+  payload       Json
+  status        String    @default("PENDING") // PENDING | PROCESSING | PROCESSED | DEAD_LETTER
+  retries       Int       @default(0)
+  lastError     String?
+  createdAt     DateTime  @default(now())
+  processedAt   DateTime?
+
+  @@index([status])
+  @@index([aggregateType, aggregateId])
+  @@index([createdAt])
 }
 
 model Dispute {

@@ -3,7 +3,9 @@ import { UsersService } from './users.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CacheManagerService } from '../cache/cache-manager.service';
 import { SearchService } from '../search/search.service';
-import { NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { OnboardingEmailService } from '../notifications/onboarding-email.service';
+import { ImageOptimizationService } from '../images/image-optimization.service';
+import { NotFoundException, UnauthorizedException, BadRequestException } from '@nestjs/common';
 
 describe('UsersService', () => {
     let service: UsersService;
@@ -36,6 +38,14 @@ describe('UsersService', () => {
                 {
                     provide: SearchService,
                     useValue: { search: jest.fn(), index: jest.fn(), triggerIndexing: jest.fn() },
+                },
+                {
+                    provide: OnboardingEmailService,
+                    useValue: { sendOnboardingCompletionEmail: jest.fn().mockResolvedValue(undefined) },
+                },
+                {
+                    provide: ImageOptimizationService,
+                    useValue: { optimizeImage: jest.fn(), optimizeAndUpload: jest.fn() },
                 },
             ],
         }).compile();
@@ -201,7 +211,7 @@ describe('UsersService', () => {
 
             const result = await service.findOne('user-1');
 
-            expect(result).toEqual(mockUser);
+            expect(result).toEqual({ ...mockUser, hasPassword: false });
             expect(prisma.user.findUnique).toHaveBeenCalledWith({
                 where: { id: 'user-1' },
                 include: expect.objectContaining({
@@ -255,8 +265,8 @@ describe('UsersService', () => {
             expect(result).toEqual(mockUpdatedUser);
             expect(prisma.user.update).toHaveBeenCalledWith({
                 where: { id: 'user-1' },
-                data: expect.objectContaining(dto),
-                select: expect.any(Object),
+                data: expect.objectContaining({ ...dto, updatedAt: expect.any(Date) }),
+                include: expect.any(Object),
             });
         });
 
@@ -284,11 +294,11 @@ describe('UsersService', () => {
             expect(result).toEqual(mockUpdatedUser);
         });
 
-        it('should throw ForbiddenException when user tries to update another user', async () => {
+        it('should throw UnauthorizedException when user tries to update another user', async () => {
             const dto = { name: 'Hacked Name' };
 
             await expect(service.update('user-2', dto, currentUser)).rejects.toThrow(
-                ForbiddenException,
+                UnauthorizedException,
             );
             await expect(service.update('user-2', dto, currentUser)).rejects.toThrow(
                 'You can only update your own profile',
@@ -310,9 +320,9 @@ describe('UsersService', () => {
             expect(prisma.user.update).toHaveBeenCalled();
         });
 
-        it('should allow clearing Yoruba name with null or empty string', async () => {
+        it('passes an empty-string yorubaName straight through to the update (no clearing conversion)', async () => {
             const dto = { yorubaName: '' };
-            const mockUpdatedUser = { id: 'user-1', yorubaName: null };
+            const mockUpdatedUser = { id: 'user-1', yorubaName: '' };
 
             mockPrismaService.user.update.mockResolvedValue(mockUpdatedUser);
 
@@ -320,13 +330,21 @@ describe('UsersService', () => {
 
             expect(prisma.user.update).toHaveBeenCalledWith({
                 where: { id: 'user-1' },
-                data: expect.objectContaining({ yorubaName: undefined }),
-                select: expect.any(Object),
+                data: expect.objectContaining({ yorubaName: '' }),
+                include: expect.any(Object),
             });
         });
     });
 
     describe('completeOnboarding', () => {
+        const currentUser = {
+            id: 'user-1',
+            sub: 'user-1',
+            email: 'user@example.com',
+            role: 'CLIENT' as any,
+            verified: true,
+        };
+
         it('should mark user as onboarded with provided data', async () => {
             const onboardingData = {
                 culturalLevel: 'BEGINNER',
@@ -343,7 +361,7 @@ describe('UsersService', () => {
 
             mockPrismaService.user.update.mockResolvedValue(mockUpdatedUser);
 
-            const result = await service.completeOnboarding('user-1', onboardingData);
+            const result = await service.completeOnboarding('user-1', onboardingData, currentUser);
 
             expect(result).toEqual(mockUpdatedUser);
             expect(prisma.user.update).toHaveBeenCalledWith({
@@ -351,6 +369,7 @@ describe('UsersService', () => {
                 data: {
                     ...onboardingData,
                     hasOnboarded: true,
+                    updatedAt: expect.any(Date),
                 },
             });
         });
@@ -364,9 +383,15 @@ describe('UsersService', () => {
 
             mockPrismaService.user.update.mockResolvedValue(mockUpdatedUser);
 
-            const result = await service.completeOnboarding('user-1', {});
+            const result = await service.completeOnboarding('user-1', {}, currentUser);
 
             expect(result.hasOnboarded).toBe(true);
+        });
+
+        it('throws UnauthorizedException when completing onboarding for another user', async () => {
+            await expect(
+                service.completeOnboarding('user-2', {}, currentUser),
+            ).rejects.toThrow(UnauthorizedException);
         });
     });
 });

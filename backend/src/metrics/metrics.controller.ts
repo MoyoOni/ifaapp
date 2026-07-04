@@ -1,4 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { EnhancedMetricsService } from './enhanced-metrics.service';
 
 /**

@@ -11,6 +11,7 @@ import * as request from 'supertest';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from '../src/app.module';
+import { GlobalExceptionFilter } from '../src/common/filters/global-exception.filter';
 import { UserRole } from '@ile-ase/common';
 
 describe('Authentication Critical-Path Tests (V4-807)', () => {
@@ -37,6 +38,9 @@ describe('Authentication Critical-Path Tests (V4-807)', () => {
       forbidNonWhitelisted: false,
       transform: true,
     }));
+    // Matches main.ts's real bootstrap — without this, error responses use
+    // Nest's bare default shape instead of { success: false, error: {...} }.
+    app.useGlobalFilters(new GlobalExceptionFilter());
 
     await app.init();
 
@@ -52,7 +56,7 @@ describe('Authentication Critical-Path Tests (V4-807)', () => {
   describe('AC-1: Registration Flow', () => {
     it('should register new user with valid credentials', async () => {
       const response = await request(app.getHttpServer())
-        .post('/api/auth/register')
+        .post('/auth/register')
         .send({
           email: TEST_EMAIL,
           password: TEST_PASSWORD,
@@ -61,17 +65,21 @@ describe('Authentication Critical-Path Tests (V4-807)', () => {
         })
         .expect(201);
 
-      expect(response.body).toHaveProperty('id');
-      expect(response.body).toHaveProperty('email', TEST_EMAIL);
-      expect(response.body).toHaveProperty('name', TEST_NAME);
-      expect(response.body).toHaveProperty('role', UserRole.CLIENT);
+      // AuthService.register() returns { user: {...}, accessToken, refreshToken }
+      expect(response.body).toHaveProperty('user');
+      expect(response.body.user).toHaveProperty('id');
+      expect(response.body.user).toHaveProperty('email', TEST_EMAIL);
+      expect(response.body.user).toHaveProperty('name', TEST_NAME);
+      expect(response.body.user).toHaveProperty('role', UserRole.CLIENT);
+      expect(response.body).toHaveProperty('accessToken');
+      expect(response.body).toHaveProperty('refreshToken');
 
-      createdUserId = response.body.id;
+      createdUserId = response.body.user.id;
     });
 
     it('should reject registration with invalid email', async () => {
       const response = await request(app.getHttpServer())
-        .post('/api/auth/register')
+        .post('/auth/register')
         .send({
           email: 'not-an-email',
           password: TEST_PASSWORD,
@@ -85,7 +93,7 @@ describe('Authentication Critical-Path Tests (V4-807)', () => {
 
     it('should reject registration with weak password', async () => {
       const response = await request(app.getHttpServer())
-        .post('/api/auth/register')
+        .post('/auth/register')
         .send({
           email: `weak-${Date.now()}@example.com`,
           password: 'weak',
@@ -99,7 +107,7 @@ describe('Authentication Critical-Path Tests (V4-807)', () => {
 
     it('should reject duplicate email registration', async () => {
       const response = await request(app.getHttpServer())
-        .post('/api/auth/register')
+        .post('/auth/register')
         .send({
           email: TEST_EMAIL,
           password: TEST_PASSWORD,
@@ -115,25 +123,25 @@ describe('Authentication Critical-Path Tests (V4-807)', () => {
   describe('AC-1: Login Flow', () => {
     it('should login with correct credentials', async () => {
       const response = await request(app.getHttpServer())
-        .post('/api/auth/login')
+        .post('/auth/login')
         .send({
           email: TEST_EMAIL,
           password: TEST_PASSWORD,
         })
         .expect(200);
 
-      expect(response.body).toHaveProperty('access_token');
-      expect(response.body).toHaveProperty('refresh_token');
+      expect(response.body).toHaveProperty('accessToken');
+      expect(response.body).toHaveProperty('refreshToken');
       expect(response.body).toHaveProperty('user');
       expect(response.body.user).toHaveProperty('id', createdUserId);
 
-      accessToken = response.body.access_token;
-      refreshToken = response.body.refresh_token;
+      accessToken = response.body.accessToken;
+      refreshToken = response.body.refreshToken;
     });
 
     it('should reject login with wrong password', async () => {
       const response = await request(app.getHttpServer())
-        .post('/api/auth/login')
+        .post('/auth/login')
         .send({
           email: TEST_EMAIL,
           password: 'WrongPassword123!',
@@ -145,7 +153,7 @@ describe('Authentication Critical-Path Tests (V4-807)', () => {
 
     it('should reject login with non-existent email', async () => {
       const response = await request(app.getHttpServer())
-        .post('/api/auth/login')
+        .post('/auth/login')
         .send({
           email: 'nonexistent@example.com',
           password: TEST_PASSWORD,
@@ -159,24 +167,32 @@ describe('Authentication Critical-Path Tests (V4-807)', () => {
   describe('AC-1: Token Refresh Flow', () => {
     it('should issue new access token with valid refresh token', async () => {
       const response = await request(app.getHttpServer())
-        .post('/api/auth/refresh')
+        .post('/auth/refresh')
         .send({
-          refresh_token: refreshToken,
+          refreshToken: refreshToken,
         })
         .expect(200);
 
-      expect(response.body).toHaveProperty('access_token');
-      expect(response.body.access_token).not.toBe(accessToken);
+      expect(response.body).toHaveProperty('accessToken');
+      // JWT `iat` has second-level granularity, so a refresh issued within the
+      // same second as the original login can legitimately produce a
+      // byte-identical token — asserting string inequality here is flaky.
+      // What actually matters is that the new token is valid and still
+      // resolves to the same user.
+      const decoded = jwtService.verify(response.body.accessToken, {
+        secret: configService.get<string>('JWT_SECRET'),
+      });
+      expect(decoded.sub).toBe(createdUserId);
 
       // Update token for subsequent tests
-      accessToken = response.body.access_token;
+      accessToken = response.body.accessToken;
     });
 
     it('should reject refresh with invalid token', async () => {
       const response = await request(app.getHttpServer())
-        .post('/api/auth/refresh')
+        .post('/auth/refresh')
         .send({
-          refresh_token: 'invalid.token.here',
+          refreshToken: 'invalid.token.here',
         })
         .expect(401);
 
@@ -191,9 +207,9 @@ describe('Authentication Critical-Path Tests (V4-807)', () => {
       );
 
       const response = await request(app.getHttpServer())
-        .post('/api/auth/refresh')
+        .post('/auth/refresh')
         .send({
-          refresh_token: expiredToken,
+          refreshToken: expiredToken,
         })
         .expect(401);
 
@@ -204,7 +220,7 @@ describe('Authentication Critical-Path Tests (V4-807)', () => {
   describe('AC-2: Protected Endpoint Access', () => {
     it('should access protected endpoint with valid token', async () => {
       const response = await request(app.getHttpServer())
-        .get('/api/auth/me')
+        .get(`/users/${createdUserId}`)
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(200);
 
@@ -214,7 +230,7 @@ describe('Authentication Critical-Path Tests (V4-807)', () => {
 
     it('should reject access without token', async () => {
       const response = await request(app.getHttpServer())
-        .get('/api/auth/me')
+        .get(`/users/${createdUserId}`)
         .expect(401);
 
       expect(response.body).toHaveProperty('error');
@@ -222,7 +238,7 @@ describe('Authentication Critical-Path Tests (V4-807)', () => {
 
     it('should reject access with invalid token', async () => {
       const response = await request(app.getHttpServer())
-        .get('/api/auth/me')
+        .get(`/users/${createdUserId}`)
         .set('Authorization', 'Bearer invalid.token.here')
         .expect(401);
 
@@ -236,7 +252,7 @@ describe('Authentication Critical-Path Tests (V4-807)', () => {
       );
 
       const response = await request(app.getHttpServer())
-        .get('/api/auth/me')
+        .get(`/users/${createdUserId}`)
         .set('Authorization', `Bearer ${expiredToken}`)
         .expect(401);
 
@@ -245,7 +261,7 @@ describe('Authentication Critical-Path Tests (V4-807)', () => {
 
     it('should reject access with malformed header', async () => {
       const response = await request(app.getHttpServer())
-        .get('/api/auth/me')
+        .get(`/users/${createdUserId}`)
         .set('Authorization', 'InvalidFormat')
         .expect(401);
 
@@ -257,7 +273,7 @@ describe('Authentication Critical-Path Tests (V4-807)', () => {
     it('should allow client role to access client endpoints', async () => {
       // Assuming a client-only endpoint exists
       const response = await request(app.getHttpServer())
-        .get('/api/users/me')
+        .get(`/users/${createdUserId}`)
         .set('Authorization', `Bearer ${accessToken}`);
 
       // Should not be 403 (forbidden)
@@ -285,7 +301,7 @@ describe('Authentication Critical-Path Tests (V4-807)', () => {
 
       // 1. Register
       const registerRes = await request(app.getHttpServer())
-        .post('/api/auth/register')
+        .post('/auth/register')
         .send({
           email: sessionEmail,
           password: TEST_PASSWORD,
@@ -294,23 +310,23 @@ describe('Authentication Critical-Path Tests (V4-807)', () => {
         })
         .expect(201);
 
-      const userId = registerRes.body.id;
+      const userId = registerRes.body.user.id;
 
       // 2. Login
       const loginRes = await request(app.getHttpServer())
-        .post('/api/auth/login')
+        .post('/auth/login')
         .send({
           email: sessionEmail,
           password: TEST_PASSWORD,
         })
         .expect(200);
 
-      let token = loginRes.body.access_token;
-      const refToken = loginRes.body.refresh_token;
+      let token = loginRes.body.accessToken;
+      const refToken = loginRes.body.refreshToken;
 
       // 3. Access protected endpoint
       const meRes1 = await request(app.getHttpServer())
-        .get('/api/auth/me')
+        .get(`/users/${userId}`)
         .set('Authorization', `Bearer ${token}`)
         .expect(200);
 
@@ -318,15 +334,15 @@ describe('Authentication Critical-Path Tests (V4-807)', () => {
 
       // 4. Refresh token
       const refreshRes = await request(app.getHttpServer())
-        .post('/api/auth/refresh')
-        .send({ refresh_token: refToken })
+        .post('/auth/refresh')
+        .send({ refreshToken: refToken })
         .expect(200);
 
-      token = refreshRes.body.access_token;
+      token = refreshRes.body.accessToken;
 
       // 5. Access protected endpoint with new token
       const meRes2 = await request(app.getHttpServer())
-        .get('/api/auth/me')
+        .get(`/users/${userId}`)
         .set('Authorization', `Bearer ${token}`)
         .expect(200);
 

@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { UsersService } from '../users/users.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from './email.service'; // Using the existing EmailService
 
@@ -8,7 +7,6 @@ export class OnboardingEmailService {
   private readonly logger = new Logger(OnboardingEmailService.name);
 
   constructor(
-    private usersService: UsersService,
     private prisma: PrismaService,
     private emailService: EmailService, // Renamed to reflect actual service
   ) {}

@@ -439,6 +439,12 @@ export class PaymentsService {
         // idempotency key derived from the gateway reference (EMG-03) so a
         // Paystack retry-on-non-2xx, or a replayed payload, returns the
         // already-processed transaction instead of crediting the wallet twice.
+        // The "payment received" notification is now written as an outbox
+        // event in the SAME transaction as the balance credit (P1-01) instead
+        // of being sent here as a separate, unprotected, fire-and-forget call
+        // — depositFunds only reaches its transaction body (and therefore
+        // only writes the outbox row) on a genuinely new deposit, never on an
+        // idempotent replay, so this can't double-notify either.
         const result = await this.walletService.depositFunds(
           userId,
           {
@@ -447,12 +453,16 @@ export class PaymentsService {
             reference,
           },
           undefined,
-          reference ? `paystack:${reference}` : undefined
+          reference ? `paystack:${reference}` : undefined,
+          {
+            eventType: 'PAYMENT_RECEIVED',
+            payload: { userId, amount: amountDecimal, currency, reference },
+          }
         );
 
         // If depositFunds returned an already-processed transaction (idempotent
-        // replay — EMG-03), skip re-marking it and skip re-notifying the user;
-        // only a genuinely new deposit reaches this branch.
+        // replay — EMG-03), skip re-marking it; only a genuinely new deposit
+        // reaches this branch.
         if (result.transaction && !result.transaction.webhookReceived) {
           await this.prisma.transaction.update({
             where: { id: result.transaction.id },
@@ -461,13 +471,6 @@ export class PaymentsService {
               webhookReceivedAt: new Date(),
             },
           });
-
-          // HC-206.2: Email notification for payment received
-          this.notificationService
-            .notifyPaymentReceived(userId, amountDecimal, currency, reference)
-            .catch((err) =>
-              this.logger.warn(`Payment received email failed: ${(err as Error).message}`)
-            );
         } else if (result.transaction) {
           this.logger.log(
             `Paystack webhook replay for reference ${reference} — deposit already processed, skipping`
@@ -522,7 +525,10 @@ export class PaymentsService {
 
         // Credit wallet (no currentUser for webhook calls). Keyed by an
         // idempotency key derived from the gateway reference (EMG-03) — see
-        // the matching comment in handlePaystackWebhook.
+        // the matching comment in handlePaystackWebhook. The "payment
+        // received" notification is written as an outbox event in the same
+        // transaction as the balance credit (P1-01) rather than sent here as
+        // a separate, unprotected call — see the matching comment there too.
         const result = await this.walletService.depositFunds(
           userId,
           {
@@ -531,7 +537,11 @@ export class PaymentsService {
             reference,
           },
           undefined,
-          reference ? `flutterwave:${reference}` : undefined
+          reference ? `flutterwave:${reference}` : undefined,
+          {
+            eventType: 'PAYMENT_RECEIVED',
+            payload: { userId, amount, currency, reference },
+          }
         );
 
         if (result.transaction && !result.transaction.webhookReceived) {
@@ -542,13 +552,6 @@ export class PaymentsService {
               webhookReceivedAt: new Date(),
             },
           });
-
-          // HC-206.2: Email notification for payment received
-          this.notificationService
-            .notifyPaymentReceived(userId, amount, currency, reference)
-            .catch((err) =>
-              this.logger.warn(`Payment received email failed: ${(err as Error).message}`)
-            );
         } else if (result.transaction) {
           this.logger.log(
             `Flutterwave webhook replay for reference ${reference} — deposit already processed, skipping`
