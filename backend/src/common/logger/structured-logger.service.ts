@@ -22,6 +22,7 @@ export interface LogContext {
 @Injectable({ scope: Scope.TRANSIENT })
 export class StructuredLoggerService implements LoggerService {
   private readonly logger = console; // In production, this would likely be replaced with a more sophisticated logger like Winston
+  private persistentContext: LogContext = {};
 
   constructor(
     @Inject(REQUEST) private readonly request?: Request,
@@ -88,17 +89,19 @@ export class StructuredLoggerService implements LoggerService {
       environment: process.env.NODE_ENV || 'development',
     };
 
-    // Add request context if available
+    // Add request context if available, layering: request defaults ->
+    // persistent context from child() -> this call's own context (most specific wins)
     if (this.request) {
       logEntry.context = {
         method: this.request.method,
         url: this.request.url,
         ip: this.request.ip,
         userAgent: this.request.get('User-Agent'),
+        ...this.persistentContext,
         ...context,
       };
     } else {
-      logEntry.context = context;
+      logEntry.context = { ...this.persistentContext, ...context };
     }
 
     // Add correlation IDs if present in headers
@@ -128,11 +131,12 @@ export class StructuredLoggerService implements LoggerService {
   }
 
   /**
-   * Creates a child logger with additional context
+   * Creates a child logger that includes the given context on every
+   * subsequent log call, merged under this instance's own persistent context.
    */
   child(context: LogContext): StructuredLoggerService {
     const childLogger = new StructuredLoggerService(this.request, this.sentryService);
-    // We could enhance this to carry forward context
+    childLogger.persistentContext = { ...this.persistentContext, ...context };
     return childLogger;
   }
 }

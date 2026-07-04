@@ -1,7 +1,6 @@
 import {
   Injectable,
   NotFoundException,
-  ForbiddenException,
   BadRequestException,
   UnauthorizedException,
   Logger,
@@ -182,12 +181,13 @@ export class UsersService {
     }
 
     // Strip sensitive fields before caching and returning
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    /* eslint-disable @typescript-eslint/no-unused-vars */
     const {
       passwordHash: _ph,
       emailVerificationToken: _evt,
       ...safeUser
     } = user as Record<string, unknown> & typeof user;
+    /* eslint-enable @typescript-eslint/no-unused-vars */
 
     // Expose whether the account has a password (Google-only accounts don't)
     // Add personalAwo data to the response if this is the user's own profile
@@ -438,6 +438,14 @@ export class UsersService {
     // Authorization: users can only update their own profile
     if (currentUser.id !== id && currentUser.role !== 'ADMIN') {
       throw new UnauthorizedException('You can only update your own profile');
+    }
+
+    if (dto.yorubaName) {
+      const validation = validateYorubaName(dto.yorubaName);
+      if (!validation.valid) {
+        throw new BadRequestException(validation.error);
+      }
+      dto.yorubaName = normalizeYorubaText(dto.yorubaName);
     }
 
     // If avatar is being updated, optimize it first

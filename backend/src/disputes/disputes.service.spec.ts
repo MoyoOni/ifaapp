@@ -7,7 +7,6 @@ import { NotFoundException, ForbiddenException } from '@nestjs/common';
 describe('DisputesService', () => {
   let service: DisputesService;
   let prisma: PrismaService;
-  let walletService: WalletService;
 
   const mockPrismaService = {
     dispute: {
@@ -58,7 +57,6 @@ describe('DisputesService', () => {
 
     service = module.get<DisputesService>(DisputesService);
     prisma = module.get<PrismaService>(PrismaService);
-    walletService = module.get<WalletService>(WalletService);
 
     jest.clearAllMocks();
   });

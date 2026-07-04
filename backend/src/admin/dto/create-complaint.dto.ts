@@ -1,4 +1,4 @@
-import { IsString, IsEnum, IsOptional, IsUUID } from 'class-validator';
+import { IsString, IsEnum, IsUUID } from 'class-validator';
 
 export enum ComplaintReason {
   NO_SHOW = 'no-show',

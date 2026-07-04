@@ -5,7 +5,6 @@ import { JwtAuthGuard } from '../shared/guards/auth.guard';
 import { RolesGuard } from '../shared/guards/roles.guard';
 import { Roles } from '@/shared/decorators/roles.decorator';
 import { UserRole } from '@common/enums/user-role.enum';
-import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 
 @Controller('analytics')
 @UseGuards(JwtAuthGuard)

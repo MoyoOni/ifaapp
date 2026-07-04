@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AcademyService } from './academy.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CertificateService } from '../certificates/certificate.service';
-import { NotFoundException, ForbiddenException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 
 jest.mock('@ile-ase/common', () => {
   const actual = jest.requireActual('@ile-ase/common');
@@ -17,7 +17,6 @@ jest.mock('@ile-ase/common', () => {
 
 describe('AcademyService', () => {
   let service: AcademyService;
-  let prisma: PrismaService;
 
   const mockPrismaService = {
     course: {
@@ -62,7 +61,6 @@ describe('AcademyService', () => {
     }).compile();
 
     service = module.get<AcademyService>(AcademyService);
-    prisma = module.get<PrismaService>(PrismaService);
     jest.clearAllMocks();
   });
 

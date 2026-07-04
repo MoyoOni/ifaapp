@@ -10,7 +10,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { CreateAppointmentDto, PaymentMethod, PreferredMethod } from './dto/create-appointment.dto';
-import { EscrowType, EscrowStatus } from '@ile-ase/common';
+import { EscrowType } from '@ile-ase/common';
 import { WhatsAppService } from '../whatsapp';
 
 const mockPrismaService = {

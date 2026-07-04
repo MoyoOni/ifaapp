@@ -44,10 +44,6 @@ jest.mock('flutterwave-node-v3', () => {
 
 describe('PaymentsService', () => {
   let service: PaymentsService;
-  let configService: ConfigService;
-  let prismaService: PrismaService;
-  let walletService: WalletService;
-  let locationService: LocationService;
 
   const mockConfigService = {
     get: jest.fn((key: string) => {
@@ -116,10 +112,6 @@ describe('PaymentsService', () => {
     }).compile();
 
     service = module.get<PaymentsService>(PaymentsService);
-    configService = module.get<ConfigService>(ConfigService);
-    prismaService = module.get<PrismaService>(PrismaService);
-    walletService = module.get<WalletService>(WalletService);
-    locationService = module.get<LocationService>(LocationService);
   });
 
   describe('initializePayment', () => {

@@ -130,6 +130,42 @@ describe('AdminUsersService', () => {
     });
   });
 
+  describe('getInactivePractitioners', () => {
+    it('filters by the actual daysInactive cutoff via userSessions.lastSeenAt', async () => {
+      const findManySpy = jest.spyOn(prisma.user, 'findMany').mockResolvedValue([]);
+
+      await service.getInactivePractitioners(mockAdminUser, 14);
+
+      expect(findManySpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            role: 'BABALAWO',
+            OR: expect.arrayContaining([
+              { userSessions: { none: {} } },
+              expect.objectContaining({
+                userSessions: { every: { lastSeenAt: { lt: expect.any(Date) } } },
+              }),
+            ]),
+          }),
+        })
+      );
+    });
+
+    it('uses a different cutoff for a different daysInactive value', async () => {
+      const findManySpy = jest.spyOn(prisma.user, 'findMany').mockResolvedValue([]);
+
+      await service.getInactivePractitioners(mockAdminUser, 14);
+      const cutoff14 = (findManySpy.mock.calls[0][0] as any).where.OR[1].userSessions.every
+        .lastSeenAt.lt;
+
+      await service.getInactivePractitioners(mockAdminUser, 30);
+      const cutoff30 = (findManySpy.mock.calls[1][0] as any).where.OR[1].userSessions.every
+        .lastSeenAt.lt;
+
+      expect(cutoff30.getTime()).toBeLessThan(cutoff14.getTime());
+    });
+  });
+
   describe('getVerificationApplications', () => {
     it('should return verification applications for admin user', async () => {
       const mockApplications = [

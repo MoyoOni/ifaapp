@@ -1,7 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { MessageInterceptorService } from './message-interceptor.service';
-import { BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { User, Message } from '@prisma/client';
 import { MessageStatus } from '@common/enums/message-status.enum';
 import { UserRole } from '@common/enums/user-role.enum';

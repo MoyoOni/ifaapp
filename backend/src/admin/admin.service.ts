@@ -1,10 +1,4 @@
-import {
-  Injectable,
-  ForbiddenException,
-  NotFoundException,
-  BadRequestException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { VerificationStage } from '@ile-ase/common';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
@@ -315,8 +309,8 @@ export class AdminService {
     return this.adminUsersService.getRecentLogins(limit);
   }
 
-  async getInactivePractitioners(currentUser: any, _daysInactive: number): Promise<any[]> {
-    return this.adminUsersService.getInactivePractitioners(currentUser, _daysInactive);
+  async getInactivePractitioners(currentUser: any, daysInactive: number): Promise<any[]> {
+    return this.adminUsersService.getInactivePractitioners(currentUser, daysInactive);
   }
 
   async getLifecycleAnalytics() {

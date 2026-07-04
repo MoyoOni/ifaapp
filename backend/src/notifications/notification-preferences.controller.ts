@@ -2,7 +2,6 @@ import { Controller, Get, Patch, Body, UseGuards } from '@nestjs/common';
 import { NotificationPreferencesService } from './notification-preferences.service';
 import { JwtAuthGuard } from '../shared/guards/auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { User } from '@prisma/client';
 
 interface UpdateNotificationPreferencesDto {
   emailBooking?: boolean;
@@ -29,7 +28,7 @@ export class NotificationPreferencesController {
   }
 
   @Patch()
-  async update(@CurrentUser() user: any, @Body() data: any) {
+  async update(@CurrentUser() user: any, @Body() data: UpdateNotificationPreferencesDto) {
     return this.notificationPreferencesService.updatePreferences(user.sub, data);
   }
 }

@@ -4,7 +4,6 @@ import { PrismaService } from '../prisma/prisma.service';
 
 describe('DashboardService', () => {
   let service: DashboardService;
-  let prisma: PrismaService;
 
   const mockPrismaService = {
     appointment: {
@@ -63,7 +62,6 @@ describe('DashboardService', () => {
     }).compile();
 
     service = module.get<DashboardService>(DashboardService);
-    prisma = module.get<PrismaService>(PrismaService);
 
     jest.clearAllMocks();
   });

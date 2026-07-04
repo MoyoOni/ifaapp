@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 
 @Injectable()
 export class PractitionerAnalyticsService {
@@ -41,7 +40,7 @@ export class PractitionerAnalyticsService {
             clientId: true,
           },
         })
-        .then((result) => {
+        .then(() => {
           // To get unique clients, we need a separate query
           return this.prisma.$queryRaw<Array<{ count: bigint }>>`
           SELECT COUNT(DISTINCT "clientId")::int AS count

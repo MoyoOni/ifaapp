@@ -1,4 +1,4 @@
-import { IsArray, IsBoolean, IsInt, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsArray, IsBoolean, IsInt, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateQuizQuestionDto {
   @IsString()

@@ -1,7 +1,6 @@
 /**
  * PB-201.1: Unit tests for mapToStandardError (standard error response).
  */
-import { HttpStatus } from '@nestjs/common';
 import { mapToStandardError } from './map-to-standard-error';
 import { ErrorCode } from './error-codes';
 

@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import { PractitionerAnalyticsService } from './practitioner-analytics.service';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../shared/guards/auth.guard';

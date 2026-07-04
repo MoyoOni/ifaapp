@@ -1,7 +1,6 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
-import { User } from '@prisma/client';
 import * as admin from 'firebase-admin';
 
 @Injectable()

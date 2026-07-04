@@ -1,11 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TutorsService } from './tutors.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { NotFoundException } from '@nestjs/common';
 
 describe('TutorsService', () => {
   let service: TutorsService;
-  let prisma: PrismaService;
 
   const mockPrismaService = {
     tutor: {
@@ -36,7 +34,6 @@ describe('TutorsService', () => {
     }).compile();
 
     service = module.get<TutorsService>(TutorsService);
-    prisma = module.get<PrismaService>(PrismaService);
     jest.clearAllMocks();
   });
 

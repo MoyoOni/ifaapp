@@ -1,17 +1,8 @@
 import { Test } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { RecommendationsService } from './recommendations.service';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
-import {
-  User,
-  BabalawoProfile,
-  Temple,
-  Circle,
-  ForumThread,
-  Event,
-  Product,
-  Appointment,
-} from '@prisma/client';
+import { NotFoundException } from '@nestjs/common';
+import { User, Appointment } from '@prisma/client';
 import { UserRole } from '@common/enums/user-role.enum';
 
 describe('RecommendationsService', () => {

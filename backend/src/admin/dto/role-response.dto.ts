@@ -1,5 +1,3 @@
-import { UserRole } from '@common/enums/user-role.enum';
-
 export class RoleResponseDto {
   id!: string;
   name!: string;

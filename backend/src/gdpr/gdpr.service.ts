@@ -342,7 +342,7 @@ export class GdprService {
       // Perform the deletion/anonymization
       const result = await this.prisma.$transaction(async (tx) => {
         // Anonymize user record instead of deleting it completely for legal reasons
-        const updatedUser = await tx.user.update({
+        await tx.user.update({
           where: { id: userId },
           data: {
             email: `deleted_${Date.now()}_${userId}@example.com`,

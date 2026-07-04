@@ -1,6 +1,5 @@
-import { Injectable, LoggerService } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import * as winston from 'winston';
-import * as Transport from 'winston-transport';
 import { utilities as nestWinstonModuleUtilities } from 'nest-winston';
 
 @Injectable()

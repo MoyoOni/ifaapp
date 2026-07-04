@@ -24,7 +24,6 @@ import { ImageModule } from './images/image.module';
 import { MarketplaceModule } from './marketplace/marketplace.module';
 import { MessagingModule } from './messaging/messaging.module';
 import { MetricsModule } from './metrics/metrics.module';
-import { LoggerModule } from './common/logger/logger.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PaymentsModule } from './payments/payments.module';
 import { GuidancePlansModule } from './prescriptions/prescriptions.module';

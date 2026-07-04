@@ -6,7 +6,7 @@ import { SearchService } from '../search/search.service';
 import { WhatsAppService } from '../whatsapp/whatsapp.service';
 import { WalletService } from '../wallet/wallet.service';
 import { ReleaseTier } from '../wallet/dto/release-escrow.dto';
-import { NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { ForbiddenException, BadRequestException } from '@nestjs/common';
 
 jest.mock('@ile-ase/common', () => {
   const actual = jest.requireActual('@ile-ase/common');
@@ -29,7 +29,6 @@ jest.mock('@ile-ase/common', () => {
 describe('MarketplaceService', () => {
   let service: MarketplaceService;
   let prisma: PrismaService;
-  let orderNotificationService: OrderNotificationService;
 
   const mockPrismaService = {
     user: {
@@ -133,7 +132,6 @@ describe('MarketplaceService', () => {
 
     service = module.get<MarketplaceService>(MarketplaceService);
     prisma = module.get<PrismaService>(PrismaService);
-    orderNotificationService = module.get<OrderNotificationService>(OrderNotificationService);
 
     jest.clearAllMocks();
   });

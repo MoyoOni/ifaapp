@@ -2,15 +2,12 @@ import {
   Controller,
   Get,
   Post,
-  Put,
-  Delete,
   Param,
   Body,
   UseGuards,
   HttpCode,
   HttpStatus,
   Logger,
-  Query,
 } from '@nestjs/common';
 import { PushNotificationService } from './push-notification.service';
 import { JwtAuthGuard } from '../shared/guards/auth.guard';

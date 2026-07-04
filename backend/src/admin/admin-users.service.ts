@@ -605,9 +605,20 @@ export class AdminUsersService {
 
   // ADM-028: Cultural Orientation Quiz Management
 
-  async getInactivePractitioners(currentUser: any, _daysInactive: number): Promise<any[]> {
+  // _currentUser: not used for authorization here -- this is only ever called
+  // internally (by the AdminService facade and the inactive-practitioner cron
+  // monitor, which passes a synthetic system user), never from a controller
+  // route directly.
+  async getInactivePractitioners(_currentUser: any, daysInactive: number): Promise<any[]> {
+    const cutoff = new Date(Date.now() - daysInactive * 24 * 60 * 60 * 1000);
     return this.prisma.user.findMany({
-      where: { role: 'BABALAWO' },
+      where: {
+        role: 'BABALAWO',
+        OR: [
+          { userSessions: { none: {} } },
+          { userSessions: { every: { lastSeenAt: { lt: cutoff } } } },
+        ],
+      },
       select: { id: true, name: true, email: true, isOnLeave: true, isDeactivated: true },
     });
   }

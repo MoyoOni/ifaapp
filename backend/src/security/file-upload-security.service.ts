@@ -1,4 +1,4 @@
-import { Injectable, Logger, BadRequestException, HttpStatus } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()

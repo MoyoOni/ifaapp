@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Registry, Counter, Histogram, Gauge, collectDefaultMetrics } from 'prom-client';
-import { normalizePath } from './metrics.service';
 
 const UUID_REGEX = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
 const SHORT_ID_REGEX = /[a-z0-9]{20,}/gi;

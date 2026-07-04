@@ -2,11 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { AdminService } from './admin.service';
 import { PrismaService } from '../prisma/prisma.service';
-import {
-  NotificationService,
-  NotificationType,
-  NotificationCategory,
-} from '../notifications/notification.service';
+import { NotificationService } from '../notifications/notification.service';
 
 @Injectable()
 export class InactivePractitionerMonitorService implements OnModuleInit {

@@ -62,7 +62,7 @@ export class SentryInitializerService implements OnModuleInit {
           new sentry.Integrations.Http({ tracing: true }),
           new sentry.Integrations.Prisma({ client: 'prisma' }),
         ],
-        beforeSend(event: any, hint: any) {
+        beforeSend(event: any, _hint: any) {
           // Filter events by country if possible
           if (event.user?.country === 'NG' || !event.user?.country) {
             return event;

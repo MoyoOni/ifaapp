@@ -21,10 +21,7 @@ jest.mock('bcrypt', () => ({
 
 describe('AuthService', () => {
   let service: AuthService;
-  let prisma: PrismaService;
   let jwtService: JwtService;
-  let configService: ConfigService;
-  let messagingService: MessagingService;
 
   const mockPrismaService = {
     user: {
@@ -40,14 +37,6 @@ describe('AuthService', () => {
       create: jest.fn().mockResolvedValue({}),
     },
     $transaction: jest.fn().mockImplementation(async (fn) => fn()),
-  };
-
-  const mockJwtService = {
-    signAsync: jest.fn(),
-  };
-
-  const mockConfigService = {
-    get: jest.fn(),
   };
 
   const mockMessagingService = {
@@ -92,10 +81,7 @@ describe('AuthService', () => {
     }).compile();
 
     service = module.get<AuthService>(AuthService);
-    prisma = module.get<PrismaService>(PrismaService);
     jwtService = module.get<JwtService>(JwtService);
-    configService = module.get<ConfigService>(ConfigService);
-    messagingService = module.get<MessagingService>(MessagingService);
   });
 
   describe('register', () => {
@@ -204,7 +190,6 @@ describe('AuthService', () => {
       };
 
       const accessToken = 'accessToken123';
-      const refreshToken = 'refreshToken123';
 
       (mockPrismaService.user.findUnique as jest.Mock).mockResolvedValue(user);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);

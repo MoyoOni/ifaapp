@@ -5,7 +5,7 @@ import { CacheManagerService } from '../cache/cache-manager.service';
 import { SearchService } from '../search/search.service';
 import { OnboardingEmailService } from '../notifications/onboarding-email.service';
 import { ImageOptimizationService } from '../images/image-optimization.service';
-import { NotFoundException, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { NotFoundException, UnauthorizedException } from '@nestjs/common';
 
 describe('UsersService', () => {
   let service: UsersService;

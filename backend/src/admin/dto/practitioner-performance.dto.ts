@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsDate, IsOptional, IsBoolean, IsEnum } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsEnum } from 'class-validator';
 
 export class PractitionerPerformanceDto {
   @IsString()

@@ -8,7 +8,6 @@ import { UserRole } from '@ile-ase/common';
 
 describe('GuidancePlansService', () => {
   let service: GuidancePlansService;
-  let prisma: any;
 
   const mockPrismaService = {
     guidancePlan: {
@@ -57,7 +56,6 @@ describe('GuidancePlansService', () => {
     }).compile();
 
     service = module.get<GuidancePlansService>(GuidancePlansService);
-    prisma = module.get<PrismaService>(PrismaService);
 
     jest.clearAllMocks();
   });

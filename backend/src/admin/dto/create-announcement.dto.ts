@@ -1,13 +1,4 @@
-import {
-  IsString,
-  IsEnum,
-  IsOptional,
-  IsBoolean,
-  IsDate,
-  IsEmail,
-  ValidateNested,
-  IsArray,
-} from 'class-validator';
+import { IsString, IsEnum, IsOptional, IsBoolean, IsDate, IsArray } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export enum AnnouncementType {

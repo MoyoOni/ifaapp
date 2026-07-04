@@ -6,7 +6,6 @@ import { PrismaService } from '../prisma/prisma.service';
 describe('HealthService', () => {
   let service: HealthService;
   let prisma: PrismaService;
-  let config: ConfigService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -36,7 +35,6 @@ describe('HealthService', () => {
 
     service = module.get<HealthService>(HealthService);
     prisma = module.get<PrismaService>(PrismaService);
-    config = module.get<ConfigService>(ConfigService);
   });
 
   it('should be defined', () => {

@@ -5,15 +5,13 @@ import {
   HttpHealthIndicator,
   TypeOrmHealthIndicator,
 } from '@nestjs/terminus';
-import { EnhancedMetricsService } from '../metrics/enhanced-metrics.service';
 
 @Controller('health')
 export class HealthController {
   constructor(
     private health: HealthCheckService,
     private http: HttpHealthIndicator,
-    private db: TypeOrmHealthIndicator,
-    private metricsService: EnhancedMetricsService
+    private db: TypeOrmHealthIndicator
   ) {}
 
   @Get()
@@ -24,13 +22,13 @@ export class HealthController {
       () => this.http.pingCheck('google', 'https://google.com'),
     ]);
 
-    // Add custom metrics to the health check
-    const metrics = await this.metricsService.getMetrics();
-
     return {
       ...healthCheckResult,
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
+      // Full Prometheus metrics are exposed separately at GET /metrics
+      // (metrics.controller.ts) -- not embedded here since raw
+      // exposition-format text doesn't belong in a JSON health response.
       metricsEndpoint: '/metrics',
     };
   }

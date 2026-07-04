@@ -5,7 +5,6 @@ import { ForbiddenException } from '@nestjs/common';
 
 describe('BabalawoClientService', () => {
   let service: BabalawoClientService;
-  let prisma: PrismaService;
 
   const mockPrismaService = {
     babalawoClient: {
@@ -31,7 +30,6 @@ describe('BabalawoClientService', () => {
     }).compile();
 
     service = module.get<BabalawoClientService>(BabalawoClientService);
-    prisma = module.get<PrismaService>(PrismaService);
     jest.clearAllMocks();
   });
 
