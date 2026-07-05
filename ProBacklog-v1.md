@@ -618,6 +618,20 @@ These fix the 🔴🔴 EXPLOITABLE NOW findings. They should be hotfixed directl
 - **Dependencies**: P3-09 (where the restyle-and-swap opportunity was flagged)
 - **Notes**: The relation-direction bug is the same shape as the Announcements (P3-10) and forum-moderation (P3-11) findings this session: code that looked authorized and correct, with a plausible-sounding check, that had simply never been exercised for real because nothing rendered the component that would have called it.
 
+### P3-14: Fix CI `cache-dependency-path` Mismatch for npm Workspaces
+- **Priority**: P3
+- **Status**: ✅ DONE
+- **Owner**: DevOps/Platform
+- **Story Points**: 1
+- **Description**: `.github/workflows/ci-cd.yml`'s three `actions/setup-node@v4` steps (`build-common`, `test-backend`, `test-frontend`) each pointed `cache-dependency-path` at a per-workspace lockfile (`common/package-lock.json`, `backend/package-lock.json`, `frontend/package-lock.json`) that doesn't exist — this repo uses npm workspaces (`root package.json`: `"workspaces": ["frontend", "backend", "common"]`), which hoists a single `package-lock.json` at the repo root. `actions/setup-node`'s cache step reads the file at the given path to compute the cache key; a nonexistent path causes that step to fail (or silently produce a useless/empty cache key, depending on action version), defeating the intended `npm` dependency caching without necessarily failing the whole job outright.
+- **Implementation notes**:
+  - Verified the diagnosis before changing anything: confirmed the root lockfile exists (1.1MB) and the workspaces array is exactly `["frontend", "backend", "common"]`; confirmed via `grep -n` that all three `cache-dependency-path` lines pointed at nonexistent per-workspace lockfiles at lines 46, 85, 153.
+  - Separately checked a second hypothesis that turned out to be a non-issue: each job also runs `cd <workspace> && npm ci`, and `npm ci` is normally strict about requiring a lockfile in its own working directory. Verified empirically (`cd backend && npm ci --dry-run`, exit 0) that npm's workspace-awareness resolves this correctly — running `npm ci` from within a registered workspace member's directory finds the hoisted root lockfile automatically, so those install steps were never broken. Only the cache-key path (which `actions/setup-node` reads directly, with no workspace-awareness of its own) was wrong.
+  - Fix: all three `cache-dependency-path` values changed to `'package-lock.json'` (the root lockfile), one line each in `build-common`, `test-backend`, `test-frontend`.
+  - Verified: `python3 -c "import yaml; yaml.safe_load(...)"` confirms the edited file is still valid YAML; `git diff --stat` confirms only the 3 intended lines changed (3 insertions, 3 deletions) with no other file touched.
+- **Dependencies**: none
+- **Notes**: Purely a CI caching-key fix — does not change what gets installed or how tests run, only whether `actions/setup-node`'s dependency cache step can find the right lockfile to hash.
+
 ---
 
 ## Sprint Metrics
