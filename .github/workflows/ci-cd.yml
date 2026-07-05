@@ -203,15 +203,15 @@ jobs:
         run: npm audit --workspaces --audit-level=high
         continue-on-error: true
 
-  # --- Deploy to EC2 (main branch only) ---
+  # --- Deploy to EC2 staging (july-2026-hardening-pass is the active branch; no `main` branch exists on this remote) ---
   deploy:
     needs: [test-backend, test-frontend]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/july-2026-hardening-pass' && github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy to production via SSH
+      - name: Deploy to staging via SSH
         uses: appleboy/ssh-action@v1
         with:
           # Secrets configured in GitHub repository settings
@@ -234,6 +234,6 @@ jobs:
       - name: Verify deployment
         if: success()
         run: |
-          echo "Deployment to production complete"
+          echo "Deployment to staging complete"
           echo "Commit: ${{ github.sha }}"
           echo "Branch: ${{ github.ref_name }}"
