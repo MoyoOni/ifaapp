@@ -6,7 +6,8 @@ import {
 } from './notification.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from './email.service';
-import { PushNotificationService } from './push-notification.service';
+import { PushNotificationService } from './push/push-notification.service';
+import { NotificationPreferencesService } from './notification-preferences.service';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
 
 describe('NotificationService', () => {
@@ -35,6 +36,15 @@ describe('NotificationService', () => {
     sendToUser: jest.fn(),
   };
 
+  // NotificationService's constructor requires this (not @Optional() like
+  // email/push) -- was never provided here at all, a pre-existing failure
+  // unrelated to the push-service rewiring, fixed incidentally while already
+  // touching this file. Defaults to allowing every channel so existing
+  // send-path tests keep their prior behavior.
+  const mockNotificationPreferencesService = {
+    isNotificationEnabled: jest.fn().mockResolvedValue(true),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -51,6 +61,10 @@ describe('NotificationService', () => {
           provide: PushNotificationService,
           useValue: mockPushNotificationService,
         },
+        {
+          provide: NotificationPreferencesService,
+          useValue: mockNotificationPreferencesService,
+        },
       ],
     }).compile();
 
@@ -60,6 +74,13 @@ describe('NotificationService', () => {
 
     // Clear all mocks before each test
     jest.clearAllMocks();
+    mockNotificationPreferencesService.isNotificationEnabled.mockResolvedValue(true);
+    // Default so tests that only assert on `create`'s call args (not its
+    // return value) still get an object with an `id` -- needed now that the
+    // sendPush branch reads `notification.id` (see notifyAppointmentDeclined/
+    // notifyAppointmentCancelled tests below, which set sendPush: true).
+    // Tests that care about the actual returned shape override this per-test.
+    mockPrismaService.notification.create.mockResolvedValue({ id: 'default-notification-id' });
   });
 
   describe('notifyAppointmentDeclined', () => {
@@ -224,6 +245,43 @@ describe('NotificationService', () => {
       expect(emailService.sendNotificationEmail).toHaveBeenCalledWith(dto.userId, mockNotification);
     });
 
+    it('should create a notification and send push when sendPush is true', async () => {
+      const dto = {
+        userId: 'user-1',
+        type: NotificationType.APPOINTMENT,
+        category: NotificationCategory.SUCCESS,
+        title: 'Booking Confirmed',
+        message: 'Your booking has been confirmed',
+        sendEmail: false,
+        sendPush: true,
+      };
+
+      const mockNotification = {
+        id: 'notif-push-1',
+        ...dto,
+        data: null,
+        read: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      mockPrismaService.notification.create.mockResolvedValue(mockNotification);
+      mockPushNotificationService.sendToUser.mockResolvedValue(undefined);
+
+      const result = await service.createNotification(dto);
+
+      expect(result).toEqual(mockNotification);
+      expect(mockPushNotificationService.sendToUser).toHaveBeenCalledWith({
+        userId: dto.userId,
+        title: dto.title,
+        body: dto.message,
+      });
+      expect(prisma.notification.update).toHaveBeenCalledWith({
+        where: { id: mockNotification.id },
+        data: { pushSent: true },
+      });
+    });
+
     it('should create a notification with custom data', async () => {
       const dto = {
         userId: 'user-1',
@@ -321,7 +379,10 @@ describe('NotificationService', () => {
 
       expect(result).toEqual(mockNotifications);
       expect(prisma.notification.findMany).toHaveBeenCalledWith({
-        where: { userId },
+        where: {
+          userId,
+          OR: [{ scheduledAt: null }, { scheduledAt: { lte: expect.any(Date) } }],
+        },
         orderBy: { createdAt: 'desc' },
         take: 50, // Added the take parameter
       });
@@ -348,7 +409,11 @@ describe('NotificationService', () => {
 
       expect(result).toEqual(mockUnreadNotifications);
       expect(prisma.notification.findMany).toHaveBeenCalledWith({
-        where: { userId, read: false },
+        where: {
+          userId,
+          OR: [{ scheduledAt: null }, { scheduledAt: { lte: expect.any(Date) } }],
+          read: false,
+        },
         orderBy: { createdAt: 'desc' },
         take: 50, // Added the take parameter
       });

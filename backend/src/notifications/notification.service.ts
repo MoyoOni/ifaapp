@@ -1,7 +1,7 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from './email.service';
-import { PushNotificationService } from './push-notification.service';
+import { PushNotificationService } from './push/push-notification.service';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
 import { NotificationPreferencesService } from './notification-preferences.service';
 
@@ -138,16 +138,21 @@ export class NotificationService {
         this.logger.warn('EmailService unavailable; cannot send email notification');
       }
 
-      // PushNotificationService.sendNotificationToUser currently fails to build
-      // (relies on a `fcmTokens` field that doesn't exist on the User model and a
-      // Firebase Messaging method that isn't in the installed SDK version) — this
-      // is the known, separate, not-yet-built FCM push feature (deferred backlog
-      // D8, ~12 SP), not something to paper over here. Log and skip rather than
-      // call into code that doesn't compile or falsely mark `pushSent: true`.
-      if (dto.sendPush) {
-        this.logger.warn(
-          'Push notifications are not yet available (FCM integration incomplete) — skipping'
-        );
+      // Send via push if requested. sendToUser never throws (it's designed as
+      // best-effort, matching email above) and doesn't report success/failure
+      // back to the caller, so pushSent just reflects that a send was attempted.
+      if (dto.sendPush && this.pushService) {
+        await this.pushService.sendToUser({
+          userId: dto.userId,
+          title: dto.title,
+          body: dto.message,
+        });
+        await this.prisma.notification.update({
+          where: { id: notification.id },
+          data: { pushSent: true },
+        });
+      } else if (dto.sendPush && !this.pushService) {
+        this.logger.warn('PushNotificationService unavailable; cannot send push notification');
       }
 
       return notification;

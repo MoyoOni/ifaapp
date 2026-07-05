@@ -117,10 +117,14 @@ export class SubscriptionsService {
             title: `Devoted renews in ${daysRemaining} ${dayWord}`,
             message: `Your Devoted plan renews on ${activeSub.endDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}. Your subscription will auto-renew.`,
           })
-          .catch(() => {});
+          .catch((err) =>
+            this.logger.error(`Failed to send renewal reminder notification to user ${userId}`, err)
+          );
         this.prisma.subscription
           .update({ where: { id: activeSub.id }, data: { reminderSent: true } })
-          .catch(() => {});
+          .catch((err) =>
+            this.logger.error(`Failed to set reminderSent for subscription ${activeSub.id}`, err)
+          );
       }
     }
 
@@ -310,7 +314,9 @@ export class SubscriptionsService {
         title: 'Welcome to Devoted!',
         message: `Your ${plan === 'ANNUAL' ? 'Annual' : 'Quarterly'} Devoted plan is now active. Access expires ${endDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}.`,
       })
-      .catch(() => {});
+      .catch((err) =>
+        this.logger.error(`Failed to send subscription-activated notification to user ${userId}`, err)
+      );
 
     // Send billing confirmation email (fire-and-forget)
     const user = await this.prisma.user.findUnique({
@@ -364,7 +370,9 @@ export class SubscriptionsService {
         message:
           'Your Devoted subscription payment could not be processed. Please update your payment method to keep your access.',
       })
-      .catch(() => {});
+      .catch((err) =>
+        this.logger.error(`Failed to send payment-failed notification to user ${userId}`, err)
+      );
 
     this.logger.warn(`Payment failed for user ${userId} — marked PAST_DUE`);
   }
@@ -396,7 +404,9 @@ export class SubscriptionsService {
         title: 'Devoted plan renewed',
         message: `Your ${plan === 'ANNUAL' ? 'Annual' : 'Quarterly'} Devoted plan has been renewed. Access until ${newEnd.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}.`,
       })
-      .catch(() => {});
+      .catch((err) =>
+        this.logger.error(`Failed to send renewal-success notification to user ${userId}`, err)
+      );
 
     this.logger.log(`Renewal successful for user ${userId} — extended to ${newEnd.toISOString()}`);
   }
@@ -491,7 +501,9 @@ export class SubscriptionsService {
         title: 'Devoted access granted',
         message: `Your Devoted ${plan === 'ANNUAL' ? 'Annual' : 'Quarterly'} plan has been activated by the Ilé Àṣẹ team.${reason ? ` Note: ${reason}` : ''} Access until ${endDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}.`,
       })
-      .catch(() => {});
+      .catch((err) =>
+        this.logger.error(`Failed to send admin-grant notification to user ${userId}`, err)
+      );
 
     this.logger.log(
       `Admin granted ${plan} Devoted to user ${userId}${reason ? ` — reason: ${reason}` : ''}`

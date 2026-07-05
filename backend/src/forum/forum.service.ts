@@ -98,7 +98,7 @@ export class ForumService {
           lastContributionDate: now,
         },
       })
-      .catch(() => {});
+      .catch((err) => this.logger.error(`Failed to update contribution streak for user ${userId}`, err));
   }
 
   private async isFirstResponderReply(
@@ -122,7 +122,7 @@ export class ForumService {
 
   async findAllCategories() {
     // Lazily ensure this week's Odù of the Week thread exists
-    this.ensureOduOfWeek().catch(() => {});
+    this.ensureOduOfWeek().catch((err) => this.logger.error('Failed to ensure Odù of the Week thread', err));
 
     return this.prisma.forumCategory.findMany({
       where: { isActive: true },
@@ -519,8 +519,12 @@ Share your reflections, questions, and experiences below. All levels welcome.
     });
 
     // XP: +10 for creating a thread
-    this.incrementXP(currentUser.id, 10).catch(() => {});
-    this.updateContributionStreak(currentUser.id).catch(() => {});
+    this.incrementXP(currentUser.id, 10).catch((err) =>
+      this.logger.error(`Failed to increment XP for user ${currentUser.id} (create thread)`, err)
+    );
+    this.updateContributionStreak(currentUser.id).catch((err) =>
+      this.logger.error(`Failed to update contribution streak for user ${currentUser.id}`, err)
+    );
 
     // Check if this is a circle suggestion category
     const isCircleSuggestionCategory =
@@ -570,7 +574,7 @@ Share your reflections, questions, and experiences below. All levels welcome.
             message,
             data,
           })
-          .catch(() => {});
+          .catch((err) => this.logger.error(`Failed to notify admin ${id}: ${title}`, err));
       });
     } catch {
       // Non-blocking; never interrupt the user flow
@@ -689,7 +693,9 @@ Share your reflections, questions, and experiences below. All levels welcome.
     ]);
 
     // XP: +3 for the post author receiving an acknowledgment
-    this.incrementXP(post.authorId, 3).catch(() => {});
+    this.incrementXP(post.authorId, 3).catch((err) =>
+      this.logger.error(`Failed to increment XP for user ${post.authorId} (acknowledgment)`, err)
+    );
 
     return { acknowledged: true, acknowledgeCount: post.acknowledgeCount + 1 };
   }
@@ -977,18 +983,28 @@ Share your reflections, questions, and experiences below. All levels welcome.
     }
 
     // XP: +5 for posting a reply; +25 bonus when thread hits 20 replies
-    this.incrementXP(currentUser.id, 5).catch(() => {});
-    this.updateContributionStreak(currentUser.id).catch(() => {});
+    this.incrementXP(currentUser.id, 5).catch((err) =>
+      this.logger.error(`Failed to increment XP for user ${currentUser.id} (reply)`, err)
+    );
+    this.updateContributionStreak(currentUser.id).catch((err) =>
+      this.logger.error(`Failed to update contribution streak for user ${currentUser.id}`, err)
+    );
     if (thread.postCount + 1 === 20) {
-      this.incrementXP(thread.authorId, 25).catch(() => {});
+      this.incrementXP(thread.authorId, 25).catch((err) =>
+        this.logger.error(`Failed to increment XP for user ${thread.authorId} (20-reply bonus)`, err)
+      );
     }
     // +15 bonus for thread author when thread hits 100 views
     if (thread.viewCount >= 100 && thread.postCount + 1 === 1) {
-      this.incrementXP(thread.authorId, 15).catch(() => {});
+      this.incrementXP(thread.authorId, 15).catch((err) =>
+        this.logger.error(`Failed to increment XP for user ${thread.authorId} (100-view bonus)`, err)
+      );
     }
 
     // Fire-and-forget: reply notifications + @mention notifications
-    this.sendForumNotifications(post, thread, currentUser).catch(() => {});
+    this.sendForumNotifications(post, thread, currentUser).catch((err) =>
+      this.logger.error(`Failed to send forum notifications for post ${post.id}`, err)
+    );
 
     // F9-602: Crisis detection
     const crisisDetected = this.detectCrisis(dto.content);
@@ -998,7 +1014,7 @@ Share your reflections, questions, and experiences below. All levels welcome.
           where: { id: post.id },
           data: { hasCrisisSignal: true },
         })
-        .catch(() => {});
+        .catch((err) => this.logger.error(`Failed to flag crisis signal on post ${post.id}`, err));
       this.notifyAdmins(
         'Post flagged for welfare review',
         `A forum post may contain a distress signal. Thread: "${thread.title}"`,
@@ -1058,7 +1074,7 @@ Share your reflections, questions, and experiences below. All levels welcome.
           where: { id: userId },
           data: { culturalLevel: newLevel },
         })
-        .catch(() => {});
+        .catch((err) => this.logger.error(`Failed to update cultural level for user ${userId}`, err));
     }
   }
 
@@ -1093,7 +1109,7 @@ Share your reflections, questions, and experiences below. All levels welcome.
           message: `${displayName} replied to "${thread.title}"`,
           data: { threadId: thread.id, postId: post.id },
         })
-        .catch(() => {});
+        .catch((err) => this.logger.error(`Failed to send reply notification to user ${userId}`, err));
     });
 
     // ── F9-302: Parse @mentions ───────────────────────────────────────────────
@@ -1122,7 +1138,7 @@ Share your reflections, questions, and experiences below. All levels welcome.
             message: `${displayName} mentioned you in "${thread.title}"`,
             data: { threadId: thread.id, postId: post.id },
           })
-          .catch(() => {});
+          .catch((err) => this.logger.error(`Failed to send mention notification to user ${userId}`, err));
       });
     }
   }
@@ -1276,7 +1292,12 @@ Share your reflections, questions, and experiences below. All levels welcome.
               : 'A moderator has reviewed a report about your post. Please review our community guidelines.',
           data: { postId: report.postId, threadId: report.post.threadId },
         })
-        .catch(() => {});
+        .catch((err) =>
+          this.logger.error(
+            `Failed to notify user ${report.post.authorId} of moderation action (${action})`,
+            err
+          )
+        );
     }
 
     return this.prisma.forumReport.update({
@@ -2025,7 +2046,9 @@ Share your reflections, questions, and experiences below. All levels welcome.
         message: `Someone appreciated your forum post with a ${currency} ${amount.toLocaleString()} tip!`,
         data: { postId, tipId: tip.id },
       })
-      .catch(() => {});
+      .catch((err) =>
+        this.logger.error(`Failed to notify user ${post.authorId} of received tip ${tip.id}`, err)
+      );
 
     return {
       success: true,
@@ -2461,7 +2484,9 @@ Share your reflections, questions, and experiences below. All levels welcome.
             'A community elder has raised a concern about the cultural accuracy of one of your posts. Please review and revise.',
           data: { postId: flag.postId, threadId: flag.post.threadId },
         })
-        .catch(() => {});
+        .catch((err) =>
+          this.logger.error(`Failed to notify user ${flag.post.authorId} of elder edit request`, err)
+        );
     }
 
     return this.prisma.elderFlag.update({
