@@ -45,11 +45,18 @@ export class ConsultationNotesService {
       throw new ForbiddenException('You can only access notes for clients you serve');
     }
 
-    // Verify that the client exists and belongs to this babalawo
+    // Verify that the client exists and belongs to this babalawo. `client`
+    // here is the seeker's own User record, so the relation to check is the
+    // "relationships where I am the client" side (clientsAsBabalawo,
+    // @relation("ClientRelationships")) -- not babalawoClients
+    // (@relation("BabalawoRelationships")), which is the reverse direction
+    // and would only be non-empty if this same user also separately serves
+    // as a babalawo for this exact babalawoId. Checking the wrong side made
+    // this 403 for essentially every real babalawo/client pair.
     const client = await this.prisma.user.findUnique({
       where: { id: clientId },
       include: {
-        babalawoClients: {
+        clientsAsBabalawo: {
           where: {
             babalawoId,
           },
@@ -57,7 +64,7 @@ export class ConsultationNotesService {
       },
     });
 
-    if (!client || client.babalawoClients.length === 0) {
+    if (!client || client.clientsAsBabalawo.length === 0) {
       throw new ForbiddenException('This client is not assigned to you');
     }
 

@@ -94,7 +94,12 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({ initialProfile, onSave, o
         </button>
       </div>
 
-      <form onSubmit={handleSubmit}>
+      {/* noValidate: the native type="email" constraint check runs before
+          React's onSubmit and silently cancels submission on an invalid
+          value (showing the browser's own tooltip, never this component's
+          custom error text below) -- this form's validateForm() is the only
+          validation that should ever run, consistently, for every field. */}
+      <form onSubmit={handleSubmit} noValidate>
         <div className="flex flex-col items-center mb-8">
           <div className="relative group">
             <div className="w-24 h-24 rounded-full bg-gray-200 dark:bg-gray-700 border-4 border-white dark:border-gray-600 shadow-md overflow-hidden">

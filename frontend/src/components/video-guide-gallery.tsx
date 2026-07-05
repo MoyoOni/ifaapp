@@ -75,8 +75,9 @@ const VideoGuideGallery: React.FC<VideoGuideGalleryProps> = ({
               />
               
               <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <button 
+                <button
                   className="bg-white/90 backdrop-blur-sm rounded-full p-3 hover:bg-white transition-all shadow-lg"
+                  aria-label={playingVideoId === video.id ? 'Pause' : 'Play'}
                   onClick={(e) => {
                     e.stopPropagation();
                     togglePlay(video.id);

@@ -69,7 +69,7 @@ const ConsultationNotesPanel: React.FC<ConsultationNotesPanelProps> = ({ babalaw
   const handleSubmitNewNote = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newNote.content.trim()) return;
-    
+
     createNoteMutation.mutate({
       title: newNote.title || undefined,
       content: newNote.content,
@@ -77,63 +77,59 @@ const ConsultationNotesPanel: React.FC<ConsultationNotesPanelProps> = ({ babalaw
   };
 
   const handleUpdateNote = (id: string) => {
-    updateNoteMutation.mutate({ 
-      id, 
-      data: { title: editContent.title || undefined, content: editContent.content } 
+    updateNoteMutation.mutate({
+      id,
+      data: { title: editContent.title || undefined, content: editContent.content },
     });
   };
 
   const formatDate = (dateString: string) => {
-    const options: Intl.DateTimeFormatOptions = { 
-      year: 'numeric', 
-      month: 'short', 
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
-  if (isLoading) return <div className="p-4">Loading notes...</div>;
-  if (isError) return <div className="p-4 text-red-500">Failed to load notes</div>;
+  if (isLoading) return <div className="bg-card rounded-xl border border-border p-4 text-muted-foreground text-sm">Loading notes...</div>;
+  if (isError) return <div className="bg-card rounded-xl border border-border p-4 text-destructive text-sm">Failed to load notes</div>;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+    <div className="bg-card rounded-xl border border-border shadow-sm p-6">
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+        <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
           <span className="text-lg">📓</span> Private Notes
         </h2>
-        <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+        <p className="text-sm text-muted-foreground mt-1">
           Only you can see these notes about your client.
         </p>
       </div>
 
       {/* Add new note form */}
-      <div className="mb-8 border rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
-        <h3 className="font-medium text-gray-900 dark:text-white mb-3">Add note for today</h3>
+      <div className="mb-8 border border-border rounded-xl p-4 bg-muted/40">
+        <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">Add note for today</p>
         <form onSubmit={handleSubmitNewNote}>
           <input
             type="text"
             placeholder="Title (optional)"
             value={newNote.title}
             onChange={(e) => setNewNote({ ...newNote, title: e.target.value })}
-            className="w-full p-2 mb-3 border rounded text-gray-900 dark:text-white bg-white dark:bg-gray-600"
+            className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm mb-3 outline-none focus:ring-2 focus:ring-primary/30"
           />
           <textarea
             placeholder="Note content..."
             value={newNote.content}
             onChange={(e) => setNewNote({ ...newNote, content: e.target.value })}
             rows={3}
-            className="w-full p-2 mb-3 border rounded text-gray-900 dark:text-white bg-white dark:bg-gray-600"
+            className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm mb-3 outline-none focus:ring-2 focus:ring-primary/30 resize-none"
           />
           <button
             type="submit"
             disabled={createNoteMutation.isPending || !newNote.content.trim()}
-            className={`px-4 py-2 rounded ${
-              createNoteMutation.isPending || !newNote.content.trim()
-                ? 'bg-gray-300 cursor-not-allowed'
-                : 'bg-blue-600 hover:bg-blue-700 text-white'
-            }`}
+            className="px-4 py-2 text-sm font-bold rounded-xl bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {createNoteMutation.isPending ? 'Saving...' : 'Add Note'}
           </button>
@@ -142,14 +138,14 @@ const ConsultationNotesPanel: React.FC<ConsultationNotesPanelProps> = ({ babalaw
 
       {/* Display existing notes */}
       <div>
-        <h3 className="font-medium text-gray-900 dark:text-white mb-3">Previous Notes</h3>
-        
+        <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">Previous Notes</p>
+
         {notes.length === 0 ? (
-          <p className="text-gray-600 dark:text-gray-400 italic">No notes yet. Add your first note above.</p>
+          <p className="text-muted-foreground italic text-sm">No notes yet. Add your first note above.</p>
         ) : (
           <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
             {notes.map((note) => (
-              <div key={note.id} className="border rounded-lg p-4 bg-white dark:bg-gray-700 shadow-sm">
+              <div key={note.id} className="border border-border/60 rounded-xl p-4 bg-card shadow-sm">
                 {editingNoteId === note.id ? (
                   // Edit mode
                   <div>
@@ -158,29 +154,28 @@ const ConsultationNotesPanel: React.FC<ConsultationNotesPanelProps> = ({ babalaw
                       value={editContent.title}
                       onChange={(e) => setEditContent({ ...editContent, title: e.target.value })}
                       placeholder="Title (optional)"
-                      className="w-full p-2 mb-3 border rounded text-gray-900 dark:text-white bg-white dark:bg-gray-600"
+                      className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm mb-3 outline-none focus:ring-2 focus:ring-primary/30"
                     />
                     <textarea
                       value={editContent.content}
                       onChange={(e) => setEditContent({ ...editContent, content: e.target.value })}
+                      placeholder="Note content..."
                       rows={4}
-                      className="w-full p-2 mb-3 border rounded text-gray-900 dark:text-white bg-white dark:bg-gray-600"
+                      className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm mb-3 outline-none focus:ring-2 focus:ring-primary/30 resize-none"
                     />
                     <div className="flex gap-2">
                       <button
+                        type="button"
                         onClick={() => handleUpdateNote(note.id)}
                         disabled={updateNoteMutation.isPending}
-                        className={`px-3 py-1 rounded ${
-                          updateNoteMutation.isPending
-                            ? 'bg-gray-300 cursor-not-allowed'
-                            : 'bg-green-600 hover:bg-green-700 text-white'
-                        }`}
+                        className="px-3 py-1.5 text-sm font-bold rounded-xl bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Save
                       </button>
                       <button
+                        type="button"
                         onClick={() => setEditingNoteId(null)}
-                        className="px-3 py-1 rounded bg-gray-300 hover:bg-gray-400 text-gray-800"
+                        className="px-3 py-1.5 text-sm font-medium rounded-xl bg-muted text-foreground hover:bg-muted/80 transition-colors"
                       >
                         Cancel
                       </button>
@@ -192,32 +187,34 @@ const ConsultationNotesPanel: React.FC<ConsultationNotesPanelProps> = ({ babalaw
                     <div className="flex justify-between items-start mb-2">
                       <div>
                         {note.title && (
-                          <h4 className="font-semibold text-gray-900 dark:text-white">{note.title}</h4>
+                          <h4 className="font-bold text-foreground">{note.title}</h4>
                         )}
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                        <p className="text-xs text-muted-foreground">
                           [{formatDate(note.createdAt)}]
                         </p>
                       </div>
                       <div className="flex gap-1">
                         <button
+                          type="button"
                           onClick={() => {
                             setEditingNoteId(note.id);
                             setEditContent({ title: note.title || '', content: note.content });
                           }}
-                          className="text-blue-600 hover:text-blue-800 text-sm"
+                          className="text-primary hover:text-primary/80 text-sm font-medium"
                         >
                           Edit
                         </button>
                         <button
+                          type="button"
                           onClick={() => deleteNoteMutation.mutate(note.id)}
                           disabled={deleteNoteMutation.isPending}
-                          className="text-red-600 hover:text-red-800 text-sm ml-2"
+                          className="text-destructive hover:text-destructive/80 text-sm font-medium ml-2"
                         >
                           {deleteNoteMutation.isPending ? 'Deleting...' : 'Delete'}
                         </button>
                       </div>
                     </div>
-                    <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+                    <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap text-muted-foreground">
                       {note.content}
                     </div>
                   </div>

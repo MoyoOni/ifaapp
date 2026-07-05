@@ -1,12 +1,45 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { UserPlus, Calendar, MessageCircle, Mail, MapPin, User, AlertCircle, Copy, Check, Clock } from 'lucide-react';
+import { UserPlus, Calendar, MessageCircle, Mail, MapPin, User, AlertCircle, Copy, Check, Clock, NotebookPen, ChevronDown, ChevronUp } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
-import { ConsultationNotepad } from '@/shared/components/consultation-notepad';
+import ConsultationNotesPanel from '@/features/consultations/consultation-notes-panel';
 import { ClientTimeline } from '@/shared/components/client-timeline';
 import { isDevModeActive } from '@/shared/utils/dev-mode';
+
+// Real, server-persisted note history (P3-13) -- replaces the old
+// localStorage-only ConsultationNotepad for this card, which had no history,
+// no editing, and never synced across devices. Wrapped in the same
+// collapsible shell ConsultationNotepad used, since ConsultationNotesPanel
+// always renders its full form+list with no collapse of its own and this
+// grid would otherwise get very tall with every seeker's notes expanded.
+const CollapsibleConsultationNotes: React.FC<{ babalawoId: string; clientId: string }> = ({
+  babalawoId,
+  clientId,
+}) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border-t border-border/50 mt-4 pt-3">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between text-xs font-bold text-muted-foreground hover:text-foreground transition-colors py-1"
+      >
+        <span className="flex items-center gap-1.5">
+          <NotebookPen size={13} />
+          Private Notes
+        </span>
+        {open ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+      </button>
+      {open && (
+        <div className="mt-2 animate-in slide-in-from-top-2 duration-200">
+          <ConsultationNotesPanel babalawoId={babalawoId} clientId={clientId} />
+        </div>
+      )}
+    </div>
+  );
+};
 
 interface Client {
   id: string;
@@ -212,11 +245,7 @@ const MySeekersView: React.FC = () => {
               )}
 
               {user?.id && (
-                <ConsultationNotepad
-                  babalawoId={user.id}
-                  clientId={client.id}
-                  clientName={client.name}
-                />
+                <CollapsibleConsultationNotes babalawoId={user.id} clientId={client.id} />
               )}
             </div>
           ))}

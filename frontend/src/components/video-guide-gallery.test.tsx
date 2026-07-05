@@ -70,7 +70,7 @@ describe('VideoGuideGallery', () => {
   });
 
   test('calls onVideoSelect when video is clicked', () => {
-    const mockOnVideoSelect = jest.fn();
+    const mockOnVideoSelect = vi.fn();
     render(<VideoGuideGallery videos={mockVideos} onVideoSelect={mockOnVideoSelect} />);
     
     const videoElement = screen.getByText('Introduction to Ifá');
@@ -82,15 +82,20 @@ describe('VideoGuideGallery', () => {
 
   test('toggles play state when play button is clicked', () => {
     render(<VideoGuideGallery videos={mockVideos} />);
-    
+
     // Initially no video should be playing
-    const playButtons = screen.getAllByLabelText(/play/i);
+    const playButtons = screen.getAllByLabelText('Play');
     expect(playButtons).toHaveLength(2);
-    
+
     // Click the first play button
     fireEvent.click(playButtons[0]);
-    
-    // TODO: Verify that the video player UI state changes
-    // This would require more complex testing setup for the actual video player
+
+    // The clicked video's button swaps to Pause; the other video is unaffected
+    expect(screen.getByLabelText('Pause')).toBeInTheDocument();
+    expect(screen.getAllByLabelText('Play')).toHaveLength(1);
+
+    // Clicking it again toggles back to Play
+    fireEvent.click(screen.getByLabelText('Pause'));
+    expect(screen.getAllByLabelText('Play')).toHaveLength(2);
   });
 });

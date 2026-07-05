@@ -73,9 +73,7 @@ describe('ProfileEditor', () => {
     });
   });
 
-  it.skip('validates email format on submit', async () => {
-    // Skipping this test for now due to timeout issues
-    // Need to investigate why the email validation error isn't appearing as expected
+  it('validates email format on submit', async () => {
     render(
       <ProfileEditor 
         initialProfile={mockProfile} 
@@ -87,7 +85,7 @@ describe('ProfileEditor', () => {
     // Get the email input field and change its value to an invalid email
     const emailInput = screen.getByDisplayValue(mockProfile.email);
     fireEvent.change(emailInput, { target: { value: 'invalid-email' } });
-    
+
     // Submit the form
     const saveButton = screen.getByText('Save Changes');
     fireEvent.click(saveButton);
