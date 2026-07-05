@@ -2,7 +2,7 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main, v4/quality]
+    branches: [main, v4/quality, july-2026-hardening-pass]
   pull_request:
     branches: [main]
 
