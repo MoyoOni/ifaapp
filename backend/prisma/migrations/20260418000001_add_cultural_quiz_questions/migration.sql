@@ -16,7 +16,7 @@ CREATE INDEX "cultural_quiz_questions_isActive_idx" ON "cultural_quiz_questions"
 CREATE INDEX "cultural_quiz_questions_sortOrder_idx" ON "cultural_quiz_questions"("sortOrder");
 
 -- Alter PlatformSettings: add quizPassThreshold
-ALTER TABLE "platform_settings" ADD COLUMN IF NOT EXISTS "quizPassThreshold" INTEGER NOT NULL DEFAULT 2;
+ALTER TABLE "PlatformSettings" ADD COLUMN IF NOT EXISTS "quizPassThreshold" INTEGER NOT NULL DEFAULT 2;
 
 -- Alter users: add culturalQuizFailCount
 ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "culturalQuizFailCount" INTEGER NOT NULL DEFAULT 0;
