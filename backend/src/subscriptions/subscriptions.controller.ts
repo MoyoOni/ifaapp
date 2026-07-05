@@ -16,9 +16,10 @@ import { SubscriptionsService } from './subscriptions.service';
 import { InitiateSubscriptionDto } from './dto/initiate-subscription.dto';
 import { AdminGrantSubscriptionDto, WinBackDto } from './dto/admin-subscription.dto';
 import { JwtAuthGuard } from '../shared/guards/auth.guard';
-import { RolesGuard } from '../shared/guards/roles.guard';
+import { RolesGuard, AdminRoles } from '../auth/guards/roles.guard';
 import { Roles } from '@/shared/decorators/roles.decorator';
 import { UserRole } from '@common/enums/user-role.enum';
+import { AdminSubRole } from '@common/enums/admin-sub-role.enum';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 
 // Extend Request to include rawBody (enabled in main.ts via { rawBody: true })
@@ -87,6 +88,7 @@ export class SubscriptionsController {
   @Post('admin/grant')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
+  @AdminRoles(AdminSubRole.SUPER, AdminSubRole.FINANCE)
   async adminGrantSubscription(@Body() body: AdminGrantSubscriptionDto) {
     return this.subscriptionsService.adminGrantSubscription(body.userId, body.plan, body.reason);
   }
@@ -96,6 +98,7 @@ export class SubscriptionsController {
   @Post('admin/send-winback')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
+  @AdminRoles(AdminSubRole.SUPER, AdminSubRole.FINANCE, AdminSubRole.SUPPORT)
   async sendWinBack(@Body() body: WinBackDto) {
     await this.subscriptionsService.sendWinBackEmail(body.userId);
     return { sent: true };

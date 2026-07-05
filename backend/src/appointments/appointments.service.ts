@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   ForbiddenException,
   BadRequestException,
@@ -27,6 +28,8 @@ const DEFAULT_TIMEZONE = 'Africa/Lagos';
 
 @Injectable()
 export class AppointmentsService {
+  private readonly logger = new Logger(AppointmentsService.name);
+
   constructor(
     private prisma: PrismaService,
     private notificationService: NotificationService,
@@ -312,8 +315,18 @@ export class AppointmentsService {
         }
       }
 
-      this.maybeAssignPersonalAwo(appointment.clientId, appointment.babalawoId).catch(() => {});
-      this.maybeGrantReferralReward(appointment.clientId).catch(() => {});
+      this.maybeAssignPersonalAwo(appointment.clientId, appointment.babalawoId).catch((err) =>
+        this.logger.error(
+          `Failed to assign Personal Awo for client ${appointment.clientId} after appointment ${appointment.id}`,
+          err
+        )
+      );
+      this.maybeGrantReferralReward(appointment.clientId).catch((err) =>
+        this.logger.error(
+          `Failed to grant referral reward for client ${appointment.clientId} after appointment ${appointment.id}`,
+          err
+        )
+      );
       this.notificationService
         .scheduleFollowUpReminder(appointment.babalawoId, appointment.id, appointment.client.name)
         .catch(() => {});

@@ -11,9 +11,10 @@ import {
 } from '@nestjs/common';
 import { PushNotificationService } from './push-notification.service';
 import { JwtAuthGuard } from '../shared/guards/auth.guard';
-import { RolesGuard } from '../shared/guards/roles.guard';
+import { RolesGuard, AdminRoles } from '../auth/guards/roles.guard';
 import { Roles } from '../shared/decorators/roles.decorator';
 import { UserRole } from '@common/enums/user-role.enum';
+import { AdminSubRole } from '@common/enums/admin-sub-role.enum';
 import { CurrentUser } from '../shared/decorators/current-user.decorator';
 import { User } from '@prisma/client';
 
@@ -64,6 +65,7 @@ export class PushNotificationController {
   @Post('send-booking-reminder/:userId')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.BABALAWO)
+  @AdminRoles(AdminSubRole.SUPER, AdminSubRole.SUPPORT, AdminSubRole.MODERATOR)
   @HttpCode(HttpStatus.OK)
   async sendBookingReminder(
     @CurrentUser() currentUser: User,
@@ -89,6 +91,7 @@ export class PushNotificationController {
   @Post('send-message-received/:userId')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
+  @AdminRoles(AdminSubRole.SUPER)
   @HttpCode(HttpStatus.OK)
   async sendMessageReceived(
     @CurrentUser() currentUser: User,
@@ -110,6 +113,7 @@ export class PushNotificationController {
   @Post('send-system-notification')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
+  @AdminRoles(AdminSubRole.SUPER, AdminSubRole.MODERATOR)
   @HttpCode(HttpStatus.OK)
   async sendSystemNotification(
     @CurrentUser() currentUser: User,

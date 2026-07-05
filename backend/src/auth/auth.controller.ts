@@ -20,9 +20,10 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { SetPasswordDto } from './dto/set-password.dto';
 import { JwtAuthGuard } from '@/shared/guards/auth.guard';
-import { RolesGuard } from '@/shared/guards/roles.guard';
+import { RolesGuard, AdminRoles } from '@/auth/guards/roles.guard';
 import { Roles } from '@/shared/decorators/roles.decorator';
 import { UserRole } from '@common/enums/user-role.enum';
+import { AdminSubRole } from '@common/enums/admin-sub-role.enum';
 import { CurrentUser } from '@/shared/decorators/current-user.decorator';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags, ApiBody } from '@nestjs/swagger';
 import { RegisterDto } from './dto/register.dto';
@@ -87,6 +88,7 @@ export class AuthController {
   @Post('impersonate')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.ADVISORY_BOARD_MEMBER)
+  @AdminRoles(AdminSubRole.SUPER)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Initiate user impersonation (admin only)' })
   @ApiResponse({ status: 200, description: 'Successfully initiated impersonation' })

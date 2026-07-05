@@ -21,9 +21,10 @@ import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user
 import { PrismaService } from '../prisma/prisma.service';
 import { Currency } from '@ile-ase/common';
 import { JwtAuthGuard } from '../shared/guards/auth.guard';
-import { RolesGuard } from '../shared/guards/roles.guard';
+import { RolesGuard, AdminRoles } from '../auth/guards/roles.guard';
 import { Roles } from '@/shared/decorators/roles.decorator';
 import { UserRole } from '@common/enums/user-role.enum';
+import { AdminSubRole } from '@common/enums/admin-sub-role.enum';
 import { PaystackWebhookPayload, FlutterwaveWebhookPayload } from './types/webhook-payloads';
 
 @Controller('payments')
@@ -184,6 +185,7 @@ export class PaymentsController {
   @Post('verify-manual/:transactionId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
+  @AdminRoles(AdminSubRole.SUPER, AdminSubRole.FINANCE, AdminSubRole.COMPLIANCE)
   async manuallyVerifyPayment(
     @Param('transactionId') transactionId: string,
     @CurrentUser() currentUser: CurrentUserPayload

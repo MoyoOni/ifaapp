@@ -1,9 +1,10 @@
 import { Controller, Get, UseGuards, HttpCode, HttpStatus, Logger } from '@nestjs/common';
 import { OwaspSecurityAuditService } from './owasp-security-audit.service';
 import { JwtAuthGuard } from '../shared/guards/auth.guard';
-import { RolesGuard } from '../shared/guards/roles.guard';
+import { RolesGuard, AdminRoles } from '../auth/guards/roles.guard';
 import { Roles } from '../shared/decorators/roles.decorator';
 import { UserRole } from '@common/enums/user-role.enum';
+import { AdminSubRole } from '@common/enums/admin-sub-role.enum';
 
 @Controller('security')
 @UseGuards(JwtAuthGuard)
@@ -18,6 +19,7 @@ export class SecurityAuditController {
   @Get('audit/owasp-top-10')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
+  @AdminRoles(AdminSubRole.SUPER)
   @HttpCode(HttpStatus.OK)
   async performOWASPSecurityAudit() {
     this.logger.log('Initiating OWASP Top 10 security audit');
@@ -30,6 +32,7 @@ export class SecurityAuditController {
   @Get('audit/additional')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
+  @AdminRoles(AdminSubRole.SUPER)
   @HttpCode(HttpStatus.OK)
   async performAdditionalSecurityChecks() {
     this.logger.log('Initiating additional security checks');
@@ -42,6 +45,7 @@ export class SecurityAuditController {
   @Get('audit/full')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
+  @AdminRoles(AdminSubRole.SUPER)
   @HttpCode(HttpStatus.OK)
   async performFullSecurityAudit() {
     this.logger.log('Initiating full security audit');
