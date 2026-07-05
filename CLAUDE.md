@@ -35,12 +35,7 @@ Before working on any wiring, real-data, or UX fix work, AI agents MUST read:
 
 ### V1 Phase (Feature Development) — ✅ COMPLETE
 
-Before implementing any V1 feature, AI agents MUST read these documents in order:
-
-1. **[V1_PRODUCT_BACKLOG.md](V1_PRODUCT_BACKLOG.md)** - Product backlog with EPIC-XXX / PB-XXX.Y labels; includes Codebase Audit findings
-2. **[V1_DEVELOPMENT_PROGRESS.md](V1_DEVELOPMENT_PROGRESS.md)** - Current status; what's routed vs orphaned (CODE EXISTS but not reachable)
-3. **[V1_AI_SESSION_HANDOFF.md](V1_AI_SESSION_HANDOFF.md)** - Handoff context for AI agents
-4. **[SPIRITUAL_JOURNEY_EVALUATION.md](SPIRITUAL_JOURNEY_EVALUATION.md)** - Decision on deferred features (spiritual journey is P3, deferred)
+V1_PRODUCT_BACKLOG.md, V1_DEVELOPMENT_PROGRESS.md, and V1_AI_SESSION_HANDOFF.md have been removed (V1 is 100% complete, no remaining reading needed). **[SPIRITUAL_JOURNEY_EVALUATION.md](SPIRITUAL_JOURNEY_EVALUATION.md)** still holds the decision record on the deferred spiritual journey feature.
 
 **Status:** V1 feature development is COMPLETE. All 28 EPICs built and routed.
 
@@ -54,10 +49,7 @@ V2 docs have been archived to `docs/archive/`. All production readiness work fol
 
 ### V4 Phase (Production Launch) — 🔵 IN PROGRESS (Target: April 2026)
 
-Before working on production launch tasks, AI agents MUST read:
-
-1. **[V4_QUALITY_BACKLOG.md](V4_QUALITY_BACKLOG.md)** - Full detailed backlog (10 sprints, stories, 241 story points)
-2. **[V4_TODO.md](V4_TODO.md)** - Quick reference with execution order and task breakdowns
+V4_QUALITY_BACKLOG.md and V4_TODO.md have been removed (100% complete, fully superseded by the sprint table below — no remaining reading needed).
 
 **10 Sprints (241/241 SP = 100% complete — ALL SPRINTS DONE):**
 - Sprint 1: 🔥 Foundational Trust and Cleanup (24 SP) — ✅ COMPLETED
