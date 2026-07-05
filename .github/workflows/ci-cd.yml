@@ -97,8 +97,21 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
 
+      # TEMPORARY DEBUG (remove once the P3-19 follow-on build failure is root-caused):
+      # a fresh npm ci here rules out a stale actions/setup-node cache after P3-14/P3-19
+      # changed package-lock.json, and --pretty false gives us a plain-text tsc dump
+      # even though this repo's log-download endpoint 403s without repo write access.
       - name: Build backend
-        run: cd backend && npm run build
+        run: |
+          cd backend
+          echo "=== NPM CI (clean install) ==="
+          npm ci
+          echo "=== TSC VERSION ==="
+          npx tsc --version
+          echo "=== TSC BUILD (verbose) ==="
+          npx tsc --noEmit --pretty false || true
+          echo "=== FULL BUILD ==="
+          npm run build
 
       - name: Run unit tests (with coverage gate — P1-03)
         run: cd backend && npm test -- --passWithNoTests --coverage
@@ -160,8 +173,19 @@ jobs:
       - name: TypeScript type check
         run: cd frontend && npx tsc --noEmit
 
+      # TEMPORARY DEBUG (remove once the P3-19 follow-on build failure is root-caused):
+      # same rationale as test-backend's Build backend step -- fresh install to rule
+      # out a stale cache, and tee/tail so the actual vite/tsc error is visible in the
+      # step log without needing the repo write access the raw log-download API requires.
       - name: Build frontend
-        run: cd frontend && npm run build
+        run: |
+          cd frontend
+          echo "=== NPM CI (clean install) ==="
+          npm ci
+          echo "=== NPM RUN BUILD ==="
+          npm run build 2>&1 | tee build.log
+          echo "=== LAST 50 LINES ==="
+          tail -50 build.log
         env:
           VITE_API_URL: http://localhost:3000/api
           VITE_DEMO_MODE: 'true'
