@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AcademyService } from './academy.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CertificateService } from '../certificates/certificate.service';
+import { UsersService } from '../users/users.service';
 import { NotFoundException } from '@nestjs/common';
 
 jest.mock('@ile-ase/common', () => {
@@ -51,12 +52,17 @@ describe('AcademyService', () => {
     getCertificate: jest.fn(),
   };
 
+  const mockUsersService = {
+    awardXP: jest.fn().mockResolvedValue(undefined),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AcademyService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: CertificateService, useValue: mockCertificateService },
+        { provide: UsersService, useValue: mockUsersService },
       ],
     }).compile();
 

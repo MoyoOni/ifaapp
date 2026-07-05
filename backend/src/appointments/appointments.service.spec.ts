@@ -13,6 +13,18 @@ import { CreateAppointmentDto, PaymentMethod, PreferredMethod } from './dto/crea
 import { EscrowType } from '@ile-ase/common';
 import { WhatsAppService } from '../whatsapp';
 
+// getAvailableTimeSlots enforces a minimum-notice/advance-booking window against the
+// real current date (EXP-017), so a hardcoded date eventually lands in the past and
+// the checks silently return []. Compute a Monday a week+ out instead of hardcoding one.
+function getFutureMonday(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 7);
+  const day = d.getDay();
+  const diff = (1 - day + 7) % 7;
+  d.setDate(d.getDate() + diff);
+  return d.toISOString().split('T')[0];
+}
+
 const mockPrismaService = {
   appointment: {
     findUnique: jest.fn(),
@@ -20,6 +32,7 @@ const mockPrismaService = {
     findMany: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
+    count: jest.fn().mockResolvedValue(0),
   },
   user: {
     findUnique: jest.fn(),
@@ -47,6 +60,8 @@ const mockNotificationService = {
   notifyAppointmentCreated: jest.fn(),
   notifyAppointmentConfirmed: jest.fn(),
   notifyAppointmentCancelled: jest.fn(),
+  scheduleFollowUpReminder: jest.fn().mockResolvedValue(undefined),
+  scheduleReviewRequest: jest.fn().mockResolvedValue(undefined),
 };
 
 const mockWalletService = {
@@ -270,7 +285,7 @@ describe('AppointmentsService', () => {
       // We need to pick a future Monday date for this test to be robust
       // For simplicity in this mock test, we'll assume the date passed is a Monday
       // In a real scenario, we might need to mock the Date object or pick a careful date
-      const futureMonday = '2026-06-01'; // June 1st 2026 is a Monday
+      const futureMonday = getFutureMonday();
 
       const slots = await service.getAvailableTimeSlots('babalawo-1', futureMonday);
 
@@ -295,7 +310,7 @@ describe('AppointmentsService', () => {
 
       prisma.user.findUnique.mockResolvedValue(mockBabalawo);
 
-      const futureMonday = '2026-06-01'; // Monday date
+      const futureMonday = getFutureMonday();
 
       const slots = await service.getAvailableTimeSlots('babalawo-1', futureMonday);
 
@@ -316,7 +331,7 @@ describe('AppointmentsService', () => {
 
       prisma.user.findUnique.mockResolvedValue(mockBabalawo);
 
-      const futureMonday = '2026-06-01'; // Monday date
+      const futureMonday = getFutureMonday();
 
       // Test with 30 minute duration
       const halfHourSlots = await service.getAvailableTimeSlots('babalawo-1', futureMonday);
@@ -337,7 +352,7 @@ describe('AppointmentsService', () => {
 
       prisma.user.findUnique.mockResolvedValue(mockBabalawo);
 
-      const futureMonday = '2026-06-01'; // Monday date
+      const futureMonday = getFutureMonday();
 
       const slots = await service.getAvailableTimeSlots('babalawo-1', futureMonday);
 
@@ -439,8 +454,9 @@ describe('AppointmentsService', () => {
           babalawo: {
             select: { id: true, name: true, yorubaName: true, avatar: true },
           },
+          guidancePlan: { select: { id: true } },
         },
-        orderBy: { date: 'asc', time: 'asc' },
+        orderBy: [{ date: 'desc' }, { time: 'desc' }],
       });
     });
 
@@ -468,8 +484,9 @@ describe('AppointmentsService', () => {
           babalawo: {
             select: { id: true, name: true, yorubaName: true, avatar: true },
           },
+          guidancePlan: { select: { id: true } },
         },
-        orderBy: { date: 'asc', time: 'asc' },
+        orderBy: [{ date: 'desc' }, { time: 'desc' }],
       });
     });
 

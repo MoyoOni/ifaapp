@@ -56,13 +56,13 @@ describe('SecretsService', () => {
     it('should return environment variable value in development', async () => {
       jest.spyOn(configService, 'get').mockImplementation((key: string) => {
         if (key === 'NODE_ENV') return 'development';
-        if (key === 'TEST_SECRET') return 'test-value';
+        if (key === 'SECRET') return 'test-value';
         return undefined;
       });
 
       const result = await service.getSecret('test/secret');
       expect(result).toBe('test-value');
-      expect(configService.get).toHaveBeenCalledWith('TEST_SECRET');
+      expect(configService.get).toHaveBeenCalledWith('SECRET');
     });
 
     it('should throw error if environment variable is not set in development', async () => {
@@ -72,7 +72,7 @@ describe('SecretsService', () => {
       });
 
       await expect(service.getSecret('test/secret')).rejects.toThrow(
-        'Environment variable TEST_SECRET is not set'
+        'Environment variable SECRET is not set'
       );
     });
   });
@@ -92,35 +92,41 @@ describe('SecretsService', () => {
     });
 
     it('should return AWS Secrets Manager value in production', async () => {
+      // NODE_ENV is only mocked to 'production' in this describe block's beforeEach,
+      // which runs after the outer beforeEach already constructed `service` in dev
+      // mode. Build a fresh instance here so secretsManagerClient is non-null.
+      const prodService = new SecretsService(configService);
       const mockSend = jest.fn().mockResolvedValue({
         SecretString: 'aws-secret-value',
       });
-      mockSecretsManagerClient.send = mockSend;
+      (prodService as any).secretsManagerClient.send = mockSend;
 
-      const result = await service.getSecret('iluase/prod/test-secret');
+      const result = await prodService.getSecret('iluase/prod/test-secret');
       expect(result).toBe('aws-secret-value');
       expect(mockSend).toHaveBeenCalled();
     });
 
     it('should fall back to environment variable if AWS Secrets Manager fails', async () => {
+      const prodService = new SecretsService(configService);
       const mockSend = jest.fn().mockRejectedValue(new Error('AWS Error'));
-      mockSecretsManagerClient.send = mockSend;
+      (prodService as any).secretsManagerClient.send = mockSend;
 
       jest.spyOn(configService, 'get').mockImplementation((key: string) => {
         if (key === 'NODE_ENV') return 'production';
         if (key === 'AWS_REGION') return 'us-east-1';
-        if (key === 'TEST_SECRET') return 'fallback-value';
+        if (key === 'SECRET') return 'fallback-value';
         return undefined;
       });
 
-      const result = await service.getSecret('test/secret');
+      const result = await prodService.getSecret('test/secret');
       expect(result).toBe('fallback-value');
       expect(mockSend).toHaveBeenCalled();
     });
 
     it('should throw error if both AWS Secrets Manager and environment variable fail', async () => {
+      const prodService = new SecretsService(configService);
       const mockSend = jest.fn().mockRejectedValue(new Error('AWS Error'));
-      mockSecretsManagerClient.send = mockSend;
+      (prodService as any).secretsManagerClient.send = mockSend;
 
       jest.spyOn(configService, 'get').mockImplementation((key: string) => {
         if (key === 'NODE_ENV') return 'production';
@@ -128,8 +134,8 @@ describe('SecretsService', () => {
         return undefined;
       });
 
-      await expect(service.getSecret('test/secret')).rejects.toThrow(
-        'Environment variable TEST_SECRET is not set and secret test/secret not found in AWS Secrets Manager'
+      await expect(prodService.getSecret('test/secret')).rejects.toThrow(
+        'Environment variable SECRET is not set and secret test/secret not found in AWS Secrets Manager'
       );
     });
   });
