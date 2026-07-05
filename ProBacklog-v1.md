@@ -50,7 +50,7 @@ A second pass read the actual controller/service code adversarially — assuming
 - [ ] 2. **Client-side dev-login bypass ships to production unguarded** — `frontend/src/pages/QuickAccessPage.tsx` and `shared/hooks/use-auth.ts` (`devLogin`) fabricate a fully "authenticated" session (fake JWT in localStorage, fake `User` object) with no backend call. The `/quick-access` route is registered unconditionally in `App.tsx` with no `NODE_ENV`/env guard on the route itself — only a UI widget (`dev-role-switcher.tsx`) checks `NODE_ENV==='production'`. (VCM-09)
 - [ ] 3. **No soft-delete pattern except one table** — only `RefreshToken.deletedAt` exists in `schema.prisma` (73 models total). 29 hard `.delete()`/`.deleteMany()` calls permanently destroy forum threads (`forum.service.ts`), documents, and circles with no recovery path or audit trail. (VCM-13)
 - [ ] 4. **Test coverage is low and mock-heavy** — backend: 45 `*.spec.ts` files vs 160 services+controllers (~28%); frontend: 50 test files vs 292 components (~17%). No testcontainers/real-DB integration tests found — Prisma transaction/cascade correctness is largely unverified on a platform that moves real money. (VCM-30)
-- [ ] 5. **Silent loss of failed notification writes** — `whatsapp.service.ts` catches send failures with an explicit "never throw" comment and drops them: no retry queue, no dead-letter, no operator alert. A failed payment-confirmation or appointment-reminder message simply vanishes. (VCM-40)
+- [x] 5. **Silent loss of failed notification writes** — ✅ FIXED (P3-12, July 2026): `whatsapp.service.ts` now routes send failures through `OutboxService.createEvent()` as a `WHATSAPP_SEND_FAILED` dead-letter event instead of silently dropping them. (VCM-40)
 
 ## 🟠 SIGNIFICANT — Pre-Scale Structural Debt
 
@@ -69,7 +69,7 @@ A second pass read the actual controller/service code adversarially — assuming
 
 - [ ] Raw `console.log`/`console.error` remain in ~23 frontend files (`profile-page.tsx`, `preferences-context.tsx`, `use-performance-measure.ts`, `error-handler.util.ts`) despite a `shared/utils/logger.ts` utility existing and being used elsewhere. (VCM-19, frontend half)
 - [ ] `onboarding-view.tsx` (1209 lines) mixes ~15 `useState` slices with direct `api.get/post/patch` calls inline in handlers — not incorrect, but no separation between fetch orchestration and UI state.
-- [ ] `users.service.ts` uses a fire-and-forget `.catch(() => {/* ignore errors */})` for profile-view logging — low-risk but an intentional silent swallow worth a one-line log statement.
+- [x] `users.service.ts`'s two fire-and-forget `.catch(() => {/* ignore errors */})` sites (profile-view logging, badge notification) — ✅ FIXED (P3-12): both now log via `this.logger.error(...)`. **However, grep now shows the identical silent-swallow pattern at 28 more sites in production code** (`forum.service.ts` ×18, `subscriptions.service.ts` ×6, `appointments.service.ts` ×4) — several of these are money/reward-bearing (`maybeGrantReferralReward`, `maybeAssignPersonalAwo`) or user-facing (follow-up reminders, review requests, renewal warnings), not just cosmetic. Logged as new item **P3-16**.
 - [ ] No `ClassSerializerInterceptor`/global response shaping means every new controller is one missed destructure away from leaking `passwordHash` or `emailVerificationToken` again.
 - [ ] Sentry sample rates (`shared/config/sentry.ts`) and a handful of animation-delay constants are hardcoded inline rather than sourced from a shared config — cosmetic, low blast radius.
 
@@ -81,6 +81,11 @@ A second pass read the actual controller/service code adversarially — assuming
 - [ ] **Two NestJS services built, DI-registered, and never actually called** — `OpenSearchService` and `CdnService` (`backend/src/shared/services/`) are only referenced in their own module's provider/export list (`infrastructure.module.ts`); no other file in the codebase injects or calls them. Dead infrastructure masquerading as active.
 - [ ] **Copy-pasted "verify → conflict-check → create" logic between unrelated modules** — `academy.service.ts:366-426` (`createEnrollment`) and `tutors.service.ts:160-229` (`createTutorSession`) implement the identical 5-step scaffold independently with slightly different exception messages and no shared test — the same bug class, if found, has to be fixed twice.
 - [ ] One skipped test with a stubbed assertion instead of a real one — `frontend/src/components/profile/profile-editor.test.tsx:76` (`it.skip('validates email format on submit', ...)`) and `video-guide-gallery.test.tsx:93` (a `// TODO` standing in for an assertion that was never written). Only 2 hits across 66 spec files, so not systemic — but both are in exactly the kind of form-validation/UI-state code a "the tests pass" check would wrongly vouch for.
+
+**Added this session (July 5, 2026) — found while closing out P3-11 through P3-14:**
+
+- [ ] **6 controllers gate `@Roles(UserRole.ADMIN)` routes through the sub-role-blind guard**, so *any* full ADMIN — including a narrowly-scoped `SUPPORT` or `FINANCE` `adminSubRole` — can hit them with no further check: `payments.controller.ts` (manual payment verification, `POST /payments/verify-manual/:transactionId`), `security-audit.controller.ts` (all 3 OWASP audit endpoints), `subscriptions.controller.ts` (2 admin routes), `push-notification.controller.ts` (3 routes), `analytics.controller.ts`, `auth.controller.ts` (advisory-board actions). This is the mirror image of the gap just fixed in P3-11 (forum moderation was *too* restrictive, requiring full ADMIN for a MODERATOR-level action) — here the coarse guard is *too permissive*, since `AdminSubRole` exists specifically to separate these privileges and 6 controllers bypass it entirely by importing `shared/guards/roles.guard` instead of `auth/guards/roles.guard`. Logged as new item **P3-15**.
+- [ ] **`video-guide-gallery.tsx` has zero consumers anywhere in the app** (confirmed via grep — the component file is the only match) — same orphan-component class as P3-09, just missed by that pass since it wasn't caught in the unused-import sweep that surfaced the other 18. Logged as new item **P3-17**.
 
 **Genuinely clean, verified directly (harsh-audit confirmation, not just the earlier scan):** no `throw new Error('Something went wrong')`/empty `InternalServerErrorException()` patterns found; no pointless `catch(e){throw e}` rethrows; the `Error('Something went wrong')` strings that do exist are intentional centralized fallback copy in `map-to-standard-error.ts`/`error-boundary.tsx`, not lazy exceptions; no large commented-out dead-code blocks in any of the five largest files checked; the multiple `prisma/seed-*.ts` files are legitimate domain-scoped seeding (forum/temples/demo), not duplicated cruft; only 1 TODO/FIXME/HACK comment exists in the entire `src` tree (arguably a yellow flag on its own — either genuinely clean or debt went unmarked rather than untracked, and the money-correctness findings above suggest the latter).
 
@@ -631,6 +636,65 @@ These fix the 🔴🔴 EXPLOITABLE NOW findings. They should be hotfixed directl
   - Verified: `python3 -c "import yaml; yaml.safe_load(...)"` confirms the edited file is still valid YAML; `git diff --stat` confirms only the 3 intended lines changed (3 insertions, 3 deletions) with no other file touched.
 - **Dependencies**: none
 - **Notes**: Purely a CI caching-key fix — does not change what gets installed or how tests run, only whether `actions/setup-node`'s dependency cache step can find the right lockfile to hash.
+
+### P3-15: Admin Sub-Role Gating Gap — 6 Controllers Bypass `AdminSubRole` Entirely
+- **Priority**: P2 (privilege-scope gap on real financial/security endpoints, not a "cleanup" item — flagged P3 only by backlog-section convention, actual risk is higher than most items in this tranche)
+- **Status**: 🔴 NOT STARTED — found, not yet fixed
+- **Owner**: Backend Team
+- **Story Points**: 3
+- **Description**: This session's P3-11 work established that `auth/guards/roles.guard.ts` + `@AdminRoles(...)` is the real sub-role enforcement mechanism (`AdminSubRole.FINANCE`/`MODERATOR`/`COMPLIANCE`/`SUPPORT`/`SUPER`), layered on top of the coarser `@Roles(UserRole.ADMIN)` check. A second, older guard — `shared/guards/roles.guard.ts` — implements only the coarse check and has no concept of `adminSubRole` at all. Both guards' `@Roles` decorators write to the identical `'roles'` metadata key, so a controller can be pointed at either guard with no other code changes — which means the choice of guard is the *only* thing standing between "any full ADMIN" and "only the right kind of ADMIN" for these routes, and 6 controllers picked the wrong one for genuinely sensitive actions:
+  - `payments.controller.ts:186` — `POST /payments/verify-manual/:transactionId`, manually verifies a payment (real money).
+  - `security-audit.controller.ts` — all 3 routes (`/security/audit/owasp-top-10`, `/audit/additional`, `/audit/full`) run full OWASP security scans against the live platform.
+  - `subscriptions.controller.ts:89,98` — 2 admin subscription-management routes.
+  - `push-notification.controller.ts:66,91,112` — 3 routes, including sending admin/babalawo push notifications.
+  - `analytics.controller.ts:23` — admin analytics dashboard.
+  - `auth.controller.ts:89` — advisory-board actions (`@Roles(UserRole.ADMIN, UserRole.ADVISORY_BOARD_MEMBER)`).
+  - Confirmed via `grep -rl "from '.*shared/guards/roles.guard'" backend/src --include="*.controller.ts"` (6 files) cross-referenced against each file's `@Roles(` call sites.
+- **Acceptance Criteria**:
+  - [ ] For each of the 6 controllers, decide per-route (with the product owner, not unilaterally) which `AdminSubRole`(s) should actually be allowed — e.g. manual payment verification and the OWASP audit routes are plausible `SUPER`/`COMPLIANCE`-only candidates, not something a `SUPPORT` sub-role admin should be able to trigger.
+  - [ ] Swap the guard import to `auth/guards/roles.guard` (same pattern as P3-11's `forum.controller.ts` change) and add the appropriate `@AdminRoles(...)` decorator per route.
+  - [ ] Add regression tests asserting a non-`SUPER` sub-role admin is rejected from at least the payments and security-audit routes (the two highest-consequence ones), following the pattern established in `forum-moderation-authz.service.spec.ts`.
+- **Dependencies**: P3-11 (established the `AdminRoles` pattern and the two-competing-guards discovery)
+- **Notes**: Not urgent-critical — still requires a genuine, authenticated full-ADMIN account, so this is a privilege-*scope* gap (blast radius wider than intended within the admin tier), not an unauthenticated exploit. But it's the same root cause class as P3-11, just the opposite direction, and worth closing before it's someone's incident report instead of an audit finding.
+
+### P3-16: Systemic Silent-Catch Fire-and-Forget Pattern (28 More Instances Beyond P3-12's Fix)
+- **Priority**: P3
+- **Status**: 🔴 NOT STARTED — found, not yet fixed
+- **Owner**: Backend Team
+- **Story Points**: 5
+- **Description**: P3-12 fixed two `.catch(() => {/* ignore errors */})` sites in `users.service.ts` by adding `this.logger.error(...)`. Re-grepping the same pattern (`\.catch(() => {})`) across the rest of the backend after that fix turned up 28 more production-code instances with the exact same "if this background write fails, nobody will ever know" shape:
+  - `forum.service.ts` — 18 sites: XP awards (`incrementXP`), contribution-streak updates, forum notification sends, and `ensureOduOfWeek()`.
+  - `subscriptions.service.ts` — 6 sites: renewal-reminder notifications, welcome notifications, `reminderSent` flag updates, billing-confirmation emails.
+  - `appointments.service.ts` — 4 sites, two of which are money/relationship-bearing, not just cosmetic gamification: `maybeAssignPersonalAwo(...)` (the core babalawo/client relationship-forming step after a completed appointment) and `maybeGrantReferralReward(...)` (the ₦500 referral reward from EXP-027) — both confirmed at `appointments.service.ts:315-323` to be `await`-free, fire-and-forget, and completely unlogged on failure. The other two (follow-up reminder, review-request scheduling) are lower-stakes but still silently drop notification-delivery failures.
+  - Frontend equivalents of this same grep pattern (`public-profile-view.tsx`, `thread-view.tsx`, `use-auth.ts`, `lib/analytics.ts`) were checked and are legitimately fine to leave silent — clipboard-copy, native share-sheet, push-registration-retry-on-next-login, and analytics-beacon failures have no user-facing consequence worth logging.
+- **Acceptance Criteria**:
+  - [ ] At minimum, the two `appointments.service.ts` money/relationship sites (`maybeAssignPersonalAwo`, `maybeGrantReferralReward`) get `.catch((err) => this.logger.error(...))` — these are the ones where a silent failure means a real user-facing feature (a granted relationship, a paid-out reward) silently never happens with no operator visibility.
+  - [ ] Triage the remaining 24 (`forum.service.ts` gamification/notification side effects, `subscriptions.service.ts` renewal/billing notifications) for the same treatment — likely all of them, since "silently drop and never log" is never actually the intended behavior for a side effect worth writing in the first place, but confirm none of them are deliberately silenced for a reason (e.g. expected-to-fail-often noise) before blanket-fixing.
+  - [ ] No behavior change intended — these stay fire-and-forget (do not block the main request path on them); the fix is purely observability (log on failure), matching exactly what P3-12 already did for the two `users.service.ts` sites.
+- **Dependencies**: P3-12 (established the fix pattern; this item is the same fix applied at the scale the initial grep missed)
+- **Notes**: Same "the fix pattern already exists and is proven, it just wasn't applied everywhere the same bug shape occurs" discovery shape as several other items this session (P3-08's stale `eslint-disable` comments, P1-03's TypeScript errors).
+
+### P3-17: Wire Up or Delete `video-guide-gallery.tsx` (Orphan Component, Missed by P3-09)
+- **Priority**: P3
+- **Status**: 🔴 NOT STARTED — found, not yet fixed
+- **Owner**: Frontend Team / Product
+- **Story Points**: 2
+- **Description**: `frontend/src/components/video-guide-gallery.tsx` exports a fully-built, fully-tested (5/5 passing since P3-13's fixes to its test file) video-gallery component with zero consumers anywhere in the app — confirmed via `grep -rl "VideoGuideGallery" frontend/src --include="*.tsx"`, which returns only the component's own definition file. This is the same "orphan component" class P3-09 systematically hunted down (18 found, 15 wired/resolved, 3 deliberately left for backend work), just one that P3-09's unused-*import*-driven sweep didn't catch, since nothing imports it at all rather than importing-and-not-using it.
+- **Acceptance Criteria**:
+  - [ ] Decide (product call, not a unilateral frontend decision — same discipline P3-09 used for its other orphans): does this belong in the Academy view (its `VideoGuide` shape — `instructor`, `duration`, `difficulty`, `category`, `views`, `progress` — strongly suggests it was built for a course-video-library feature) or is it superseded by something else already wired (e.g. `lesson-player-view.tsx`)? Check for overlap before wiring it in blind.
+  - [ ] If wiring in: find or build a real API-backed data source for `VideoGuide[]` — nothing currently produces this shape from the backend, so this is not a pure routing fix like most of P3-09's wins were.
+  - [ ] If confirmed dead/superseded: delete the component and its test file, following the same "confirm before deleting" discipline as P3-09's `content-moderation-dashboard.tsx`/`client-wallet-view.tsx` findings.
+- **Dependencies**: P3-09 (established the orphan-component audit and the decide-before-touching discipline), P3-13 (fixed this file's test suite, making it worth deciding on rather than leaving to bit-rot further)
+- **Notes**: Low urgency (dead code, not a live bug), but cheap to resolve either way — the expensive part (finding it, confirming it's truly orphaned) is already done.
+
+### P3-18 (deferred, not scheduled): Custom-Permission JSON Layer for Admin Sub-Role RBAC
+- **Priority**: P3 (explicitly deferred by product decision, not forgotten)
+- **Status**: ⚪ DEFERRED — captured so the decision isn't lost, not scheduled for work
+- **Owner**: Backend Team / Product
+- **Story Points**: unestimated (design work needed first)
+- **Description**: During the P3-11 forum-moderation fix, the user laid out a 3-step plan for admin permission granularity: (1) gate forum moderation behind the existing `AdminSubRole.MODERATOR` — done, this is P3-11; (2) leave `role-management-tab.tsx` (which calls the nonexistent `/admin/roles` and is already tracked as a real backend gap in P3-09) in place but hidden rather than deleting it; (3) a lightweight custom-permission JSON layer beyond the fixed `AdminSubRole` enum, for finer-grained per-admin permission grants than "one of 5 fixed sub-roles" allows. The user was explicit: build steps 1 and 2 now, **do not build step 3 yet** ("For now, keep it simple!"). Capturing step 3 here as a named backlog item so the deferred decision has a home and isn't rediscovered from scratch later, rather than because it's ready to schedule.
+- **Dependencies**: P3-11 (step 1, done), P3-09's `role-management-tab.tsx` finding (step 2's target)
+- **Notes**: Do not start this without re-confirming scope with the product owner first — it was explicitly out of scope at time of writing, not merely low-priority.
 
 ---
 
