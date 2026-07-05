@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { OutboxService } from './outbox.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from '../notifications/notification.service';
+import { WhatsAppService } from '../whatsapp/whatsapp.service';
 
 // BullMQ's Queue/Worker open real Redis connections in their constructors —
 // mock the module so these unit tests never try to actually connect.
@@ -36,11 +37,16 @@ describe('OutboxService (P1-01)', () => {
       findUnique: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn(),
+      create: jest.fn(),
     },
   };
 
   const mockNotificationService = {
     notifyPaymentReceived: jest.fn(),
+  };
+
+  const mockWhatsAppService = {
+    sendRaw: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -51,6 +57,7 @@ describe('OutboxService (P1-01)', () => {
         OutboxService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: NotificationService, useValue: mockNotificationService },
+        { provide: WhatsAppService, useValue: mockWhatsAppService },
       ],
     }).compile();
 
@@ -77,6 +84,23 @@ describe('OutboxService (P1-01)', () => {
       expect(txClient.outboxEvent.create).toHaveBeenCalledWith({ data: input });
       expect(result).toEqual({ id: 'evt-1' });
       expect(mockPrismaService.outboxEvent.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('createEvent (non-transactional sibling of createEventInTx)', () => {
+    it('writes the event via its own PrismaService, not a transaction client', async () => {
+      mockPrismaService.outboxEvent.create.mockResolvedValue({ id: 'evt-2' });
+      const input = {
+        aggregateType: 'WHATSAPP',
+        aggregateId: '08012345678',
+        eventType: 'WHATSAPP_SEND_FAILED',
+        payload: { to: '08012345678', templateName: 'new_message_received', components: [] },
+      };
+
+      const result = await service.createEvent(input);
+
+      expect(mockPrismaService.outboxEvent.create).toHaveBeenCalledWith({ data: input });
+      expect(result).toEqual({ id: 'evt-2' });
     });
   });
 
@@ -213,6 +237,49 @@ describe('OutboxService (P1-01)', () => {
         expect.any(Error),
         expect.objectContaining({ outboxEventId: 'evt-1', eventType: 'PAYMENT_RECEIVED' })
       );
+    });
+
+    it('dispatches WHATSAPP_SEND_FAILED via WhatsAppService.sendRaw and marks PROCESSED on success', async () => {
+      mockPrismaService.outboxEvent.findUnique.mockResolvedValue({
+        id: 'evt-1',
+        eventType: 'WHATSAPP_SEND_FAILED',
+        status: 'PROCESSING',
+        retries: 0,
+        payload: { to: '08012345678', templateName: 'new_message_received', components: [] },
+      });
+      mockWhatsAppService.sendRaw.mockResolvedValue(undefined);
+
+      const callback = getWorkerCallback();
+      await callback({ data: { eventId: 'evt-1' } });
+
+      expect(mockWhatsAppService.sendRaw).toHaveBeenCalledWith(
+        '08012345678',
+        'new_message_received',
+        []
+      );
+      expect(mockPrismaService.outboxEvent.update).toHaveBeenCalledWith({
+        where: { id: 'evt-1' },
+        data: { status: 'PROCESSED', processedAt: expect.any(Date) },
+      });
+    });
+
+    it('re-throws and increments retries when the WHATSAPP_SEND_FAILED retry itself fails again', async () => {
+      mockPrismaService.outboxEvent.findUnique.mockResolvedValue({
+        id: 'evt-1',
+        eventType: 'WHATSAPP_SEND_FAILED',
+        status: 'PROCESSING',
+        retries: 0,
+        payload: { to: '08012345678', templateName: 'new_message_received', components: [] },
+      });
+      mockWhatsAppService.sendRaw.mockRejectedValue(new Error('still unreachable'));
+
+      const callback = getWorkerCallback();
+      await expect(callback({ data: { eventId: 'evt-1' } })).rejects.toThrow('still unreachable');
+
+      expect(mockPrismaService.outboxEvent.update).toHaveBeenCalledWith({
+        where: { id: 'evt-1' },
+        data: { retries: 1, lastError: 'still unreachable' },
+      });
     });
 
     it('throws for an unknown event type without crashing the worker process', async () => {

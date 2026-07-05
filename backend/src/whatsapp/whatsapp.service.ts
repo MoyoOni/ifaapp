@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import { retryWithBackoff } from '../utils/retry-with-backoff.util';
+import { OutboxService } from '../outbox/outbox.service';
 
 export type WhatsAppTemplate =
   | 'new_booking_babalawo'
@@ -13,7 +14,7 @@ export type WhatsAppTemplate =
   | 'guidance_plan_ready'
   | 'payment_received';
 
-interface TemplateComponent {
+export interface TemplateComponent {
   type: 'body' | 'header';
   parameters: Array<{ type: 'text'; text: string }>;
 }
@@ -26,7 +27,11 @@ export class WhatsAppService {
   private readonly apiUrl: string;
   private readonly enabled: boolean;
 
-  constructor(private config: ConfigService) {
+  constructor(
+    private config: ConfigService,
+    @Inject(forwardRef(() => OutboxService))
+    private readonly outboxService: OutboxService
+  ) {
     this.phoneNumberId = config.get<string>('WHATSAPP_PHONE_NUMBER_ID') || '';
     this.accessToken = config.get<string>('WHATSAPP_ACCESS_TOKEN') || '';
     this.apiUrl = `https://graph.facebook.com/v19.0/${this.phoneNumberId}/messages`;
@@ -49,7 +54,16 @@ export class WhatsAppService {
     return digits;
   }
 
-  async sendTemplateMessage(
+  /**
+   * Does the actual send, throwing on failure. Exists separately from
+   * sendTemplateMessage (below) so OutboxService.dispatch()'s
+   * WHATSAPP_SEND_FAILED retry can call this directly and have a real
+   * failure propagate back into its own retry/dead-letter counting —
+   * calling the public sendTemplateMessage instead would silently swallow
+   * a second failure inside its own catch, and the outbox would wrongly
+   * mark the event PROCESSED.
+   */
+  async sendRaw(
     to: string,
     templateName: WhatsAppTemplate,
     components: TemplateComponent[]
@@ -58,35 +72,43 @@ export class WhatsAppService {
       this.logger.debug(`[WhatsApp SKIP] ${templateName} → ${to} (not configured)`);
       return;
     }
-    try {
-      // P1-02: 15s timeout (was unset — a slow WhatsApp Business API response
-      // used to hang this request thread indefinitely) + retry with
-      // exponential backoff on retryable failures (network errors, timeouts,
-      // 5xx). A 4xx (e.g. bad template params) fails on the first attempt —
-      // retrying it would just get the same rejection three times.
-      await retryWithBackoff(() =>
-        axios.post(
-          this.apiUrl,
-          {
-            messaging_product: 'whatsapp',
-            to: this.formatPhone(to),
-            type: 'template',
-            template: {
-              name: templateName,
-              language: { code: 'en' },
-              components,
-            },
+    // P1-02: 15s timeout (was unset — a slow WhatsApp Business API response
+    // used to hang this request thread indefinitely) + retry with
+    // exponential backoff on retryable failures (network errors, timeouts,
+    // 5xx). A 4xx (e.g. bad template params) fails on the first attempt —
+    // retrying it would just get the same rejection three times.
+    await retryWithBackoff(() =>
+      axios.post(
+        this.apiUrl,
+        {
+          messaging_product: 'whatsapp',
+          to: this.formatPhone(to),
+          type: 'template',
+          template: {
+            name: templateName,
+            language: { code: 'en' },
+            components,
           },
-          {
-            timeout: 15000,
-            headers: {
-              Authorization: `Bearer ${this.accessToken}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        )
-      );
-      this.logger.log(`[WhatsApp OK] ${templateName} → ${to}`);
+        },
+        {
+          timeout: 15000,
+          headers: {
+            Authorization: `Bearer ${this.accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      )
+    );
+    this.logger.log(`[WhatsApp OK] ${templateName} → ${to}`);
+  }
+
+  async sendTemplateMessage(
+    to: string,
+    templateName: WhatsAppTemplate,
+    components: TemplateComponent[]
+  ): Promise<void> {
+    try {
+      await this.sendRaw(to, templateName, components);
     } catch (err: any) {
       // Never throw — WhatsApp failure must not break main flow. This is a
       // best-effort, direct send (used by non-payment flows); the specific
@@ -96,6 +118,24 @@ export class WhatsAppService {
       this.logger.error(
         `[WhatsApp FAIL] ${templateName} → ${to}: ${err?.response?.data?.error?.message || err.message}`
       );
+
+      // P3-12: record the exhausted failure as a dead-letter-able outbox
+      // event so an operator can see it (GET /admin/outbox-events) and
+      // manually retry it (POST /admin/outbox-events/:id/retry) once
+      // whatever caused it (bad template config, expired token, etc.) is
+      // fixed, instead of it just vanishing into a log line. Wrapped in its
+      // own try/catch so a DB hiccup while recording the failure can't
+      // itself throw out of a method with a "never throws" contract.
+      try {
+        await this.outboxService.createEvent({
+          aggregateType: 'WHATSAPP',
+          aggregateId: to,
+          eventType: 'WHATSAPP_SEND_FAILED',
+          payload: { to, templateName, components },
+        });
+      } catch (outboxErr) {
+        this.logger.error(`Failed to record WhatsApp send failure in the outbox`, outboxErr);
+      }
     }
   }
 

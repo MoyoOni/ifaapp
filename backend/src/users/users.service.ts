@@ -99,9 +99,9 @@ export class UsersService {
   async findOne(id: string, viewerId?: string) {
     // Log profile view (fire-and-forget — never blocks the response)
     if (viewerId && viewerId !== id) {
-      this.logProfileView(id, viewerId).catch(() => {
-        /* ignore errors */
-      });
+      this.logProfileView(id, viewerId).catch((err) =>
+        this.logger.error(`Failed to log profile view (viewer ${viewerId} → profile ${id})`, err)
+      );
     }
 
     // Try to get from cache first
@@ -270,7 +270,9 @@ export class UsersService {
               "You've earned the Community Builder badge! Your contribution is building this community.",
           },
         })
-        .catch(() => {});
+        .catch((err) =>
+          this.logger.error(`Failed to create Community Builder badge notification for user ${userId}`, err)
+        );
     }
 
     return {

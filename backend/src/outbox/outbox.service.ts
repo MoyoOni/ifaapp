@@ -1,8 +1,16 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { Queue, Worker, ConnectionOptions } from 'bullmq';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from '../notifications/notification.service';
+import { WhatsAppService } from '../whatsapp/whatsapp.service';
 import { captureException } from '../sentry';
 
 export interface OutboxEventInput {
@@ -37,7 +45,9 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly notificationService: NotificationService
+    private readonly notificationService: NotificationService,
+    @Inject(forwardRef(() => WhatsAppService))
+    private readonly whatsAppService: WhatsAppService
   ) {}
 
   private getConnectionOptions(): ConnectionOptions {
@@ -94,6 +104,17 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
     // always a plain object literal built by the caller, never containing
     // functions/undefined/circular references, so this cast is safe.
     return tx.outboxEvent.create({
+      data: { ...input, payload: input.payload as Prisma.InputJsonValue },
+    });
+  }
+
+  /**
+   * Non-transactional sibling of createEventInTx, for callers that aren't
+   * already inside a `$transaction` (e.g. WhatsAppService, whose send failure
+   * isn't paired with any DB write to be atomic with).
+   */
+  async createEvent(input: OutboxEventInput) {
+    return this.prisma.outboxEvent.create({
       data: { ...input, payload: input.payload as Prisma.InputJsonValue },
     });
   }
@@ -182,6 +203,17 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
           payload.amount as number,
           payload.currency as string,
           payload.reference as string
+        );
+        return;
+      case 'WHATSAPP_SEND_FAILED':
+        // sendRaw (not the public sendTemplateMessage) throws on failure,
+        // so a retry that fails again correctly propagates back into
+        // dispatchEvent's own retry/dead-letter counting above instead of
+        // being silently swallowed a second time.
+        await this.whatsAppService.sendRaw(
+          payload.to as string,
+          payload.templateName as Parameters<WhatsAppService['sendRaw']>[1],
+          payload.components as Parameters<WhatsAppService['sendRaw']>[2]
         );
         return;
       default:
