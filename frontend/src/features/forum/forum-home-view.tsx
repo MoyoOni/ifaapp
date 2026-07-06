@@ -261,6 +261,19 @@ const ForumHomeView: React.FC<ForumHomeViewProps> = ({ onSelectThread, onCreateT
 
   const selectedCategoryObj = categories.find((c) => c.id === selectedCategory);
 
+  // Active in the Community — distinct authors from currently-loaded threads.
+  // Real data already on hand, not a fabricated "online now" presence feature
+  // (this app has no live presence tracking today).
+  const activeMembers = useMemo(() => {
+    const seen = new Map<string, ForumThread['author']>();
+    for (const t of threads) {
+      if (!seen.has(t.author.id)) seen.set(t.author.id, t.author);
+    }
+    return Array.from(seen.values()).slice(0, 10);
+  }, [threads]);
+
+  const totalThreadCount = categories.reduce((sum, c) => sum + c.threadCount, 0);
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
 
@@ -330,7 +343,7 @@ const ForumHomeView: React.FC<ForumHomeViewProps> = ({ onSelectThread, onCreateT
       <div className="flex flex-col lg:flex-row gap-6">
 
         {/* Categories Sidebar */}
-        <div ref={tourCategoryRef} className="lg:w-1/4 space-y-4">
+        <div ref={tourCategoryRef} className="lg:w-1/5 space-y-4">
           <div className="bg-card rounded-2xl p-4 border border-emerald-100 shadow-sm">
             <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-wider mb-3 px-2">
               Topics
@@ -405,7 +418,7 @@ const ForumHomeView: React.FC<ForumHomeViewProps> = ({ onSelectThread, onCreateT
         </div>
 
         {/* Threads Feed */}
-        <div className="lg:w-3/4 space-y-6">
+        <div className="lg:w-3/5 space-y-6">
 
           {/* 🔥 Hot Right Now — trending threads */}
           {trendingThreads.length > 0 && (
@@ -689,6 +702,62 @@ const ForumHomeView: React.FC<ForumHomeViewProps> = ({ onSelectThread, onCreateT
               })}
             </div>
           ) : null}
+        </div>
+
+        {/* Community Sidebar */}
+        <div className="lg:w-1/5 space-y-4">
+          <div className="bg-card rounded-2xl p-4 border border-emerald-100 shadow-sm">
+            <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-wider mb-3 px-2">
+              The Square
+            </h3>
+            <div className="space-y-2 px-2 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-emerald-500">Categories</span>
+                <span className="font-bold text-emerald-700 dark:text-emerald-300">{categories.length}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-emerald-500">Discussions</span>
+                <span className="font-bold text-emerald-700 dark:text-emerald-300">{totalThreadCount}</span>
+              </div>
+            </div>
+          </div>
+
+          {activeMembers.length > 0 && (
+            <div className="bg-card rounded-2xl p-4 border border-emerald-100 shadow-sm">
+              <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-wider mb-3 px-2">
+                Active in the Community
+              </h3>
+              <div className="space-y-1">
+                {activeMembers.map((member) => (
+                  <button
+                    type="button"
+                    key={member.id}
+                    onClick={() => navigate(`/profile/${member.id}`)}
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-xl text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+                  >
+                    <span className="shrink-0 w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-xs font-bold text-emerald-500 overflow-hidden">
+                      {member.avatar ? (
+                        <img src={member.avatar} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        member.name[0].toUpperCase()
+                      )}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold text-emerald-800 dark:text-emerald-200 truncate">
+                        {member.yorubaName || member.name}
+                      </span>
+                      <ForumRoleBadge
+                        role={member.role}
+                        verified={member.verified}
+                        subscriptionStatus={member.subscriptionStatus}
+                        culturalLevel={member.culturalLevel}
+                      />
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
