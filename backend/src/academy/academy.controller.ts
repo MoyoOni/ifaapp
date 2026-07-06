@@ -44,10 +44,10 @@ export class AcademyController {
 
   @ApiOperation({ summary: 'Create a new course' })
   @ApiResponse({ status: 201, description: 'Course successfully created' })
-  @ApiResponse({ status: 403, description: 'Forbidden - requires Babalawo or Admin role' })
+  @ApiResponse({ status: 403, description: 'Forbidden - requires Admin role' })
   @Post('courses')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.BABALAWO, UserRole.ADMIN)
+  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   async createCourse(@Body() dto: CreateCourseDto, @CurrentUser() user: CurrentUserPayload) {
     return this.academyService.createCourse(dto, user);

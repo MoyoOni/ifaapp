@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { BookOpen, BarChart2, Star, Trash2, UserPlus } from 'lucide-react';
+import { BookOpen, BarChart2, Star, Trash2, UserPlus, Plus } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/shared/components/toast';
 
@@ -9,10 +9,103 @@ type SubTab = 'courses' | 'enrollments' | 'certificates';
 interface Course { id: string; title: string; status: string; isFeatured: boolean; instructor: { name: string }; _count: { enrollments: number } }
 interface EnrollmentStat { courseId: string; title: string; enrollments: number; completions: number; completionRate: number; revenue: number }
 
+const COURSE_CATEGORIES = ['Foundational', 'Spiritual Practice', 'Advanced Priestly', 'Cultural Studies'];
+const COURSE_LEVELS = ['BEGINNER', 'INTERMEDIATE', 'ADVANCED'];
+
+function slugify(title: string): string {
+  return title.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
+}
+
+const EMPTY_COURSE_FORM = {
+  title: '', description: '', category: COURSE_CATEGORIES[0], level: 'BEGINNER',
+  price: '0', currency: 'NGN', duration: '',
+};
+
+function CreateCourseForm({ onDone }: { onDone: () => void }) {
+  const { success, error } = useToast();
+  const qc = useQueryClient();
+  const [form, setForm] = useState(EMPTY_COURSE_FORM);
+  const create = useMutation({
+    mutationFn: () => api.post('/academy/courses', {
+      title: form.title,
+      slug: slugify(form.title),
+      description: form.description,
+      category: form.category,
+      level: form.level,
+      price: Number(form.price) || 0,
+      currency: form.currency,
+      duration: form.duration ? Number(form.duration) : undefined,
+    }),
+    onSuccess: () => {
+      success('Course created and live');
+      qc.invalidateQueries({ queryKey: ['admin', 'academy-courses'] });
+      onDone();
+    },
+    onError: (err: any) => error(err?.response?.data?.message || 'Failed to create course'),
+  });
+  return (
+    <div className="bg-card border border-border rounded-xl p-4 space-y-3">
+      <h4 className="text-sm font-semibold text-foreground flex items-center gap-2"><Plus className="w-4 h-4" />New Course</h4>
+      <div>
+        <label htmlFor="course-title" className="text-xs text-muted-foreground">Title *</label>
+        <input id="course-title" type="text" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
+          placeholder="e.g. Introduction to Ifá"
+          className="mt-1 w-full px-3 py-2 text-sm bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+      </div>
+      <div>
+        <label htmlFor="course-description" className="text-xs text-muted-foreground">Description *</label>
+        <textarea id="course-description" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={2}
+          className="mt-1 w-full px-3 py-2 text-sm bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none" />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label htmlFor="course-category" className="text-xs text-muted-foreground">Category</label>
+          <select id="course-category" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}
+            className="mt-1 w-full px-3 py-2 text-sm bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary">
+            {COURSE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="course-level" className="text-xs text-muted-foreground">Level</label>
+          <select id="course-level" value={form.level} onChange={e => setForm({ ...form, level: e.target.value })}
+            className="mt-1 w-full px-3 py-2 text-sm bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary">
+            {COURSE_LEVELS.map(l => <option key={l} value={l}>{l.charAt(0) + l.slice(1).toLowerCase()}</option>)}
+          </select>
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        <div>
+          <label htmlFor="course-price" className="text-xs text-muted-foreground">Price</label>
+          <input id="course-price" type="number" min="0" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })}
+            className="mt-1 w-full px-3 py-2 text-sm bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+        </div>
+        <div>
+          <label htmlFor="course-currency" className="text-xs text-muted-foreground">Currency</label>
+          <input id="course-currency" type="text" value={form.currency} onChange={e => setForm({ ...form, currency: e.target.value })}
+            className="mt-1 w-full px-3 py-2 text-sm bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+        </div>
+        <div>
+          <label htmlFor="course-duration" className="text-xs text-muted-foreground">Hours</label>
+          <input id="course-duration" type="number" min="0" value={form.duration} onChange={e => setForm({ ...form, duration: e.target.value })}
+            className="mt-1 w-full px-3 py-2 text-sm bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+        </div>
+      </div>
+      <div className="flex justify-end gap-2 pt-1">
+        <button type="button" onClick={onDone} className="px-4 py-2 text-sm bg-muted text-muted-foreground rounded-lg hover:bg-muted/80">Cancel</button>
+        <button type="button" onClick={() => create.mutate()} disabled={!form.title.trim() || !form.description.trim() || create.isPending}
+          className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:opacity-90 disabled:opacity-50">
+          {create.isPending ? 'Creating…' : 'Create Course'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function CoursesTab() {
   const { success, error } = useToast();
   const qc = useQueryClient();
   const [page, setPage] = useState(1);
+  const [showCreate, setShowCreate] = useState(false);
   const { data, isLoading } = useQuery<{ courses: Course[]; total: number }>({
     queryKey: ['admin', 'academy-courses', page],
     queryFn: () => api.get(`/admin/academy/courses?page=${page}&limit=20`).then(r => r.data),
@@ -32,6 +125,15 @@ function CoursesTab() {
   if (isLoading) return <p className="text-sm text-muted-foreground p-4">Loading...</p>;
   return (
     <div className="space-y-3">
+      <div className="flex justify-end">
+        {!showCreate && (
+          <button type="button" onClick={() => setShowCreate(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-lg hover:opacity-90">
+            <Plus className="w-4 h-4" />New Course
+          </button>
+        )}
+      </div>
+      {showCreate && <CreateCourseForm onDone={() => setShowCreate(false)} />}
       {data?.courses.map(c => (
         <div key={c.id} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between gap-4">
           <div className="flex-1 min-w-0">

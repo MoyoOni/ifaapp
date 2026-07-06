@@ -34,9 +34,10 @@ export class AcademyService {
   // ==================== Courses ====================
 
   async createCourse(dto: CreateCourseDto, currentUser: CurrentUserPayload) {
-    // Verify user can create courses (verified trainer/Babalawo or admin)
-    if (currentUser.role !== 'BABALAWO' && currentUser.role !== 'ADMIN') {
-      throw new ForbiddenException('Only verified trainers (Babalawos) can create courses');
+    // Course creation is admin-only -- the platform curates Academy content
+    // directly rather than accepting instructor self-service submissions.
+    if (currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can create courses');
     }
 
     // Check if slug already exists
@@ -60,7 +61,8 @@ export class AcademyService {
         duration: dto.duration,
         price: dto.price || 0,
         currency: dto.currency || 'NGN',
-        status: CourseStatus.DRAFT, // Requires approval
+        // Admin-created courses go live immediately -- no self-review step needed.
+        status: CourseStatus.APPROVED,
         certificateEnabled: dto.certificateEnabled !== undefined ? dto.certificateEnabled : true,
       },
       include: {
