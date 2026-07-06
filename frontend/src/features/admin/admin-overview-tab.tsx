@@ -30,7 +30,7 @@ const MorningBriefing: React.FC<{
     const { data: openDisputes } = useQuery<number>({
         queryKey: ['admin-open-disputes-count'],
         queryFn: async () => {
-            const res = await api.get('/admin/disputes');
+            const res = await api.get('/disputes');
             const disputes: Array<{ status: string }> = res.data?.disputes ?? res.data ?? [];
             return disputes.filter(d => d.status === 'OPEN' || d.status === 'DISPUTED').length;
         },
