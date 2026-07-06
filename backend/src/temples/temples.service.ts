@@ -41,7 +41,17 @@ export class TemplesService {
       },
     });
 
-    if (!user || user.role !== 'BABALAWO' || !user.verified) {
+    if (!user) {
+      return false;
+    }
+
+    // Admins manage the platform's temple directory directly, not through the
+    // tier-gated founder path.
+    if (user.role === 'ADMIN') {
+      return true;
+    }
+
+    if (user.role !== 'BABALAWO' || !user.verified) {
       return false;
     }
 
@@ -77,8 +87,12 @@ export class TemplesService {
       );
     }
 
-    // Check if user already founded a temple
-    if (dto.type === 'ILE_IFA') {
+    const isAdminCreated = currentUser.role === 'ADMIN';
+
+    // Check if user already founded a temple (admin-created temples are
+    // unclaimed platform directory entries, not personally founded, so this
+    // doesn't apply to them)
+    if (dto.type === 'ILE_IFA' && !isAdminCreated) {
       const existingTemple = await this.prisma.temple.findUnique({
         where: { founderId: currentUser.id },
       });
@@ -120,15 +134,18 @@ export class TemplesService {
         logo: dto.logo,
         bannerImage: dto.bannerImage,
         images: dto.images || [],
-        founderId: currentUser.id,
+        // Admin-created temples are unclaimed platform directory entries,
+        // claimable by an actual practitioner leader later -- same as the
+        // bulk-imported official-directory temples.
+        founderId: isAdminCreated ? null : currentUser.id,
         foundedYear: dto.foundedYear,
         type: dto.type,
         lineage: dto.lineage,
         tradition: dto.tradition,
         specialties: dto.specialties || [],
         socialLinks: dto.socialLinks,
-        status: dto.type === 'ILE_IFA' ? 'PENDING_VERIFICATION' : 'ACTIVE',
-        verified: false,
+        status: isAdminCreated || dto.type !== 'ILE_IFA' ? 'ACTIVE' : 'PENDING_VERIFICATION',
+        verified: isAdminCreated,
       },
       include: {
         founder: {
