@@ -1,7 +1,8 @@
 import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
-import { AuthGuard } from '@nestjs/passport';
 import { Roles, RolesGuard } from '../auth/guards/roles.guard';
+import { JwtAuthGuard } from '../shared/guards/auth.guard';
+import { Public } from '../auth/decorators/public.decorator';
 import { TemplesService } from './temples.service';
 import { CreateTempleDto } from './dto/create-temple.dto';
 import { UpdateTempleDto } from './dto/update-temple.dto';
@@ -11,7 +12,7 @@ import { UserRole } from '@ile-ase/common';
 @ApiTags('temples')
 @ApiBearerAuth()
 @Controller('temples')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(JwtAuthGuard)
 export class TemplesController {
   constructor(private readonly templesService: TemplesService) {}
 
@@ -21,6 +22,7 @@ export class TemplesController {
   @ApiQuery({ name: 'state', required: false })
   @ApiQuery({ name: 'country', required: false })
   @ApiResponse({ status: 200, description: 'Returns a list of temples' })
+  @Public()
   @Get()
   async findAll(
     @Query('search') search?: string,
@@ -46,19 +48,29 @@ export class TemplesController {
     });
   }
 
+  @ApiOperation({ summary: 'Get total count of temples' })
+  @Public()
+  @Get('count')
+  async getCount() {
+    return this.templesService.getCount();
+  }
+
   @ApiOperation({ summary: 'Get temple by ID' })
+  @Public()
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.templesService.findOne(id);
   }
 
   @ApiOperation({ summary: 'Get temple by slug' })
+  @Public()
   @Get('slug/:slug')
   async findBySlug(@Param('slug') slug: string, @CurrentUser() currentUser?: CurrentUserPayload) {
     return this.templesService.findBySlug(slug, currentUser?.id);
   }
 
   @ApiOperation({ summary: 'Get babalawos associated with a temple' })
+  @Public()
   @Get(':id/babalawos')
   async findBabalawos(@Param('id') id: string) {
     return this.templesService.findBabalawos(id);
@@ -107,11 +119,5 @@ export class TemplesController {
   @Get('followed/all')
   async getFollowedTemples(@CurrentUser() currentUser: CurrentUserPayload) {
     return this.templesService.getFollowedTemples(currentUser.id);
-  }
-
-  @ApiOperation({ summary: 'Get total count of temples' })
-  @Get('count')
-  async getCount() {
-    return this.templesService.getCount();
   }
 }
