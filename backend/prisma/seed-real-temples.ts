@@ -413,7 +413,12 @@ async function main() {
       ? 'Parish of Ijo Orunmila Adulawo (IOA). For queries contact the National HQ: info@ijoorunmilaadulawo.com or visit ijoorunmilaadulawo.com.'
       : undefined);
     const isVerified = temple.verified ?? false;
-    const finalStatus = isVerified ? 'ACTIVE' : 'PENDING_VERIFICATION';
+    // These entries all come from the official Ilé Ìjúbà / Ilé Ifá Directory, not
+    // an unvetted user submission, so they're ACTIVE (visible) regardless of the
+    // `verified` flag. `verified` is a separate "extra-confirmed" badge shown in
+    // the UI, not a visibility gate — PENDING_VERIFICATION is for temples a user
+    // submits through the app, which do need admin review before going live.
+    const finalStatus = 'ACTIVE';
 
     try {
       const existing = await prisma.temple.findUnique({ where: { slug } });

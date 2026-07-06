@@ -91,8 +91,11 @@ Tell us:
 async function main() {
   console.log('📜 Seeding Community Covenant threads...\n');
 
-  // Find admin user to be the author
+  // Prefer the platform founder's own account as author; fall back to any admin.
   const admin = await prisma.user.findFirst({
+    where: { email: 'ifamoyooni@outlook.com' },
+    select: { id: true, name: true },
+  }) ?? await prisma.user.findFirst({
     where: { role: 'ADMIN' },
     select: { id: true, name: true },
   });

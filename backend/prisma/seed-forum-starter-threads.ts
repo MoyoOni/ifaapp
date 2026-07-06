@@ -213,8 +213,12 @@ What are you listening to this week?`,
 async function main() {
   console.log('🌿  Seeding forum starter threads...\n');
 
-  // Get the admin user (or first user) to be thread author
+  // Author these as the platform founder's own account if it exists yet,
+  // falling back to any admin, then any user at all.
   const adminUser = await prisma.user.findFirst({
+    where: { email: 'ifamoyooni@outlook.com' },
+    select: { id: true },
+  }) ?? await prisma.user.findFirst({
     where: { role: 'ADMIN' },
     select: { id: true },
   }) ?? await prisma.user.findFirst({ select: { id: true } });

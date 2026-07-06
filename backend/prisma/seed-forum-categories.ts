@@ -166,8 +166,12 @@ async function main() {
     return;
   }
 
-  // Use the first ADMIN user as thread author; fall back to first user of any role
+  // Prefer the platform founder's own account as thread author; fall back to
+  // any admin, then any user.
   const adminUser = await prisma.user.findFirst({
+    where: { email: 'ifamoyooni@outlook.com' },
+    select: { id: true },
+  }) ?? await prisma.user.findFirst({
     where: { role: 'ADMIN' },
     select: { id: true },
   }) ?? await prisma.user.findFirst({ select: { id: true } });
