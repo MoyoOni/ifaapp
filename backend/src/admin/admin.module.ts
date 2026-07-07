@@ -12,6 +12,7 @@ import { AdminFinanceService } from './admin-finance.service';
 import { AdminCommunityService } from './admin-community.service';
 import { AdminContentService } from './admin-content.service';
 import { AdminAnnouncementsService } from './admin-announcements.service';
+import { AdminCampaignsService } from './admin-campaigns.service';
 import { AdminPromosService } from './admin-promos.service';
 import { AdminReferralsService } from './admin-referrals.service';
 import { AdminCulturalContentService } from './admin-cultural-content.service';
@@ -29,6 +30,7 @@ import { NotificationPreferencesService } from '../notifications/notification-pr
 import { WalletModule } from '../wallet/wallet.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { CirclesModule } from '../circles/circles.module';
+import { SharedModule } from '../shared/shared.module';
 
 // NotificationService/NotificationPreferencesService provided directly here
 // for the same reason as WalletModule/AppointmentsModule/etc — see wallet.module.ts.
@@ -50,6 +52,7 @@ import { CirclesModule } from '../circles/circles.module';
     WalletModule,
     PaymentsModule,
     CirclesModule,
+    SharedModule,
   ],
   controllers: [AdminController],
   providers: [
@@ -59,6 +62,7 @@ import { CirclesModule } from '../circles/circles.module';
     AdminCommunityService,
     AdminContentService,
     AdminAnnouncementsService,
+    AdminCampaignsService,
     AuditService,
     InactivePractitionerMonitorService,
     AdminMarketplaceService,

@@ -24,6 +24,7 @@ import { AdminAcademyService } from './admin-academy.service';
 import { AdminTrustScoreService } from './admin-trust-score.service';
 import { AdminPlatformSettingsService } from './admin-platform-settings.service';
 import { AdminAnnouncementsService } from './admin-announcements.service';
+import { AdminCampaignsService } from './admin-campaigns.service';
 import { AdminPromosService } from './admin-promos.service';
 import { AdminReferralsService } from './admin-referrals.service';
 import { AdminCommunityService } from './admin-community.service';
@@ -97,7 +98,8 @@ export class AdminController {
     private readonly complaintsService: AdminComplaintsService,
     private readonly marketIntelligenceService: AdminMarketIntelligenceService,
     private readonly morningBriefService: AdminMorningBriefService,
-    private readonly practitionerPerformanceService: AdminPractitionerPerformanceService
+    private readonly practitionerPerformanceService: AdminPractitionerPerformanceService,
+    private readonly campaignsService: AdminCampaignsService
   ) {}
 
   @Get('stats')
@@ -734,6 +736,35 @@ export class AdminController {
   @Roles(UserRole.ADMIN)
   async getMarketplaceCategories() {
     return this.marketplaceService.getCategories();
+  }
+
+  // ADM-019: Segmented Email Campaigns
+
+  @Get('campaigns')
+  @Roles(UserRole.ADMIN)
+  async getCampaigns(@Query('page') page: number = 1) {
+    return this.campaignsService.getCampaigns(Number(page));
+  }
+
+  @Post('campaigns')
+  @Roles(UserRole.ADMIN)
+  async createCampaign(
+    @Body() body: { subject: string; body: string; segment: string; scheduledAt?: string },
+    @CurrentUser() admin: CurrentUserPayload
+  ) {
+    return this.campaignsService.createCampaign(body, admin);
+  }
+
+  @Post('campaigns/:id/send')
+  @Roles(UserRole.ADMIN)
+  async sendCampaign(@Param('id') id: string) {
+    return this.campaignsService.sendCampaign(id);
+  }
+
+  @Delete('campaigns/:id')
+  @Roles(UserRole.ADMIN)
+  async deleteCampaign(@Param('id') id: string) {
+    return this.campaignsService.deleteCampaign(id);
   }
 
   // ADM-020: Promo Codes Management
