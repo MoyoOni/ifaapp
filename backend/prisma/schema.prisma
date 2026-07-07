@@ -131,7 +131,11 @@ model User {
   longestStreak             Int                      @default(0)
 
   // F9-901: Practitioner Trust Score
-  trustScore                Float                    @default(0.5) // 0.0 - 1.0, default is neutral
+  // 0-100 point scale (computed by UsersService's trust-score recalculation:
+  // +30 verified, +20 consultation reviews, +15 forum posts, +10 temple member,
+  // -20 active dispute, floored at 0) -- NOT 0.0-1.0. See getTrustScoreTier's
+  // 75/50/30 thresholds and TrustScoreOverrideDto's @Min(0) @Max(100).
+  trustScore                Float                    @default(0)
   trustScoreOverride        Float?
   trustScoreOverrideReason  String?
   trustScoreOverrideBy      String?
