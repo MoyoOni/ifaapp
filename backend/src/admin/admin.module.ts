@@ -12,6 +12,15 @@ import { AdminFinanceService } from './admin-finance.service';
 import { AdminCommunityService } from './admin-community.service';
 import { AdminContentService } from './admin-content.service';
 import { AdminAnnouncementsService } from './admin-announcements.service';
+import { AdminPromosService } from './admin-promos.service';
+import { AdminReferralsService } from './admin-referrals.service';
+import { AdminCulturalContentService } from './admin-cultural-content.service';
+import { AdminFeaturedContentService } from './admin-featured-content.service';
+import { AdminIntegrityService } from './admin-integrity.service';
+import { AdminComplaintsService } from './admin-complaints.service';
+import { AdminMarketIntelligenceService } from './admin-market-intelligence.service';
+import { AdminPractitionerPerformanceService } from './admin-practitioner-performance.service';
+import { AdminMorningBriefService } from './admin-morning-brief.service';
 import { GdprModule } from '../gdpr/gdpr.module';
 import { OutboxModule } from '../outbox/outbox.module';
 import { NotificationsModule } from '../notifications/notifications.module';
@@ -56,6 +65,15 @@ import { CirclesModule } from '../circles/circles.module';
     AdminAcademyService,
     AdminTrustScoreService,
     AdminPlatformSettingsService,
+    AdminPromosService,
+    AdminReferralsService,
+    AdminCulturalContentService,
+    AdminFeaturedContentService,
+    AdminIntegrityService,
+    AdminComplaintsService,
+    AdminMarketIntelligenceService,
+    AdminPractitionerPerformanceService,
+    AdminMorningBriefService,
     NotificationService,
     NotificationPreferencesService,
   ],

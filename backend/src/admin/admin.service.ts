@@ -1,16 +1,43 @@
 import { Injectable, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { VerificationStage } from '@ile-ase/common';
-import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
+import { CurrentUserPayload } from '../shared/types/current-user-payload.interface';
+import { AdminMarketplaceService } from './admin-marketplace.service';
+import { AdminAcademyService } from './admin-academy.service';
+import { AdminTrustScoreService } from './admin-trust-score.service';
+import { AdminPlatformSettingsService } from './admin-platform-settings.service';
 import { AdminUsersService } from './admin-users.service';
 import { AdminFinanceService } from './admin-finance.service';
 import { AdminCommunityService } from './admin-community.service';
 import { AdminContentService } from './admin-content.service';
+import { AdminAnnouncementsService } from './admin-announcements.service';
+import { AdminPromosService } from './admin-promos.service';
+import { AdminReferralsService } from './admin-referrals.service';
+import { AdminCulturalContentService } from './admin-cultural-content.service';
+import { AdminComplaintsService } from './admin-complaints.service';
 import { AuditService } from './audit.service';
 import { ApproveVerificationDto } from './dto/approve-verification.dto';
 import { BulkVerifyDto } from './dto/bulk-verify.dto';
-import { CreateAdvisoryVoteDto } from './dto/advisory-board.dto';
 import { CreateCircleDto } from '../circles/dto/create-circle.dto';
+import { VerificationStage } from '@common/enums/verification-stage.enum';
+import { Prisma } from '@prisma/client';
+import { CreateAdvisoryVoteDto, CastAdvisoryVoteDto } from './dto/advisory-board.dto';
+import { CreateQuizQuestionDto, UpdateQuizQuestionDto, UpdateQuizThresholdDto } from './dto/quiz-question.dto';
+import { TrustScoreOverrideDto } from './dto/trust-score-override.dto';
+import { FeatureItemDto } from './dto/feature-item.dto';
+import { UpdateCourseStatusDto } from './dto/update-course-status.dto';
+import { ManualEnrollDto } from './dto/manual-enroll.dto';
+import { RemoveEnrollmentDto } from './dto/remove-enrollment.dto';
+import { CreateAnnouncementDto } from './dto/create-announcement.dto';
+import { AwardBadgeDto } from './dto/award-badge.dto';
+import { CreateDailyWordDto, UpdateDailyWordDto } from './dto/daily-word.dto';
+import { CreateOralHistoryDto, UpdateOralHistoryDto } from './dto/oral-history.dto';
+import { CreateSacredEventDto, UpdateSacredEventDto } from './dto/sacred-event.dto';
+import { UpdateFeaturedDto } from './dto/update-featured.dto';
+import { FeaturedSearchDto } from './dto/featured-search.dto';
+import { RejectPostDto } from './dto/reject-post.dto';
+import { CreateFlagRuleDto } from './dto/create-flag-rule.dto';
+import { UpdateFlagRuleDto } from './dto/update-flag-rule.dto';
+import { ResolveComplaintDto } from './dto/resolve-complaint.dto';
 
 // P2-04: AdminService is now a thin facade preserving the original public
 // method signatures AdminController calls, delegating the actual logic to
@@ -22,12 +49,21 @@ export class AdminService {
   private readonly logger = new Logger(AdminService.name);
 
   constructor(
-    private prisma: PrismaService,
-    private adminUsersService: AdminUsersService,
-    private adminFinanceService: AdminFinanceService,
-    private adminCommunityService: AdminCommunityService,
-    private adminContentService: AdminContentService,
-    private auditService: AuditService
+    private readonly prisma: PrismaService,
+    private readonly adminMarketplaceService: AdminMarketplaceService,
+    private readonly adminAcademyService: AdminAcademyService,
+    private readonly adminTrustScoreService: AdminTrustScoreService,
+    private readonly adminPlatformSettingsService: AdminPlatformSettingsService,
+    private readonly adminUsersService: AdminUsersService,
+    private readonly adminFinanceService: AdminFinanceService,
+    private readonly adminCommunityService: AdminCommunityService,
+    private readonly adminContentService: AdminContentService,
+    private readonly adminAnnouncementsService: AdminAnnouncementsService,
+    private readonly adminPromosService: AdminPromosService,
+    private readonly adminReferralsService: AdminReferralsService,
+    private readonly adminCulturalContentService: AdminCulturalContentService,
+    private readonly adminComplaintsService: AdminComplaintsService,
+    private readonly auditService: AuditService
   ) {}
 
   /**
@@ -309,9 +345,6 @@ export class AdminService {
     return this.adminUsersService.getRecentLogins(limit);
   }
 
-  async getInactivePractitioners(currentUser: any, daysInactive: number): Promise<any[]> {
-    return this.adminUsersService.getInactivePractitioners(currentUser, daysInactive);
-  }
 
   async getLifecycleAnalytics() {
     return this.adminUsersService.getLifecycleAnalytics();
@@ -371,7 +404,8 @@ export class AdminService {
     notes: string,
     currentUser: CurrentUserPayload
   ) {
-    return this.adminFinanceService.processWithdrawal(withdrawalId, approve, notes, currentUser);
+    const action = approve ? 'APPROVE' : 'REJECT';
+    return this.adminFinanceService.processWithdrawal(withdrawalId, action, notes, currentUser);
   }
 
   /**
@@ -531,5 +565,45 @@ export class AdminService {
 
   async resetUserQuizStatus(userId: string) {
     return this.adminContentService.resetUserQuizStatus(userId);
+  }
+
+  async getRevenueForecast() {
+    return this.adminFinanceService.getRevenueForecast();
+  }
+
+  async getActiveSubscribers() {
+    return this.adminFinanceService.getActiveSubscribers();
+  }
+
+  async getCancelledSubscribers() {
+    return this.adminFinanceService.getCancelledSubscribers();
+  }
+
+  async getFailedSubscribers() {
+    return this.adminFinanceService.getFailedSubscribers();
+  }
+
+  async getFinancialCommandCentre() {
+    return this.adminFinanceService.getFinancialCommandCentre();
+  }
+
+  async getInactivePractitioners(admin: CurrentUserPayload, daysThreshold: number) {
+    return this.adminUsersService.getInactivePractitioners(admin, daysThreshold);
+  }
+
+  async reEngagePractitioner(practitionerId: string, action: string, message?: string) {
+    return this.adminUsersService.reEngagePractitioner(practitionerId, action, message);
+  }
+
+  async reactivatePractitioner(practitionerId: string) {
+    return this.adminUsersService.reactivatePractitioner(practitionerId);
+  }
+
+  async getComplaints(currentUser: CurrentUserPayload, status?: string, page: number = 1, limit: number = 20) {
+    return this.adminComplaintsService.getComplaints(currentUser, status, page, limit);
+  }
+
+  async resolveComplaint(id: string, dto: any, currentUser: CurrentUserPayload) {
+    return this.adminComplaintsService.resolveComplaint(id, dto, currentUser);
   }
 }

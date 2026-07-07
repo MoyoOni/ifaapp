@@ -93,4 +93,135 @@ export class AdminTrustScoreService {
       include: { user: { select: { id: true, name: true } } },
     });
   }
+
+  async getOverrideAdjustments() {
+    return this.prisma.user.findMany({
+      where: {
+        trustScoreOverride: { not: null }
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        trustScoreOverride: true,
+        trustScoreOverrideReason: true,
+        trustScoreOverrideBy: true,
+        trustScoreOverrideAt: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+
+  async getPractitionersForFeaturing() {
+    const practitioners = await this.prisma.user.findMany({
+      where: {
+        role: 'BABALAWO'
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        avatar: true,
+        bio: true,
+        averageRating: true,
+        trustScore: true,
+        isFeatured: true,
+        featuredOrder: true,
+        featuredExpiry: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    // Add totalReviews by counting reviews for each practitioner
+    const practitionersWithReviews = await Promise.all(
+      practitioners.map(async (practitioner) => {
+        const totalReviews = await this.prisma.babalawoReview.count({
+          where: { babalawoId: practitioner.id }
+        });
+        
+        return {
+          ...practitioner,
+          totalReviews
+        };
+      })
+    );
+
+    return practitionersWithReviews;
+  }
+
+  async getFeaturedPractitioners() {
+    const practitioners = await this.prisma.user.findMany({
+      where: {
+        role: 'BABALAWO',
+        isFeatured: true
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        avatar: true,
+        bio: true,
+        averageRating: true,
+        trustScore: true,
+        isFeatured: true,
+        featuredOrder: true,
+        featuredExpiry: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    // Add totalReviews by counting reviews for each practitioner
+    const practitionersWithReviews = await Promise.all(
+      practitioners.map(async (practitioner) => {
+        const totalReviews = await this.prisma.babalawoReview.count({
+          where: { babalawoId: practitioner.id }
+        });
+        
+        return {
+          ...practitioner,
+          totalReviews
+        };
+      })
+    );
+
+    return practitionersWithReviews;
+  }
+
+  async updatePractitionerFeaturedStatus(userId: string, isFeatured: boolean, featuredOrder?: number, featuredExpiry?: Date) {
+    const practitioner = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        isFeatured,
+        featuredOrder: featuredOrder ?? null,
+        featuredExpiry: featuredExpiry ?? null,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        avatar: true,
+        bio: true,
+        averageRating: true,
+        trustScore: true,
+        isFeatured: true,
+        featuredOrder: true,
+        featuredExpiry: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    // Add totalReviews to the response
+    const totalReviews = await this.prisma.babalawoReview.count({
+      where: { babalawoId: practitioner.id }
+    });
+
+    return {
+      ...practitioner,
+      totalReviews
+    };
+  }
 }

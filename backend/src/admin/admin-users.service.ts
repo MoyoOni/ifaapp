@@ -609,18 +609,115 @@ export class AdminUsersService {
   // internally (by the AdminService facade and the inactive-practitioner cron
   // monitor, which passes a synthetic system user), never from a controller
   // route directly.
-  async getInactivePractitioners(_currentUser: any, daysInactive: number): Promise<any[]> {
-    const cutoff = new Date(Date.now() - daysInactive * 24 * 60 * 60 * 1000);
-    return this.prisma.user.findMany({
+  async getInactivePractitioners(admin: CurrentUserPayload, daysThreshold: number = 30) {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysThreshold);
+
+    // Find practitioners who have had no appointments or sessions in the last X days
+    // We'll need to get all babalawos and check their activity separately
+    const practitioners = await this.prisma.user.findMany({
       where: {
         role: 'BABALAWO',
-        OR: [
-          { userSessions: { none: {} } },
-          { userSessions: { every: { lastSeenAt: { lt: cutoff } } } },
-        ],
       },
-      select: { id: true, name: true, email: true, isOnLeave: true, isDeactivated: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        trustScore: true,
+        createdAt: true,
+        isOnLeave: true,
+        isDeactivated: true,
+        appointmentsAsBabalawo: {
+          where: {
+            date: { gte: cutoffDate.toISOString() },
+          },
+          take: 1,
+        },
+        userSessions: {
+          where: {
+            lastSeenAt: { gte: cutoffDate.toISOString() },
+          },
+          orderBy: { lastSeenAt: 'desc' },
+          take: 1,
+        },
+      },
     });
+
+    // Filter for those who have neither recent appointments nor sessions
+    const inactivePractitioners = [];
+    for (const p of practitioners) {
+      const hasRecentAppointment = p.appointmentsAsBabalawo.length > 0;
+      const hasRecentSession = p.userSessions.length > 0;
+      
+      if (!hasRecentAppointment && !hasRecentSession) {
+        // Get the last session overall for calculating days since activity
+        const lastOverallSession = await this.prisma.userSession.findFirst({
+          where: { userId: p.id },
+          orderBy: { lastSeenAt: 'desc' },
+        });
+        
+        inactivePractitioners.push({
+          id: p.id,
+          name: p.name,
+          email: p.email,
+          role: p.role,
+          trustScore: p.trustScore || 0,
+          createdAt: p.createdAt,
+          isOnLeave: p.isOnLeave,
+          isDeactivated: p.isDeactivated,
+          lastAppointmentAt: null, // We already know they don't have recent appointments
+          lastSessionAt: lastOverallSession?.lastSeenAt || null,
+          daysSinceLastActivity: lastOverallSession
+            ? Math.floor((new Date().getTime() - new Date(lastOverallSession.lastSeenAt).getTime()) / (1000 * 60 * 60 * 24))
+            : 999,
+        });
+      }
+    }
+
+    return inactivePractitioners;
+  }
+
+  async reEngagePractitioner(practitionerId: string, action: string, message?: string) {
+    const practitioner = await this.prisma.user.findUnique({
+      where: { id: practitionerId, role: 'BABALAWO' },
+    });
+    if (!practitioner) throw new NotFoundException('Practitioner not found');
+
+    switch (action) {
+      case 'send-message':
+        // Use NotificationService to send message
+        // For now, just log
+        break;
+      case 'mark-on-leave':
+        await this.prisma.user.update({
+          where: { id: practitionerId },
+          data: { isOnLeave: true },
+        });
+        break;
+      case 'deactivate':
+        await this.prisma.user.update({
+          where: { id: practitionerId },
+          data: { isDeactivated: true },
+        });
+        break;
+      default:
+        throw new BadRequestException('Invalid action');
+    }
+    return { success: true };
+  }
+
+  async reactivatePractitioner(practitionerId: string) {
+    const practitioner = await this.prisma.user.findUnique({
+      where: { id: practitionerId, role: 'BABALAWO' },
+    });
+    if (!practitioner) throw new NotFoundException('Practitioner not found');
+
+    await this.prisma.user.update({
+      where: { id: practitionerId },
+      data: { isOnLeave: false, isDeactivated: false },
+    });
+    return { success: true };
   }
 
   async getLifecycleAnalytics() {

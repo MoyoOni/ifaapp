@@ -99,32 +99,61 @@ export class AdminCommunityService {
    * Resolve reported content
    */
   async resolveReportedContent(
-    type: string,
-    id: string,
-    action: 'DISMISS' | 'REMOVE',
-    currentUser: CurrentUserPayload
+    reportType: string,
+    reportId: string,
+    action: string,
+    currentUser: CurrentUserPayload,
+    reason?: string
   ) {
     if (currentUser.role !== 'ADMIN') {
-      throw new ForbiddenException('Only admins can resolve reports');
+      throw new ForbiddenException('Only admins can resolve reported content');
     }
 
-    const updateData = {
-      status: action === 'REMOVE' ? 'REMOVED' : 'ACTIVE', // If dismissed, verify status is active
-      moderatedBy: currentUser.id,
-      moderatedAt: new Date(),
-      moderationNotes: `Report resolved: ${action}`,
-      flaggedCount: action === 'DISMISS' ? 0 : undefined, // Reset flags if dismissed
-    };
-
-    if (type === 'PRODUCT_REVIEW') {
-      return this.prisma.productReview.update({ where: { id }, data: updateData });
-    } else if (type === 'BABALAWO_REVIEW') {
-      return this.prisma.babalawoReview.update({ where: { id }, data: updateData });
-    } else if (type === 'COURSE_REVIEW') {
-      return this.prisma.courseReview.update({ where: { id }, data: updateData });
-    } else {
-      throw new BadRequestException('Invalid content type');
+    // Implementation for resolving reported content
+    // This would vary depending on the reportType and action
+    switch(reportType) {
+      case 'PRODUCT_REVIEW':
+        if (action === 'REMOVE') {
+          return this.prisma.productReview.update({
+            where: { id: reportId },
+            data: { status: 'REMOVED', moderationNotes: reason }
+          });
+        } else if (action === 'DISMISS') {
+          return this.prisma.productReview.update({
+            where: { id: reportId },
+            data: { flaggedCount: 0 } // Clear flags
+          });
+        }
+        break;
+      case 'BABALAWO_REVIEW':
+        if (action === 'REMOVE') {
+          return this.prisma.babalawoReview.update({
+            where: { id: reportId },
+            data: { status: 'REMOVED', moderationNotes: reason }
+          });
+        } else if (action === 'DISMISS') {
+          return this.prisma.babalawoReview.update({
+            where: { id: reportId },
+            data: { flaggedCount: 0 } // Clear flags
+          });
+        }
+        break;
+      case 'COURSE_REVIEW':
+        if (action === 'REMOVE') {
+          return this.prisma.courseReview.update({
+            where: { id: reportId },
+            data: { status: 'REMOVED', moderationNotes: reason }
+          });
+        } else if (action === 'DISMISS') {
+          return this.prisma.courseReview.update({
+            where: { id: reportId },
+            data: { flaggedCount: 0 } // Clear flags
+          });
+        }
+        break;
     }
+
+    throw new BadRequestException(`Unsupported report type: ${reportType} or action: ${action}`);
   }
 
   /**
@@ -135,111 +164,43 @@ export class AdminCommunityService {
     createVoteDto: CreateAdvisoryVoteDto,
     currentUser: CurrentUserPayload
   ) {
-    if (currentUser.role !== 'ADMIN' && currentUser.role !== 'ADVISORY_BOARD_MEMBER') {
-      throw new ForbiddenException('Only advisory board members can create votes');
+    if (currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can create advisory votes');
     }
 
-    // Verify user is an advisory board member
-    if (currentUser.role !== 'ADMIN' && currentUser.role !== 'ADVISORY_BOARD_MEMBER') {
-      throw new ForbiddenException('Only advisory board members can create votes');
-    }
-
-    // Create the vote
-    const vote = await this.prisma.advisoryVote.create({
+    return this.prisma.advisoryVote.create({
       data: {
         title: createVoteDto.title,
         description: createVoteDto.description,
         proposerId: userId,
         deadline: new Date(createVoteDto.deadline),
         requiredMajority: createVoteDto.requiredMajority,
-        status: 'PENDING', // Will be activated when quorum is met
-        options: {
-          create: createVoteDto.voteOptions.map((option) => ({
-            option,
-            voteCount: 0,
-          })),
-        },
-      },
-      include: {
-        options: true,
-        proposer: {
-          select: {
-            id: true,
-            name: true,
-            yorubaName: true,
-            role: true,
-          },
-        },
+        status: 'PENDING',
       },
     });
-
-    return vote;
   }
 
   /**
    * Get advisory board votes
    */
   async getAdvisoryVotes(userId: string, status: string | null, currentUser: CurrentUserPayload) {
-    if (currentUser.role !== 'ADMIN' && currentUser.role !== 'ADVISORY_BOARD_MEMBER') {
-      throw new ForbiddenException('Only advisory board members can view votes');
+    if (currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can view advisory votes');
     }
 
     const where: any = {};
     if (status) {
-      const statuses = status.split(',');
-      where.status = { in: statuses };
+      where.status = status;
     }
 
-    const votes = await this.prisma.advisoryVote.findMany({
+    return this.prisma.advisoryVote.findMany({
       where,
       include: {
-        options: {
-          select: {
-            option: true,
-            voteCount: true,
-          },
-        },
-        proposer: {
-          select: {
-            id: true,
-            name: true,
-            yorubaName: true,
-            role: true,
-          },
-        },
-        casts: {
-          select: {
-            userId: true,
-          },
-        },
+        proposer: { select: { id: true, name: true } },
+        options: true,
+        casts: { include: { user: { select: { id: true, name: true } } } },
       },
       orderBy: { createdAt: 'desc' },
-    });
-
-    // Format results to match frontend expectations
-    return votes.map((vote: any) => {
-      const totalVotes = vote.casts.length;
-      const yesVotes =
-        vote.options.find((opt: any) => opt.option.toLowerCase() === 'yes')?.voteCount || 0;
-      const noVotes =
-        vote.options.find((opt: any) => opt.option.toLowerCase() === 'no')?.voteCount || 0;
-      const abstainVotes = totalVotes - yesVotes - noVotes;
-
-      return {
-        ...vote,
-        votes: {
-          yes: yesVotes,
-          no: noVotes,
-          abstain: abstainVotes,
-        },
-        voterCount: totalVotes,
-        voteOptions: vote.options.map((opt: any) => opt.option),
-        results: vote.options.map((opt: any) => ({
-          option: opt.option,
-          count: opt.voteCount,
-          percentage: totalVotes > 0 ? Math.round((opt.voteCount / totalVotes) * 100) : 0,
-        })),
-      };
     });
   }
 
@@ -247,143 +208,54 @@ export class AdminCommunityService {
    * Cast a vote in an advisory board vote
    */
   async castAdvisoryVote(voteId: string, option: string, currentUser: CurrentUserPayload) {
-    if (currentUser.role !== 'ADMIN' && currentUser.role !== 'ADVISORY_BOARD_MEMBER') {
-      throw new ForbiddenException('Only advisory board members can vote');
+    if (currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can cast advisory votes');
     }
 
-    // Check if vote exists and is active
+    // Find the vote and the option
     const vote = await this.prisma.advisoryVote.findUnique({
       where: { id: voteId },
-      include: {
-        options: true,
-      },
+      include: { options: true },
     });
 
     if (!vote) {
       throw new NotFoundException('Vote not found');
     }
 
-    if (vote.status !== 'ACTIVE' && vote.status !== 'PENDING') {
-      throw new BadRequestException('Vote is not active');
-    }
-
-    if (new Date(vote.deadline) < new Date()) {
-      throw new BadRequestException('Vote deadline has passed');
+    const selectedOption = vote.options.find(opt => opt.option === option);
+    if (!selectedOption) {
+      throw new BadRequestException('Invalid option');
     }
 
     // Check if user has already voted
-    const existingVote = await this.prisma.advisoryVoteCast.findFirst({
+    const existingVote = await this.prisma.advisoryVoteCast.findUnique({
       where: {
-        voteId,
-        userId: currentUser.id,
-      },
+        userId_voteId: { userId: currentUser.id, voteId }
+      }
     });
 
     if (existingVote) {
-      throw new BadRequestException('You have already voted in this poll');
+      throw new BadRequestException('User has already voted');
     }
 
-    // Verify the option is valid
-    const validOption = vote.options.find((opt: any) => opt.option === option);
-    if (!validOption) {
-      throw new BadRequestException('Invalid vote option');
-    }
-
-    // Create the vote cast
+    // Record the vote
     const voteCast = await this.prisma.advisoryVoteCast.create({
       data: {
-        voteId,
         userId: currentUser.id,
+        voteId,
         option,
       },
     });
 
-    // Increment the option count
+    // Increment the vote count for the option
     await this.prisma.advisoryVoteOption.update({
-      where: {
-        id: validOption.id,
-      },
+      where: { id: selectedOption.id },
       data: {
-        voteCount: {
-          increment: 1,
-        },
-      },
+        voteCount: { increment: 1 }
+      }
     });
-
-    // Update vote status if quorum is met (more than 50% of advisory board members)
-    const totalAdvisoryMembers = await this.prisma.user.count({
-      where: { role: 'ADVISORY_BOARD_MEMBER' },
-    });
-
-    const currentVotes = await this.prisma.advisoryVoteCast.count({
-      where: { voteId },
-    });
-
-    if (currentVotes > totalAdvisoryMembers / 2 && vote.status === 'PENDING') {
-      await this.prisma.advisoryVote.update({
-        where: { id: voteId },
-        data: { status: 'ACTIVE' },
-      });
-    }
-
-    // Check if vote has ended and determine result
-    if (new Date(vote.deadline) < new Date()) {
-      await this.determineVoteResult(voteId);
-    }
 
     return voteCast;
-  }
-
-  /**
-   * Determine and finalize vote result
-   */
-  private async determineVoteResult(voteId: string) {
-    const vote = await this.prisma.advisoryVote.findUnique({
-      where: { id: voteId },
-      include: {
-        options: true,
-        casts: true,
-      },
-    });
-
-    if (!vote || vote.status !== 'ACTIVE') {
-      return;
-    }
-
-    // Calculate results
-    const totalVotes = vote.casts.length;
-    if (totalVotes === 0) {
-      await this.prisma.advisoryVote.update({
-        where: { id: voteId },
-        data: { status: 'REJECTED' },
-      });
-      return;
-    }
-
-    // Find the winning option
-    const winner = vote.options.reduce((prev: any, current: any) =>
-      prev.voteCount > current.voteCount ? prev : current
-    );
-
-    // Check if it meets the required majority
-    let status: string;
-    const requiredMajority = vote.requiredMajority;
-
-    if (requiredMajority === 'UNANIMOUS' && winner.voteCount !== totalVotes) {
-      status = 'REJECTED';
-    } else if (requiredMajority === 'SUPER' && winner.voteCount / totalVotes < 0.75) {
-      status = 'REJECTED';
-    } else if (requiredMajority === 'SIMPLE' && winner.voteCount / totalVotes <= 0.5) {
-      status = 'REJECTED';
-    } else {
-      status = 'APPROVED';
-    }
-
-    // Update vote status
-    await this.prisma.advisoryVote.update({
-      where: { id: voteId },
-      data: { status: status as any },
-    });
   }
 
   /**
@@ -402,44 +274,10 @@ export class AdminCommunityService {
     return this.prisma.circleSuggestion.findMany({
       where,
       include: {
-        suggester: {
-          select: {
-            id: true,
-            name: true,
-            yorubaName: true,
-            avatar: true,
-            email: true,
-          },
-        },
-        reviewer: {
-          select: {
-            id: true,
-            name: true,
-            yorubaName: true,
-          },
-        },
-        thread: {
-          select: {
-            id: true,
-            title: true,
-            content: true,
-            createdAt: true,
-            category: {
-              select: {
-                id: true,
-                name: true,
-                slug: true,
-              },
-            },
-          },
-        },
-        circle: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-          },
-        },
+        suggester: { select: { id: true, name: true, email: true } },
+        circle: true,
+        reviewer: { select: { id: true, name: true } },
+        thread: { select: { id: true, title: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -457,7 +295,45 @@ export class AdminCommunityService {
       throw new ForbiddenException('Only admins can approve circle suggestions');
     }
 
-    return this.circlesService.createFromSuggestion(suggestionId, circleData, currentUser);
+    const suggestion = await this.prisma.circleSuggestion.findUnique({
+      where: { id: suggestionId },
+      include: { suggester: true }
+    });
+
+    if (!suggestion) {
+      throw new NotFoundException('Circle suggestion not found');
+    }
+
+    // First, get the actual user to have complete info
+    const user = await this.prisma.user.findUnique({
+      where: { id: suggestion.suggestedBy }
+    });
+
+    if (!user) {
+      throw new NotFoundException('Suggester not found');
+    }
+
+    // Create the circle with the original suggester as the creator
+    const circle = await this.circlesService.create(circleData, { 
+      id: user.id,
+      sub: user.id,
+      email: user.email,
+      role: user.role as any, // Assuming user.role matches UserRole enum
+      verified: user.verified,
+    }); 
+
+    // Update the suggestion
+    await this.prisma.circleSuggestion.update({
+      where: { id: suggestionId },
+      data: {
+        status: 'APPROVED',
+        reviewedBy: currentUser.id,
+        reviewedAt: new Date(),
+        circleId: circle.id,
+      }
+    });
+
+    return circle;
   }
 
   /**
@@ -473,15 +349,11 @@ export class AdminCommunityService {
     }
 
     const suggestion = await this.prisma.circleSuggestion.findUnique({
-      where: { id: suggestionId },
+      where: { id: suggestionId }
     });
 
     if (!suggestion) {
       throw new NotFoundException('Circle suggestion not found');
-    }
-
-    if (suggestion.status !== 'PENDING') {
-      throw new BadRequestException('Suggestion has already been processed');
     }
 
     return this.prisma.circleSuggestion.update({
@@ -491,22 +363,7 @@ export class AdminCommunityService {
         reviewedBy: currentUser.id,
         reviewedAt: new Date(),
         notes: reason,
-      },
-      include: {
-        suggester: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        thread: {
-          select: {
-            id: true,
-            title: true,
-          },
-        },
-      },
+      }
     });
   }
 
@@ -519,25 +376,10 @@ export class AdminCommunityService {
     }
 
     return this.prisma.circle.findMany({
-      where: {
-        status: 'PENDING_APPROVAL',
-      },
+      where: { status: 'PENDING' },
       include: {
-        creator: {
-          select: {
-            id: true,
-            name: true,
-            yorubaName: true,
-            avatar: true,
-          },
-        },
-        suggester: {
-          select: {
-            id: true,
-            name: true,
-            yorubaName: true,
-          },
-        },
+        creator: { select: { id: true, name: true, email: true } },
+        suggester: { select: { id: true, name: true, email: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -556,96 +398,284 @@ export class AdminCommunityService {
     }
 
     const circle = await this.prisma.circle.findUnique({
-      where: { id: circleId },
+      where: { id: circleId }
     });
 
     if (!circle) {
       throw new NotFoundException('Circle not found');
     }
 
-    // Soft delete (P0-03): DELETE used to hard-delete the circle, cascading
-    // to destroy every member/feed-post row with no recovery path for an
-    // admin moderation action. Routed through the same status-update path as
-    // ARCHIVE/ACTIVATE below, just with its own status value.
-    const statusMap = {
-      ARCHIVE: 'ARCHIVED',
-      ACTIVATE: 'ACTIVE',
-      DELETE: 'DELETED',
-    };
-
-    return this.prisma.circle.update({
-      where: { id: circleId },
-      data: {
-        status: statusMap[action],
-        active: action === 'ACTIVATE',
-      },
-      include: {
-        creator: {
-          select: {
-            id: true,
-            name: true,
-            yorubaName: true,
-          },
-        },
-      },
-    });
+    switch (action) {
+      case 'ARCHIVE':
+        return this.prisma.circle.update({
+          where: { id: circleId },
+          data: { active: false, status: 'ARCHIVED' }
+        });
+      case 'DELETE':
+        return this.prisma.circle.update({
+          where: { id: circleId },
+          data: { active: false, status: 'DELETED' }
+        });
+      case 'ACTIVATE':
+        return this.prisma.circle.update({
+          where: { id: circleId },
+          data: { active: true, status: 'ACTIVE' }
+        });
+      default:
+        throw new BadRequestException('Invalid action');
+    }
   }
 
   /**
-   * Approve and promote circle event to main events directory
+   * Approve circle event
    */
   async approveCircleEvent(eventId: string, currentUser: CurrentUserPayload) {
     if (currentUser.role !== 'ADMIN') {
       throw new ForbiddenException('Only admins can approve circle events');
     }
 
-    // This will be implemented when EventsService is injected
-    // For now, we'll use Prisma directly
-    const event = await this.prisma.event.findUnique({
-      where: { id: eventId },
-      include: { circle: true },
-    });
-
-    if (!event) {
-      throw new NotFoundException('Event not found');
-    }
-
-    if (!event.circleId) {
-      throw new BadRequestException('This event is not associated with a circle');
-    }
-
-    // Publish the event
     return this.prisma.event.update({
       where: { id: eventId },
+      data: { status: 'APPROVED' }
+    });
+  }
+
+  /**
+   * Get community stars data: top posters, top streaks, recent badges
+   */
+  async getCommunityStars() {
+    // Get top posters (users with most forum posts)
+    const topPostersGrouped = await this.prisma.forumPost.groupBy({
+      by: ['authorId'],
+      where: { status: 'ACTIVE' },
+      _count: { authorId: true },
+      orderBy: { _count: { authorId: 'desc' } },
+      take: 10,
+    });
+    const topPostersRaw = topPostersGrouped.map(g => ({
+      authorId: g.authorId,
+      count: g._count.authorId,
+    }));
+
+    const topPosterUserIds = topPostersRaw.map(p => p.authorId);
+    const topPosterUsers = await this.prisma.user.findMany({
+      where: { id: { in: topPosterUserIds } },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        avatar: true,
+        contributionStreak: true,
+        longestStreak: true,
+        isCommunityBuilder: true,
+      },
+    });
+
+    const topPosters = topPostersRaw.map(raw => {
+      const user = topPosterUsers.find(u => u.id === raw.authorId);
+      return {
+        id: user?.id || raw.authorId,
+        name: user?.name || 'Unknown',
+        email: user?.email || '',
+        avatar: user?.avatar,
+        postCount: raw.count,
+        contributionStreak: user?.contributionStreak,
+        longestStreak: user?.longestStreak,
+        isCommunityBuilder: user?.isCommunityBuilder,
+      };
+    });
+
+    // Get top streaks (users with highest contribution streak)
+    const topStreaks = await this.prisma.user.findMany({
+      where: {
+        contributionStreak: { gt: 0 }
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        avatar: true,
+        contributionStreak: true,
+        longestStreak: true,
+        isCommunityBuilder: true,
+      },
+      orderBy: { contributionStreak: 'desc' },
+      take: 10,
+    }).then(users => users.map(user => ({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      avatar: user.avatar,
+      postCount: undefined, // Will be calculated separately if needed
+      contributionStreak: user.contributionStreak,
+      longestStreak: user.longestStreak,
+      isCommunityBuilder: user.isCommunityBuilder,
+    })));
+
+    // Get recent badges
+    const recentBadges = await this.prisma.userBadge.findMany({
+      take: 10,
+      orderBy: { awardedAt: 'desc' },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatar: true,
+          }
+        },
+        awardedBy: {
+          select: {
+            id: true,
+            name: true,
+          }
+        }
+      }
+    });
+
+    // Map badge keys to badge names using preset list
+    const badgeNameMap: Record<string, string> = {
+      'elder-voice': 'Elder Voice',
+      'community-pillar': 'Community Pillar',
+      'culture-keeper': 'Culture Keeper',
+      'oral-historian': 'Oral Historian',
+      'forum-guide': 'Forum Guide',
+    };
+
+    const recentBadgesMapped = recentBadges.map(badge => {
+      // Get human-readable badge name from the map, or humanize the badgeKey if not found
+      const badgeName = badgeNameMap[badge.badgeKey] || badge.badgeKey.split('-').map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1)
+      ).join(' ');
+
+      return {
+        id: badge.id,
+        badgeName,
+        badgeSlug: badge.badgeKey,
+        description: undefined, // Description is not stored in the DB, only for presets in frontend
+        awardedAt: badge.awardedAt.toISOString(),
+        message: badge.reason || undefined,
+        user: badge.user ? {
+          id: badge.user.id,
+          name: badge.user.name,
+          email: badge.user.email,
+          avatar: badge.user.avatar,
+        } : undefined,
+        awarder: badge.awardedBy ? {
+          id: badge.awardedBy.id,
+          name: badge.awardedBy.name,
+        } : undefined,
+      };
+    });
+
+    return {
+      topPosters,
+      topStreaks,
+      recentBadges: recentBadgesMapped,
+    };
+  }
+
+  /**
+   * Award a badge to a user
+   */
+  async awardBadge(userId: string, badgeData: {
+    badgeName: string,
+    badgeSlug: string,
+    description?: string,
+    message?: string,
+    promoteToBuilder?: boolean
+  }, adminId: string) {
+    // Check if user exists
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Create the badge
+    const badge = await this.prisma.userBadge.create({
       data: {
-        published: true,
+        userId,
+        badgeKey: badgeData.badgeSlug,
+        reason: badgeData.message || undefined,
+        awardedById: adminId,
       },
       include: {
-        creator: {
+        user: {
           select: {
             id: true,
             name: true,
-            yorubaName: true,
+            email: true,
             avatar: true,
-          },
+          }
         },
-        circle: {
+        awardedBy: {
           select: {
             id: true,
             name: true,
-            slug: true,
-          },
-        },
-        _count: {
-          select: {
-            registrations: {
-              where: {
-                status: { in: ['REGISTERED', 'ATTENDED'] },
-              },
-            },
-          },
-        },
-      },
+          }
+        }
+      }
+    });
+
+    // Promote to community builder if requested
+    if (badgeData.promoteToBuilder) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { isCommunityBuilder: true },
+      });
+    }
+
+    // Map the response to match frontend expectations
+    const badgeNameMap: Record<string, string> = {
+      'elder-voice': 'Elder Voice',
+      'community-pillar': 'Community Pillar',
+      'culture-keeper': 'Culture Keeper',
+      'oral-historian': 'Oral Historian',
+      'forum-guide': 'Forum Guide',
+    };
+
+    const badgeName = badgeNameMap[badge.badgeKey] || badge.badgeKey.split('-').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
+
+    return {
+      id: badge.id,
+      badgeName,
+      badgeSlug: badge.badgeKey,
+      description: undefined, // Description is not stored in the DB
+      awardedAt: badge.awardedAt.toISOString(),
+      message: badge.reason || undefined,
+      user: badge.user ? {
+        id: badge.user.id,
+        name: badge.user.name,
+        email: badge.user.email,
+        avatar: badge.user.avatar,
+      } : undefined,
+      awarder: badge.awardedBy ? {
+        id: badge.awardedBy.id,
+        name: badge.awardedBy.name,
+      } : undefined,
+    };
+  }
+
+  /**
+   * Revoke/delete a badge
+   */
+  async revokeBadge(badgeId: string) {
+    const badge = await this.prisma.userBadge.findUnique({
+      where: { id: badgeId }
+    });
+
+    if (!badge) {
+      throw new NotFoundException('Badge not found');
+    }
+
+    await this.prisma.userBadge.delete({
+      where: { id: badgeId }
     });
   }
 }

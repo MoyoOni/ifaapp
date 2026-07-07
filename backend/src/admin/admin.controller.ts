@@ -24,6 +24,16 @@ import { AdminAcademyService } from './admin-academy.service';
 import { AdminTrustScoreService } from './admin-trust-score.service';
 import { AdminPlatformSettingsService } from './admin-platform-settings.service';
 import { AdminAnnouncementsService } from './admin-announcements.service';
+import { AdminPromosService } from './admin-promos.service';
+import { AdminReferralsService } from './admin-referrals.service';
+import { AdminCommunityService } from './admin-community.service';
+import { AdminCulturalContentService } from './admin-cultural-content.service';
+import { AdminFeaturedContentService } from './admin-featured-content.service';
+import { AdminIntegrityService } from './admin-integrity.service';
+import { AdminComplaintsService } from './admin-complaints.service';
+import { AdminMarketIntelligenceService } from './admin-market-intelligence.service';
+import { AdminPractitionerPerformanceService } from './admin-practitioner-performance.service';
+import { AdminMorningBriefService } from './admin-morning-brief.service';
 import { OutboxService } from '../outbox/outbox.service';
 import { GdprService } from '../gdpr/gdpr.service';
 import { AuditInterceptor } from './interceptors/audit.interceptor';
@@ -52,6 +62,16 @@ import { UpdateCourseStatusDto } from './dto/update-course-status.dto';
 import { ManualEnrollDto } from './dto/manual-enroll.dto';
 import { RemoveEnrollmentDto } from './dto/remove-enrollment.dto';
 import { CreateAnnouncementDto } from './dto/create-announcement.dto';
+import { AwardBadgeDto } from './dto/award-badge.dto';
+import { CreateDailyWordDto, UpdateDailyWordDto } from './dto/daily-word.dto';
+import { CreateOralHistoryDto, UpdateOralHistoryDto } from './dto/oral-history.dto';
+import { CreateSacredEventDto, UpdateSacredEventDto } from './dto/sacred-event.dto';
+import { UpdateFeaturedDto } from './dto/update-featured.dto';
+import { FeaturedSearchDto } from './dto/featured-search.dto';
+import { RejectPostDto } from './dto/reject-post.dto';
+import { CreateFlagRuleDto } from './dto/create-flag-rule.dto';
+import { UpdateFlagRuleDto } from './dto/update-flag-rule.dto';
+import { ResolveComplaintDto } from './dto/resolve-complaint.dto';
 
 @Controller('admin')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
@@ -67,7 +87,17 @@ export class AdminController {
     private readonly platformSettingsService: AdminPlatformSettingsService,
     private readonly gdprService: GdprService,
     private readonly outboxService: OutboxService,
-    private readonly announcementsService: AdminAnnouncementsService
+    private readonly announcementsService: AdminAnnouncementsService,
+    private readonly promosService: AdminPromosService,
+    private readonly referralsService: AdminReferralsService,
+    private readonly communityService: AdminCommunityService,
+    private readonly culturalContentService: AdminCulturalContentService,
+    private readonly featuredContentService: AdminFeaturedContentService,
+    private readonly integrityService: AdminIntegrityService,
+    private readonly complaintsService: AdminComplaintsService,
+    private readonly marketIntelligenceService: AdminMarketIntelligenceService,
+    private readonly morningBriefService: AdminMorningBriefService,
+    private readonly practitionerPerformanceService: AdminPractitionerPerformanceService
   ) {}
 
   @Get('stats')
@@ -602,6 +632,48 @@ export class AdminController {
     return this.trustScoreService.getOverrideHistory(userId);
   }
 
+  @Get('trust-score-adjustments')
+  @Roles(UserRole.ADMIN)
+  async getTrustScoreAdjustments() {
+    return this.trustScoreService.getOverrideAdjustments();
+  }
+
+  // ADM-007: Featured Practitioners
+
+  @Get('practitioners/for-featuring')
+  @Roles(UserRole.ADMIN)
+  async getPractitionersForFeaturing() {
+    return this.trustScoreService.getPractitionersForFeaturing();
+  }
+
+  @Get('practitioners/featured')
+  @Roles(UserRole.ADMIN)
+  async getFeaturedPractitioners() {
+    return this.trustScoreService.getFeaturedPractitioners();
+  }
+
+  @Patch('practitioners/:id/featured')
+  @Roles(UserRole.ADMIN)
+  async updatePractitionerFeaturedStatus(
+    @Param('id') id: string,
+    @Body() dto: { isFeatured: boolean; featuredOrder?: number; featuredExpiry?: string }
+  ) {
+    return this.trustScoreService.updatePractitionerFeaturedStatus(
+      id,
+      dto.isFeatured,
+      dto.featuredOrder,
+      dto.featuredExpiry ? new Date(dto.featuredExpiry) : undefined
+    );
+  }
+
+  // Practitioner Performance
+
+  @Get('practitioner-performance')
+  @Roles(UserRole.ADMIN)
+  async getPractitionerPerformance() {
+    return this.practitionerPerformanceService.getPractitionerPerformance();
+  }
+
   // ADM-030: Platform Settings
 
   @Get('platform-settings')
@@ -662,6 +734,285 @@ export class AdminController {
   @Roles(UserRole.ADMIN)
   async getMarketplaceCategories() {
     return this.marketplaceService.getCategories();
+  }
+
+  // ADM-020: Promo Codes Management
+
+  @Get('promos')
+  @Roles(UserRole.ADMIN)
+  async getAllPromos(@Query('includeInactive') includeInactive: string) {
+    return this.promosService.getAllPromos(includeInactive === 'true');
+  }
+
+  @Post('promos')
+  @Roles(UserRole.ADMIN)
+  async createPromo(
+    @Body() body: { code: string; type: string; value: number; maxUses?: number; expiresAt?: string; eligibleRoles: string[] },
+    @CurrentUser() admin: CurrentUserPayload
+  ) {
+    return this.promosService.createPromo(
+      body.code,
+      body.type,
+      body.value,
+      admin,
+      body.maxUses,
+      body.expiresAt,
+      body.eligibleRoles
+    );
+  }
+
+  @Patch('promos/:id')
+  @Roles(UserRole.ADMIN)
+  async updatePromo(@Param('id') id: string, @Body() body: { isActive: boolean }) {
+    return this.promosService.updatePromo(id, body.isActive);
+  }
+
+  @Delete('promos/:id')
+  @Roles(UserRole.ADMIN)
+  async deletePromo(@Param('id') id: string) {
+    return this.promosService.deletePromo(id);
+  }
+
+  // ADM-022: Revenue Forecasting
+
+  @Get('forecasting/revenue')
+  @Roles(UserRole.ADMIN)
+  async getRevenueForecast() {
+    return this.adminService.getRevenueForecast();
+  }
+
+  // ADM-027: Subscription Lists
+
+  @Get('subscriptions/active')
+  @Roles(UserRole.ADMIN)
+  async getActiveSubscribers() {
+    return this.adminService.getActiveSubscribers();
+  }
+
+  @Get('subscriptions/cancelled')
+  @Roles(UserRole.ADMIN)
+  async getCancelledSubscribers() {
+    return this.adminService.getCancelledSubscribers();
+  }
+
+  @Get('subscriptions/failed-payments')
+  @Roles(UserRole.ADMIN)
+  async getFailedSubscribers() {
+    return this.adminService.getFailedSubscribers();
+  }
+
+  // ADM-029: Financial Command Centre
+
+  @Get('financial-command-centre')
+  @Roles(UserRole.ADMIN)
+  async getFinancialCommandCentre() {
+    return this.adminService.getFinancialCommandCentre();
+  }
+
+  // ADM-028: Market Intelligence
+
+  @Get('market-intelligence/leaderboard')
+  @Roles(UserRole.ADMIN)
+  async getLeaderboard(@Query('sortBy') sortBy: string = 'bookings') {
+    return this.marketIntelligenceService.getLeaderboard(sortBy as 'bookings' | 'revenue' | 'rating');
+  }
+
+  @Get('market-intelligence/signals')
+  @Roles(UserRole.ADMIN)
+  async getSignals() {
+    return this.marketIntelligenceService.getSignals();
+  }
+
+  // ADM-021: Referral Program Management
+
+  @Get('referrals/stats')
+  @Roles(UserRole.ADMIN)
+  async getReferralStats() {
+    return this.referralsService.getStats();
+  }
+
+  @Get('referrals')
+  @Roles(UserRole.ADMIN)
+  async getReferrals(@Query('page') page: number = 1, @Query('limit') limit: number = 20) {
+    return this.referralsService.getReferrals(Number(page), Number(limit));
+  }
+
+  @Post('referrals/:id/credit')
+  @Roles(UserRole.ADMIN)
+  async creditReferral(@Param('id') id: string) {
+    return this.referralsService.creditReferral(id);
+  }
+
+  // ADM-017: Community Recognition System
+
+  @Get('community/stars')
+  @Roles(UserRole.ADMIN)
+  async getCommunityStars() {
+    return this.communityService.getCommunityStars();
+  }
+
+  @Post('community/badges/:userId')
+  @Roles(UserRole.ADMIN)
+  async awardBadge(
+    @Param('userId') userId: string,
+    @Body() dto: AwardBadgeDto,
+    @CurrentUser() admin: CurrentUserPayload
+  ) {
+    return this.communityService.awardBadge(userId, dto, admin.id);
+  }
+
+  @Delete('community/badges/:badgeId')
+  @Roles(UserRole.ADMIN)
+  async revokeBadge(@Param('badgeId') badgeId: string) {
+    return this.communityService.revokeBadge(badgeId);
+  }
+
+  // ADM-023: Cultural Content Calendar
+
+  // ===== Daily Words =====
+
+  @Get('cultural/daily-words')
+  @Roles(UserRole.ADMIN)
+  async getDailyWords() {
+    return this.culturalContentService.getDailyWords();
+  }
+
+  @Post('cultural/daily-words')
+  @Roles(UserRole.ADMIN)
+  async createDailyWord(@Body() dto: CreateDailyWordDto, @CurrentUser() admin: CurrentUserPayload) {
+    return this.culturalContentService.createDailyWord(dto, admin);
+  }
+
+  @Patch('cultural/daily-words/:id')
+  @Roles(UserRole.ADMIN)
+  async updateDailyWord(@Param('id') id: string, @Body() dto: UpdateDailyWordDto) {
+    return this.culturalContentService.updateDailyWord(id, dto);
+  }
+
+  @Delete('cultural/daily-words/:id')
+  @Roles(UserRole.ADMIN)
+  async deleteDailyWord(@Param('id') id: string) {
+    return this.culturalContentService.deleteDailyWord(id);
+  }
+
+  // ===== Oral History =====
+
+  @Get('cultural/oral-histories')
+  @Roles(UserRole.ADMIN)
+  async getOralHistories() {
+    return this.culturalContentService.getOralHistories();
+  }
+
+  @Post('cultural/oral-histories')
+  @Roles(UserRole.ADMIN)
+  async createOralHistory(@Body() dto: CreateOralHistoryDto, @CurrentUser() admin: CurrentUserPayload) {
+    return this.culturalContentService.createOralHistory(dto, admin);
+  }
+
+  @Patch('cultural/oral-histories/:id')
+  @Roles(UserRole.ADMIN)
+  async updateOralHistory(@Param('id') id: string, @Body() dto: UpdateOralHistoryDto) {
+    return this.culturalContentService.updateOralHistory(id, dto);
+  }
+
+  @Delete('cultural/oral-histories/:id')
+  @Roles(UserRole.ADMIN)
+  async deleteOralHistory(@Param('id') id: string) {
+    return this.culturalContentService.deleteOralHistory(id);
+  }
+
+  // ===== Sacred Calendar Events =====
+
+  @Get('cultural/sacred-events')
+  @Roles(UserRole.ADMIN)
+  async getSacredEvents() {
+    return this.culturalContentService.getSacredEvents();
+  }
+
+  @Post('cultural/sacred-events')
+  @Roles(UserRole.ADMIN)
+  async createSacredEvent(@Body() dto: CreateSacredEventDto, @CurrentUser() admin: CurrentUserPayload) {
+    return this.culturalContentService.createSacredEvent(dto, admin);
+  }
+
+  @Patch('cultural/sacred-events/:id')
+  @Roles(UserRole.ADMIN)
+  async updateSacredEvent(@Param('id') id: string, @Body() dto: UpdateSacredEventDto) {
+    return this.culturalContentService.updateSacredEvent(id, dto);
+  }
+
+  @Delete('cultural/sacred-events/:id')
+  @Roles(UserRole.ADMIN)
+  async deleteSacredEvent(@Param('id') id: string) {
+    return this.culturalContentService.deleteSacredEvent(id);
+  }
+
+  // ADM-024: Featured Content Management
+
+  @Get('featured-content')
+  @Roles(UserRole.ADMIN)
+  async getFeaturedContent() {
+    return this.featuredContentService.getFeaturedContent();
+  }
+
+  @Get('featured-content/search')
+  @Roles(UserRole.ADMIN)
+  async searchFeaturedContent(@Query() dto: FeaturedSearchDto) {
+    return this.featuredContentService.search(dto.type, dto.q);
+  }
+
+  @Patch('featured-content/:type/:id')
+  @Roles(UserRole.ADMIN)
+  async updateFeatured(
+    @Param('type') type: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateFeaturedDto,
+  ) {
+    return this.featuredContentService.updateFeatured(type, id, dto);
+  }
+
+  // ADM-025: Cultural Integrity Management
+
+  @Get('integrity/queue')
+  @Roles(UserRole.ADMIN)
+  async getIntegrityQueue(@Query('page') page: number = 1, @Query('limit') limit: number = 20) {
+    return this.integrityService.getQueue(Number(page), Number(limit));
+  }
+
+  @Post('integrity/queue/:postId/approve')
+  @Roles(UserRole.ADMIN)
+  async approvePost(@Param('postId') postId: string, @CurrentUser() admin: CurrentUserPayload) {
+    return this.integrityService.approvePost(postId, admin);
+  }
+
+  @Post('integrity/queue/:postId/reject')
+  @Roles(UserRole.ADMIN)
+  async rejectPost(@Param('postId') postId: string, @Body() dto: RejectPostDto, @CurrentUser() admin: CurrentUserPayload) {
+    return this.integrityService.rejectPost(postId, admin, dto);
+  }
+
+  @Get('integrity/rules')
+  @Roles(UserRole.ADMIN)
+  async getFlagRules() {
+    return this.integrityService.getRules();
+  }
+
+  @Post('integrity/rules')
+  @Roles(UserRole.ADMIN)
+  async createFlagRule(@Body() dto: CreateFlagRuleDto, @CurrentUser() admin: CurrentUserPayload) {
+    return this.integrityService.createRule(dto, admin);
+  }
+
+  @Patch('integrity/rules/:id')
+  @Roles(UserRole.ADMIN)
+  async updateFlagRule(@Param('id') id: string, @Body() dto: UpdateFlagRuleDto) {
+    return this.integrityService.updateRule(id, dto);
+  }
+
+  @Delete('integrity/rules/:id')
+  @Roles(UserRole.ADMIN)
+  async deleteFlagRule(@Param('id') id: string) {
+    return this.integrityService.deleteRule(id);
   }
 
   // ADM-032: Academy Management
@@ -731,6 +1082,32 @@ export class AdminController {
     return this.academyService.revokeCertificate(enrollmentId, dto.reason, admin.id);
   }
 
+  // ADM-016: Inactive Practitioners
+
+  @Get('inactive-practitioners')
+  @Roles(UserRole.ADMIN)
+  async getInactivePractitioners(
+    @Query('daysThreshold') daysThreshold: number = 30,
+    @CurrentUser() admin: CurrentUserPayload,
+  ) {
+    return this.adminService.getInactivePractitioners(admin, Number(daysThreshold));
+  }
+
+  @Post('practitioners/:practitionerId/re-engagement-action')
+  @Roles(UserRole.ADMIN)
+  async reEngagePractitioner(
+    @Param('practitionerId') practitionerId: string,
+    @Body() body: { action: string; message?: string },
+  ) {
+    return this.adminService.reEngagePractitioner(practitionerId, body.action, body.message);
+  }
+
+  @Post('practitioners/:practitionerId/reactivate-listing')
+  @Roles(UserRole.ADMIN)
+  async reactivatePractitioner(@Param('practitionerId') practitionerId: string) {
+    return this.adminService.reactivatePractitioner(practitionerId);
+  }
+
   // ==================== GDPR / Compliance ====================
 
   @Get('compliance/users/:userId/export')
@@ -760,5 +1137,36 @@ export class AdminController {
     preferences: { marketingEmails?: boolean; dataProcessing?: boolean; forumDigest?: boolean }
   ) {
     return this.gdprService.updateConsentPreferences(userId, preferences);
+  }
+
+  // ==================== Complaints ====================
+
+  @Get('complaints')
+  @Roles(UserRole.ADMIN)
+  async getComplaints(
+    @CurrentUser() currentUser: CurrentUserPayload,
+    @Query('status') status?: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 20,
+  ) {
+    return this.complaintsService.getComplaints(currentUser, status, page, limit);
+  }
+
+  @Post('complaints/:id/resolve')
+  @Roles(UserRole.ADMIN)
+  async resolveComplaint(
+    @Param('id') id: string,
+    @Body() dto: ResolveComplaintDto,
+    @CurrentUser() currentUser: CurrentUserPayload,
+  ) {
+    return this.complaintsService.resolveComplaint(id, dto, currentUser);
+  }
+
+  // ADM-030: Morning Brief
+
+  @Get('morning-brief')
+  @Roles(UserRole.ADMIN)
+  async getMorningBrief(@CurrentUser() admin: CurrentUserPayload) {
+    return this.morningBriefService.getMorningBrief(admin);
   }
 }
