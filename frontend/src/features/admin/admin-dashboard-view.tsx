@@ -6,6 +6,8 @@ import {
   AlertTriangle, DollarSign, BarChart3, TrendingUp,
   Building2, Store, Activity, XCircle, Crown, Flag, ScrollText, Lock, Hash, Megaphone, RotateCcw, Settings, BookOpen, Star, Award, ShieldAlert, Mail, Tag
 } from 'lucide-react';
+import { ADMIN_NAV_ITEMS, type AdminTab } from './admin-nav-config';
+import { AdminSidebarNav } from './admin-sidebar-nav';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { usePrompt } from '@/hooks/use-prompt';
 import api from '@/lib/api';
@@ -38,7 +40,6 @@ import FinancialCommandCentreTab from './financial-command-centre-tab'; // New i
 import TrustScoreManagementTab from './trust-score-management-tab';
 import AdminMorningBriefTab from './admin-morning-brief-tab';
 import AdminRefundsTab from './admin-refunds-tab';
-import AdminSettingsTab from './admin-settings-tab';
 import AdminCulturalContentTab from './admin-cultural-content-tab';
 import { AdminFeaturedContentTab } from './admin-featured-content-tab';
 import { AdminCommunityTab } from './admin-community-tab';
@@ -72,18 +73,6 @@ interface PlatformStats {
   totalAppointments: number;
   totalMessages: number;
 }
-
-type AdminTab =
-  | 'morning-brief' | 'overview' | 'verification' | 'temples' | 'vendors'
-  | 'disputes' | 'withdrawals' | 'analytics' | 'fraud'
-  | 'content' | 'users' | 'circles' | 'quality' | 'health'
-  | 'admin-management' | 'payment-verification' | 'subscriptions'
-  | 'forum-reports' | 'forum' | 'forum-management' | 'audit-log' | 'sacred-content'
-  | 'inactive-practitioners' | 'financial-command'
-  | 'practitioners' | 'featured' | 'complaints' | 'roles' | 'announcements'
-  | 'trust-scores' | 'refunds' | 'settings' | 'cultural-content' | 'featured-content' | 'community' | 'forum-intelligence' | 'integrity'
-  | 'campaigns' | 'promos' | 'referrals' | 'market-intelligence' | 'forecasting' | 'lifecycle' | 'security' | 'cultural-quiz'
-  | 'trust-score-audit' | 'platform-settings' | 'marketplace-admin' | 'academy-admin' | 'compliance' | 'crisis-alerts';
 
 interface AdminDashboardViewProps {
   initialTab?: AdminTab;
@@ -204,60 +193,6 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ initialTab }) =
     staleTime: 5 * 60 * 1000,
   });
 
-  const tabs = [
-    { id: 'morning-brief' as AdminTab, label: 'Morning Brief', icon: Activity },
-    { id: 'overview' as AdminTab, label: 'Overview', icon: BarChart3 },
-    { id: 'verification' as AdminTab, label: 'Verification Queue', icon: Shield },
-    { id: 'users' as AdminTab, label: 'User Management', icon: Users },
-    { id: 'temples' as AdminTab, label: 'Temple Management', icon: Building2 },
-    { id: 'vendors' as AdminTab, label: 'Vendor Review', icon: Store },
-    { id: 'circles' as AdminTab, label: 'Circle Management', icon: Users },
-    { id: 'disputes' as AdminTab, label: 'Dispute Center', icon: AlertTriangle },
-    { id: 'withdrawals' as AdminTab, label: 'Payout Approvals', icon: DollarSign },
-    { id: 'content' as AdminTab, label: 'Content Moderation', icon: MessageSquare },
-    { id: 'quality' as AdminTab, label: 'Quality Assurance', icon: BarChart3 },
-    { id: 'health' as AdminTab, label: 'Platform Health', icon: Activity },
-    { id: 'analytics' as AdminTab, label: 'Analytics', icon: BarChart3 },
-    { id: 'fraud' as AdminTab, label: 'Fraud Alerts', icon: AlertTriangle },
-    { id: 'admin-management' as AdminTab, label: 'Admin Management', icon: Shield },
-    { id: 'payment-verification' as AdminTab, label: 'Payment Verification', icon: DollarSign },
-    { id: 'subscriptions' as AdminTab, label: 'Subscriptions', icon: Crown },
-    { id: 'forum-reports' as AdminTab, label: 'Forum Reports', icon: Flag },
-    { id: 'forum' as AdminTab, label: 'Forum Management', icon: Hash },
-    { id: 'forum-management' as AdminTab, label: 'Forum Management', icon: Hash },
-    { id: 'sacred-content' as AdminTab, label: 'Sacred Content', icon: Lock },
-    { id: 'audit-log' as AdminTab, label: 'Audit Log', icon: ScrollText },
-    { id: 'roles' as AdminTab, label: 'Role Management', icon: Shield }, // New tab for role management
-    { id: 'announcements' as AdminTab, label: 'Announcements', icon: Megaphone }, // New tab for announcements
-    { id: 'practitioners' as AdminTab, label: 'Practitioner Performance', icon: Activity }, // New tab for practitioner performance
-    { id: 'featured' as AdminTab, label: 'Featured Practitioners', icon: Crown }, // Added new tab for featured practitioners
-    { id: 'complaints' as AdminTab, label: 'Practitioner Complaints', icon: AlertTriangle }, // New tab for practitioner complaints
-    { id: 'inactive-practitioners' as AdminTab, label: 'Inactive Practitioners', icon: Activity }, // New tab for inactive practitioners
-    { id: 'financial-command' as AdminTab, label: 'Financial Command', icon: DollarSign },
-    { id: 'trust-scores' as AdminTab, label: 'Trust Score Management', icon: Shield },
-    { id: 'refunds' as AdminTab, label: 'Refund Management', icon: RotateCcw },
-    { id: 'settings' as AdminTab, label: 'Platform Settings', icon: Settings },
-    { id: 'cultural-content' as AdminTab, label: 'Cultural Content', icon: BookOpen },
-    { id: 'featured-content' as AdminTab, label: 'Featured Content', icon: Star },
-    { id: 'community' as AdminTab, label: 'Community Recognition', icon: Award },
-    { id: 'forum-intelligence' as AdminTab, label: 'Forum Intelligence', icon: BarChart3 },
-    { id: 'integrity' as AdminTab, label: 'Cultural Integrity', icon: ShieldAlert },
-    { id: 'campaigns' as AdminTab, label: 'Email Campaigns', icon: Mail },
-    { id: 'promos' as AdminTab, label: 'Promo Codes', icon: Tag },
-    { id: 'referrals' as AdminTab, label: 'Referral Program', icon: Users },
-    { id: 'market-intelligence' as AdminTab, label: 'Market Intelligence', icon: TrendingUp },
-    { id: 'forecasting' as AdminTab, label: 'Revenue Forecasting', icon: BarChart3 },
-    { id: 'lifecycle' as AdminTab, label: 'User Lifecycle Analytics', icon: TrendingUp }, // New tab for user lifecycle analytics
-    { id: 'security' as AdminTab, label: 'Security & Sessions', icon: Shield },
-    { id: 'compliance' as AdminTab, label: 'Data & Compliance', icon: Shield },
-    { id: 'crisis-alerts' as AdminTab, label: 'Crisis Alerts', icon: AlertTriangle },
-    { id: 'cultural-quiz' as AdminTab, label: 'Cultural Quiz', icon: BookOpen },
-    { id: 'trust-score-audit' as AdminTab, label: 'Trust Score Audit', icon: Shield },
-    { id: 'platform-settings' as AdminTab, label: 'Platform Settings', icon: Settings },
-    { id: 'marketplace-admin' as AdminTab, label: 'Marketplace', icon: Store },
-    { id: 'academy-admin' as AdminTab, label: 'Academy', icon: BookOpen },
-  ];
-
   const renderTabContent = () => {
     switch (activeTab) {
       case 'morning-brief':
@@ -334,8 +269,6 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ initialTab }) =
         return <TabErrorBoundary fallback={<TabFallback icon={Shield} label="Trust Score Management" />} tabName="trust-scores"><TrustScoreManagementTab /></TabErrorBoundary>;
       case 'refunds':
         return <TabErrorBoundary fallback={<TabFallback icon={RotateCcw} label="Refund Management" />} tabName="refunds"><AdminRefundsTab /></TabErrorBoundary>;
-      case 'settings':
-        return <TabErrorBoundary fallback={<TabFallback icon={Settings} label="Platform Settings" />} tabName="settings"><AdminSettingsTab /></TabErrorBoundary>;
       case 'cultural-content':
         return <TabErrorBoundary fallback={<TabFallback icon={BookOpen} label="Cultural Content" />} tabName="cultural-content"><AdminCulturalContentTab /></TabErrorBoundary>;
       case 'featured-content':
@@ -394,7 +327,7 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ initialTab }) =
   return (
     <div className="min-h-screen bg-background p-6">
       <PromptDialog />
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="max-w-[100rem] mx-auto space-y-6">
         {/* Header */}
         <div className="space-y-2">
           <h1 className="text-[1.5rem] font-[700] text-foreground mb-2">Admin Dashboard</h1>
@@ -402,12 +335,7 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ initialTab }) =
           {activeTab !== 'overview' && (
             <Breadcrumb items={[
               { label: 'Admin', onClick: () => setActiveTab('overview') },
-              { 
-                label: tabs.find(t => t.id === activeTab)?.label || activeTab,
-                onClick: ['forum', 'forum-management', 'announcements'].includes(activeTab) 
-                  ? undefined 
-                  : () => setActiveTab('overview')
-              },
+              { label: ADMIN_NAV_ITEMS.find(t => t.id === activeTab)?.label || activeTab },
             ]} />
           )}
         </div>
@@ -417,39 +345,25 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ initialTab }) =
           <ImpersonationBanner userName={currentUser.name} onStop={() => logout()} />
         )}
 
-        {/* Tabs */}
-        <div className="flex gap-2 border-b border-border overflow-x-auto">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-3 flex items-center gap-2 font-medium transition-colors border-b-2 whitespace-nowrap ${activeTab === tab.id
-                    ? 'border-highlight text-highlight'
-                    : 'border-transparent text-foreground/60 hover:text-foreground'
-                  }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
+        {/* Sidebar navigation + tab content */}
+        <div className="flex flex-col lg:flex-row gap-6 items-start">
+          <AdminSidebarNav activeTab={activeTab} onSelectTab={setActiveTab} />
 
-        {/* Tab Content */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
-            className="space-y-6"
-          >
-            {renderTabContent()}
-          </motion.div>
-        </AnimatePresence>
+          <div className="flex-1 min-w-0 w-full">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                className="space-y-6"
+              >
+                {renderTabContent()}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </div>
       </div>
     </div>
   );
