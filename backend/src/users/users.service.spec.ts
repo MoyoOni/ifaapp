@@ -187,7 +187,7 @@ describe('UsersService', () => {
   });
 
   describe('findOne', () => {
-    it('should return a user by ID with all relations', async () => {
+    it('should return a user by ID with all relations, stripping PII when no viewerId is given', async () => {
       const mockUser = {
         id: 'user-1',
         sub: 'user-1',
@@ -209,9 +209,12 @@ describe('UsersService', () => {
 
       mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
 
+      // No viewerId -> not the owner's own profile -> findOne strips email/phone
+      // (a real PII leak otherwise: see users.controller.ts's findOne route).
       const result = await service.findOne('user-1');
+      const { email: _email, ...mockUserWithoutEmail } = mockUser;
 
-      expect(result).toEqual({ ...mockUser, hasPassword: false });
+      expect(result).toEqual({ ...mockUserWithoutEmail, hasPassword: false });
       expect(prisma.user.findUnique).toHaveBeenCalledWith({
         where: { id: 'user-1' },
         include: expect.objectContaining({
@@ -221,6 +224,34 @@ describe('UsersService', () => {
           eventRegistrations: expect.any(Object),
         }),
       });
+    });
+
+    it('includes email and personalAwo when the viewer is the profile owner', async () => {
+      const mockUser = {
+        id: 'user-1',
+        sub: 'user-1',
+        email: 'user@example.com',
+        name: 'Test User',
+        role: 'CLIENT' as any,
+        verified: true,
+        babalawoReviews: [],
+        templesJoined: [],
+        circleMemberships: [],
+        eventRegistrations: [],
+        postsAuthored: [],
+        ordersPlaced: [],
+        vendorProfile: null,
+        guidancePlansReceived: [],
+        certificates: [],
+        verificationApp: null,
+        personalAwo: null,
+      };
+
+      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+
+      const result = await service.findOne('user-1', 'user-1');
+
+      expect(result).toEqual({ ...mockUser, hasPassword: false });
     });
 
     it('should throw NotFoundException when user does not exist', async () => {

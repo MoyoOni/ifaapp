@@ -73,9 +73,15 @@ describe('AdminUsersService', () => {
           email: 'user1@example.com',
           name: 'User One',
           role: 'CLIENT',
+          adminSubRole: null,
           verified: true,
           hasOnboarded: true,
           culturalLevel: 'OMO_ILE',
+          createdAt: new Date('2026-01-01'),
+          suspendedUntil: null,
+          bannedAt: null,
+          banReason: null,
+          warnCount: 0,
         },
       ];
 
@@ -83,7 +89,9 @@ describe('AdminUsersService', () => {
 
       const result = await service.getAllUsers(mockAdminUser);
 
-      expect(result).toEqual(mockUsers);
+      // ADM-003: isBanned/isSuspended are computed from bannedAt/suspendedUntil,
+      // not selected columns -- not part of the Prisma mock's return value.
+      expect(result).toEqual(mockUsers.map((u) => ({ ...u, isBanned: false, isSuspended: false })));
       expect(prisma.user.findMany).toHaveBeenCalledWith({
         where: {},
         select: {
@@ -91,9 +99,15 @@ describe('AdminUsersService', () => {
           email: true,
           name: true,
           role: true,
+          adminSubRole: true,
           verified: true,
           hasOnboarded: true,
           culturalLevel: true,
+          createdAt: true,
+          suspendedUntil: true,
+          bannedAt: true,
+          banReason: true,
+          warnCount: true,
         },
         orderBy: { name: 'asc' },
       });
@@ -131,21 +145,25 @@ describe('AdminUsersService', () => {
   });
 
   describe('getInactivePractitioners', () => {
-    it('filters by the actual daysInactive cutoff via userSessions.lastSeenAt', async () => {
+    // Current implementation fetches all BABALAWOs with their most recent
+    // appointment/session since the cutoff (bounded to 1 each via `take`),
+    // then filters for "neither" in application code -- not a DB-level
+    // where/OR filter. Assertions target that real shape.
+    it('filters by role and applies the daysInactive cutoff via select', async () => {
       const findManySpy = jest.spyOn(prisma.user, 'findMany').mockResolvedValue([]);
 
       await service.getInactivePractitioners(mockAdminUser, 14);
 
       expect(findManySpy).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({
-            role: 'BABALAWO',
-            OR: expect.arrayContaining([
-              { userSessions: { none: {} } },
-              expect.objectContaining({
-                userSessions: { every: { lastSeenAt: { lt: expect.any(Date) } } },
-              }),
-            ]),
+          where: { role: 'BABALAWO' },
+          select: expect.objectContaining({
+            appointmentsAsBabalawo: expect.objectContaining({
+              where: { date: { gte: expect.any(String) } },
+            }),
+            userSessions: expect.objectContaining({
+              where: { lastSeenAt: { gte: expect.any(String) } },
+            }),
           }),
         })
       );
@@ -155,14 +173,15 @@ describe('AdminUsersService', () => {
       const findManySpy = jest.spyOn(prisma.user, 'findMany').mockResolvedValue([]);
 
       await service.getInactivePractitioners(mockAdminUser, 14);
-      const cutoff14 = (findManySpy.mock.calls[0][0] as any).where.OR[1].userSessions.every
-        .lastSeenAt.lt;
+      const cutoff14 = (findManySpy.mock.calls[0][0] as any).select.userSessions.where.lastSeenAt
+        .gte;
 
       await service.getInactivePractitioners(mockAdminUser, 30);
-      const cutoff30 = (findManySpy.mock.calls[1][0] as any).where.OR[1].userSessions.every
-        .lastSeenAt.lt;
+      const cutoff30 = (findManySpy.mock.calls[1][0] as any).select.userSessions.where.lastSeenAt
+        .gte;
 
-      expect(cutoff30.getTime()).toBeLessThan(cutoff14.getTime());
+      // A 30-day window's cutoff is further in the past than a 14-day window's.
+      expect(new Date(cutoff30).getTime()).toBeLessThan(new Date(cutoff14).getTime());
     });
   });
 

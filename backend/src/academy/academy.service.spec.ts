@@ -71,7 +71,14 @@ describe('AcademyService', () => {
   });
 
   describe('createCourse', () => {
-    it('should create a course', async () => {
+    // Course creation is admin-only (babalawo self-service submission was
+    // removed) -- mockCurrentUser above is BABALAWO, shared with tests
+    // elsewhere in this file that aren't about course-creation permissions,
+    // so this test uses its own admin-role user rather than changing the
+    // shared fixture's role.
+    const mockAdminUser = { ...mockCurrentUser, id: 'admin-1', sub: 'admin-1', role: 'ADMIN' as any };
+
+    it('should create a course when called by an admin', async () => {
       const dto = {
         title: 'Introduction to Ifa',
         slug: 'intro-to-ifa',
@@ -79,13 +86,26 @@ describe('AcademyService', () => {
         category: 'DIVINATION' as any,
       };
 
-      const mockCourse = { id: 'course-1', ...dto, instructorId: mockCurrentUser.id };
+      const mockCourse = { id: 'course-1', ...dto, instructorId: mockAdminUser.id };
       mockPrismaService.course.findUnique.mockResolvedValue(null);
       mockPrismaService.course.create.mockResolvedValue(mockCourse);
 
-      const result = await service.createCourse(dto as any, mockCurrentUser);
+      const result = await service.createCourse(dto as any, mockAdminUser);
 
       expect(result).toEqual(mockCourse);
+    });
+
+    it('should reject a non-admin (e.g. babalawo) trying to create a course', async () => {
+      const dto = {
+        title: 'Introduction to Ifa',
+        slug: 'intro-to-ifa',
+        description: 'Learn the basics',
+        category: 'DIVINATION' as any,
+      };
+
+      await expect(service.createCourse(dto as any, mockCurrentUser)).rejects.toThrow(
+        'Only admins can create courses'
+      );
     });
   });
 

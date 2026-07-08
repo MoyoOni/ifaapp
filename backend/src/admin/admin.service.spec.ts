@@ -6,6 +6,15 @@ import { AdminFinanceService } from './admin-finance.service';
 import { AdminCommunityService } from './admin-community.service';
 import { AdminContentService } from './admin-content.service';
 import { AuditService } from './audit.service';
+import { AdminMarketplaceService } from './admin-marketplace.service';
+import { AdminAcademyService } from './admin-academy.service';
+import { AdminTrustScoreService } from './admin-trust-score.service';
+import { AdminPlatformSettingsService } from './admin-platform-settings.service';
+import { AdminAnnouncementsService } from './admin-announcements.service';
+import { AdminPromosService } from './admin-promos.service';
+import { AdminReferralsService } from './admin-referrals.service';
+import { AdminCulturalContentService } from './admin-cultural-content.service';
+import { AdminComplaintsService } from './admin-complaints.service';
 
 // P2-04: AdminService is now a thin facade delegating to domain services
 // (see admin-users/finance/community/content.service.spec.ts for the real
@@ -72,6 +81,17 @@ describe('AdminService', () => {
           provide: AuditService,
           useValue: { log: jest.fn(), getAuditLogs: jest.fn() },
         },
+        // Not exercised by any test in this file (see the file-level comment
+        // above) -- only present so AdminService's full constructor resolves.
+        { provide: AdminMarketplaceService, useValue: {} },
+        { provide: AdminAcademyService, useValue: {} },
+        { provide: AdminTrustScoreService, useValue: {} },
+        { provide: AdminPlatformSettingsService, useValue: {} },
+        { provide: AdminAnnouncementsService, useValue: {} },
+        { provide: AdminPromosService, useValue: {} },
+        { provide: AdminReferralsService, useValue: {} },
+        { provide: AdminCulturalContentService, useValue: {} },
+        { provide: AdminComplaintsService, useValue: {} },
         {
           provide: PrismaService,
           useValue: {

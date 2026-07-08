@@ -3,6 +3,8 @@ import { AdminFinanceService } from './admin-finance.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletService } from '../wallet/wallet.service';
 import { PaymentsService } from '../payments/payments.service';
+import { AuditService } from './audit.service';
+import { NotificationService } from '../notifications/notification.service';
 
 // P2-04: moved from admin.service.spec.ts along with the getDisputes/
 // getPendingWithdrawals logic itself, when AdminService was split.
@@ -38,6 +40,14 @@ describe('AdminFinanceService', () => {
         {
           provide: PaymentsService,
           useValue: { getUnverifiedPayments: jest.fn(), manuallyVerifyPayment: jest.fn() },
+        },
+        {
+          provide: AuditService,
+          useValue: { logAction: jest.fn() },
+        },
+        {
+          provide: NotificationService,
+          useValue: { createNotification: jest.fn() },
         },
         {
           provide: PrismaService,
