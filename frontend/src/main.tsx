@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { CartProvider } from './shared/contexts/cart-context';
 import { LanguageProvider } from './shared/contexts/language-context';
 import { ToastProvider } from './shared/components/toast';
+import { ModalProvider } from './components/common/ModalProvider';
 import { ThemeProvider } from './shared/contexts/theme-provider';
 import { DevRoleSwitcher } from './shared/components/dev-role-switcher';
 import { initSentry } from './shared/config/sentry';
@@ -88,8 +89,10 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
             <CartProvider>
               <ToastProvider>
-                <App />
-                <DevRoleSwitcher />
+                <ModalProvider>
+                  <App />
+                  <DevRoleSwitcher />
+                </ModalProvider>
               </ToastProvider>
             </CartProvider>
           </ThemeProvider>
