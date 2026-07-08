@@ -23,7 +23,8 @@
     "seed:real-temples": "tsx prisma/seed-real-temples.ts",
     "seed:forum-categories": "tsx prisma/seed-forum-categories.ts",
     "seed:forum-covenant": "tsx prisma/seed-forum-covenant.ts",
-    "seed:forum-starter-threads": "tsx prisma/seed-forum-starter-threads.ts"
+    "seed:forum-starter-threads": "tsx prisma/seed-forum-starter-threads.ts",
+    "seed:academy-courses": "tsx prisma/seed-academy-courses.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.972.0",
