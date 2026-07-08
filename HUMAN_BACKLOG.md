@@ -5,11 +5,33 @@ a credential only you hold, a product/business call, or a real browser to click
 through. Everything here is **not code I can fix myself**; the code-side fixes
 that prompted these items are already done and verified where noted.
 
-Last updated: 2026-07-07
+Last updated: 2026-07-08
 
 ---
 
 ## 🔴 Blocking — needed to finish testing what was just built
+
+- [ ] **EC2 staging deploy is failing — the instance looks unreachable, not a
+  code problem.** CI/CD's `test-backend` and `test-frontend` gates are fixed
+  and green as of commit `33270f4` (5 broken Jest suites repaired — 4 broken
+  by this session's own earlier changes, 1 pre-existing and unrelated). With
+  those unblocked, the pipeline reached the `deploy` job for the first time
+  in a while — and it failed at the "Deploy to staging via SSH" step
+  (`appleboy/ssh-action`, run
+  [28979953534](https://github.com/MoyoOni/ifaapp/actions/runs/28979953534)).
+  Two things point at the EC2 instance itself, not the workflow or secrets:
+  (1) the *only* prior run where `deploy` ever executed — July 5, commit
+  `861db5d6`, before any of this session's work — failed identically, so this
+  predates everything done recently; (2) I curled
+  `http://100.52.200.113:4040/api/health` (the staging address CLAUDE.md
+  documents) directly from outside GitHub Actions and got no response at all
+  (connection timeout), which is consistent with the instance being stopped
+  or a security-group/networking change having locked it out. I have no AWS
+  console or CLI access in this environment to check the instance's actual
+  state, the `EC2_HOST`/`EC2_SSH_KEY` GitHub secrets, or security groups —
+  someone with AWS console access needs to check whether the EC2 staging
+  instance is running and reachable on port 22/4040, and re-run the
+  `july-2026-hardening-pass` workflow (or just re-push) once it's back.
 
 - [ ] **Restart both local dev servers.** I edited `frontend/.env` and
   `backend/.env` (see Google OAuth items below). Vite and NestJS's
