@@ -104,14 +104,20 @@ export class UsersService {
       );
     }
 
-    // Try to get from cache first
-    const cachedUser = await this.cacheManager.getUserProfile(id);
+    // Determine if we're fetching the current user's profile (which should include personalAwo info)
+    const isOwnProfile = viewerId === id;
+
+    // The cache key must vary by isOwnProfile: the self view includes PII
+    // (email/phone) and personalAwo that the public view deliberately strips.
+    // A single shared `user:profile:${id}` key would let whichever variant
+    // gets cached first serve every subsequent viewer for the next hour --
+    // including the full self view leaking to a stranger, bypassing the PII
+    // strip below entirely.
+    const cacheKey = isOwnProfile ? `${id}:self` : `${id}:public`;
+    const cachedUser = await this.cacheManager.getUserProfile(cacheKey);
     if (cachedUser) {
       return cachedUser;
     }
-
-    // Determine if we're fetching the current user's profile (which should include personalAwo info)
-    const isOwnProfile = viewerId === id;
 
     const user = await this.prisma.user.findUnique({
       where: { id },
@@ -189,15 +195,19 @@ export class UsersService {
     } = user as Record<string, unknown> & typeof user;
     /* eslint-enable @typescript-eslint/no-unused-vars */
 
-    // Expose whether the account has a password (Google-only accounts don't)
-    // Add personalAwo data to the response if this is the user's own profile
-    let safeUserWithMeta;
-    if (isOwnProfile && (user as any).personalAwo) {
+    // Expose whether the account has a password (Google-only accounts don't).
+    // Ownership and "has a personalAwo assigned" are independent conditions --
+    // they used to be conflated in a single `isOwnProfile && personalAwo`
+    // branch, so an owner viewing their own profile with no personalAwo yet
+    // assigned (personalAwo === null, falsy) fell into the "someone else's
+    // profile" branch below. That branch's stripping is now the only thing
+    // gated on isOwnProfile, so it must be checked on its own.
+    let safeUserWithMeta: Record<string, unknown>;
+    if (isOwnProfile) {
+      safeUserWithMeta = { ...safeUser, hasPassword: !!(user as any).passwordHash };
       const personalAwo = (user as any).personalAwo;
-      safeUserWithMeta = {
-        ...safeUser,
-        hasPassword: !!(user as any).passwordHash,
-        personalAwo: {
+      if (personalAwo) {
+        safeUserWithMeta.personalAwo = {
           id: personalAwo.id,
           name: personalAwo.name,
           yorubaName: personalAwo.yorubaName,
@@ -206,14 +216,24 @@ export class UsersService {
           trustScore: personalAwo.trustScore,
           verified: personalAwo.verified,
           sessionCount: personalAwo._count.appointmentsAsBabalawo,
-        },
-      };
+        };
+      }
     } else {
-      safeUserWithMeta = { ...safeUser, hasPassword: !!(user as any).passwordHash };
+      // Viewing someone else's profile -- strip PII that has no reason to be
+      // visible to a third party (previously returned in full; only dormant
+      // because the controller blocked all non-self/admin access outright).
+      /* eslint-disable @typescript-eslint/no-unused-vars */
+      const {
+        email: _email,
+        phone: _phone,
+        ...publicSafeUser
+      } = safeUser as Record<string, unknown>;
+      /* eslint-enable @typescript-eslint/no-unused-vars */
+      safeUserWithMeta = { ...publicSafeUser, hasPassword: !!(user as any).passwordHash };
     }
 
     // Cache the user profile for 1 hour
-    await this.cacheManager.cacheUserProfile(id, safeUserWithMeta, 3600);
+    await this.cacheManager.cacheUserProfile(cacheKey, safeUserWithMeta, 3600);
 
     return safeUserWithMeta;
   }
@@ -681,5 +701,91 @@ export class UsersService {
         data: { culturalQuizFailCount: { increment: 1 } },
       });
     }
+  }
+
+  /**
+   * EXP-029: Spiritual Milestones & Badges -- 7 badges computed entirely from
+   * data already tracked elsewhere (no new schema). Only earned badges are
+   * returned; the profile UI just renders whatever comes back.
+   */
+  async getUserBadges(userId: string) {
+    const [user, certificateCount] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          role: true,
+          verified: true,
+          subscriptionStatus: true,
+          isCommunityBuilder: true,
+          longestStreak: true,
+          trustScore: true,
+          passedCulturalOrientation: true,
+        },
+      }),
+      this.prisma.certificate.count({ where: { userId } }),
+    ]);
+
+    if (!user) throw new NotFoundException('User not found');
+
+    const badges: { key: string; emoji: string; label: string; description: string }[] = [];
+
+    if (user.passedCulturalOrientation) {
+      badges.push({
+        key: 'cultural-scholar',
+        emoji: '📿',
+        label: 'Cultural Scholar',
+        description: 'Completed the cultural orientation gate',
+      });
+    }
+    if (user.isCommunityBuilder) {
+      badges.push({
+        key: 'community-builder',
+        emoji: '🏗️',
+        label: 'Community Builder',
+        description: 'Brought 3 or more members into the community via referral',
+      });
+    }
+    if (user.subscriptionStatus === 'DEVOTED') {
+      badges.push({
+        key: 'devoted-member',
+        emoji: '👑',
+        label: 'Devoted Member',
+        description: 'Active Devoted subscriber',
+      });
+    }
+    if (user.longestStreak >= 7) {
+      badges.push({
+        key: 'consistency-streak',
+        emoji: '🔥',
+        label: 'Consistency Streak',
+        description: `Longest contribution streak: ${user.longestStreak} days`,
+      });
+    }
+    if (user.trustScore >= 50) {
+      badges.push({
+        key: 'trusted-voice',
+        emoji: '🤝',
+        label: 'Trusted Voice',
+        description: 'Reached Community Trusted status',
+      });
+    }
+    if (user.role === 'BABALAWO' && user.verified) {
+      badges.push({
+        key: 'verified-practitioner',
+        emoji: '✅',
+        label: 'Verified Practitioner',
+        description: 'Lineage and credentials verified',
+      });
+    }
+    if (certificateCount > 0) {
+      badges.push({
+        key: 'certified-graduate',
+        emoji: '🎓',
+        label: 'Certified Graduate',
+        description: `Earned ${certificateCount} Academy certificate${certificateCount === 1 ? '' : 's'}`,
+      });
+    }
+
+    return badges;
   }
 }

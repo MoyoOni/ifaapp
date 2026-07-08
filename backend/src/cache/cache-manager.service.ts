@@ -169,7 +169,15 @@ export class CacheManagerService {
    * Invalidate user-related cache
    */
   async invalidateUserCache(userId: string): Promise<void> {
-    const patterns = [`user:profile:${userId}`, `user:stats:${userId}`, `dashboard:${userId}`];
+    const patterns = [
+      // UsersService.findOne caches the self and public views under separate
+      // keys (they return different fields) -- both must be cleared, not
+      // just the old bare `user:profile:${userId}` key from before that split.
+      `user:profile:${userId}:self`,
+      `user:profile:${userId}:public`,
+      `user:stats:${userId}`,
+      `dashboard:${userId}`,
+    ];
 
     for (const pattern of patterns) {
       await this.redisCache.del(pattern);

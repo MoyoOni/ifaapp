@@ -468,7 +468,24 @@ export class ReviewsService {
   /**
    * Flag a review (user reports inappropriate content)
    */
-  async flagReview(reviewType: 'product' | 'babalawo' | 'course', reviewId: string) {
+  async flagReview(
+    reviewType: 'product' | 'babalawo' | 'course',
+    reviewId: string,
+    flaggedBy: string
+  ) {
+    // One flag per account per review. If this account already flagged it,
+    // treat the call as a no-op success rather than incrementing again --
+    // without this, a single account could call the endpoint repeatedly to
+    // force any review past the flaggedCount >= 2 auto-flag threshold alone.
+    try {
+      await this.prisma.reviewFlag.create({ data: { reviewType, reviewId, flaggedBy } });
+    } catch (err: any) {
+      if (err?.code === 'P2002') {
+        return this.getReviewForFlagCheck(reviewType, reviewId);
+      }
+      throw err;
+    }
+
     if (reviewType === 'product') {
       const review = await this.prisma.productReview.findUnique({
         where: { id: reviewId },
@@ -509,6 +526,21 @@ export class ReviewsService {
         },
       });
     }
+  }
+
+  /** Returns the review unchanged -- used when flagReview sees a duplicate flag from the same account. */
+  private async getReviewForFlagCheck(
+    reviewType: 'product' | 'babalawo' | 'course',
+    reviewId: string
+  ) {
+    const review =
+      reviewType === 'product'
+        ? await this.prisma.productReview.findUnique({ where: { id: reviewId } })
+        : reviewType === 'babalawo'
+          ? await this.prisma.babalawoReview.findUnique({ where: { id: reviewId } })
+          : await this.prisma.courseReview.findUnique({ where: { id: reviewId } });
+    if (!review) throw new NotFoundException('Review not found');
+    return review;
   }
 
   // ============================================

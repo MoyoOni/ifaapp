@@ -113,6 +113,7 @@ model User {
   profileViewsReceived      ProfileView[]            @relation("ProfileViewReceiver")
   referralsMade             Referral[]               @relation("ReferralsMade")
   referralReceived          Referral?                @relation("ReferralReceived")
+  reviewFlagsMade           ReviewFlag[]             @relation("ReviewFlagger")
 
   // Subscription / billing fields
   subscriptionStatus        String                   @default("FREE") // FREE | DEVOTED | EXPIRED
@@ -941,6 +942,25 @@ model CourseReview {
   @@index([studentId])
   @@index([status])
   @@index([enrollmentId])
+}
+
+// One row per (reviewType, reviewId, flaggedBy) -- prevents a single account
+// from repeatedly flagging the same review to force it past the
+// flaggedCount >= 2 auto-flag threshold. reviewId deliberately has no FK: it
+// points at whichever of ProductReview/BabalawoReview/CourseReview
+// reviewType selects, and Prisma doesn't support a relation to one of
+// several possible target models.
+model ReviewFlag {
+  id         String   @id @default(uuid())
+  reviewType String
+  reviewId   String
+  flaggedBy  String
+  createdAt  DateTime @default(now())
+  flagger    User     @relation("ReviewFlagger", fields: [flaggedBy], references: [id], onDelete: Cascade)
+
+  @@unique([reviewType, reviewId, flaggedBy])
+  @@index([reviewType, reviewId])
+  @@map("review_flags")
 }
 
 model Course {

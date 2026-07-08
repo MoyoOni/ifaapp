@@ -8,6 +8,7 @@ import {
   Param,
   Query,
   UseGuards,
+  ForbiddenException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { EventsService } from './events.service';
@@ -120,9 +121,18 @@ export class EventsController {
   /**
    * Get user's event registrations
    * GET /events/user/:userId/registrations
+   * Only the user themselves or an admin can view this -- was previously
+   * unauthenticated with no ownership check at all (IDOR).
    */
   @Get('user/:userId/registrations')
-  async getUserRegistrations(@Param('userId') userId: string) {
+  @UseGuards(AuthGuard('jwt'))
+  async getUserRegistrations(
+    @Param('userId') userId: string,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    if (currentUser.id !== userId && currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('You can only view your own event registrations');
+    }
     return this.eventsService.getUserRegistrations(userId);
   }
 

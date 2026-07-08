@@ -189,12 +189,25 @@ export class ReviewsController {
   /**
    * Flag a review
    * POST /reviews/:type/:reviewId/flag
+   * Requires auth, and one flag per account per review (ReviewFlag table) --
+   * previously fully unauthenticated with no per-caller tracking at all, so
+   * a single anonymous script could force any review to auto-flag (3
+   * reports) with zero friction.
    */
   @Post(':type/:reviewId/flag')
-  async flagReview(@Param('type') type: string, @Param('reviewId') reviewId: string) {
+  @UseGuards(AuthGuard('jwt'))
+  async flagReview(
+    @Param('type') type: string,
+    @Param('reviewId') reviewId: string,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
     if (!['product', 'babalawo', 'course'].includes(type)) {
       throw new Error('Invalid review type');
     }
-    return this.reviewsService.flagReview(type as 'product' | 'babalawo' | 'course', reviewId);
+    return this.reviewsService.flagReview(
+      type as 'product' | 'babalawo' | 'course',
+      reviewId,
+      currentUser.id
+    );
   }
 }

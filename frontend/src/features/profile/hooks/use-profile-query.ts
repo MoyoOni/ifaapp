@@ -48,7 +48,7 @@ export function useProfileQuery(userId: string) {
   return useQuery<UserProfile>({
     queryKey: ['profile', userId],
     queryFn: async () => {
-      const response = await api.get(`/users/${userId}/profile`);
+      const response = await api.get(`/users/${userId}`);
       return response.data;
     },
     enabled: !!userId && !isDevModeActive(),
