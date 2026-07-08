@@ -80,7 +80,7 @@ interface Circle {
  * Admin interface for managing circle suggestions and circles
  */
 const CircleManagementView: React.FC = () => {
-  const { success } = useToast();
+  const { success, error: toastError } = useToast();
   const { PromptDialog, prompt } = usePrompt();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'suggestions' | 'circles'>('suggestions');
@@ -140,7 +140,7 @@ const CircleManagementView: React.FC = () => {
       setSelectedSuggestion(null);
     },
     onError: (error: any) => {
-      error(error?.response?.data?.message || 'Failed to approve suggestion');
+      toastError(error?.response?.data?.message || 'Failed to approve suggestion');
     },
   });
 
@@ -155,7 +155,7 @@ const CircleManagementView: React.FC = () => {
       success('Suggestion rejected');
     },
     onError: (error: any) => {
-      error(error?.response?.data?.message || 'Failed to reject suggestion');
+      toastError(error?.response?.data?.message || 'Failed to reject suggestion');
     },
   });
 
@@ -175,7 +175,7 @@ const CircleManagementView: React.FC = () => {
           queryClient.invalidateQueries({ queryKey: ['circles'] });
           success('Circle deleted successfully');
         } catch (error: any) {
-          error(error?.response?.data?.message || 'Failed to delete circle');
+          toastError(error?.response?.data?.message || 'Failed to delete circle');
         }
       }
     });

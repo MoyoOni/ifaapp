@@ -21,7 +21,11 @@ import { CreateCircleDto } from '../circles/dto/create-circle.dto';
 import { VerificationStage } from '@common/enums/verification-stage.enum';
 import { Prisma } from '@prisma/client';
 import { CreateAdvisoryVoteDto, CastAdvisoryVoteDto } from './dto/advisory-board.dto';
-import { CreateQuizQuestionDto, UpdateQuizQuestionDto, UpdateQuizThresholdDto } from './dto/quiz-question.dto';
+import {
+  CreateQuizQuestionDto,
+  UpdateQuizQuestionDto,
+  UpdateQuizThresholdDto,
+} from './dto/quiz-question.dto';
 import { TrustScoreOverrideDto } from './dto/trust-score-override.dto';
 import { FeatureItemDto } from './dto/feature-item.dto';
 import { UpdateCourseStatusDto } from './dto/update-course-status.dto';
@@ -38,6 +42,11 @@ import { RejectPostDto } from './dto/reject-post.dto';
 import { CreateFlagRuleDto } from './dto/create-flag-rule.dto';
 import { UpdateFlagRuleDto } from './dto/update-flag-rule.dto';
 import { ResolveComplaintDto } from './dto/resolve-complaint.dto';
+import { SuspendUserDto } from './dto/suspend-user.dto';
+import { WarnUserDto } from './dto/warn-user.dto';
+import { BanUserDto } from './dto/ban-user.dto';
+import { UnbanUserDto } from './dto/unban-user.dto';
+import { ChangeUserRoleDto } from './dto/change-user-role.dto';
 
 // P2-04: AdminService is now a thin facade preserving the original public
 // method signatures AdminController calls, delegating the actual logic to
@@ -247,6 +256,29 @@ export class AdminService {
   }
 
   /**
+   * ADM-003: Suspend / warn / ban / unban a user
+   */
+  async suspendUser(currentUser: CurrentUserPayload, userId: string, dto: SuspendUserDto) {
+    return this.adminUsersService.suspendUser(currentUser, userId, dto);
+  }
+
+  async warnUser(currentUser: CurrentUserPayload, userId: string, dto: WarnUserDto) {
+    return this.adminUsersService.warnUser(currentUser, userId, dto);
+  }
+
+  async banUser(currentUser: CurrentUserPayload, userId: string, dto: BanUserDto) {
+    return this.adminUsersService.banUser(currentUser, userId, dto);
+  }
+
+  async unbanUser(currentUser: CurrentUserPayload, userId: string, dto: UnbanUserDto) {
+    return this.adminUsersService.unbanUser(currentUser, userId, dto);
+  }
+
+  async changeUserRole(currentUser: CurrentUserPayload, userId: string, dto: ChangeUserRoleDto) {
+    return this.adminUsersService.changeUserRole(currentUser, userId, dto);
+  }
+
+  /**
    * Get Verification Applications for Review
    */
   async getVerificationApplications(currentUser: CurrentUserPayload, stage?: VerificationStage) {
@@ -344,7 +376,6 @@ export class AdminService {
   async getRecentLogins(limit = 50) {
     return this.adminUsersService.getRecentLogins(limit);
   }
-
 
   async getLifecycleAnalytics() {
     return this.adminUsersService.getLifecycleAnalytics();
@@ -459,12 +490,8 @@ export class AdminService {
   /**
    * Create an advisory board vote
    */
-  async createAdvisoryVote(
-    userId: string,
-    createVoteDto: CreateAdvisoryVoteDto,
-    currentUser: CurrentUserPayload
-  ) {
-    return this.adminCommunityService.createAdvisoryVote(userId, createVoteDto, currentUser);
+  async createAdvisoryVote(createVoteDto: CreateAdvisoryVoteDto, currentUser: CurrentUserPayload) {
+    return this.adminCommunityService.createAdvisoryVote(createVoteDto, currentUser);
   }
 
   /**
@@ -583,6 +610,32 @@ export class AdminService {
     return this.adminFinanceService.getFailedSubscribers();
   }
 
+  async cancelSubscriptionById(
+    currentUser: CurrentUserPayload,
+    subscriptionId: string,
+    reason?: string
+  ) {
+    return this.adminFinanceService.cancelSubscriptionById(currentUser, subscriptionId, reason);
+  }
+
+  async extendSubscriptionById(
+    currentUser: CurrentUserPayload,
+    subscriptionId: string,
+    months: number,
+    reason?: string
+  ) {
+    return this.adminFinanceService.extendSubscriptionById(
+      currentUser,
+      subscriptionId,
+      months,
+      reason
+    );
+  }
+
+  async sendSubscriptionPaymentReminder(currentUser: CurrentUserPayload, subscriptionId: string) {
+    return this.adminFinanceService.sendSubscriptionPaymentReminder(currentUser, subscriptionId);
+  }
+
   async getFinancialCommandCentre() {
     return this.adminFinanceService.getFinancialCommandCentre();
   }
@@ -599,7 +652,12 @@ export class AdminService {
     return this.adminUsersService.reactivatePractitioner(practitionerId);
   }
 
-  async getComplaints(currentUser: CurrentUserPayload, status?: string, page: number = 1, limit: number = 20) {
+  async getComplaints(
+    currentUser: CurrentUserPayload,
+    status?: string,
+    page: number = 1,
+    limit: number = 20
+  ) {
     return this.adminComplaintsService.getComplaints(currentUser, status, page, limit);
   }
 

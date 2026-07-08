@@ -26,6 +26,7 @@ import { logger } from '@/shared/utils/logger';
 interface TrustScoreBreakdown {
   userId: string;
   name: string;
+  averageRating: number;
   currentTrustScore: number;
   isOverridden: boolean;
   overrideDetails: {
@@ -35,13 +36,6 @@ interface TrustScoreBreakdown {
     overriddenAt: string | null;
   } | null;
   algorithmicScore: number;
-  breakdown: {
-    baseRating: number;
-    reviewCountBonus: number;
-    responseRateBonus: number;
-    accountAgeBonus: number;
-    manualAdjustments: number;
-  };
 }
 
 interface TrustScoreAdjustment {
@@ -68,40 +62,22 @@ const TrustScoreManagementTab: React.FC = () => {
   const { data: practitioners = [], isLoading } = useQuery<TrustScoreBreakdown[]>({
     queryKey: ['trust-score-breakdown-all'],
     queryFn: async () => {
-      // We'll need to get all practitioners first, then fetch breakdown for each
-      // For now, let's fetch from a hypothetical endpoint
       try {
         const response = await api.get('/admin/practitioners/for-featuring');
-        const practitioners = response.data;
-        
-        // Fetch breakdown for each practitioner
-        const breakdowns = await Promise.all(
-          practitioners.map(async (p: any) => {
-            try {
-              const breakdownRes = await api.get(`/admin/users/${p.id}/trust-score-breakdown`);
-              return breakdownRes.data;
-            } catch (err) {
-              // If there's an error getting breakdown, return basic info
-              return {
-                userId: p.id,
-                name: p.name,
-                currentTrustScore: p.averageRating || 0,
-                isOverridden: false,
-                overrideDetails: null,
-                algorithmicScore: p.averageRating || 0,
-                breakdown: {
-                  baseRating: p.averageRating || 0,
-                  reviewCountBonus: 0,
-                  responseRateBonus: 0,
-                  accountAgeBonus: 0,
-                  manualAdjustments: 0
-                }
-              };
-            }
-          })
-        );
-        
-        return breakdowns;
+        return response.data.map((p: any) => ({
+          userId: p.id,
+          name: p.name,
+          averageRating: p.averageRating || 0,
+          currentTrustScore: p.trustScoreOverride ?? p.trustScore ?? 0,
+          isOverridden: p.trustScoreOverride != null,
+          algorithmicScore: p.trustScore ?? 0,
+          overrideDetails: p.trustScoreOverride != null ? {
+            score: p.trustScoreOverride,
+            reason: p.trustScoreOverrideReason,
+            overriddenBy: p.trustScoreOverrideBy,
+            overriddenAt: p.trustScoreOverrideAt,
+          } : null,
+        }));
       } catch (err) {
         logger.error('Error fetching practitioners:', err);
         return [];
@@ -119,9 +95,9 @@ const TrustScoreManagementTab: React.FC = () => {
 
   const updateTrustScoreMutation = useMutation({
     mutationFn: async ({ userId, score, reason }: { userId: string, score: number, reason: string }) => {
-      const response = await api.patch(`/admin/users/${userId}/trust-score`, {
-        trustScoreOverride: score,
-        trustScoreOverrideReason: reason
+      const response = await api.patch(`/admin/trust-scores/override/${userId}`, {
+        override: score,
+        reason,
       });
       return response.data;
     },
@@ -140,8 +116,10 @@ const TrustScoreManagementTab: React.FC = () => {
   );
 
   const handleUpdateTrustScore = () => {
-    if (!editingUser || overrideScore === undefined) return;
-    
+    // Backend requires a reason of at least 5 characters (TrustScoreOverrideDto) -- checked
+    // here too so the button fails fast instead of round-tripping a 400.
+    if (!editingUser || overrideScore === undefined || overrideReason.trim().length < 5) return;
+
     updateTrustScoreMutation.mutate({
       userId: editingUser.userId,
       score: overrideScore,
@@ -263,7 +241,7 @@ const TrustScoreManagementTab: React.FC = () => {
                     <TableHead>Current Score</TableHead>
                     <TableHead>Algorithmic Score</TableHead>
                     <TableHead>Override Status</TableHead>
-                    <TableHead>Base Rating</TableHead>
+                    <TableHead>Rating</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -289,13 +267,13 @@ const TrustScoreManagementTab: React.FC = () => {
                           <div className="flex items-center gap-1">
                             <Shield size={14} className={`${practitioner.isOverridden ? 'text-orange-500 fill-orange-200' : 'text-green-500 fill-green-200'}`} />
                             <span className={practitioner.isOverridden ? 'text-orange-600 font-medium' : 'text-green-600'}>
-                              {practitioner.currentTrustScore.toFixed(1)}/10
+                              {practitioner.currentTrustScore.toFixed(0)}/100
                             </span>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="text-sm text-muted-foreground">
-                            {practitioner.algorithmicScore.toFixed(1)}/10
+                            {practitioner.algorithmicScore.toFixed(0)}/100
                           </div>
                         </TableCell>
                         <TableCell>
@@ -306,13 +284,17 @@ const TrustScoreManagementTab: React.FC = () => {
                         <TableCell>
                           <div className="flex items-center gap-1">
                             <Star size={14} className="fill-yellow-400 text-yellow-400" />
-                            <span>{practitioner.breakdown.baseRating.toFixed(1)}</span>
+                            <span>{practitioner.averageRating.toFixed(1)}</span>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Dialog 
-                            open={editingUser?.userId === practitioner.userId} 
-                            onOpenChange={(open) => setEditingUser(open ? practitioner : null)}
+                          <Dialog
+                            open={editingUser?.userId === practitioner.userId}
+                            onOpenChange={(open) => {
+                              setEditingUser(open ? practitioner : null);
+                              setOverrideScore(open ? practitioner.currentTrustScore : undefined);
+                              setOverrideReason(open ? (practitioner.overrideDetails?.reason ?? '') : '');
+                            }}
                           >
                             <DialogTrigger asChild>
                               <Button variant="outline" size="sm">
@@ -334,28 +316,28 @@ const TrustScoreManagementTab: React.FC = () => {
                                   <div>
                                     <div className="font-medium">{practitioner.name}</div>
                                     <div className="text-sm text-muted-foreground">
-                                      Current: {practitioner.currentTrustScore.toFixed(1)}, 
-                                      Algorithmic: {practitioner.algorithmicScore.toFixed(1)}
+                                      Current: {practitioner.currentTrustScore.toFixed(0)}/100,
+                                      Algorithmic: {practitioner.algorithmicScore.toFixed(0)}/100
                                     </div>
                                   </div>
                                 </div>
-                                
+
                                 <div>
-                                  <Label htmlFor="score">Trust Score (0-10)</Label>
+                                  <Label htmlFor="score">Trust Score (0-100)</Label>
                                   <Input
                                     id="score"
                                     type="number"
                                     min="0"
-                                    max="10"
-                                    step="0.1"
+                                    max="100"
+                                    step="1"
                                     value={overrideScore ?? practitioner.currentTrustScore}
                                     onChange={(e) => setOverrideScore(parseFloat(e.target.value))}
                                     placeholder="Enter trust score"
                                   />
                                 </div>
-                                
+
                                 <div>
-                                  <Label htmlFor="reason">Override Reason</Label>
+                                  <Label htmlFor="reason">Override Reason (min. 5 characters)</Label>
                                   <Textarea
                                     id="reason"
                                     value={overrideReason || practitioner.overrideDetails?.reason || ''}
@@ -363,10 +345,10 @@ const TrustScoreManagementTab: React.FC = () => {
                                     placeholder="Enter reason for manual override (community elder, known lineage, etc.)"
                                   />
                                 </div>
-                                
+
                                 <div className="flex gap-2">
-                                  <Button 
-                                    variant="outline" 
+                                  <Button
+                                    variant="outline"
                                     onClick={() => {
                                       // Reset to algorithmic score if removing override
                                       setEditingUser(null);
@@ -376,9 +358,9 @@ const TrustScoreManagementTab: React.FC = () => {
                                   >
                                     Cancel
                                   </Button>
-                                  <Button 
+                                  <Button
                                     onClick={handleUpdateTrustScore}
-                                    disabled={updateTrustScoreMutation.isPending}
+                                    disabled={updateTrustScoreMutation.isPending || overrideReason.trim().length < 5}
                                   >
                                     {updateTrustScoreMutation.isPending ? 'Saving...' : 'Save Override'}
                                   </Button>
@@ -432,7 +414,7 @@ const TrustScoreManagementTab: React.FC = () => {
                           <div className="flex items-center gap-1">
                             <Shield size={14} className="text-orange-500 fill-orange-200" />
                             <span className="text-orange-600 font-medium">
-                              {adjustment.trustScoreOverride?.toFixed(1)}/10
+                              {adjustment.trustScoreOverride?.toFixed(0)}/100
                             </span>
                           </div>
                         </TableCell>

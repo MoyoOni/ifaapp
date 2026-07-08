@@ -111,17 +111,17 @@ export class AdminCommunityService {
 
     // Implementation for resolving reported content
     // This would vary depending on the reportType and action
-    switch(reportType) {
+    switch (reportType) {
       case 'PRODUCT_REVIEW':
         if (action === 'REMOVE') {
           return this.prisma.productReview.update({
             where: { id: reportId },
-            data: { status: 'REMOVED', moderationNotes: reason }
+            data: { status: 'REMOVED', moderationNotes: reason },
           });
         } else if (action === 'DISMISS') {
           return this.prisma.productReview.update({
             where: { id: reportId },
-            data: { flaggedCount: 0 } // Clear flags
+            data: { flaggedCount: 0 }, // Clear flags
           });
         }
         break;
@@ -129,12 +129,12 @@ export class AdminCommunityService {
         if (action === 'REMOVE') {
           return this.prisma.babalawoReview.update({
             where: { id: reportId },
-            data: { status: 'REMOVED', moderationNotes: reason }
+            data: { status: 'REMOVED', moderationNotes: reason },
           });
         } else if (action === 'DISMISS') {
           return this.prisma.babalawoReview.update({
             where: { id: reportId },
-            data: { flaggedCount: 0 } // Clear flags
+            data: { flaggedCount: 0 }, // Clear flags
           });
         }
         break;
@@ -142,12 +142,12 @@ export class AdminCommunityService {
         if (action === 'REMOVE') {
           return this.prisma.courseReview.update({
             where: { id: reportId },
-            data: { status: 'REMOVED', moderationNotes: reason }
+            data: { status: 'REMOVED', moderationNotes: reason },
           });
         } else if (action === 'DISMISS') {
           return this.prisma.courseReview.update({
             where: { id: reportId },
-            data: { flaggedCount: 0 } // Clear flags
+            data: { flaggedCount: 0 }, // Clear flags
           });
         }
         break;
@@ -159,24 +159,27 @@ export class AdminCommunityService {
   /**
    * Create an advisory board vote
    */
-  async createAdvisoryVote(
-    userId: string,
-    createVoteDto: CreateAdvisoryVoteDto,
-    currentUser: CurrentUserPayload
-  ) {
+  async createAdvisoryVote(createVoteDto: CreateAdvisoryVoteDto, currentUser: CurrentUserPayload) {
     if (currentUser.role !== 'ADMIN') {
       throw new ForbiddenException('Only admins can create advisory votes');
     }
 
+    // voteOptions must be persisted as AdvisoryVoteOption rows -- castAdvisoryVote
+    // validates a cast option against vote.options, so a vote created without
+    // them can never actually be voted on.
     return this.prisma.advisoryVote.create({
       data: {
         title: createVoteDto.title,
         description: createVoteDto.description,
-        proposerId: userId,
+        proposerId: currentUser.id,
         deadline: new Date(createVoteDto.deadline),
         requiredMajority: createVoteDto.requiredMajority,
         status: 'PENDING',
+        options: {
+          create: createVoteDto.voteOptions.map((option) => ({ option })),
+        },
       },
+      include: { options: true },
     });
   }
 
@@ -222,7 +225,7 @@ export class AdminCommunityService {
       throw new NotFoundException('Vote not found');
     }
 
-    const selectedOption = vote.options.find(opt => opt.option === option);
+    const selectedOption = vote.options.find((opt) => opt.option === option);
     if (!selectedOption) {
       throw new BadRequestException('Invalid option');
     }
@@ -230,8 +233,8 @@ export class AdminCommunityService {
     // Check if user has already voted
     const existingVote = await this.prisma.advisoryVoteCast.findUnique({
       where: {
-        userId_voteId: { userId: currentUser.id, voteId }
-      }
+        userId_voteId: { userId: currentUser.id, voteId },
+      },
     });
 
     if (existingVote) {
@@ -251,8 +254,8 @@ export class AdminCommunityService {
     await this.prisma.advisoryVoteOption.update({
       where: { id: selectedOption.id },
       data: {
-        voteCount: { increment: 1 }
-      }
+        voteCount: { increment: 1 },
+      },
     });
 
     return voteCast;
@@ -297,7 +300,7 @@ export class AdminCommunityService {
 
     const suggestion = await this.prisma.circleSuggestion.findUnique({
       where: { id: suggestionId },
-      include: { suggester: true }
+      include: { suggester: true },
     });
 
     if (!suggestion) {
@@ -306,7 +309,7 @@ export class AdminCommunityService {
 
     // First, get the actual user to have complete info
     const user = await this.prisma.user.findUnique({
-      where: { id: suggestion.suggestedBy }
+      where: { id: suggestion.suggestedBy },
     });
 
     if (!user) {
@@ -314,13 +317,13 @@ export class AdminCommunityService {
     }
 
     // Create the circle with the original suggester as the creator
-    const circle = await this.circlesService.create(circleData, { 
+    const circle = await this.circlesService.create(circleData, {
       id: user.id,
       sub: user.id,
       email: user.email,
       role: user.role as any, // Assuming user.role matches UserRole enum
       verified: user.verified,
-    }); 
+    });
 
     // Update the suggestion
     await this.prisma.circleSuggestion.update({
@@ -330,7 +333,7 @@ export class AdminCommunityService {
         reviewedBy: currentUser.id,
         reviewedAt: new Date(),
         circleId: circle.id,
-      }
+      },
     });
 
     return circle;
@@ -349,7 +352,7 @@ export class AdminCommunityService {
     }
 
     const suggestion = await this.prisma.circleSuggestion.findUnique({
-      where: { id: suggestionId }
+      where: { id: suggestionId },
     });
 
     if (!suggestion) {
@@ -363,7 +366,7 @@ export class AdminCommunityService {
         reviewedBy: currentUser.id,
         reviewedAt: new Date(),
         notes: reason,
-      }
+      },
     });
   }
 
@@ -398,7 +401,7 @@ export class AdminCommunityService {
     }
 
     const circle = await this.prisma.circle.findUnique({
-      where: { id: circleId }
+      where: { id: circleId },
     });
 
     if (!circle) {
@@ -409,17 +412,17 @@ export class AdminCommunityService {
       case 'ARCHIVE':
         return this.prisma.circle.update({
           where: { id: circleId },
-          data: { active: false, status: 'ARCHIVED' }
+          data: { active: false, status: 'ARCHIVED' },
         });
       case 'DELETE':
         return this.prisma.circle.update({
           where: { id: circleId },
-          data: { active: false, status: 'DELETED' }
+          data: { active: false, status: 'DELETED' },
         });
       case 'ACTIVATE':
         return this.prisma.circle.update({
           where: { id: circleId },
-          data: { active: true, status: 'ACTIVE' }
+          data: { active: true, status: 'ACTIVE' },
         });
       default:
         throw new BadRequestException('Invalid action');
@@ -436,7 +439,7 @@ export class AdminCommunityService {
 
     return this.prisma.event.update({
       where: { id: eventId },
-      data: { status: 'APPROVED' }
+      data: { status: 'APPROVED' },
     });
   }
 
@@ -452,12 +455,12 @@ export class AdminCommunityService {
       orderBy: { _count: { authorId: 'desc' } },
       take: 10,
     });
-    const topPostersRaw = topPostersGrouped.map(g => ({
+    const topPostersRaw = topPostersGrouped.map((g) => ({
       authorId: g.authorId,
       count: g._count.authorId,
     }));
 
-    const topPosterUserIds = topPostersRaw.map(p => p.authorId);
+    const topPosterUserIds = topPostersRaw.map((p) => p.authorId);
     const topPosterUsers = await this.prisma.user.findMany({
       where: { id: { in: topPosterUserIds } },
       select: {
@@ -471,8 +474,8 @@ export class AdminCommunityService {
       },
     });
 
-    const topPosters = topPostersRaw.map(raw => {
-      const user = topPosterUsers.find(u => u.id === raw.authorId);
+    const topPosters = topPostersRaw.map((raw) => {
+      const user = topPosterUsers.find((u) => u.id === raw.authorId);
       return {
         id: user?.id || raw.authorId,
         name: user?.name || 'Unknown',
@@ -486,31 +489,35 @@ export class AdminCommunityService {
     });
 
     // Get top streaks (users with highest contribution streak)
-    const topStreaks = await this.prisma.user.findMany({
-      where: {
-        contributionStreak: { gt: 0 }
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        avatar: true,
-        contributionStreak: true,
-        longestStreak: true,
-        isCommunityBuilder: true,
-      },
-      orderBy: { contributionStreak: 'desc' },
-      take: 10,
-    }).then(users => users.map(user => ({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      avatar: user.avatar,
-      postCount: undefined, // Will be calculated separately if needed
-      contributionStreak: user.contributionStreak,
-      longestStreak: user.longestStreak,
-      isCommunityBuilder: user.isCommunityBuilder,
-    })));
+    const topStreaks = await this.prisma.user
+      .findMany({
+        where: {
+          contributionStreak: { gt: 0 },
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          avatar: true,
+          contributionStreak: true,
+          longestStreak: true,
+          isCommunityBuilder: true,
+        },
+        orderBy: { contributionStreak: 'desc' },
+        take: 10,
+      })
+      .then((users) =>
+        users.map((user) => ({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          avatar: user.avatar,
+          postCount: undefined, // Will be calculated separately if needed
+          contributionStreak: user.contributionStreak,
+          longestStreak: user.longestStreak,
+          isCommunityBuilder: user.isCommunityBuilder,
+        }))
+      );
 
     // Get recent badges
     const recentBadges = await this.prisma.userBadge.findMany({
@@ -523,15 +530,15 @@ export class AdminCommunityService {
             name: true,
             email: true,
             avatar: true,
-          }
+          },
         },
         awardedBy: {
           select: {
             id: true,
             name: true,
-          }
-        }
-      }
+          },
+        },
+      },
     });
 
     // Map badge keys to badge names using preset list
@@ -543,11 +550,14 @@ export class AdminCommunityService {
       'forum-guide': 'Forum Guide',
     };
 
-    const recentBadgesMapped = recentBadges.map(badge => {
+    const recentBadgesMapped = recentBadges.map((badge) => {
       // Get human-readable badge name from the map, or humanize the badgeKey if not found
-      const badgeName = badgeNameMap[badge.badgeKey] || badge.badgeKey.split('-').map(word => 
-        word.charAt(0).toUpperCase() + word.slice(1)
-      ).join(' ');
+      const badgeName =
+        badgeNameMap[badge.badgeKey] ||
+        badge.badgeKey
+          .split('-')
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
 
       return {
         id: badge.id,
@@ -556,16 +566,20 @@ export class AdminCommunityService {
         description: undefined, // Description is not stored in the DB, only for presets in frontend
         awardedAt: badge.awardedAt.toISOString(),
         message: badge.reason || undefined,
-        user: badge.user ? {
-          id: badge.user.id,
-          name: badge.user.name,
-          email: badge.user.email,
-          avatar: badge.user.avatar,
-        } : undefined,
-        awarder: badge.awardedBy ? {
-          id: badge.awardedBy.id,
-          name: badge.awardedBy.name,
-        } : undefined,
+        user: badge.user
+          ? {
+              id: badge.user.id,
+              name: badge.user.name,
+              email: badge.user.email,
+              avatar: badge.user.avatar,
+            }
+          : undefined,
+        awarder: badge.awardedBy
+          ? {
+              id: badge.awardedBy.id,
+              name: badge.awardedBy.name,
+            }
+          : undefined,
       };
     });
 
@@ -579,16 +593,20 @@ export class AdminCommunityService {
   /**
    * Award a badge to a user
    */
-  async awardBadge(userId: string, badgeData: {
-    badgeName: string,
-    badgeSlug: string,
-    description?: string,
-    message?: string,
-    promoteToBuilder?: boolean
-  }, adminId: string) {
+  async awardBadge(
+    userId: string,
+    badgeData: {
+      badgeName: string;
+      badgeSlug: string;
+      description?: string;
+      message?: string;
+      promoteToBuilder?: boolean;
+    },
+    adminId: string
+  ) {
     // Check if user exists
     const user = await this.prisma.user.findUnique({
-      where: { id: userId }
+      where: { id: userId },
     });
 
     if (!user) {
@@ -610,15 +628,15 @@ export class AdminCommunityService {
             name: true,
             email: true,
             avatar: true,
-          }
+          },
         },
         awardedBy: {
           select: {
             id: true,
             name: true,
-          }
-        }
-      }
+          },
+        },
+      },
     });
 
     // Promote to community builder if requested
@@ -638,9 +656,12 @@ export class AdminCommunityService {
       'forum-guide': 'Forum Guide',
     };
 
-    const badgeName = badgeNameMap[badge.badgeKey] || badge.badgeKey.split('-').map(word => 
-      word.charAt(0).toUpperCase() + word.slice(1)
-    ).join(' ');
+    const badgeName =
+      badgeNameMap[badge.badgeKey] ||
+      badge.badgeKey
+        .split('-')
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
 
     return {
       id: badge.id,
@@ -649,16 +670,20 @@ export class AdminCommunityService {
       description: undefined, // Description is not stored in the DB
       awardedAt: badge.awardedAt.toISOString(),
       message: badge.reason || undefined,
-      user: badge.user ? {
-        id: badge.user.id,
-        name: badge.user.name,
-        email: badge.user.email,
-        avatar: badge.user.avatar,
-      } : undefined,
-      awarder: badge.awardedBy ? {
-        id: badge.awardedBy.id,
-        name: badge.awardedBy.name,
-      } : undefined,
+      user: badge.user
+        ? {
+            id: badge.user.id,
+            name: badge.user.name,
+            email: badge.user.email,
+            avatar: badge.user.avatar,
+          }
+        : undefined,
+      awarder: badge.awardedBy
+        ? {
+            id: badge.awardedBy.id,
+            name: badge.awardedBy.name,
+          }
+        : undefined,
     };
   }
 
@@ -667,7 +692,7 @@ export class AdminCommunityService {
    */
   async revokeBadge(badgeId: string) {
     const badge = await this.prisma.userBadge.findUnique({
-      where: { id: badgeId }
+      where: { id: badgeId },
     });
 
     if (!badge) {
@@ -675,7 +700,7 @@ export class AdminCommunityService {
     }
 
     await this.prisma.userBadge.delete({
-      where: { id: badgeId }
+      where: { id: badgeId },
     });
   }
 }

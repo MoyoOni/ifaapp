@@ -10,6 +10,11 @@ import { VerificationStage, VendorStatus, AdminSubRole } from '@ile-ase/common';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { ApproveVerificationDto } from './dto/approve-verification.dto';
 import { BulkVerifyDto } from './dto/bulk-verify.dto';
+import { SuspendUserDto } from './dto/suspend-user.dto';
+import { WarnUserDto } from './dto/warn-user.dto';
+import { BanUserDto } from './dto/ban-user.dto';
+import { UnbanUserDto } from './dto/unban-user.dto';
+import { ChangeUserRoleDto } from './dto/change-user-role.dto';
 import {
   NotificationService,
   NotificationType,
@@ -53,14 +58,28 @@ export class AdminUsersService {
         email: true,
         name: true,
         role: true,
+        adminSubRole: true,
         verified: true,
         hasOnboarded: true,
         culturalLevel: true,
+        createdAt: true,
+        suspendedUntil: true,
+        bannedAt: true,
+        banReason: true,
+        warnCount: true,
       },
       orderBy: { name: 'asc' },
     });
 
-    return users;
+    const now = new Date();
+    // isBanned/isSuspended have no dedicated columns -- they're derived from
+    // bannedAt/suspendedUntil here so the frontend doesn't need to know the
+    // underlying schema (and a suspension quietly expires once its date passes).
+    return users.map((user) => ({
+      ...user,
+      isBanned: !!user.bannedAt,
+      isSuspended: !user.bannedAt && !!user.suspendedUntil && user.suspendedUntil > now,
+    }));
   }
 
   /**
@@ -649,14 +668,14 @@ export class AdminUsersService {
     for (const p of practitioners) {
       const hasRecentAppointment = p.appointmentsAsBabalawo.length > 0;
       const hasRecentSession = p.userSessions.length > 0;
-      
+
       if (!hasRecentAppointment && !hasRecentSession) {
         // Get the last session overall for calculating days since activity
         const lastOverallSession = await this.prisma.userSession.findFirst({
           where: { userId: p.id },
           orderBy: { lastSeenAt: 'desc' },
         });
-        
+
         inactivePractitioners.push({
           id: p.id,
           name: p.name,
@@ -669,7 +688,10 @@ export class AdminUsersService {
           lastAppointmentAt: null, // We already know they don't have recent appointments
           lastSessionAt: lastOverallSession?.lastSeenAt || null,
           daysSinceLastActivity: lastOverallSession
-            ? Math.floor((new Date().getTime() - new Date(lastOverallSession.lastSeenAt).getTime()) / (1000 * 60 * 60 * 24))
+            ? Math.floor(
+                (new Date().getTime() - new Date(lastOverallSession.lastSeenAt).getTime()) /
+                  (1000 * 60 * 60 * 24)
+              )
             : 999,
         });
       }
@@ -818,5 +840,277 @@ export class AdminUsersService {
         piiReveal: true,
       },
     });
+  }
+
+  /**
+   * Guards shared by the moderation actions below: an admin can't apply
+   * suspend/warn/ban to themselves (accidental self-lockout), and can't
+   * apply it to another admin through this generic endpoint (role changes
+   * on admins go through the dedicated admin-management flow instead).
+   */
+  private assertModerationTarget(
+    currentUser: CurrentUserPayload,
+    target: { id: string; role: string }
+  ) {
+    if (target.id === currentUser.id) {
+      throw new BadRequestException('You cannot apply moderation actions to your own account');
+    }
+    if (target.role === 'ADMIN') {
+      throw new ForbiddenException(
+        'Admins cannot be suspended, warned, or banned through this action'
+      );
+    }
+  }
+
+  /**
+   * ADM-003: Suspend a user for a fixed number of days
+   */
+  async suspendUser(currentUser: CurrentUserPayload, userId: string, dto: SuspendUserDto) {
+    if (currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can suspend users');
+    }
+
+    const target = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!target) {
+      throw new NotFoundException('User not found');
+    }
+    this.assertModerationTarget(currentUser, target);
+
+    const durationDays = dto.durationDays ?? 7;
+    const suspendedUntil = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { suspendedUntil },
+      select: { id: true, email: true, name: true, suspendedUntil: true },
+    });
+
+    await this.auditService.logAction({
+      adminId: currentUser.id,
+      action: 'SUSPEND_USER',
+      entityType: 'USER',
+      entityId: userId,
+      reason: dto.reason,
+      payload: { durationDays, suspendedUntil, targetEmail: target.email },
+    });
+
+    await this.notificationService.createNotification({
+      userId,
+      type: NotificationType.SYSTEM,
+      category: NotificationCategory.WARNING,
+      title: 'Account Suspended',
+      message: `Your account has been suspended until ${suspendedUntil.toDateString()}. Reason: ${dto.reason}`,
+      sendEmail: true,
+    });
+
+    this.logger.log(`User ${userId} suspended for ${durationDays} days by admin ${currentUser.id}`);
+
+    return updated;
+  }
+
+  /**
+   * ADM-003: Send a formal warning to a user (increments warnCount)
+   */
+  async warnUser(currentUser: CurrentUserPayload, userId: string, dto: WarnUserDto) {
+    if (currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can warn users');
+    }
+
+    const target = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!target) {
+      throw new NotFoundException('User not found');
+    }
+    this.assertModerationTarget(currentUser, target);
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { warnCount: { increment: 1 }, warnedAt: new Date() },
+      select: { id: true, email: true, name: true, warnCount: true, warnedAt: true },
+    });
+
+    await this.auditService.logAction({
+      adminId: currentUser.id,
+      action: 'WARN_USER',
+      entityType: 'USER',
+      entityId: userId,
+      reason: dto.message,
+      payload: { message: dto.message, warnCount: updated.warnCount, targetEmail: target.email },
+    });
+
+    await this.notificationService.createNotification({
+      userId,
+      type: NotificationType.SYSTEM,
+      category: NotificationCategory.WARNING,
+      title: 'Warning from Ìlú Àṣẹ',
+      message: dto.message,
+      sendEmail: true,
+    });
+
+    this.logger.log(
+      `User ${userId} warned by admin ${currentUser.id} (warnCount now ${updated.warnCount})`
+    );
+
+    return updated;
+  }
+
+  /**
+   * ADM-003: Ban a user permanently (until manually unbanned)
+   */
+  async banUser(currentUser: CurrentUserPayload, userId: string, dto: BanUserDto) {
+    if (currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can ban users');
+    }
+
+    const target = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!target) {
+      throw new NotFoundException('User not found');
+    }
+    this.assertModerationTarget(currentUser, target);
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { bannedAt: new Date(), banReason: dto.reason },
+      select: { id: true, email: true, name: true, bannedAt: true, banReason: true },
+    });
+
+    await this.auditService.logAction({
+      adminId: currentUser.id,
+      action: 'BAN_USER',
+      entityType: 'USER',
+      entityId: userId,
+      reason: dto.reason,
+      payload: { targetEmail: target.email },
+    });
+
+    await this.notificationService.createNotification({
+      userId,
+      type: NotificationType.SYSTEM,
+      category: NotificationCategory.URGENT,
+      title: 'Account Banned',
+      message: `Your account has been banned. Reason: ${dto.reason}`,
+      sendEmail: true,
+    });
+
+    this.logger.log(`User ${userId} banned by admin ${currentUser.id}`);
+
+    return updated;
+  }
+
+  /**
+   * ADM-003: Lift a ban or an active suspension. The frontend routes both
+   * "unsuspend" and "unban" actions through this single endpoint, so it
+   * clears whichever punitive state is actually set.
+   */
+  async unbanUser(currentUser: CurrentUserPayload, userId: string, dto: UnbanUserDto) {
+    if (currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can lift a suspension or ban');
+    }
+
+    const target = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!target) {
+      throw new NotFoundException('User not found');
+    }
+
+    const wasBanned = !!target.bannedAt;
+    const wasSuspended = !!target.suspendedUntil && target.suspendedUntil > new Date();
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { bannedAt: null, banReason: null, suspendedUntil: null },
+      select: { id: true, email: true, name: true },
+    });
+
+    await this.auditService.logAction({
+      adminId: currentUser.id,
+      action: 'UNBAN_USER',
+      entityType: 'USER',
+      entityId: userId,
+      reason: dto.reason,
+      payload: { targetEmail: target.email, wasBanned, wasSuspended },
+    });
+
+    await this.notificationService.createNotification({
+      userId,
+      type: NotificationType.SYSTEM,
+      category: NotificationCategory.SUCCESS,
+      title: wasBanned ? 'Account Reinstated' : 'Suspension Lifted',
+      message: wasBanned
+        ? 'Your account ban has been lifted. Welcome back to Ìlú Àṣẹ.'
+        : 'Your account suspension has been lifted early.',
+      sendEmail: true,
+    });
+
+    this.logger.log(`User ${userId} unbanned/unsuspended by admin ${currentUser.id}`);
+
+    return updated;
+  }
+
+  /**
+   * ADM-002: Change a user's role. Granting or revoking ADMIN requires SUPER
+   * (same bar as manage-admins/removeAdminPrivileges below) -- moving between
+   * CLIENT/BABALAWO/VENDOR is a lower-stakes action any admin can perform.
+   */
+  async changeUserRole(currentUser: CurrentUserPayload, userId: string, dto: ChangeUserRoleDto) {
+    if (currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can change user roles');
+    }
+    if (currentUser.id === userId) {
+      throw new BadRequestException('You cannot change your own role');
+    }
+
+    const target = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!target) {
+      throw new NotFoundException('User not found');
+    }
+
+    const grantingOrRevokingAdmin = target.role === 'ADMIN' || dto.role === 'ADMIN';
+    if (grantingOrRevokingAdmin && currentUser.adminSubRole !== 'SUPER') {
+      throw new ForbiddenException('Only super admins can grant or revoke admin privileges');
+    }
+    if (dto.role === 'ADMIN' && !dto.adminSubRole) {
+      throw new BadRequestException('adminSubRole is required when promoting a user to ADMIN');
+    }
+
+    const previousRole = target.role;
+    const previousAdminSubRole = target.adminSubRole;
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        role: dto.role,
+        adminSubRole: dto.role === 'ADMIN' ? dto.adminSubRole : null,
+      },
+      select: { id: true, email: true, name: true, role: true, adminSubRole: true },
+    });
+
+    await this.auditService.logAction({
+      adminId: currentUser.id,
+      action: 'CHANGE_USER_ROLE',
+      entityType: 'USER',
+      entityId: userId,
+      reason: dto.reason,
+      payload: {
+        targetEmail: target.email,
+        previousRole,
+        previousAdminSubRole,
+        newRole: updated.role,
+        newAdminSubRole: updated.adminSubRole,
+      },
+    });
+
+    await this.notificationService.createNotification({
+      userId,
+      type: NotificationType.SYSTEM,
+      category: NotificationCategory.INFO,
+      title: 'Account Role Updated',
+      message: `Your account role has been changed to ${dto.role}.`,
+      sendEmail: true,
+    });
+
+    this.logger.log(
+      `User ${userId} role changed from ${previousRole} to ${dto.role} by admin ${currentUser.id}`
+    );
+
+    return updated;
   }
 }

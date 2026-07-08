@@ -35,6 +35,7 @@ import { AdminComplaintsService } from './admin-complaints.service';
 import { AdminMarketIntelligenceService } from './admin-market-intelligence.service';
 import { AdminPractitionerPerformanceService } from './admin-practitioner-performance.service';
 import { AdminMorningBriefService } from './admin-morning-brief.service';
+import { AdminRefundsService } from './admin-refunds.service';
 import { OutboxService } from '../outbox/outbox.service';
 import { GdprService } from '../gdpr/gdpr.service';
 import { AuditInterceptor } from './interceptors/audit.interceptor';
@@ -73,6 +74,14 @@ import { RejectPostDto } from './dto/reject-post.dto';
 import { CreateFlagRuleDto } from './dto/create-flag-rule.dto';
 import { UpdateFlagRuleDto } from './dto/update-flag-rule.dto';
 import { ResolveComplaintDto } from './dto/resolve-complaint.dto';
+import { SuspendUserDto } from './dto/suspend-user.dto';
+import { WarnUserDto } from './dto/warn-user.dto';
+import { BanUserDto } from './dto/ban-user.dto';
+import { UnbanUserDto } from './dto/unban-user.dto';
+import { ChangeUserRoleDto } from './dto/change-user-role.dto';
+import { ProcessRefundRequestDto } from './dto/process-refund-request.dto';
+import { AdminCancelSubscriptionDto } from './dto/admin-cancel-subscription.dto';
+import { AdminExtendSubscriptionDto } from './dto/admin-extend-subscription.dto';
 
 @Controller('admin')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
@@ -99,7 +108,8 @@ export class AdminController {
     private readonly marketIntelligenceService: AdminMarketIntelligenceService,
     private readonly morningBriefService: AdminMorningBriefService,
     private readonly practitionerPerformanceService: AdminPractitionerPerformanceService,
-    private readonly campaignsService: AdminCampaignsService
+    private readonly campaignsService: AdminCampaignsService,
+    private readonly refundsService: AdminRefundsService
   ) {}
 
   @Get('stats')
@@ -179,6 +189,63 @@ export class AdminController {
     });
   }
 
+  // ADM-003: User Suspension & Ban System
+  @Post('users/:id/suspend')
+  @Roles(UserRole.ADMIN)
+  @AdminRoles(AdminSubRole.MODERATOR, AdminSubRole.SUPER)
+  async suspendUser(
+    @Param('id') id: string,
+    @Body() dto: SuspendUserDto,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.adminService.suspendUser(currentUser, id, dto);
+  }
+
+  @Post('users/:id/warn')
+  @Roles(UserRole.ADMIN)
+  @AdminRoles(AdminSubRole.MODERATOR, AdminSubRole.SUPER)
+  async warnUser(
+    @Param('id') id: string,
+    @Body() dto: WarnUserDto,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.adminService.warnUser(currentUser, id, dto);
+  }
+
+  @Post('users/:id/ban')
+  @Roles(UserRole.ADMIN)
+  @AdminRoles(AdminSubRole.MODERATOR, AdminSubRole.SUPER)
+  async banUser(
+    @Param('id') id: string,
+    @Body() dto: BanUserDto,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.adminService.banUser(currentUser, id, dto);
+  }
+
+  @Post('users/:id/unban')
+  @Roles(UserRole.ADMIN)
+  @AdminRoles(AdminSubRole.MODERATOR, AdminSubRole.SUPER)
+  async unbanUser(
+    @Param('id') id: string,
+    @Body() dto: UnbanUserDto,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.adminService.unbanUser(currentUser, id, dto);
+  }
+
+  // ADM-002: User Role Management
+  @Patch('users/:id/role')
+  @Roles(UserRole.ADMIN)
+  @AdminRoles(AdminSubRole.SUPPORT, AdminSubRole.SUPER)
+  async changeUserRole(
+    @Param('id') id: string,
+    @Body() dto: ChangeUserRoleDto,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.adminService.changeUserRole(currentUser, id, dto);
+  }
+
   @Get('verification-applications')
   @Roles(UserRole.ADMIN)
   @AdminRoles(AdminSubRole.COMPLIANCE, AdminSubRole.SUPER)
@@ -250,6 +317,28 @@ export class AdminController {
       dto.notes || '',
       currentUser
     );
+  }
+
+  // ADM-012: Refund Management
+  @Get('refund-requests')
+  @Roles(UserRole.ADMIN)
+  @AdminRoles(AdminSubRole.FINANCE, AdminSubRole.SUPER)
+  async getRefundRequests(
+    @CurrentUser() currentUser: CurrentUserPayload,
+    @Query('status') status?: string
+  ) {
+    return this.refundsService.getRefundRequests(currentUser, status);
+  }
+
+  @Post('refund-requests/:id/process')
+  @Roles(UserRole.ADMIN)
+  @AdminRoles(AdminSubRole.FINANCE, AdminSubRole.SUPER)
+  async processRefundRequest(
+    @Param('id') id: string,
+    @Body() dto: ProcessRefundRequestDto,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.refundsService.processRefundRequest(currentUser, id, dto);
   }
 
   /**
@@ -510,14 +599,13 @@ export class AdminController {
   }
 
   // ADVISORY BOARD VOTING ENDPOINTS
-  @Post('advisory-board/votes/:userId')
+  @Post('advisory-board/votes')
   @Roles(UserRole.ADMIN, UserRole.ADVISORY_BOARD_MEMBER)
   async createAdvisoryVote(
-    @Param('userId') userId: string,
     @Body() createVoteDto: CreateAdvisoryVoteDto,
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
-    return this.adminService.createAdvisoryVote(userId, createVoteDto, currentUser);
+    return this.adminService.createAdvisoryVote(createVoteDto, currentUser);
   }
 
   @Get('advisory-board/votes')
@@ -778,7 +866,15 @@ export class AdminController {
   @Post('promos')
   @Roles(UserRole.ADMIN)
   async createPromo(
-    @Body() body: { code: string; type: string; value: number; maxUses?: number; expiresAt?: string; eligibleRoles: string[] },
+    @Body()
+    body: {
+      code: string;
+      type: string;
+      value: number;
+      maxUses?: number;
+      expiresAt?: string;
+      eligibleRoles: string[];
+    },
     @CurrentUser() admin: CurrentUserPayload
   ) {
     return this.promosService.createPromo(
@@ -832,6 +928,38 @@ export class AdminController {
     return this.adminService.getFailedSubscribers();
   }
 
+  @Post('subscriptions/:id/cancel')
+  @Roles(UserRole.ADMIN)
+  @AdminRoles(AdminSubRole.FINANCE, AdminSubRole.SUPER)
+  async cancelSubscriptionById(
+    @Param('id') id: string,
+    @Body() dto: AdminCancelSubscriptionDto,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.adminService.cancelSubscriptionById(currentUser, id, dto.reason);
+  }
+
+  @Post('subscriptions/:id/extend')
+  @Roles(UserRole.ADMIN)
+  @AdminRoles(AdminSubRole.FINANCE, AdminSubRole.SUPER)
+  async extendSubscriptionById(
+    @Param('id') id: string,
+    @Body() dto: AdminExtendSubscriptionDto,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.adminService.extendSubscriptionById(currentUser, id, dto.months, dto.reason);
+  }
+
+  @Post('subscriptions/:id/send-payment-reminder')
+  @Roles(UserRole.ADMIN)
+  @AdminRoles(AdminSubRole.FINANCE, AdminSubRole.SUPER)
+  async sendSubscriptionPaymentReminder(
+    @Param('id') id: string,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.adminService.sendSubscriptionPaymentReminder(currentUser, id);
+  }
+
   // ADM-029: Financial Command Centre
 
   @Get('financial-command-centre')
@@ -845,7 +973,9 @@ export class AdminController {
   @Get('market-intelligence/leaderboard')
   @Roles(UserRole.ADMIN)
   async getLeaderboard(@Query('sortBy') sortBy: string = 'bookings') {
-    return this.marketIntelligenceService.getLeaderboard(sortBy as 'bookings' | 'revenue' | 'rating');
+    return this.marketIntelligenceService.getLeaderboard(
+      sortBy as 'bookings' | 'revenue' | 'rating'
+    );
   }
 
   @Get('market-intelligence/signals')
@@ -936,7 +1066,10 @@ export class AdminController {
 
   @Post('cultural/oral-histories')
   @Roles(UserRole.ADMIN)
-  async createOralHistory(@Body() dto: CreateOralHistoryDto, @CurrentUser() admin: CurrentUserPayload) {
+  async createOralHistory(
+    @Body() dto: CreateOralHistoryDto,
+    @CurrentUser() admin: CurrentUserPayload
+  ) {
     return this.culturalContentService.createOralHistory(dto, admin);
   }
 
@@ -962,7 +1095,10 @@ export class AdminController {
 
   @Post('cultural/sacred-events')
   @Roles(UserRole.ADMIN)
-  async createSacredEvent(@Body() dto: CreateSacredEventDto, @CurrentUser() admin: CurrentUserPayload) {
+  async createSacredEvent(
+    @Body() dto: CreateSacredEventDto,
+    @CurrentUser() admin: CurrentUserPayload
+  ) {
     return this.culturalContentService.createSacredEvent(dto, admin);
   }
 
@@ -997,7 +1133,7 @@ export class AdminController {
   async updateFeatured(
     @Param('type') type: string,
     @Param('id') id: string,
-    @Body() dto: UpdateFeaturedDto,
+    @Body() dto: UpdateFeaturedDto
   ) {
     return this.featuredContentService.updateFeatured(type, id, dto);
   }
@@ -1018,7 +1154,11 @@ export class AdminController {
 
   @Post('integrity/queue/:postId/reject')
   @Roles(UserRole.ADMIN)
-  async rejectPost(@Param('postId') postId: string, @Body() dto: RejectPostDto, @CurrentUser() admin: CurrentUserPayload) {
+  async rejectPost(
+    @Param('postId') postId: string,
+    @Body() dto: RejectPostDto,
+    @CurrentUser() admin: CurrentUserPayload
+  ) {
     return this.integrityService.rejectPost(postId, admin, dto);
   }
 
@@ -1119,7 +1259,7 @@ export class AdminController {
   @Roles(UserRole.ADMIN)
   async getInactivePractitioners(
     @Query('daysThreshold') daysThreshold: number = 30,
-    @CurrentUser() admin: CurrentUserPayload,
+    @CurrentUser() admin: CurrentUserPayload
   ) {
     return this.adminService.getInactivePractitioners(admin, Number(daysThreshold));
   }
@@ -1128,7 +1268,7 @@ export class AdminController {
   @Roles(UserRole.ADMIN)
   async reEngagePractitioner(
     @Param('practitionerId') practitionerId: string,
-    @Body() body: { action: string; message?: string },
+    @Body() body: { action: string; message?: string }
   ) {
     return this.adminService.reEngagePractitioner(practitionerId, body.action, body.message);
   }
@@ -1178,7 +1318,7 @@ export class AdminController {
     @CurrentUser() currentUser: CurrentUserPayload,
     @Query('status') status?: string,
     @Query('page') page: number = 1,
-    @Query('limit') limit: number = 20,
+    @Query('limit') limit: number = 20
   ) {
     return this.complaintsService.getComplaints(currentUser, status, page, limit);
   }
@@ -1188,7 +1328,7 @@ export class AdminController {
   async resolveComplaint(
     @Param('id') id: string,
     @Body() dto: ResolveComplaintDto,
-    @CurrentUser() currentUser: CurrentUserPayload,
+    @CurrentUser() currentUser: CurrentUserPayload
   ) {
     return this.complaintsService.resolveComplaint(id, dto, currentUser);
   }

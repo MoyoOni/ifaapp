@@ -97,7 +97,7 @@ export class AdminTrustScoreService {
   async getOverrideAdjustments() {
     return this.prisma.user.findMany({
       where: {
-        trustScoreOverride: { not: null }
+        trustScoreOverride: { not: null },
       },
       select: {
         id: true,
@@ -116,7 +116,7 @@ export class AdminTrustScoreService {
   async getPractitionersForFeaturing() {
     const practitioners = await this.prisma.user.findMany({
       where: {
-        role: 'BABALAWO'
+        role: 'BABALAWO',
       },
       select: {
         id: true,
@@ -126,6 +126,10 @@ export class AdminTrustScoreService {
         bio: true,
         averageRating: true,
         trustScore: true,
+        trustScoreOverride: true,
+        trustScoreOverrideReason: true,
+        trustScoreOverrideBy: true,
+        trustScoreOverrideAt: true,
         isFeatured: true,
         featuredOrder: true,
         featuredExpiry: true,
@@ -138,12 +142,12 @@ export class AdminTrustScoreService {
     const practitionersWithReviews = await Promise.all(
       practitioners.map(async (practitioner) => {
         const totalReviews = await this.prisma.babalawoReview.count({
-          where: { babalawoId: practitioner.id }
+          where: { babalawoId: practitioner.id },
         });
-        
+
         return {
           ...practitioner,
-          totalReviews
+          totalReviews,
         };
       })
     );
@@ -155,7 +159,7 @@ export class AdminTrustScoreService {
     const practitioners = await this.prisma.user.findMany({
       where: {
         role: 'BABALAWO',
-        isFeatured: true
+        isFeatured: true,
       },
       select: {
         id: true,
@@ -177,12 +181,12 @@ export class AdminTrustScoreService {
     const practitionersWithReviews = await Promise.all(
       practitioners.map(async (practitioner) => {
         const totalReviews = await this.prisma.babalawoReview.count({
-          where: { babalawoId: practitioner.id }
+          where: { babalawoId: practitioner.id },
         });
-        
+
         return {
           ...practitioner,
-          totalReviews
+          totalReviews,
         };
       })
     );
@@ -190,7 +194,12 @@ export class AdminTrustScoreService {
     return practitionersWithReviews;
   }
 
-  async updatePractitionerFeaturedStatus(userId: string, isFeatured: boolean, featuredOrder?: number, featuredExpiry?: Date) {
+  async updatePractitionerFeaturedStatus(
+    userId: string,
+    isFeatured: boolean,
+    featuredOrder?: number,
+    featuredExpiry?: Date
+  ) {
     const practitioner = await this.prisma.user.update({
       where: { id: userId },
       data: {
@@ -216,12 +225,12 @@ export class AdminTrustScoreService {
 
     // Add totalReviews to the response
     const totalReviews = await this.prisma.babalawoReview.count({
-      where: { babalawoId: practitioner.id }
+      where: { babalawoId: practitioner.id },
     });
 
     return {
       ...practitioner,
-      totalReviews
+      totalReviews,
     };
   }
 }

@@ -5,10 +5,17 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
+import { addMonths } from 'date-fns';
 import { PrismaService } from '../prisma/prisma.service';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { WalletService } from '../wallet/wallet.service';
 import { PaymentsService } from '../payments/payments.service';
+import { AuditService } from './audit.service';
+import {
+  NotificationService,
+  NotificationType,
+  NotificationCategory,
+} from '../notifications/notification.service';
 
 @Injectable()
 export class AdminFinanceService {
@@ -17,7 +24,9 @@ export class AdminFinanceService {
   constructor(
     private prisma: PrismaService,
     private walletService: WalletService,
-    private paymentsService: PaymentsService
+    private paymentsService: PaymentsService,
+    private auditService: AuditService,
+    private notificationService: NotificationService
   ) {}
 
   /**
@@ -517,21 +526,23 @@ export class AdminFinanceService {
     const [appointmentRevenue, orderRevenue] = await Promise.all([
       this.prisma.appointment.aggregate({
         _sum: { price: true },
-        where: { 
-          date: { gte: startOfMonth.toISOString() }, 
-          status: 'COMPLETED' 
+        where: {
+          date: { gte: startOfMonth.toISOString() },
+          status: 'COMPLETED',
         },
       }),
       this.prisma.order.aggregate({
         _sum: { totalAmount: true },
-        where: { 
-          createdAt: { gte: startOfMonth.toISOString() }, 
-          status: 'DELIVERED' 
+        where: {
+          createdAt: { gte: startOfMonth.toISOString() },
+          status: 'DELIVERED',
         },
       }),
     ]);
-    
-    const thisMonthGMV = ((appointmentRevenue._sum?.price || 0) as number) + ((orderRevenue._sum?.totalAmount || 0) as number);
+
+    const thisMonthGMV =
+      ((appointmentRevenue._sum?.price || 0) as number) +
+      ((orderRevenue._sum?.totalAmount || 0) as number);
 
     // 3. Churn rate (subscriptions cancelled this month / active at start)
     const startOfMonthDate = new Date();
@@ -558,7 +569,7 @@ export class AdminFinanceService {
     lastMonthStart.setHours(0, 0, 0, 0);
     const lastMonthEnd = new Date(startOfMonth);
     lastMonthEnd.setMilliseconds(-1);
-    
+
     // Calculate last month's MRR
     const lastMonthSubs = await this.prisma.subscription.findMany({
       where: {
@@ -580,7 +591,8 @@ export class AdminFinanceService {
     const platformCostNgn = await this.getPlatformCost(); // helper method
 
     // 7. Break-even
-    const breakEvenThreshold = platformCostNgn > 0 ? platformCostNgn / (projectedAnnualPlatformRevenue / 12) : 0;
+    const breakEvenThreshold =
+      platformCostNgn > 0 ? platformCostNgn / (projectedAnnualPlatformRevenue / 12) : 0;
     const monthsToBreakEven = breakEvenThreshold > 0 ? Math.ceil(breakEvenThreshold) : 0;
 
     // 8. Trend (last 3 months)
@@ -708,6 +720,149 @@ export class AdminFinanceService {
       endDate: s.endDate,
       failedAt: s.updatedAt, // map updatedAt as failedAt
     }));
+  }
+
+  /**
+   * ADM-013: Admin-initiated subscription actions. These operate on a
+   * Subscription row directly (the id shown in the active/cancelled/
+   * failed-payments admin lists), unlike the self-service
+   * SubscriptionsService methods which look up "the caller's own active
+   * subscription" by userId -- an admin isn't the subscriber, so those
+   * aren't reusable here.
+   */
+  async cancelSubscriptionById(
+    currentUser: CurrentUserPayload,
+    subscriptionId: string,
+    reason?: string
+  ) {
+    if (currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can cancel subscriptions');
+    }
+
+    const subscription = await this.prisma.subscription.findUnique({
+      where: { id: subscriptionId },
+    });
+    if (!subscription) {
+      throw new NotFoundException('Subscription not found');
+    }
+
+    await this.prisma.subscription.update({
+      where: { id: subscriptionId },
+      data: { autoRenew: false, status: 'CANCELLED' },
+    });
+
+    await this.auditService.logAction({
+      adminId: currentUser.id,
+      action: 'ADMIN_CANCEL_SUBSCRIPTION',
+      entityType: 'Subscription',
+      entityId: subscriptionId,
+      reason,
+      payload: { userId: subscription.userId, plan: subscription.plan },
+    });
+
+    await this.notificationService.createNotification({
+      userId: subscription.userId,
+      type: NotificationType.SYSTEM,
+      category: NotificationCategory.INFO,
+      title: 'Subscription Cancelled',
+      message: reason
+        ? `Your Devoted subscription was cancelled by an admin: ${reason}`
+        : 'Your Devoted subscription was cancelled by an admin.',
+      sendEmail: true,
+    });
+
+    this.logger.log(`Subscription ${subscriptionId} cancelled by admin ${currentUser.id}`);
+    return { success: true };
+  }
+
+  async extendSubscriptionById(
+    currentUser: CurrentUserPayload,
+    subscriptionId: string,
+    months: number,
+    reason?: string
+  ) {
+    if (currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can extend subscriptions');
+    }
+    if (!months || months <= 0) {
+      throw new BadRequestException('months must be a positive number');
+    }
+
+    const subscription = await this.prisma.subscription.findUnique({
+      where: { id: subscriptionId },
+    });
+    if (!subscription) {
+      throw new NotFoundException('Subscription not found');
+    }
+
+    const newEnd = addMonths(subscription.endDate, months);
+    await this.prisma.subscription.update({
+      where: { id: subscriptionId },
+      data: { endDate: newEnd },
+    });
+    await this.prisma.user.update({
+      where: { id: subscription.userId },
+      data: { subscriptionEnd: newEnd },
+    });
+
+    await this.auditService.logAction({
+      adminId: currentUser.id,
+      action: 'ADMIN_EXTEND_SUBSCRIPTION',
+      entityType: 'Subscription',
+      entityId: subscriptionId,
+      reason,
+      payload: { userId: subscription.userId, months, newEndDate: newEnd },
+    });
+
+    await this.notificationService.createNotification({
+      userId: subscription.userId,
+      type: NotificationType.SYSTEM,
+      category: NotificationCategory.SUCCESS,
+      title: 'Subscription Extended',
+      message: `Your Devoted subscription has been extended by ${months} month${months === 1 ? '' : 's'}.`,
+      sendEmail: true,
+    });
+
+    this.logger.log(
+      `Subscription ${subscriptionId} extended by ${months} month(s) by admin ${currentUser.id}`
+    );
+    return { success: true, newEndDate: newEnd };
+  }
+
+  async sendSubscriptionPaymentReminder(currentUser: CurrentUserPayload, subscriptionId: string) {
+    if (currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can send payment reminders');
+    }
+
+    const subscription = await this.prisma.subscription.findUnique({
+      where: { id: subscriptionId },
+    });
+    if (!subscription) {
+      throw new NotFoundException('Subscription not found');
+    }
+
+    await this.notificationService.createNotification({
+      userId: subscription.userId,
+      type: NotificationType.PAYMENT,
+      category: NotificationCategory.WARNING,
+      title: 'Update Your Payment Method',
+      message:
+        'Your last Devoted subscription payment failed. Please update your payment method to keep your benefits active.',
+      sendEmail: true,
+    });
+
+    await this.auditService.logAction({
+      adminId: currentUser.id,
+      action: 'ADMIN_SEND_PAYMENT_REMINDER',
+      entityType: 'Subscription',
+      entityId: subscriptionId,
+      payload: { userId: subscription.userId },
+    });
+
+    this.logger.log(
+      `Payment reminder sent for subscription ${subscriptionId} by admin ${currentUser.id}`
+    );
+    return { success: true };
   }
 
   async getFinancialCommandCentre() {

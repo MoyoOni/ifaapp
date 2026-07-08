@@ -22,6 +22,7 @@ import { AdminComplaintsService } from './admin-complaints.service';
 import { AdminMarketIntelligenceService } from './admin-market-intelligence.service';
 import { AdminPractitionerPerformanceService } from './admin-practitioner-performance.service';
 import { AdminMorningBriefService } from './admin-morning-brief.service';
+import { AdminRefundsService } from './admin-refunds.service';
 import { GdprModule } from '../gdpr/gdpr.module';
 import { OutboxModule } from '../outbox/outbox.module';
 import { NotificationsModule } from '../notifications/notifications.module';
@@ -78,6 +79,7 @@ import { SharedModule } from '../shared/shared.module';
     AdminMarketIntelligenceService,
     AdminPractitionerPerformanceService,
     AdminMorningBriefService,
+    AdminRefundsService,
     NotificationService,
     NotificationPreferencesService,
   ],

@@ -33,7 +33,7 @@ export class AdminAcademyService {
     const course = await this.prisma.course.findUnique({ where: { id: courseId } });
     if (!course) throw new NotFoundException('Course not found');
     const data: Record<string, string | null> = { status };
-    if (status === 'PUBLISHED') data.approvedBy = adminId;
+    if (status === 'APPROVED') data.approvedBy = adminId;
     await this.prisma.course.update({ where: { id: courseId }, data });
     await this.prisma.auditLog.create({
       data: {
@@ -49,7 +49,7 @@ export class AdminAcademyService {
 
   async getEnrollmentStats() {
     const courses = await this.prisma.course.findMany({
-      where: { status: 'PUBLISHED' },
+      where: { status: 'APPROVED' },
       select: {
         id: true,
         title: true,

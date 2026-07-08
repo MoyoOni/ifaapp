@@ -118,7 +118,7 @@ function CoursesTab() {
   });
   const updateStatus = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
-      api.patch(`/admin/academy/courses/${id}`, { status, reason: 'Admin action' }),
+      api.patch(`/admin/academy/courses/${id}/status`, { status, reason: 'Admin action' }),
     onSuccess: () => { success('Status updated'); qc.invalidateQueries({ queryKey: ['admin', 'academy-courses'] }); },
     onError: () => error('Failed'),
   });
@@ -139,7 +139,7 @@ function CoursesTab() {
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground truncate">{c.title}</p>
             <p className="text-xs text-muted-foreground">{c.instructor.name} &middot; {c._count.enrollments} enrolled</p>
-            <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full ${c.status === 'PUBLISHED' ? 'bg-green-500/10 text-green-600' : c.status === 'ARCHIVED' ? 'bg-muted text-muted-foreground' : 'bg-blue-500/10 text-blue-600'}`}>{c.status}</span>
+            <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full ${c.status === 'APPROVED' ? 'bg-green-500/10 text-green-600' : c.status === 'ARCHIVED' ? 'bg-muted text-muted-foreground' : 'bg-blue-500/10 text-blue-600'}`}>{c.status}</span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button type="button" onClick={() => feature.mutate({ id: c.id, featuredUntil: c.isFeatured ? null : new Date(Date.now() + 30 * 86400000).toISOString() })} className={`p-1.5 rounded-lg ${c.isFeatured ? 'text-yellow-500 bg-yellow-500/10' : 'text-muted-foreground hover:bg-muted'}`} title={c.isFeatured ? 'Unfeature' : 'Feature 30d'}>
@@ -211,7 +211,7 @@ function CertificatesTab() {
   const qc = useQueryClient();
   const [enrollmentId, setEnrollmentId] = useState('');
   const issue = useMutation({
-    mutationFn: () => api.post(`/admin/academy/certificates/${enrollmentId}`),
+    mutationFn: () => api.post(`/admin/academy/certificates/${enrollmentId}/issue`),
     onSuccess: () => { success('Certificate issued'); setEnrollmentId(''); },
     onError: () => error('Failed'),
   });

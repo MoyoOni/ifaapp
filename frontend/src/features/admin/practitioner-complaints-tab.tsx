@@ -80,7 +80,7 @@ const PractitionerComplaintsTab: React.FC = () => {
       resolutionNotes: string, 
       clientNotification: string 
     }) => {
-      const response = await api.patch(`/admin/complaints/${complaintId}/resolve`, {
+      const response = await api.post(`/admin/complaints/${complaintId}/resolve`, {
         action,
         resolutionNotes,
         clientNotification

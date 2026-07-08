@@ -1,10 +1,5 @@
 import { IsEnum, IsOptional, IsString } from 'class-validator';
-
-export enum CourseStatus {
-  DRAFT = 'DRAFT',
-  PUBLISHED = 'PUBLISHED',
-  ARCHIVED = 'ARCHIVED',
-}
+import { CourseStatus } from '@ile-ase/common';
 
 export class UpdateCourseStatusDto {
   @IsEnum(CourseStatus)

@@ -1,4 +1,12 @@
-import { IsString, IsDateString, IsOptional, IsArray, IsBoolean, IsNotEmpty, MinLength } from 'class-validator';
+import {
+  IsString,
+  IsDateString,
+  IsOptional,
+  IsArray,
+  IsBoolean,
+  IsNotEmpty,
+  MinLength,
+} from 'class-validator';
 
 export class CreateOralHistoryDto {
   @IsString()

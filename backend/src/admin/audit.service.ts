@@ -26,7 +26,12 @@ export class AuditService {
           action: params.action,
           resourceType: params.entityType,
           resourceId: params.entityId,
-          metadata: params.payload || {},
+          // `reason` has no dedicated column -- fold it into metadata so it's
+          // not silently dropped (was previously accepted on AuditLogParams
+          // but never persisted anywhere).
+          metadata: params.reason
+            ? { ...(params.payload || {}), reason: params.reason }
+            : params.payload || {},
           ipAddress: params.ipAddress,
           userAgent: params.userAgent,
         },
