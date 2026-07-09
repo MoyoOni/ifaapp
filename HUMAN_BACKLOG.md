@@ -9,6 +9,61 @@ Last updated: 2026-07-09
 
 ---
 
+## ✅ 2026-07-09: AWS cost audit — cut ~$36/month (over half of total spend)
+
+Asked to minimize AWS cost. Pulled real Cost Explorer data rather than
+guessing, broke it down by usage type, and verified each finding before
+touching anything (checked DNS records, network interfaces, VPC endpoints,
+IAM policy, and app source code for actual runtime usage before deleting or
+keeping each item).
+
+**Deleted (with explicit per-resource confirmation):**
+
+- **NAT Gateway `nat-0be36c09489eeae80`** — ~$32.40/month, by far the single
+  largest line item on the whole bill. Served two private subnets
+  (`subnet-0e9abfd04b5fb760d`, `subnet-0788046c003a849fb`) with **zero**
+  network interfaces in them and no VPC endpoints depending on it — leftover
+  from the abandoned ECS/multi-AZ architecture (see the production-redeploy
+  section above: real production is a single EC2 box in a *public* subnet
+  with direct Internet Gateway routing, not the private-subnet/NAT-gateway
+  topology this was built for). Deleted.
+- **Unattached Elastic IP `52.4.116.79`** — ~$3.60/month, attached to
+  nothing, no DNS record anywhere referenced it (checked the full
+  `iluase.com` hosted zone). Released.
+
+**Verified as genuinely needed, left alone:**
+
+- **Secrets Manager** (`iluase/prod/app-secrets`, `iluase/prod/connection-strings`,
+  ~$0.80/mo combined) — almost flagged as ECS-era leftovers, but
+  `paystack-api.service.ts` and `sentry-initializer.service.ts` actively call
+  `secretsService.getSecret(...)` against these at runtime, for every payment
+  and every error report. Deleting them would have broken live payments.
+- **Route53 health checks** (2 checks, ~$2/mo) — both correctly point at the
+  real live endpoint (`https://iluase.com/api/health`), not a dead ALB.
+  Working as intended.
+- **RDS snapshot** `iluase-prod-final-snapshot-20260325` (20GB, ~$0.27/mo) —
+  left untouched without asking; looks like the final backup taken when the
+  real RDS instance was decommissioned in favor of the self-hosted Postgres
+  setup, and deleting a database backup isn't a call to make unilaterally.
+  Small enough to not matter much either way — flagging in case it's no
+  longer wanted.
+- EC2 compute (~$15/mo), EBS volume (~$1.60/mo), S3/ECR storage (~$0.70/mo),
+  Route53 hosted zone (~$0.50/mo) — all directly needed for the one real
+  production box.
+
+**Result:** verified via `describe-addresses`/`describe-nat-gateways` that
+both are fully gone, and confirmed `https://iluase.com/` still returns 200
+immediately after (expected — the deleted resources had zero dependents).
+Estimated total AWS spend drops from ~$60/month to ~$24/month.
+
+**Not done, worth considering separately:** a 1-year no-upfront EC2 Compute
+Savings Plan against the `t3.small` production box's steady 24/7 usage would
+typically save another ~25-30% (~$4-5/month) — this is a financial
+commitment decision, not a technical cleanup, so left for you to decide
+rather than executed.
+
+---
+
 ## ✅ 2026-07-09: Production backend redeploy — 4 real bugs found and fixed, 1 documented
 
 Context: asked to push this session's backend changes to real production
