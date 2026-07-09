@@ -11,6 +11,24 @@ Last updated: 2026-07-08
 
 ## 🔴 Blocking — needed to finish testing what was just built
 
+- [ ] **Withdrawal approval doesn't move real money and has a double-spend
+  gap — decided against fixing for now, but this is load-bearing on the
+  refund decision below, so flagging here rather than burying it.**
+  `AdminFinanceService.processWithdrawal` (`admin-finance.service.ts:236-273`)
+  only flips `WithdrawalRequest.status` — it never debits the wallet balance
+  and never calls a real bank-transfer/payout API (there is no transfer/payout
+  integration anywhere in the codebase; `paystack-api.service.ts` only has
+  `initializeTransaction`/`verifyTransaction`/`createRefund`, no
+  `initiateTransfer`). Worse, `WalletService.createWithdrawalRequest`
+  (`wallet.service.ts:984-1031`) never reserves/debits funds at request time
+  either, so a user can submit the same wallet balance as multiple withdrawal
+  requests with no double-spend protection. **Net effect: "refund to wallet,
+  let them withdraw it" (the decided refund policy below) does not currently
+  get anyone real money — withdrawal is a dead end today, not a working
+  path.** Decision as of 2026-07-08: document only, don't fix yet. Revisit
+  before withdrawals go live for real users, and definitely before relying on
+  "they can withdraw it" as the answer to any refund/payout question.
+
 - [ ] **EC2 staging deploy is failing — the instance looks unreachable, not a
   code problem.** CI/CD's `test-backend` and `test-frontend` gates are fixed
   and green as of commit `33270f4` (5 broken Jest suites repaired — 4 broken
@@ -56,15 +74,16 @@ Last updated: 2026-07-08
 
 ## 🟠 Product decisions — I fixed the plumbing, you need to decide the policy
 
-- [ ] **Refund mechanism: wallet credit vs. real gateway refund.** The refund
-  backend I built (`admin-refunds.service.ts`) approves a refund by crediting
-  the client's in-app **wallet balance** — it does not reverse the original
-  Paystack/Flutterwave charge. If someone paid by card, "approving" their
-  refund today gives them in-app credit, not money back on their card. There's
-  already a `POST /payments/refund` endpoint (`payments.controller.ts`) that
-  talks to the real payment gateway — decide whether refund approval should
-  call that instead of/in addition to the wallet credit, and if so I can wire
-  it up.
+- [x] **DECIDED 2026-07-08: Refund mechanism is wallet credit, withdrawable
+  by the user.** Admin-approved refunds credit the client's in-app **wallet
+  balance** (`admin-refunds.service.ts:119-124` → `WalletService.depositFunds`)
+  rather than reversing the original Paystack/Flutterwave charge — confirmed
+  this is already how it's coded, no change needed there. The intent is that
+  users withdraw that balance as real money via the existing withdrawal
+  request flow. **That withdraw half isn't actually wired up yet** — see the
+  withdrawal item at the top of the 🔴 Blocking section above. Until that's
+  fixed, this decision is directionally right but not yet delivering real
+  money to anyone.
 
 - [ ] **Admin-cancelled subscriptions don't cancel the Paystack recurring
   charge.** The self-service cancel path (`subscriptions.service.ts`,
