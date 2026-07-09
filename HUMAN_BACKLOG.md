@@ -5,7 +5,121 @@ a credential only you hold, a product/business call, or a real browser to click
 through. Everything here is **not code I can fix myself**; the code-side fixes
 that prompted these items are already done and verified where noted.
 
-Last updated: 2026-07-08
+Last updated: 2026-07-09
+
+---
+
+## ✅ 2026-07-09: Production backend redeploy — 4 real bugs found and fixed, 1 documented
+
+Context: asked to push this session's backend changes to real production
+(`iluase-prod`, single EC2 instance `i-0ac1e9e2c4984af72` at 32.192.127.137,
+Docker Compose — see the architecture-mismatch note below). This was the
+**first production redeploy in ~2 months**, and every one of the following
+had been sitting undetected on `main` that whole time because nothing had
+exercised a fresh boot against real production traffic.
+
+**1. Fixed — `TypeOrmHealthIndicator` crashed app bootstrap.**
+`health.controller.ts` injected `@nestjs/terminus`'s `TypeOrmHealthIndicator`,
+but this app uses Prisma, not TypeORM — the `typeorm`/`@nestjs/typeorm`
+packages were never installed, and resolving that indicator crashed the app
+during `HealthModule` initialization, before any routes mapped. Replaced with
+a Prisma-based `$queryRaw\`SELECT 1\`` check wrapped in `HealthCheckError`,
+matching terminus's expected contract. Verified: container now boots and
+stays up.
+
+**2. Fixed — missing `PAYSTACK_WEBHOOK_SECRET` also blocked boot, and its
+absence was a live security gap.** A prior change (`subscriptions.controller.ts`,
+tagged "EMG-02") made `SecurityHardeningService` refuse to boot without this
+var set, replacing older code where an unset secret **silently skipped
+webhook signature verification entirely** — meaning the currently-live old
+backend accepts a forged Paystack webhook (e.g. a fake `subscription.create`
+event) with no check at all. Paystack signs webhooks with the same secret
+used for API calls (no separate webhook-signing secret in their model), so
+this wasn't a new credential to generate — added
+`PAYSTACK_WEBHOOK_SECRET=<value of the existing PAYSTACK_SECRET_KEY>` to
+`~/app/.env` on the box (backup at `~/app/.env.bak-pre-webhook-secret`) and
+wired it through `~/app/docker-compose.yml`'s backend environment block
+(backup at `~/app/docker-compose.yml.bak-pre-webhook-secret`). Done with
+explicit sign-off before writing to the live secrets file.
+
+**3. Fixed — `app.setGlobalPrefix('api')` was deleted and never restored.**
+Added Feb 24, 2026 (`2741d513`), removed Apr 21, 2026 (`fe553dc3`) as a side
+effect of an unrelated "fix Lingma-introduced build errors" cleanup commit.
+Its absence meant every route mounted at its bare path (`/health`, `/auth`,
+...) instead of `/api/health`, `/api/auth`, ... — and the production nginx
+proxy passes the full `/api/...` path through verbatim, so **every single API
+route would have 404'd** once deployed. Restored in `backend/src/main.ts` in
+its original position. This is the one I'd flag as needing a regression
+test or a smoke-test step in CI, given how completely silent this failure
+mode is (no error anywhere — just a working app that answers nothing at the
+path anything real talks to).
+
+**4. Documented, not fixed — BullMQ queue connection ignores `REDIS_URL`.**
+`src/common/queue/queue.module.ts` configures `BullModule` via `REDIS_HOST`
+(default `'localhost'`) / `REDIS_PORT` (default `6379`) / `REDIS_PASSWORD` —
+entirely separate config keys from `REDIS_URL`, which is the only Redis
+config actually provided anywhere (`.env`, `docker-compose.yml`). Confirmed
+via a standalone container run: this doesn't crash the app (BullMQ just logs
+`ECONNREFUSED 127.0.0.1:6379` and retries forever in the background), so it
+wasn't blocking, but it means the `notifications`, `media`, `analytics`, and
+`search` queues never actually connect — background jobs for those silently
+never run. Fix is straightforward (add `REDIS_HOST`/`REDIS_PORT`/
+`REDIS_PASSWORD` to the compose environment block, or better, read
+`REDIS_URL` in `queue.module.ts` directly) but wasn't done tonight given how
+much else was already in flight. Worth checking whether any of those four
+job types have a fallback synchronous path (some might silently no-op
+instead of degrading), which would make this higher priority than "just
+queues."
+
+**5. Also fixed en route (my own tooling bug, not app code) — image platform
+mismatch.** Built on this Apple Silicon Mac without `--platform linux/amd64`
+on the first attempt, producing ARM64 images against an Intel/AMD (`t3.small`)
+production box — caught cleanly by Docker's own manifest check before
+anything was affected. Separately, a `docker build -t $VAR:latest` invocation
+tagged an image as `...backendatest:latest` (dropped `:l` — root cause
+unconfirmed, possibly BuildKit progress-output interference with the
+harness's background-command capture) instead of `...backend:latest`, so the
+first "fixed" push silently didn't update what `latest` pointed to. Both
+self-caught via `docker buildx imagetools inspect` / `docker images` before
+causing harm — mentioned here only because if you see `iluase/backendatest`-
+or `iluase/frontendatest`-named images/containers anywhere, that's what they
+are (should already be cleaned up).
+
+**Incident during this work:** cutting over triggered a real ~7-8 minute
+partial outage (502s on `/api/*`), root-caused to `iluase-proxy`'s nginx
+caching the `backend` service's Docker-internal IP at its own startup —
+recreating the backend container gives it a new internal IP, and nginx's
+static `upstream` block doesn't re-resolve until the proxy itself restarts.
+Fixed by restarting `iluase-proxy` (no image/config change). **Worth adding
+`docker compose restart proxy` as a standard step any time `backend` or
+`nginx` (frontend) get recreated**, or switching the proxy's nginx config to
+dynamic upstream resolution (`resolver 127.0.0.11 valid=10s;` + variables in
+`proxy_pass`) so this class of issue can't recur.
+
+**Bigger picture — CLAUDE.md's documented production architecture doesn't
+match reality.** Went looking for the ECS Fargate cluster / ALB / multi-AZ
+RDS / Redis cluster CLAUDE.md describes as "Sprint 10 ALL COMPLETE" and found
+none of it: `iluase-prod` ECS cluster has zero services, no ALB exists in the
+account, no RDS instances, no ElastiCache clusters. Real production is one
+`t3.small` EC2 instance running everything (app, Postgres, Redis, nginx) in
+Docker Compose — architecturally identical to what CLAUDE.md describes as
+*staging*. `deploy.sh` (checked into the repo root as "the" production
+deploy script) pushes to ECR, which nothing on the real box was pulling from
+until tonight — it was fully disconnected from what's actually live. This is
+worth a deliberate conversation, not a backlog line: single point of failure
+for a live user-facing app, no redundancy, no managed backups on the DB
+unless something else (a cron job, manual habit) is doing them — I didn't
+find one, but didn't do an exhaustive search either.
+
+**Current state:** production backend now runs this session's code
+(including all the fixes above); frontend was already updated earlier in
+this same redeploy. Verified via the backend container's own internal Docker
+healthcheck (`"Status":"healthy"`, continuous successful `{"status":"ok"}`
+responses) and the external homepage (200 throughout). External
+`/api/health` was returning 429 to my own testing IP at the very end of this
+session — that's the app's rate limiter correctly responding to the sheer
+volume of repeated health checks I ran while verifying, not a real issue;
+unrelated IPs / normal traffic are unaffected.
 
 ---
 

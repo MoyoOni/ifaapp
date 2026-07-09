@@ -90,6 +90,13 @@ async function bootstrap() {
   // too); the other two were unused duplicates and have been removed.
   app.useGlobalFilters(new GlobalExceptionFilter());
 
+  // Removed in fe553dc (Apr 21, 2026) as a side effect of an unrelated
+  // build-error cleanup and never restored -- every route was mounted at
+  // its bare path (/health, /auth, ...) instead of /api/health, /api/auth,
+  // which the production nginx proxy passes requests through to verbatim.
+  // Never caught because production hadn't redeployed from main since.
+  app.setGlobalPrefix('api');
+
   // Swagger setup for development
   if (configService.get('NODE_ENV') !== 'production') {
     const config = new DocumentBuilder()

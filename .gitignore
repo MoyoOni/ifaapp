@@ -18,6 +18,10 @@ build/
 !**/.env*.example
 !frontend/.env.production
 
+# AWS IAM access key downloads (e.g. *_accessKeys.csv from the console) —
+# plaintext long-lived credentials, must never be committed.
+*_accessKeys.csv
+
 # Logs
 logs
 *.log
