@@ -56,11 +56,26 @@ both are fully gone, and confirmed `https://iluase.com/` still returns 200
 immediately after (expected — the deleted resources had zero dependents).
 Estimated total AWS spend drops from ~$60/month to ~$24/month.
 
-**Not done, worth considering separately:** a 1-year no-upfront EC2 Compute
-Savings Plan against the `t3.small` production box's steady 24/7 usage would
-typically save another ~25-30% (~$4-5/month) — this is a financial
-commitment decision, not a technical cleanup, so left for you to decide
-rather than executed.
+**Considered and declined: EC2 Savings Plan.** Pulled exact rates from AWS's
+live Savings Plans rate card for `BoxUsage:t3.small`/`Linux/UNIX` in
+us-east-1 (confirmed on-demand baseline: $0.0208/hr, ~$15.19/mo):
+
+| Term | Payment | Rate/hr | Monthly | Savings | Upfront |
+|---|---|---|---|---|---|
+| 1yr | No Upfront | $0.0150 | $10.96 | 28% | $0 |
+| 1yr | All Upfront | $0.0140 | $10.23 | 33% | $122.76 |
+| 3yr | No Upfront | $0.0103 | $7.52 | 50% | $0 |
+| 3yr | All Upfront | $0.0094 | $6.87 | 55% | $247.32 |
+
+AWS's own `get-savings-plans-purchase-recommendation` returned **empty** for
+this account — its confidence algorithm doesn't consider there's enough
+stable usage history yet to recommend a purchase, which lines up with
+tonight's bigger finding that the documented production architecture
+doesn't match what's actually running. Presented all four options; decided
+to stay on-demand rather than lock in a 1-3 year commitment on
+infrastructure that might legitimately change. Revisit once the
+single-EC2-box-vs-proper-multi-AZ architecture question (above) is settled
+and usage has been stable for a while.
 
 ---
 
