@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, BookOpen, GraduationCap, Clock, Users, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
@@ -13,7 +14,7 @@ function getOrishaGradientClass(category: string): string {
   switch (category?.toLowerCase()) {
     case 'divination': return 'from-primary/20 to-accent/20';
     case 'herbalism': return 'from-green-900/30 to-primary/20';
-    case 'ritual': return 'from-secondary/20 to-primary/20';
+    case 'ritual': return 'from-highlight/20 to-primary/20';
     default: return 'from-muted to-accent/10';
   }
 }
@@ -22,7 +23,7 @@ function getOrishaBadgeClass(category: string): string {
   switch (category?.toLowerCase()) {
     case 'divination': return 'bg-primary/20 text-primary';
     case 'herbalism': return 'bg-green-900/30 text-green-400';
-    case 'ritual': return 'bg-secondary/20 text-secondary';
+    case 'ritual': return 'bg-highlight/20 text-highlight';
     default: return 'bg-muted text-muted-foreground';
   }
 }
@@ -31,7 +32,7 @@ function getOrishaIconBackgroundClass(category: string): string {
   switch (category?.toLowerCase()) {
     case 'divination': return 'bg-primary/10';
     case 'herbalism': return 'bg-green-900/20';
-    case 'ritual': return 'bg-secondary/10';
+    case 'ritual': return 'bg-highlight/10';
     default: return 'bg-muted';
   }
 }
@@ -40,7 +41,7 @@ function getOrishaIconColorClass(category: string): string {
   switch (category?.toLowerCase()) {
     case 'divination': return 'text-primary';
     case 'herbalism': return 'text-green-400';
-    case 'ritual': return 'text-secondary';
+    case 'ritual': return 'text-highlight';
     default: return 'text-muted-foreground';
   }
 }
@@ -92,6 +93,7 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({ courseId, onBack })
   const { user } = useAuth();
   const { success, error } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   // Fetch course
   const { data: course, isLoading, isError, refetch } = useQuery<Course>({
@@ -102,12 +104,26 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({ courseId, onBack })
     },
   });
 
+  // Check whether the current user is already enrolled, so the CTA reflects
+  // reality instead of always offering "Enroll Now" (which 409s harmlessly
+  // server-side, but reads as broken to a student who already signed up).
+  const { data: myEnrollments } = useQuery<{ id: string }[]>({
+    queryKey: ['enrollments', courseId, user?.id],
+    queryFn: async () => {
+      const response = await api.get(`/academy/enrollments?courseId=${courseId}`);
+      return response.data;
+    },
+    enabled: !!user && !!courseId,
+  });
+  const isEnrolled = (myEnrollments?.length ?? 0) > 0;
+
   // Enroll mutation
   const { mutate: enroll, isPending: isEnrolling } = useMutation({
-    mutationFn: () => api.post(`/academy/courses/${courseId}/enroll`),
+    mutationFn: () => api.post('/academy/enrollments', { courseId }),
     onSuccess: () => {
       success(`You've been enrolled in ${course?.title || 'the course'}`);
       queryClient.invalidateQueries({ queryKey: ['course', courseId] });
+      queryClient.invalidateQueries({ queryKey: ['enrollments', courseId, user?.id] });
     },
     onError: (err) => {
       logger.error('Failed to enroll in course', err);
@@ -218,7 +234,7 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({ courseId, onBack })
               <span className={`${getOrishaBadgeClass(course.category)} text-sm font-bold px-3 py-1 rounded-full`}>
                 {course.category.replace('_', ' ')}
               </span>
-              <span className="bg-secondary/10 text-secondary text-sm font-bold px-3 py-1 rounded-full">
+              <span className="bg-muted text-muted-foreground text-sm font-bold px-3 py-1 rounded-full">
                 {course.level}
               </span>
             </div>
@@ -300,14 +316,23 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({ courseId, onBack })
                 Includes certificate • {course.lessonCount || 0} lessons
               </p>
             </div>
-            <button
-              onClick={handleEnroll}
-              disabled={isEnrolling}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground py-3 px-8 rounded-xl font-bold text-base flex items-center gap-2 transition-all disabled:opacity-70"
-            >
-              {isEnrolling ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-              {isEnrolling ? 'Processing...' : 'Enroll Now'}
-            </button>
+            {isEnrolled ? (
+              <button
+                onClick={() => navigate(`/academy/learn/${myEnrollments![0].id}`)}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground py-3 px-8 rounded-xl font-bold text-base flex items-center gap-2 transition-all"
+              >
+                Continue Learning
+              </button>
+            ) : (
+              <button
+                onClick={handleEnroll}
+                disabled={isEnrolling}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground py-3 px-8 rounded-xl font-bold text-base flex items-center gap-2 transition-all disabled:opacity-70"
+              >
+                {isEnrolling ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                {isEnrolling ? 'Processing...' : 'Enroll Now'}
+              </button>
+            )}
           </div>
         </div>
       </div>

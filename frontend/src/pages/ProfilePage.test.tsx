@@ -12,7 +12,6 @@ vi.mock('@/features/profile/public-profile-view', () => ({
     <div data-testid="public-profile">
       <span>Profile {userId}</span>
       <button onClick={() => onNavigate('booking-flow', 'bab-1')}>ToBooking</button>
-      <button onClick={() => onNavigate('messages', 'conv-1')}>ToMessages</button>
       <button onClick={() => onNavigate('profile-settings')}>ToSettings</button>
       <button onClick={() => onNavigate('temple-detail', 't1')}>ToTemple</button>
       <button onClick={() => onNavigate('circle-detail', 'c1')}>ToCircle</button>
@@ -73,14 +72,6 @@ describe('ProfilePage', () => {
     renderProfile('u1', null);
     fireEvent.click(screen.getByText('ToBooking'));
     expect(mockNavigate).toHaveBeenCalledWith('/booking/bab-1');
-  });
-
-  it('handleNavigate messages navigates to /messages/:params', () => {
-    const mockNavigate = vi.fn();
-    vi.mocked(useNavigate).mockReturnValue(mockNavigate);
-    renderProfile('u1', null);
-    fireEvent.click(screen.getByText('ToMessages'));
-    expect(mockNavigate).toHaveBeenCalledWith('/messages/conv-1');
   });
 
   it('handleNavigate profile-settings navigates to /profile', () => {

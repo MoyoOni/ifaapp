@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, MapPin, Star, Building2, Calendar, MessageSquare } from 'lucide-react';
+import { X, MapPin, Star, Building2, Calendar } from 'lucide-react';
 import { getDemoUser } from '@/demo';
 import { UserRole, VerificationTier } from '@common';
 import VerificationBadge from './verification-badge';
@@ -9,7 +9,6 @@ interface BabalawoProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
   onRequestConsultation?: (babalawoId: string) => void;
-  onMessage?: (babalawoId: string) => void;
   onViewProfile?: (babalawoId: string) => void;
 }
 
@@ -23,7 +22,6 @@ const BabalawoProfileModal: React.FC<BabalawoProfileModalProps> = ({
   isOpen,
   onClose,
   onRequestConsultation,
-  onMessage,
   onViewProfile,
 }) => {
   if (!isOpen) return null;
@@ -164,7 +162,7 @@ const BabalawoProfileModal: React.FC<BabalawoProfileModalProps> = ({
                     <span className="font-bold text-stone-800 dark:text-stone-200">{service.title}</span>
                     <span className="text-stone-500 text-sm ml-2">• {service.duration}</span>
                   </div>
-                  <span className="font-bold text-secondary">
+                  <span className="font-bold text-highlight">
                     ₦{service.price.toLocaleString()}
                   </span>
                 </div>
@@ -195,14 +193,6 @@ const BabalawoProfileModal: React.FC<BabalawoProfileModalProps> = ({
           >
             <Calendar size={20} />
             Request Consultation
-          </button>
-          <button
-            type="button"
-            onClick={() => onMessage?.(babalawoId)}
-            className="px-6 py-4 bg-card border-2 border-border text-stone-700 dark:text-stone-300 rounded-xl font-bold hover:bg-muted/60 transition-colors"
-            aria-label="Message this practitioner"
-          >
-            <MessageSquare size={20} />
           </button>
           {onViewProfile && (
             <button

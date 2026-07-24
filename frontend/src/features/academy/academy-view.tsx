@@ -7,7 +7,6 @@ import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
 import { AcademySkeleton } from '@/shared/components/skeleton';
 import { useSubscription } from '@/features/subscription/use-subscription';
-import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface Course {
   id: string;
@@ -75,7 +74,6 @@ const AcademyView: React.FC<AcademyViewProps> = ({ onSelectCourse }) => {
       return response.data;
     },
     staleTime: 10 * 60 * 1000, // Course catalog: 10 minutes
-    enabled: !isDevModeActive(),
   });
 
   const categories = [

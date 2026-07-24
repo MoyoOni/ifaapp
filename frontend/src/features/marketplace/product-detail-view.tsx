@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ShoppingCart, Package, Store, Star, Plus, Minus, Check, MessageSquare, Lock } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Package, Store, Star, Plus, Minus, Check, Lock } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { useCart } from '@/shared/contexts/cart-context';
@@ -66,7 +65,6 @@ interface ProductDetailViewProps {
  * Product details, reviews, and add to cart
  */
 const ProductDetailView: React.FC<ProductDetailViewProps> = ({ productId, onBack }) => {
-  const navigate = useNavigate();
   useAuth();
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
@@ -117,7 +115,7 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ productId, onBack
           {onBack && (
             <button
               onClick={onBack}
-              className="mt-4 text-highlight hover:text-secondary transition-colors"
+              className="mt-4 text-highlight hover:text-highlight/80 transition-colors"
             >
               Back to Marketplace
             </button>
@@ -290,7 +288,7 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ productId, onBack
               </div>
             )}
 
-            {/* Add to Cart & Message Vendor Buttons */}
+            {/* Add to Cart */}
             <div className="flex gap-4">
               <button
                 onClick={handleAddToCart}
@@ -312,18 +310,6 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ productId, onBack
                     Add to Cart
                   </>
                 )}
-              </button>
-
-              <button
-                onClick={() => {
-                  if (product?.vendor?.user?.id) {
-                    navigate(`/messages/${product.vendor.user.id}`);
-                  }
-                }}
-                className="px-6 py-4 bg-muted text-foreground rounded-xl font-bold hover:bg-muted/80 transition-colors flex items-center gap-2"
-              >
-                <MessageSquare className="w-5 h-5" />
-                Message Vendor
               </button>
             </div>
 

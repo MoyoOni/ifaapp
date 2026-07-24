@@ -44,6 +44,7 @@ const MilestoneBadges: React.FC<{ userId: string }> = ({ userId }) => {
       const r = await api.get(`/users/${userId}/badges`);
       return r.data;
     },
+    enabled: !!userId && !isDevModeActive(),
     staleTime: 5 * 60_000,
   });
 
@@ -59,7 +60,7 @@ const MilestoneBadges: React.FC<{ userId: string }> = ({ userId }) => {
             onMouseLeave={() => setTooltip(null)}
             onFocus={() => setTooltip(b.key)}
             onBlur={() => setTooltip(null)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-secondary/10 text-secondary rounded-full text-xs font-semibold cursor-default select-none hover:bg-secondary/20 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-highlight/10 text-highlight rounded-full text-xs font-semibold cursor-default select-none hover:bg-highlight/20 transition-colors"
           >
             <span>{b.emoji}</span>
             <span>{b.label}</span>
@@ -98,11 +99,20 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
     bio: '',
     location: '',
     culturalLevel: '',
+    aboutMe: '',
+    interests: '', // comma-separated in the form; split into an array on save
   });
 
   const saveProfileMutation = useMutation({
     mutationFn: async (data: typeof editForm) => {
-      const response = await api.patch(`/users/${userId}`, data);
+      const { interests, ...rest } = data;
+      const response = await api.patch(`/users/${userId}`, {
+        ...rest,
+        interests: interests
+          .split(',')
+          .map(i => i.trim())
+          .filter(Boolean),
+      });
       return response.data;
     },
     onSuccess: () => {
@@ -122,6 +132,8 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
       bio: user?.bio || '',
       location: user?.location || '',
       culturalLevel: user?.culturalLevel || '',
+      aboutMe: user?.aboutMe || '',
+      interests: (user?.interests || []).join(', '),
     });
     setIsEditing(true);
   };
@@ -192,7 +204,7 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
 
   // Role badge styling
   const roleBadge = isBabalawo
-    ? { label: 'Babalawo', bg: 'bg-secondary/10', text: 'text-secondary' }
+    ? { label: 'Babalawo', bg: 'bg-highlight/10', text: 'text-highlight' }
     : isVendor
       ? { label: 'Vendor', bg: 'bg-accent/10', text: 'text-accent' }
       : { label: 'Seeker', bg: 'bg-primary/10', text: 'text-primary' };
@@ -238,7 +250,7 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
               </h1>
 
               {user.yorubaName && (
-                <p className="text-secondary font-semibold text-sm mt-0.5 tracking-wide">
+                <p className="text-highlight font-semibold text-sm mt-0.5 tracking-wide">
                   Orúkọ: {user.yorubaName}
                 </p>
               )}
@@ -257,7 +269,7 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
                       <Star
                         key={i}
                         size={14}
-                        className={i < Math.floor(rating) ? 'text-secondary fill-secondary' : 'text-muted-foreground'}
+                        className={i < Math.floor(rating) ? 'text-highlight fill-highlight' : 'text-muted-foreground'}
                       />
                     ))}
                   </div>
@@ -395,6 +407,29 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
                 maxLength={140}
               />
             </div>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">About Me</label>
+              <textarea
+                value={editForm.aboutMe}
+                onChange={e => setEditForm(f => ({ ...f, aboutMe: e.target.value }))}
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm text-foreground bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-y"
+                placeholder="Tell your story..."
+                rows={4}
+                maxLength={2000}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">
+                {isBabalawo ? 'Areas of Practice' : 'Interests'} (comma-separated)
+              </label>
+              <input
+                type="text"
+                value={editForm.interests}
+                onChange={e => setEditForm(f => ({ ...f, interests: e.target.value }))}
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm text-foreground bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                placeholder={isBabalawo ? 'Divination, Herbalism, Ancestral Veneration' : 'Dreams, Yoruba Language, Ancestral Veneration'}
+              />
+            </div>
             <div className="flex flex-wrap items-center gap-3 pt-1">
               <button
                 type="button"
@@ -432,7 +467,7 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
         {isBabalawo && services.length > 0 && (
           <div className="md:col-span-3 bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
             <div className="px-5 py-3 border-b border-border/60 flex items-center gap-2">
-              <BookOpen size={15} className="text-secondary" />
+              <BookOpen size={15} className="text-highlight" />
               <h3 className="font-bold text-foreground text-sm">Services Offered</h3>
             </div>
             <div className="divide-y divide-border/50">
@@ -448,7 +483,7 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <div className="text-lg font-bold text-secondary brand-font">
+                    <div className="text-lg font-bold text-highlight brand-font">
                       ₦{Number(service.price).toLocaleString()}
                     </div>
                     {!isCurrentUser && (
@@ -472,7 +507,7 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
         {isBabalawo && specializations.length > 0 && (
           <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
             <div className="px-5 py-3 border-b border-border/60 flex items-center gap-2">
-              <Sparkles size={15} className="text-secondary" />
+              <Sparkles size={15} className="text-highlight" />
               <h3 className="font-bold text-foreground text-sm">Specializations</h3>
             </div>
             <div className="p-5">
@@ -480,7 +515,7 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
                 {specializations.map((spec: string, idx: number) => (
                   <span
                     key={idx}
-                    className="px-3 py-1.5 bg-secondary/10 text-secondary border border-secondary/20 rounded-full text-xs font-medium"
+                    className="px-3 py-1.5 bg-highlight/10 text-highlight border border-highlight/20 rounded-full text-xs font-medium"
                   >
                     {spec}
                   </span>
@@ -497,16 +532,16 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
           <div className="md:col-span-2 bg-gradient-to-br from-primary/5 to-secondary/5 border border-primary/20 rounded-2xl shadow-sm overflow-hidden">
             <div className="p-6 flex items-center justify-between gap-4">
               <div>
-                <h3 className="font-bold text-foreground brand-font text-lg">Ready to Begin?</h3>
+                <h3 className="font-bold text-foreground brand-font text-lg">Consultations Coming Soon</h3>
                 <p className="text-muted-foreground text-sm mt-1">
-                  Book a consultation with {user.name.split(' ')[0]} and start your spiritual journey.
+                  Booking with {user.name.split(' ')[0]} is temporarily paused. In the meantime, ask a question in the Forum.
                 </p>
               </div>
               <button
                 onClick={() => onNavigate('booking-flow', user.id)}
                 className="flex-shrink-0 px-6 py-3 bg-primary text-white font-bold rounded-xl hover:opacity-90 transition-opacity shadow-sm"
               >
-                Book Session
+                Notify Me
               </button>
             </div>
           </div>
@@ -538,7 +573,7 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
         {/* About Me — col-span-2 */}
         <div className={`${isBabalawo && specializations.length > 0 ? 'md:col-span-3' : 'md:col-span-2'} bg-card border border-border rounded-2xl shadow-sm overflow-hidden`}>
           <div className="px-5 py-3 border-b border-border/60 flex items-center gap-2">
-            <BookOpen size={15} className="text-secondary" />
+            <BookOpen size={15} className="text-highlight" />
             <h3 className="font-bold text-foreground text-sm">About Me</h3>
           </div>
           <div className="p-5">
@@ -874,12 +909,6 @@ function ConnectCard({
                 primary
               />
             )}
-            <ActionButton
-              label="Message"
-              icon={<MessageSquare size={14} />}
-              onClick={() => onNavigate('messages', user.id)}
-              primary={!isBabalawo}
-            />
             <ActionButton
               label="Add Friend"
               icon={<User size={14} />}

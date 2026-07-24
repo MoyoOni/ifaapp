@@ -230,7 +230,7 @@ export const BookingForm: React.FC<BookingFormProps> = ({ babalawoId, babalawoNa
                     "p-2 rounded-lg transition-colors",
                     formData.preferredMethod === method.value
                       ? "bg-primary text-primary-foreground"
-                      : "bg-secondary/10 text-secondary"
+                      : "bg-muted text-muted-foreground"
                   )}>
                     <Icon size={20} />
                   </div>

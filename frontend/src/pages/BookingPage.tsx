@@ -162,8 +162,8 @@ export const BookingPage: React.FC = () => {
                 </div>
               )}
               {babalawo.location && (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary/10 rounded-full">
-                  <span className="text-secondary font-bold">📍</span>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-highlight/10 rounded-full">
+                  <span className="text-highlight font-bold">📍</span>
                   <span className="text-foreground">{babalawo.location}</span>
                 </div>
               )}

@@ -19,7 +19,6 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
-import { AuthGuard } from '@nestjs/passport';
 import { AcademyService } from './academy.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
@@ -32,11 +31,13 @@ import { RolesGuard, Roles } from '../auth/guards/roles.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { CourseStatus, UserRole } from '@ile-ase/common';
+import { JwtAuthGuard } from '../shared/guards/auth.guard';
+import { Public } from '../auth/decorators/public.decorator';
 
 @ApiTags('academy')
 @ApiBearerAuth()
 @Controller('academy')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(JwtAuthGuard)
 export class AcademyController {
   constructor(private readonly academyService: AcademyService) {}
 
@@ -59,6 +60,7 @@ export class AcademyController {
   @ApiQuery({ name: 'status', enum: CourseStatus, required: false })
   @ApiResponse({ status: 200, description: 'Returns a list of courses' })
   @Get('courses')
+  @Public()
   async findAllCourses(
     @Query('instructorId') instructorId?: string,
     @Query('category') category?: string,
@@ -72,6 +74,7 @@ export class AcademyController {
   @ApiResponse({ status: 200, description: 'Returns the course details' })
   @ApiResponse({ status: 404, description: 'Course not found' })
   @Get('courses/:id')
+  @Public()
   async findCourseById(@Param('id') id: string) {
     return this.academyService.findCourseById(id);
   }
@@ -80,6 +83,7 @@ export class AcademyController {
   @ApiParam({ name: 'slug', description: 'Course slug' })
   @ApiResponse({ status: 200, description: 'Returns the course details' })
   @Get('courses/slug/:slug')
+  @Public()
   async findCourseBySlug(@Param('slug') slug: string) {
     return this.academyService.findCourseBySlug(slug);
   }

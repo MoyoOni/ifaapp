@@ -17,7 +17,7 @@ const sizeClasses = {
 const variantClasses = {
   default: 'text-foreground',
   primary: 'text-primary',
-  secondary: 'text-secondary',
+  secondary: 'text-secondary-foreground',
   accent: 'text-accent',
   highlight: 'text-highlight',
 };
