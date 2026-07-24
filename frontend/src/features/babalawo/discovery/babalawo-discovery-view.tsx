@@ -123,13 +123,13 @@ const MemoizedBabalawoCard = React.memo(({ babalawo, onSelect }: { babalawo: Bab
                 <span>{babalawo.sessionCount || 0} sessions</span>
               </span>
             </div>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="sm"
               onClick={() => onSelect(babalawo.id)}
               className="h-8"
             >
-              Book Consultation
+              Consultations Coming Soon
             </Button>
           </div>
         </div>

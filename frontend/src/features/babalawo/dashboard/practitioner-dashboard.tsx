@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Calendar, Loader2, BookOpen, Building2, BarChart3, User, Shield } from 'lucide-react';
 import ClientList from '../../client-hub/client-list';
@@ -9,6 +9,9 @@ import { Button } from '@/shared/components/ui/button';
 import { FirstStepsChecklist } from '@/shared/components/first-steps-checklist';
 import ProfileCompletenessCard from '@/components/ProfileCompletenessCard';
 import { WelcomeBanner } from '@/shared/components/welcome-banner';
+import { PausedFeatureNotice } from '@/shared/components/paused-feature-notice';
+
+const PRACTICE_BANNER_DISMISSED_KEY = 'iluase_practice_banner_dismissed';
 
 interface PractitionerDashboardProps {
     userId?: string;
@@ -28,6 +31,13 @@ const PractitionerDashboard: React.FC<PractitionerDashboardProps> = ({ userId, i
     const { user } = useAuth();
     const resolvedUserId = userId || user?.id || '';
     const { data: dashboard, isLoading } = useBabalawoDashboard(resolvedUserId);
+    const [practiceBannerDismissed, setPracticeBannerDismissed] = useState(
+        () => localStorage.getItem(PRACTICE_BANNER_DISMISSED_KEY) === 'true'
+    );
+    const dismissPracticeBanner = () => {
+        localStorage.setItem(PRACTICE_BANNER_DISMISSED_KEY, 'true');
+        setPracticeBannerDismissed(true);
+    };
 
     // Format currency for display
     const formatCurrency = (amount: number) => {
@@ -87,7 +97,6 @@ const PractitionerDashboard: React.FC<PractitionerDashboardProps> = ({ userId, i
                         <ClientList
                             babalawoId={resolvedUserId}
                             onSelectClient={(id) => navigate(`/profile/${id}`)}
-                            onMessageClient={(id) => navigate(`/messages/${id}`)}
                         />
                     </div>
                 );
@@ -134,6 +143,20 @@ const PractitionerDashboard: React.FC<PractitionerDashboardProps> = ({ userId, i
                           <ProfileCompletenessCard userData={user} userRole={user.role} compact />
                         </div>
                       </>
+                    )}
+                    {!practiceBannerDismissed && (
+                      <div className="mb-6">
+                        <PausedFeatureNotice
+                          compact
+                          icon={Calendar}
+                          eyebrow="Platform Update"
+                          title="Consultations are currently paused for platform updates until 2027."
+                          body="Your historical data remains visible below."
+                          mailtoSubject="Practitioner Interest: Consultation Tools"
+                          mailtoBody="Hi Team, I am a practitioner interested in updates regarding the consultation tools."
+                          onDismiss={dismissPracticeBanner}
+                        />
+                      </div>
                     )}
                     <div className="mb-8">
                       <h1 className="text-[1.5rem] font-[700] text-foreground">My Dashboard</h1>

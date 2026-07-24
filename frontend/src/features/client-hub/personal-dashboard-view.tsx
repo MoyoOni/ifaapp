@@ -173,24 +173,8 @@ const PersonalDashboardView: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: STAGGER_DELAY_1 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+          className="grid grid-cols-1 gap-6 mb-8"
         >
-          <button
-            onClick={() => navigate('/client/consultations')}
-            className="bg-card p-6 rounded-2xl border border-emerald-100 dark:border-emerald-900/50 shadow-sm hover:shadow-md hover:border-emerald-200 dark:hover:border-emerald-800 transition-all text-left group"
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-emerald-600 dark:text-emerald-400 text-sm font-bold uppercase tracking-wider">My Consultations</p>
-                <h3 className="text-3xl font-bold text-emerald-800 dark:text-emerald-200 mt-1">{stats.consultations}</h3>
-                <p className="text-emerald-400 dark:text-emerald-300 text-sm mt-1">This month</p>
-              </div>
-              <div className="bg-emerald-100 p-3 rounded-xl text-emerald-700 dark:text-emerald-400 group-hover:bg-emerald-200 transition-colors">
-                <Calendar size={24} />
-              </div>
-            </div>
-          </button>
-
           <button
             onClick={() => navigate('/guidance-plans')}
             className="bg-card p-6 rounded-2xl border border-teal-100 dark:border-teal-900/50 shadow-sm hover:shadow-md hover:border-teal-200 dark:hover:border-teal-800 transition-all text-left group"
@@ -203,22 +187,6 @@ const PersonalDashboardView: React.FC = () => {
               </div>
               <div className="bg-teal-100 p-3 rounded-xl text-teal-700 dark:text-teal-400 group-hover:bg-teal-200 transition-colors">
                 <FileText size={24} />
-              </div>
-            </div>
-          </button>
-
-          <button
-            onClick={() => navigate('/messages')}
-            className="bg-card p-6 rounded-2xl border border-amber-100 shadow-sm hover:shadow-md hover:border-amber-200 dark:border-amber-800 transition-all text-left group"
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-amber-600 dark:text-amber-400 text-sm font-bold uppercase tracking-wider">Unread Messages</p>
-                <h3 className="text-3xl font-bold text-amber-800 dark:text-amber-400 mt-1">{stats.unreadMessages}</h3>
-                <p className="text-amber-400 dark:text-amber-300 text-sm mt-1">From community</p>
-              </div>
-              <div className="bg-amber-100 dark:bg-amber-900/30 p-3 rounded-xl text-amber-700 dark:text-amber-400 group-hover:bg-amber-200 transition-colors">
-                <MessageCircle size={24} />
               </div>
             </div>
           </button>
@@ -256,7 +224,7 @@ const PersonalDashboardView: React.FC = () => {
                     </div>
                     <span className="font-bold">Find Babalawo</span>
                   </div>
-                  <p className="text-emerald-100 dark:text-emerald-200 text-sm">Connect with verified spiritual guides for personalized consultations</p>
+                  <p className="text-emerald-100 dark:text-emerald-200 text-sm">Browse verified spiritual guides in the community</p>
                 </button>
                 
                 <button

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { User, MessageSquare, Calendar } from 'lucide-react';
+import { User, Calendar } from 'lucide-react';
 import api from '@/lib/api';
 
 import LoadingSpinner from '@/components/common/LoadingSpinner';
@@ -20,7 +20,6 @@ interface Client {
 interface ClientListProps {
   babalawoId: string;
   onSelectClient?: (clientId: string) => void;
-  onMessageClient?: (clientId: string) => void;
 }
 
 /**
@@ -28,7 +27,7 @@ interface ClientListProps {
  * Babalawo's view of their assigned clients
  * NOTE: "Personal Awo" relationship - clients may change but not "unfriend"
  */
-const ClientList: React.FC<ClientListProps> = ({ babalawoId, onSelectClient, onMessageClient }) => {
+const ClientList: React.FC<ClientListProps> = ({ babalawoId, onSelectClient }) => {
   const { data: clients = [], isLoading } = useQuery<Array<{ client: Client }>>({
     queryKey: ['babalawo-clients', babalawoId],
     queryFn: async () => {
@@ -107,16 +106,6 @@ const ClientList: React.FC<ClientListProps> = ({ babalawoId, onSelectClient, onM
 
             {/* Quick Actions */}
             <div className="flex gap-2 mt-4 pt-4 border-t border-border/50">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onMessageClient ? onMessageClient(client.id) : onSelectClient?.(client.id);
-                }}
-                className="flex-1 flex items-center justify-center gap-2 bg-muted/40 hover:bg-muted/60 text-stone-700 dark:text-stone-300 px-4 py-2 rounded-lg text-sm font-medium transition-all border border-border shadow-sm"
-              >
-                <MessageSquare size={16} />
-                Message
-              </button>
               <button
                 onClick={(e) => {
                   e.stopPropagation();

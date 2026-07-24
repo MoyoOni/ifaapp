@@ -155,13 +155,6 @@ export const SearchProvider: React.FC<SearchProviderProps> = ({ children }) => {
             url: '/circles/healing-circles'
           },
           {
-            id: '4',
-            title: 'Traditional IFA Consultation',
-            description: 'Book a personalized consultation session',
-            category: 'products',
-            url: '/booking/adebowale'
-          },
-          {
             id: '5',
             title: 'Introduction to IFA Course',
             description: 'Learn the fundamentals of Ifa with experienced teachers',

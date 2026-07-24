@@ -13,15 +13,13 @@ const seekerFeatures = [
   'Access the public Forum',
   'Browse Academy previews',
   'View the Marketplace',
-  'Basic messaging',
 ];
 
 const devotedFeatures = [
   'Everything in Seeker',
-  'Book unlimited consultations',
-  'Receive detailed guidance plans',
+  'Priority access when Consultations return',
+  'Priority access when Guidance Plans return',
   'Selected premium Academy courses',
-  'Unlimited private messaging',
   'Free local delivery on marketplace orders above ₦100,000',
   'Priority customer support',
   'Early access to new features',
@@ -59,9 +57,9 @@ const templeFeatures = [
 
 const faqs = [
   { q: 'Is the Seeker plan really free forever?', a: 'Yes — no credit card required, no trial period. Seekers always have full free access to explore the community, browse practitioners, and discover temples.' },
-  { q: 'What does the Devoted plan include?', a: 'Devoted members can book unlimited consultations, receive private guidance plans, access selected premium Academy courses, message practitioners without limits, and get free local delivery on marketplace orders above ₦100,000.' },
-  { q: 'Why is the Practitioner plan free?', a: 'We believe practitioners should earn from their gift, not pay to offer it. Babalawos and Ìyánifá join and list for free — they earn directly from consultations and guidance plans.' },
-  { q: 'What is the commission rate for practitioners?', a: 'Practitioners keep 90% of every consultation fee. The 10% platform fee covers payment processing, security infrastructure, and ongoing platform development.' },
+  { q: 'What does the Devoted plan include?', a: 'Devoted members get priority access when Consultations and Guidance Plans return, selected premium Academy courses, and free local delivery on marketplace orders above ₦100,000. Consultation booking is temporarily paused platform-wide while we upgrade our tools.' },
+  { q: 'Why is the Practitioner plan free?', a: 'We believe practitioners should earn from their gift, not pay to offer it. Babalawos and Ìyánifá join and list for free — once Consultations resume, they earn directly from consultation and guidance plan fees.' },
+  { q: 'What is the commission rate for practitioners?', a: 'Once Consultations resume, practitioners keep 90% of every consultation fee. The 10% platform fee covers payment processing, security infrastructure, and ongoing platform development.' },
   { q: 'What currency are prices shown in?', a: 'Prices are shown in Nigerian Naira (₦). International payments are also accepted in USD via Flutterwave. All transactions are fully secured.' },
   { q: 'How does practitioner verification work?', a: 'Practitioners submit credentials, references from elders, and undergo a review by our cultural advisory team. Verification typically takes 3–7 working days.' },
   { q: 'Can I cancel my Devoted plan?', a: 'Yes. Plans can be cancelled from your settings at any time. No lock-in, no cancellation fees.' },
@@ -284,7 +282,7 @@ const PricingPage: React.FC = () => {
             <Users size={32} className="text-primary mx-auto mb-4" />
             <h3 className="brand-font text-2xl font-bold text-foreground mb-3">Practitioners Keep 90%</h3>
             <p className="text-muted-foreground leading-relaxed">
-              Babalawos and Ìyánifá keep 90% of every consultation fee. The 10% platform fee covers payment processing,
+              Once Consultations resume, Babalawos and Ìyánifá keep 90% of every consultation fee. The 10% platform fee covers payment processing,
               security infrastructure, and continuous platform development. We believe in fair economics for spiritual labour.
             </p>
           </div>

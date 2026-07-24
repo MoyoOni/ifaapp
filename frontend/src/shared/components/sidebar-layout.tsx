@@ -8,7 +8,6 @@ import {
     LogOut,
     Bell,
     ChevronDown,
-    MessageSquare,
     ChevronLeft,
     ChevronRight,
     Settings,
@@ -59,14 +58,12 @@ function getMobileBottomTabs(role: string | undefined): BottomTab[] {
             return [
                 { id: 'home', label: 'Home', icon: LayoutDashboard, path: '/practitioner/dashboard' },
                 { id: 'temples', label: 'Temple', icon: Building2, path: '/practitioner/temple-connection' },
-                { id: 'messages', label: 'Messages', icon: MessageSquare, path: '/messages' },
                 { id: 'seekers', label: 'Seekers', icon: Users, path: '/practitioner/my-seekers' },
                 { id: 'more', label: 'More', icon: Menu, action: 'more' },
             ];
         case 'VENDOR':
             return [
                 { id: 'home', label: 'Home', icon: LayoutDashboard, path: '/vendor/dashboard' },
-                { id: 'messages', label: 'Messages', icon: MessageSquare, path: '/messages' },
                 { id: 'profile', label: 'Profile', icon: User, path: '/profile' },
                 { id: 'more', label: 'More', icon: Menu, action: 'more' },
             ];
@@ -74,7 +71,6 @@ function getMobileBottomTabs(role: string | undefined): BottomTab[] {
         case 'ADVISORY_BOARD_MEMBER':
             return [
                 { id: 'home', label: 'Home', icon: Shield, path: '/admin' },
-                { id: 'messages', label: 'Messages', icon: MessageSquare, path: '/messages' },
                 { id: 'profile', label: 'Profile', icon: User, path: '/profile' },
                 { id: 'more', label: 'More', icon: Menu, action: 'more' },
             ];
@@ -520,10 +516,9 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                                 </div>
 
                                 {/* Quick actions row */}
-                                <div className="grid grid-cols-4 gap-1 mb-2">
+                                <div className="grid grid-cols-3 gap-1 mb-2">
                                     {[
                                         { icon: User, label: 'Profile', path: '/profile', color: 'text-highlight' },
-                                        { icon: MessageSquare, label: 'Messages', path: '/messages', color: 'text-primary' },
                                         { icon: Settings, label: 'Settings', path: '/settings', color: 'text-muted-foreground' },
                                         { icon: HelpCircle, label: 'Help', path: '/help', color: 'text-muted-foreground' },
                                     ].map(({ icon: Icon, label, path, color }) => (

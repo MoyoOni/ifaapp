@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { MessageSquare, Calendar, FileText, UserPlus, Building2, AlertCircle } from 'lucide-react';
+import { Calendar, FileText, UserPlus, Building2, AlertCircle } from 'lucide-react';
 import api from '@/lib/api';
 import VerificationBadge from '@/shared/components/verification-badge';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
@@ -45,7 +45,6 @@ interface PersonalAwo {
 
 interface PersonalAwoDashboardProps {
   clientId: string;
-  onMessage?: () => void;
   onRequestConsultation?: () => void;
   onViewDocuments?: () => void;
   onChangeAwo?: () => void;
@@ -58,7 +57,6 @@ interface PersonalAwoDashboardProps {
  */
 const PersonalAwoDashboard: React.FC<PersonalAwoDashboardProps> = ({
   clientId,
-  onMessage,
   onRequestConsultation,
   onViewDocuments,
   onChangeAwo,
@@ -232,19 +230,6 @@ const PersonalAwoDashboard: React.FC<PersonalAwoDashboardProps> = ({
               <div>
                 <h4 className="font-bold text-foreground text-lg group-hover:text-highlight transition-colors">Request Consultation</h4>
                 <p className="text-muted-foreground text-sm mt-1">Schedule a reading or consultation</p>
-              </div>
-            </button>
-
-            <button
-              onClick={onMessage}
-              className="bg-card p-5 rounded-3xl border border-border shadow-sm hover:shadow-md hover:border-blue-400/30 hover:-translate-y-1 transition-all text-left group flex items-start gap-4"
-            >
-              <div className="bg-blue-50 dark:bg-blue-950/30 p-3 rounded-2xl text-blue-500 dark:text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-colors">
-                <MessageSquare size={24} />
-              </div>
-              <div>
-                <h4 className="font-bold text-foreground text-lg group-hover:text-blue-500 dark:text-blue-400 transition-colors">Message</h4>
-                <p className="text-muted-foreground text-sm mt-1">Chat privately with your guide</p>
               </div>
             </button>
 

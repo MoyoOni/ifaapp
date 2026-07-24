@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Leaf, Star, CheckCircle, MessageCircle, CalendarPlus, X } from 'lucide-react';
+import { Leaf, Star, CheckCircle, CalendarPlus, X } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 
@@ -101,18 +101,12 @@ export function PersonalAwoPanel() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 gap-2">
         <button type="button"
           onClick={() => navigate(`/booking/${awo.id}`)}
           className="flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition-colors"
         >
           <CalendarPlus size={14} /> Book Again
-        </button>
-        <button type="button"
-          onClick={() => navigate(`/messages/${awo.id}`)}
-          className="flex items-center justify-center gap-2 py-2.5 border border-border hover:bg-muted/50 text-foreground rounded-xl text-sm font-semibold transition-colors"
-        >
-          <MessageCircle size={14} /> Message
         </button>
       </div>
       <div className="flex items-center justify-center gap-4">

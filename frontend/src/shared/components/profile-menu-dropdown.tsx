@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { User, MessageSquare, Settings, HelpCircle, LogOut } from 'lucide-react';
+import { User, Settings, HelpCircle, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { User as UserType } from '@common';
 
@@ -54,16 +54,6 @@ export const ProfileMenuDropdown: React.FC<ProfileMenuDropdownProps> = ({
                 >
                     <User size={16} className="text-highlight" />
                     My Profile
-                </button>
-
-                <button
-                    onClick={() => onNavigate('/messages')}
-                    className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-secondary/10 text-sm font-medium text-foreground transition-colors"
-                >
-                    <MessageSquare size={16} className="text-primary" />
-                    Messages
-                    {/* Note: Unread count could be passed as a prop for V4-204 */}
-                    {/* <span className="ml-auto bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded-full font-bold">3</span> */}
                 </button>
 
                 <div className="h-px bg-border my-1" />

@@ -30,28 +30,31 @@ import NotificationsPage from './pages/NotificationsPage';
 import BabalawoLandingPage from './pages/BabalawoLandingPage';
 import SessionHistoryWithReceipts from './features/appointments/session-history-with-receipts';
 import ClientSessionNotesPage from './pages/ClientSessionNotesPage';
+import ConsultationsPausedPage from './pages/ConsultationsPausedPage';
+import MessagesPausedPage from './pages/MessagesPausedPage';
+
+// ============================================
+// PAUSED FEATURES (2026 scope pivot — see MVP_PIVOT_BACKLOG.md):
+// To re-enable Consultations/Messaging:
+// 1. Restore the removed lazy imports below / at the top of App.tsx.
+// 2. Swap <ConsultationsPausedPage />/<MessagesPausedPage /> back to
+//    the original route elements (see git history for this commit).
+// 3. Restore the removed items in navigation.ts and sidebar-layout.tsx.
+// ============================================
 
 import {
-  BookingPage,
-  BookingConfirmation,
   EventsPage,
   EventDetailPage,
-  MessagesPage,
   MarketplacePage,
   CartPage,
   CheckoutPage,
   ProductDetailPage,
   GuidancePlansPage,
-  PrescriptionCreationPage,
   PrescriptionApprovalPage,
   PrescriptionHistoryPage,
   PersonalDashboardView,
-  ClientConsultationsView,
   PractitionerDashboard,
   InviteClientView,
-  PractitionerCalendarView,
-  SetAvailabilityView,
-  EarningsReportView,
   VendorDashboardView,
   AdminDashboardView,
   AdvisoryBoardVotingView,
@@ -90,8 +93,6 @@ import {
   MyCoursesPage,
   LessonPlayerPage,
   YorubaWordDetailPage,
-  ClientConsultationsPage,
-  PractitionerConsultationsPage,
   EventCreatePage,
   TempleDirectoryPage,
   ForumHomePage,
@@ -244,7 +245,7 @@ function App() {
                         <React.Suspense fallback={<LoadingSpinner />}>
                           <ErrorBoundary>
                             <ProtectedRoute allowedRoles={['CLIENT'] as UserRole[]}>
-                              <ClientConsultationsView />
+                              <ConsultationsPausedPage />
                             </ProtectedRoute>
                           </ErrorBoundary>
                         </React.Suspense>
@@ -446,7 +447,7 @@ function App() {
                       <Route path="/consultations" element={
                         <React.Suspense fallback={<LoadingSpinner />}>
                           <ErrorBoundary>
-                            <ClientConsultationsPage />
+                            <ConsultationsPausedPage />
                           </ErrorBoundary>
                         </React.Suspense>
                       } />
@@ -499,7 +500,7 @@ function App() {
                         <React.Suspense fallback={<LoadingSpinner />}>
                           <ErrorBoundary>
                             <ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}>
-                              <PractitionerConsultationsPage />
+                              <ConsultationsPausedPage />
                             </ProtectedRoute>
                           </ErrorBoundary>
                         </React.Suspense>
@@ -508,7 +509,7 @@ function App() {
                         <React.Suspense fallback={<LoadingSpinner />}>
                           <ErrorBoundary>
                             <ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}>
-                              <PractitionerCalendarView />
+                              <ConsultationsPausedPage />
                             </ProtectedRoute>
                           </ErrorBoundary>
                         </React.Suspense>
@@ -517,7 +518,7 @@ function App() {
                         <React.Suspense fallback={<LoadingSpinner />}>
                           <ErrorBoundary>
                             <ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}>
-                              <SetAvailabilityView />
+                              <ConsultationsPausedPage />
                             </ProtectedRoute>
                           </ErrorBoundary>
                         </React.Suspense>
@@ -526,7 +527,7 @@ function App() {
                         <React.Suspense fallback={<LoadingSpinner />}>
                           <ErrorBoundary>
                             <ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}>
-                              <EarningsReportView />
+                              <ConsultationsPausedPage />
                             </ProtectedRoute>
                           </ErrorBoundary>
                         </React.Suspense>
@@ -714,14 +715,14 @@ function App() {
                       <Route path="/booking/:babalawoId" element={
                         <React.Suspense fallback={<LoadingSpinner />}>
                           <ErrorBoundary>
-                            <BookingPage />
+                            <ConsultationsPausedPage />
                           </ErrorBoundary>
                         </React.Suspense>
                       } />
                       <Route path="/booking/:appointmentId/confirmation" element={
                         <React.Suspense fallback={<LoadingSpinner />}>
                           <ErrorBoundary>
-                            <BookingConfirmation />
+                            <ConsultationsPausedPage />
                           </ErrorBoundary>
                         </React.Suspense>
                       } />
@@ -763,14 +764,14 @@ function App() {
                       <Route path="/messages" element={
                         <React.Suspense fallback={<LoadingSpinner />}>
                           <ErrorBoundary>
-                            <MessagesPage />
+                            <MessagesPausedPage />
                           </ErrorBoundary>
                         </React.Suspense>
                       } />
                       <Route path="/messages/:otherUserId" element={
                         <React.Suspense fallback={<LoadingSpinner />}>
                           <ErrorBoundary>
-                            <MessagesPage />
+                            <MessagesPausedPage />
                           </ErrorBoundary>
                         </React.Suspense>
                       } />
@@ -816,10 +817,18 @@ function App() {
                           </ErrorBoundary>
                         </React.Suspense>
                       } />
+                      {/* Guarded per the 2026 scope pivot: this is a pure creation
+                          form with no in-app entry point once Consultations is
+                          paused, but stays reachable via a typed/bookmarked URL.
+                          Without this, a practitioner could load a fully
+                          interactive form that only fails on submit (the backend
+                          still requires a real COMPLETED appointment) — worse
+                          than never seeing the form. Approve/history routes for
+                          existing plans are deliberately left untouched below. */}
                       <Route path="/prescriptions/create" element={
                         <React.Suspense fallback={<LoadingSpinner />}>
                           <ErrorBoundary>
-                            <PrescriptionCreationPage />
+                            <ConsultationsPausedPage />
                           </ErrorBoundary>
                         </React.Suspense>
                       } />

@@ -10,8 +10,8 @@ const HelpPage: React.FC = () => {
   const faqs = [
     {
       id: 1,
-      question: "How do I book a consultation with a Babalawo?",
-      answer: "Visit the 'Find a Babalawo' section, browse verified practitioners, and click 'Request Consultation' on any Babalawo's profile. You can then select your preferred date and time."
+      question: "Can I book a consultation with a Babalawo?",
+      answer: "Consultation booking is temporarily paused while we upgrade our tools. In the meantime, you can browse verified practitioners in 'Find a Babalawo' or ask a question in the 'Ask a Babalawo' Forum category."
     },
     {
       id: 2,
@@ -35,8 +35,8 @@ const HelpPage: React.FC = () => {
     },
     {
       id: 6,
-      question: "Can I cancel a booked consultation?",
-      answer: "Yes, you can cancel consultations up to 24 hours before the scheduled time. Cancellations made less than 24 hours in advance may incur a fee."
+      question: "I have an existing consultation booked — is it still happening?",
+      answer: "Yes. Existing bookings made before the pause are unaffected. You can still cancel an existing consultation up to 24 hours before the scheduled time; cancellations made less than 24 hours in advance may incur a fee."
     }
   ];
 
@@ -57,12 +57,12 @@ const HelpPage: React.FC = () => {
       id: 'consultations',
       title: 'Consultations',
       icon: Users,
-      description: 'Booking and managing spiritual guidance sessions',
+      description: 'Booking is paused — find and ask a Babalawo in the meantime',
       items: [
         'Finding the right Babalawo',
-        'Booking consultations',
-        'Preparing for your session',
-        'Following up on guidance'
+        'Asking a Babalawo in the Forum',
+        'When consultation booking returns',
+        'Managing an existing booking'
       ]
     },
     {

@@ -75,6 +75,10 @@ V4_QUALITY_BACKLOG.md and V4_TODO.md have been removed (100% complete, fully sup
 **Production is LIVE at https://iluase.com**
 **ALL 10 SPRINTS COMPLETE — 241/241 SP. V9 FORUM LAUNCH: 4/5 Stories DONE.**
 
+### MVP Pivot Backlog — 🔵 IN PROGRESS (July 9, 2026)
+
+Active work tracked in **[MVP_PIVOT_BACKLOG.md](MVP_PIVOT_BACKLOG.md)** — 14 stories (PIV-001 through PIV-014). Frontend-only scope pivot: Consultations and Messaging pause to "Coming Soon"/paused state, Guidance Plans creation pauses as a consequence; Forum, Marketplace, Temple Directory, Academy, Events, and Pod Network stay fully live. Backend untouched throughout.
+
 ### Experience Backlog — 🔵 IN PROGRESS (April 18, 2026)
 
 Active work tracked in **[EXPERIENCE_BACKLOG.md](EXPERIENCE_BACKLOG.md)**.

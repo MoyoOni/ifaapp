@@ -303,8 +303,7 @@ const TempleDetailView: React.FC<TempleDetailViewProps> = ({
           <BabalawoProfileModal babalawoId={selectedBabalawoId || ''} isOpen={!!selectedBabalawoId}
             onClose={() => setSelectedBabalawoId(null)}
             onRequestConsultation={(id) => { setSelectedBabalawoId(null); onSelectBabalawo?.(id); }}
-            onViewProfile={(id) => { setSelectedBabalawoId(null); onViewBabalawoProfile?.(id); }}
-            onMessage={(_id: string) => { setSelectedBabalawoId(null); window.location.href = '/messages'; }} />
+            onViewProfile={(id) => { setSelectedBabalawoId(null); onViewBabalawoProfile?.(id); }} />
         </div>
 
         {/* Contact & Links */}

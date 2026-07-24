@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { MapPin, CheckCircle, Calendar } from 'lucide-react';
 import api from '@/lib/api';
@@ -156,10 +156,15 @@ const BabalawoLandingPage: React.FC = () => {
             className="w-full max-w-sm mx-auto py-5 bg-amber-700 text-white rounded-2xl font-bold text-lg uppercase tracking-wide flex items-center justify-center gap-3 hover:bg-amber-800 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0"
           >
             <Calendar size={20} />
-            Book a Consultation
+            Consultations Coming Soon
           </button>
           <p className="text-xs text-stone-400">
-            {currentUser ? 'You will be taken to the booking page.' : 'You will need to create a free account to book.'}
+            Booking is temporarily paused while we upgrade our tools. Have a question in the
+            meantime?{' '}
+            <Link to="/forum" className="text-amber-700 dark:text-amber-400 font-semibold hover:underline">
+              Ask a Babalawo in the Forum
+            </Link>
+            .
           </p>
         </div>
       </div>

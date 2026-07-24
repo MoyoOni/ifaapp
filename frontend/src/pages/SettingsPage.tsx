@@ -506,7 +506,7 @@ const SettingsPage: React.FC = () => {
                         <p className="font-bold text-foreground mb-1">Seeker — Free</p>
                         <p className="text-sm text-muted-foreground mb-4">Access core platform features at no cost.</p>
                         <div className="flex flex-wrap gap-2 justify-center mb-5">
-                          {['Browse temples & Babalawos', 'Book consultations', 'Community forum', 'Marketplace'].map((f) => (
+                          {['Browse temples & Babalawos', 'Community forum', 'Marketplace'].map((f) => (
                             <span key={f} className="inline-flex items-center gap-1 bg-muted text-muted-foreground text-xs px-2.5 py-1 rounded-full">
                               <Check size={10} /> {f}
                             </span>
@@ -637,7 +637,7 @@ const SettingsPage: React.FC = () => {
 
                       {whatsappEnabled && whatsappNumber && (
                         <div className="mt-3 flex flex-wrap gap-2">
-                          {['New bookings', 'Messages', 'Orders', 'Payments', 'Guidance plans'].map((item) => (
+                          {['Orders', 'Payments'].map((item) => (
                             <span key={item} className="inline-flex items-center gap-1 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 text-xs font-semibold px-2.5 py-1 rounded-full">
                               <Check size={10} /> {item}
                             </span>
@@ -650,7 +650,7 @@ const SettingsPage: React.FC = () => {
                       <h3 className="font-bold text-stone-800 dark:text-stone-200 mb-4">Notification Types</h3>
                       <div className="space-y-3">
                         {[
-                          { key: 'consultationReminders', label: 'Consultation Reminders' },
+                          { key: 'consultationReminders', label: 'Consultation Reminders (existing bookings only)' },
                           { key: 'communityUpdates', label: 'Community Updates' },
                           { key: 'marketing', label: 'Marketing & Promotions' },
                         ].map(({ key, label }) => (

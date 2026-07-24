@@ -116,7 +116,10 @@ test.describe('Temple Discovery & Booking Flows', () => {
     await expect(page).toHaveURL(/\/profile\/baba-1/);
   });
 
-  test('Scenario 6: Book Consultation (Standard Flow)', async ({ page }) => {
+  // Paused as part of the 2026 scope pivot — see MVP_PIVOT_BACKLOG.md;
+  // re-enable when Consultations return. /booking/:id now renders
+  // ConsultationsPausedPage instead of the real booking form.
+  test.skip('Scenario 6: Book Consultation (Standard Flow)', async ({ page }) => {
     // Mock babalawo details
     await page.route(/\/api\/babalawos\/baba-1/, async (route) => {
       await route.fulfill({
@@ -214,7 +217,11 @@ test.describe('Temple Discovery & Booking Flows', () => {
     await expect(page.getByText('ABC-123')).toBeVisible();
   });
 
-  test('Scenario 7: Cancel Booking & Verify Refund UI', async ({ page }) => {
+  // Paused as part of the 2026 scope pivot — see MVP_PIVOT_BACKLOG.md;
+  // re-enable when Consultations return. Only asserts the URL today (no
+  // real cancel/refund UI is exercised), but the name claims coverage
+  // that no longer exists in the UI — skip rather than leave misleading.
+  test.skip('Scenario 7: Cancel Booking & Verify Refund UI', async ({ page }) => {
     // Mock consultations list
     await page.route(/\/api\/appointments/, async (route) => {
       if (route.request().method() === 'GET') {
@@ -248,7 +255,9 @@ test.describe('Temple Discovery & Booking Flows', () => {
     await expect(page).toHaveURL(/\/client\/consultations/);
   });
 
-  test('Scenario 8: Reschedule Booking', async ({ page }) => {
+  // Paused as part of the 2026 scope pivot — see MVP_PIVOT_BACKLOG.md;
+  // re-enable when Consultations return. Same caveat as Scenario 7.
+  test.skip('Scenario 8: Reschedule Booking', async ({ page }) => {
     // Mock consultations list
     await page.route(/\/api\/appointments/, async (route) => {
       if (route.request().method() === 'GET') {

@@ -85,7 +85,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ onClose }) 
       });
     } else if (notification.data?.action === 'follow_up') {
       onClose();
-      navigate('/messages');
+      navigate('/practitioner/consultations');
     } else if (notification.data?.action === 'rebooking_nudge' && notification.data.babalawoId) {
       onClose();
       navigate(`/booking/${notification.data.babalawoId}`);
@@ -168,13 +168,6 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ onClose }) 
                   <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{notification.message}</p>
                   {notification.data?.action === 'follow_up' && (
                     <div className="flex gap-2 mt-2">
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); onClose(); navigate('/messages'); }}
-                        className="text-xs px-2 py-1 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
-                      >
-                        Send Message
-                      </button>
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); onClose(); navigate('/practitioner/consultations'); }}

@@ -1,12 +1,9 @@
 import {
   ShoppingBag,
   GraduationCap,
-  Calendar,
   Users,
-  MessageSquare,
   Search,
   LayoutDashboard,
-  DollarSign,
   Package,
   TrendingUp,
   Shield,
@@ -40,9 +37,7 @@ export interface NavSection {
 // Client-specific navigation (now includes all necessary items)
 const CLIENT_NAV_ITEMS: NavItem[] = [
   { id: 'home', label: 'Home', icon: User, path: '/client/dashboard' },
-  { id: 'messages', label: 'Messages', icon: MessageSquare, path: '/messages' },
   { id: 'find-guide', label: 'Find My Guide', icon: Search, path: '/babalawo' },
-  { id: 'my-consultations', label: 'My Consultations', icon: Calendar, path: '/client/consultations' },
   { id: 'temples', label: 'Temples', icon: Building2, path: '/client/temples' },
   { id: 'learning-path', label: 'Academy', icon: GraduationCap, path: '/academy' },
   { id: 'community-circles', label: 'Community Circles', icon: Users, path: '/circles' },
@@ -55,12 +50,9 @@ const CLIENT_NAV_ITEMS: NavItem[] = [
 // Babalawo/Practitioner-specific navigation
 const BABALAWO_NAV_ITEMS: NavItem[] = [
   { id: 'practice-center', label: 'Practice Center', icon: LayoutDashboard, path: '/practitioner/dashboard' },
-  { id: 'messages', label: 'Messages', icon: MessageSquare, path: '/messages' },
   { id: 'my-seekers', label: 'My Seekers', icon: Users, path: '/practitioner/my-seekers' },
-  { id: 'consultation-schedule', label: 'Calendar', icon: Calendar, path: '/practitioner/consultations' },
   { id: 'service-offerings', label: 'Service Offerings', icon: BookOpen, path: '/practitioner/service-offering' },
   { id: 'temple-connection', label: 'Temple Connection', icon: Building2, path: '/practitioner/temple-connection' },
-  { id: 'practice-earnings', label: 'Practice Earnings', icon: DollarSign, path: '/practitioner/earnings' },
   { id: 'wallet', label: 'Wallet', icon: Wallet, path: '/wallet' },
   { id: 'forum', label: 'Forum', icon: MessagesSquare, path: '/forum' },
   { id: 'professional-growth', label: 'Academy', icon: TrendingUp, path: '/academy' },
@@ -70,7 +62,6 @@ const BABALAWO_NAV_ITEMS: NavItem[] = [
 // Vendor-specific navigation
 const VENDOR_NAV_ITEMS: NavItem[] = [
   { id: 'sacred-shop', label: 'My Sacred Shop', icon: LayoutDashboard, path: '/vendor/dashboard' },
-  { id: 'messages', label: 'Messages', icon: MessageSquare, path: '/messages' },
   { id: 'product-workshop', label: 'Inventory', icon: Package, path: '/vendor/products' },
   { id: 'customer-care', label: 'Customer Care', icon: Users, path: '/vendor/support' },
   { id: 'community-market', label: 'Community Market', icon: ShoppingBag, path: '/marketplace' },
@@ -85,7 +76,6 @@ const VENDOR_NAV_ITEMS: NavItem[] = [
 // All admin sub-pages are tabs within AdminDashboardView, routed via /admin/:tab
 const ADMIN_NAV_ITEMS: NavItem[] = [
   { id: 'community-stewardship', label: 'Community Stewardship', icon: Shield, path: '/admin' },
-  { id: 'messages', label: 'Messages', icon: MessageSquare, path: '/messages' },
   {
     id: 'member-verification',
     label: 'Member Verification',

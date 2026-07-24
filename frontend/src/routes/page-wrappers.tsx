@@ -20,8 +20,6 @@ import {
   MyCoursesView,
   LessonPlayerView,
   YorubaWordDetailView,
-  ConsultationList,
-  AppointmentsCalendar,
   EventCreationForm,
   TempleDirectory,
   ForumHomeView,
@@ -210,34 +208,6 @@ export const YorubaWordDetailPage: React.FC = () => {
   return <YorubaWordDetailView wordId={wordId} onBack={() => navigate('/')} />;
 };
 
-export const ClientConsultationsPage: React.FC = () => {
-  const { user } = useAuth();
-
-  if (!user?.id) {
-    return (
-      <div className="min-h-[400px] flex items-center justify-center">
-        <p className="text-stone-500">Sign in to view your consultations.</p>
-      </div>
-    );
-  }
-
-  return <ConsultationList clientId={user.id} />;
-};
-
-export const PractitionerConsultationsPage: React.FC = () => {
-  const { user } = useAuth();
-
-  if (!user?.id) {
-    return (
-      <div className="min-h-[400px] flex items-center justify-center">
-        <p className="text-stone-500">Sign in to manage consultations.</p>
-      </div>
-    );
-  }
-
-  return <AppointmentsCalendar userId={user.id} userRole={user.role} />;
-};
-
 export const EventCreatePage: React.FC = () => {
   const navigate = useNavigate();
 
@@ -314,7 +284,6 @@ export const PersonalAwoDashboardPage: React.FC = () => {
   return (
     <PersonalAwoDashboard
       clientId={user.id}
-      onMessage={() => navigate('/messages')}
       onRequestConsultation={() => navigate('/babalawo')}
       onViewDocuments={() => navigate('/guidance-plans')}
       onChangeAwo={() => navigate('/discovery')}

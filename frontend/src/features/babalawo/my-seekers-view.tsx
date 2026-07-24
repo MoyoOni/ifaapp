@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { UserPlus, Calendar, MessageCircle, Mail, MapPin, User, AlertCircle, Copy, Check, Clock, NotebookPen, ChevronDown, ChevronUp } from 'lucide-react';
+import { UserPlus, Calendar, Mail, MapPin, User, AlertCircle, Copy, Check, Clock, NotebookPen, ChevronDown, ChevronUp } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import ConsultationNotesPanel from '@/features/consultations/consultation-notes-panel';
@@ -200,14 +200,6 @@ const MySeekersView: React.FC = () => {
               </div>
 
               <div className="mt-5 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => navigate(`/messages/${client.id}`)}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-muted/50 border border-border text-foreground rounded-lg hover:bg-muted text-sm font-medium transition-colors"
-                >
-                  <MessageCircle size={15} />
-                  Message
-                </button>
                 <button
                   type="button"
                   onClick={() => handleCopyBookingLink(client.id)}

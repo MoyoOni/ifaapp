@@ -43,7 +43,11 @@ test.describe('Messaging Flows', () => {
         });
     });
 
-    test('Scenario 19: Send Message to Babalawo', async ({ page }) => {
+    // Paused as part of the 2026 scope pivot — see MVP_PIVOT_BACKLOG.md;
+    // re-enable when Messaging returns. /messages now renders
+    // MessagesPausedPage; only the URL is asserted today, but the name
+    // claims coverage that no longer exists in the UI.
+    test.skip('Scenario 19: Send Message to Babalawo', async ({ page }) => {
         await page.route(/\/api\/messages/, async (route) => {
             await route.fulfill({
                 status: 200,
@@ -66,7 +70,9 @@ test.describe('Messaging Flows', () => {
         await expect(page).toHaveURL(/\/messages/);
     });
 
-    test('Scenario 20: Receive Reply (Mocked) & Verify Unread Count', async ({ page }) => {
+    // Paused as part of the 2026 scope pivot — see MVP_PIVOT_BACKLOG.md;
+    // re-enable when Messaging returns. Same caveat as Scenario 19.
+    test.skip('Scenario 20: Receive Reply (Mocked) & Verify Unread Count', async ({ page }) => {
         await page.route(/\/api\/messages/, async (route) => {
             await route.fulfill({
                 status: 200,

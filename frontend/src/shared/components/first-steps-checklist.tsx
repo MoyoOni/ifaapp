@@ -15,14 +15,13 @@ interface ChecklistItem {
 const CLIENT_STEPS: ChecklistItem[] = [
   { id: 'profile', label: 'Complete your profile', description: 'Add your Yoruba name, location and a photo.', action: '/profile', actionLabel: 'Edit Profile' },
   { id: 'temple', label: 'Browse Temples near you', description: 'Find your spiritual home in the community.', action: '/client/temples', actionLabel: 'Find a Temple' },
-  { id: 'booking', label: 'Book your first consultation', description: 'Connect with a verified Babalawo.', action: '/babalawo', actionLabel: 'Browse Practitioners' },
+  { id: 'booking', label: 'Meet your Babalawo', description: 'Browse verified spiritual guides in the community.', action: '/babalawo', actionLabel: 'Browse Practitioners' },
   { id: 'academy', label: 'Explore the Academy', description: 'Start learning Ifá and Isese tradition.', action: '/academy', actionLabel: 'Browse Courses' },
   { id: 'circle', label: 'Join a Circle', description: 'Connect with seekers on the same journey.', action: '/circles', actionLabel: 'Browse Circles' },
 ];
 
 const BABALAWO_STEPS: ChecklistItem[] = [
   { id: 'docs', label: 'Upload your verification documents', description: 'Credentials speed up your verification review.', action: '/profile', actionLabel: 'Go to Profile' },
-  { id: 'availability', label: 'Set your availability', description: 'Let seekers know when you can be reached.', action: '/babalawo/availability', actionLabel: 'Set Availability' },
   { id: 'service', label: 'Create a service offering', description: 'Define your consultation types and rates.', action: '/babalawo/services', actionLabel: 'Add Services' },
   { id: 'temple', label: 'Connect to a Temple', description: 'Associate your practice with a registered Ilé Ifá.', action: '/babalawo/temple', actionLabel: 'Find Temple' },
   { id: 'bio', label: 'Write your practice bio', description: 'Tell seekers who you are and your lineage.', action: '/profile', actionLabel: 'Edit Profile' },

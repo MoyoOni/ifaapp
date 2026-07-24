@@ -37,7 +37,7 @@ const TYPE_LABELS: Record<string, string> = {
 
 function getResultPath(result: SearchResult): string {
   switch (result.type) {
-    case 'babalawo': return `/booking/${result.id}`;
+    case 'babalawo': return `/profile/${result.id}`;
     case 'temple': return `/temples/${result.slug || result.id}`;
     case 'product': return `/marketplace/${result.id}`;
     case 'course': return `/academy/course/${result.id}`;
