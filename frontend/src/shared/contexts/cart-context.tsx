@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { analytics } from '@/lib/analytics';
 
 interface CartItem {
   productId: string;
@@ -65,6 +66,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [items]);
 
   const addItem = (newItem: Omit<CartItem, 'quantity'> & { quantity?: number }) => {
+    // VENDOR_BACKLOG.md VND-013: previously nothing tracked add-to-cart
+    // events at all -- vendors had no view/cart-interest signal, only final
+    // sales. Fire-and-forget, same pattern as the onboarding funnel events.
+    analytics.track('add_to_cart', {
+      data: { productId: newItem.productId, vendorId: newItem.vendorId, quantity: newItem.quantity || 1 },
+    });
+
     setItems((current) => {
       const existingIndex = current.findIndex((item) => sameLine(item, newItem));
 

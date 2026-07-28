@@ -4391,7 +4391,12 @@ export class MarketplaceService {
     // Product performance table -- return rate reuses the same rule as
     // getReturnAnalytics() (VND-010): returns for that product / orders
     // containing that product, both scoped to this vendor, not just this range.
-    const [allProductOrderItems, returns, reviewStats] = await Promise.all([
+    // VENDOR_BACKLOG.md VND-013: view/add-to-cart events, fired by the
+    // frontend (product-detail-view.tsx / cart-context.tsx) into the
+    // existing generic AnalyticsEvent log (previously only used for the
+    // onboarding funnel) -- filtered to this vendor's products via the
+    // event's own JSON payload, since AnalyticsEvent has no vendorId column.
+    const [allProductOrderItems, returns, reviewStats, vendorProducts, viewEvents, cartEvents] = await Promise.all([
       this.prisma.orderItem.findMany({
         where: { order: { vendorId } },
         select: { productId: true, orderId: true, product: { select: { name: true } } },
@@ -4405,13 +4410,36 @@ export class MarketplaceService {
         where: { product: { vendorId }, status: 'ACTIVE' },
         _avg: { rating: true },
       }),
+      this.prisma.product.findMany({ where: { vendorId }, select: { id: true, name: true } }),
+      this.prisma.analyticsEvent.findMany({
+        where: { event: 'product_view', createdAt: { gte: from, lte: to }, data: { path: ['vendorId'], equals: vendorId } },
+        select: { data: true },
+      }),
+      this.prisma.analyticsEvent.findMany({
+        where: { event: 'add_to_cart', createdAt: { gte: from, lte: to }, data: { path: ['vendorId'], equals: vendorId } },
+        select: { data: true },
+      }),
     ]);
     const orderIdsByProduct = new Map<string, Set<string>>();
-    const allProductNames = new Map<string, string>();
+    // Seeded from the vendor's full catalog (not just allProductOrderItems)
+    // so a viewed-but-never-ordered product still shows up in the table --
+    // that "high interest, zero conversions" gap is the whole point of this
+    // feature, not something to silently drop.
+    const allProductNames = new Map<string, string>(vendorProducts.map((p) => [p.id, p.name]));
     for (const item of allProductOrderItems) {
       allProductNames.set(item.productId, item.product.name);
       if (!orderIdsByProduct.has(item.productId)) orderIdsByProduct.set(item.productId, new Set());
       orderIdsByProduct.get(item.productId)!.add(item.orderId);
+    }
+    const viewCountByProduct = new Map<string, number>();
+    for (const e of viewEvents) {
+      const productId = (e.data as { productId?: string } | null)?.productId;
+      if (productId) viewCountByProduct.set(productId, (viewCountByProduct.get(productId) ?? 0) + 1);
+    }
+    const cartCountByProduct = new Map<string, number>();
+    for (const e of cartEvents) {
+      const productId = (e.data as { productId?: string } | null)?.productId;
+      if (productId) cartCountByProduct.set(productId, (cartCountByProduct.get(productId) ?? 0) + 1);
     }
     const returnCountByProduct = new Map<string, number>();
     for (const r of returns) {
@@ -4425,6 +4453,7 @@ export class MarketplaceService {
     const productPerformanceTable = [...allProductNames.entries()].map(([productId, name]) => {
       const totalOrders = orderIdsByProduct.get(productId)?.size ?? 0;
       const revenueEntry = revenueByProduct.get(productId);
+      const views = viewCountByProduct.get(productId) ?? 0;
       return {
         productId,
         name,
@@ -4432,6 +4461,10 @@ export class MarketplaceService {
         revenue: revenueEntry?.revenue ?? 0,
         returnRate: totalOrders > 0 ? (returnCountByProduct.get(productId) ?? 0) / totalOrders : 0,
         avgRating: avgRatingByProduct.get(productId) ?? null,
+        // VENDOR_BACKLOG.md VND-013
+        views,
+        addToCartCount: cartCountByProduct.get(productId) ?? 0,
+        viewToOrderConversionRate: views > 0 ? totalOrders / views : null,
       };
     });
 

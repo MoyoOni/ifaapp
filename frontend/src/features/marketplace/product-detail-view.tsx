@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ShoppingCart, Package, Store, Star, Plus, Minus, Check, Lock, BookOpen, ShieldCheck, Flag, Users, Clock, Award } from 'lucide-react';
@@ -10,6 +10,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { getCategoryBySlug, getSubcategoryLabel } from './marketplace-categories';
 import { isDevModeActive } from '@/shared/utils/dev-mode';
 import { usePageMeta } from '@/shared/hooks/use-page-meta';
+import { analytics } from '@/lib/analytics';
 import SocialShareButton from './social-share-button';
 
 // COMMUNITY_BACKLOG.md FOR-024/FOR-026: same categories the admin oral-history
@@ -173,6 +174,18 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ productId, onBack
     description: product ? product.seoDescription || product.description : undefined,
     image: product?.images?.[0],
   });
+
+  // VENDOR_BACKLOG.md VND-013: previously nothing tracked product views at
+  // all -- vendors had no visibility into interest that didn't convert to a
+  // sale. Fire-and-forget, once per loaded product.
+  useEffect(() => {
+    if (!product) return;
+    analytics.track('product_view', {
+      userId: user?.id,
+      role: user?.role,
+      data: { productId: product.id, vendorId: product.vendorId },
+    });
+  }, [product?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // VENDOR_BACKLOG.md VND-007
   const { data: variants = [] } = useQuery<Variant[]>({

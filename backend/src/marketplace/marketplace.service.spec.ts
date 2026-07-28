@@ -114,6 +114,10 @@ describe('MarketplaceService', () => {
       deleteMany: jest.fn(),
       count: jest.fn().mockResolvedValue(0),
     },
+    // VENDOR_BACKLOG.md VND-013: product_view/add_to_cart events.
+    analyticsEvent: {
+      findMany: jest.fn().mockResolvedValue([]),
+    },
     order: {
       create: jest.fn(),
       findUnique: jest.fn(),
@@ -3795,6 +3799,8 @@ describe('MarketplaceService', () => {
       mockPrismaService.orderItem.findMany.mockResolvedValue([]);
       mockPrismaService.returnRequest.findMany.mockResolvedValue([]);
       mockPrismaService.productReview.groupBy.mockResolvedValue([]);
+      mockPrismaService.product.findMany.mockResolvedValue([]);
+      mockPrismaService.analyticsEvent.findMany.mockResolvedValue([]);
     });
 
     it('computes top products by revenue and by units separately', async () => {
@@ -3859,6 +3865,86 @@ describe('MarketplaceService', () => {
       await expect(service.getVendorSalesAnalytics('vendor-1', vendorOwner)).rejects.toThrow(
         'You do not have access to this vendor account'
       );
+    });
+
+    // VENDOR_BACKLOG.md VND-013: view/add-to-cart events, previously not
+    // tracked at all.
+    describe('view/cart tracking', () => {
+      it('attributes product_view and add_to_cart AnalyticsEvent rows to the right product and computes conversion', async () => {
+        mockPrismaService.order.findMany.mockResolvedValue([
+          {
+            id: 'order-1',
+            status: 'DELIVERED',
+            customerId: 'customer-1',
+            shippingCountry: 'NG',
+            createdAt: new Date(),
+            totalAmount: 5000,
+            items: [{ productId: 'product-1', quantity: 1, price: 5000, product: { name: 'Ide Beads' } }],
+          },
+        ]);
+        mockPrismaService.order.groupBy.mockResolvedValue([]);
+        mockPrismaService.product.findMany.mockResolvedValue([{ id: 'product-1', name: 'Ide Beads' }]);
+        mockPrismaService.orderItem.findMany.mockResolvedValue([
+          { productId: 'product-1', orderId: 'order-1', product: { name: 'Ide Beads' } },
+        ]);
+        mockPrismaService.analyticsEvent.findMany
+          .mockResolvedValueOnce([{ data: { productId: 'product-1' } }, { data: { productId: 'product-1' } }, { data: { productId: 'product-1' } }, { data: { productId: 'product-1' } }]) // 4 views
+          .mockResolvedValueOnce([{ data: { productId: 'product-1' } }]); // 1 add-to-cart
+
+        const result = await service.getVendorSalesAnalytics('vendor-1', vendorOwner);
+
+        const row = result.productPerformanceTable.find((p: any) => p.productId === 'product-1');
+        expect(row).toMatchObject({ views: 4, addToCartCount: 1, orders: 1, viewToOrderConversionRate: 0.25 });
+      });
+
+      it('includes a product that has views but zero orders, instead of dropping it', async () => {
+        mockPrismaService.order.findMany.mockResolvedValue([]);
+        mockPrismaService.order.groupBy.mockResolvedValue([]);
+        mockPrismaService.product.findMany.mockResolvedValue([{ id: 'never-ordered', name: 'Opon Ifá' }]);
+        mockPrismaService.analyticsEvent.findMany
+          .mockResolvedValueOnce([{ data: { productId: 'never-ordered' } }])
+          .mockResolvedValueOnce([]);
+
+        const result = await service.getVendorSalesAnalytics('vendor-1', vendorOwner);
+
+        const row = result.productPerformanceTable.find((p: any) => p.productId === 'never-ordered');
+        expect(row).toMatchObject({ views: 1, orders: 0, viewToOrderConversionRate: 0 });
+      });
+
+      it('reports null conversion (not 0 or NaN) for a product with zero views', async () => {
+        mockPrismaService.order.findMany.mockResolvedValue([]);
+        mockPrismaService.order.groupBy.mockResolvedValue([]);
+        mockPrismaService.product.findMany.mockResolvedValue([{ id: 'unviewed', name: 'Ase Candle' }]);
+
+        const result = await service.getVendorSalesAnalytics('vendor-1', vendorOwner);
+
+        const row = result.productPerformanceTable.find((p: any) => p.productId === 'unviewed');
+        expect(row).toMatchObject({ views: 0, viewToOrderConversionRate: null });
+      });
+
+      it('scopes the AnalyticsEvent query to this vendor via the JSON payload path filter', async () => {
+        mockPrismaService.order.findMany.mockResolvedValue([]);
+        mockPrismaService.order.groupBy.mockResolvedValue([]);
+
+        await service.getVendorSalesAnalytics('vendor-1', vendorOwner);
+
+        expect(mockPrismaService.analyticsEvent.findMany).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: expect.objectContaining({
+              event: 'product_view',
+              data: { path: ['vendorId'], equals: 'vendor-1' },
+            }),
+          })
+        );
+        expect(mockPrismaService.analyticsEvent.findMany).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: expect.objectContaining({
+              event: 'add_to_cart',
+              data: { path: ['vendorId'], equals: 'vendor-1' },
+            }),
+          })
+        );
+      });
     });
   });
 

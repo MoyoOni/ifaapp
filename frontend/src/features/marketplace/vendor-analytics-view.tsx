@@ -17,7 +17,18 @@ interface SalesAnalytics {
   topProductsByUnits: Array<{ productId: string; name: string; units: number }>;
   repeatCustomerRate: number;
   geoBreakdown: Array<{ country: string; count: number }>;
-  productPerformanceTable: Array<{ productId: string; name: string; orders: number; revenue: number; returnRate: number; avgRating: number | null }>;
+  productPerformanceTable: Array<{
+    productId: string;
+    name: string;
+    orders: number;
+    revenue: number;
+    returnRate: number;
+    avgRating: number | null;
+    // VENDOR_BACKLOG.md VND-013
+    views: number;
+    addToCartCount: number;
+    viewToOrderConversionRate: number | null;
+  }>;
 }
 
 const PIE_COLORS = ['#d97706', '#16a34a', '#2563eb', '#dc2626', '#7c3aed', '#0891b2'];
@@ -28,14 +39,17 @@ const PERIOD_OPTIONS = [
   { label: 'Last 3 Months', days: 90 },
 ];
 
-type SortKey = 'name' | 'orders' | 'revenue' | 'returnRate' | 'avgRating';
+type SortKey = 'name' | 'orders' | 'revenue' | 'returnRate' | 'avgRating' | 'views' | 'addToCartCount';
 
 const fmt = (n: number) => `₦${Number(n ?? 0).toLocaleString()}`;
 
 const toCsv = (rows: SalesAnalytics['productPerformanceTable']) => {
-  const header = ['Product', 'Orders', 'Revenue', 'Return Rate', 'Avg Rating'];
+  const header = ['Product', 'Views', 'Added to Cart', 'View->Order Conversion', 'Orders', 'Revenue', 'Return Rate', 'Avg Rating'];
   const lines = rows.map((r) => [
     r.name.includes(',') ? `"${r.name}"` : r.name,
+    String(r.views),
+    String(r.addToCartCount),
+    r.viewToOrderConversionRate !== null ? (r.viewToOrderConversionRate * 100).toFixed(1) + '%' : 'N/A',
     String(r.orders),
     r.revenue.toFixed(2),
     (r.returnRate * 100).toFixed(1) + '%',
@@ -271,7 +285,7 @@ const VendorAnalyticsView: React.FC = () => {
                 <thead className="bg-muted/50 border-b border-border">
                   <tr>
                     {([
-                      ['name', 'Product'], ['orders', 'Orders'], ['revenue', 'Revenue'], ['returnRate', 'Return Rate'], ['avgRating', 'Avg Rating'],
+                      ['name', 'Product'], ['views', 'Views'], ['addToCartCount', 'Added to Cart'], ['orders', 'Orders'], ['revenue', 'Revenue'], ['returnRate', 'Return Rate'], ['avgRating', 'Avg Rating'],
                     ] as [SortKey, string][]).map(([key, label]) => (
                       <th key={key} className="p-3 font-bold text-muted-foreground uppercase tracking-wider text-xs cursor-pointer select-none" onClick={() => toggleSort(key)}>
                         <span className="flex items-center gap-1">{label} <ArrowUpDown size={10} /></span>
@@ -281,11 +295,18 @@ const VendorAnalyticsView: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-border/60">
                   {sortedTable.length === 0 ? (
-                    <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">No product data yet</td></tr>
+                    <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">No product data yet</td></tr>
                   ) : (
                     sortedTable.map((row) => (
                       <tr key={row.productId}>
                         <td className="p-3 font-medium text-foreground">{row.name}</td>
+                        <td className="p-3 text-foreground">{row.views}</td>
+                        <td className="p-3 text-foreground">
+                          {row.addToCartCount}
+                          {row.viewToOrderConversionRate !== null && (
+                            <span className="text-xs text-muted-foreground ml-1">({(row.viewToOrderConversionRate * 100).toFixed(0)}% convert)</span>
+                          )}
+                        </td>
                         <td className="p-3 text-foreground">{row.orders}</td>
                         <td className="p-3 font-bold text-foreground">{fmt(row.revenue)}</td>
                         <td className="p-3 text-foreground">{(row.returnRate * 100).toFixed(0)}%</td>
