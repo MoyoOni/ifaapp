@@ -89,6 +89,12 @@ describe('WalletService', () => {
             platformSettings: {
               findUnique: jest.fn().mockResolvedValue({ minPayoutThresholdNgn: 0 }),
             },
+            // VND-026: tier-based commission discount lookup on ORDER-type
+            // escrow releases. Defaults to null (NEW_VENDOR / 0% discount)
+            // so pre-existing tests that don't care about tiers still pass.
+            vendor: {
+              findUnique: jest.fn().mockResolvedValue(null),
+            },
             bankAccount: {
               findUnique: jest.fn(),
               findMany: jest.fn(),
@@ -812,6 +818,102 @@ describe('WalletService', () => {
         expect(txClient.transaction.create).not.toHaveBeenCalledWith(
           expect.objectContaining({ data: expect.objectContaining({ type: TransactionType.COMMISSION }) })
         );
+      });
+    });
+
+    // VENDOR_BACKLOG.md VND-026: tier benefit, confirmed with the platform
+    // owner July 28, 2026 -- 0/10/20/30% off the base commission by
+    // NEW_VENDOR/ESTABLISHED/TRUSTED_VENDOR/SACRED_ARTISAN.
+    describe('VND-026 tier-based commission discount', () => {
+      const vendorUser = {
+        id: 'vendor-user-1',
+        sub: 'vendor-user-1',
+        email: 'vendor@example.com',
+        role: 'VENDOR',
+        verified: true,
+      };
+      const mockOrderEscrow = {
+        id: 'escrow-order-1',
+        walletId: 'wallet-1',
+        userId: 'customer-1',
+        recipientId: 'vendor-user-1',
+        amount: new Prisma.Decimal('1000.00'),
+        type: 'ORDER',
+        status: 'HOLD',
+        relatedId: 'order-1',
+        currency: 'NGN',
+        releaseTiers: null,
+        releasedAt: null,
+      };
+
+      const setup = (performanceTier: string | null) => {
+        (prisma.escrow.findUnique as jest.Mock).mockResolvedValue({ ...mockOrderEscrow, wallet: {} });
+        (prisma.wallet.findUnique as jest.Mock).mockResolvedValue({
+          id: 'wallet-2',
+          userId: 'vendor-user-1',
+          balance: 0,
+          currency: 'NGN',
+          locked: false,
+        });
+        (prisma.platformSettings.findUnique as jest.Mock).mockResolvedValueOnce({ marketplaceCommissionPct: 10 });
+        (prisma.vendor.findUnique as jest.Mock).mockResolvedValueOnce(
+          performanceTier ? { performanceTier } : null
+        );
+        (txClient.escrow.update as jest.Mock).mockResolvedValue({ ...mockOrderEscrow, status: 'RELEASED' });
+        (txClient.wallet.update as jest.Mock).mockResolvedValue({});
+        (txClient.transaction.create as jest.Mock).mockResolvedValue({});
+      };
+
+      it.each([
+        ['NEW_VENDOR (no vendor row found defaults here too)', null, 900], // 10% of 1000, no discount
+        ['NEW_VENDOR', 'NEW_VENDOR', 900],
+        ['ESTABLISHED (10% off -> 9% effective)', 'ESTABLISHED', 910],
+        ['TRUSTED_VENDOR (20% off -> 8% effective)', 'TRUSTED_VENDOR', 920],
+        ['SACRED_ARTISAN (30% off -> 7% effective)', 'SACRED_ARTISAN', 930],
+      ])('%s: vendor nets the discounted amount', async (_label, tier, expectedNet) => {
+        setup(tier);
+
+        await service.releaseEscrow('vendor-user-1', { escrowId: 'escrow-order-1' }, vendorUser);
+
+        expect(txClient.wallet.update).toHaveBeenCalledWith({
+          where: { id: 'wallet-2' },
+          data: { balance: { increment: expectedNet } },
+        });
+      });
+
+      it('records tierDiscountPct on both the ESCROW_RELEASE and COMMISSION transaction metadata', async () => {
+        setup('SACRED_ARTISAN');
+
+        await service.releaseEscrow('vendor-user-1', { escrowId: 'escrow-order-1' }, vendorUser);
+
+        expect(txClient.transaction.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              type: TransactionType.ESCROW_RELEASE,
+              metadata: expect.objectContaining({ tierDiscountPct: 30 }),
+            }),
+          })
+        );
+        expect(txClient.transaction.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              type: TransactionType.COMMISSION,
+              amount: 70, // 7% of 1000
+              metadata: expect.objectContaining({ tierDiscountPct: 30, commissionPct: 7 }),
+            }),
+          })
+        );
+      });
+
+      it("looks up the vendor by the escrow's recipientId (the vendor's userId), not the escrow depositor", async () => {
+        setup('TRUSTED_VENDOR');
+
+        await service.releaseEscrow('vendor-user-1', { escrowId: 'escrow-order-1' }, vendorUser);
+
+        expect(prisma.vendor.findUnique).toHaveBeenCalledWith({
+          where: { userId: 'vendor-user-1' }, // recipientId, not escrow.userId ('customer-1')
+          select: { performanceTier: true },
+        });
       });
     });
   });

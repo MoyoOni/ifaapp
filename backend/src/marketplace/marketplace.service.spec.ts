@@ -1631,6 +1631,36 @@ describe('MarketplaceService', () => {
         expect(result.nextTierProgress).toBeNull();
       });
 
+      // VENDOR_BACKLOG.md VND-026 tier benefit: the same discount schedule
+      // walletService.releaseEscrow() actually applies, surfaced here so
+      // vendors can see what they'll really pay before it happens.
+      it('reports 0% commission discount for a NEW_VENDOR', async () => {
+        const result = await service.getVendorPerformanceStatus('vendor-1', vendorOwner);
+
+        expect(result.commission).toEqual({
+          baseCommissionPct: 10,
+          commissionDiscountPct: 0,
+          effectiveCommissionPct: 10,
+        });
+      });
+
+      it('reports the 30% commission discount for a SACRED_ARTISAN vendor', async () => {
+        mockPrismaService.vendor.findUnique.mockResolvedValue({ userId: 'vendor-user-1', verifiedAt: oldEnoughDate, apprenticeshipTier: 'ELDER_APPROVED' });
+        mockPrismaService.order.count.mockResolvedValue(150);
+        mockPrismaService.productReview.groupBy.mockResolvedValue([
+          { productId: 'p1', _avg: { rating: 4.9 }, _count: { rating: 150 } },
+        ]);
+
+        const result = await service.getVendorPerformanceStatus('vendor-1', vendorOwner);
+
+        expect(result.tier).toBe('SACRED_ARTISAN');
+        expect(result.commission).toEqual({
+          baseCommissionPct: 10,
+          commissionDiscountPct: 30,
+          effectiveCommissionPct: 7,
+        });
+      });
+
       it('rejects a vendor who does not own this vendor account', async () => {
         mockPrismaService.vendor.findUnique.mockResolvedValue({ userId: 'someone-else' });
 

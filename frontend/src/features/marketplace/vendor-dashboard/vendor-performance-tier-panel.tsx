@@ -12,6 +12,10 @@ interface PerformanceStatus {
     monthsSinceVerified: number;
   };
   nextTierProgress: { nextTier: string; gaps: string[] } | null;
+  // VENDOR_BACKLOG.md VND-026 tier benefit: the real discount
+  // walletService.releaseEscrow() applies when this vendor's order escrows
+  // release, not an estimate.
+  commission: { baseCommissionPct: number; commissionDiscountPct: number; effectiveCommissionPct: number };
 }
 
 interface VendorPerformanceTierPanelProps {
@@ -68,6 +72,17 @@ const VendorPerformanceTierPanel: React.FC<VendorPerformanceTierPanelProps> = ({
           <p className="text-xs text-muted-foreground uppercase tracking-widest">Return Rate</p>
           <p className="font-bold text-foreground">{(data.metrics.returnRate * 100).toFixed(1)}%</p>
         </div>
+      </div>
+      <div className="pt-3 border-t border-border flex items-center justify-between flex-wrap gap-2">
+        <p className="text-sm text-muted-foreground">Your commission rate</p>
+        <p className="text-sm font-bold text-foreground">
+          {data.commission.effectiveCommissionPct}%
+          {data.commission.commissionDiscountPct > 0 && (
+            <span className="ml-1.5 text-xs font-medium text-green-600">
+              ({data.commission.commissionDiscountPct}% off the standard {data.commission.baseCommissionPct}%)
+            </span>
+          )}
+        </p>
       </div>
       {data.nextTierProgress && (
         <div className="pt-3 border-t border-border">

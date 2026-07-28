@@ -38,6 +38,19 @@ import { EscrowReleaseTiers } from './types';
 export class WalletService {
   private readonly logger = new Logger(WalletService.name);
 
+  // VENDOR_BACKLOG.md VND-026: percentage discount off the base
+  // marketplaceCommissionPct, by Vendor.performanceTier. Confirmed with the
+  // platform owner July 28, 2026 -- see ILUASE_V1_BACKLOG.md's VND-026 entry.
+  // Public (not private) so marketplace.service.ts's getVendorPerformanceStatus()
+  // can display the same numbers releaseEscrow() actually applies, without
+  // a second copy of this schedule drifting out of sync.
+  static readonly TIER_COMMISSION_DISCOUNT_PCT: Record<string, number> = {
+    NEW_VENDOR: 0,
+    ESTABLISHED: 10,
+    TRUSTED_VENDOR: 20,
+    SACRED_ARTISAN: 30,
+  };
+
   constructor(
     private prisma: PrismaService,
     private currencyService: CurrencyService,
@@ -657,9 +670,21 @@ export class WalletService {
     // passthrough, unchanged from before.
     const isMarketplaceOrderEscrow = escrow.type === EscrowType.ORDER;
     let commissionPct = 0;
+    let tierDiscountPct = 0;
     if (isMarketplaceOrderEscrow) {
-      const settings = await this.prisma.platformSettings.findUnique({ where: { id: 'singleton' } });
-      commissionPct = Number(settings?.marketplaceCommissionPct ?? 10);
+      const [settings, vendor] = await Promise.all([
+        this.prisma.platformSettings.findUnique({ where: { id: 'singleton' } }),
+        escrow.recipientId
+          ? this.prisma.vendor.findUnique({ where: { userId: escrow.recipientId }, select: { performanceTier: true } })
+          : Promise.resolve(null),
+      ]);
+      const basePct = Number(settings?.marketplaceCommissionPct ?? 10);
+      // VND-026 tier benefit: reduced commission for higher-performing
+      // vendors. Discount schedule is a product decision (confirmed with
+      // the platform owner July 28, 2026), not an engineering default --
+      // change here, not by inventing a different number elsewhere.
+      tierDiscountPct = WalletService.TIER_COMMISSION_DISCOUNT_PCT[vendor?.performanceTier ?? 'NEW_VENDOR'] ?? 0;
+      commissionPct = basePct * (1 - tierDiscountPct / 100);
     }
     const round2 = (n: number) => Math.round(n * 100) / 100;
     const commissionAmount = isMarketplaceOrderEscrow ? round2((releaseAmount * commissionPct) / 100) : 0;
@@ -711,6 +736,7 @@ export class WalletService {
               grossAmount: releaseAmount,
               commissionAmount,
               commissionPct,
+              tierDiscountPct,
               totalAmount: escrowAmount,
             },
           },
@@ -725,12 +751,13 @@ export class WalletService {
               amount: commissionAmount,
               currency: escrow.currency,
               status: TransactionStatus.COMPLETED,
-              description: `Platform commission (${commissionPct}%) retained on marketplace order escrow release`,
+              description: `Platform commission (${commissionPct}%${tierDiscountPct > 0 ? `, ${tierDiscountPct}% tier discount applied` : ''}) retained on marketplace order escrow release`,
               metadata: {
                 escrowId: escrow.id,
                 relatedId: escrow.relatedId,
                 grossAmount: releaseAmount,
                 commissionPct,
+                tierDiscountPct,
               },
             },
           });

@@ -3863,7 +3863,19 @@ export class MarketplaceService {
     await this.assertOwnsVendorOrAdmin(vendorId, currentUser);
     const metrics = await this.computeVendorPerformanceMetrics(vendorId);
     const tier = this.computeTierFromMetrics(metrics);
-    return { tier, metrics, nextTierProgress: this.computeNextTierProgress(tier, metrics) };
+    // VND-026 tier benefit: same discount schedule walletService.releaseEscrow()
+    // actually applies when this vendor's order escrows release, read from the
+    // single shared source of truth rather than a second copy of the numbers.
+    const settings = await this.prisma.platformSettings.findUnique({ where: { id: 'singleton' } });
+    const baseCommissionPct = Number(settings?.marketplaceCommissionPct ?? 10);
+    const commissionDiscountPct = WalletService.TIER_COMMISSION_DISCOUNT_PCT[tier] ?? 0;
+    const effectiveCommissionPct = baseCommissionPct * (1 - commissionDiscountPct / 100);
+    return {
+      tier,
+      metrics,
+      nextTierProgress: this.computeNextTierProgress(tier, metrics),
+      commission: { baseCommissionPct, commissionDiscountPct, effectiveCommissionPct },
+    };
   }
 
   /**
