@@ -40,6 +40,23 @@ const emptyForm = {
   isDefault: false,
 };
 
+// VENDOR_BACKLOG.md VND-011: quick-apply templates for the most common zone
+// shapes, so a vendor isn't stuck manually typing every country name. Only
+// pre-fills name/countries/isDefault (geography, not a business decision) --
+// rates are left for the vendor to set themselves, same as a from-scratch zone.
+const ZONE_PRESETS: Array<{ label: string; name: string; countries: string[]; isDefault?: boolean }> = [
+  { label: 'Nigeria Only', name: 'Nigeria', countries: ['Nigeria'] },
+  {
+    label: 'West Africa (ECOWAS)',
+    name: 'West Africa',
+    countries: [
+      'Nigeria', 'Ghana', 'Benin', 'Togo', 'Senegal', "Côte d'Ivoire", 'Sierra Leone',
+      'Liberia', 'Guinea', 'Gambia', 'Mali', 'Burkina Faso', 'Niger', 'Guinea-Bissau', 'Cape Verde',
+    ],
+  },
+  { label: 'Rest of World', name: 'International', countries: ['Rest of World'], isDefault: true },
+];
+
 const ShippingManagement: React.FC<ShippingManagementProps> = ({ vendorId, activeTab }) => {
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -134,6 +151,30 @@ const ShippingManagement: React.FC<ShippingManagementProps> = ({ vendorId, activ
               }}
               className="space-y-4"
             >
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase text-muted-foreground tracking-widest">Quick-apply a template</label>
+                <div className="flex flex-wrap gap-2">
+                  {ZONE_PRESETS.map((preset) => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() =>
+                        setForm((f) => ({
+                          ...f,
+                          name: preset.name,
+                          countries: preset.countries.join(', '),
+                          isDefault: !!preset.isDefault,
+                        }))
+                      }
+                      className="px-3 py-1.5 text-xs font-bold rounded-lg border border-border hover:bg-muted transition-colors"
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">Fills in the name and countries below — rates are still yours to set.</p>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold uppercase text-muted-foreground tracking-widest">Zone Name</label>
