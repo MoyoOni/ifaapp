@@ -19,6 +19,12 @@ export const MarketplacePage = React.lazy(() => import('../pages/MarketplacePage
 export const CartPage = React.lazy(() => import('../pages/CartPage'));
 export const CheckoutPage = React.lazy(() => import('../pages/CheckoutPage'));
 export const ProductDetailPage = React.lazy(() => import('../pages/ProductDetailPage'));
+export const VendorStorefrontPage = React.lazy(() => import('../pages/VendorStorefrontPage'));
+export const StoriesPage = React.lazy(() => import('../pages/StoriesPage'));
+export const BundleDetailPage = React.lazy(() => import('../pages/BundleDetailPage'));
+export const PartnershipsPage = React.lazy(() => import('../pages/PartnershipsPage'));
+export const PartnershipDetailPage = React.lazy(() => import('../pages/PartnershipDetailPage'));
+export const YorubaGlossaryPage = React.lazy(() => import('../pages/YorubaGlossaryPage'));
 export const GuidancePlansPage = React.lazy(() => import('../pages/GuidancePlansPage'));
 export const PrescriptionApprovalPage = React.lazy(() => import('../pages/PrescriptionApprovalPage'));
 export const PrescriptionHistoryPage = React.lazy(() => import('../pages/PrescriptionHistoryPage'));
@@ -32,10 +38,14 @@ export const AdvisoryBoardVotingView = React.lazy(() => import('../features/admi
 export const VendorReviewView = React.lazy(() => import('../features/admin/vendor-review-view'));
 export const TempleDirectory = React.lazy(() => import('../features/temple/temple-directory'));
 export const TempleDetailView = React.lazy(() => import('../features/temple/temple-detail-view'));
+export const TempleManagementView = React.lazy(() => import('../features/temple/temple-management-view'));
 // Unused directory imports removed
 export const ForumHomeView = React.lazy(() => import('../features/forum/forum-home-view'));
 export const ThreadView = React.lazy(() => import('../features/forum/thread-view'));
 export const ElderOversightPanel = React.lazy(() => import('../features/forum/elder-oversight-panel'));
+export const LearningPathwaysView = React.lazy(() => import('../features/forum/learning-pathways-view'));
+export const PathwayDetailView = React.lazy(() => import('../features/forum/pathway-detail-view'));
+export const CommunityMentorshipView = React.lazy(() => import('../features/community/community-mentorship-view'));
 export const AcademyView = React.lazy(() => import('../features/academy/academy-view'));
 export const CourseDetailView = React.lazy(() => import('../features/academy/course-detail-view'));
 export const MyCoursesView = React.lazy(() => import('../features/academy/my-courses-view'));
@@ -44,6 +54,11 @@ export const EventCreationForm = React.lazy(() => import('../features/events/eve
 export const YorubaWordDetailView = React.lazy(() => import('../features/yoruba-word/yoruba-word-detail-view'));
 export const VendorProductListView = React.lazy(() => import('../features/marketplace/vendor-product-list-view'));
 export const VendorOrderListView = React.lazy(() => import('../features/marketplace/vendor-order-list-view'));
+export const MyOrdersView = React.lazy(() => import('../features/marketplace/my-orders-view'));
+export const MyDownloadsView = React.lazy(() => import('../features/marketplace/my-downloads-view'));
+export const BulkOrderView = React.lazy(() => import('../features/marketplace/bulk-order-view'));
+export const VendorEarningsView = React.lazy(() => import('../features/marketplace/vendor-earnings-view'));
+export const VendorAnalyticsView = React.lazy(() => import('../features/marketplace/vendor-analytics-view'));
 export const MySeekersView = React.lazy(() => import('../features/babalawo/my-seekers-view'));
 export const ServiceOfferingView = React.lazy(() => import('../features/babalawo/service-offering-view'));
 export const TempleConnectionView = React.lazy(() => import('../features/babalawo/temple-connection-view'));

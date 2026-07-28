@@ -64,6 +64,7 @@ export interface FeedPost {
   createdAt: string;
   likes: number;
   comments: number;
+  likedByMe?: boolean;
   isPinned?: boolean;
   patronOnly?: boolean;
 }

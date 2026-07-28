@@ -129,7 +129,7 @@ const MySeekersView: React.FC = () => {
           </p>
         </div>
         <Link
-          to="/practitioner/invite-client"
+          to="/practitioner/clients/invite"
           className="px-4 py-2 bg-highlight text-white font-bold rounded-xl shadow-lg hover:bg-yellow-600 transition-colors flex items-center gap-2"
         >
           <UserPlus size={18} /> Find Seeker

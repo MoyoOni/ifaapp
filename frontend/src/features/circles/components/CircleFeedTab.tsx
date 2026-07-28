@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
   MessageSquare,
@@ -11,9 +12,11 @@ import {
   Crown,
   Lock,
 } from 'lucide-react';
+import api from '@/lib/api';
 import { FeedPost } from '../types/circle.types';
 
 interface CircleFeedTabProps {
+  circleId?: string;
   feedPosts: FeedPost[];
   isMember: boolean;
   isPatron: boolean;
@@ -22,6 +25,15 @@ interface CircleFeedTabProps {
   onPostSubmit: (patronOnly?: boolean) => void;
   isCreatingPost: boolean;
   userInitial: string;
+}
+
+interface FeedComment {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar?: string | null;
+  content: string;
+  createdAt: string;
 }
 
 const formatDate = (dateString: string) => {
@@ -38,7 +50,99 @@ const formatDate = (dateString: string) => {
   return date.toLocaleDateString();
 };
 
+// Real like-toggle + comment thread for a single post. Was previously two
+// static, non-interactive counts with no backend at all.
+const PostReactions: React.FC<{ post: FeedPost; circleId?: string }> = ({ post, circleId }) => {
+  const queryClient = useQueryClient();
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [commentDraft, setCommentDraft] = useState('');
+
+  const invalidateFeed = () => queryClient.invalidateQueries({ queryKey: ['circle-feed', circleId] });
+
+  const likeMutation = useMutation({
+    mutationFn: () => api.post(`/circles/feed/${post.id}/like`),
+    onSuccess: invalidateFeed,
+  });
+
+  const { data: comments = [], isLoading: loadingComments } = useQuery<FeedComment[]>({
+    queryKey: ['circle-feed-comments', post.id],
+    queryFn: async () => (await api.get(`/circles/feed/${post.id}/comments`)).data,
+    enabled: commentsOpen,
+  });
+
+  const addCommentMutation = useMutation({
+    mutationFn: () => api.post(`/circles/feed/${post.id}/comments`, { content: commentDraft }),
+    onSuccess: () => {
+      setCommentDraft('');
+      queryClient.invalidateQueries({ queryKey: ['circle-feed-comments', post.id] });
+      invalidateFeed();
+    },
+  });
+
+  return (
+    <div className="mt-3">
+      <div className="flex items-center gap-4 text-muted-foreground">
+        <button
+          type="button"
+          onClick={() => likeMutation.mutate()}
+          disabled={likeMutation.isPending}
+          className={`flex items-center gap-1 transition-colors ${post.likedByMe ? 'text-red-500' : 'hover:text-red-500'}`}
+          aria-pressed={!!post.likedByMe}
+        >
+          <Heart size={16} className={post.likedByMe ? 'fill-current' : ''} />
+          <span className="text-sm">{post.likes}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setCommentsOpen((o) => !o)}
+          className="flex items-center gap-1 hover:text-blue-500 transition-colors"
+        >
+          <MessageCircle size={16} />
+          <span className="text-sm">{post.comments}</span>
+        </button>
+      </div>
+
+      {commentsOpen && (
+        <div className="mt-3 pl-2 border-l-2 border-border space-y-3">
+          {loadingComments ? (
+            <Loader2 size={14} className="animate-spin text-muted-foreground" />
+          ) : comments.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No comments yet.</p>
+          ) : (
+            comments.map((c) => (
+              <div key={c.id} className="text-sm">
+                <span className="font-semibold text-foreground">{c.authorName}</span>{' '}
+                <span className="text-xs text-muted-foreground">{formatDate(c.createdAt)}</span>
+                <p className="text-foreground/90">{c.content}</p>
+              </div>
+            ))
+          )}
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={commentDraft}
+              onChange={(e) => setCommentDraft(e.target.value)}
+              placeholder="Write a comment..."
+              className="flex-1 px-3 py-1.5 text-sm bg-muted/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+            <button
+              type="button"
+              onClick={() => commentDraft.trim() && addCommentMutation.mutate()}
+              disabled={!commentDraft.trim() || addCommentMutation.isPending}
+              className="p-2 text-primary hover:bg-primary/10 rounded-lg disabled:opacity-50 transition-colors"
+              aria-label="Post comment"
+            >
+              {addCommentMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const CircleFeedTab: React.FC<CircleFeedTabProps> = ({
+  circleId,
   feedPosts,
   isMember,
   isPatron,
@@ -157,16 +261,7 @@ export const CircleFeedTab: React.FC<CircleFeedTabProps> = ({
                     <span className="text-xs text-muted-foreground">{formatDate(post.createdAt)}</span>
                   </div>
                   <p className="text-foreground whitespace-pre-wrap">{post.content}</p>
-                  <div className="flex items-center gap-4 mt-3 text-muted-foreground">
-                    <button aria-label={`Like post (${post.likes} likes)`} className="flex items-center gap-1 hover:text-red-500 dark:text-red-400 transition-colors">
-                      <Heart size={16} />
-                      <span className="text-sm" aria-hidden="true">{post.likes}</span>
-                    </button>
-                    <button className="flex items-center gap-1 hover:text-blue-500 dark:text-blue-400 transition-colors">
-                      <MessageCircle size={16} />
-                      <span className="text-sm">{post.comments}</span>
-                    </button>
-                  </div>
+                  <PostReactions post={post} circleId={circleId} />
                 </div>
               </div>
             </motion.div>

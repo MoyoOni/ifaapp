@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Search, BookOpen, Clock, CheckCircle, Users, AlertCircle } from 'lucide-react';
+import { Search, BookOpen, Clock, CheckCircle, Users, AlertCircle, Lock, X } from 'lucide-react';
 import { Input } from '@/shared/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
 import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
 import { AcademySkeleton } from '@/shared/components/skeleton';
 import { useSubscription } from '@/features/subscription/use-subscription';
+import { UpgradePrompt } from '@/features/subscription/feature-gate';
 
 interface Course {
   id: string;
@@ -52,10 +53,15 @@ const AcademyView: React.FC<AcademyViewProps> = ({ onSelectCourse }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
   const { isDevoted } = useSubscription();
+  const [lockedCourseTitle, setLockedCourseTitle] = useState<string | null>(null);
 
+  // V8-203: clicking a locked course previously just silently navigated to
+  // /pricing with no explanation -- an UpgradePrompt modal instead, matching
+  // the AC ("FREE user clicking a locked course sees UpgradePrompt, not an
+  // error").
   const handleCourseClick = (course: Course) => {
     if (course.isDevoted && !isDevoted) {
-      navigate('/pricing');
+      setLockedCourseTitle(course.title);
       return;
     }
     onSelectCourse?.(course.id);
@@ -178,17 +184,28 @@ const AcademyView: React.FC<AcademyViewProps> = ({ onSelectCourse }) => {
             </div>
           ) : filteredCourses.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredCourses.map((course) => (
-                <div 
+              {filteredCourses.map((course) => {
+                const isLocked = course.isDevoted && !isDevoted;
+                return (
+                <div
                   key={course.id}
-                  className="bg-card rounded-2xl border border-border/50 p-5 hover:shadow-md transition-shadow cursor-pointer"
+                  className={`bg-card rounded-2xl border p-5 hover:shadow-md transition-shadow cursor-pointer relative ${
+                    isLocked
+                      ? 'border-amber-300 dark:border-amber-700 shadow-[0_0_0_1px_rgba(245,158,11,0.15)]'
+                      : 'border-border/50'
+                  }`}
                   onClick={() => handleCourseClick(course)}
                 >
-                  <div className="aspect-video bg-muted rounded-xl mb-4 overflow-hidden">
+                  {isLocked && (
+                    <div className="absolute top-3 right-3 z-10 flex items-center gap-1 bg-amber-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow">
+                      <Lock size={11} /> Devoted
+                    </div>
+                  )}
+                  <div className="aspect-video bg-muted rounded-xl mb-4 overflow-hidden relative">
                     <img
                       src={course.thumbnail}
                       alt={course.title}
-                      className="w-full h-full object-cover"
+                      className={`w-full h-full object-cover ${isLocked ? 'opacity-60' : ''}`}
                     />
                     <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
                       {course.duration}m
@@ -229,7 +246,8 @@ const AcademyView: React.FC<AcademyViewProps> = ({ onSelectCourse }) => {
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-12 bg-muted/20 rounded-2xl border border-border/50">
@@ -253,6 +271,23 @@ const AcademyView: React.FC<AcademyViewProps> = ({ onSelectCourse }) => {
           )}
         </section>
       </main>
+
+      {lockedCourseTitle && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-card border border-border rounded-2xl shadow-2xl p-6 max-w-md w-full relative">
+            <button
+              type="button"
+              onClick={() => setLockedCourseTitle(null)}
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
+              aria-label="Close"
+            >
+              <X size={18} />
+            </button>
+            <h2 className="text-lg font-bold text-foreground mb-4">{lockedCourseTitle}</h2>
+            <UpgradePrompt message={`"${lockedCourseTitle}" is a Devoted-only course.`} />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

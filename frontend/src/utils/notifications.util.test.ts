@@ -126,15 +126,16 @@ describe('Notification Utilities', () => {
 
   describe('createNotification', () => {
     it('should create a notification object with provided parameters', () => {
-      const timestamp = new Date().toISOString();
-      const notification = createNotification('Test Title', 'Test Description', 'info', timestamp);
-      
-      expect(notification).toEqual({
+      const notification = createNotification('Test Title', 'Test Description', 'info', 'booking', { appointmentId: 'apt-1' });
+
+      expect(notification).toMatchObject({
         title: 'Test Title',
         description: 'Test Description',
         type: 'info',
-        timestamp
+        category: 'booking',
+        data: { appointmentId: 'apt-1' },
       });
+      expect(typeof notification.timestamp).toBe('string');
     });
 
     it('should use current timestamp if none is provided', () => {

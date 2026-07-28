@@ -16,6 +16,8 @@ import {
   BookOpen,
   Activity,
   MessagesSquare,
+  UserPlus,
+  ClipboardList,
   type LucideIcon
 } from 'lucide-react';
 import { UserRole, AdminSubRole } from '@common';
@@ -41,6 +43,7 @@ const CLIENT_NAV_ITEMS: NavItem[] = [
   { id: 'temples', label: 'Temples', icon: Building2, path: '/client/temples' },
   { id: 'learning-path', label: 'Academy', icon: GraduationCap, path: '/academy' },
   { id: 'community-circles', label: 'Community Circles', icon: Users, path: '/circles' },
+  { id: 'directory', label: 'Member Directory', icon: UserPlus, path: '/directory' },
   { id: 'forum', label: 'Forum', icon: MessagesSquare, path: '/forum' },
   { id: 'marketplace', label: 'Marketplace', icon: ShoppingBag, path: '/marketplace' },
   { id: 'wallet', label: 'Wallet', icon: Wallet, path: '/wallet' },
@@ -63,6 +66,10 @@ const BABALAWO_NAV_ITEMS: NavItem[] = [
 const VENDOR_NAV_ITEMS: NavItem[] = [
   { id: 'sacred-shop', label: 'My Sacred Shop', icon: LayoutDashboard, path: '/vendor/dashboard' },
   { id: 'product-workshop', label: 'Inventory', icon: Package, path: '/vendor/products' },
+  // Whole-app audit loose end: /vendor/orders (VendorOrderListView) was
+  // fully built and routed but had no sidebar entry anywhere -- the only
+  // reachable "view my orders" UI was the dashboard's own Orders tab.
+  { id: 'vendor-orders', label: 'Orders', icon: ClipboardList, path: '/vendor/orders' },
   { id: 'customer-care', label: 'Customer Care', icon: Users, path: '/vendor/support' },
   { id: 'community-market', label: 'Community Market', icon: ShoppingBag, path: '/marketplace' },
   { id: 'sales-insights', label: 'Revenue/Analytics', icon: BarChart3, path: '/vendor/insights' },
@@ -122,13 +129,23 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
   { id: 'profile', label: 'My Profile', icon: User, path: '/profile' },
 ];
 
+// Advisory board members only have backend access to the advisory-board
+// voting endpoints (@Roles(ADMIN, ADVISORY_BOARD_MEMBER) in admin.controller.ts)
+// -- the other 140+ admin endpoints are ADMIN-only. Reusing ADMIN_NAV_ITEMS
+// here used to show this role every admin tab, each of which 403'd on click.
+const ADVISORY_BOARD_NAV_ITEMS: NavItem[] = [
+  { id: 'advisory-board', label: 'Advisory Board', icon: Shield, path: '/admin/advisory-board' },
+  { id: 'forum', label: 'Forum', icon: MessagesSquare, path: '/forum' },
+  { id: 'profile', label: 'My Profile', icon: User, path: '/profile' },
+];
+
 // Map roles to their navigation items
 const ROLE_NAV_MAP: Record<UserRole, NavItem[]> = {
   [UserRole.CLIENT]: CLIENT_NAV_ITEMS,
   [UserRole.BABALAWO]: BABALAWO_NAV_ITEMS,
   [UserRole.VENDOR]: VENDOR_NAV_ITEMS,
   [UserRole.ADMIN]: ADMIN_NAV_ITEMS,
-  [UserRole.ADVISORY_BOARD_MEMBER]: ADMIN_NAV_ITEMS, // Advisory board members see admin nav
+  [UserRole.ADVISORY_BOARD_MEMBER]: ADVISORY_BOARD_NAV_ITEMS,
 };
 
 /**
@@ -152,8 +169,9 @@ export function getNavItemsForRole(role: UserRole | string | undefined): NavItem
 export function getDashboardPathForRole(role: UserRole | string | undefined): string {
   switch (role) {
     case UserRole.ADMIN:
-    case UserRole.ADVISORY_BOARD_MEMBER:
       return '/admin';
+    case UserRole.ADVISORY_BOARD_MEMBER:
+      return '/admin/advisory-board';
     case UserRole.BABALAWO:
       return '/practitioner/dashboard';
     case UserRole.VENDOR:

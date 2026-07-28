@@ -22,15 +22,15 @@ const CLIENT_STEPS: ChecklistItem[] = [
 
 const BABALAWO_STEPS: ChecklistItem[] = [
   { id: 'docs', label: 'Upload your verification documents', description: 'Credentials speed up your verification review.', action: '/profile', actionLabel: 'Go to Profile' },
-  { id: 'service', label: 'Create a service offering', description: 'Define your consultation types and rates.', action: '/babalawo/services', actionLabel: 'Add Services' },
-  { id: 'temple', label: 'Connect to a Temple', description: 'Associate your practice with a registered Ilé Ifá.', action: '/babalawo/temple', actionLabel: 'Find Temple' },
+  { id: 'service', label: 'Create a service offering', description: 'Define your consultation types and rates.', action: '/practitioner/service-offering', actionLabel: 'Add Services' },
+  { id: 'temple', label: 'Connect to a Temple', description: 'Associate your practice with a registered Ilé Ifá.', action: '/practitioner/temple-connection', actionLabel: 'Find Temple' },
   { id: 'bio', label: 'Write your practice bio', description: 'Tell seekers who you are and your lineage.', action: '/profile', actionLabel: 'Edit Profile' },
 ];
 
 const VENDOR_STEPS: ChecklistItem[] = [
   { id: 'shop', label: 'Complete your shop profile', description: 'Add your shop description and contact details.', action: '/profile', actionLabel: 'Edit Profile' },
   { id: 'product', label: 'List your first product', description: 'Upload a sacred item to the marketplace.', action: '/vendor/products/new', actionLabel: 'Add Product' },
-  { id: 'delivery', label: 'Set your delivery zones', description: 'Tell buyers where you can ship to.', action: '/vendor/settings', actionLabel: 'Configure Shipping' },
+  { id: 'delivery', label: 'Set your delivery zones', description: 'Tell buyers where you can ship to.', action: '/vendor/dashboard', actionLabel: 'Configure Shipping' },
   { id: 'guidelines', label: 'Read the Cultural Authenticity Guidelines', description: 'Understand the standards for sacred items.', action: '/terms', actionLabel: 'Read Guidelines' },
 ];
 

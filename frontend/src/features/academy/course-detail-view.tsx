@@ -1,13 +1,15 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, BookOpen, GraduationCap, Clock, Users, Loader2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, GraduationCap, Clock, Users, Loader2, Lock } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { logger } from '@/shared/utils/logger';
 
 import { AcademySkeleton } from '@/shared/components/skeleton';
 import { useToast } from '@/shared/components/toast';
+import { useSubscription } from '@/features/subscription/use-subscription';
+import { UpgradePrompt } from '@/features/subscription/feature-gate';
 
 // Orisha-themed styling helpers for course categories
 function getOrishaGradientClass(category: string): string {
@@ -71,6 +73,7 @@ interface Course {
   enrolledCount: number;
   lessonCount: number;
   certificateEnabled: boolean;
+  isDevoted?: boolean;
   instructor: {
     id: string;
     name: string;
@@ -94,6 +97,7 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({ courseId, onBack })
   const { success, error } = useToast();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { isDevoted } = useSubscription();
 
   // Fetch course
   const { data: course, isLoading, isError, refetch } = useQuery<Course>({
@@ -125,9 +129,17 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({ courseId, onBack })
       queryClient.invalidateQueries({ queryKey: ['course', courseId] });
       queryClient.invalidateQueries({ queryKey: ['enrollments', courseId, user?.id] });
     },
-    onError: (err) => {
+    onError: (err: any) => {
       logger.error('Failed to enroll in course', err);
-      error('Could not enroll in the course. Please try again.');
+      // V8-203: a FREE user enrolling in a Devoted course hits the backend's
+      // 403 (assertLessonAccess/createEnrollment gate) -- previously shown
+      // as the same generic failure message as a real error, not a graceful
+      // "this needs Devoted" explanation.
+      if (err?.response?.status === 403) {
+        error('This is a Devoted-only course. Upgrade to enroll.');
+      } else {
+        error('Could not enroll in the course. Please try again.');
+      }
     },
   });
 
@@ -140,6 +152,8 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({ courseId, onBack })
 
     enroll();
   };
+
+  const isLocked = !!course?.isDevoted && !isDevoted;
 
   if (isLoading) {
     return (
@@ -225,9 +239,14 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({ courseId, onBack })
         </button>
       </div>
 
-      <div className="bg-card rounded-2xl border border-input overflow-hidden">
+      <div className={`bg-card rounded-2xl border overflow-hidden ${isLocked ? 'border-amber-300 dark:border-amber-700' : 'border-input'}`}>
         {/* Course Header */}
         <div className={`h-64 bg-gradient-to-r ${getOrishaGradientClass(course.category)} relative`}>
+          {isLocked && (
+            <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-amber-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow">
+              <Lock size={12} /> Devoted-only
+            </div>
+          )}
           <div className="absolute bottom-6 left-6">
             <h1 className="text-3xl font-bold text-foreground">{course.title}</h1>
             <div className="flex items-center gap-4 mt-2">
@@ -305,35 +324,41 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({ courseId, onBack })
           </div>
 
           {/* Enrollment */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-6 border-t border-border">
-            <div>
-              <p className="text-2xl font-bold text-foreground">
-                {course.price === 0 
-                  ? 'Free' 
-                  : course.currency + ' ' + course.price.toString()}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Includes certificate • {course.lessonCount || 0} lessons
-              </p>
+          {isLocked && !isEnrolled ? (
+            <div className="pt-6 border-t border-border">
+              <UpgradePrompt message={`"${course.title}" is a Devoted-only course.`} />
             </div>
-            {isEnrolled ? (
-              <button
-                onClick={() => navigate(`/academy/learn/${myEnrollments![0].id}`)}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground py-3 px-8 rounded-xl font-bold text-base flex items-center gap-2 transition-all"
-              >
-                Continue Learning
-              </button>
-            ) : (
-              <button
-                onClick={handleEnroll}
-                disabled={isEnrolling}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground py-3 px-8 rounded-xl font-bold text-base flex items-center gap-2 transition-all disabled:opacity-70"
-              >
-                {isEnrolling ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                {isEnrolling ? 'Processing...' : 'Enroll Now'}
-              </button>
-            )}
-          </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-6 border-t border-border">
+              <div>
+                <p className="text-2xl font-bold text-foreground">
+                  {course.price === 0
+                    ? 'Free'
+                    : course.currency + ' ' + course.price.toString()}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Includes certificate • {course.lessonCount || 0} lessons
+                </p>
+              </div>
+              {isEnrolled ? (
+                <button
+                  onClick={() => navigate(`/academy/learn/${myEnrollments![0].id}`)}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground py-3 px-8 rounded-xl font-bold text-base flex items-center gap-2 transition-all"
+                >
+                  Continue Learning
+                </button>
+              ) : (
+                <button
+                  onClick={handleEnroll}
+                  disabled={isEnrolling}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground py-3 px-8 rounded-xl font-bold text-base flex items-center gap-2 transition-all disabled:opacity-70"
+                >
+                  {isEnrolling ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                  {isEnrolling ? 'Processing...' : 'Enroll Now'}
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

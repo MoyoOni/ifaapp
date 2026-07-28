@@ -54,6 +54,12 @@ export const FEATURE_COLORS: Record<string, FeatureColorConfig> = {
     subtextColor: 'text-purple-600',
     iconBg: 'bg-purple-100 text-purple-600',
   },
+  'practice-center': {
+    gradient: 'bg-gradient-to-r from-amber-50 to-orange-50',
+    textColor: 'text-amber-900',
+    subtextColor: 'text-amber-600',
+    iconBg: 'bg-amber-100 text-amber-600',
+  },
 };
 
 const DEFAULT_COLORS: FeatureColorConfig = {

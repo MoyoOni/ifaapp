@@ -48,8 +48,9 @@ describe('SearchInput', () => {
     // Verify the value is set
     expect(input).toHaveValue('test search');
     
-    // Find and click the clear button (the X icon)
-    const clearButton = screen.getByRole('button');
+    // Find and click the clear button (the X icon) -- distinguish it from
+    // the search submit button, both of which are now accessible buttons
+    const clearButton = screen.getByRole('button', { name: /clear search/i });
     fireEvent.click(clearButton);
     
     // Verify the input is cleared

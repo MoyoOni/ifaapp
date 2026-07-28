@@ -6,7 +6,7 @@ import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 
 interface ResolvedProfile {
-  type: 'babalawo' | 'client' | 'temple';
+  type: 'babalawo' | 'client' | 'temple' | 'vendor';
   id: string;
   name: string;
   yorubaName?: string;
@@ -41,6 +41,9 @@ const BabalawoLandingPage: React.FC = () => {
       navigate(`/temples/${data.slug}`, { replace: true });
     } else if (data.type === 'client') {
       navigate(`/profile/${data.id}`, { replace: true });
+    } else if (data.type === 'vendor') {
+      // VENDOR_BACKLOG.md VND-021
+      navigate(`/vendors/${data.slug}`, { replace: true });
     }
   }, [data, navigate]);
 

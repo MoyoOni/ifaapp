@@ -9,6 +9,11 @@ import { UserRole } from '@common';
 import OfflineIndicator from './shared/components/offline-indicator';
 import SpiritualJourneyView from './features/client-hub/spiritual-journey-view';
 import CircleDirectory from './features/circles/circle-directory'; // Import CircleDirectory
+import MemberDirectoryView from './features/community/member-directory-view'; // COMMUNITY_BACKLOG.md FOR-Q2
+import RemembranceWallView from './features/community/remembrance-wall-view'; // COMMUNITY_BACKLOG.md FOR-015
+import WellbeingView from './features/community/wellbeing-view'; // COMMUNITY_BACKLOG.md FOR-017
+import DreamJournalView from './features/community/dream-journal-view'; // COMMUNITY_BACKLOG.md FOR-021
+import HealingView from './features/community/healing-view'; // COMMUNITY_BACKLOG.md FOR-018
 import ProfilePage from './pages/ProfilePage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
@@ -49,6 +54,12 @@ import {
   CartPage,
   CheckoutPage,
   ProductDetailPage,
+  VendorStorefrontPage,
+  StoriesPage,
+  BundleDetailPage,
+  PartnershipsPage,
+  PartnershipDetailPage,
+  YorubaGlossaryPage,
   GuidancePlansPage,
   PrescriptionApprovalPage,
   PrescriptionHistoryPage,
@@ -60,8 +71,16 @@ import {
   AdvisoryBoardVotingView,
   VendorReviewView,
   ElderOversightPanel,
+  LearningPathwaysView,
+  PathwayDetailView,
+  CommunityMentorshipView,
   VendorProductListView,
   VendorOrderListView,
+  MyOrdersView,
+  MyDownloadsView,
+  BulkOrderView,
+  VendorEarningsView,
+  VendorAnalyticsView,
   MySeekersView,
   ServiceOfferingView,
   TempleConnectionView,
@@ -86,6 +105,7 @@ import {
   AppWrapper,
   HomePage,
   TempleDetailPage,
+  TempleManagementPage,
   CircleDetailPage,
   ForumThreadPage,
   AcademyPage,
@@ -214,6 +234,15 @@ function App() {
                           <VendorDirectoryPage />
                         </React.Suspense>
                       } />
+                      {/* VENDOR_BACKLOG.md VND-016: public storefront, distinct from
+                          the vendor's own /vendor/dashboard operations views. */}
+                      <Route path="/vendors/:vendorId" element={
+                        <React.Suspense fallback={<LoadingSpinner />}>
+                          <ErrorBoundary>
+                            <VendorStorefrontPage />
+                          </ErrorBoundary>
+                        </React.Suspense>
+                      } />
                       <Route path="/client/dashboard" element={
                         <React.Suspense fallback={<LoadingSpinner />}>
                           <ErrorBoundary>
@@ -232,15 +261,10 @@ function App() {
                           </ErrorBoundary>
                         </React.Suspense>
                       } />
-                      <Route path="/personal-dashboard" element={
-                        <React.Suspense fallback={<LoadingSpinner />}>
-                          <ErrorBoundary>
-                            <ProtectedRoute allowedRoles={[UserRole.CLIENT, UserRole.ADMIN]}>
-                              <PersonalDashboardView />
-                            </ProtectedRoute>
-                          </ErrorBoundary>
-                        </React.Suspense>
-                      } />
+                      {/* Byte-identical duplicate of /client/dashboard (the canonical
+                          path getDashboardPathForRole actually uses) -- kept as a
+                          redirect in case anything still links to the old URL. */}
+                      <Route path="/personal-dashboard" element={<Navigate to="/client/dashboard" replace />} />
                       <Route path="/client/consultations" element={
                         <React.Suspense fallback={<LoadingSpinner />}>
                           <ErrorBoundary>
@@ -370,6 +394,15 @@ function App() {
                           </ErrorBoundary>
                         </React.Suspense>
                       } />
+                      <Route path="/temples/:slug/manage" element={
+                        <React.Suspense fallback={<LoadingSpinner />}>
+                          <ErrorBoundary>
+                            <ProtectedRoute allowedRoles={['BABALAWO', 'ADMIN'] as UserRole[]}>
+                              <TempleManagementPage />
+                            </ProtectedRoute>
+                          </ErrorBoundary>
+                        </React.Suspense>
+                      } />
                       <Route path="/babalawo" element={
                         <React.Suspense fallback={<LoadingSpinner />}>
                           <ErrorBoundary>
@@ -391,6 +424,41 @@ function App() {
                           </ErrorBoundary>
                         </React.Suspense>
                       } />
+                      <Route path="/directory" element={
+                        <React.Suspense fallback={<LoadingSpinner />}>
+                          <ErrorBoundary>
+                            <MemberDirectoryView />
+                          </ErrorBoundary>
+                        </React.Suspense>
+                      } />
+                      <Route path="/remembrance-wall" element={
+                        <React.Suspense fallback={<LoadingSpinner />}>
+                          <ErrorBoundary>
+                            <RemembranceWallView />
+                          </ErrorBoundary>
+                        </React.Suspense>
+                      } />
+                      <Route path="/wellbeing" element={
+                        <React.Suspense fallback={<LoadingSpinner />}>
+                          <ErrorBoundary>
+                            <WellbeingView />
+                          </ErrorBoundary>
+                        </React.Suspense>
+                      } />
+                      <Route path="/dreams" element={
+                        <React.Suspense fallback={<LoadingSpinner />}>
+                          <ErrorBoundary>
+                            <DreamJournalView />
+                          </ErrorBoundary>
+                        </React.Suspense>
+                      } />
+                      <Route path="/healing" element={
+                        <React.Suspense fallback={<LoadingSpinner />}>
+                          <ErrorBoundary>
+                            <HealingView />
+                          </ErrorBoundary>
+                        </React.Suspense>
+                      } />
                       <Route path="/forum" element={
                         <React.Suspense fallback={<LoadingSpinner />}>
                           <ErrorBoundary>
@@ -402,6 +470,27 @@ function App() {
                         <React.Suspense fallback={<LoadingSpinner />}>
                           <ErrorBoundary>
                             <ForumThreadPage />
+                          </ErrorBoundary>
+                        </React.Suspense>
+                      } />
+                      <Route path="/forum/pathways" element={
+                        <React.Suspense fallback={<LoadingSpinner />}>
+                          <ErrorBoundary>
+                            <LearningPathwaysView />
+                          </ErrorBoundary>
+                        </React.Suspense>
+                      } />
+                      <Route path="/forum/pathways/:seriesName" element={
+                        <React.Suspense fallback={<LoadingSpinner />}>
+                          <ErrorBoundary>
+                            <PathwayDetailView />
+                          </ErrorBoundary>
+                        </React.Suspense>
+                      } />
+                      <Route path="/community/mentorship" element={
+                        <React.Suspense fallback={<LoadingSpinner />}>
+                          <ErrorBoundary>
+                            <CommunityMentorshipView />
                           </ErrorBoundary>
                         </React.Suspense>
                       } />
@@ -532,24 +621,12 @@ function App() {
                           </ErrorBoundary>
                         </React.Suspense>
                       } />
-                      <Route path="/practitioner/seekers" element={
-                        <React.Suspense fallback={<LoadingSpinner />}>
-                          <ErrorBoundary>
-                            <ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}>
-                              <PractitionerDashboard initialTab="seekers" />
-                            </ProtectedRoute>
-                          </ErrorBoundary>
-                        </React.Suspense>
-                      } />
-                      <Route path="/practitioner/clients" element={
-                        <React.Suspense fallback={<LoadingSpinner />}>
-                          <ErrorBoundary>
-                            <ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}>
-                              <PractitionerDashboard initialTab="seekers" />
-                            </ProtectedRoute>
-                          </ErrorBoundary>
-                        </React.Suspense>
-                      } />
+                      {/* Both used to render a bare-bones client list (PractitionerDashboard's
+                          'seekers' tab) duplicating the fuller MySeekersView (timeline, notes,
+                          invite) one click away in the sidebar -- redirecting instead of
+                          maintaining two "my clients" UIs. */}
+                      <Route path="/practitioner/seekers" element={<Navigate to="/practitioner/my-seekers" replace />} />
+                      <Route path="/practitioner/clients" element={<Navigate to="/practitioner/my-seekers" replace />} />
                       <Route path="/practitioner/clients/invite" element={
                         <React.Suspense fallback={<LoadingSpinner />}>
                           <ErrorBoundary>
@@ -559,24 +636,10 @@ function App() {
                           </ErrorBoundary>
                         </React.Suspense>
                       } />
-                      <Route path="/practitioner/services" element={
-                        <React.Suspense fallback={<LoadingSpinner />}>
-                          <ErrorBoundary>
-                            <ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}>
-                              <PractitionerDashboard initialTab="services" />
-                            </ProtectedRoute>
-                          </ErrorBoundary>
-                        </React.Suspense>
-                      } />
-                      <Route path="/practitioner/temple" element={
-                        <React.Suspense fallback={<LoadingSpinner />}>
-                          <ErrorBoundary>
-                            <ProtectedRoute allowedRoles={['BABALAWO'] as UserRole[]}>
-                              <PractitionerDashboard initialTab="temple" />
-                            </ProtectedRoute>
-                          </ErrorBoundary>
-                        </React.Suspense>
-                      } />
+                      {/* Both used to render a static placeholder card with a dead,
+                          onClick-less button, duplicating the real, wired-up pages below. */}
+                      <Route path="/practitioner/services" element={<Navigate to="/practitioner/service-offering" replace />} />
+                      <Route path="/practitioner/temple" element={<Navigate to="/practitioner/temple-connection" replace />} />
                       <Route path="/practitioner/analytics" element={
                         <React.Suspense fallback={<LoadingSpinner />}>
                           <ErrorBoundary>
@@ -640,6 +703,26 @@ function App() {
                           </ErrorBoundary>
                         </React.Suspense>
                       } />
+                      {/* VENDOR_BACKLOG.md VND-001 */}
+                      <Route path="/vendor/earnings" element={
+                        <React.Suspense fallback={<LoadingSpinner />}>
+                          <ErrorBoundary>
+                            <ProtectedRoute allowedRoles={['VENDOR'] as UserRole[]}>
+                              <VendorEarningsView />
+                            </ProtectedRoute>
+                          </ErrorBoundary>
+                        </React.Suspense>
+                      } />
+                      {/* VENDOR_BACKLOG.md VND-013 */}
+                      <Route path="/vendor/analytics" element={
+                        <React.Suspense fallback={<LoadingSpinner />}>
+                          <ErrorBoundary>
+                            <ProtectedRoute allowedRoles={['VENDOR'] as UserRole[]}>
+                              <VendorAnalyticsView />
+                            </ProtectedRoute>
+                          </ErrorBoundary>
+                        </React.Suspense>
+                      } />
                       <Route path="/vendor/products" element={
                         <React.Suspense fallback={<LoadingSpinner />}>
                           <ErrorBoundary>
@@ -649,15 +732,9 @@ function App() {
                           </ErrorBoundary>
                         </React.Suspense>
                       } />
-                      <Route path="/vendor/products/add" element={
-                        <React.Suspense fallback={<LoadingSpinner />}>
-                          <ErrorBoundary>
-                            <ProtectedRoute allowedRoles={['VENDOR'] as UserRole[]}>
-                              <VendorProductListView mode="create" />
-                            </ProtectedRoute>
-                          </ErrorBoundary>
-                        </React.Suspense>
-                      } />
+                      {/* Identical duplicate of /vendor/products/new (the one actually
+                          linked from the vendor onboarding checklist) -- kept as a redirect. */}
+                      <Route path="/vendor/products/add" element={<Navigate to="/vendor/products/new" replace />} />
                       <Route path="/vendor/products/new" element={
                         <React.Suspense fallback={<LoadingSpinner />}>
                           <ErrorBoundary>
@@ -672,15 +749,6 @@ function App() {
                           <ErrorBoundary>
                             <ProtectedRoute allowedRoles={['VENDOR'] as UserRole[]}>
                               <VendorProductListView mode="edit" />
-                            </ProtectedRoute>
-                          </ErrorBoundary>
-                        </React.Suspense>
-                      } />
-                      <Route path="/vendor/workshop" element={
-                        <React.Suspense fallback={<LoadingSpinner />}>
-                          <ErrorBoundary>
-                            <ProtectedRoute allowedRoles={['VENDOR'] as UserRole[]}>
-                              <VendorDashboardView initialTab="inventory" />
                             </ProtectedRoute>
                           </ErrorBoundary>
                         </React.Suspense>
@@ -782,6 +850,34 @@ function App() {
                           </ErrorBoundary>
                         </React.Suspense>
                       } />
+                      <Route path="/marketplace/stories" element={
+                        <React.Suspense fallback={<LoadingSpinner />}>
+                          <ErrorBoundary>
+                            <StoriesPage />
+                          </ErrorBoundary>
+                        </React.Suspense>
+                      } />
+                      <Route path="/marketplace/bundles/:bundleId" element={
+                        <React.Suspense fallback={<LoadingSpinner />}>
+                          <ErrorBoundary>
+                            <BundleDetailPage />
+                          </ErrorBoundary>
+                        </React.Suspense>
+                      } />
+                      <Route path="/marketplace/partnerships" element={
+                        <React.Suspense fallback={<LoadingSpinner />}>
+                          <ErrorBoundary>
+                            <PartnershipsPage />
+                          </ErrorBoundary>
+                        </React.Suspense>
+                      } />
+                      <Route path="/marketplace/partnerships/:partnershipId" element={
+                        <React.Suspense fallback={<LoadingSpinner />}>
+                          <ErrorBoundary>
+                            <PartnershipDetailPage />
+                          </ErrorBoundary>
+                        </React.Suspense>
+                      } />
                       <Route path="/marketplace/:productId" element={
                         <React.Suspense fallback={<LoadingSpinner />}>
                           <ErrorBoundary>
@@ -793,6 +889,34 @@ function App() {
                         <React.Suspense fallback={<LoadingSpinner />}>
                           <ErrorBoundary>
                             <CartPage />
+                          </ErrorBoundary>
+                        </React.Suspense>
+                      } />
+                      {/* VENDOR_BACKLOG.md VND-010: no customer-facing order
+                          history existed anywhere in the app before this --
+                          also the entry point for requesting a return. */}
+                      <Route path="/my-orders" element={
+                        <React.Suspense fallback={<LoadingSpinner />}>
+                          <ErrorBoundary>
+                            <MyOrdersView />
+                          </ErrorBoundary>
+                        </React.Suspense>
+                      } />
+                      {/* VENDOR_BACKLOG.md VND-024 */}
+                      <Route path="/my-downloads" element={
+                        <React.Suspense fallback={<LoadingSpinner />}>
+                          <ErrorBoundary>
+                            <MyDownloadsView />
+                          </ErrorBoundary>
+                        </React.Suspense>
+                      } />
+                      {/* VENDOR_BACKLOG.md VND-025 */}
+                      <Route path="/bulk-order/:productId" element={
+                        <React.Suspense fallback={<LoadingSpinner />}>
+                          <ErrorBoundary>
+                            <ProtectedRoute allowedRoles={['BABALAWO', 'ADMIN'] as UserRole[]}>
+                              <BulkOrderView />
+                            </ProtectedRoute>
                           </ErrorBoundary>
                         </React.Suspense>
                       } />
@@ -850,6 +974,13 @@ function App() {
                         <React.Suspense fallback={<LoadingSpinner />}>
                           <ErrorBoundary>
                             <YorubaWordDetailPage />
+                          </ErrorBoundary>
+                        </React.Suspense>
+                      } />
+                      <Route path="/yoruba-glossary" element={
+                        <React.Suspense fallback={<LoadingSpinner />}>
+                          <ErrorBoundary>
+                            <YorubaGlossaryPage />
                           </ErrorBoundary>
                         </React.Suspense>
                       } />

@@ -25,7 +25,7 @@ const InviteClientView: React.FC = () => {
   const { data: results = [], isLoading: searching } = useQuery<SearchUser[]>({
     queryKey: ['user-search', searchQuery],
     queryFn: async () => {
-      const res = await api.get('/users', { params: { search: searchQuery, role: 'CLIENT' } });
+      const res = await api.get('/babalawo-client/search-clients', { params: { search: searchQuery } });
       const payload = res.data;
       return Array.isArray(payload) ? payload : (payload.users ?? payload.data ?? []);
     },

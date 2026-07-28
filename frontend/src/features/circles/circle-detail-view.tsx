@@ -133,6 +133,16 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({
       try {
         await api.post(`/circles/${circle.id}/join`);
       } catch (error) {
+        // V8-204: this demo-fallback (see circle-membership.utils.ts's
+        // `demo-circle-membership:` key) previously swallowed EVERY error
+        // unconditionally, including a real 403 from a FREE user correctly
+        // rejected from a Devoted-only circle -- the mutation always
+        // resolved as "success" and the UI showed "Joined circle" even
+        // though the backend rejected it. Only fake success in actual demo
+        // mode; a real user's real rejection must reach onError.
+        if (!isDevModeActive()) {
+          throw error;
+        }
         setSessionMembership(circle.id, true, user?.role);
         const cachedMembership = getSessionMembership(circle.id);
         const updatedCircle: CircleDetail = {
@@ -313,6 +323,7 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({
       >
         {activeTab === 'feed' && (
           <CircleFeedTab
+            circleId={circle?.id}
             feedPosts={feedPosts}
             isMember={isMember ?? false}
             isPatron={isPatron ?? false}
@@ -329,6 +340,7 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({
         {activeTab === 'events' && (
           <CircleEventsTab
             events={circleEvents}
+            circleId={circle.id}
             isAdmin={isAdmin}
             onApproveEvent={(eventId) =>
               approveEventMutation.mutate(eventId)
@@ -340,7 +352,6 @@ const CircleDetailView: React.FC<CircleDetailViewProps> = ({
         {activeTab === 'resources' && (
           <CircleResourcesTab
             resources={circle.resources}
-            isAdmin={isAdmin}
           />
         )}
       </motion.div>

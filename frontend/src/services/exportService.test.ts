@@ -41,31 +41,38 @@ describe('ExportService', () => {
     expect(new ExportService()).toBeInstanceOf(ExportService);
   });
 
-  it('should export data as JSON', async () => {
-    const service = new ExportService();
-    const data: ExportableData = { data: [{ id: 1, name: 'Test' }] };
+  it('should export data as JSON', () => {
+    const data: ExportableData = { title: 'test', data: [{ id: 1, name: 'Test' }] };
     const options: ExportOptions = { format: 'json', filename: 'test' };
 
-    await service.export(data, options);
+    ExportService.exportAsJSON(data, options);
 
     expect(mockCreateObjectURL).toHaveBeenCalled();
   });
 
-  it('should export data as CSV', async () => {
-    const service = new ExportService();
-    const data: ExportableData = { data: [{ id: 1, name: 'Test' }] };
+  it('should export data as CSV', () => {
+    const data: ExportableData = { title: 'test', data: [{ id: 1, name: 'Test' }] };
     const options: ExportOptions = { format: 'csv', filename: 'test' };
 
-    await service.export(data, options);
+    ExportService.exportAsCSV(data, options);
 
     expect(mockCreateObjectURL).toHaveBeenCalled();
   });
 
-  it('should throw an error for unsupported formats', async () => {
-    const service = new ExportService();
-    const data: ExportableData = { data: [{ id: 1, name: 'Test' }] };
-    const options: ExportOptions = { format: 'xml' as any, filename: 'test' };
+  it('reports failure via onError instead of throwing when export fails', () => {
+    const data = { title: 'test', data: null } as unknown as ExportableData;
+    const onError = vi.fn();
+    const options: ExportOptions = { format: 'csv', filename: 'test', onError };
 
-    await expect(service.export(data, options)).rejects.toThrow('Unsupported format: xml');
+    // array[0] is undefined when data.data is null, so Object.keys(array[0] || {})
+    // succeeds but the resulting single-row CSV would come from bad input --
+    // force a real failure by making the mocked URL API throw.
+    mockCreateObjectURL.mockImplementationOnce(() => {
+      throw new Error('boom');
+    });
+
+    ExportService.exportAsCSV(data, options);
+
+    expect(onError).toHaveBeenCalledWith('Failed to export as CSV');
   });
 });

@@ -7,6 +7,7 @@ import { useToast } from '@/shared/components/toast';
 import api from '@/lib/api';
 import { useSubscription } from '@/features/subscription/use-subscription';
 import ReferralPanel from '@/features/devoted/referral-panel';
+import ProfileViewsPanel from '@/features/devoted/profile-views-panel';
 import { GdprSettingsPanel } from '@/features/gdpr/GdprSettingsPanel';
 
 type SettingsState = {
@@ -64,6 +65,8 @@ const SettingsPage: React.FC = () => {
   const [slugChecking, setSlugChecking] = useState(false);
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [whatsappEnabled, setWhatsappEnabled] = useState(true);
+  const [showInDirectory, setShowInDirectory] = useState(false);
+  const [answersElderQuestions, setAnswersElderQuestions] = useState(false);
   const [showSetPassword, setShowSetPassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [setPasswordError, setSetPasswordError] = useState('');
@@ -88,6 +91,8 @@ const SettingsPage: React.FC = () => {
     if (userProfile) {
       setWhatsappNumber(userProfile.whatsappNumber || '');
       setWhatsappEnabled(userProfile.whatsappEnabled ?? true);
+      setShowInDirectory(userProfile.showInDirectory ?? false);
+      setAnswersElderQuestions(userProfile.answersElderQuestions ?? false);
     }
   }, [userProfile]);
 
@@ -116,6 +121,30 @@ const SettingsPage: React.FC = () => {
     },
     onError: (err: any) => {
       toast.error(err?.response?.data?.message || 'Failed to save username');
+    },
+  });
+
+  // COMMUNITY_BACKLOG.md FOR-Q2: opt-in toggle for the Member Directory
+  const saveDirectoryOptInMutation = useMutation({
+    mutationFn: (value: boolean) => api.patch(`/users/${user!.id}`, { showInDirectory: value }),
+    onSuccess: (_data, value) => {
+      queryClient.invalidateQueries({ queryKey: ['user-settings', user?.id] });
+      toast.success(value ? 'You now appear in the Member Directory' : 'Removed from the Member Directory');
+    },
+    onError: () => {
+      toast.error('Failed to update directory visibility');
+    },
+  });
+
+  // COMMUNITY_BACKLOG.md FOR-Q3: "Ask an Elder" opt-in
+  const saveAnswersElderQuestionsMutation = useMutation({
+    mutationFn: (value: boolean) => api.patch(`/users/${user!.id}`, { answersElderQuestions: value }),
+    onSuccess: (_data, value) => {
+      queryClient.invalidateQueries({ queryKey: ['user-settings', user?.id] });
+      toast.success(value ? 'You will now appear as available to answer Seeker Questions' : 'You are no longer listed as answering Seeker Questions');
+    },
+    onError: () => {
+      toast.error('Failed to update this setting');
     },
   });
 
@@ -491,6 +520,9 @@ const SettingsPage: React.FC = () => {
                         <ArrowRight size={16} />
                       </button>
 
+                      {/* Who visited your profile */}
+                      <ProfileViewsPanel />
+
                       {/* Referral panel */}
                       <div className="rounded-2xl border border-border bg-card p-6">
                         <ReferralPanel />
@@ -540,6 +572,9 @@ const SettingsPage: React.FC = () => {
                           <Sparkles size={15} /> Become Devoted <ArrowRight size={15} />
                         </button>
                       </div>
+
+                      {/* Who visited your profile — blurred teaser for FREE */}
+                      <ProfileViewsPanel />
 
                       {/* Referral panel — available to all users */}
                       <div className="rounded-2xl border border-border bg-card p-6">
@@ -744,6 +779,40 @@ const SettingsPage: React.FC = () => {
                             className="w-5 h-5 text-highlight rounded focus:ring-highlight"
                           />
                         </label>
+
+                        <label className="flex items-center justify-between p-4 bg-muted/40 rounded-xl">
+                          <div>
+                            <span className="font-medium text-stone-700 dark:text-stone-300">Show me in the Community Directory</span>
+                            <p className="text-xs text-muted-foreground mt-0.5">Opt-in only — off by default. Lets other members find and connect with you.</p>
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={showInDirectory}
+                            onChange={(e) => {
+                              setShowInDirectory(e.target.checked);
+                              saveDirectoryOptInMutation.mutate(e.target.checked);
+                            }}
+                            className="w-5 h-5 text-highlight rounded focus:ring-highlight"
+                          />
+                        </label>
+
+                        {user?.role === 'BABALAWO' && (
+                          <label className="flex items-center justify-between p-4 bg-muted/40 rounded-xl">
+                            <div>
+                              <span className="font-medium text-stone-700 dark:text-stone-300">Answer Seeker Questions</span>
+                              <p className="text-xs text-muted-foreground mt-0.5">Opt-in — appear as an elder available to answer questions in the Forum's Seeker Questions category.</p>
+                            </div>
+                            <input
+                              type="checkbox"
+                              checked={answersElderQuestions}
+                              onChange={(e) => {
+                                setAnswersElderQuestions(e.target.checked);
+                                saveAnswersElderQuestionsMutation.mutate(e.target.checked);
+                              }}
+                              className="w-5 h-5 text-highlight rounded focus:ring-highlight"
+                            />
+                          </label>
+                        )}
                       </div>
                     </div>
                   </div>

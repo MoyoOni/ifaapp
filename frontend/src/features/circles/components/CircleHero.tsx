@@ -7,7 +7,6 @@ import {
   Globe,
   Lock,
   UserPlus,
-  Settings,
   LogOut,
   Loader2,
 } from 'lucide-react';
@@ -33,7 +32,6 @@ export const CircleHero: React.FC<CircleHeroProps> = ({
   circle,
   onBack,
   isMember,
-  isAdmin,
   isCreator,
   isPatron = false,
   onJoin,
@@ -143,15 +141,6 @@ export const CircleHero: React.FC<CircleHeroProps> = ({
                   <span className="flex items-center gap-1.5 px-4 py-2.5 bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 rounded-xl font-bold text-sm">
                     ✦ Circle Patron
                   </span>
-                )}
-                {isAdmin && (
-                  <button
-                    className="p-2.5 bg-muted hover:bg-muted rounded-xl transition-colors"
-                    title="Circle Settings"
-                    aria-label="Circle Settings"
-                  >
-                    <Settings size={20} className="text-muted-foreground" />
-                  </button>
                 )}
                 {isMember ? (
                   <button

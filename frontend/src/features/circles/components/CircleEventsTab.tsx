@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Calendar,
@@ -22,6 +23,7 @@ interface CircleEvent {
 
 interface CircleEventsTabProps {
   events: CircleEvent[];
+  circleId: string;
   isAdmin: boolean;
   onApproveEvent: (eventId: string) => void;
   isApprovingEvent: boolean;
@@ -40,6 +42,7 @@ const formatEventDate = (dateString: string) => {
 
 export const CircleEventsTab: React.FC<CircleEventsTabProps> = ({
   events,
+  circleId,
   isAdmin,
   onApproveEvent,
   isApprovingEvent,
@@ -49,9 +52,12 @@ export const CircleEventsTab: React.FC<CircleEventsTabProps> = ({
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-foreground">Circle Events</h2>
         {isAdmin && (
-          <button className="px-4 py-2 bg-primary/10 text-primary rounded-lg font-medium hover:bg-primary/20 transition-colors">
+          <Link
+            to={`/events/create?circleId=${circleId}`}
+            className="px-4 py-2 bg-primary/10 text-primary rounded-lg font-medium hover:bg-primary/20 transition-colors"
+          >
             + Create Event
-          </button>
+          </Link>
         )}
       </div>
       {events.length === 0 ? (

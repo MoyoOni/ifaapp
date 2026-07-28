@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useMutation } from '@tanstack/react-query';
 import { Users, UserPlus, Globe, Lock, MapPin, ChevronRight, Sparkles } from 'lucide-react';
 import { FeatureHeader } from '@/shared/components/feature-header';
 import { useNavigate } from 'react-router-dom';
@@ -7,7 +8,8 @@ import { useAuth } from '@/shared/hooks/use-auth';
 import { useCirclesQuery } from '@/shared/hooks/queries';
 import { useToast } from '@/shared/components/toast';
 import { UserRole } from '@common';
-import { Input, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, Button } from '@/shared/components/ui';
+import { Input, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, Button, Textarea } from '@/shared/components/ui';
+import api from '@/lib/api';
 import { Skeleton, SkeletonText } from '@/shared/components/skeleton';
 import { useSubscription } from '@/features/subscription/use-subscription';
 
@@ -28,6 +30,20 @@ const CircleDirectory: React.FC<CircleDirectoryProps> = ({ onSelectCircle, onCre
   const [searchQuery, setSearchQuery] = useState('');
   const [privacyFilter, setPrivacyFilter] = useState<string>('all');
   const [topicFilter, setTopicFilter] = useState<string>('');
+  const [showSuggestForm, setShowSuggestForm] = useState(false);
+  const [suggestTitle, setSuggestTitle] = useState('');
+  const [suggestDescription, setSuggestDescription] = useState('');
+
+  const suggestCircleMutation = useMutation({
+    mutationFn: () => api.post('/circles/suggestions', { title: suggestTitle, description: suggestDescription }),
+    onSuccess: () => {
+      toast.success('Circle suggestion submitted! An admin will review it. Àṣẹ!');
+      setShowSuggestForm(false);
+      setSuggestTitle('');
+      setSuggestDescription('');
+    },
+    onError: (err: Error) => toast.error(`Failed to submit suggestion — ${err.message}`),
+  });
 
   // Use the new reusable query hook
   const { data: circles = [], isLoading } = useCirclesQuery({
@@ -184,14 +200,38 @@ const CircleDirectory: React.FC<CircleDirectoryProps> = ({ onSelectCircle, onCre
           <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-[1.25rem] font-bold text-foreground mb-2">No circles found</h3>
           <p className="text-[0.875rem] text-muted-foreground mb-6">Try adjusting your search or filters</p>
-          {user?.role === UserRole.CLIENT && (
+          {user?.role === UserRole.CLIENT && !showSuggestForm && (
             <Button
               variant="outline"
               className="text-[0.875rem]"
-              onClick={() => toast.success('Circle suggestion submitted! Àṣẹ!')}
+              onClick={() => setShowSuggestForm(true)}
             >
               Suggest a New Circle
             </Button>
+          )}
+          {user?.role === UserRole.CLIENT && showSuggestForm && (
+            <div className="max-w-md mx-auto text-left space-y-3">
+              <Input
+                placeholder="Circle name"
+                value={suggestTitle}
+                onChange={(e) => setSuggestTitle(e.target.value)}
+              />
+              <Textarea
+                placeholder="What's this circle for? Who's it for?"
+                rows={3}
+                value={suggestDescription}
+                onChange={(e) => setSuggestDescription(e.target.value)}
+              />
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowSuggestForm(false)}>Cancel</Button>
+                <Button
+                  disabled={suggestTitle.trim().length < 3 || suggestDescription.trim().length < 10 || suggestCircleMutation.isPending}
+                  onClick={() => suggestCircleMutation.mutate()}
+                >
+                  Submit Suggestion
+                </Button>
+              </div>
+            </div>
           )}
         </motion.div>
       ) : (

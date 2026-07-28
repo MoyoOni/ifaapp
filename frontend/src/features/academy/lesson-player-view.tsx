@@ -4,6 +4,8 @@ import { ArrowLeft, CheckCircle, Clock, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/shared/components/toast';
 import { isDevModeActive } from '@/shared/utils/dev-mode';
+import { useSubscription } from '@/features/subscription/use-subscription';
+import { UpgradePrompt } from '@/features/subscription/feature-gate';
 // import { useAuth } from '@/shared/hooks/use-auth';
 
 interface Lesson {
@@ -25,6 +27,7 @@ interface Course {
   title: string;
   instructorId: string;
   lessons: Lesson[];
+  isDevoted?: boolean;
   instructor: {
     name: string;
     yorubaName?: string;
@@ -74,6 +77,7 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
   const audioRef = useRef<HTMLAudioElement>(null);
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { isDevoted } = useSubscription();
 
   // Fetch enrollment with demo fallback
   const { data: enrollment, isLoading: enrollmentLoading } = useQuery<Enrollment>({
@@ -105,15 +109,23 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
     enabled: !!enrollment?.courseId && !isDevModeActive(),
   });
 
-  // Fetch current lesson with demo fallback
-  const { data: currentLesson } = useQuery<Lesson>({
+  // Fetch current lesson with demo fallback. V8-203: a FREE user who lands
+  // on a lesson of a Devoted-only course (e.g. an enrollment that predates
+  // the backend's access gate, or a direct deep link) previously got this
+  // query silently failing with a 403 and no handling at all -- the header/
+  // sidebar shell would render but the main content area stayed permanently
+  // blank, with no explanation. isError/error below let the render swap in
+  // a real UpgradePrompt instead.
+  const { data: currentLesson, isError: isLessonError, error: lessonError } = useQuery<Lesson>({
     queryKey: ['academy-lesson', currentLessonId],
     queryFn: async () => {
       const response = await api.get(`/academy/lessons/${currentLessonId}`);
       return response.data;
     },
     enabled: !!currentLessonId && !isDevModeActive(),
+    retry: false,
   });
+  const isLessonLocked = (lessonError as any)?.response?.status === 403 || (!!course?.isDevoted && !isDevoted);
 
   // Fetch completed lessons with demo fallback
   const { data: completedLessons = [] } = useQuery<LessonCompletion[]>({
@@ -213,7 +225,11 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Lesson Content - Main Area */}
           <div className="lg:col-span-3 space-y-6">
-            {currentLesson && (
+            {isLessonLocked ? (
+              <div className="bg-card border border-amber-200 dark:border-amber-800 rounded-xl p-6">
+                <UpgradePrompt message={`"${course.title}" is a Devoted-only course.`} />
+              </div>
+            ) : currentLesson && (
               <>
                 {/* Lesson Title */}
                 <div>

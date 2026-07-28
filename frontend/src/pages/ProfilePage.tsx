@@ -1,7 +1,10 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
 import PublicProfileView from '@/features/profile/public-profile-view';
 import { useAuth } from '@/shared/hooks/use-auth';
+import { useToast } from '@/shared/components/toast';
+import api from '@/lib/api';
 import { User, AlertTriangle } from 'lucide-react';
 import ErrorBoundary from '@/shared/components/error-boundary';
 
@@ -14,13 +17,23 @@ const ProfilePage: React.FC = () => {
   const { userId: userIdParam } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
+  const toast = useToast();
 
   // If no userId in URL, show current user's profile
   const targetUserId = userIdParam || currentUser?.id || '';
 
+  const addFriendMutation = useMutation({
+    mutationFn: (toUserId: string) => api.post(`/users/directory/connect/${toUserId}`, {}),
+    onSuccess: () => toast.success('Friend request sent'),
+    onError: (err: Error) => toast.error(`Could not send friend request — ${err.message}`),
+  });
+
   // Navigation handler for internal links with enhanced routing
   const handleNavigate = (view: string, params?: string) => {
     switch (view) {
+      case 'add-friend':
+        if (params) addFriendMutation.mutate(params);
+        break;
       case 'booking-flow':
         if (params) {
           navigate(`/booking/${params}`);

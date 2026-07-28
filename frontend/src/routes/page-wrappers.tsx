@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Outlet, useNavigate, useParams } from 'react-router-dom';
+import { Outlet, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import NotFound from '../pages/not-found';
 import { SidebarLayout } from '../shared/components/sidebar-layout';
 import { useAuth } from '../shared/hooks/use-auth';
@@ -12,8 +12,11 @@ import { NotificationProvider } from '../contexts/notification-context';
 import { SearchProvider } from '../contexts/search-context';
 import { PreferencesProvider } from '../contexts/preferences-context';
 import { CacheDebugger } from '@/components/CacheDebugger';
+import { useQuery } from '@tanstack/react-query';
+import api from '@/lib/api';
 import {
   TempleDetailView,
+  TempleManagementView,
   ThreadView,
   AcademyView,
   CourseDetailView,
@@ -119,8 +122,36 @@ export const TempleDetailPage: React.FC = () => {
       onSelectBabalawo={(id: string) => navigate(`/booking/${id}`)}
       onViewBabalawoProfile={(id: string) => navigate(`/profile/${id}`)}
       onSelectEvent={(eventSlug: string) => navigate(`/events/${eventSlug}`)}
+      onManage={() => navigate(`/temples/${slug}/manage`)}
     />
   );
+};
+
+// Temple founders/admins editing their temple -- temple-management-view.tsx
+// takes a templeId, but this route only has the slug, so resolve it first.
+export const TempleManagementPage: React.FC = () => {
+  const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
+
+  const { data: temple, isLoading } = useQuery<{ id: string }>({
+    queryKey: ['temple-slug-resolve', slug],
+    queryFn: async () => (await api.get(`/temples/slug/${slug}`)).data,
+    enabled: !!slug,
+  });
+
+  if (!slug) {
+    return <NotFound />;
+  }
+
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
+
+  if (!temple) {
+    return <NotFound />;
+  }
+
+  return <TempleManagementView templeId={temple.id} onBack={() => navigate(`/temples/${slug}`)} />;
 };
 
 export const CircleDetailPage: React.FC = () => {
@@ -210,11 +241,13 @@ export const YorubaWordDetailPage: React.FC = () => {
 
 export const EventCreatePage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const circleId = searchParams.get('circleId') ?? undefined;
 
   return (
     <div className="min-h-screen bg-background text-foreground p-6"> {/* Using theme variables */}
       <div className="max-w-4xl mx-auto">
-        <EventCreationForm onSuccess={() => navigate('/events')} onCancel={() => navigate('/events')} />
+        <EventCreationForm circleId={circleId} onSuccess={() => navigate('/events')} onCancel={() => navigate('/events')} />
       </div>
     </div>
   );
@@ -286,7 +319,7 @@ export const PersonalAwoDashboardPage: React.FC = () => {
       clientId={user.id}
       onRequestConsultation={() => navigate('/babalawo')}
       onViewDocuments={() => navigate('/guidance-plans')}
-      onChangeAwo={() => navigate('/discovery')}
+      onChangeAwo={() => navigate('/babalawo')}
     />
   );
 };

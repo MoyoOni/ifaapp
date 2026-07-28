@@ -30,6 +30,7 @@ interface UserProfile {
   reviewCount?: number;
   services?: any[];
   specialization?: string[];
+  availabilityNote?: string;
   vendorId?: string;
   phone?: string;
   interests?: string[];

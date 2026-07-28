@@ -78,37 +78,6 @@ const PersonalDashboardView: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
-        {/* Welcome Banner — personalized for first 30 days */}
-        {user && (
-          <WelcomeBanner
-            role={user.role}
-            intentTags={user.intentTags}
-            joinedAt={user.createdAt}
-          />
-        )}
-        {/* First Steps Checklist — visible for new users */}
-        {user && (
-          <FirstStepsChecklist
-            userId={user.id}
-            role={user.role}
-          />
-        )}
-        {/* Profile completeness nudge */}
-        {user && (
-          <div className="mb-6">
-            <ProfileCompletenessCard userData={user} userRole={user.role} compact />
-          </div>
-        )}
-        {/* Smart Journey CTA — context-aware next step */}
-        <JourneyCtaCard />
-        {/* Personal Awo Panel — shows saved practitioner or CTA to find one */}
-        <div className="mb-6">
-          <PersonalAwoPanel />
-        </div>
-        {/* Referral panel — accessible to all clients */}
-        <div className="mb-6 bg-card border border-border rounded-2xl p-5">
-          <ReferralPanel />
-        </div>
         {/* Personal Header */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
@@ -194,7 +163,7 @@ const PersonalDashboardView: React.FC = () => {
         </motion.div>
 
         {/* Personal Journey Sections */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
           {/* Left Column: Personal Activities */}
           <div className="lg:col-span-2 space-y-6">
             <motion.div
@@ -483,6 +452,40 @@ const PersonalDashboardView: React.FC = () => {
             </motion.div>
           </div>
         </div>
+
+        {/* Welcome Banner — personalized for first 30 days */}
+        {user && (
+          <WelcomeBanner
+            role={user.role}
+            intentTags={user.intentTags}
+            joinedAt={user.createdAt}
+          />
+        )}
+        {/* First Steps Checklist — visible for new users */}
+        {user && (
+          <FirstStepsChecklist
+            userId={user.id}
+            role={user.role}
+          />
+        )}
+        {/* Smart Journey CTA — context-aware next step */}
+        <JourneyCtaCard />
+        {/* Personal Awo Panel — shows saved practitioner or CTA to find one */}
+        <div className="mb-6">
+          <PersonalAwoPanel />
+        </div>
+        {/* Referral panel — accessible to all clients */}
+        <div className="mb-6 bg-card border border-border rounded-2xl p-5">
+          <ReferralPanel />
+        </div>
+        {/* Profile completeness nudge — moved to the bottom of the page so
+            the actual dashboard (greeting/stats/activities above) is the
+            first thing a returning user sees, not an onboarding nudge. */}
+        {user && (
+          <div className="mb-6">
+            <ProfileCompletenessCard userData={user} userRole={user.role} compact />
+          </div>
+        )}
       </div>
     </div>
   );

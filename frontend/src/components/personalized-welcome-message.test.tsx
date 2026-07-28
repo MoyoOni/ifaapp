@@ -1,8 +1,6 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { rest } from 'msw';
-import { setupServer } from 'msw/node';
+import { vi, describe, it, expect } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import PersonalizedWelcomeMessage from './personalized-welcome-message';
 
@@ -17,32 +15,12 @@ vi.mock('@/shared/hooks/use-auth', () => ({
   }),
 }));
 
-// Mock the API
+// Mock the API (default export, matching `import api from '@/lib/api'`)
 vi.mock('@/lib/api', () => ({
-  api: {
+  default: {
     get: vi.fn(() => Promise.resolve({ data: { loginCount: 1 } })),
   },
 }));
-
-const server = setupServer(
-  rest.get('*/users/:userId', (req, res, ctx) => {
-    return res(
-      ctx.json({
-        loginCount: 1,
-        newBadgeUnlocked: false,
-        upcomingAppointmentWithin24h: false,
-      })
-    );
-  })
-);
-
-beforeEach(() => {
-  server.listen();
-});
-
-afterEach(() => {
-  server.close();
-});
 
 describe('PersonalizedWelcomeMessage', () => {
   it('renders with a welcome message', async () => {

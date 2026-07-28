@@ -1,104 +1,129 @@
 import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Edit, Plus, Trash2, Save, X } from 'lucide-react';
+import api from '@/lib/api';
+import { useAuth } from '@/shared/hooks/use-auth';
+import { useToast } from '@/shared/components/toast';
+import { Skeleton } from '@/shared/components/ui';
 
 interface ServiceOffering {
   id: string;
   name: string;
   description: string;
-  duration: number; // in minutes
-  price: number; // in naira
+  durationMinutes: number;
+  priceAmount: number;
+  priceCurrency: string;
   isActive: boolean;
   category: string;
-  maxSessionsPerDay?: number;
+  maxSessionsPerDay?: number | null;
 }
 
+type ServiceOfferingDraft = Omit<ServiceOffering, 'id' | 'priceCurrency'>;
+
+const EMPTY_DRAFT: ServiceOfferingDraft = {
+  name: '',
+  description: '',
+  durationMinutes: 30,
+  priceAmount: 5000,
+  isActive: true,
+  category: '',
+};
+
 const ServiceOfferingView: React.FC = () => {
-  const [services, setServices] = useState<ServiceOffering[]>([
-    {
-      id: '1',
-      name: 'Spiritual Consultation',
-      description: 'One-on-one consultation to address your spiritual concerns and seek guidance',
-      duration: 60,
-      price: 15000,
-      isActive: true,
-      category: 'Consultation',
-      maxSessionsPerDay: 3
-    },
-    {
-      id: '2',
-      name: 'Ancestral Healing',
-      description: 'Specialized healing session connecting with ancestral wisdom',
-      duration: 90,
-      price: 25000,
-      isActive: true,
-      category: 'Healing',
-      maxSessionsPerDay: 2
-    },
-    {
-      id: '3',
-      name: 'Cultural Education',
-      description: 'Learn about Yoruba traditions, customs, and spiritual practices',
-      duration: 45,
-      price: 10000,
-      isActive: false,
-      category: 'Education'
-    }
-  ]);
-  
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [newService, setNewService] = useState<Omit<ServiceOffering, 'id'>>({
-    name: '',
-    description: '',
-    duration: 30,
-    price: 5000,
-    isActive: true,
-    category: ''
+  const { user } = useAuth();
+  const babalawoId = user?.id ?? '';
+  const queryClient = useQueryClient();
+  const toast = useToast();
+
+  const { data: services = [], isLoading } = useQuery<ServiceOffering[]>({
+    queryKey: ['service-offerings', babalawoId],
+    queryFn: async () => (await api.get(`/babalawo/${babalawoId}/service-offerings`)).data,
+    enabled: !!babalawoId,
   });
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<ServiceOfferingDraft>(EMPTY_DRAFT);
+  const [newService, setNewService] = useState<ServiceOfferingDraft>(EMPTY_DRAFT);
   const [showAddForm, setShowAddForm] = useState(false);
 
-  const handleEdit = (id: string) => {
-    setEditingId(id);
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['service-offerings', babalawoId] });
+
+  const createMutation = useMutation({
+    mutationFn: (dto: ServiceOfferingDraft) => api.post(`/babalawo/${babalawoId}/service-offerings`, dto),
+    onSuccess: () => {
+      invalidate();
+      toast.success('Service added');
+    },
+    onError: (err: Error) => toast.error(`Failed to add service — ${err.message}`),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: Partial<ServiceOfferingDraft> }) =>
+      api.patch(`/babalawo/${babalawoId}/service-offerings/${id}`, dto),
+    onSuccess: () => {
+      invalidate();
+      toast.success('Service updated');
+    },
+    onError: (err: Error) => toast.error(`Failed to update service — ${err.message}`),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/babalawo/${babalawoId}/service-offerings/${id}`),
+    onSuccess: () => {
+      invalidate();
+      toast.success('Service removed');
+    },
+    onError: (err: Error) => toast.error(`Failed to remove service — ${err.message}`),
+  });
+
+  const handleEdit = (service: ServiceOffering) => {
+    setEditingId(service.id);
+    setEditDraft({
+      name: service.name,
+      description: service.description,
+      durationMinutes: service.durationMinutes,
+      priceAmount: service.priceAmount,
+      isActive: service.isActive,
+      category: service.category,
+      maxSessionsPerDay: service.maxSessionsPerDay,
+    });
   };
 
-  const handleSave = (_id: string) => {
+  const handleSave = (id: string) => {
+    updateMutation.mutate({ id, dto: editDraft });
     setEditingId(null);
   };
 
   const handleCancel = () => {
     setEditingId(null);
-    setNewService({
-      name: '',
-      description: '',
-      duration: 30,
-      price: 5000,
-      isActive: true,
-      category: ''
-    });
+    setNewService(EMPTY_DRAFT);
     setShowAddForm(false);
   };
 
   const handleAddService = () => {
-    const serviceToAdd = {
-      ...newService,
-      id: `service-${Date.now()}`
-    };
-    setServices([...services, serviceToAdd]);
+    createMutation.mutate(newService);
     handleCancel();
   };
 
   const handleDelete = (id: string) => {
-    setServices(services.filter(service => service.id !== id));
+    deleteMutation.mutate(id);
   };
 
-  const updateServiceField = (id: string, field: keyof ServiceOffering, value: any) => {
-    setServices(services.map(service => 
-      service.id === id ? { ...service, [field]: value } : service
-    ));
-  };
+  const getServicePrice = (price: number) => `₦${price.toLocaleString()}`;
 
-  const getServicePrice = (price: number) => {
-    return `₦${price.toLocaleString()}`;
-  };
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-64" />
+        {Array.from({ length: 2 }).map((_, idx) => (
+          <div key={idx} className="border rounded-xl p-6 bg-card space-y-3">
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-full" />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -109,7 +134,7 @@ const ServiceOfferingView: React.FC = () => {
             Manage your spiritual services and offerings
           </p>
         </div>
-        <button 
+        <button
           onClick={() => setShowAddForm(true)}
           className="px-4 py-2 bg-highlight text-white font-bold rounded-xl shadow-lg hover:bg-yellow-600 transition-colors flex items-center gap-2"
         >
@@ -121,73 +146,73 @@ const ServiceOfferingView: React.FC = () => {
       {showAddForm && (
         <div className="border rounded-xl p-6 bg-card shadow-sm">
           <h3 className="text-xl font-semibold mb-4">Add New Service</h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">Service Name</label>
               <input
                 type="text"
                 value={newService.name}
-                onChange={(e) => setNewService({...newService, name: e.target.value})}
+                onChange={(e) => setNewService({ ...newService, name: e.target.value })}
                 className="w-full px-3 py-2 border border-border rounded-lg focus:ring-highlight focus:border-highlight"
                 placeholder="Enter service name"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">Category</label>
               <input
                 type="text"
                 value={newService.category}
-                onChange={(e) => setNewService({...newService, category: e.target.value})}
+                onChange={(e) => setNewService({ ...newService, category: e.target.value })}
                 className="w-full px-3 py-2 border border-border rounded-lg focus:ring-highlight focus:border-highlight"
                 placeholder="e.g., Consultation, Healing, Education"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">Duration (minutes)</label>
               <input
                 type="number"
-                value={newService.duration}
-                onChange={(e) => setNewService({...newService, duration: parseInt(e.target.value) || 30})}
+                value={newService.durationMinutes}
+                onChange={(e) => setNewService({ ...newService, durationMinutes: parseInt(e.target.value) || 30 })}
                 className="w-full px-3 py-2 border border-border rounded-lg focus:ring-highlight focus:border-highlight"
                 min="15"
                 step="15"
                 aria-label="Service duration in minutes"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">Price (₦)</label>
               <input
                 type="number"
-                value={newService.price}
-                onChange={(e) => setNewService({...newService, price: parseInt(e.target.value) || 5000})}
+                value={newService.priceAmount}
+                onChange={(e) => setNewService({ ...newService, priceAmount: parseInt(e.target.value) || 5000 })}
                 className="w-full px-3 py-2 border border-border rounded-lg focus:ring-highlight focus:border-highlight"
                 min="1000"
                 step="1000"
                 aria-label="Service price in Naira"
               />
             </div>
-            
+
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-foreground mb-1">Description</label>
               <textarea
                 value={newService.description}
-                onChange={(e) => setNewService({...newService, description: e.target.value})}
+                onChange={(e) => setNewService({ ...newService, description: e.target.value })}
                 className="w-full px-3 py-2 border border-border rounded-lg focus:ring-highlight focus:border-highlight"
                 rows={3}
                 placeholder="Describe your service..."
               />
             </div>
-            
+
             <div className="md:col-span-2 flex items-center">
               <input
                 type="checkbox"
                 id="isActiveNew"
                 checked={newService.isActive}
-                onChange={(e) => setNewService({...newService, isActive: e.target.checked})}
+                onChange={(e) => setNewService({ ...newService, isActive: e.target.checked })}
                 className="h-4 w-4 text-highlight focus:ring-highlight border-border rounded"
               />
               <label htmlFor="isActiveNew" className="ml-2 block text-sm text-foreground">
@@ -195,7 +220,7 @@ const ServiceOfferingView: React.FC = () => {
               </label>
             </div>
           </div>
-          
+
           <div className="flex justify-end gap-2">
             <button
               onClick={handleCancel}
@@ -205,10 +230,10 @@ const ServiceOfferingView: React.FC = () => {
             </button>
             <button
               onClick={handleAddService}
-              disabled={!newService.name || !newService.description}
+              disabled={!newService.name || !newService.description || createMutation.isPending}
               className={`px-4 py-2 rounded-lg text-white flex items-center gap-2 ${
-                !newService.name || !newService.description 
-                  ? 'bg-muted-foreground cursor-not-allowed' 
+                !newService.name || !newService.description
+                  ? 'bg-muted-foreground cursor-not-allowed'
                   : 'bg-highlight hover:bg-yellow-600'
               }`}
             >
@@ -220,80 +245,85 @@ const ServiceOfferingView: React.FC = () => {
 
       {/* Services List */}
       <div className="space-y-6">
+        {services.length === 0 && !showAddForm && (
+          <div className="text-center py-12 bg-muted/40 rounded-xl border border-border">
+            <p className="text-muted-foreground">No service offerings yet. Add your first one above.</p>
+          </div>
+        )}
         {services.map((service) => (
           <div key={service.id} className="border rounded-xl p-6 bg-card shadow-sm">
             {editingId === service.id ? (
               // Edit Mode
               <div>
                 <h3 className="text-xl font-semibold mb-4">Edit Service</h3>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-1">Service Name</label>
                     <input
                       type="text"
-                      value={service.name}
-                      onChange={(e) => updateServiceField(service.id, 'name', e.target.value)}
+                      value={editDraft.name}
+                      onChange={(e) => setEditDraft({ ...editDraft, name: e.target.value })}
                       className="w-full px-3 py-2 border border-border rounded-lg focus:ring-highlight focus:border-highlight"
                       aria-label="Service name"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-1">Category</label>
                     <input
                       type="text"
-                      value={service.category}
-                      onChange={(e) => updateServiceField(service.id, 'category', e.target.value)}
+                      value={editDraft.category}
+                      onChange={(e) => setEditDraft({ ...editDraft, category: e.target.value })}
                       className="w-full px-3 py-2 border border-border rounded-lg focus:ring-highlight focus:border-highlight"
                       aria-label="Service category"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-1">Duration (minutes)</label>
                     <input
                       type="number"
-                      value={service.duration}
-                      onChange={(e) => updateServiceField(service.id, 'duration', parseInt(e.target.value))}
+                      value={editDraft.durationMinutes}
+                      onChange={(e) => setEditDraft({ ...editDraft, durationMinutes: parseInt(e.target.value) })}
                       className="w-full px-3 py-2 border border-border rounded-lg focus:ring-highlight focus:border-highlight"
                       min="15"
                       step="15"
                       aria-label="Service duration in minutes"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-1">Price (₦)</label>
                     <input
                       type="number"
-                      value={service.price}
-                      onChange={(e) => updateServiceField(service.id, 'price', parseInt(e.target.value))}
+                      value={editDraft.priceAmount}
+                      onChange={(e) => setEditDraft({ ...editDraft, priceAmount: parseInt(e.target.value) })}
                       className="w-full px-3 py-2 border border-border rounded-lg focus:ring-highlight focus:border-highlight"
                       min="1000"
                       step="1000"
                       aria-label="Service price in Naira"
                     />
                   </div>
-                  
+
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-foreground mb-1">Description</label>
                     <textarea
-                      value={service.description}
-                      onChange={(e) => updateServiceField(service.id, 'description', e.target.value)}
+                      value={editDraft.description}
+                      onChange={(e) => setEditDraft({ ...editDraft, description: e.target.value })}
                       className="w-full px-3 py-2 border border-border rounded-lg focus:ring-highlight focus:border-highlight"
                       rows={3}
                       aria-label="Service description"
                       placeholder="Describe your service..."
                     />
                   </div>
-                  
+
                   <div className="md:col-span-2 flex items-center">
                     <input
                       type="checkbox"
                       id={`isActive-${service.id}`}
-                      checked={service.isActive}
-                      onChange={(e) => updateServiceField(service.id, 'isActive', e.target.checked)}
+                      checked={editDraft.isActive}
+                      onChange={(e) => setEditDraft({ ...editDraft, isActive: e.target.checked })}
                       className="h-4 w-4 text-highlight focus:ring-highlight border-border rounded"
                     />
                     <label htmlFor={`isActive-${service.id}`} className="ml-2 block text-sm text-foreground">
@@ -301,7 +331,7 @@ const ServiceOfferingView: React.FC = () => {
                     </label>
                   </div>
                 </div>
-                
+
                 <div className="flex justify-end gap-2">
                   <button
                     onClick={() => setEditingId(null)}
@@ -325,8 +355,8 @@ const ServiceOfferingView: React.FC = () => {
                     <div className="flex items-center gap-3">
                       <h3 className="text-xl font-bold text-foreground">{service.name}</h3>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        service.isActive 
-                          ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' 
+                        service.isActive
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200'
                           : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
                       }`}>
                         {service.isActive ? 'Active' : 'Inactive'}
@@ -336,7 +366,7 @@ const ServiceOfferingView: React.FC = () => {
                   </div>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => handleEdit(service.id)}
+                      onClick={() => handleEdit(service)}
                       className="p-2 text-muted-foreground hover:text-highlight hover:bg-muted rounded-lg"
                       title="Edit"
                       aria-label="Edit service"
@@ -352,17 +382,17 @@ const ServiceOfferingView: React.FC = () => {
                     </button>
                   </div>
                 </div>
-                
+
                 <p className="mt-4 text-foreground">{service.description}</p>
-                
+
                 <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-border/60">
                   <div className="text-center">
                     <p className="text-sm text-muted-foreground">Duration</p>
-                    <p className="font-semibold">{service.duration} min</p>
+                    <p className="font-semibold">{service.durationMinutes} min</p>
                   </div>
                   <div className="text-center">
                     <p className="text-sm text-muted-foreground">Price</p>
-                    <p className="font-semibold">{getServicePrice(service.price)}</p>
+                    <p className="font-semibold">{getServicePrice(service.priceAmount)}</p>
                   </div>
                   <div className="text-center">
                     <p className="text-sm text-muted-foreground">Sessions/Day</p>

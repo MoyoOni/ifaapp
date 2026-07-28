@@ -28,6 +28,11 @@ import { useProfileQuery } from './hooks/use-profile-query';
 import ProfileSkeleton from './components/profile-skeleton';
 import { UserRole, CulturalLevel } from '@common';
 import { isDevModeActive } from '@/shared/utils/dev-mode';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/components/ui/dialog';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/shared/components/ui/select';
+import { Textarea } from '@/shared/components/ui/textarea';
+import { Label } from '@/shared/components/ui/label';
+import { Button } from '@/shared/components/ui/button';
 
 interface MilestoneBadge {
   key: string;
@@ -76,6 +81,252 @@ const MilestoneBadges: React.FC<{ userId: string }> = ({ userId }) => {
   );
 };
 
+// COMMUNITY_BACKLOG.md FOR-014/FOR-006: "Elder endorsement system for
+// respected members" -- peer/elder-initiated, distinct from the
+// admin-awarded UserBadge system MilestoneBadges above reads from.
+const ElderEndorseButton: React.FC<{ userId: string; viewerRole?: string }> = ({ userId, viewerRole }) => {
+  const queryClient = useQueryClient();
+  const toastCtx = useToast();
+
+  if (viewerRole !== UserRole.BABALAWO) return null;
+
+  const { data: endorsements = [] } = useQuery<Array<{ endorser: { id: string } }>>({
+    queryKey: ['endorsements', userId],
+    queryFn: async () => (await api.get(`/users/${userId}/endorsements`)).data,
+    enabled: !!userId && !isDevModeActive(),
+  });
+
+  const { user: currentUser } = useAuth();
+  const hasEndorsed = endorsements.some((e) => e.endorser.id === currentUser?.id);
+
+  const endorseMutation = useMutation({
+    mutationFn: () => api.post(`/users/${userId}/endorse`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['endorsements', userId] });
+      queryClient.invalidateQueries({ queryKey: ['milestone-badges', userId] });
+      toastCtx.success('Endorsement given.', 'Endorsed');
+    },
+    onError: () => toastCtx.error('Could not endorse this member. Please try again.', 'Endorsement failed'),
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: () => api.delete(`/users/${userId}/endorse`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['endorsements', userId] });
+      queryClient.invalidateQueries({ queryKey: ['milestone-badges', userId] });
+    },
+  });
+
+  return (
+    <button
+      type="button"
+      onClick={() => (hasEndorsed ? removeMutation.mutate() : endorseMutation.mutate())}
+      disabled={endorseMutation.isPending || removeMutation.isPending}
+      className={`mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+        hasEndorsed
+          ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+          : 'border border-border text-muted-foreground hover:bg-muted'
+      }`}
+    >
+      🌟 {hasEndorsed ? 'Endorsed by you' : 'Give an Elder Endorsement'}
+    </button>
+  );
+};
+
+const USER_REPORT_REASONS: Array<{ value: string; label: string }> = [
+  { value: 'HARASSMENT', label: 'Harassment' },
+  { value: 'SPAM', label: 'Spam' },
+  { value: 'IMPERSONATION', label: 'Impersonation' },
+  { value: 'INAPPROPRIATE', label: 'Inappropriate conduct' },
+  { value: 'FRAUD', label: 'Fraud' },
+  { value: 'OTHER', label: 'Other concern' },
+];
+
+// Whole-app audit loose end: the "Report" ActionButton for non-babalawo
+// profiles used to call onNavigate('report-user', ...), a view no route
+// ever handled, so it silently bounced to the homepage. This was hidden
+// entirely until the generic UserReport backend existed; now wired to it,
+// same shape as ReportComplaintButton below but for any reported role.
+const ReportUserButton: React.FC<{ reportedUserId: string }> = ({ reportedUserId }) => {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState('');
+  const [description, setDescription] = useState('');
+  const toastCtx = useToast();
+
+  const fileMutation = useMutation({
+    mutationFn: () => api.post('/user-reports', { reportedUserId, reason, description }),
+    onSuccess: () => {
+      toastCtx.success('Your report has been sent to our review team.', 'Report filed');
+      setOpen(false);
+      setReason('');
+      setDescription('');
+    },
+    onError: (err: any) =>
+      toastCtx.error(err?.response?.data?.error?.userMessage || 'Could not file this report. Please try again.', 'Report failed'),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <button
+          type="button"
+          className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-muted/50 text-muted-foreground hover:bg-muted transition-colors"
+        >
+          <Flag size={14} /> Report
+        </button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Report a Concern</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            This goes directly to our admin review team, not to this person.
+          </p>
+          <div>
+            <Label>What's the concern?</Label>
+            <Select value={reason} onValueChange={setReason}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a reason" />
+              </SelectTrigger>
+              <SelectContent>
+                {USER_REPORT_REASONS.map((r) => (
+                  <SelectItem key={r.value} value={r.value}>
+                    {r.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="report-description">Tell us what happened</Label>
+            <Textarea
+              id="report-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Please share details so our review team can understand the situation..."
+              rows={5}
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => fileMutation.mutate()}
+              disabled={!reason || description.trim().length < 10 || fileMutation.isPending}
+            >
+              {fileMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Submit Report
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const COMPLAINT_REASONS: Array<{ value: string; label: string }> = [
+  { value: 'CONTROLLING_BEHAVIOR', label: 'Controlling behavior' },
+  { value: 'FEAR_BASED_MANIPULATION', label: 'Fear-based manipulation' },
+  { value: 'FINANCIAL_EXPLOITATION', label: 'Financial exploitation' },
+  { value: 'INAPPROPRIATE', label: 'Inappropriate conduct' },
+  { value: 'NO_SHOW', label: 'No-show / unreliable' },
+  { value: 'FRAUD', label: 'Fraud' },
+  { value: 'OTHER', label: 'Other concern' },
+];
+
+// COMMUNITY_BACKLOG.md FOR-016: the "Report" ActionButton below this
+// component used to call onNavigate('report-user', ...), a view no route
+// ever handled -- ProfilePage.tsx's handleNavigate has no matching case, so
+// it silently fell through to navigate('/') and sent the user to the
+// homepage. This replaces it with a real, working report flow wired to the
+// PractitionerComplaint intake (POST /complaints), gated to practitioner
+// profiles since that's what the model represents.
+const ReportComplaintButton: React.FC<{ practitionerId: string }> = ({ practitionerId }) => {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState('');
+  const [description, setDescription] = useState('');
+  const toastCtx = useToast();
+
+  const fileMutation = useMutation({
+    mutationFn: () => api.post('/complaints', { practitionerId, reason, description }),
+    onSuccess: () => {
+      toastCtx.success('Your report has been sent to our review team.', 'Report filed');
+      setOpen(false);
+      setReason('');
+      setDescription('');
+    },
+    onError: (err: any) =>
+      toastCtx.error(err?.response?.data?.error?.userMessage || 'Could not file this report. Please try again.', 'Report failed'),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <button
+          type="button"
+          className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-muted/50 text-muted-foreground hover:bg-muted transition-colors"
+        >
+          <Flag size={14} /> Report
+        </button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Report a Concern</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            This goes directly to our admin review team, not to this practitioner. If you're processing a
+            conflict rather than filing a formal complaint, our{' '}
+            <a href="/healing" className="text-primary underline">
+              Healing & Reconciliation
+            </a>{' '}
+            space may be a better fit.
+          </p>
+          <div>
+            <Label>What's the concern?</Label>
+            <Select value={reason} onValueChange={setReason}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a reason" />
+              </SelectTrigger>
+              <SelectContent>
+                {COMPLAINT_REASONS.map((r) => (
+                  <SelectItem key={r.value} value={r.value}>
+                    {r.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="complaint-description">Tell us what happened</Label>
+            <Textarea
+              id="complaint-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Please share details so our review team can understand the situation..."
+              rows={5}
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => fileMutation.mutate()}
+              disabled={!reason || description.trim().length < 10 || fileMutation.isPending}
+            >
+              {fileMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Submit Report
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 interface PublicProfileViewProps {
   userId: string;
   onNavigate: (view: string, params?: string) => void;
@@ -101,16 +352,25 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
     culturalLevel: '',
     aboutMe: '',
     interests: '', // comma-separated in the form; split into an array on save
+    // COMMUNITY_BACKLOG.md FOR-014: distinct from `interests` ("Areas of
+    // Practice") -- this is the formal specialization list shown in the
+    // prominent bento card next to Services/Booking, not a casual interest list.
+    specialization: '',
+    availabilityNote: '',
   });
 
   const saveProfileMutation = useMutation({
     mutationFn: async (data: typeof editForm) => {
-      const { interests, ...rest } = data;
+      const { interests, specialization, ...rest } = data;
       const response = await api.patch(`/users/${userId}`, {
         ...rest,
         interests: interests
           .split(',')
           .map(i => i.trim())
+          .filter(Boolean),
+        specialization: specialization
+          .split(',')
+          .map(s => s.trim())
           .filter(Boolean),
       });
       return response.data;
@@ -134,6 +394,8 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
       culturalLevel: user?.culturalLevel || '',
       aboutMe: user?.aboutMe || '',
       interests: (user?.interests || []).join(', '),
+      specialization: (user?.specialization || []).join(', '),
+      availabilityNote: user?.availabilityNote || '',
     });
     setIsEditing(true);
   };
@@ -332,6 +594,9 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
 
               {/* Spiritual Milestones */}
               <MilestoneBadges userId={userId} />
+
+              {/* COMMUNITY_BACKLOG.md FOR-014/FOR-006: elder endorsement */}
+              {!isCurrentUser && <ElderEndorseButton userId={userId} viewerRole={currentUser?.role} />}
             </div>
           </div>
         </div>
@@ -430,6 +695,34 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
                 placeholder={isBabalawo ? 'Divination, Herbalism, Ancestral Veneration' : 'Dreams, Yoruba Language, Ancestral Veneration'}
               />
             </div>
+            {/* COMMUNITY_BACKLOG.md FOR-014: elder profile -- expertise areas + availability */}
+            {isBabalawo && (
+              <>
+                <div>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">
+                    Specializations (comma-separated, shown on your booking profile)
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.specialization}
+                    onChange={e => setEditForm(f => ({ ...f, specialization: e.target.value }))}
+                    className="w-full px-3 py-2 border border-border rounded-lg text-sm text-foreground bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    placeholder="Ifá Divination, Marriage Rites, Ancestral Reconciliation"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">Availability</label>
+                  <input
+                    type="text"
+                    value={editForm.availabilityNote}
+                    onChange={e => setEditForm(f => ({ ...f, availabilityNote: e.target.value }))}
+                    className="w-full px-3 py-2 border border-border rounded-lg text-sm text-foreground bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    placeholder="Available for questions Tues/Thurs evenings WAT"
+                    maxLength={140}
+                  />
+                </div>
+              </>
+            )}
             <div className="flex flex-wrap items-center gap-3 pt-1">
               <button
                 type="button"
@@ -504,23 +797,31 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
         {/* ══════════════════════════════════════
             BABALAWO-SPECIFIC: Specializations
            ══════════════════════════════════════ */}
-        {isBabalawo && specializations.length > 0 && (
+        {isBabalawo && (specializations.length > 0 || user.availabilityNote) && (
           <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
             <div className="px-5 py-3 border-b border-border/60 flex items-center gap-2">
               <Sparkles size={15} className="text-highlight" />
               <h3 className="font-bold text-foreground text-sm">Specializations</h3>
             </div>
-            <div className="p-5">
-              <div className="flex flex-wrap gap-2">
-                {specializations.map((spec: string, idx: number) => (
-                  <span
-                    key={idx}
-                    className="px-3 py-1.5 bg-highlight/10 text-highlight border border-highlight/20 rounded-full text-xs font-medium"
-                  >
-                    {spec}
-                  </span>
-                ))}
-              </div>
+            <div className="p-5 space-y-3">
+              {specializations.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {specializations.map((spec: string, idx: number) => (
+                    <span
+                      key={idx}
+                      className="px-3 py-1.5 bg-highlight/10 text-highlight border border-highlight/20 rounded-full text-xs font-medium"
+                    >
+                      {spec}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {/* COMMUNITY_BACKLOG.md FOR-014 */}
+              {user.availabilityNote && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <Clock size={12} /> {user.availabilityNote}
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -933,12 +1234,11 @@ function ConnectCard({
                 }
               }}
             />
-            <ActionButton
-              label="Report"
-              icon={<Flag size={14} />}
-              onClick={() => onNavigate('report-user', user.id)}
-              muted
-            />
+            {isBabalawo ? (
+              <ReportComplaintButton practitionerId={user.id} />
+            ) : (
+              <ReportUserButton reportedUserId={user.id} />
+            )}
           </>
         )}
       </div>
