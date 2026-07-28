@@ -98,9 +98,21 @@ describe('AdminFinanceService', () => {
               findUnique: jest.fn(),
               findMany: jest.fn(),
               update: jest.fn(),
+              count: jest.fn().mockResolvedValue(0),
             },
             transaction: {
               updateMany: jest.fn(),
+            },
+            // ILUASE_V1_BACKLOG.md 🔴 Critical fix: getRevenueForecast no
+            // longer fabricates platformCostNgn -- it reads the real column.
+            appointment: {
+              aggregate: jest.fn().mockResolvedValue({ _sum: { price: 0 } }),
+            },
+            order: {
+              aggregate: jest.fn().mockResolvedValue({ _sum: { totalAmount: 0 } }),
+            },
+            platformSettings: {
+              findFirst: jest.fn().mockResolvedValue(null),
             },
           },
         },
@@ -443,6 +455,63 @@ describe('AdminFinanceService', () => {
         where: { id: 'sub-1' },
         data: { autoRenew: false, status: 'CANCELLED' },
       });
+    });
+  });
+
+  // ILUASE_V1_BACKLOG.md top 🔴 Critical item, second fix: getRevenueForecast
+  // used to fabricate platformCostNgn as a "placeholder calculation" and
+  // assumed a flat 10% platform fee rather than reading real settings.
+  describe('getRevenueForecast (ILUASE_V1_BACKLOG.md fix: no more fabricated operating cost)', () => {
+    beforeEach(() => {
+      (prisma as any).subscription.findMany.mockResolvedValue([]);
+      (prisma as any).subscription.count.mockResolvedValue(0);
+      (prisma as any).appointment.aggregate.mockResolvedValue({ _sum: { price: 1000 } });
+      (prisma as any).order.aggregate.mockResolvedValue({ _sum: { totalAmount: 4000 } });
+    });
+
+    it('reports platformCostNgn as null (not a fabricated number) and skips break-even math when no admin value has been set', async () => {
+      (prisma as any).platformSettings.findFirst.mockResolvedValue(null);
+
+      const result = await service.getRevenueForecast();
+
+      expect(result.platformCostNgn).toBeNull();
+      expect(result.platformCostTracked).toBe(false);
+      expect(result.platformCostNote).toContain('not yet tracked');
+      expect(result.breakEvenThreshold).toBeNull();
+      expect(result.monthsToBreakEven).toBeNull();
+    });
+
+    it('computes real break-even math once an admin has set a real platformCostNgn', async () => {
+      (prisma as any).platformSettings.findFirst.mockResolvedValue({
+        consultationCommissionPct: 15,
+        marketplaceCommissionPct: 10,
+        platformCostNgn: 120000,
+      });
+
+      const result = await service.getRevenueForecast();
+
+      expect(result.platformCostNgn).toBe(120000);
+      expect(result.platformCostTracked).toBe(true);
+      expect(result.platformCostNote).toBeUndefined();
+      // this-month platform revenue = 1000*0.15 + 4000*0.10 = 550, annualized = 6600
+      expect(result.projectedAnnualPlatformRevenue).toBe(6600);
+      // break-even = 120000 / (6600 / 12) = 218.18...
+      expect(result.breakEvenThreshold).toBeCloseTo(218.18, 1);
+      expect(result.monthsToBreakEven).toBe(219);
+    });
+
+    it('uses the real configured commission rates instead of a hardcoded 10% flat fee', async () => {
+      (prisma as any).platformSettings.findFirst.mockResolvedValue({
+        consultationCommissionPct: 20,
+        marketplaceCommissionPct: 5,
+        platformCostNgn: null,
+      });
+
+      const result = await service.getRevenueForecast();
+
+      // this-month platform revenue = 1000*0.20 + 4000*0.05 = 400, annualized = 4800
+      // (a flat-10% assumption on the 5000 GMV would have wrongly given 500/6000)
+      expect(result.projectedAnnualPlatformRevenue).toBe(4800);
     });
   });
 });

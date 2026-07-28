@@ -10,9 +10,16 @@ interface RevenueData {
   monthlyGrowthRate: number;
   projectedAnnualGMV: number;
   projectedAnnualPlatformRevenue: number;
-  platformCostNgn: number;
-  breakEvenThreshold: number;
-  monthsToBreakEven: number;
+  consultationCommissionPct: number;
+  marketplaceCommissionPct: number;
+  // ILUASE_V1_BACKLOG.md 🔴 Critical fix: platformCostNgn/breakEvenThreshold/
+  // monthsToBreakEven are now honestly null until an admin sets a real
+  // operating-cost figure, instead of a fabricated placeholder number.
+  platformCostNgn: number | null;
+  platformCostTracked: boolean;
+  platformCostNote?: string;
+  breakEvenThreshold: number | null;
+  monthsToBreakEven: number | null;
   churnRate: number;
   currentSubscribers: number;
   trend: Array<{ month: string; gmv: number; revenue: number }>;
@@ -49,7 +56,7 @@ export function AdminForecastingTab() {
     return <div>No data available</div>;
   }
 
-  const breakEvenWarning = data.monthsToBreakEven > 6;
+  const breakEvenWarning = data.monthsToBreakEven !== null && data.monthsToBreakEven > 6;
 
   return (
     <div className="space-y-6">
@@ -81,8 +88,8 @@ export function AdminForecastingTab() {
         <StatCard
           icon={AlertTriangle}
           label="Break-even in"
-          value={data.monthsToBreakEven === 999 ? '∞' : `${data.monthsToBreakEven} mo`}
-          sub={`Costs: ₦${Math.round(data.platformCostNgn).toLocaleString()}/mo`}
+          value={data.platformCostTracked ? (data.monthsToBreakEven === null ? '∞' : `${data.monthsToBreakEven} mo`) : 'Not tracked'}
+          sub={data.platformCostTracked ? `Costs: ₦${Math.round(data.platformCostNgn!).toLocaleString()}/mo` : 'Set an operating cost in Platform Settings'}
           alert={breakEvenWarning}
         />
       </div>
@@ -147,7 +154,9 @@ export function AdminForecastingTab() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-xs text-muted-foreground mb-1">Monthly Platform Costs</p>
-              <p className="text-lg font-semibold">₦{Math.round(data.platformCostNgn).toLocaleString()}</p>
+              <p className="text-lg font-semibold">
+                {data.platformCostTracked ? `₦${Math.round(data.platformCostNgn!).toLocaleString()}` : 'Not tracked'}
+              </p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground mb-1">Current Monthly Revenue</p>
@@ -155,9 +164,13 @@ export function AdminForecastingTab() {
             </div>
           </div>
           <div className="border-t border-border pt-3">
-            {data.monthsToBreakEven === 999 ? (
+            {!data.platformCostTracked ? (
               <p className="text-sm text-amber-700 bg-amber-50 rounded px-3 py-2">
-                ⚠️ Current revenue is below platform costs. Need to increase commission revenue or reduce costs.
+                ⚠️ {data.platformCostNote}
+              </p>
+            ) : data.monthsToBreakEven === null ? (
+              <p className="text-sm text-amber-700 bg-amber-50 rounded px-3 py-2">
+                ⚠️ Current commission revenue is ₦0 or the cost figure is invalid -- can't project a break-even date. Increase commission revenue or reduce costs.
               </p>
             ) : (
               <p className="text-sm text-green-700 bg-green-50 rounded px-3 py-2">
@@ -170,7 +183,7 @@ export function AdminForecastingTab() {
             <ul className="list-disc list-inside space-y-0.5">
               <li>Monthly growth rate: {data.monthlyGrowthRate}%</li>
               <li>Churn rate: {data.churnRate}%</li>
-              <li>Commission: 15% of consultation GMV</li>
+              <li>Commission: {data.consultationCommissionPct}% of consultation GMV + {data.marketplaceCommissionPct}% of marketplace GMV (configured rates, from Platform Settings)</li>
             </ul>
           </div>
         </div>

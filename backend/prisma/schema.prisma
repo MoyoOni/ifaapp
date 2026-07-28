@@ -2900,6 +2900,12 @@ model PlatformSettings {
   minPayoutThresholdNgn       Decimal  @default(5000) @db.Decimal(14, 2)
   maxPayoutWithoutApprovalNgn Decimal  @default(100000) @db.Decimal(14, 2)
   quizPassThreshold           Int      @default(2)
+  // ILUASE_V1_BACKLOG.md 🔴 Critical fix: admin-finance.service.ts used to
+  // fabricate this as a "placeholder calculation" derived from commission
+  // percentages, presenting a made-up number as real operating cost in the
+  // revenue forecast API response. Nullable and no default -- null means
+  // "an admin hasn't entered a real figure yet", distinct from a real 0.
+  platformCostNgn             Decimal? @db.Decimal(14, 2)
   updatedAt                   DateTime @updatedAt
   updatedBy                   String?
 }

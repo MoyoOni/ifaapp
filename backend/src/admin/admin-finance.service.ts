@@ -687,19 +687,41 @@ export class AdminFinanceService {
     const lastMonthMRR = lastMonthSubs.reduce((sum, s) => sum + s.amountPaid, 0) / 100;
     const monthlyGrowthRate = lastMonthMRR > 0 ? (currentMRR - lastMonthMRR) / lastMonthMRR : 0;
 
-    // 5. Projections
+    // 5. Projections. Platform revenue now uses the actually-configured
+    // commission rates (ILUASE_V1_BACKLOG.md fix) instead of a hardcoded
+    // "assuming 10%" flat rate -- appointment revenue x consultation rate
+    // plus order revenue x marketplace rate, matching what
+    // walletService.releaseEscrow() now really deducts on the marketplace
+    // side (consultation commission is still never actually collected,
+    // since Consultations are paused, but the configured rate is still the
+    // most honest available projection basis).
     const projectedMRR = currentMRR * (1 + monthlyGrowthRate);
     const churnAdjustedMRR = currentMRR * (1 - churnRate) * (1 + monthlyGrowthRate);
     const projectedAnnualGMV = thisMonthGMV * 12;
-    const projectedAnnualPlatformRevenue = projectedAnnualGMV * 0.1; // assuming 10% platform fee, adjust if different
+    const platformSettings = await this.prisma.platformSettings.findFirst();
+    const consultationRate = Number(platformSettings?.consultationCommissionPct ?? 15) / 100;
+    const marketplaceRate = Number(platformSettings?.marketplaceCommissionPct ?? 10) / 100;
+    const thisMonthPlatformRevenue =
+      ((appointmentRevenue._sum?.price || 0) as number) * consultationRate +
+      ((orderRevenue._sum?.totalAmount || 0) as number) * marketplaceRate;
+    const projectedAnnualPlatformRevenue = thisMonthPlatformRevenue * 12;
 
-    // 6. Platform cost (configurable) - using existing platform settings
-    const platformCostNgn = await this.getPlatformCost(); // helper method
+    // 6. Platform cost -- ILUASE_V1_BACKLOG.md 🔴 Critical fix: this used to
+    // be a fabricated "placeholder calculation" derived from commission
+    // percentages. It now reads the real, admin-settable
+    // PlatformSettings.platformCostNgn column and is honestly `null` (not a
+    // made-up number) until an admin actually enters one via
+    // PATCH /admin/platform-settings.
+    const platformCostNgn =
+      platformSettings?.platformCostNgn != null ? Number(platformSettings.platformCostNgn) : null;
+    const platformCostTracked = platformCostNgn !== null;
 
-    // 7. Break-even
+    // 7. Break-even -- only computable once a real operating cost exists.
     const breakEvenThreshold =
-      platformCostNgn > 0 ? platformCostNgn / (projectedAnnualPlatformRevenue / 12) : 0;
-    const monthsToBreakEven = breakEvenThreshold > 0 ? Math.ceil(breakEvenThreshold) : 0;
+      platformCostTracked && platformCostNgn! > 0 && projectedAnnualPlatformRevenue > 0
+        ? platformCostNgn! / (projectedAnnualPlatformRevenue / 12)
+        : null;
+    const monthsToBreakEven = breakEvenThreshold !== null ? Math.ceil(breakEvenThreshold) : null;
 
     // 8. Trend (last 3 months)
     const trend = await this.getRevenueTrend(3); // helper method
@@ -712,26 +734,19 @@ export class AdminFinanceService {
       monthlyGrowthRate,
       projectedAnnualGMV,
       projectedAnnualPlatformRevenue,
+      consultationCommissionPct: consultationRate * 100,
+      marketplaceCommissionPct: marketplaceRate * 100,
       platformCostNgn,
+      platformCostTracked,
+      platformCostNote: platformCostTracked
+        ? undefined
+        : 'Operating cost not yet tracked -- set PlatformSettings.platformCostNgn via PATCH /admin/platform-settings to enable break-even projections.',
       breakEvenThreshold,
       monthsToBreakEven,
       churnRate,
       currentSubscribers,
       trend,
     };
-  }
-
-  private async getPlatformCost(): Promise<number> {
-    // Try to get from platform settings - using existing fields
-    // Check if there's a PlatformSettings table with a cost field
-    const settings = await this.prisma.platformSettings.findFirst();
-    if (settings) {
-      // Calculate based on commission percentages and other settings
-      // Using a combination of values as an estimate of platform costs
-      return (Number(settings.consultationCommissionPct) + Number(settings.marketplaceCommissionPct)) * 10000; // placeholder calculation
-    }
-    // Default fallback
-    return 500000; // 500k NGN as placeholder
   }
 
   async getPendingPayoutsTotal(): Promise<number> {
