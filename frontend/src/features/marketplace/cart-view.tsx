@@ -89,7 +89,7 @@ const CartView: React.FC<CartViewProps> = ({ onBack, onCheckout }) => {
           <div className="lg:col-span-2 space-y-4">
             {cartItems.map((item) => (
               <div
-                key={item.productId}
+                key={`${item.productId}-${item.variantId ?? 'default'}`}
                 className="bg-card rounded-2xl p-6 border border-border shadow-sm flex flex-col sm:flex-row items-start gap-6 relative overflow-hidden group"
               >
                 {/* Product Image */}
@@ -107,6 +107,8 @@ const CartView: React.FC<CartViewProps> = ({ onBack, onCheckout }) => {
                 <div className="flex-1 w-full space-y-3">
                   <div className="pr-10">
                     <h3 className="font-bold text-xl text-foreground brand-font">{item.name}</h3>
+                    {/* VENDOR_BACKLOG.md VND-007 */}
+                    {item.variantLabel && <p className="text-sm text-muted-foreground">{item.variantLabel}</p>}
                     <p className="text-sm font-medium text-muted-foreground">Sold by {item.vendorName}</p>
                   </div>
 
@@ -114,7 +116,7 @@ const CartView: React.FC<CartViewProps> = ({ onBack, onCheckout }) => {
                     {/* Quantity Controls */}
                     <div className="flex items-center gap-3 bg-muted/50 rounded-lg p-1 border border-border">
                       <button
-                        onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                        onClick={() => updateQuantity(item.productId, item.quantity - 1, item.variantId)}
                         className="w-8 h-8 flex items-center justify-center bg-card rounded-md text-foreground shadow-sm hover:text-highlight transition-colors"
                         aria-label={`Decrease quantity for ${item.name}`}
                         title="Decrease quantity"
@@ -123,7 +125,7 @@ const CartView: React.FC<CartViewProps> = ({ onBack, onCheckout }) => {
                       </button>
                       <span className="w-8 text-center font-bold text-foreground">{item.quantity}</span>
                       <button
-                        onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                        onClick={() => updateQuantity(item.productId, item.quantity + 1, item.variantId)}
                         disabled={item.stock != null && item.quantity >= item.stock}
                         className="w-8 h-8 flex items-center justify-center bg-card rounded-md text-foreground shadow-sm hover:text-highlight transition-colors disabled:opacity-50"
                         aria-label={`Increase quantity for ${item.name}`}
@@ -149,7 +151,7 @@ const CartView: React.FC<CartViewProps> = ({ onBack, onCheckout }) => {
 
                 {/* Remove Button */}
                 <button
-                  onClick={() => removeItem(item.productId)}
+                  onClick={() => removeItem(item.productId, item.variantId)}
                   className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-red-500 dark:text-red-400 hover:bg-red-50 dark:bg-red-950/30 rounded-full transition-all"
                   title="Remove item"
                 >

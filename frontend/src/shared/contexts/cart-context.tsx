@@ -10,13 +10,18 @@ interface CartItem {
   vendorId: string;
   vendorName: string;
   stock?: number;
+  // VENDOR_BACKLOG.md VND-007: which specific variant combination (if any)
+  // is in this cart line. variantLabel is display-only (e.g. "Yellow /
+  // Medium"), built from the variant's attributes at add-to-cart time.
+  variantId?: string;
+  variantLabel?: string;
 }
 
 interface CartContextType {
   items: CartItem[];
   addItem: (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => void;
-  removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  removeItem: (productId: string, variantId?: string) => void;
+  updateQuantity: (productId: string, quantity: number, variantId?: string) => void;
   clearCart: () => void;
   totalItems: number;
   totalAmount: number;
@@ -24,6 +29,13 @@ interface CartContextType {
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
+
+// VENDOR_BACKLOG.md VND-007: a cart line is identified by (productId,
+// variantId), not just productId -- two different variants of the same
+// product (e.g. Yellow beads and Blue beads) are different cart lines, not
+// one line whose quantity silently merges the two colours together.
+const sameLine = (a: { productId: string; variantId?: string }, b: { productId: string; variantId?: string }) =>
+  a.productId === b.productId && (a.variantId ?? null) === (b.variantId ?? null);
 
 /**
  * Cart Context Provider
@@ -54,7 +66,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const addItem = (newItem: Omit<CartItem, 'quantity'> & { quantity?: number }) => {
     setItems((current) => {
-      const existingIndex = current.findIndex((item) => item.productId === newItem.productId);
+      const existingIndex = current.findIndex((item) => sameLine(item, newItem));
 
       if (existingIndex >= 0) {
         // Update existing item quantity
@@ -73,19 +85,19 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  const removeItem = (productId: string) => {
-    setItems((current) => current.filter((item) => item.productId !== productId));
+  const removeItem = (productId: string, variantId?: string) => {
+    setItems((current) => current.filter((item) => !sameLine(item, { productId, variantId })));
   };
 
-  const updateQuantity = (productId: string, quantity: number) => {
+  const updateQuantity = (productId: string, quantity: number, variantId?: string) => {
     if (quantity <= 0) {
-      removeItem(productId);
+      removeItem(productId, variantId);
       return;
     }
 
     setItems((current) =>
       current.map((item) => {
-        if (item.productId === productId) {
+        if (sameLine(item, { productId, variantId })) {
           const maxQuantity = item.stock !== undefined ? Math.min(item.stock, 10) : 10;
           return { ...item, quantity: Math.min(quantity, maxQuantity) };
         }

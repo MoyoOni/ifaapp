@@ -10,6 +10,8 @@ const MarketplacePage: React.FC = () => {
       onSelectProduct={(productId) => {
         if (productId === 'cart') {
           navigate('/cart');
+        } else if (productId === 'my-orders') {
+          navigate('/my-orders');
         } else {
           navigate(`/product/${productId}`);
         }

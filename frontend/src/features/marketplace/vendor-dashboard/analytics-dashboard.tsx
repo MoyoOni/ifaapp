@@ -1,5 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { TrendingUp, TrendingDown } from 'lucide-react';
@@ -28,6 +29,7 @@ const fmt = (n: number) =>
   new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(n);
 
 const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ vendorId, activeTab }) => {
+  const navigate = useNavigate();
   const { data, isLoading } = useQuery<AnalyticsData>({
     queryKey: ['vendor-analytics', vendorId],
     queryFn: async () => {
@@ -53,9 +55,15 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ vendorId, activ
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-foreground">Earnings Report</h2>
-        <p className="text-muted-foreground">Your store performance at a glance</p>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">Earnings Report</h2>
+          <p className="text-muted-foreground">Your store performance at a glance</p>
+        </div>
+        {/* VENDOR_BACKLOG.md VND-013 */}
+        <button type="button" onClick={() => navigate('/vendor/analytics')} className="text-sm font-bold text-highlight hover:underline">
+          View Detailed Analytics →
+        </button>
       </div>
 
       {/* KPI cards */}

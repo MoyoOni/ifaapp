@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Plus, Edit2, Trash2, Package, Search, Filter } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
@@ -21,9 +21,10 @@ const VendorProductListView: React.FC<VendorProductListViewProps> = ({
     onCreateProduct,
     onEditProduct,
     onBack,
-    mode: _mode = 'list',
+    mode = 'list',
 }) => {
     const navigate = useNavigate();
+    const { productId: productIdParam } = useParams<{ productId: string }>();
     const { user } = useAuth();
     const queryClient = useQueryClient();
     const toast = useToast();
@@ -57,30 +58,53 @@ const VendorProductListView: React.FC<VendorProductListViewProps> = ({
         },
     });
 
-    const { data: products = [], isLoading } = useQuery<Product[]>({
-        queryKey: ['vendor-products', user?.id],
-        queryFn: async () => {
-            const response = await api.get('/marketplace/products', {
-                params: { vendorId: user?.id }
-            });
-            return response.data;
-        },
+    // VENDOR_BACKLOG.md VND-008: previously queried `/marketplace/products`
+    // with `vendorId: user.id` -- but Product.vendorId references the Vendor
+    // record's own id, not the User's, so this always matched zero products
+    // for every real vendor. Also switched to the authenticated
+    // "vendor's own products" endpoint so drafts/archived/coming-soon
+    // listings show up here too, not just what's publicly visible.
+    const { data: vendorProfile } = useQuery<{ id: string }>({
+        queryKey: ['vendor-profile', user?.id],
+        queryFn: async () => (await api.get('/marketplace/vendors/me')).data,
         enabled: !!user?.id && !isDevModeActive(),
     });
+
+    const { data: products = [], isLoading } = useQuery<Product[]>({
+        queryKey: ['vendor-products', vendorProfile?.id],
+        queryFn: async () => {
+            const response = await api.get(`/marketplace/vendors/${vendorProfile!.id}/products`);
+            return response.data;
+        },
+        enabled: !!vendorProfile?.id && !isDevModeActive(),
+    });
+
+    // Was previously ignored entirely -- /vendor/products/new and
+    // /vendor/products/edit/:productId both just rendered the plain list,
+    // never the create/edit form the route name promised.
+    useEffect(() => {
+        if (mode === 'create') {
+            setShowAddForm(true);
+        } else if (mode === 'edit' && productIdParam && products.length > 0) {
+            const match = products.find((p) => p.id === productIdParam);
+            if (match) setEditingProduct(match);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [mode, productIdParam, products]);
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
         {showAddForm && (
             <VendorProductForm
-                onClose={() => setShowAddForm(false)}
-                onSuccess={() => setShowAddForm(false)}
+                onClose={() => (mode === 'create' ? navigate('/vendor/products') : setShowAddForm(false))}
+                onSuccess={() => (mode === 'create' ? navigate('/vendor/products') : setShowAddForm(false))}
             />
         )}
         {editingProduct && (
             <VendorProductForm
                 initialData={editingProduct as any}
-                onClose={() => setEditingProduct(null)}
-                onSuccess={() => setEditingProduct(null)}
+                onClose={() => (mode === 'edit' ? navigate('/vendor/products') : setEditingProduct(null))}
+                onSuccess={() => (mode === 'edit' ? navigate('/vendor/products') : setEditingProduct(null))}
             />
         )}
         {deletingProductId && (

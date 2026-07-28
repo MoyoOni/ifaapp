@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, CreditCard, Loader2, MapPin, Truck, CheckCircle2, Store, AlertCircle, Sparkles } from 'lucide-react';
+import { ArrowLeft, CreditCard, Loader2, MapPin, Truck, CheckCircle2, Store, AlertCircle, Sparkles, Gift } from 'lucide-react';
 import { useSubscription } from '@/features/subscription/use-subscription';
 import { useCart } from '@/shared/contexts/cart-context';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { logger } from '@/shared/utils/logger';
@@ -55,9 +55,89 @@ const CheckoutView: React.FC<CheckoutViewProps> = ({ onBack, onSuccess }) => {
         state: '',
         zipCode: '',
         phone: '',
+        country: 'Nigeria',
     });
 
+    // VENDOR_BACKLOG.md VND-011: real per-vendor shipping quote, replacing the
+    // previously hardcoded `shippingCost: 0` -- each vendor may have their
+    // own zones/rates, so this is a quote per vendor group, summed for the
+    // order total.
+    const { data: shippingQuotes = {} } = useQuery<Record<string, { cost: number; zoneName: string | null; processingTime: string | null }>>({
+        queryKey: ['shipping-quotes', shippingDetails.country, itemsByVendor.map(g => g.vendorId).join(',')],
+        queryFn: async () => {
+            const entries = await Promise.all(
+                itemsByVendor.map(async (group) => {
+                    try {
+                        const res = await api.post(`/marketplace/vendors/${group.vendorId}/shipping-quote`, {
+                            country: shippingDetails.country,
+                            items: group.items.map(item => ({ productId: item.productId, quantity: item.quantity })),
+                        });
+                        return [group.vendorId, res.data] as const;
+                    } catch {
+                        return [group.vendorId, { cost: 0, zoneName: null, processingTime: null }] as const;
+                    }
+                })
+            );
+            return Object.fromEntries(entries);
+        },
+        enabled: itemsByVendor.length > 0 && !!shippingDetails.country,
+    });
+
+    // VENDOR_BACKLOG.md VND-020: per-vendor promo code input + live preview,
+    // using the exact same calculation createOrder() applies server-side
+    // (previewPromotion calls the same calculateBestPromotion() helper) so
+    // this can never show a discount the backend wouldn't actually honor.
+    const [promoCodes, setPromoCodes] = useState<Record<string, string>>({});
+    const [appliedPromoCodes, setAppliedPromoCodes] = useState<Record<string, string>>({});
+
+    const { data: promotionPreviews = {} } = useQuery<Record<string, { promotionId: string | null; discountAmount: number }>>({
+        queryKey: ['promotion-previews', itemsByVendor.map(g => g.vendorId).join(','), JSON.stringify(appliedPromoCodes)],
+        queryFn: async () => {
+            const entries = await Promise.all(
+                itemsByVendor.map(async (group) => {
+                    try {
+                        const res = await api.post(`/marketplace/vendors/${group.vendorId}/promotions/preview`, {
+                            items: group.items.map(item => ({ productId: item.productId, quantity: item.quantity })),
+                            promoCode: appliedPromoCodes[group.vendorId] || undefined,
+                        });
+                        return [group.vendorId, res.data] as const;
+                    } catch {
+                        return [group.vendorId, { promotionId: null, discountAmount: 0 }] as const;
+                    }
+                })
+            );
+            return Object.fromEntries(entries);
+        },
+        enabled: itemsByVendor.length > 0,
+    });
+    const totalDiscount = itemsByVendor.reduce((sum, group) => sum + (promotionPreviews[group.vendorId]?.discountAmount ?? 0), 0);
+    const discountedItemsTotal = Math.max(0, totalAmount - totalDiscount);
+
+    // Mirrors the backend's own Devoted-free-delivery rule (createOrder in
+    // marketplace.service.ts) so the total shown here matches what's
+    // actually charged, rather than displaying a shipping fee that a
+    // Devoted member on a ≥₦100,000 order won't actually be billed for.
+    const devotedFreeDeliveryApplies = isDevoted && freeDeliveryEligible;
+    const totalShippingCost = devotedFreeDeliveryApplies
+        ? 0
+        : itemsByVendor.reduce((sum, group) => sum + (shippingQuotes[group.vendorId]?.cost ?? 0), 0);
+    // Backend (marketplace.service.ts createOrder) adds 7.5% VAT on top of
+    // (items - discount + shipping) for every order's authoritative
+    // `totalAmount` -- this was never reflected in what checkout actually
+    // displayed/charged even before shipping was real, a separate
+    // pre-existing gap fixed alongside this one since it's the same total
+    // calculation. Discount is applied to the item subtotal before VAT,
+    // same order of operations as createOrder().
+    const vatAmount = (discountedItemsTotal + totalShippingCost) * 0.075;
+    const grandTotal = Math.round(discountedItemsTotal + totalShippingCost + vatAmount);
+
     const [paymentMethod, setPaymentMethod] = useState<'card' | 'bank_transfer' | 'crypto'>('card');
+
+    // SHOP_BACKLOG.md MSP-024: gifting, via the existing checkout flow
+    const [isGift, setIsGift] = useState(false);
+    const [giftRecipientEmail, setGiftRecipientEmail] = useState('');
+    const [giftMessage, setGiftMessage] = useState('');
+    const [dedicatedTo, setDedicatedTo] = useState('');
 
     const buildDemoOrderIds = () => itemsByVendor.map((group) => `demo-order-${group.vendorId}-${Date.now()}`);
 
@@ -74,11 +154,23 @@ const CheckoutView: React.FC<CheckoutViewProps> = ({ onBack, onSuccess }) => {
                         vendorId: group.vendorId,
                         items: group.items.map(item => ({
                             productId: item.productId,
-                            quantity: item.quantity
+                            quantity: item.quantity,
+                            // VENDOR_BACKLOG.md VND-007
+                            variantId: item.variantId,
                         })),
                         shippingAddress,
-                        shippingCost: 0, // Free shipping for now
-                        notes: `Payment method: ${paymentMethod}`
+                        shippingCountry: shippingDetails.country,
+                        // Server recomputes this authoritatively when the vendor has
+                        // shipping zones configured (VENDOR_BACKLOG.md VND-011) --
+                        // this is only used as a fallback for vendors who haven't.
+                        shippingCost: devotedFreeDeliveryApplies ? 0 : (shippingQuotes[group.vendorId]?.cost ?? 0),
+                        // VENDOR_BACKLOG.md VND-020
+                        promoCode: appliedPromoCodes[group.vendorId] || undefined,
+                        notes: `Payment method: ${paymentMethod}`,
+                        isGift: isGift || undefined,
+                        giftRecipientEmail: isGift && giftRecipientEmail ? giftRecipientEmail : undefined,
+                        giftMessage: isGift && giftMessage ? giftMessage : undefined,
+                        dedicatedTo: dedicatedTo || undefined,
                     })
                 );
 
@@ -147,6 +239,7 @@ const CheckoutView: React.FC<CheckoutViewProps> = ({ onBack, onSuccess }) => {
             shippingDetails.fullName,
             shippingDetails.address,
             `${shippingDetails.city}, ${shippingDetails.state} ${shippingDetails.zipCode}`,
+            shippingDetails.country,
             shippingDetails.phone
         ].filter(Boolean).join('\n');
 
@@ -270,6 +363,64 @@ const CheckoutView: React.FC<CheckoutViewProps> = ({ onBack, onSuccess }) => {
                                             placeholder="Lagos State"
                                         />
                                     </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-bold uppercase text-muted-foreground">Country</label>
+                                        <input
+                                            type="text"
+                                            value={shippingDetails.country}
+                                            onChange={e => setShippingDetails({ ...shippingDetails, country: e.target.value })}
+                                            className="w-full p-3 bg-muted/50 rounded-xl border border-border focus:outline-none focus:border-highlight text-foreground"
+                                            placeholder="Nigeria"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* SHOP_BACKLOG.md MSP-024: gifting */}
+                                <div className="pt-4 border-t border-border space-y-3">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={isGift}
+                                            onChange={e => setIsGift(e.target.checked)}
+                                        />
+                                        <span className="font-bold text-foreground flex items-center gap-1.5">
+                                            <Gift size={16} className="text-highlight" /> Send this as a gift
+                                        </span>
+                                    </label>
+                                    {isGift && (
+                                        <div className="pl-6 space-y-3">
+                                            <div className="space-y-1">
+                                                <label className="text-xs font-bold uppercase text-muted-foreground">Recipient's Email</label>
+                                                <input
+                                                    type="email"
+                                                    value={giftRecipientEmail}
+                                                    onChange={e => setGiftRecipientEmail(e.target.value)}
+                                                    className="w-full p-3 bg-muted/50 rounded-xl border border-border focus:outline-none focus:border-highlight text-foreground"
+                                                    placeholder="recipient@example.com"
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-xs font-bold uppercase text-muted-foreground">Gift Message (optional)</label>
+                                                <textarea
+                                                    value={giftMessage}
+                                                    onChange={e => setGiftMessage(e.target.value)}
+                                                    rows={2}
+                                                    className="w-full p-3 bg-muted/50 rounded-xl border border-border focus:outline-none focus:border-highlight text-foreground resize-none"
+                                                    placeholder="A note for the recipient..."
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-bold uppercase text-muted-foreground">Dedicate This Purchase (optional)</label>
+                                        <input
+                                            type="text"
+                                            value={dedicatedTo}
+                                            onChange={e => setDedicatedTo(e.target.value)}
+                                            className="w-full p-3 bg-muted/50 rounded-xl border border-border focus:outline-none focus:border-highlight text-foreground"
+                                            placeholder="e.g. my ancestors, Ọ̀rúnmìlà"
+                                        />
+                                    </div>
                                 </div>
 
                                 <div className="pt-4 flex justify-end">
@@ -326,7 +477,7 @@ const CheckoutView: React.FC<CheckoutViewProps> = ({ onBack, onSuccess }) => {
                                         className="bg-highlight text-white px-8 py-3 rounded-xl font-bold hover:bg-yellow-500 transition-colors shadow-lg hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-70 flex items-center gap-2"
                                     >
                                         {loading ? <Loader2 size={18} className="animate-spin" /> : null}
-                                        {loading ? 'Processing...' : `Pay ${currency === 'NGN' ? '₦' : '$'}${totalAmount.toLocaleString()}`}
+                                        {loading ? 'Processing...' : `Pay ${currency === 'NGN' ? '₦' : '$'}${grandTotal.toLocaleString()}`}
                                     </button>
                                 </div>
                             </div>
@@ -348,12 +499,13 @@ const CheckoutView: React.FC<CheckoutViewProps> = ({ onBack, onSuccess }) => {
                                             {group.vendorName}
                                         </div>
                                         {group.items.map((item) => (
-                                            <div key={item.productId} className="flex items-start gap-3 text-sm pl-4">
+                                            <div key={`${item.productId}-${item.variantId ?? 'default'}`} className="flex items-start gap-3 text-sm pl-4">
                                                 <div className="w-10 h-10 bg-muted rounded-lg overflow-hidden flex-shrink-0">
                                                     {item.image && <img src={item.image} className="w-full h-full object-cover" alt={item.name} />}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <p className="font-medium text-foreground line-clamp-1">{item.name}</p>
+                                                    {item.variantLabel && <p className="text-muted-foreground text-xs">{item.variantLabel}</p>}
                                                     <p className="text-muted-foreground text-xs">Qty: {item.quantity}</p>
                                                 </div>
                                                 <div className="font-bold text-sm">
@@ -361,6 +513,28 @@ const CheckoutView: React.FC<CheckoutViewProps> = ({ onBack, onSuccess }) => {
                                                 </div>
                                             </div>
                                         ))}
+                                        {/* VENDOR_BACKLOG.md VND-020: per-vendor promo code */}
+                                        <div className="pl-4 flex gap-2 items-center">
+                                            <input
+                                                type="text"
+                                                placeholder="Promo code"
+                                                value={promoCodes[group.vendorId] ?? ''}
+                                                onChange={(e) => setPromoCodes((prev) => ({ ...prev, [group.vendorId]: e.target.value }))}
+                                                className="flex-1 px-2 py-1.5 bg-muted/50 border border-border rounded-lg text-xs text-foreground"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setAppliedPromoCodes((prev) => ({ ...prev, [group.vendorId]: promoCodes[group.vendorId] ?? '' }))}
+                                                className="px-3 py-1.5 border border-border rounded-lg text-xs font-bold hover:bg-muted transition-colors"
+                                            >
+                                                Apply
+                                            </button>
+                                        </div>
+                                        {(promotionPreviews[group.vendorId]?.discountAmount ?? 0) > 0 && (
+                                            <p className="pl-4 text-xs font-bold text-green-600">
+                                                Discount applied: -{currency === 'NGN' ? '₦' : '$'}{promotionPreviews[group.vendorId]!.discountAmount.toLocaleString()}
+                                            </p>
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -390,13 +564,31 @@ const CheckoutView: React.FC<CheckoutViewProps> = ({ onBack, onSuccess }) => {
                                     <span>Subtotal</span>
                                     <span>{currency === 'NGN' ? '₦' : '$'}{totalAmount.toLocaleString()}</span>
                                 </div>
+                                {totalDiscount > 0 && (
+                                    <div className="flex justify-between text-green-600 font-semibold">
+                                        <span>Discount</span>
+                                        <span>-{currency === 'NGN' ? '₦' : '$'}{totalDiscount.toLocaleString()}</span>
+                                    </div>
+                                )}
                                 <div className="flex justify-between text-muted-foreground">
                                     <span>Shipping</span>
-                                    <span>{isDevoted && freeDeliveryEligible ? <span className="text-amber-600 dark:text-amber-400 font-semibold">Free</span> : 'Free'}</span>
+                                    <span>
+                                        {devotedFreeDeliveryApplies ? (
+                                            <span className="text-amber-600 dark:text-amber-400 font-semibold">Free</span>
+                                        ) : totalShippingCost > 0 ? (
+                                            `${currency === 'NGN' ? '₦' : '$'}${totalShippingCost.toLocaleString()}`
+                                        ) : (
+                                            'Free'
+                                        )}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between text-muted-foreground">
+                                    <span>VAT (7.5%)</span>
+                                    <span>{currency === 'NGN' ? '₦' : '$'}{Math.round(vatAmount).toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between font-bold text-xl text-foreground pt-2">
                                     <span>Total</span>
-                                    <span>{currency === 'NGN' ? '₦' : '$'}{totalAmount.toLocaleString()}</span>
+                                    <span>{currency === 'NGN' ? '₦' : '$'}{grandTotal.toLocaleString()}</span>
                                 </div>
                             </div>
                         </div>
@@ -408,7 +600,7 @@ const CheckoutView: React.FC<CheckoutViewProps> = ({ onBack, onSuccess }) => {
             <PaymentModal
                 isOpen={showPaymentModal}
                 onClose={handlePaymentModalClose}
-                amount={totalAmount}
+                amount={grandTotal}
                 currency={paymentCurrency}
                 purpose={PaymentPurpose.MARKETPLACE_ORDER}
                 relatedId={pendingOrderIds.join(',')}

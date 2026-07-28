@@ -77,7 +77,11 @@ describe('CheckoutView', () => {
     fireEvent.change(screen.getByPlaceholderText('Lagos'), { target: { value: 'Lagos' } });
     fireEvent.click(screen.getByRole('button', { name: /Continue to Payment/i }));
     fireEvent.click(screen.getByText('Bank Transfer'));
-    expect(screen.getByRole('button', { name: /Pay ₦100/ })).toBeInTheDocument();
+    // VENDOR_BACKLOG.md VND-011: the Pay button now shows the real total
+    // (₦100 subtotal + no shipping zones configured for this vendor in the
+    // test + 7.5% VAT, matching backend's createOrder calculation) rather
+    // than the bare subtotal it displayed before VAT was ever reflected here.
+    expect(screen.getByRole('button', { name: /Pay ₦108/ })).toBeInTheDocument();
   });
 
   it('back button on checkout calls onBack', () => {

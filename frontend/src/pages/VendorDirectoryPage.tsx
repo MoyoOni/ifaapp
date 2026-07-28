@@ -1,128 +1,57 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, MapPin, Star, ShoppingCart, CheckCircle } from 'lucide-react';
+import { Search, ShoppingCart, CheckCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import _api from '@/lib/api';
+import api from '@/lib/api';
 
 interface Vendor {
   id: string;
-  userId: string;
-  shopName: string;
-  description: string;
-  rating: number;
-  reviewCount: number;
-  verified: boolean;
-  location: string;
-  specialties: string[];
-  productCount: number;
-  avatar?: string;
+  businessName: string;
+  description: string | null;
+  apprenticeshipTier: string;
+  user: {
+    id: string;
+    name: string;
+    verified: boolean;
+  };
+  _count: {
+    products: number;
+    orders: number;
+  };
 }
 
+const TIER_LABELS: Record<string, string> = {
+  APPRENTICE: 'Apprentice',
+  RECOGNIZED_ARTISAN: 'Recognized Artisan',
+  MASTER_PRACTITIONER: 'Master Practitioner',
+  ELDER_APPROVED: 'Elder Approved',
+};
+
+// VENDOR_BACKLOG.md VND-023: this page previously showed four hardcoded mock
+// vendors whose "View Profile" button navigated to a userId ('user-1', etc.)
+// that never matched a real account -- discovered as a gap while building
+// VND-016's new storefront page, which this now links to for real.
 const VendorDirectoryPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSpecialty, setSelectedSpecialty] = useState<string>('all');
-  const [showVerifiedOnly, setShowVerifiedOnly] = useState(false);
 
-  // Mock vendor data since we don't have the actual API endpoint
-  const mockVendors: Vendor[] = [
-    {
-      id: '1',
-      userId: 'user-1',
-      shopName: 'Sacred Artifacts House',
-      description: 'Authentic traditional items crafted with ancestral blessings',
-      rating: 4.8,
-      reviewCount: 127,
-      verified: true,
-      location: 'Lagos, Nigeria',
-      specialties: ['Artifacts', 'Clothing', 'Herbs'],
-      productCount: 42,
-      avatar: undefined
-    },
-    {
-      id: '2',
-      userId: 'user-2',
-      shopName: 'Yoruba Wisdom Crafts',
-      description: 'Handmade ceremonial items and spiritual tools',
-      rating: 4.9,
-      reviewCount: 89,
-      verified: true,
-      location: 'Ibadan, Nigeria',
-      specialties: ['Tools', 'Artifacts', 'Books'],
-      productCount: 28,
-      avatar: undefined
-    },
-    {
-      id: '3',
-      userId: 'user-3',
-      shopName: 'Ancestral Blessings Store',
-      description: 'Traditional clothing and ritual garments',
-      rating: 4.6,
-      reviewCount: 64,
-      verified: false,
-      location: 'Abuja, Nigeria',
-      specialties: ['Clothing', 'Accessories'],
-      productCount: 15,
-      avatar: undefined
-    },
-    {
-      id: '4',
-      userId: 'user-4',
-      shopName: 'Divine Herbs & Remedies',
-      description: 'Medicinal herbs and traditional healing supplies',
-      rating: 4.7,
-      reviewCount: 203,
-      verified: true,
-      location: 'Port Harcourt, Nigeria',
-      specialties: ['Herbs', 'Remedies', 'Supplements'],
-      productCount: 56,
-      avatar: undefined
-    }
-  ];
-
-  // Simulate API call with mock data
   const { data: vendors = [], isLoading } = useQuery<Vendor[]>({
-    queryKey: ['vendors'],
-    queryFn: async () => {
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-      return mockVendors;
-    }
+    queryKey: ['vendor-directory'],
+    queryFn: async () => (await api.get('/marketplace/vendors', { params: { status: 'APPROVED' } })).data,
   });
 
-  // Filter vendors based on search and filters
   const filteredVendors = useMemo(() => {
-    return vendors.filter(vendor => {
-      const matchesSearch = vendor.shopName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           vendor.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           vendor.specialties.some(specialty => 
-                             specialty.toLowerCase().includes(searchQuery.toLowerCase())
-                           );
-      
-      const matchesSpecialty = selectedSpecialty === 'all' || 
-                              vendor.specialties.includes(selectedSpecialty);
-      
-      const matchesVerified = !showVerifiedOnly || vendor.verified;
-      
-      return matchesSearch && matchesSpecialty && matchesVerified;
-    });
-  }, [vendors, searchQuery, selectedSpecialty, showVerifiedOnly]);
-
-  // Get all unique specialties for filter dropdown
-  const allSpecialties = useMemo(() => {
-    const specialties = new Set<string>();
-    vendors.forEach(vendor => {
-      vendor.specialties.forEach(specialty => specialties.add(specialty));
-    });
-    return ['all', ...Array.from(specialties).sort()];
-  }, [vendors]);
+    const q = searchQuery.toLowerCase();
+    if (!q) return vendors;
+    return vendors.filter(
+      (vendor) =>
+        vendor.businessName.toLowerCase().includes(q) ||
+        (vendor.description ?? '').toLowerCase().includes(q)
+    );
+  }, [vendors, searchQuery]);
 
   const handleViewVendor = (vendor: Vendor) => {
-    navigate(`/profile/${vendor.userId}`);
-  };
-
-  const handleViewProducts = (vendor: Vendor) => {
-    navigate(`/marketplace?vendor=${vendor.id}`);
+    navigate(`/vendors/${vendor.user.id}`);
   };
 
   if (isLoading) {
@@ -145,57 +74,27 @@ const VendorDirectoryPage: React.FC = () => {
             <ShoppingCart className="text-highlight" size={20} />
             <span className="font-bold text-highlight uppercase tracking-wider">Sacred Merchants</span>
           </div>
-          
+
           <h1 className="text-4xl font-bold text-stone-800 dark:text-stone-200 brand-font mb-4">
             Curators of Authentic Spiritual Goods
           </h1>
           <p className="text-xl text-stone-600 max-w-3xl">
-            Discover trusted vendors offering genuine traditional artifacts, ceremonial items, 
+            Discover trusted vendors offering genuine traditional artifacts, ceremonial items,
             and spiritual supplies from verified artisans and practitioners.
           </p>
         </div>
 
-        {/* Search and Filters */}
+        {/* Search */}
         <div className="bg-card rounded-2xl border border-border shadow-sm p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* Search */}
-            <div className="md:col-span-2 relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-stone-400" size={20} />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search vendors, specialties, or locations..."
-                className="w-full pl-12 pr-4 py-3 bg-muted/40 border border-border rounded-xl focus:ring-2 focus:ring-highlight focus:border-transparent"
-              />
-            </div>
-
-            {/* Specialty Filter */}
-            <select
-              value={selectedSpecialty}
-              onChange={(e) => setSelectedSpecialty(e.target.value)}
-              className="px-4 py-3 bg-muted/40 border border-border rounded-xl focus:ring-2 focus:ring-highlight focus:border-transparent"
-            >
-              {allSpecialties.map(specialty => (
-                <option key={specialty} value={specialty}>
-                  {specialty === 'all' ? 'All Specialties' : specialty}
-                </option>
-              ))}
-            </select>
-
-            {/* Verified Filter */}
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="verified-filter"
-                checked={showVerifiedOnly}
-                onChange={(e) => setShowVerifiedOnly(e.target.checked)}
-                className="w-5 h-5 text-highlight rounded focus:ring-highlight border-stone-300"
-              />
-              <label htmlFor="verified-filter" className="text-stone-700 dark:text-stone-300 font-medium">
-                Verified Only
-              </label>
-            </div>
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-stone-400" size={20} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search vendors by name or description..."
+              className="w-full pl-12 pr-4 py-3 bg-muted/40 border border-border rounded-xl focus:ring-2 focus:ring-highlight focus:border-transparent"
+            />
           </div>
         </div>
 
@@ -212,7 +111,7 @@ const VendorDirectoryPage: React.FC = () => {
           <div className="bg-card rounded-2xl border border-border shadow-sm p-12 text-center">
             <ShoppingCart size={48} className="mx-auto text-stone-300 mb-4" />
             <h3 className="text-xl font-bold text-stone-800 dark:text-stone-200 mb-2">No merchants found</h3>
-            <p className="text-stone-600">Try adjusting your search or filter criteria</p>
+            <p className="text-stone-600">Try adjusting your search</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -227,19 +126,16 @@ const VendorDirectoryPage: React.FC = () => {
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 bg-highlight/10 rounded-full flex items-center justify-center">
                         <span className="text-highlight font-bold text-lg">
-                          {vendor.shopName.charAt(0)}
+                          {vendor.businessName.charAt(0)}
                         </span>
                       </div>
                       <div>
-                        <h3 className="font-bold text-lg text-stone-800 dark:text-stone-200">{vendor.shopName}</h3>
+                        <h3 className="font-bold text-lg text-stone-800 dark:text-stone-200">{vendor.businessName}</h3>
                         <div className="flex items-center gap-2 mt-1">
-                          <div className="flex items-center gap-1">
-                            <Star className="text-yellow-500 dark:text-yellow-400 fill-current" size={16} />
-                            <span className="text-sm font-bold text-stone-700 dark:text-stone-300">{vendor.rating}</span>
-                          </div>
-                          <span className="text-stone-400">•</span>
-                          <span className="text-sm text-stone-500">{vendor.reviewCount} reviews</span>
-                          {vendor.verified && (
+                          <span className="text-xs font-bold text-stone-500 uppercase">
+                            {TIER_LABELS[vendor.apprenticeshipTier] ?? vendor.apprenticeshipTier}
+                          </span>
+                          {vendor.user.verified && (
                             <>
                               <span className="text-stone-400">•</span>
                               <div className="flex items-center gap-1">
@@ -253,50 +149,24 @@ const VendorDirectoryPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <p className="text-stone-600 text-sm mb-4 line-clamp-2">{vendor.description}</p>
-
-                  <div className="flex items-center gap-2 mb-4">
-                    <MapPin className="text-stone-400" size={16} />
-                    <span className="text-sm text-stone-600">{vendor.location}</span>
-                  </div>
-
-                  {/* Specialties */}
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {vendor.specialties.slice(0, 3).map((specialty) => (
-                      <span
-                        key={specialty}
-                        className="px-2 py-1 bg-muted/60 text-stone-700 dark:text-stone-300 text-xs font-bold rounded-full"
-                      >
-                        {specialty}
-                      </span>
-                    ))}
-                    {vendor.specialties.length > 3 && (
-                      <span className="px-2 py-1 bg-muted/60 text-stone-500 text-xs font-bold rounded-full">
-                        +{vendor.specialties.length - 3} more
-                      </span>
-                    )}
-                  </div>
+                  {vendor.description && (
+                    <p className="text-stone-600 text-sm mb-4 line-clamp-2">{vendor.description}</p>
+                  )}
                 </div>
 
                 {/* Vendor Footer */}
                 <div className="px-6 py-4 bg-muted/40 border-t border-border/50">
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-sm text-stone-600">
-                      {vendor.productCount} {vendor.productCount === 1 ? 'product' : 'products'}
+                      {vendor._count.products} {vendor._count.products === 1 ? 'product' : 'products'}
                     </span>
-                    <button
-                      onClick={() => handleViewVendor(vendor)}
-                      className="text-sm font-bold text-highlight hover:text-yellow-700 dark:text-yellow-400 transition-colors"
-                    >
-                      View Profile
-                    </button>
                   </div>
-                  
+
                   <button
-                    onClick={() => handleViewProducts(vendor)}
+                    onClick={() => handleViewVendor(vendor)}
                     className="w-full py-2.5 bg-highlight hover:bg-yellow-600 text-white font-bold rounded-xl transition-colors"
                   >
-                    Browse Products
+                    Visit Storefront
                   </button>
                 </div>
               </div>
