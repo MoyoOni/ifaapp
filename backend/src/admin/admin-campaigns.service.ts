@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { SesEmailService } from '../shared/services/ses-email.service';
+import { AuditService } from './audit.service';
 
 @Injectable()
 export class AdminCampaignsService {
@@ -10,7 +11,8 @@ export class AdminCampaignsService {
 
   constructor(
     private prisma: PrismaService,
-    private sesEmailService: SesEmailService
+    private sesEmailService: SesEmailService,
+    private auditService: AuditService
   ) {}
 
   async getCampaigns(page: number = 1, limit: number = 20) {
@@ -44,7 +46,7 @@ export class AdminCampaignsService {
     });
   }
 
-  async deleteCampaign(id: string) {
+  async deleteCampaign(id: string, currentUser: CurrentUserPayload) {
     const campaign = await this.prisma.emailCampaign.findUnique({ where: { id } });
     if (!campaign) {
       throw new NotFoundException('Campaign not found');
@@ -53,6 +55,15 @@ export class AdminCampaignsService {
       throw new BadRequestException('Cannot delete a campaign that has already been sent');
     }
     await this.prisma.emailCampaign.delete({ where: { id } });
+
+    // P0-03: real queryable audit trail for hard deletes, not just a log line.
+    await this.auditService.logAction({
+      adminId: currentUser.id,
+      action: 'DELETE',
+      entityType: 'EmailCampaign',
+      entityId: id,
+      payload: { snapshot: campaign },
+    });
   }
 
   async sendCampaign(id: string) {

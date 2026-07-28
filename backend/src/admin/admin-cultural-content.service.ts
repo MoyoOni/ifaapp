@@ -13,12 +13,14 @@ import {
   NotificationType,
   NotificationCategory,
 } from '../notifications/notification.service';
+import { AuditService } from './audit.service';
 
 @Injectable()
 export class AdminCulturalContentService {
   constructor(
     private prisma: PrismaService,
-    private readonly notificationService: NotificationService
+    private readonly notificationService: NotificationService,
+    private readonly auditService: AuditService
   ) {}
 
   // ===== Daily Words =====
@@ -86,7 +88,7 @@ export class AdminCulturalContentService {
    * so this just blocks the delete outright once it has view history --
    * content admins rarely need to force-delete an already-shown word.
    */
-  async deleteDailyWord(id: string) {
+  async deleteDailyWord(id: string, currentUser: CurrentUserPayload) {
     const existing = await this.prisma.dailyYorubaWord.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Daily word not found');
 
@@ -97,7 +99,18 @@ export class AdminCulturalContentService {
       );
     }
 
-    return this.prisma.dailyYorubaWord.delete({ where: { id } });
+    const deleted = await this.prisma.dailyYorubaWord.delete({ where: { id } });
+
+    // P0-03: real queryable audit trail for hard deletes, not just a log line.
+    await this.auditService.logAction({
+      adminId: currentUser.id,
+      action: 'DELETE',
+      entityType: 'DailyYorubaWord',
+      entityId: id,
+      payload: { snapshot: deleted },
+    });
+
+    return deleted;
   }
 
   // ===== Oral History =====
@@ -353,7 +366,7 @@ export class AdminCulturalContentService {
    * feature-request tied to this event. Deactivate (isActive: false)
    * instead once either exists, same posture as deleteProduct()/deletePromo().
    */
-  async deleteSacredEvent(id: string) {
+  async deleteSacredEvent(id: string, currentUser: CurrentUserPayload) {
     const existing = await this.prisma.sacredCalendarEvent.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Sacred event not found');
 
@@ -370,6 +383,16 @@ export class AdminCulturalContentService {
     }
 
     await this.prisma.sacredCalendarEvent.delete({ where: { id } });
+
+    // P0-03: real queryable audit trail for hard deletes, not just a log line.
+    await this.auditService.logAction({
+      adminId: currentUser.id,
+      action: 'DELETE',
+      entityType: 'SacredCalendarEvent',
+      entityId: id,
+      payload: { snapshot: existing },
+    });
+
     return { message: 'Sacred event deleted', deactivated: false };
   }
 

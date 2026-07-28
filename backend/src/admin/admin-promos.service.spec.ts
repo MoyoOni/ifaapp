@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { AdminPromosService } from './admin-promos.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from './audit.service';
 
 // ProBacklog-v1.md structural fix: deletePromo() used to call
 // prisma.promoCode.delete() with no check at all. PromoRedemption.promoCode
@@ -11,6 +12,8 @@ import { PrismaService } from '../prisma/prisma.service';
 describe('AdminPromosService', () => {
   let service: AdminPromosService;
 
+  const mockAdmin = { id: 'admin-1', role: 'ADMIN', email: 'admin@example.com', verified: true } as any;
+
   const mockPrismaService = {
     promoCode: {
       findUnique: jest.fn(),
@@ -18,10 +21,18 @@ describe('AdminPromosService', () => {
     },
   };
 
+  const mockAuditService = {
+    logAction: jest.fn().mockResolvedValue(undefined),
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
     const module: TestingModule = await Test.createTestingModule({
-      providers: [AdminPromosService, { provide: PrismaService, useValue: mockPrismaService }],
+      providers: [
+        AdminPromosService,
+        { provide: PrismaService, useValue: mockPrismaService },
+        { provide: AuditService, useValue: mockAuditService },
+      ],
     }).compile();
 
     service = module.get<AdminPromosService>(AdminPromosService);
@@ -31,7 +42,7 @@ describe('AdminPromosService', () => {
     it('404s on a missing promo code', async () => {
       mockPrismaService.promoCode.findUnique.mockResolvedValue(null);
 
-      await expect(service.deletePromo('missing')).rejects.toThrow(NotFoundException);
+      await expect(service.deletePromo('missing', mockAdmin)).rejects.toThrow(NotFoundException);
       expect(mockPrismaService.promoCode.delete).not.toHaveBeenCalled();
     });
 
@@ -42,7 +53,7 @@ describe('AdminPromosService', () => {
       });
       mockPrismaService.promoCode.delete.mockResolvedValue({ id: 'promo-1' });
 
-      await service.deletePromo('promo-1');
+      await service.deletePromo('promo-1', mockAdmin);
 
       expect(mockPrismaService.promoCode.delete).toHaveBeenCalledWith({ where: { id: 'promo-1' } });
     });
@@ -53,8 +64,28 @@ describe('AdminPromosService', () => {
         _count: { redemptions: 5 },
       });
 
-      await expect(service.deletePromo('promo-1')).rejects.toThrow(BadRequestException);
+      await expect(service.deletePromo('promo-1', mockAdmin)).rejects.toThrow(BadRequestException);
       expect(mockPrismaService.promoCode.delete).not.toHaveBeenCalled();
+      expect(mockAuditService.logAction).not.toHaveBeenCalled();
+    });
+
+    // P0-03: real queryable audit trail for hard deletes.
+    it('logs the deletion to AuditLog with a snapshot of the deleted row', async () => {
+      const promo = { id: 'promo-1', code: 'WELCOME10', _count: { redemptions: 0 } };
+      mockPrismaService.promoCode.findUnique.mockResolvedValue(promo);
+      mockPrismaService.promoCode.delete.mockResolvedValue(promo);
+
+      await service.deletePromo('promo-1', mockAdmin);
+
+      expect(mockAuditService.logAction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          adminId: 'admin-1',
+          action: 'DELETE',
+          entityType: 'PromoCode',
+          entityId: 'promo-1',
+          payload: { snapshot: promo },
+        })
+      );
     });
   });
 });

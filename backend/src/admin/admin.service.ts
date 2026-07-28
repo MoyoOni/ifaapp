@@ -591,8 +591,8 @@ export class AdminService {
     return this.adminContentService.updateQuizQuestion(id, data);
   }
 
-  async deleteQuizQuestion(id: string) {
-    return this.adminContentService.deleteQuizQuestion(id);
+  async deleteQuizQuestion(id: string, currentUser: CurrentUserPayload) {
+    return this.adminContentService.deleteQuizQuestion(id, currentUser);
   }
 
   async getQuizStats() {

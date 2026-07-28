@@ -10,6 +10,7 @@ import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { CirclesService } from '../circles/circles.service';
 import { CreateAdvisoryVoteDto } from './dto/advisory-board.dto';
 import { CreateCircleDto } from '../circles/dto/create-circle.dto';
+import { AuditService } from './audit.service';
 
 @Injectable()
 export class AdminCommunityService {
@@ -17,7 +18,8 @@ export class AdminCommunityService {
 
   constructor(
     private prisma: PrismaService,
-    private circlesService: CirclesService
+    private circlesService: CirclesService,
+    private auditService: AuditService
   ) {}
 
   /**
@@ -715,7 +717,7 @@ export class AdminCommunityService {
   /**
    * Revoke/delete a badge
    */
-  async revokeBadge(badgeId: string) {
+  async revokeBadge(badgeId: string, currentUser: CurrentUserPayload) {
     const badge = await this.prisma.userBadge.findUnique({
       where: { id: badgeId },
     });
@@ -726,6 +728,15 @@ export class AdminCommunityService {
 
     await this.prisma.userBadge.delete({
       where: { id: badgeId },
+    });
+
+    // P0-03: real queryable audit trail for hard deletes, not just a log line.
+    await this.auditService.logAction({
+      adminId: currentUser.id,
+      action: 'DELETE',
+      entityType: 'UserBadge',
+      entityId: badgeId,
+      payload: { snapshot: badge },
     });
   }
 }

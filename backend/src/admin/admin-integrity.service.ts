@@ -4,10 +4,14 @@ import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { RejectPostDto } from './dto/reject-post.dto';
 import { CreateFlagRuleDto } from './dto/create-flag-rule.dto';
 import { UpdateFlagRuleDto } from './dto/update-flag-rule.dto';
+import { AuditService } from './audit.service';
 
 @Injectable()
 export class AdminIntegrityService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private auditService: AuditService
+  ) {}
 
   // ===== Review Queue =====
 
@@ -104,9 +108,20 @@ export class AdminIntegrityService {
     });
   }
 
-  async deleteRule(id: string) {
+  async deleteRule(id: string, currentUser: CurrentUserPayload) {
     const rule = await this.prisma.contentFlagRule.findUnique({ where: { id } });
     if (!rule) throw new NotFoundException('Flag rule not found');
-    return this.prisma.contentFlagRule.delete({ where: { id } });
+    const deleted = await this.prisma.contentFlagRule.delete({ where: { id } });
+
+    // P0-03: real queryable audit trail for hard deletes, not just a log line.
+    await this.auditService.logAction({
+      adminId: currentUser.id,
+      action: 'DELETE',
+      entityType: 'ContentFlagRule',
+      entityId: id,
+      payload: { snapshot: deleted },
+    });
+
+    return deleted;
   }
 }

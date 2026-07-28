@@ -1,10 +1,14 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
+import { AuditService } from './audit.service';
 
 @Injectable()
 export class AdminPromosService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private auditService: AuditService
+  ) {}
 
   async getAllPromos(includeInactive: boolean = false) {
     const promos = await this.prisma.promoCode.findMany({
@@ -130,8 +134,12 @@ export class AdminPromosService {
    * the redemption/discount history for every order that ever used this
    * code the moment an admin deleted it. Same "preserve history, block the
    * hard delete" posture as marketplace.service.ts's deleteProduct().
+   *
+   * P0-03: also logs to the real AuditLog table (previously nothing did
+   * for this action) with a full snapshot of the deleted row as payload,
+   * so a hard-deleted promo can still be identified/recreated later.
    */
-  async deletePromo(id: string) {
+  async deletePromo(id: string, currentUser: CurrentUserPayload) {
     const promo = await this.prisma.promoCode.findUnique({
       where: { id },
       include: { _count: { select: { redemptions: true } } },
@@ -149,6 +157,14 @@ export class AdminPromosService {
 
     await this.prisma.promoCode.delete({
       where: { id },
+    });
+
+    await this.auditService.logAction({
+      adminId: currentUser.id,
+      action: 'DELETE',
+      entityType: 'PromoCode',
+      entityId: id,
+      payload: { snapshot: promo },
     });
   }
 }

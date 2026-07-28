@@ -1,7 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { NotFoundException } from '@nestjs/common';
 import { AdminCommunityService } from './admin-community.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CirclesService } from '../circles/circles.service';
+import { AuditService } from './audit.service';
 
 // P2-04: moved from admin.service.spec.ts along with the moderateCircle
 // (P0-03 soft delete) logic itself, when AdminService was split.
@@ -55,7 +57,15 @@ describe('AdminCommunityService', () => {
               findUnique: jest.fn(),
               update: jest.fn(),
             },
+            userBadge: {
+              findUnique: jest.fn(),
+              delete: jest.fn(),
+            },
           },
+        },
+        {
+          provide: AuditService,
+          useValue: { logAction: jest.fn().mockResolvedValue(undefined) },
         },
       ],
     }).compile();
@@ -66,6 +76,35 @@ describe('AdminCommunityService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  // P0-03: real queryable audit trail for hard deletes.
+  describe('revokeBadge', () => {
+    it('404s on a missing badge', async () => {
+      (prisma.userBadge.findUnique as jest.Mock).mockResolvedValue(null);
+
+      await expect(service.revokeBadge('badge-1', mockAdminUser as any)).rejects.toThrow(NotFoundException);
+    });
+
+    it('deletes the badge and logs the deletion to AuditLog with a snapshot', async () => {
+      const badge = { id: 'badge-1', userId: 'user-1', badgeKey: 'FIRST_HARVEST' };
+      (prisma.userBadge.findUnique as jest.Mock).mockResolvedValue(badge);
+      (prisma.userBadge.delete as jest.Mock).mockResolvedValue(badge);
+      const auditService = (service as any).auditService as { logAction: jest.Mock };
+
+      await service.revokeBadge('badge-1', mockAdminUser as any);
+
+      expect(prisma.userBadge.delete).toHaveBeenCalledWith({ where: { id: 'badge-1' } });
+      expect(auditService.logAction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          adminId: 'admin-1',
+          action: 'DELETE',
+          entityType: 'UserBadge',
+          entityId: 'badge-1',
+          payload: { snapshot: badge },
+        })
+      );
+    });
   });
 
   describe('moderateCircle (P0-03 soft delete)', () => {

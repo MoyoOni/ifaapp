@@ -1,11 +1,16 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
+import { AuditService } from './audit.service';
 
 @Injectable()
 export class AdminContentService {
   private readonly logger = new Logger(AdminContentService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private auditService: AuditService
+  ) {}
 
   async getQuizQuestions() {
     return this.prisma.culturalQuizQuestion.findMany({ orderBy: { sortOrder: 'asc' } });
@@ -27,8 +32,22 @@ export class AdminContentService {
     return this.prisma.culturalQuizQuestion.update({ where: { id }, data });
   }
 
-  async deleteQuizQuestion(id: string) {
+  async deleteQuizQuestion(id: string, currentUser: CurrentUserPayload) {
+    const question = await this.prisma.culturalQuizQuestion.findUnique({ where: { id } });
+    if (!question) {
+      throw new NotFoundException('Quiz question not found');
+    }
     await this.prisma.culturalQuizQuestion.delete({ where: { id } });
+
+    // P0-03: real queryable audit trail for hard deletes, not just a log line.
+    await this.auditService.logAction({
+      adminId: currentUser.id,
+      action: 'DELETE',
+      entityType: 'CulturalQuizQuestion',
+      entityId: id,
+      payload: { snapshot: question },
+    });
+
     return { success: true };
   }
 

@@ -3,6 +3,7 @@ import { NotFoundException } from '@nestjs/common';
 import { AdminCulturalContentService } from './admin-cultural-content.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from '../notifications/notification.service';
+import { AuditService } from './audit.service';
 
 // Scoped to the OralHistoryEntry methods touched by ProBacklog-v1.md item #12
 // (soft-delete audit) -- not full coverage of this service's other models
@@ -30,6 +31,7 @@ describe('AdminCulturalContentService - OralHistoryEntry soft delete', () => {
         AdminCulturalContentService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: NotificationService, useValue: mockNotificationService },
+        { provide: AuditService, useValue: { logAction: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
 

@@ -703,8 +703,8 @@ export class AdminController {
 
   @Delete('quiz/questions/:id')
   @Roles(UserRole.ADMIN)
-  async deleteQuizQuestion(@Param('id') id: string) {
-    return this.adminService.deleteQuizQuestion(id);
+  async deleteQuizQuestion(@Param('id') id: string, @CurrentUser() admin: CurrentUserPayload) {
+    return this.adminService.deleteQuizQuestion(id, admin);
   }
 
   @Get('quiz/stats')
@@ -953,8 +953,8 @@ export class AdminController {
 
   @Delete('campaigns/:id')
   @Roles(UserRole.ADMIN)
-  async deleteCampaign(@Param('id') id: string) {
-    return this.campaignsService.deleteCampaign(id);
+  async deleteCampaign(@Param('id') id: string, @CurrentUser() admin: CurrentUserPayload) {
+    return this.campaignsService.deleteCampaign(id, admin);
   }
 
   // ADM-020: Promo Codes Management
@@ -998,8 +998,8 @@ export class AdminController {
 
   @Delete('promos/:id')
   @Roles(UserRole.ADMIN)
-  async deletePromo(@Param('id') id: string) {
-    return this.promosService.deletePromo(id);
+  async deletePromo(@Param('id') id: string, @CurrentUser() admin: CurrentUserPayload) {
+    return this.promosService.deletePromo(id, admin);
   }
 
   // ADM-022: Revenue Forecasting
@@ -1126,8 +1126,8 @@ export class AdminController {
 
   @Delete('community/badges/:badgeId')
   @Roles(UserRole.ADMIN)
-  async revokeBadge(@Param('badgeId') badgeId: string) {
-    return this.communityService.revokeBadge(badgeId);
+  async revokeBadge(@Param('badgeId') badgeId: string, @CurrentUser() admin: CurrentUserPayload) {
+    return this.communityService.revokeBadge(badgeId, admin);
   }
 
   // ADM-023: Cultural Content Calendar
@@ -1154,8 +1154,8 @@ export class AdminController {
 
   @Delete('cultural/daily-words/:id')
   @Roles(UserRole.ADMIN)
-  async deleteDailyWord(@Param('id') id: string) {
-    return this.culturalContentService.deleteDailyWord(id);
+  async deleteDailyWord(@Param('id') id: string, @CurrentUser() admin: CurrentUserPayload) {
+    return this.culturalContentService.deleteDailyWord(id, admin);
   }
 
   // ===== Oral History =====
@@ -1212,8 +1212,8 @@ export class AdminController {
 
   @Delete('cultural/sacred-events/:id')
   @Roles(UserRole.ADMIN)
-  async deleteSacredEvent(@Param('id') id: string) {
-    return this.culturalContentService.deleteSacredEvent(id);
+  async deleteSacredEvent(@Param('id') id: string, @CurrentUser() admin: CurrentUserPayload) {
+    return this.culturalContentService.deleteSacredEvent(id, admin);
   }
 
   // ADM-024: Featured Content Management
@@ -1284,8 +1284,8 @@ export class AdminController {
 
   @Delete('integrity/rules/:id')
   @Roles(UserRole.ADMIN)
-  async deleteFlagRule(@Param('id') id: string) {
-    return this.integrityService.deleteRule(id);
+  async deleteFlagRule(@Param('id') id: string, @CurrentUser() admin: CurrentUserPayload) {
+    return this.integrityService.deleteRule(id, admin);
   }
 
   // ADM-032: Academy Management
