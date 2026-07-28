@@ -29,6 +29,12 @@ import { UsersService } from '../users/users.service';
 export class ForumService {
   private readonly logger = new Logger(ForumService.name);
 
+  // COMMUNITY_BACKLOG.md FOR-002: shared between the thread- and reply-
+  // creation crisis-flagging blocks below so the reason text on
+  // heldForReview posts is always identical, not two copies that could drift.
+  private static readonly CRISIS_REVIEW_REASON =
+    'Automatic crisis-keyword detection -- pending welfare review';
+
   constructor(
     private prisma: PrismaService,
     @Inject(forwardRef(() => MessagingGateway))
@@ -584,7 +590,11 @@ Share your reflections, questions, and experiences below. All levels welcome.
       await this.prisma.forumPost
         .update({
           where: { id: firstPost.id },
-          data: { hasCrisisSignal: true },
+          data: {
+            hasCrisisSignal: true,
+            heldForReview: true,
+            reviewReason: ForumService.CRISIS_REVIEW_REASON,
+          },
         })
         .catch((err) =>
           this.logger.error(`Failed to flag crisis signal on post ${firstPost.id}`, err)
@@ -819,10 +829,28 @@ Share your reflections, questions, and experiences below. All levels welcome.
       throw new NotFoundException('Thread not found');
     }
 
+    const isAdmin = currentUser?.role === 'ADMIN';
+
+    // COMMUNITY_BACKLOG.md FOR-002: a post automatically flagged by crisis
+    // detection (see maybeFlagCrisisContent below) is also put on
+    // heldForReview -- previously flagged content stayed fully visible to
+    // everyone for the entire time it sat in the admin welfare-review queue.
+    // Reuses the existing heldForReview/reviewReason columns (already on
+    // ForumPost, previously written nowhere) rather than adding a second
+    // visibility flag. The author can still see their own post (so it
+    // doesn't just vanish on them mid-crisis), and admins see everything.
     const posts = await this.prisma.forumPost.findMany({
       where: {
         threadId,
         status: { not: PostStatus.DELETED },
+        ...(isAdmin
+          ? {}
+          : {
+              OR: [
+                { heldForReview: false },
+                ...(currentUser ? [{ authorId: currentUser.id }] : []),
+              ],
+            }),
       },
       orderBy: { createdAt: 'asc' },
       include: {
@@ -859,8 +887,6 @@ Share your reflections, questions, and experiences below. All levels welcome.
         },
       },
     });
-
-    const isAdmin = currentUser?.role === 'ADMIN';
 
     return posts.map((post) => {
       if (post.isAnonymous && !isAdmin && currentUser?.id !== post.authorId) {
@@ -1071,7 +1097,11 @@ Share your reflections, questions, and experiences below. All levels welcome.
       await this.prisma.forumPost
         .update({
           where: { id: post.id },
-          data: { hasCrisisSignal: true },
+          data: {
+            hasCrisisSignal: true,
+            heldForReview: true,
+            reviewReason: ForumService.CRISIS_REVIEW_REASON,
+          },
         })
         .catch((err) => this.logger.error(`Failed to flag crisis signal on post ${post.id}`, err));
       this.notifyAdmins(
@@ -2712,16 +2742,27 @@ Share your reflections, questions, and experiences below. All levels welcome.
     return { posts, total, page, limit };
   }
 
-  async clearCrisisSignal(postId: string, source: 'forum' | 'circle' = 'forum') {
+  async clearCrisisSignal(
+    postId: string,
+    source: 'forum' | 'circle' = 'forum',
+    currentUser?: CurrentUserPayload
+  ) {
     if (source === 'circle') {
       return (this.prisma as any).circleFeedPost.update({
         where: { id: postId },
         data: { hasCrisisSignal: false },
       });
     }
+    // FOR-002: clearing the signal also lifts the heldForReview restriction
+    // this fix added -- reviewed content becomes publicly visible again.
     return this.prisma.forumPost.update({
       where: { id: postId },
-      data: { hasCrisisSignal: false },
+      data: {
+        hasCrisisSignal: false,
+        heldForReview: false,
+        reviewedBy: currentUser?.id,
+        reviewedAt: new Date(),
+      },
     });
   }
 }

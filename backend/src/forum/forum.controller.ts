@@ -509,9 +509,10 @@ export class ForumController {
   @Roles(UserRole.ADMIN)
   async clearCrisisSignal(
     @Param('postId') postId: string,
-    @Query('source') source?: 'forum' | 'circle'
+    @Query('source') source: 'forum' | 'circle' | undefined,
+    @CurrentUser() currentUser: CurrentUserPayload
   ) {
-    return this.forumService.clearCrisisSignal(postId, source || 'forum');
+    return this.forumService.clearCrisisSignal(postId, source || 'forum', currentUser);
   }
 
   @Post('live-sessions')
