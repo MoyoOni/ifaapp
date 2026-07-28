@@ -15,6 +15,13 @@ interface UpdateNotificationPreferencesDto {
   pushFollowup?: boolean;
   pushForum?: boolean;
   pushCircles?: boolean;
+  // VENDOR_BACKLOG.md VND-004
+  emailOrder?: boolean;
+  pushOrder?: boolean;
+  emailReviewReceived?: boolean;
+  pushReviewReceived?: boolean;
+  emailLowStock?: boolean;
+  pushLowStock?: boolean;
 }
 
 @Controller('notifications/preferences')

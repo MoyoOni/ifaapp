@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SesEmailService } from '../shared/services/ses-email.service';
 import {
@@ -6,7 +6,8 @@ import {
   NotificationType,
   NotificationCategory,
 } from '../notifications/notification.service';
-import { addMonths, addDays, differenceInDays } from 'date-fns';
+import { PaystackApiService } from '../payments/paystack-api.service';
+import { addMonths, addDays, differenceInDays, startOfDay, endOfDay, subDays } from 'date-fns';
 
 @Injectable()
 export class SubscriptionsService {
@@ -15,8 +16,43 @@ export class SubscriptionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly sesEmailService: SesEmailService,
-    private readonly notificationService: NotificationService
+    private readonly notificationService: NotificationService,
+    private readonly paystackApiService: PaystackApiService
   ) {}
+
+  /**
+   * HUMAN_BACKLOG.md: shared by both the self-service cancel path below and
+   * AdminFinanceService.cancelSubscriptionById -- previously each path
+   * either used a raw unguarded fetch() with the wrong token (self-service)
+   * or never called Paystack at all (admin path), so an admin cancelling a
+   * subscription didn't stop Paystack from billing the customer again.
+   * Failure here is logged and swallowed, not thrown -- the local
+   * cancellation must still succeed even if Paystack is unreachable or the
+   * subscription predates paystackEmailToken being stored (older rows have
+   * it null), matching this file's existing "proceeding locally" philosophy.
+   */
+  async disablePaystackSubscription(subscription: {
+    id: string;
+    paystackSubId: string | null;
+    paystackEmailToken: string | null;
+  }) {
+    if (!subscription.paystackSubId || !subscription.paystackEmailToken) {
+      if (subscription.paystackSubId) {
+        this.logger.warn(
+          `Subscription ${subscription.id} has no stored paystackEmailToken -- cannot disable in Paystack, only cancelling locally`
+        );
+      }
+      return;
+    }
+    try {
+      await this.paystackApiService.disableSubscription(
+        subscription.paystackSubId,
+        subscription.paystackEmailToken
+      );
+    } catch (err) {
+      this.logger.warn(`Failed to cancel subscription ${subscription.id} in Paystack, proceeding locally`, err);
+    }
+  }
 
   // ─── Initiate Subscription (returns Paystack checkout URL) ───────────────
 
@@ -28,6 +64,21 @@ export class SubscriptionsService {
       plan === 'QUARTERLY'
         ? process.env.PAYSTACK_DEVOTED_QUARTERLY_PLAN
         : process.env.PAYSTACK_DEVOTED_ANNUAL_PLAN;
+
+    // V8-103: previously, an unset plan-code env var silently sent
+    // `plan: undefined` to Paystack -- JSON.stringify drops the key
+    // entirely, so Paystack quietly created a one-time charge instead of a
+    // recurring subscription. The user would pay, land back on the
+    // confirmation page, and never actually be enrolled for auto-renewal --
+    // no error anywhere, just a subscription that silently never renews.
+    // Fail loudly instead, matching this app's "no silent fallbacks in
+    // production" principle.
+    if (!planCode) {
+      this.logger.error(
+        `Cannot initiate ${plan} checkout: ${plan === 'QUARTERLY' ? 'PAYSTACK_DEVOTED_QUARTERLY_PLAN' : 'PAYSTACK_DEVOTED_ANNUAL_PLAN'} is not configured`
+      );
+      throw new Error('Devoted subscriptions are not yet available — payment plan is not configured.');
+    }
 
     const amount = plan === 'QUARTERLY' ? 2_500_000 : 10_000_000; // kobo
 
@@ -82,7 +133,7 @@ export class SubscriptionsService {
     });
 
     if (!activeSub || user.subscriptionStatus === 'FREE') {
-      return { status: 'FREE', plan: null, endDate: null, daysRemaining: null, autoRenew: null };
+      return { status: 'FREE', plan: null, endDate: null, daysRemaining: null, autoRenew: null, canPause: false };
     }
 
     const daysRemaining = differenceInDays(activeSub.endDate, new Date());
@@ -134,6 +185,7 @@ export class SubscriptionsService {
       endDate: activeSub.endDate.toISOString(),
       daysRemaining: Math.max(0, daysRemaining),
       autoRenew: activeSub.autoRenew,
+      canPause: !activeSub.pausedAt,
     };
   }
 
@@ -147,23 +199,7 @@ export class SubscriptionsService {
     if (!activeSub) throw new NotFoundException('No active subscription found');
 
     // Cancel in Paystack (disable subscription)
-    if (activeSub.paystackSubId) {
-      try {
-        await fetch(`https://api.paystack.co/subscription/disable`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            code: activeSub.paystackSubId,
-            token: activeSub.paystackSubId, // Paystack requires email token — stored separately in production
-          }),
-        });
-      } catch (err) {
-        this.logger.warn('Failed to cancel in Paystack, proceeding locally', err);
-      }
-    }
+    await this.disablePaystackSubscription(activeSub);
 
     // Mark as cancelled locally — but keep user DEVOTED until endDate
     await this.prisma.subscription.update({
@@ -181,6 +217,48 @@ export class SubscriptionsService {
     };
   }
 
+  // ─── Auto-Renew Toggle ────────────────────────────────────────────────────
+  // V8-401: a lighter-weight action than cancelSubscription -- turning off
+  // auto-renew keeps status ACTIVE (so admin's active-subscriber views don't
+  // count this as churn) while still actually stopping Paystack from
+  // billing again, same as cancel. Turning it back on is only meaningful
+  // while the subscription hasn't lapsed yet.
+
+  async setAutoRenew(userId: string, autoRenew: boolean) {
+    const activeSub = await this.prisma.subscription.findFirst({
+      where: { userId, status: 'ACTIVE' },
+      orderBy: { endDate: 'desc' },
+    });
+    if (!activeSub) throw new NotFoundException('No active subscription found');
+
+    if (autoRenew === activeSub.autoRenew) {
+      return { message: `Auto-renew is already ${autoRenew ? 'on' : 'off'}.`, autoRenew };
+    }
+
+    if (!autoRenew) {
+      await this.disablePaystackSubscription(activeSub);
+    } else {
+      if (activeSub.endDate < new Date()) {
+        throw new BadRequestException('This subscription has already lapsed — resubscribe instead.');
+      }
+      if (activeSub.paystackSubId && activeSub.paystackEmailToken) {
+        try {
+          await this.paystackApiService.enableSubscription(
+            activeSub.paystackSubId,
+            activeSub.paystackEmailToken
+          );
+        } catch (err) {
+          this.logger.warn(`Failed to re-enable subscription ${activeSub.id} in Paystack, proceeding locally`, err);
+        }
+      }
+    }
+
+    await this.prisma.subscription.update({ where: { id: activeSub.id }, data: { autoRenew } });
+
+    this.logger.log(`Auto-renew set to ${autoRenew} for subscription ${activeSub.id} (user ${userId})`);
+    return { message: `Auto-renew turned ${autoRenew ? 'on' : 'off'}.`, autoRenew };
+  }
+
   // ─── Pause Subscription (extends endDate by 30 days, no charge) ──────────
 
   async pauseSubscription(userId: string) {
@@ -190,16 +268,27 @@ export class SubscriptionsService {
     });
     if (!activeSub) throw new NotFoundException('No active subscription found');
 
+    // V8-503: this row spans the whole subscription lifetime (renewals extend
+    // endDate in place rather than creating a new row -- see onChargeSuccess),
+    // so pausedAt is only ever cleared by a fresh subscribe after
+    // cancellation, which does create a new row. That makes this a genuine
+    // one-time-per-subscription grace period, not a once-per-renewal-period one.
+    if (activeSub.pausedAt) {
+      throw new BadRequestException('You have already used your pause for this subscription.');
+    }
+
     const newEnd = addDays(activeSub.endDate, 30);
     await this.prisma.subscription.update({
       where: { id: activeSub.id },
-      data: { endDate: newEnd },
+      data: { endDate: newEnd, pausedAt: new Date() },
     });
 
     await this.prisma.user.update({
       where: { id: userId },
       data: { subscriptionEnd: newEnd },
     });
+
+    this.logger.log(`Subscription ${activeSub.id} paused by user ${userId} -- extended to ${newEnd.toISOString()}`);
 
     return { message: 'Subscription paused by 30 days.', newEndDate: newEnd.toISOString() };
   }
@@ -290,6 +379,7 @@ export class SubscriptionsService {
         status: 'ACTIVE',
         paystackSubId: data.subscription_code ?? null,
         paystackRef: data.reference ?? null,
+        paystackEmailToken: data.email_token ?? null,
         startDate: new Date(),
         endDate,
         amountPaid: data.amount ?? (plan === 'QUARTERLY' ? 2_500_000 : 10_000_000),
@@ -315,7 +405,10 @@ export class SubscriptionsService {
         message: `Your ${plan === 'ANNUAL' ? 'Annual' : 'Quarterly'} Devoted plan is now active. Access expires ${endDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}.`,
       })
       .catch((err) =>
-        this.logger.error(`Failed to send subscription-activated notification to user ${userId}`, err)
+        this.logger.error(
+          `Failed to send subscription-activated notification to user ${userId}`,
+          err
+        )
       );
 
     // Send billing confirmation email (fire-and-forget)
@@ -417,7 +510,12 @@ export class SubscriptionsService {
     const referral = await this.prisma.referral.findUnique({
       where: { referredId: newSubscriberId },
     });
-    if (!referral || referral.rewardGranted) return;
+    // V8-501: this is a separate reward from EXP-027's ₦500-wallet-on-first-
+    // booking reward (appointments.service.ts maybeGrantReferralReward), so
+    // it has its own flag -- previously both paths shared `rewardGranted`
+    // and whichever milestone happened first silently consumed the other's
+    // reward.
+    if (!referral || referral.subscriptionRewardGranted) return;
 
     // Extend referrer's subscription by 30 days, or grant 30-day Devoted if free
     const referrer = await this.prisma.user.findUnique({ where: { id: referral.referrerId } });
@@ -457,7 +555,7 @@ export class SubscriptionsService {
 
     await this.prisma.referral.update({
       where: { id: referral.id },
-      data: { rewardGranted: true },
+      data: { subscriptionRewardGranted: true },
     });
 
     this.logger.log(
@@ -633,5 +731,105 @@ export class SubscriptionsService {
 
     await this.sesEmailService.sendEmail(user.email, 'Your Devoted journey awaits — Ilé Àṣẹ', html);
     this.logger.log(`Win-back email sent to ${user.email}`);
+  }
+
+  // ─── Cron Sweeps (called by SubscriptionLifecycleCronService) ─────────────
+  // V8-404/V8-504's automatic triggers were previously missing entirely: the
+  // renewal reminder only ever fired as a side effect of the user loading
+  // GET /subscriptions/me themselves, and win-back only ever fired from an
+  // admin manually clicking a button for one user. These three sweeps are
+  // the real daily automation the backlog specifies, reusing the exact same
+  // email-sending logic those manual paths already used.
+
+  // Pre-existing gap found alongside V8-404/V8-504: nothing anywhere ever
+  // transitioned a lapsed non-renewing subscription to EXPIRED -- the
+  // comment on onSubscriptionDisabled above ("Keep DEVOTED status until
+  // endDate — a cron will expire it") promised this cron and it never
+  // existed. Needed as a prerequisite for the win-back sweep below, which
+  // keys off Subscription.status === 'EXPIRED'.
+  async runExpirySweep(): Promise<number> {
+    const lapsed = await this.prisma.subscription.findMany({
+      where: { status: { in: ['ACTIVE', 'PAST_DUE'] }, autoRenew: false, endDate: { lt: new Date() } },
+      select: { id: true, userId: true },
+    });
+
+    for (const sub of lapsed) {
+      await this.prisma.subscription.update({ where: { id: sub.id }, data: { status: 'EXPIRED' } });
+      await this.prisma.user.update({
+        where: { id: sub.userId },
+        data: { subscriptionStatus: 'FREE' },
+      });
+    }
+
+    if (lapsed.length > 0) {
+      this.logger.log(`Expiry sweep: expired ${lapsed.length} lapsed subscription(s)`);
+    }
+    return lapsed.length;
+  }
+
+  // V8-404: daily 9am reminder, 3 days before renewal, deduped via
+  // reminderSent (same flag the reactive getMySubscription path already used
+  // and already dedupes against -- this sweep just guarantees it fires even
+  // if the user never opens the app before renewal).
+  async runRenewalReminderSweep(): Promise<number> {
+    const dueSoon = await this.prisma.subscription.findMany({
+      where: {
+        status: 'ACTIVE',
+        autoRenew: true,
+        reminderSent: false,
+        endDate: { gte: new Date(), lte: addDays(new Date(), 3) },
+      },
+      include: { user: { select: { email: true, name: true } } },
+    });
+
+    let sent = 0;
+    for (const sub of dueSoon) {
+      const daysRemaining = Math.max(0, differenceInDays(sub.endDate, new Date()));
+      try {
+        await this.sendRenewalReminder(sub.user.email, sub.user.name, sub.plan, sub.endDate, daysRemaining);
+        await this.prisma.subscription.update({ where: { id: sub.id }, data: { reminderSent: true } });
+        sent++;
+      } catch (err) {
+        this.logger.error(`Failed to send renewal reminder sweep email to ${sub.user.email}`, err);
+      }
+    }
+
+    if (sent > 0) {
+      this.logger.log(`Renewal reminder sweep: sent ${sent} reminder(s)`);
+    }
+    return sent;
+  }
+
+  // V8-504: "sent exactly once, 7 days after expiry" -- targets subscriptions
+  // whose status flipped to EXPIRED exactly 7 days ago (by endDate, since
+  // that's when access actually lapsed) and that haven't received the email
+  // yet. Skips anyone who has since resubscribed (sendWinBackEmail's own
+  // subscriptionStatus === 'DEVOTED' guard).
+  async runWinBackSweep(): Promise<number> {
+    const target = subDays(new Date(), 7);
+    const candidates = await this.prisma.subscription.findMany({
+      where: {
+        status: 'EXPIRED',
+        winBackSentAt: null,
+        endDate: { gte: startOfDay(target), lte: endOfDay(target) },
+      },
+      select: { id: true, userId: true },
+    });
+
+    let sent = 0;
+    for (const sub of candidates) {
+      try {
+        await this.sendWinBackEmail(sub.userId);
+        await this.prisma.subscription.update({ where: { id: sub.id }, data: { winBackSentAt: new Date() } });
+        sent++;
+      } catch (err) {
+        this.logger.error(`Failed to send win-back sweep email for subscription ${sub.id}`, err);
+      }
+    }
+
+    if (sent > 0) {
+      this.logger.log(`Win-back sweep: sent ${sent} email(s)`);
+    }
+    return sent;
   }
 }

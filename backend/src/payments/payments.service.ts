@@ -13,10 +13,11 @@ import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletService } from '../wallet/wallet.service';
+import { ReleaseTier } from '../wallet/dto/release-escrow.dto';
 import { LocationService } from './location.service';
 import { CurrencyService } from './currency.service';
 import { InitializePaymentDto } from './dto/initialize-payment.dto';
-import { Currency, PaymentPurpose, EscrowType } from '@ile-ase/common';
+import { Currency, PaymentPurpose, EscrowType, TransactionStatus, WithdrawalStatus } from '@ile-ase/common';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { Payment } from '../shared/types/prisma-models';
 // flutterwave-node-v3 is CJS-only without esModuleInterop configured; `import Flutterwave
@@ -24,7 +25,7 @@ import { Payment } from '../shared/types/prisma-models';
 // here deliberately.
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const Flutterwave = require('flutterwave-node-v3');
-import { NotificationService } from '../notifications/notification.service';
+import { NotificationService, NotificationType, NotificationCategory } from '../notifications/notification.service';
 import { PaystackApiService } from './paystack-api.service';
 import {
   PaymentWebhookPayload,
@@ -170,6 +171,31 @@ export class PaymentsService {
         );
       }
 
+      // VENDOR_BACKLOG.md VND-004 (payment-confirmation audit): previously no
+      // `Payment` row was ever created for a real gateway-initiated payment
+      // at all -- `processSuccessfulPayment`'s purpose-based routing
+      // (WALLET_TOPUP/BOOKING/MARKETPLACE_ORDER/COURSE_ENROLLMENT) existed
+      // but was only reachable via the admin-only `manuallyVerifyPayment`,
+      // never from a live webhook. Scoped to MARKETPLACE_ORDER here (the
+      // specific, confirmed bug: a card-paid marketplace order was never
+      // actually marked PAID, it just silently credited the buyer's wallet
+      // instead) rather than also touching BOOKING/COURSE_ENROLLMENT, which
+      // haven't been verified broken and aren't part of what was reported.
+      if (dto.purpose === PaymentPurpose.MARKETPLACE_ORDER) {
+        await this.prisma.payment.create({
+          data: {
+            userId,
+            transactionId: paymentResult.reference,
+            amount: paymentAmount,
+            currency: paymentCurrency,
+            purpose: dto.purpose,
+            provider: provider === PaymentProvider.PAYSTACK ? 'PAYSTACK' : 'FLUTTERWAVE',
+            status: 'PENDING',
+            metadata,
+          },
+        });
+      }
+
       // Include conversion info in response if applicable
       if (conversionInfo) {
         return {
@@ -272,6 +298,18 @@ export class PaymentsService {
   /**
    * Verify payment
    */
+  /**
+   * HUMAN_BACKLOG.md: the withdrawal form needs real bank codes (not free-text
+   * bank names) to actually be able to pay someone via Paystack Transfer.
+   */
+  async listBanks() {
+    const response = await this.paystackApi.listBanks();
+    if (!response.status) {
+      throw new Error(response.message || 'Failed to fetch bank list from Paystack');
+    }
+    return response.data.filter((bank) => bank.active);
+  }
+
   async verifyPayment(reference: string, provider?: PaymentProvider) {
     // Try to determine provider from reference format
     if (!provider) {
@@ -445,11 +483,36 @@ export class PaymentsService {
       // Process successful payment
       const metadata = data.metadata;
       const userId = metadata?.userId;
+      const reference = data.reference;
+
+      // VENDOR_BACKLOG.md VND-004 (payment-confirmation audit): a
+      // MARKETPLACE_ORDER payment must mark the order(s) PAID and create the
+      // vendor escrow -- NOT be credited to the buyer's wallet, which is
+      // what every charge.success used to do unconditionally regardless of
+      // `metadata.purpose`. Routed via the `Payment` row created at
+      // initialize time (see `initializePayment`) so this reuses the
+      // already-written, purpose-aware `processSuccessfulPayment` dispatch
+      // instead of duplicating order-completion logic here.
+      if (metadata?.purpose === PaymentPurpose.MARKETPLACE_ORDER && reference) {
+        const payment = await this.prisma.payment.findUnique({ where: { transactionId: reference } });
+        if (payment) {
+          if (payment.status !== 'success') {
+            await this.prisma.payment.update({
+              where: { id: payment.id },
+              data: { status: 'success', verified: true, verifiedAt: new Date() },
+            });
+            await this.processSuccessfulPayment(payment.id);
+          } else {
+            this.logger.log(`Paystack webhook replay for reference ${reference} — order payment already processed, skipping`);
+          }
+          return { success: true, reference, amount: data.amount / 100, currency: data.currency };
+        }
+        this.logger.warn(`No Payment record found for MARKETPLACE_ORDER reference ${reference} -- falling back to legacy handling`);
+      }
 
       if (userId) {
         const amountDecimal = data.amount / 100; // Convert from kobo
         const currency = data.currency as Currency;
-        const reference = data.reference;
 
         // Credit wallet (no currentUser for webhook calls). Keyed by an
         // idempotency key derived from the gateway reference (EMG-03) so a
@@ -500,6 +563,77 @@ export class PaymentsService {
         amount: data.amount / 100,
         currency: data.currency,
       };
+    }
+
+    // HUMAN_BACKLOG.md: withdrawal transfers can complete asynchronously --
+    // AdminFinanceService.processWithdrawal already resolves the common case
+    // where Paystack's /transfer response itself says 'success' immediately,
+    // but a 'pending' transfer only gets a final answer via this webhook.
+    // `reference` is the WithdrawalRequest id (set at initiateTransfer time).
+    if (event === 'transfer.success' || event === 'transfer.failed' || event === 'transfer.reversed') {
+      const reference = data.reference;
+      if (!reference) {
+        return { success: false, message: 'Transfer webhook missing reference' };
+      }
+
+      const withdrawal = await this.prisma.withdrawalRequest.findUnique({ where: { id: reference } });
+
+      if (event === 'transfer.success') {
+        // Idempotency guard mirrors the failure branch below -- a repeated
+        // webhook delivery after this already ran sees the row is no longer
+        // in a resolvable state and no-ops instead of double-notifying.
+        if (withdrawal && withdrawal.status !== WithdrawalStatus.PROCESSED) {
+          await this.prisma.transaction.updateMany({
+            where: { reference, status: TransactionStatus.PENDING },
+            data: { status: TransactionStatus.COMPLETED },
+          });
+          await this.prisma.withdrawalRequest.update({
+            where: { id: reference },
+            data: { status: WithdrawalStatus.PROCESSED },
+          });
+          // VENDOR_BACKLOG.md VND-002: "push/email notification when status
+          // changes at each stage" -- this is the final "Confirmed" stage of
+          // the payout tracker, distinct from the earlier "Approved" one
+          // (AdminFinanceService.processWithdrawal already notifies then).
+          this.notificationService
+            .createNotification({
+              userId: withdrawal.userId,
+              type: NotificationType.SYSTEM,
+              category: NotificationCategory.INFO,
+              title: 'Payout confirmed',
+              message: `Your withdrawal of ${Number(withdrawal.amount).toLocaleString()} ${withdrawal.currency} has been confirmed as delivered to your bank account.`,
+              sendEmail: true,
+            })
+            .catch(() => undefined);
+        }
+      } else {
+        // transfer.failed / transfer.reversed -- Paystack accepted the
+        // transfer at initiation time but it didn't actually complete.
+        // Idempotency guard: only refund if still PROCESSED (a second
+        // webhook delivery for the same event sees PENDING and no-ops).
+        if (withdrawal && withdrawal.status === WithdrawalStatus.PROCESSED) {
+          await this.walletService.refundWithdrawalAmount(reference);
+          await this.prisma.withdrawalRequest.update({
+            where: { id: reference },
+            data: {
+              status: WithdrawalStatus.PENDING,
+              adminNotes: `Paystack ${event} — funds returned automatically, needs re-approval`,
+            },
+          });
+          this.notificationService
+            .createNotification({
+              userId: withdrawal.userId,
+              type: NotificationType.SYSTEM,
+              category: NotificationCategory.WARNING,
+              title: 'Payout could not be completed',
+              message: `Your withdrawal of ${Number(withdrawal.amount).toLocaleString()} ${withdrawal.currency} could not be delivered. The funds have been returned to your wallet and an admin will review it.`,
+              sendEmail: true,
+            })
+            .catch(() => undefined);
+        }
+      }
+
+      return { success: true, event };
     }
 
     return { success: false, message: 'Event not processed' };
@@ -846,12 +980,17 @@ export class PaymentsService {
       throw new BadRequestException('Payment not found or not successful');
     }
 
+    // Payment.amount is now Decimal (ProBacklog-v1.md item #15) -- converted
+    // once here since everything downstream (DTOs, the shared Payment mirror
+    // type in shared/types/prisma-models.ts) still expects a plain number.
+    const paymentAmount = Number(payment.amount);
+
     // Depending on the purpose of the payment, perform different actions
     switch (payment.purpose) {
       case PaymentPurpose.WALLET_TOPUP:
         // Add funds to user's wallet using the proper method
         const depositData = {
-          amount: payment.amount,
+          amount: paymentAmount,
           currency: payment.currency as Currency,
           reference: payment.transactionId,
           description: 'Wallet top-up via payment gateway',
@@ -877,7 +1016,7 @@ export class PaymentsService {
               payment.userId,
               {
                 recipientId: appointment.babalawo.id,
-                amount: payment.amount,
+                amount: paymentAmount,
                 currency: payment.currency as Currency,
                 type: EscrowType.BOOKING,
                 relatedId: appointmentId,
@@ -891,7 +1030,7 @@ export class PaymentsService {
 
       case PaymentPurpose.MARKETPLACE_ORDER:
         // Handle marketplace order payment
-        await this.processMarketplaceOrderPayment(payment);
+        await this.processMarketplaceOrderPayment({ ...payment, amount: paymentAmount });
         break;
 
       case PaymentPurpose.COURSE_ENROLLMENT:
@@ -942,6 +1081,8 @@ export class PaymentsService {
               },
             },
             customer: true,
+            // VENDOR_BACKLOG.md VND-024
+            items: { include: { product: true } },
           },
         });
 
@@ -951,7 +1092,9 @@ export class PaymentsService {
         }
 
         // Calculate order amount (may differ from payment if multi-vendor split)
-        const orderAmount = order.totalAmount;
+        // Order.totalAmount is now Decimal (ProBacklog-v1.md item #15) --
+        // createExternallyFundedEscrow's DTO expects a plain number.
+        const orderAmount = Number(order.totalAmount);
 
         // Update order status to PAID
         await this.prisma.order.update({
@@ -978,14 +1121,57 @@ export class PaymentsService {
           },
         };
 
-        await this.walletService.createEscrow(order.customerId, escrowData, {
-          id: order.customerId,
-          role: 'CLIENT',
-        } as CurrentUserPayload);
+        // VENDOR_BACKLOG.md VND-010 investigation: this money came from an
+        // external Paystack charge, never from order.customerId's internal
+        // wallet balance -- createEscrow() would require that balance to
+        // already hold `orderAmount` and throw "Insufficient funds" on
+        // every real order (a fresh wallet defaults to 0), silently
+        // swallowed by the catch below, leaving the vendor never paid.
+        const escrow = await this.walletService.createExternallyFundedEscrow(order.customerId, escrowData);
 
         this.logger.log(
           `Marketplace order ${orderId} marked as PAID. Escrow created for vendor ${order.vendor.userId}`
         );
+
+        // VENDOR_BACKLOG.md VND-024: "No shipping required -- instant
+        // delivery." Grants a 30-day/5-download window for every DIGITAL
+        // item that actually has a file configured -- inlined here (not
+        // calling MarketplaceService.grantDigitalDownloadsForOrder, which
+        // has the same logic) to avoid a new PaymentsModule <-> Marketplace
+        // Module import cycle (WalletModule already imports PaymentsModule,
+        // and MarketplaceModule already forwardRef's WalletModule).
+        const digitalItems = order.items.filter((i) => i.product.type === 'DIGITAL');
+        const allDigital = order.items.length > 0 && order.items.every((i) => i.product.type === 'DIGITAL');
+        for (const item of digitalItems) {
+          if (!item.product.digitalFileKey && !item.product.digitalFileUrl) continue;
+          const expiresAt = new Date();
+          expiresAt.setDate(expiresAt.getDate() + 30);
+          await this.prisma.digitalProductDownload
+            .upsert({
+              where: { orderId_productId: { orderId: orderId.trim(), productId: item.productId } },
+              create: { orderId: orderId.trim(), productId: item.productId, customerId: order.customerId, expiresAt },
+              update: {},
+            })
+            .catch((err: Error) => this.logger.warn(`Digital download grant failed for order ${orderId}: ${err.message}`));
+        }
+
+        // A pure-digital order has no shipping step for the existing
+        // SHIPPED/DELIVERED escrow-release tiers to gate on -- without this,
+        // its escrow would sit in HOLD forever (nothing would ever call
+        // updateOrder to advance a digital order's status). Delivery is
+        // instant, so the full escrow releases immediately too.
+        if (allDigital) {
+          await this.prisma.order.update({
+            where: { id: orderId.trim() },
+            data: { status: 'DELIVERED', deliveredAt: new Date() },
+          });
+          await this.walletService.releaseEscrow(
+            order.vendor.userId,
+            { escrowId: escrow.id, tier: ReleaseTier.FULL },
+            { id: order.vendor.userId, role: 'VENDOR' } as CurrentUserPayload
+          );
+          this.logger.log(`Marketplace order ${orderId} is all-digital -- marked DELIVERED and escrow released immediately`);
+        }
 
         // Send notifications
         // Notify customer that payment was confirmed

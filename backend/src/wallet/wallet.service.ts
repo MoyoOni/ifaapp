@@ -81,7 +81,12 @@ export class WalletService {
 
     const wallet = await this.getOrCreateWallet(userId);
     return {
-      balance: wallet.balance,
+      // ProBacklog-v1.md #15: converted explicitly here (not just relying on
+      // DecimalToNumberInterceptor) because this method is also called
+      // in-process by other services (e.g. appointments.service.ts's
+      // `wallet.balance < price` check), which never goes through the HTTP
+      // response pipeline the interceptor wraps.
+      balance: Number(wallet.balance),
       currency: wallet.currency,
       locked: wallet.locked,
     };
@@ -96,7 +101,8 @@ export class WalletService {
     }
 
     const wallet = await this.getOrCreateWallet(userId);
-    const baseBalance = wallet.balance;
+    // ProBacklog-v1.md #15: see the same note in getWalletBalance above.
+    const baseBalance = Number(wallet.balance);
     const baseCurrency = wallet.currency;
 
     // Get conversions for all supported currencies
@@ -447,6 +453,111 @@ export class WalletService {
   }
 
   /**
+   * VENDOR_BACKLOG.md VND-010 investigation: createEscrow() above requires
+   * the depositor's own internal WALLET balance to already hold the escrow
+   * amount, then decrements it -- correct for BOOKING/TUTOR_SESSION/
+   * GUIDANCE_PLAN escrows, where the customer really did fund them from
+   * their wallet. It is wrong for MARKETPLACE_ORDER escrows: that money
+   * arrived from an external Paystack charge (see payments.service.ts's
+   * MARKETPLACE_ORDER webhook handling), never touched the customer's
+   * wallet balance, and a fresh wallet defaults to 0 -- so createEscrow()
+   * would throw "Insufficient funds" on essentially every real order,
+   * silently caught by processMarketplaceOrderPayment's per-order try/catch,
+   * leaving the order marked PAID with no escrow and the vendor never paid.
+   * This variant creates the same HOLD escrow row without touching wallet
+   * balance or writing a misleading debit Transaction -- the Payment row
+   * and Order.paidAt already carry the audit trail for where the money
+   * actually came from.
+   */
+  async createExternallyFundedEscrow(userId: string, dto: CreateEscrowDto) {
+    const wallet = await this.getOrCreateWallet(userId, dto.currency || Currency.NGN);
+
+    const autoReleaseAt = new Date();
+    autoReleaseAt.setDate(autoReleaseAt.getDate() + 14);
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + 14);
+    const releaseTiers = dto.releaseTiers
+      ? {
+          tier1: dto.releaseTiers.tier1 || 0.5,
+          tier2: dto.releaseTiers.tier2 || 0.5,
+          releasedTier1: false,
+          releasedTier2: false,
+        }
+      : null;
+
+    return this.prisma.escrow.create({
+      data: {
+        userId,
+        recipientId: dto.recipientId,
+        walletId: wallet.id,
+        amount: dto.amount,
+        currency: dto.currency || wallet.currency,
+        type: dto.type,
+        relatedId: dto.relatedId,
+        status: EscrowStatus.HOLD,
+        autoReleaseAt,
+        expiryDate,
+        releaseTiers: releaseTiers as unknown as object,
+        notes: dto.notes,
+      },
+    });
+  }
+
+  /**
+   * VENDOR_BACKLOG.md VND-010: reverse a marketplace order's escrow hold and
+   * credit the customer's wallet with the actual refund amount (which may be
+   * a partial refund, less than the full escrow). Only cancels an escrow
+   * still fully in HOLD -- a PARTIALLY_RELEASED escrow means a shipped/
+   * delivered tier has already been paid out to the vendor, and that money
+   * has already left the platform's ledger; recovering it is a manual
+   * payout-deduction operation, out of scope here. The customer is made
+   * whole via the wallet credit either way, and safe to call even when no
+   * escrow was ever created (e.g. orders paid before this fix) -- it just
+   * credits the wallet directly in that case.
+   */
+  async refundMarketplaceOrder(
+    orderId: string,
+    customerId: string,
+    refundAmount: number,
+    currency: Currency,
+    refundedBy: string
+  ) {
+    const wallet = await this.getOrCreateWallet(customerId, currency);
+
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const escrow = await tx.escrow.findFirst({
+        where: { type: EscrowType.ORDER, relatedId: orderId, status: EscrowStatus.HOLD },
+      });
+      if (escrow) {
+        await tx.escrow.update({
+          where: { id: escrow.id },
+          data: { status: EscrowStatus.CANCELLED, notes: `Cancelled: order refunded by ${refundedBy}` },
+        });
+      }
+
+      const updatedWallet = await tx.wallet.update({
+        where: { id: wallet.id },
+        data: { balance: { increment: refundAmount } },
+      });
+
+      await tx.transaction.create({
+        data: {
+          walletId: wallet.id,
+          userId: customerId,
+          type: TransactionType.REFUND,
+          amount: refundAmount,
+          currency,
+          status: TransactionStatus.COMPLETED,
+          description: `Refund for marketplace order #${orderId.slice(0, 8)}`,
+          metadata: { orderId, escrowId: escrow?.id ?? null, refundedBy } as object,
+        },
+      });
+
+      return { wallet: updatedWallet, escrowCancelled: !!escrow };
+    });
+  }
+
+  /**
    * Release escrow funds (supports multi-tier release)
    */
   async releaseEscrow(userId: string, dto: ReleaseEscrowDto, currentUser: CurrentUserPayload) {
@@ -482,6 +593,9 @@ export class WalletService {
 
     // Handle multi-tier release
     const releaseTiers = escrow.releaseTiers as unknown as EscrowReleaseTiers;
+    // Escrow.amount is now Decimal (ProBacklog-v1.md item #15) -- normalized
+    // once here since this method does percentage-based tier math on it.
+    const escrowAmount = Number(escrow.amount);
     let releaseAmount = 0;
     let newStatus = EscrowStatus.RELEASED;
     let updatedReleaseTiers = releaseTiers;
@@ -490,7 +604,7 @@ export class WalletService {
       // Multi-tier escrow
       if (dto.tier === 'TIER_1' || (!dto.tier && !releaseTiers.releasedTier1)) {
         // Release tier 1
-        releaseAmount = escrow.amount * (releaseTiers.tier1 || 0.5);
+        releaseAmount = escrowAmount * (releaseTiers.tier1 || 0.5);
         updatedReleaseTiers = {
           ...releaseTiers,
           releasedTier1: true,
@@ -500,7 +614,7 @@ export class WalletService {
           : EscrowStatus.PARTIALLY_RELEASED;
       } else if (dto.tier === 'TIER_2' || (!dto.tier && !releaseTiers.releasedTier2)) {
         // Release tier 2
-        releaseAmount = escrow.amount * (releaseTiers.tier2 || 0.5);
+        releaseAmount = escrowAmount * (releaseTiers.tier2 || 0.5);
         updatedReleaseTiers = {
           ...releaseTiers,
           releasedTier2: true,
@@ -509,9 +623,9 @@ export class WalletService {
       } else if (dto.tier === 'FULL') {
         // Release remaining amount
         const releasedAmount =
-          escrow.amount * (releaseTiers.tier1 || 0.5) * (releaseTiers.releasedTier1 ? 1 : 0) +
-          escrow.amount * (releaseTiers.tier2 || 0.5) * (releaseTiers.releasedTier2 ? 1 : 0);
-        releaseAmount = escrow.amount - releasedAmount;
+          escrowAmount * (releaseTiers.tier1 || 0.5) * (releaseTiers.releasedTier1 ? 1 : 0) +
+          escrowAmount * (releaseTiers.tier2 || 0.5) * (releaseTiers.releasedTier2 ? 1 : 0);
+        releaseAmount = escrowAmount - releasedAmount;
         updatedReleaseTiers = {
           ...releaseTiers,
           releasedTier1: true,
@@ -523,15 +637,15 @@ export class WalletService {
       }
     } else if (dto.amount) {
       // Custom amount release
-      if (dto.amount > escrow.amount) {
+      if (dto.amount > escrowAmount) {
         throw new BadRequestException('Release amount cannot exceed escrow amount');
       }
       releaseAmount = dto.amount;
       newStatus =
-        releaseAmount < escrow.amount ? EscrowStatus.PARTIALLY_RELEASED : EscrowStatus.RELEASED;
+        releaseAmount < escrowAmount ? EscrowStatus.PARTIALLY_RELEASED : EscrowStatus.RELEASED;
     } else {
       // Full release (default behavior)
-      releaseAmount = escrow.amount;
+      releaseAmount = escrowAmount;
       newStatus = EscrowStatus.RELEASED;
     }
 
@@ -578,7 +692,7 @@ export class WalletService {
               relatedId: escrow.relatedId,
               tier: dto.tier,
               releaseAmount,
-              totalAmount: escrow.amount,
+              totalAmount: escrowAmount,
             },
           },
         });
@@ -607,7 +721,7 @@ export class WalletService {
               relatedId: escrow.relatedId,
               tier: dto.tier,
               releaseAmount,
-              totalAmount: escrow.amount,
+              totalAmount: escrowAmount,
             },
           },
         });
@@ -641,8 +755,10 @@ export class WalletService {
       throw new BadRequestException(`Cannot cancel escrow with status ${escrow.status}`);
     }
 
-    // All cancellation steps must be atomic
-    const remainingAmount = escrow.amount;
+    // All cancellation steps must be atomic. Escrow.amount is now Decimal
+    // (ProBacklog-v1.md item #15) -- normalized since remainingAmount is
+    // compared with `>` below and returned to the caller.
+    const remainingAmount = Number(escrow.amount);
 
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       if (remainingAmount > 0) {
@@ -766,18 +882,21 @@ export class WalletService {
 
     for (const escrow of expiredEscrows) {
       try {
-        // Calculate remaining amount to refund
+        // Calculate remaining amount to refund. Escrow.amount is now Decimal
+        // (ProBacklog-v1.md item #15) -- normalized here since this does the
+        // same tier-percentage math as releaseEscrow above.
         const releaseTiers = escrow.releaseTiers as unknown as EscrowReleaseTiers;
-        let remainingAmount = escrow.amount;
+        const escrowAmount = Number(escrow.amount);
+        let remainingAmount = escrowAmount;
 
         if (releaseTiers) {
           const releasedTier1 = releaseTiers.releasedTier1
-            ? escrow.amount * (releaseTiers.tier1 || 0.5)
+            ? escrowAmount * (releaseTiers.tier1 || 0.5)
             : 0;
           const releasedTier2 = releaseTiers.releasedTier2
-            ? escrow.amount * (releaseTiers.tier2 || 0.5)
+            ? escrowAmount * (releaseTiers.tier2 || 0.5)
             : 0;
-          remainingAmount = escrow.amount - releasedTier1 - releasedTier2;
+          remainingAmount = escrowAmount - releasedTier1 - releasedTier2;
         }
 
         if (remainingAmount <= 0) {
@@ -996,38 +1115,96 @@ export class WalletService {
       throw new BadRequestException('Wallet is locked. Please contact support.');
     }
 
-    // Check available balance (excluding escrowed funds)
-    const escrowedAmount = await this.prisma.escrow.aggregate({
-      where: {
-        walletId: wallet.id,
-        status: EscrowStatus.HOLD,
-      },
-      _sum: {
-        amount: true,
-      },
-    });
-
-    const availableBalance = wallet.balance - (escrowedAmount._sum.amount || 0);
-
-    if (availableBalance < dto.amount) {
-      throw new BadRequestException('Insufficient available balance (consider escrowed funds)');
+    // VENDOR_BACKLOG.md VND-002: minimum payout threshold was already a real
+    // PlatformSettings field (`minPayoutThresholdNgn`) but had zero
+    // references anywhere in the codebase -- nothing ever actually enforced
+    // it. Falls back to 0 (no minimum) if settings somehow don't exist yet.
+    const settings = await this.prisma.platformSettings.findUnique({ where: { id: 'singleton' } });
+    const minPayout = Number(settings?.minPayoutThresholdNgn ?? 0);
+    if (dto.amount < minPayout) {
+      throw new BadRequestException(
+        `Minimum withdrawal amount is ${minPayout} ${dto.currency || wallet.currency}`
+      );
     }
 
-    // Create withdrawal request
-    const withdrawalRequest = await this.prisma.withdrawalRequest.create({
-      data: {
-        userId,
-        escrowId: dto.escrowId,
-        amount: dto.amount,
-        currency: dto.currency || wallet.currency,
+    // VENDOR_BACKLOG.md VND-002: pre-fill from a saved BankAccount instead
+    // of requiring the raw fields every time.
+    let bankDetails: { bankAccount: string; bankName: string; bankCode: string; accountName: string };
+    if (dto.bankAccountId) {
+      const savedAccount = await this.prisma.bankAccount.findUnique({ where: { id: dto.bankAccountId } });
+      if (!savedAccount || savedAccount.userId !== userId) {
+        throw new NotFoundException('Bank account not found');
+      }
+      bankDetails = {
+        bankAccount: savedAccount.accountNumber,
+        bankName: savedAccount.bankName,
+        bankCode: savedAccount.bankCode,
+        accountName: savedAccount.accountName,
+      };
+    } else if (dto.bankAccount && dto.bankName && dto.bankCode && dto.accountName) {
+      bankDetails = {
         bankAccount: dto.bankAccount,
         bankName: dto.bankName,
+        bankCode: dto.bankCode,
         accountName: dto.accountName,
-        status: WithdrawalStatus.PENDING,
-      },
-    });
+      };
+    } else {
+      throw new BadRequestException(
+        'Provide either a saved bankAccountId or all of bankAccount/bankName/bankCode/accountName'
+      );
+    }
 
-    return withdrawalRequest;
+    // HUMAN_BACKLOG.md: previously this only *checked* available balance
+    // (excluding escrowed funds) and left the wallet untouched -- meaning a
+    // user could file several overlapping withdrawal requests against the
+    // same balance before any of them got approved (no hold, no double-spend
+    // protection). Now the amount is actually reserved atomically at request
+    // time, same EMG-06 conditional-decrement pattern used for escrow holds:
+    // the WHERE clause's `balance: { gte: dto.amount }` is checked and
+    // applied in one statement, so two concurrent requests can't both pass a
+    // stale pre-transaction check. The held Transaction stays PENDING until
+    // an admin approves (-> Paystack transfer attempted) or rejects (-> held
+    // amount refunded) it.
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const decremented = await tx.wallet.updateMany({
+        where: { id: wallet.id, locked: false, balance: { gte: dto.amount } },
+        data: { balance: { decrement: dto.amount } },
+      });
+
+      if (decremented.count === 0) {
+        throw new BadRequestException('Insufficient available balance');
+      }
+
+      const withdrawalRequest = await tx.withdrawalRequest.create({
+        data: {
+          userId,
+          escrowId: dto.escrowId,
+          amount: dto.amount,
+          currency: dto.currency || wallet.currency,
+          bankAccount: bankDetails.bankAccount,
+          bankName: bankDetails.bankName,
+          bankCode: bankDetails.bankCode,
+          accountName: bankDetails.accountName,
+          status: WithdrawalStatus.PENDING,
+        },
+      });
+
+      await tx.transaction.create({
+        data: {
+          walletId: wallet.id,
+          userId,
+          type: TransactionType.WITHDRAWAL,
+          amount: -dto.amount,
+          currency: dto.currency || wallet.currency,
+          status: TransactionStatus.PENDING,
+          description: `Withdrawal requested: ${dto.amount} ${dto.currency || wallet.currency}`,
+          reference: withdrawalRequest.id,
+          metadata: { withdrawalRequestId: withdrawalRequest.id },
+        },
+      });
+
+      return withdrawalRequest;
+    });
   }
 
   /**
@@ -1042,6 +1219,129 @@ export class WalletService {
       where: { userId },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  /**
+   * HUMAN_BACKLOG.md: reverses the hold created by createWithdrawalRequest
+   * above -- called by AdminFinanceService both when an admin rejects a
+   * request outright, and when an admin's approval attempt fails at
+   * Paystack (money was never held from the user's perspective in that case
+   * either way, since it left the wallet only as an internal ledger hold,
+   * never actually sent anywhere). Does not touch WithdrawalRequest.status
+   * -- the caller decides what that becomes (REJECTED vs. back to PENDING).
+   */
+  async refundWithdrawalAmount(withdrawalRequestId: string) {
+    const withdrawal = await this.prisma.withdrawalRequest.findUnique({
+      where: { id: withdrawalRequestId },
+    });
+    if (!withdrawal) {
+      throw new NotFoundException('Withdrawal request not found');
+    }
+
+    const wallet = await this.getOrCreateWallet(withdrawal.userId, withdrawal.currency as Currency);
+
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      await tx.wallet.update({
+        where: { id: wallet.id },
+        data: { balance: { increment: withdrawal.amount } },
+      });
+
+      await tx.transaction.updateMany({
+        where: { reference: withdrawalRequestId, status: TransactionStatus.PENDING },
+        data: { status: TransactionStatus.CANCELLED },
+      });
+    });
+  }
+
+  /**
+   * VENDOR_BACKLOG.md VND-002: "Minimum payout threshold clearly displayed" --
+   * a vendor-safe read of PlatformSettings (not the full admin object, which
+   * also carries commission percentages and other admin-only fields).
+   */
+  async getPayoutSettings() {
+    const settings = await this.prisma.platformSettings.findUnique({ where: { id: 'singleton' } });
+    return { minPayoutThresholdNgn: settings?.minPayoutThresholdNgn ?? 0 };
+  }
+
+  // ==================== Bank Accounts (VENDOR_BACKLOG.md VND-002) ====================
+
+  private static readonly MAX_BANK_ACCOUNTS = 3;
+
+  async getBankAccounts(userId: string, currentUser: CurrentUserPayload) {
+    if (currentUser.id !== userId && currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('You can only view your own bank accounts');
+    }
+    return this.prisma.bankAccount.findMany({
+      where: { userId },
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }],
+    });
+  }
+
+  async createBankAccount(
+    userId: string,
+    dto: { bankName: string; bankCode: string; accountNumber: string; accountName: string; isDefault?: boolean },
+    currentUser: CurrentUserPayload
+  ) {
+    if (currentUser.id !== userId) {
+      throw new ForbiddenException('You can only manage your own bank accounts');
+    }
+
+    const existingCount = await this.prisma.bankAccount.count({ where: { userId } });
+    if (existingCount >= WalletService.MAX_BANK_ACCOUNTS) {
+      throw new BadRequestException(
+        `You can save up to ${WalletService.MAX_BANK_ACCOUNTS} bank accounts. Remove one before adding another.`
+      );
+    }
+
+    // The first saved account is always the default -- there's no
+    // meaningful "not default" state when it's the only one.
+    const makeDefault = dto.isDefault ?? existingCount === 0;
+    if (makeDefault) {
+      await this.prisma.bankAccount.updateMany({
+        where: { userId, isDefault: true },
+        data: { isDefault: false },
+      });
+    }
+
+    return this.prisma.bankAccount.create({
+      data: {
+        userId,
+        bankName: dto.bankName,
+        bankCode: dto.bankCode,
+        accountNumber: dto.accountNumber,
+        accountName: dto.accountName,
+        isDefault: makeDefault,
+      },
+    });
+  }
+
+  async setDefaultBankAccount(userId: string, bankAccountId: string, currentUser: CurrentUserPayload) {
+    if (currentUser.id !== userId) {
+      throw new ForbiddenException('You can only manage your own bank accounts');
+    }
+    const account = await this.prisma.bankAccount.findUnique({ where: { id: bankAccountId } });
+    if (!account || account.userId !== userId) {
+      throw new NotFoundException('Bank account not found');
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.bankAccount.updateMany({ where: { userId, isDefault: true }, data: { isDefault: false } }),
+      this.prisma.bankAccount.update({ where: { id: bankAccountId }, data: { isDefault: true } }),
+    ]);
+
+    return { message: 'Default bank account updated' };
+  }
+
+  async deleteBankAccount(userId: string, bankAccountId: string, currentUser: CurrentUserPayload) {
+    if (currentUser.id !== userId) {
+      throw new ForbiddenException('You can only manage your own bank accounts');
+    }
+    const account = await this.prisma.bankAccount.findUnique({ where: { id: bankAccountId } });
+    if (!account || account.userId !== userId) {
+      throw new NotFoundException('Bank account not found');
+    }
+    await this.prisma.bankAccount.delete({ where: { id: bankAccountId } });
+    return { message: 'Bank account removed' };
   }
 
   /**

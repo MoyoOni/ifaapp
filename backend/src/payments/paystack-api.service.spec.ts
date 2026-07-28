@@ -152,4 +152,148 @@ describe('PaystackApiService (P1-02: timeout + retry/backoff)', () => {
       'Paystack is not configured'
     );
   });
+
+  describe('disableSubscription (HUMAN_BACKLOG.md — mutating, network-failure-only retry)', () => {
+    it('sends the subscription code and email token, not the code twice', async () => {
+      mockClient.post.mockResolvedValueOnce({ data: { status: true } });
+
+      const result = await service.disableSubscription('SUB_123', 'email_token_abc');
+
+      expect(result.status).toBe(true);
+      expect(mockClient.post).toHaveBeenCalledWith('/subscription/disable', {
+        code: 'SUB_123',
+        token: 'email_token_abc',
+      });
+    });
+
+    it('does NOT retry on a timeout', async () => {
+      mockClient.post.mockRejectedValue({ code: 'ECONNABORTED' });
+
+      await expect(service.disableSubscription('SUB_123', 'token')).rejects.toEqual({
+        code: 'ECONNABORTED',
+      });
+      expect(mockClient.post).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('enableSubscription (V8-401 — mirror of disableSubscription)', () => {
+    it('sends the subscription code and email token to /subscription/enable', async () => {
+      mockClient.post.mockResolvedValueOnce({ data: { status: true } });
+
+      const result = await service.enableSubscription('SUB_123', 'email_token_abc');
+
+      expect(result.status).toBe(true);
+      expect(mockClient.post).toHaveBeenCalledWith('/subscription/enable', {
+        code: 'SUB_123',
+        token: 'email_token_abc',
+      });
+    });
+
+    it('does NOT retry on a timeout', async () => {
+      mockClient.post.mockRejectedValue({ code: 'ECONNABORTED' });
+
+      await expect(service.enableSubscription('SUB_123', 'token')).rejects.toEqual({
+        code: 'ECONNABORTED',
+      });
+      expect(mockClient.post).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('listBanks (HUMAN_BACKLOG.md — read-only, full retry policy)', () => {
+    it('retries on a timeout and succeeds on the 2nd attempt', async () => {
+      mockClient.get
+        .mockRejectedValueOnce({ code: 'ECONNABORTED' })
+        .mockResolvedValueOnce({ data: { status: true, data: [{ name: 'GTBank', code: '058', currency: 'NGN', active: true }] } });
+
+      const result = await service.listBanks();
+
+      expect(result.data).toHaveLength(1);
+      expect(mockClient.get).toHaveBeenCalledTimes(2);
+      expect(mockClient.get).toHaveBeenCalledWith('/bank?currency=NGN');
+    });
+  });
+
+  describe('createTransferRecipient (HUMAN_BACKLOG.md — mutating, network-failure-only retry)', () => {
+    it('registers a nuban recipient with the given bank details', async () => {
+      mockClient.post.mockResolvedValueOnce({ data: { status: true, data: { recipient_code: 'RCP_1' } } });
+
+      const result = await service.createTransferRecipient({
+        name: 'Test Seeker',
+        account_number: '0123456789',
+        bank_code: '058',
+      });
+
+      expect(result.data.recipient_code).toBe('RCP_1');
+      expect(mockClient.post).toHaveBeenCalledWith('/transferrecipient', {
+        type: 'nuban',
+        currency: 'NGN',
+        name: 'Test Seeker',
+        account_number: '0123456789',
+        bank_code: '058',
+      });
+    });
+
+    it('does NOT retry on a timeout', async () => {
+      mockClient.post.mockRejectedValue({ code: 'ECONNABORTED' });
+
+      await expect(
+        service.createTransferRecipient({ name: 'a', account_number: 'b', bank_code: 'c' })
+      ).rejects.toEqual({ code: 'ECONNABORTED' });
+      expect(mockClient.post).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('initiateTransfer (HUMAN_BACKLOG.md — the actual money-out call, network-failure-only retry)', () => {
+    it('sends amount/recipient/reason/reference to Paystack', async () => {
+      mockClient.post.mockResolvedValueOnce({
+        data: { status: true, data: { reference: 'withdrawal-1', transfer_code: 'TRF_1', status: 'success' } },
+      });
+
+      const result = await service.initiateTransfer({
+        amount: 500000,
+        recipientCode: 'RCP_1',
+        reason: 'Withdrawal',
+        reference: 'withdrawal-1',
+      });
+
+      expect(result.data.status).toBe('success');
+      expect(mockClient.post).toHaveBeenCalledWith('/transfer', {
+        source: 'balance',
+        amount: 500000,
+        recipient: 'RCP_1',
+        reason: 'Withdrawal',
+        reference: 'withdrawal-1',
+      });
+    });
+
+    it('does NOT retry on a timeout or 5xx — a duplicate transfer is a real-money risk', async () => {
+      mockClient.post.mockRejectedValue({ response: { status: 500 } });
+
+      await expect(
+        service.initiateTransfer({
+          amount: 500000,
+          recipientCode: 'RCP_1',
+          reason: 'Withdrawal',
+          reference: 'withdrawal-1',
+        })
+      ).rejects.toEqual({ response: { status: 500 } });
+      expect(mockClient.post).toHaveBeenCalledTimes(1);
+    });
+
+    it('retries a confirmed network-level failure', async () => {
+      mockClient.post.mockRejectedValueOnce({ code: 'ECONNRESET' }).mockResolvedValueOnce({
+        data: { status: true, data: { reference: 'withdrawal-1', transfer_code: 'TRF_1', status: 'success' } },
+      });
+
+      const result = await service.initiateTransfer({
+        amount: 500000,
+        recipientCode: 'RCP_1',
+        reason: 'Withdrawal',
+        reference: 'withdrawal-1',
+      });
+
+      expect(result.status).toBe(true);
+      expect(mockClient.post).toHaveBeenCalledTimes(2);
+    });
+  });
 });

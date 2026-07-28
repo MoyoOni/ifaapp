@@ -30,6 +30,6 @@ import { NotificationPreferencesService } from '../notifications/notification-pr
     NotificationPreferencesService,
   ],
   controllers: [PaymentsController],
-  exports: [PaymentsService, CurrencyService],
+  exports: [PaymentsService, CurrencyService, PaystackApiService],
 })
 export class PaymentsModule {}

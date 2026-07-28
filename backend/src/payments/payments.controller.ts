@@ -99,6 +99,16 @@ export class PaymentsController {
   }
 
   /**
+   * List banks (for the withdrawal form's bank picker — HUMAN_BACKLOG.md)
+   * GET /payments/banks
+   */
+  @Get('banks')
+  @UseGuards(AuthGuard('jwt'))
+  async listBanks() {
+    return this.paymentsService.listBanks();
+  }
+
+  /**
    * Verify payment
    * GET /payments/verify/:reference
    */

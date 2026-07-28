@@ -83,6 +83,29 @@ describe('NotificationService', () => {
     mockPrismaService.notification.create.mockResolvedValue({ id: 'default-notification-id' });
   });
 
+  describe('shouldSendNotification (VENDOR_BACKLOG.md VND-004: vendor notification preferences)', () => {
+    it.each([
+      [NotificationType.ORDER, 'order'],
+      [NotificationType.REVIEW_RECEIVED, 'reviewReceived'],
+      [NotificationType.LOW_STOCK, 'lowStock'],
+    ])('maps %s to the %s preference key', async (type, expectedKey) => {
+      await service.shouldSendNotification('user-1', type, 'email');
+
+      expect(mockNotificationPreferencesService.isNotificationEnabled).toHaveBeenCalledWith(
+        'user-1',
+        expectedKey,
+        'email'
+      );
+    });
+
+    it('does not gate DISPUTE notifications on any preference (always allowed)', async () => {
+      const result = await service.shouldSendNotification('user-1', 'DISPUTE' as any, 'email');
+
+      expect(result).toBe(true);
+      expect(mockNotificationPreferencesService.isNotificationEnabled).not.toHaveBeenCalled();
+    });
+  });
+
   describe('notifyAppointmentDeclined', () => {
     it('should create appointment declined notification', async () => {
       const notificationData = {

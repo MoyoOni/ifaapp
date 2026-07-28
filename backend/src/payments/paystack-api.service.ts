@@ -41,6 +41,42 @@ export interface PaystackRefundResponse {
   };
 }
 
+export interface PaystackDisableSubscriptionResponse {
+  status: boolean;
+  message?: string;
+}
+
+export interface PaystackBank {
+  name: string;
+  code: string;
+  currency: string;
+  active: boolean;
+}
+
+export interface PaystackListBanksResponse {
+  status: boolean;
+  message?: string;
+  data: PaystackBank[];
+}
+
+export interface PaystackTransferRecipientResponse {
+  status: boolean;
+  message?: string;
+  data: {
+    recipient_code: string;
+  };
+}
+
+export interface PaystackTransferResponse {
+  status: boolean;
+  message?: string;
+  data: {
+    reference: string;
+    transfer_code: string;
+    status: string; // 'success' | 'pending' | 'otp' | 'failed'
+  };
+}
+
 /**
  * Paystack API client using axios (replaces deprecated paystack SDK that depended on vulnerable `request`).
  * See: https://paystack.com/docs/api/
@@ -147,6 +183,123 @@ export class PaystackApiService implements OnModuleInit {
     if (payload.amount != null) body.amount = payload.amount;
     const { data } = await this.retryIfNeverReachedServer(() =>
       this.client!.post<PaystackRefundResponse>('/refund', body)
+    );
+    return data;
+  }
+
+  /**
+   * HUMAN_BACKLOG.md: admin-cancelled subscriptions previously only updated
+   * the local Subscription row -- Paystack kept billing the customer on
+   * schedule regardless. Paystack's `/subscription/disable` requires both
+   * the subscription_code AND the email_token from the original
+   * `subscription.create` webhook payload (NOT the subscription code used
+   * twice, which is what the self-service cancel path was doing before this
+   * fix and would have silently failed against the real API).
+   */
+  async disableSubscription(
+    subscriptionCode: string,
+    emailToken: string
+  ): Promise<PaystackDisableSubscriptionResponse> {
+    if (!this.client) throw new Error('Paystack is not configured');
+    const { data } = await this.retryIfNeverReachedServer(() =>
+      this.client!.post<PaystackDisableSubscriptionResponse>('/subscription/disable', {
+        code: subscriptionCode,
+        token: emailToken,
+      })
+    );
+    return data;
+  }
+
+  /**
+   * V8-401: the mirror-image counterpart to disableSubscription, for
+   * turning auto-renew back on before it actually lapses. Same
+   * code+token pair as disable per Paystack's API.
+   */
+  async enableSubscription(
+    subscriptionCode: string,
+    emailToken: string
+  ): Promise<PaystackDisableSubscriptionResponse> {
+    if (!this.client) throw new Error('Paystack is not configured');
+    const { data } = await this.retryIfNeverReachedServer(() =>
+      this.client!.post<PaystackDisableSubscriptionResponse>('/subscription/enable', {
+        code: subscriptionCode,
+        token: emailToken,
+      })
+    );
+    return data;
+  }
+
+  /**
+   * HUMAN_BACKLOG.md: the withdrawal/payout flow. Read-only reference data
+   * (the list of Nigerian banks Paystack can transfer to, each with its
+   * numeric bank code) -- safe to retry freely.
+   */
+  async listBanks(currency = 'NGN'): Promise<PaystackListBanksResponse> {
+    if (!this.client) throw new Error('Paystack is not configured');
+    const { data } = await retryWithBackoff(() =>
+      this.client!.get<PaystackListBanksResponse>(`/bank?currency=${encodeURIComponent(currency)}`)
+    );
+    return data;
+  }
+
+  /**
+   * Registers a payout destination with Paystack, returning a
+   * `recipient_code` required by `initiateTransfer` below. A mutating call
+   * to a real gateway -- same conservative retry-only-on-confirmed-network-
+   * failure policy as initializeTransaction/createRefund.
+   */
+  async createTransferRecipient(params: {
+    name: string;
+    account_number: string;
+    bank_code: string;
+    currency?: string;
+  }): Promise<PaystackTransferRecipientResponse> {
+    if (!this.client) throw new Error('Paystack is not configured');
+    const { data } = await this.retryIfNeverReachedServer(() =>
+      this.client!.post<PaystackTransferRecipientResponse>('/transferrecipient', {
+        type: 'nuban',
+        currency: params.currency ?? 'NGN',
+        name: params.name,
+        account_number: params.account_number,
+        bank_code: params.bank_code,
+      })
+    );
+    return data;
+  }
+
+  /**
+   * Sends real money out of the platform's Paystack balance to a recipient.
+   * The single riskiest mutating call in this file -- retried only on a
+   * confirmed network-level failure, same as createRefund/
+   * initializeTransaction, for the same reason (a timeout doesn't mean the
+   * transfer didn't happen). `reference` should be the WithdrawalRequest id
+   * so the transfer.success/transfer.failed webhook can look the request
+   * back up.
+   *
+   * Note: if this Paystack account has "OTP for API-initiated transfers"
+   * enabled in its dashboard settings, this call returns `data.status ===
+   * 'otp'` and the transfer cannot complete without a human entering that
+   * OTP via Paystack's dashboard/finalize endpoint -- this platform has no
+   * OTP-entry UI, so that setting must be disabled for this flow to work
+   * unattended. That's a Paystack account configuration decision, not
+   * something this code can resolve.
+   */
+  async initiateTransfer(params: {
+    /** In kobo, same convention as every other amount this service sends to Paystack. */
+    amount: number;
+    recipientCode: string;
+    reason: string;
+    reference: string;
+  }): Promise<PaystackTransferResponse> {
+    if (!this.client) throw new Error('Paystack is not configured');
+    const { data } = await this.retryIfNeverReachedServer(() =>
+      this.client!.post<PaystackTransferResponse>('/transfer', {
+        source: 'balance',
+        amount: params.amount,
+        recipient: params.recipientCode,
+        reason: params.reason,
+        reference: params.reference,
+      })
     );
     return data;
   }

@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { WalletService } from './wallet.service';
 import { CreateWithdrawalRequestDto } from './dto/create-withdrawal-request.dto';
+import { CreateBankAccountDto } from './dto/bank-account.dto';
 import { CreateEscrowDto } from './dto/create-escrow.dto';
 import { ReleaseEscrowDto } from './dto/release-escrow.dto';
 import { SyncQueuedActionsDto } from './dto/sync-queued-actions.dto';
@@ -148,6 +149,45 @@ export class WalletController {
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
     return this.walletService.getWithdrawalRequests(userId, currentUser);
+  }
+
+  @Get('payout-settings')
+  async getPayoutSettings() {
+    return this.walletService.getPayoutSettings();
+  }
+
+  // ==================== Bank Accounts (VENDOR_BACKLOG.md VND-002) ====================
+
+  @Get(':userId/bank-accounts')
+  async getBankAccounts(@Param('userId') userId: string, @CurrentUser() currentUser: CurrentUserPayload) {
+    return this.walletService.getBankAccounts(userId, currentUser);
+  }
+
+  @Post(':userId/bank-accounts')
+  async createBankAccount(
+    @Param('userId') userId: string,
+    @Body() dto: CreateBankAccountDto,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.walletService.createBankAccount(userId, dto, currentUser);
+  }
+
+  @Patch(':userId/bank-accounts/:bankAccountId/default')
+  async setDefaultBankAccount(
+    @Param('userId') userId: string,
+    @Param('bankAccountId') bankAccountId: string,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.walletService.setDefaultBankAccount(userId, bankAccountId, currentUser);
+  }
+
+  @Delete(':userId/bank-accounts/:bankAccountId')
+  async deleteBankAccount(
+    @Param('userId') userId: string,
+    @Param('bankAccountId') bankAccountId: string,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.walletService.deleteBankAccount(userId, bankAccountId, currentUser);
   }
 
   // ==================== Offline Sync ====================

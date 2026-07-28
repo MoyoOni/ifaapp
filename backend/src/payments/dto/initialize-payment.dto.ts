@@ -1,4 +1,4 @@
-import { IsNumber, IsString, IsOptional, IsEnum, Min, IsUUID } from 'class-validator';
+import { IsNumber, IsString, IsOptional, IsEnum, Min } from 'class-validator';
 import { Currency, PaymentPurpose } from '@ile-ase/common';
 
 export class InitializePaymentDto {
@@ -20,9 +20,13 @@ export class InitializePaymentDto {
   @IsOptional()
   name?: string;
 
-  @IsUUID()
+  // Was @IsUUID(), which rejected marketplace checkout's comma-joined
+  // multi-order id (one Payment can cover several vendors' orders at once --
+  // see PaymentsService.processMarketplaceOrderPayment). A single UUID is
+  // still valid here, so this only widens acceptance.
+  @IsString()
   @IsOptional()
-  relatedId?: string; // orderId, appointmentId, courseId, etc.
+  relatedId?: string; // orderId, appointmentId, courseId, or a comma-joined list of order ids
 
   @IsString()
   @IsOptional()

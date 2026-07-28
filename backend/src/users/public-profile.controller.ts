@@ -56,6 +56,28 @@ export class PublicProfileController {
       };
     }
 
+    // VENDOR_BACKLOG.md VND-021: "Each vendor storefront has:
+    // iluase.com/shop/[vendor-slug]" -- Vendor.slug existed (VND-023) but
+    // was never checked here, so a vendor's shareable slug link 404'd (or
+    // silently rendered the wrong profile type) instead of reaching their
+    // storefront. `findVendorByUserId` in marketplace.service.ts already
+    // falls back to slug lookup, so the frontend redirect target
+    // (/vendors/:id) works with either the vendor's id or its slug.
+    const vendor = await this.prisma.vendor.findUnique({
+      where: { slug },
+      select: { id: true, businessName: true, slug: true, bannerImageUrl: true },
+    });
+
+    if (vendor) {
+      return {
+        type: 'vendor',
+        id: vendor.id,
+        name: vendor.businessName,
+        slug: vendor.slug,
+        avatar: vendor.bannerImageUrl,
+      };
+    }
+
     throw new NotFoundException('No profile found for this username');
   }
 }

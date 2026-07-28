@@ -26,6 +26,13 @@ export class NotificationPreferencesService {
           pushFollowup: true,
           pushForum: true,
           pushCircles: true,
+          // VENDOR_BACKLOG.md VND-004
+          emailOrder: true,
+          pushOrder: true,
+          emailReviewReceived: true,
+          pushReviewReceived: false,
+          emailLowStock: true,
+          pushLowStock: false,
         },
       });
     }
@@ -68,6 +75,9 @@ export class NotificationPreferencesService {
       'emailPlan',
       'emailMessages',
       'emailMarketing',
+      'emailOrder',
+      'emailReviewReceived',
+      'emailLowStock',
     ];
 
     const validPushKeys = [
@@ -76,6 +86,9 @@ export class NotificationPreferencesService {
       'pushFollowup',
       'pushForum',
       'pushCircles',
+      'pushOrder',
+      'pushReviewReceived',
+      'pushLowStock',
     ];
 
     // Construct the preference key based on type and channel

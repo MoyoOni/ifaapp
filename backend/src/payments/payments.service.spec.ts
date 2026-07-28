@@ -60,17 +60,37 @@ describe('PaymentsService', () => {
       findUnique: jest.fn(),
       update: jest.fn(),
       findMany: jest.fn(),
+      create: jest.fn().mockResolvedValue({ id: 'payment-1' }),
     },
     transaction: {
       update: jest.fn(),
+      updateMany: jest.fn(),
       findFirst: jest.fn(),
       findMany: jest.fn(),
+    },
+    withdrawalRequest: {
+      findUnique: jest.fn(),
+      update: jest.fn(),
+      updateMany: jest.fn(),
+    },
+    order: {
+      findUnique: jest.fn(),
+      update: jest.fn(),
+    },
+    // VENDOR_BACKLOG.md VND-024
+    digitalProductDownload: {
+      upsert: jest.fn().mockResolvedValue({}),
     },
   };
 
   const mockWalletService = {
     depositFunds: jest.fn(),
     recordRefundFromGateway: jest.fn(),
+    refundWithdrawalAmount: jest.fn().mockResolvedValue(undefined),
+    createEscrow: jest.fn().mockResolvedValue({ id: 'escrow-1' }),
+    createExternallyFundedEscrow: jest.fn().mockResolvedValue({ id: 'escrow-1' }),
+    // VENDOR_BACKLOG.md VND-024
+    releaseEscrow: jest.fn().mockResolvedValue({}),
   };
 
   const mockLocationService = {
@@ -86,6 +106,9 @@ describe('PaymentsService', () => {
   const mockNotificationService = {
     notifyOrderUpdate: jest.fn(),
     notifyPaymentReceived: jest.fn().mockResolvedValue(undefined),
+    createNotification: jest.fn().mockResolvedValue(undefined),
+    notifyOrderPaid: jest.fn().mockResolvedValue(undefined),
+    notifyVendorNewOrder: jest.fn().mockResolvedValue(undefined),
   };
 
   beforeEach(async () => {
@@ -137,6 +160,45 @@ describe('PaymentsService', () => {
       expect(result.provider).toBe(PaymentProvider.PAYSTACK);
       expect(result.authorizationUrl).toBeDefined();
       expect(mockPaystackApi.initializeTransaction).toHaveBeenCalled();
+      // Payment-confirmation audit fix: no Payment row for WALLET_TOPUP --
+      // that path's idempotency/outbox wiring lives entirely in
+      // WalletService.depositFunds, untouched by this fix.
+      expect(mockPrismaService.payment.create).not.toHaveBeenCalled();
+    });
+
+    it('creates a Payment row for MARKETPLACE_ORDER so the webhook can later route it correctly (payment-confirmation audit fix)', async () => {
+      mockPaystackApi.initializeTransaction.mockResolvedValue({
+        status: true,
+        data: {
+          authorization_url: 'https://paystack.com/checkout/456',
+          access_code: '456',
+          reference: 'order-ref-456',
+        },
+      });
+
+      await service.initializePayment(
+        'user-id',
+        {
+          amount: 5000,
+          currency: Currency.NGN,
+          purpose: PaymentPurpose.MARKETPLACE_ORDER,
+          relatedId: 'order-1,order-2',
+        } as any,
+        'test@example.com',
+        'Test User'
+      );
+
+      expect(mockPrismaService.payment.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            userId: 'user-id',
+            transactionId: 'order-ref-456',
+            purpose: PaymentPurpose.MARKETPLACE_ORDER,
+            status: 'PENDING',
+            metadata: expect.objectContaining({ relatedId: 'order-1,order-2' }),
+          }),
+        })
+      );
     });
   });
 
@@ -214,6 +276,161 @@ describe('PaymentsService', () => {
       expect(mockNotificationService.notifyPaymentReceived).not.toHaveBeenCalled();
     });
 
+    describe('MARKETPLACE_ORDER routing (payment-confirmation audit fix)', () => {
+      const orderPayload = {
+        event: 'charge.success',
+        data: {
+          reference: 'order-ref-1',
+          amount: 500000,
+          currency: 'NGN',
+          metadata: { userId: 'user-id', purpose: PaymentPurpose.MARKETPLACE_ORDER, relatedId: 'order-1' },
+        },
+      };
+      const mockPaymentRow = {
+        id: 'payment-1',
+        status: 'PENDING',
+        userId: 'user-id',
+        transactionId: 'order-ref-1',
+        purpose: PaymentPurpose.MARKETPLACE_ORDER,
+        metadata: { relatedId: 'order-1' },
+      };
+      const mockOrder = {
+        id: 'order-1',
+        customerId: 'user-id',
+        vendorId: 'vendor-1',
+        totalAmount: 5000,
+        currency: 'NGN',
+        vendor: { userId: 'vendor-user-1', businessName: 'Ide Beads Shop' },
+        customer: { name: 'Ade' },
+        // VENDOR_BACKLOG.md VND-024
+        items: [{ productId: 'product-1', product: { type: 'PHYSICAL', digitalFileKey: null, digitalFileUrl: null } }],
+      };
+
+      it('marks the order PAID and creates the vendor escrow instead of crediting the buyer wallet', async () => {
+        // First lookup (by transactionId, in handlePaystackWebhook) sees the
+        // still-PENDING row; second lookup (by id, inside
+        // processSuccessfulPayment) sees it after the `success` update.
+        mockPrismaService.payment.findUnique
+          .mockResolvedValueOnce(mockPaymentRow)
+          .mockResolvedValueOnce({ ...mockPaymentRow, status: 'success' });
+        mockPrismaService.payment.update.mockResolvedValue({ ...mockPaymentRow, status: 'success' });
+        mockPrismaService.order.findUnique.mockResolvedValue(mockOrder);
+
+        const result = await service.handleWebhook(
+          orderPayload,
+          PaymentProvider.PAYSTACK,
+          signPaystackPayload(orderPayload)
+        );
+
+        expect(result.success).toBe(true);
+        expect(mockWalletService.depositFunds).not.toHaveBeenCalled();
+        expect(mockPrismaService.order.update).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: { id: 'order-1' },
+            data: expect.objectContaining({ status: 'PAID' }),
+          })
+        );
+        // VENDOR_BACKLOG.md VND-010 investigation: createEscrow() requires the
+        // depositor's internal wallet balance, which is wrong for money that
+        // arrived from an external Paystack charge -- must use the
+        // externally-funded variant instead, or this silently never pays the
+        // vendor (see createExternallyFundedEscrow's doc comment in wallet.service.ts).
+        expect(mockWalletService.createExternallyFundedEscrow).toHaveBeenCalledWith(
+          'user-id',
+          expect.objectContaining({ recipientId: 'vendor-user-1', amount: 5000 })
+        );
+        expect(mockWalletService.createEscrow).not.toHaveBeenCalled();
+        expect(mockNotificationService.notifyVendorNewOrder).toHaveBeenCalledWith(
+          'vendor-user-1',
+          'order-1',
+          expect.anything()
+        );
+      });
+
+      it('VENDOR_BACKLOG.md VND-024: grants a digital download and fast-tracks an all-digital order to DELIVERED with escrow released immediately', async () => {
+        const digitalOrder = {
+          ...mockOrder,
+          items: [
+            {
+              productId: 'product-1',
+              product: { type: 'DIGITAL', digitalFileKey: 'digital-products/vendor-1/file.pdf', digitalFileUrl: null },
+            },
+          ],
+        };
+        mockPrismaService.payment.findUnique
+          .mockResolvedValueOnce(mockPaymentRow)
+          .mockResolvedValueOnce({ ...mockPaymentRow, status: 'success' });
+        mockPrismaService.payment.update.mockResolvedValue({ ...mockPaymentRow, status: 'success' });
+        mockPrismaService.order.findUnique.mockResolvedValue(digitalOrder);
+
+        await service.handleWebhook(orderPayload, PaymentProvider.PAYSTACK, signPaystackPayload(orderPayload));
+
+        expect(mockPrismaService.digitalProductDownload.upsert).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: { orderId_productId: { orderId: 'order-1', productId: 'product-1' } },
+            create: expect.objectContaining({ orderId: 'order-1', productId: 'product-1', customerId: 'user-id' }),
+          })
+        );
+        expect(mockPrismaService.order.update).toHaveBeenCalledWith(
+          expect.objectContaining({ where: { id: 'order-1' }, data: expect.objectContaining({ status: 'DELIVERED' }) })
+        );
+        expect(mockWalletService.releaseEscrow).toHaveBeenCalledWith(
+          'vendor-user-1',
+          expect.objectContaining({ escrowId: 'escrow-1', tier: 'FULL' }),
+          expect.objectContaining({ id: 'vendor-user-1' })
+        );
+      });
+
+      it('VENDOR_BACKLOG.md VND-024: does not fast-track a mixed physical+digital order to DELIVERED', async () => {
+        const mixedOrder = {
+          ...mockOrder,
+          items: [
+            { productId: 'product-1', product: { type: 'DIGITAL', digitalFileKey: 'key', digitalFileUrl: null } },
+            { productId: 'product-2', product: { type: 'PHYSICAL', digitalFileKey: null, digitalFileUrl: null } },
+          ],
+        };
+        mockPrismaService.payment.findUnique
+          .mockResolvedValueOnce(mockPaymentRow)
+          .mockResolvedValueOnce({ ...mockPaymentRow, status: 'success' });
+        mockPrismaService.payment.update.mockResolvedValue({ ...mockPaymentRow, status: 'success' });
+        mockPrismaService.order.findUnique.mockResolvedValue(mixedOrder);
+
+        await service.handleWebhook(orderPayload, PaymentProvider.PAYSTACK, signPaystackPayload(orderPayload));
+
+        // The digital item still gets its download grant...
+        expect(mockPrismaService.digitalProductDownload.upsert).toHaveBeenCalled();
+        // ...but the order is not force-delivered and escrow is not released early,
+        // since the physical item still needs to actually ship.
+        expect(mockPrismaService.order.update).not.toHaveBeenCalledWith(
+          expect.objectContaining({ data: expect.objectContaining({ status: 'DELIVERED' }) })
+        );
+        expect(mockWalletService.releaseEscrow).not.toHaveBeenCalled();
+      });
+
+      it('does not reprocess an order payment on a replayed webhook delivery', async () => {
+        mockPrismaService.payment.findUnique.mockResolvedValue({ ...mockPaymentRow, status: 'success' });
+
+        const result = await service.handleWebhook(
+          orderPayload,
+          PaymentProvider.PAYSTACK,
+          signPaystackPayload(orderPayload)
+        );
+
+        expect(result.success).toBe(true);
+        expect(mockPrismaService.payment.update).not.toHaveBeenCalled();
+        expect(mockPrismaService.order.update).not.toHaveBeenCalled();
+      });
+
+      it('falls back to legacy wallet-deposit handling if no matching Payment row exists', async () => {
+        mockPrismaService.payment.findUnique.mockResolvedValue(null);
+        mockWalletService.depositFunds.mockResolvedValue({ transaction: { id: 'tx-1' } });
+
+        await service.handleWebhook(orderPayload, PaymentProvider.PAYSTACK, signPaystackPayload(orderPayload));
+
+        expect(mockWalletService.depositFunds).toHaveBeenCalled();
+      });
+    });
+
     it('rejects a Paystack webhook with no signature header instead of skipping verification (EMG-02)', async () => {
       await expect(service.handleWebhook(payload, PaymentProvider.PAYSTACK)).rejects.toThrow(
         UnauthorizedException
@@ -240,6 +457,101 @@ describe('PaymentsService', () => {
       ).rejects.toThrow(UnauthorizedException);
 
       expect(mockWalletService.depositFunds).not.toHaveBeenCalled();
+    });
+
+    it('HUMAN_BACKLOG.md: transfer.success completes the held withdrawal transaction and marks it PROCESSED', async () => {
+      mockPrismaService.withdrawalRequest.findUnique.mockResolvedValue({
+        id: 'withdrawal-1',
+        userId: 'vendor-user-1',
+        amount: 5000,
+        currency: 'NGN',
+        status: 'PENDING',
+      });
+      const transferPayload = {
+        event: 'transfer.success',
+        data: { reference: 'withdrawal-1', transfer_code: 'TRF_123', status: 'success' },
+      };
+
+      const result = await service.handleWebhook(
+        transferPayload,
+        PaymentProvider.PAYSTACK,
+        signPaystackPayload(transferPayload)
+      );
+
+      expect(result.success).toBe(true);
+      expect(mockPrismaService.transaction.updateMany).toHaveBeenCalledWith({
+        where: { reference: 'withdrawal-1', status: 'PENDING' },
+        data: { status: 'COMPLETED' },
+      });
+      expect(mockPrismaService.withdrawalRequest.update).toHaveBeenCalledWith({
+        where: { id: 'withdrawal-1' },
+        data: { status: 'PROCESSED' },
+      });
+      expect(mockNotificationService.createNotification).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: 'vendor-user-1', title: 'Payout confirmed' })
+      );
+    });
+
+    it('HUMAN_BACKLOG.md: does not re-notify or re-update on a repeated transfer.success delivery', async () => {
+      mockPrismaService.withdrawalRequest.findUnique.mockResolvedValue({
+        id: 'withdrawal-1',
+        userId: 'vendor-user-1',
+        amount: 5000,
+        currency: 'NGN',
+        status: 'PROCESSED', // already resolved by the first delivery
+      });
+      const transferPayload = {
+        event: 'transfer.success',
+        data: { reference: 'withdrawal-1', transfer_code: 'TRF_123', status: 'success' },
+      };
+
+      await service.handleWebhook(transferPayload, PaymentProvider.PAYSTACK, signPaystackPayload(transferPayload));
+
+      expect(mockPrismaService.withdrawalRequest.update).not.toHaveBeenCalled();
+      expect(mockNotificationService.createNotification).not.toHaveBeenCalled();
+    });
+
+    it('HUMAN_BACKLOG.md: transfer.failed refunds the wallet hold and returns the withdrawal to PENDING', async () => {
+      mockPrismaService.withdrawalRequest.findUnique.mockResolvedValue({
+        id: 'withdrawal-1',
+        status: 'PROCESSED',
+      });
+      const transferPayload = {
+        event: 'transfer.failed',
+        data: { reference: 'withdrawal-1', transfer_code: 'TRF_123', status: 'failed' },
+      };
+
+      const result = await service.handleWebhook(
+        transferPayload,
+        PaymentProvider.PAYSTACK,
+        signPaystackPayload(transferPayload)
+      );
+
+      expect(result.success).toBe(true);
+      expect(mockWalletService.refundWithdrawalAmount).toHaveBeenCalledWith('withdrawal-1');
+      expect(mockPrismaService.withdrawalRequest.update).toHaveBeenCalledWith({
+        where: { id: 'withdrawal-1' },
+        data: expect.objectContaining({ status: 'PENDING' }),
+      });
+    });
+
+    it('HUMAN_BACKLOG.md: a repeated transfer.failed delivery is a no-op (idempotent) once already refunded', async () => {
+      mockPrismaService.withdrawalRequest.findUnique.mockResolvedValue({
+        id: 'withdrawal-1',
+        status: 'PENDING', // already reverted by the first delivery
+      });
+      const transferPayload = {
+        event: 'transfer.failed',
+        data: { reference: 'withdrawal-1', transfer_code: 'TRF_123', status: 'failed' },
+      };
+
+      await service.handleWebhook(
+        transferPayload,
+        PaymentProvider.PAYSTACK,
+        signPaystackPayload(transferPayload)
+      );
+
+      expect(mockWalletService.refundWithdrawalAmount).not.toHaveBeenCalled();
     });
 
     it('processes a Flutterwave success webhook when the verif-hash header matches', async () => {

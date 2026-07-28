@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Patch,
   Body,
   Headers,
   Req,
@@ -14,6 +15,7 @@ import { Request } from 'express';
 import * as crypto from 'crypto';
 import { SubscriptionsService } from './subscriptions.service';
 import { InitiateSubscriptionDto } from './dto/initiate-subscription.dto';
+import { SetAutoRenewDto } from './dto/set-auto-renew.dto';
 import { AdminGrantSubscriptionDto, WinBackDto } from './dto/admin-subscription.dto';
 import { JwtAuthGuard } from '../shared/guards/auth.guard';
 import { RolesGuard, AdminRoles } from '../auth/guards/roles.guard';
@@ -65,6 +67,17 @@ export class SubscriptionsController {
   @UseGuards(JwtAuthGuard)
   async cancelSubscription(@CurrentUser() currentUser: CurrentUserPayload) {
     return this.subscriptionsService.cancelSubscription(currentUser.id);
+  }
+
+  // ─── PATCH /subscriptions/auto-renew ────────────────────────────────────
+  // Authenticated — V8-401: lighter-weight than cancel, keeps status ACTIVE
+  @Patch('auto-renew')
+  @UseGuards(JwtAuthGuard)
+  async setAutoRenew(
+    @CurrentUser() currentUser: CurrentUserPayload,
+    @Body() dto: SetAutoRenewDto
+  ) {
+    return this.subscriptionsService.setAutoRenew(currentUser.id, dto.autoRenew);
   }
 
   // ─── POST /subscriptions/pause ──────────────────────────────────────────

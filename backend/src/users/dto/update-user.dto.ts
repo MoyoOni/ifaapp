@@ -67,6 +67,28 @@ export class UpdateUserDto {
   @IsOptional()
   interests?: string[];
 
+  // COMMUNITY_BACKLOG.md FOR-Q2: opt-in to the member directory
+  @IsBoolean()
+  @IsOptional()
+  showInDirectory?: boolean;
+
+  // COMMUNITY_BACKLOG.md FOR-Q3: opt-in to answer Seeker Questions
+  @IsBoolean()
+  @IsOptional()
+  answersElderQuestions?: boolean;
+
+  // COMMUNITY_BACKLOG.md FOR-014: self-editable elder profile fields --
+  // the frontend already read `specialization` expecting it to exist; it
+  // never did. This makes that already-built display section real.
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  specialization?: string[];
+
+  @IsString()
+  @IsOptional()
+  availabilityNote?: string;
+
   @IsString()
   @IsOptional()
   @Matches(/^[a-z0-9-]{3,30}$/, {

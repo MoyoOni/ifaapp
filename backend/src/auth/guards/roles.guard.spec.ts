@@ -82,7 +82,10 @@ describe('RolesGuard', () => {
 
   it('does not apply sub-role scoping to a non-ADMIN role permitted by @Roles (e.g. ADVISORY_BOARD_MEMBER on auth/impersonate)', () => {
     const ctx = makeContext(
-      { roles: [UserRole.ADMIN, UserRole.ADVISORY_BOARD_MEMBER], adminSubRoles: [AdminSubRole.SUPER] },
+      {
+        roles: [UserRole.ADMIN, UserRole.ADVISORY_BOARD_MEMBER],
+        adminSubRoles: [AdminSubRole.SUPER],
+      },
       { role: UserRole.ADVISORY_BOARD_MEMBER }
     );
     expect(guard.canActivate(ctx)).toBe(true);
@@ -95,9 +98,24 @@ describe('RolesGuard', () => {
     const reflector = new Reflector();
 
     it.each([
-      ['PaymentsController.manuallyVerifyPayment', () => require('../../payments/payments.controller').PaymentsController, 'manuallyVerifyPayment', [AdminSubRole.SUPER, AdminSubRole.FINANCE, AdminSubRole.COMPLIANCE]],
-      ['AuthController.impersonate', () => require('../auth.controller').AuthController, 'impersonate', [AdminSubRole.SUPER]],
-      ['AnalyticsController.getOnboardingFunnel', () => require('../../analytics/analytics.controller').AnalyticsController, 'getOnboardingFunnel', [AdminSubRole.SUPER]],
+      [
+        'PaymentsController.manuallyVerifyPayment',
+        () => require('../../payments/payments.controller').PaymentsController,
+        'manuallyVerifyPayment',
+        [AdminSubRole.SUPER, AdminSubRole.FINANCE, AdminSubRole.COMPLIANCE],
+      ],
+      [
+        'AuthController.impersonate',
+        () => require('../auth.controller').AuthController,
+        'impersonate',
+        [AdminSubRole.SUPER],
+      ],
+      [
+        'AnalyticsController.getOnboardingFunnel',
+        () => require('../../analytics/analytics.controller').AnalyticsController,
+        'getOnboardingFunnel',
+        [AdminSubRole.SUPER],
+      ],
     ])('%s carries the expected @AdminRoles metadata', (_label, getCtor, methodName, expected) => {
       const ctor = getCtor();
       const subRoles = reflector.get(ADMIN_SUB_ROLES_KEY, ctor.prototype[methodName]);

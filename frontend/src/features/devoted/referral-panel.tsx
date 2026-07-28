@@ -56,6 +56,7 @@ const ReferralPanel: React.FC = () => {
 
       <p className="text-sm text-muted-foreground">
         Invite a friend to Ìlú Àṣẹ. When they complete their first booking, you both receive ₦500 wallet credit.
+        {' '}And if they subscribe to Devoted, you get 30 free Devoted days too — both rewards can land for the same friend.
       </p>
 
       {/* Referral link */}

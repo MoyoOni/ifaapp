@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Param,
   Body,
   UseGuards,
@@ -12,6 +13,11 @@ import {
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { RecordQuizAttemptDto } from './dto/record-quiz-attempt.dto';
+import {
+  SendConnectionRequestDto,
+  RespondConnectionRequestDto,
+} from './dto/connection-request.dto';
+import { EndorseUserDto } from './dto/endorse-user.dto';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../shared/guards/auth.guard';
 import { Public } from '../auth/decorators/public.decorator';
@@ -54,6 +60,67 @@ export class UsersController {
     return this.usersService.getReferralStats(currentUser.sub);
   }
 
+  // COMMUNITY_BACKLOG.md FOR-Q2: Member Directory. Must stay registered
+  // before @Get(':id') for the same route-ordering reason as quiz/questions
+  // above -- 'directory' would otherwise be swallowed as a user id.
+  @Get('directory')
+  async getDirectory(
+    @Query('role') role?: string,
+    @Query('interest') interest?: string,
+    @Query('search') search?: string,
+    @CurrentUser() currentUser?: CurrentUserPayload
+  ) {
+    return this.usersService.getDirectory({ role, interest, search }, currentUser?.sub);
+  }
+
+  @Get('directory/connections')
+  async getMyConnections(@CurrentUser() currentUser: CurrentUserPayload) {
+    return this.usersService.getMyConnections(currentUser.sub);
+  }
+
+  // "Find my Guide" discovery page. Public -- was previously calling the
+  // admin-only GET /users (findAll below), which threw a 403 for every real
+  // seeker; masked in dev because the query was disabled under dev mode.
+  // Must stay registered before @Get(':id') for the same route-ordering
+  // reason as quiz/questions above.
+  @Public()
+  @Get('practitioners')
+  async getPractitionerDiscovery(
+    @Query('search') search?: string,
+    @Query('specialty') specialty?: string,
+    @Query('verifiedOnly') verifiedOnly?: string,
+    @Query('sortBy') sortBy?: 'rating' | 'trust' | 'sessions' | 'newest',
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string
+  ) {
+    return this.usersService.getPractitionerDiscovery({
+      search,
+      specialty,
+      verifiedOnly: verifiedOnly === 'true',
+      sortBy,
+      limit: limit ? parseInt(limit, 10) : undefined,
+      offset: offset ? parseInt(offset, 10) : undefined,
+    });
+  }
+
+  @Post('directory/connect/:userId')
+  async sendConnectionRequest(
+    @Param('userId') userId: string,
+    @Body() dto: SendConnectionRequestDto,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.usersService.sendConnectionRequest(currentUser.sub, userId, dto.message);
+  }
+
+  @Patch('directory/connections/:connectionId')
+  async respondToConnectionRequest(
+    @Param('connectionId') connectionId: string,
+    @Body() dto: RespondConnectionRequestDto,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.usersService.respondToConnectionRequest(connectionId, currentUser.sub, dto.accept);
+  }
+
   // Any authenticated user can view any profile -- this is the public profile
   // page, not an account-settings lookup (that's the same route, but
   // findOne() itself strips email/phone unless the viewer is the owner).
@@ -71,6 +138,27 @@ export class UsersController {
   @Get(':id/badges')
   async getBadges(@Param('id') id: string) {
     return this.usersService.getUserBadges(id);
+  }
+
+  // COMMUNITY_BACKLOG.md FOR-014/FOR-006: elder-initiated endorsement,
+  // distinct from admin-awarded UserBadge entries.
+  @Get(':id/endorsements')
+  async getEndorsements(@Param('id') id: string) {
+    return this.usersService.getEndorsements(id);
+  }
+
+  @Post(':id/endorse')
+  async endorseUser(
+    @Param('id') id: string,
+    @Body() dto: EndorseUserDto,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.usersService.endorseUser(currentUser.id, id, dto.note);
+  }
+
+  @Delete(':id/endorse')
+  async removeEndorsement(@Param('id') id: string, @CurrentUser() currentUser: CurrentUserPayload) {
+    return this.usersService.removeEndorsement(currentUser.id, id);
   }
 
   // "Who viewed my profile" -- private, self/admin only (unlike badges).

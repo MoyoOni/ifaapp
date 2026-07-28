@@ -86,14 +86,19 @@ export class AuthService {
     if (slugConflict) {
       slug = generateSlug(user.name, Date.now().toString(36).slice(-4));
     }
-    // Generate unique referral code: firstname-6chars e.g. 'adewale-3k9xp2'
+    await this.prisma.user.update({ where: { id: user.id }, data: { slug } });
+
+    // Generate unique referral code: firstname-6chars e.g. 'adewale-3k9xp2'.
+    // A collision on the random suffix is vanishingly rare but was previously
+    // unhandled -- it would throw on the update above (unique constraint)
+    // *after* the user row already existed, failing the whole registration
+    // request. Retried independently of the slug write so a collision here
+    // can never take registration down with it.
     const firstName = user.name
       .split(' ')[0]
       .toLowerCase()
       .replace(/[^a-z0-9]/g, '');
-    const suffix = Math.random().toString(36).slice(2, 8);
-    const referralCode = `${firstName}-${suffix}`;
-    await this.prisma.user.update({ where: { id: user.id }, data: { slug, referralCode } });
+    await this.assignReferralCode(user.id, firstName);
 
     // Generate tokens
     const tokens = await this.generateTokens({
@@ -136,6 +141,23 @@ export class AuthService {
       },
       ...tokens,
     };
+  }
+
+  private async assignReferralCode(userId: string, firstName: string): Promise<string | null> {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const suffix = Math.random().toString(36).slice(2, 8);
+      const referralCode = `${firstName}-${suffix}`;
+      try {
+        await this.prisma.user.update({ where: { id: userId }, data: { referralCode } });
+        return referralCode;
+      } catch (err) {
+        this.logger.warn(
+          `Referral code collision on attempt ${attempt + 1} for user ${userId} (code=${referralCode})`
+        );
+      }
+    }
+    this.logger.error(`Failed to assign a unique referral code for user ${userId} after 3 attempts`);
+    return null;
   }
 
   private async linkReferral(newUserId: string, referralCode: string) {

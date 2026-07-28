@@ -18,6 +18,11 @@ export enum NotificationType {
   FORUM_REPLY = 'FORUM_REPLY',
   MENTION = 'MENTION',
   REVIEW_REQUEST = 'REVIEW_REQUEST',
+  // VENDOR_BACKLOG.md VND-004: distinct from the generic SYSTEM type so a
+  // vendor's preference toggle for one doesn't silently gate the other --
+  // SYSTEM covers many unrelated platform notifications.
+  REVIEW_RECEIVED = 'REVIEW_RECEIVED',
+  LOW_STOCK = 'LOW_STOCK',
 }
 
 export enum NotificationCategory {
@@ -80,6 +85,15 @@ export class NotificationService {
         break;
       case NotificationType.REVIEW_REQUEST:
         typeKey = 'followup';
+        break;
+      case NotificationType.ORDER:
+        typeKey = 'order';
+        break;
+      case NotificationType.REVIEW_RECEIVED:
+        typeKey = 'reviewReceived';
+        break;
+      case NotificationType.LOW_STOCK:
+        typeKey = 'lowStock';
         break;
       default:
         // For types not specifically controlled, allow them by default

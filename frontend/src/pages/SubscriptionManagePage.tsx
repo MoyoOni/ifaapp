@@ -5,6 +5,7 @@ import { Crown, Sparkles, AlertCircle, CheckCircle, Calendar, Clock, CreditCard,
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { useSubscription } from '@/features/subscription/use-subscription';
+import { useToast } from '@/shared/components/toast';
 
 interface BillingRecord {
   id: string;
@@ -22,10 +23,10 @@ const planAmount = (plan: string) => plan === 'ANNUAL' ? '₦100,000' : '₦25,0
 const SubscriptionManagePage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { error: toastError } = useToast();
   const queryClient = useQueryClient();
-  const { isDevoted, plan, endDate, daysRemaining, status, autoRenew } = useSubscription();
+  const { isDevoted, plan, endDate, daysRemaining, status, autoRenew, canPause } = useSubscription();
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [pauseUsed, setPauseUsed] = useState(false);
 
   const { data: history = [], isLoading: historyLoading } = useQuery<BillingRecord[]>({
     queryKey: ['subscription-history', user?.id],
@@ -46,8 +47,21 @@ const SubscriptionManagePage: React.FC = () => {
     mutationFn: () => api.post('/subscriptions/pause'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subscription'] });
-      setPauseUsed(true);
       setShowCancelModal(false);
+    },
+    onError: (err: any) => {
+      toastError(err?.response?.data?.message || 'Could not pause your subscription.');
+      queryClient.invalidateQueries({ queryKey: ['subscription'] });
+    },
+  });
+
+  const toggleAutoRenewMutation = useMutation({
+    mutationFn: (next: boolean) => api.patch('/subscriptions/auto-renew', { autoRenew: next }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subscription'] });
+    },
+    onError: (err: any) => {
+      toastError(err?.response?.data?.message || 'Could not update auto-renewal.');
     },
   });
 
@@ -114,7 +128,20 @@ const SubscriptionManagePage: React.FC = () => {
                 </div>
               )}
 
-              <div className="flex gap-3">
+              <div className="flex gap-3 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => toggleAutoRenewMutation.mutate(!autoRenew)}
+                  disabled={toggleAutoRenewMutation.isPending}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-stone-700 dark:text-stone-300 border border-border rounded-xl hover:bg-muted transition-colors disabled:opacity-50"
+                >
+                  {toggleAutoRenewMutation.isPending ? (
+                    <Loader2 size={15} className="animate-spin" />
+                  ) : (
+                    <Clock size={15} />
+                  )}
+                  {autoRenew ? 'Turn off auto-renewal' : 'Turn on auto-renewal'}
+                </button>
                 {autoRenew && (
                   <button
                     type="button"
@@ -199,7 +226,7 @@ const SubscriptionManagePage: React.FC = () => {
               You can <strong>pause for 1 month</strong> instead — no charge, Devoted access continues, auto-renewal resumes after.
             </p>
 
-            {pauseUsed ? (
+            {!canPause ? (
               <div className="p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl mb-4 text-sm text-amber-800 dark:text-amber-300">
                 You've already used your pause for this period.
               </div>

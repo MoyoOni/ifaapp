@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { CurrentUserPayload } from '@/auth/decorators/current-user.decorator';
 
 @Injectable()
 export class UserService {
@@ -47,7 +48,21 @@ export class UserService {
     }
   }
 
-  async remove(id: string) {
+  // ProBacklog-v1.md item #12 (soft-delete audit): this method has no
+  // callers anywhere in the codebase today (UserService is only injected by
+  // auth.service.ts and impersonation.service.ts, both of which only call
+  // findById) -- but it hard-deletes a User by id with zero ownership/role
+  // check, so anyone who ever wires it up to a route gets an unauthenticated
+  // delete-any-user endpoint by default. Adding the guard now, before it's
+  // reachable, rather than waiting for it to be found the hard way. Not
+  // converted to soft-delete: user removal already has an established
+  // pattern elsewhere (gdpr.service.ts's deleteUser anonymizes the row
+  // rather than deleting or soft-deleting it), which this dead method
+  // predates and doesn't match.
+  async remove(id: string, currentUser: CurrentUserPayload) {
+    if (currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can remove users');
+    }
     try {
       await this.prisma.user.delete({
         where: { id },
