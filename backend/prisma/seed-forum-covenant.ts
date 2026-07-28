@@ -32,6 +32,8 @@ Share what you know. If you are uncertain, say so. This protects the integrity o
 Seekers are in a delicate space. No judgment, no exploitation, no predatory behavior.
 If you see someone in crisis, respond with compassion — or tag a moderator.
 
+> ⚠️ **If you're in crisis or immediate danger**, please contact your local emergency services or a crisis hotline in your country. This platform does not yet offer same-day spiritual crisis response. For non-emergency support, reach out to **hello@iluase.com** and we will respond as soon as we can.
+
 **4. No Gatekeeping**
 Ifá belongs to everyone ready to learn. Do not use lineage or credentials as weapons.
 
@@ -147,6 +149,7 @@ async function main() {
           authorId: admin.id,
           title: thread.title,
           content: thread.content,
+          tags: thread.tags,
           isPinned: thread.isPinned,
           isLocked: thread.isLocked,
           isApproved: thread.isApproved,

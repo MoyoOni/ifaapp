@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "RefundRequest" ALTER COLUMN "amount" SET DATA TYPE DECIMAL(14,2),
+ALTER COLUMN "approvedAmount" SET DATA TYPE DECIMAL(14,2);
+

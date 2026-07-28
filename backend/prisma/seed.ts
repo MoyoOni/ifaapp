@@ -1,4 +1,10 @@
-// This script is run by `npm run db:seed` to populate the database with initial data
+// Standalone: forum categories/covenant/starter-threads/real-temples + the
+// Oral History Archive (which needs ConfigService/SecretsService, so it can't
+// be run as a plain child-process step like the others).
+//
+// For a full restore of everything (users, temples, circles, forum, academy,
+// moderation rules) after an empty/reset database, use `npm run seed:all`
+// instead -- that's also what `prisma migrate reset` runs automatically.
 
 import { PrismaClient } from '@prisma/client';
 import { seedForumCategories } from './seed-forum-categories';

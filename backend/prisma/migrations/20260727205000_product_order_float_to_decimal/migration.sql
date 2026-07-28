@@ -1,0 +1,14 @@
+-- AlterTable
+ALTER TABLE "Order" ALTER COLUMN "totalAmount" SET DATA TYPE DECIMAL(14,2),
+ALTER COLUMN "refundAmount" SET DATA TYPE DECIMAL(14,2);
+
+-- AlterTable
+ALTER TABLE "OrderItem" ALTER COLUMN "price" SET DATA TYPE DECIMAL(14,2);
+
+-- AlterTable
+ALTER TABLE "Product" ALTER COLUMN "price" SET DATA TYPE DECIMAL(14,2),
+ALTER COLUMN "wholesalePrice" SET DATA TYPE DECIMAL(14,2);
+
+-- AlterTable
+ALTER TABLE "ProductVariant" ALTER COLUMN "priceOverride" SET DATA TYPE DECIMAL(14,2);
+

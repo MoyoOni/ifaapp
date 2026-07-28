@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "GuidancePlan" ALTER COLUMN "totalCost" SET DATA TYPE DECIMAL(14,2),
+ALTER COLUMN "platformServiceFee" SET DATA TYPE DECIMAL(14,2);
+

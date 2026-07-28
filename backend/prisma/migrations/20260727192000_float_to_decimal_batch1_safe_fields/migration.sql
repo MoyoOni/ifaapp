@@ -1,0 +1,28 @@
+-- AlterTable
+ALTER TABLE "Course" ALTER COLUMN "price" SET DATA TYPE DECIMAL(14,2);
+
+-- AlterTable
+ALTER TABLE "Event" ALTER COLUMN "price" SET DATA TYPE DECIMAL(14,2);
+
+-- AlterTable
+ALTER TABLE "ForumTip" ALTER COLUMN "amount" SET DATA TYPE DECIMAL(14,2);
+
+-- AlterTable
+ALTER TABLE "Order" ALTER COLUMN "taxAmount" SET DATA TYPE DECIMAL(14,2),
+ALTER COLUMN "shippingCost" SET DATA TYPE DECIMAL(14,2);
+
+-- AlterTable
+ALTER TABLE "Payment" ALTER COLUMN "amount" SET DATA TYPE DECIMAL(14,2);
+
+-- AlterTable
+ALTER TABLE "PlatformSettings" ALTER COLUMN "maxPayoutWithoutApprovalNgn" SET DATA TYPE DECIMAL(14,2);
+
+-- AlterTable
+ALTER TABLE "PromoCode" ALTER COLUMN "value" SET DATA TYPE DECIMAL(14,2);
+
+-- AlterTable
+ALTER TABLE "ServiceOffering" ALTER COLUMN "priceAmount" SET DATA TYPE DECIMAL(14,2);
+
+-- AlterTable
+ALTER TABLE "TutorSession" ALTER COLUMN "price" SET DATA TYPE DECIMAL(14,2);
+

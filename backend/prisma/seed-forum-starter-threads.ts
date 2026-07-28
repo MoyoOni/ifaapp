@@ -208,6 +208,63 @@ What are you listening to this week?`,
     tags: ['music', 'culture', 'lifestyle', 'ase', 'community'],
     isPinned: false,
   },
+  {
+    // SHOP_BACKLOG.md MSP-009: "cultural sensitivity guidelines for
+    // international shipping" -- a pinned resource, not a new content model,
+    // matching VND-019's own design note ("pinned resources: platform
+    // policies, cultural guidelines, best practice guides").
+    categorySlug: 'vendor-circle',
+    title: 'Shipping Sacred Items Internationally — Cultural Sensitivity & Customs Basics',
+    content: `Many of our vendors ship across borders to a global diaspora. This is guidance, not legal advice — customs law varies by country and changes often, so always confirm current rules with your carrier and the destination country's customs authority before shipping.
+
+**Cultural sensitivity in how you describe items:**
+- Be accurate and respectful on customs forms. "Ceremonial beads" or "cultural craft item" is honest and appropriate — you don't need to over-explain a sacred item's spiritual function to a customs officer who has no context for it.
+- You are not obligated to disclose lineage-sensitive or initiatory details to satisfy a shipping form. Describe the physical object, not its spiritual role.
+- Some materials are restricted or banned entirely in certain countries (organic matter, animal products, certain woods, seeds). Check the destination country's restricted-imports list before shipping herbs, seeds, or organic ritual items — this protects both you and the buyer from a seized package.
+
+**Customs documentation basics:**
+- Most international shipments need a commercial invoice (or customs declaration) listing: item description, quantity, declared value, and country of origin.
+- Undervaluing an item to reduce customs fees is customs fraud in most jurisdictions — don't do it, even if a buyer asks.
+- Keep your own records of what you've shipped and declared, in case of a customs inquiry.
+
+**What this platform does and doesn't help with:**
+- We don't currently generate customs paperwork or calculate duties for you — check with your carrier (DHL, FedEx, your local postal service) for their customs tools.
+- We don't currently offer shipping insurance through the platform — if a sacred item is high-value or irreplaceable, look into insurance through your shipping carrier directly.
+
+If you've shipped internationally and have carrier-specific tips (customs forms that work well, countries with unusual restrictions, etc.), share them below — this thread is for the community to build on.`,
+    tags: ['shipping', 'international', 'customs', 'vendor-resource'],
+    isPinned: true,
+  },
+  {
+    // COMMUNITY_BACKLOG.md FOR-016: "Education content on healthy spiritual
+    // boundaries" -- a pinned resource in the same seeker-facing category as
+    // the "Ask Anything" starter thread above, not a new content model.
+    categorySlug: 'seeker-questions',
+    title: 'Healthy Spiritual Boundaries: What a Good Practitioner Relationship Looks Like',
+    content: `Ifá is a path of guidance, not control. A healthy relationship with a Babalawo or any practitioner should leave you feeling more grounded in your own life, not more dependent on theirs.
+
+**Signs of a healthy practitioner relationship:**
+- They explain what a reading or ritual means and welcome your questions about it.
+- They are clear and upfront about costs before you commit to anything.
+- They encourage you to also lean on your own judgment, community, and (where appropriate) other professional support — not just them.
+- They respect a "no" or "not right now" without pressure or guilt.
+
+**Concerns worth naming and, if needed, reporting:**
+- **Controlling behavior** — being told who you can talk to, what other practitioners you're "allowed" to see, or that leaving will bring you harm.
+- **Fear-based manipulation** — being told you must act *immediately* (usually with more payment) to avoid a curse, tragedy, or spiritual punishment.
+- **Financial exploitation** — escalating, open-ended costs for "clearing" something, with no clear scope or end point.
+
+None of this describes ordinary Ifá practice. If something in a practitioner relationship feels like one of these, you are allowed to trust that feeling.
+
+**What you can do here:**
+- Every practitioner's public profile has a "Report" option — that goes directly to a real admin review queue, not just this thread.
+- If what you're carrying is more about processing a conflict than filing a formal complaint, the [Healing & Reconciliation](/healing) space offers elder-mediated support instead.
+- This thread itself is for open discussion — you don't need to name anyone to ask a general question about a concerning pattern you've noticed.
+
+Protection has to come with care, not just enforcement. Ask, share, or just read — this thread is for all of it.`,
+    tags: ['boundaries', 'safety', 'practitioner-relationship', 'safeguards'],
+    isPinned: true,
+  },
 ];
 
 async function main() {

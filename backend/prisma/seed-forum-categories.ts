@@ -90,6 +90,31 @@ const CATEGORIES = [
     order: 10,
     isTeachings: false,
   },
+  {
+    // VENDOR_BACKLOG.md VND-019: vendor-only peer space -- sourcing advice,
+    // shipping tips, packaging sacred items, pricing guidance, cultural
+    // questions. Same soft-privacy pattern as practitioners-inner-circle
+    // (frontend hides it from non-vendors; backend blocks posting by
+    // non-vendors -- see forum.service.ts's restrictedCategories check).
+    slug: 'vendor-circle',
+    name: 'Vendor Circle',
+    description: 'Approved vendors only — sourcing, shipping, pricing & cultural questions',
+    icon: '🧺',
+    order: 11,
+    isTeachings: false,
+  },
+  {
+    // SHOP_BACKLOG.md MSP-019: auto-created support/reflection threads for
+    // each approved Ritual Readiness Kit live here (see
+    // AdminMarketplaceService.reviewBundle) -- reuses Forum rather than a
+    // parallel comment system, per that item's own acceptance criteria.
+    slug: 'ritual-kits-ceremonies',
+    name: 'Ritual Kits & Ceremonies',
+    description: 'Support and reflection threads for Ritual Readiness Kits',
+    icon: '🕯️',
+    order: 12,
+    isTeachings: false,
+  },
 ];
 
 const ORAL_HISTORY_THREAD_TITLE = 'Share Your Story — Oral History Archive';

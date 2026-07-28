@@ -75,7 +75,7 @@ model User {
   threadsAuthored           ForumThread[]            @relation("ThreadAuthor")
   threadsLastPoster         ForumThread[]            @relation("ThreadLastPoster")
   forumBookmarks            ForumBookmark[]
-  forumReports              ForumReport[]    @relation("ForumReporter")
+  forumReports              ForumReport[]            @relation("ForumReporter")
   forumSubscriptions        ForumSubscription[]
   elderFlagsCreated         ElderFlag[]              @relation("ElderFlagsCreated")
   elderFlagsReviewed        ElderFlag[]              @relation("ElderFlagsReviewed")
@@ -89,6 +89,7 @@ model User {
   sentMessages              Message[]                @relation("SentMessages")
   notifications             Notification[]           @relation("NotificationRecipient")
   ordersPlaced              Order[]                  @relation("OrderCustomer")
+  returnRequests            ReturnRequest[]          @relation("ReturnRequestCustomer")
   payments                  Payment[]
   auditLogs                 AuditLog[]               @relation("UserAuditLogs")
   postAcknowledgments       PostAcknowledgment[]     @relation("PostAcknowledgments")
@@ -105,6 +106,7 @@ model User {
   verificationApp           VerificationApplication?
   userWallet                Wallet?                  @relation("WalletUser")
   withdrawalRequests        WithdrawalRequest[]      @relation("WithdrawalUser")
+  bankAccounts              BankAccount[]            @relation("BankAccountUser")
   castVotes                 AdvisoryVoteCast[]       @relation("CastVotes")
   proposedVotes             AdvisoryVote[]           @relation("ProposedVotes")
   templesJoined             Temple[]                 @relation("TempleMembers")
@@ -114,89 +116,293 @@ model User {
   referralsMade             Referral[]               @relation("ReferralsMade")
   referralReceived          Referral?                @relation("ReferralReceived")
   reviewFlagsMade           ReviewFlag[]             @relation("ReviewFlagger")
+  serviceOfferings          ServiceOffering[]        @relation("ServiceOfferingBabalawo")
+  userReportsFiled          UserReport[]             @relation("UserReportReporter")
+  userReportsReceived       UserReport[]             @relation("UserReportReported")
+  userReportsResolved       UserReport[]             @relation("UserReportResolver")
+  circleFeedLikes           CircleFeedLike[]         @relation("CircleFeedLikeUser")
+  circleFeedComments        CircleFeedComment[]      @relation("CircleFeedCommentAuthor")
 
   // Subscription / billing fields
-  subscriptionStatus        String                   @default("FREE") // FREE | DEVOTED | EXPIRED
-  subscriptionEnd           DateTime?
-  referralCode              String?                  @unique
+  subscriptionStatus String    @default("FREE") // FREE | DEVOTED | EXPIRED
+  subscriptionEnd    DateTime?
+  referralCode       String?   @unique
 
   // F9-702: Forum digest email opt-in
-  forumDigestOptIn          Boolean                  @default(true)
+  forumDigestOptIn Boolean @default(true)
 
   // F9-703: Community Builder badge
-  isCommunityBuilder        Boolean                  @default(false)
+  isCommunityBuilder Boolean @default(false)
 
   // F9-802: Participation streak
-  contributionStreak        Int                      @default(0)
-  lastContributionDate      DateTime?
-  longestStreak             Int                      @default(0)
+  contributionStreak   Int       @default(0)
+  lastContributionDate DateTime?
+  longestStreak        Int       @default(0)
 
   // F9-901: Practitioner Trust Score
   // 0-100 point scale (computed by UsersService's trust-score recalculation:
   // +30 verified, +20 consultation reviews, +15 forum posts, +10 temple member,
   // -20 active dispute, floored at 0) -- NOT 0.0-1.0. See getTrustScoreTier's
   // 75/50/30 thresholds and TrustScoreOverrideDto's @Min(0) @Max(100).
-  trustScore                Float                    @default(0)
+  trustScore                Float     @default(0)
   trustScoreOverride        Float?
   trustScoreOverrideReason  String?
   trustScoreOverrideBy      String?
   trustScoreOverrideAt      DateTime?
-  passedCulturalOrientation Boolean                  @default(false)
-  culturalQuizFailCount     Int                      @default(0)
+  passedCulturalOrientation Boolean   @default(false)
+  culturalQuizFailCount     Int       @default(0)
   // F9-10: Inactive Practitioner Re-engagement
-  isOnLeave                 Boolean                  @default(false)
-  isDeactivated             Boolean                  @default(false)
+  isOnLeave                 Boolean   @default(false)
+  isDeactivated             Boolean   @default(false)
 
   // ADM-003: Suspension & Ban
-  suspendedUntil            DateTime?
-  bannedAt                  DateTime?
-  banReason                 String?
-  warnedAt                  DateTime?
-  warnCount                 Int                      @default(0)
+  suspendedUntil DateTime?
+  bannedAt       DateTime?
+  banReason      String?
+  warnedAt       DateTime?
+  warnCount      Int       @default(0)
 
   // ADM-007: Featured Practitioners
-  isFeatured                Boolean                  @default(false)
-  featuredOrder             Int?
-  featuredExpiry            DateTime?
+  isFeatured     Boolean   @default(false)
+  featuredOrder  Int?
+  featuredExpiry DateTime?
 
   // Reverse relations for new admin models
-  announcements             Announcement[]           @relation("AnnouncementCreator")
-  complaintsAsClient        PractitionerComplaint[]  @relation("ClientComplaint")
-  complaintsAsPractitioner  PractitionerComplaint[]  @relation("PractitionerComplaint")
-  resolvedComplaints        PractitionerComplaint[]  @relation("ResolverComplaint")
-  refundRequestsMade        RefundRequest[]          @relation("RefundRequester")
-  refundRequestsProcessed   RefundRequest[]          @relation("RefundProcessor")
-  oralHistoryEntries        OralHistoryEntry[]       @relation("OralHistoryCreator")
-  sacredCalendarEvents      SacredCalendarEvent[]    @relation("SacredCalendarCreator")
+  announcements            Announcement[]          @relation("AnnouncementCreator")
+  complaintsAsClient       PractitionerComplaint[] @relation("ClientComplaint")
+  complaintsAsPractitioner PractitionerComplaint[] @relation("PractitionerComplaint")
+  resolvedComplaints       PractitionerComplaint[] @relation("ResolverComplaint")
+  refundRequestsMade       RefundRequest[]         @relation("RefundRequester")
+  refundRequestsProcessed  RefundRequest[]         @relation("RefundProcessor")
+  oralHistoryEntries       OralHistoryEntry[]      @relation("OralHistoryCreator")
+  sacredCalendarEvents     SacredCalendarEvent[]   @relation("SacredCalendarCreator")
 
   // EXP-020: Personal Awo relationship
-  personalAwoId             String?
-  personalAwo               User?                    @relation("PersonalAwoClients", fields: [personalAwoId], references: [id])
-  personalAwoClients        User[]                   @relation("PersonalAwoClients")
-  
+  personalAwoId      String?
+  personalAwo        User?   @relation("PersonalAwoClients", fields: [personalAwoId], references: [id])
+  personalAwoClients User[]  @relation("PersonalAwoClients")
+
   // EXP-024: Consultation Notes relations
-  babalawoNotes             ConsultationNote[]       @relation("BabalawoNotes")
-  clientNotes               ConsultationNote[]       @relation("ClientNotes")
-  
+  babalawoNotes ConsultationNote[] @relation("BabalawoNotes")
+  clientNotes   ConsultationNote[] @relation("ClientNotes")
+
   // EXP-023: Client Session Notes
-  clientSessionNotes        ClientSessionNote[]      @relation("ClientSessionNotes")
-  
+  clientSessionNotes ClientSessionNote[] @relation("ClientSessionNotes")
+
   // EXP-026: Notification Preferences
-  userNotificationPreferences   NotificationPreferences? @relation("UserNotificationPreferences")
-  notificationPreferencesId     String?                  @unique
-  
-  onboardingEmails          OnboardingEmail[]        @relation("OnboardingEmailUser")
+  userNotificationPreferences NotificationPreferences? @relation("UserNotificationPreferences")
+  notificationPreferencesId   String?                  @unique
+
+  onboardingEmails OnboardingEmail[] @relation("OnboardingEmailUser")
 
   // Additional relations for other models
-  userBadges                UserBadge[]              @relation("UserBadges")
-  badgeAwarder              UserBadge[]              @relation("BadgeAwarder")
-  flagRuleCreator           ContentFlagRule[]        @relation("FlagRuleCreator")
-  campaignCreator           EmailCampaign[]          @relation("CampaignCreator")
-  promoCodeCreator          PromoCode[]              @relation("PromoCodeCreator")
-  promoRedemptions          PromoRedemption[]        @relation("PromoRedemptions")
-  userSessions              UserSession[]            @relation("UserSessions")
+  userBadges       UserBadge[]       @relation("UserBadges")
+  badgeAwarder     UserBadge[]       @relation("BadgeAwarder")
+  flagRuleCreator  ContentFlagRule[] @relation("FlagRuleCreator")
+  campaignCreator  EmailCampaign[]   @relation("CampaignCreator")
+  promoCodeCreator PromoCode[]       @relation("PromoCodeCreator")
+  promoRedemptions PromoRedemption[] @relation("PromoRedemptions")
+  userSessions     UserSession[]     @relation("UserSessions")
+
+  // COMMUNITY_BACKLOG.md FOR-Q2: Community Member Directory -- opt-in only,
+  // default false (privacy-first). Deliberately a new dedicated flag rather
+  // than reinterpreting `profileVisibility` (default "community", already
+  // effectively opt-out for every existing user, so redefining it here would
+  // have silently opted every existing user into a new directory).
+  showInDirectory            Boolean             @default(false)
+  connectionRequestsSent     ConnectionRequest[] @relation("ConnectionRequester")
+  connectionRequestsReceived ConnectionRequest[] @relation("ConnectionRecipient")
+
+  // COMMUNITY_BACKLOG.md FOR-013: ritual RSVP/intention-sharing
+  ritualParticipations RitualParticipation[] @relation("RitualParticipant")
+
+  // COMMUNITY_BACKLOG.md FOR-015: Ancestral Remembrance Wall
+  memorialEntries MemorialEntry[] @relation("MemorialAuthor")
+
+  // COMMUNITY_BACKLOG.md FOR-017: consent-based wellbeing check-ins.
+  // Admin-assigned flag, same pattern as isCommunityBuilder/isFeatured --
+  // not a full new role, just a marker of who has opted in to be a carer.
+  isCommunityCarer           Boolean            @default(false)
+  wellbeingCheckInsRequested WellbeingCheckIn[] @relation("CheckInRequester")
+  wellbeingCheckInsClaimed   WellbeingCheckIn[] @relation("CheckInClaimer")
+
+  // COMMUNITY_BACKLOG.md FOR-021: dream journal + interpretation
+  dreamsAuthored    DreamEntry[] @relation("DreamAuthor")
+  dreamsInterpreted DreamEntry[] @relation("DreamInterpreter")
+
+  // SHOP_BACKLOG.md MSP-024: orders gifted to this user by someone else
+  giftOrdersReceived Order[] @relation("OrderGiftRecipient")
+
+  // COMMUNITY_BACKLOG.md FOR-018: Community Healing & Reconciliation
+  healingCasesReported     HealingCase[] @relation("HealingCaseReporter")
+  healingCasesAsRespondent HealingCase[] @relation("HealingCaseRespondent")
+  healingCasesAsElder      HealingCase[] @relation("HealingCaseElder")
+
+  // SHOP_BACKLOG.md MSP-019: Ritual Readiness Kits customization requests
+  bundleCustomizationRequests BundleCustomizationRequest[]
+
+  // COMMUNITY_BACKLOG.md FOR-Q3: "Ask an Elder" -- self-service opt-in
+  // (the Babalawo's own choice, unlike isCommunityCarer which is
+  // admin-assigned for a trust-sensitive role) to appear as available to
+  // answer seeker questions in the Forum's Seeker Questions category.
+  answersElderQuestions Boolean @default(false)
+
+  // SHOP_BACKLOG.md MSP-015: products this user has community-endorsed
+  productEndorsements ProductEndorsement[] @relation("ProductEndorser")
+
+  // COMMUNITY_BACKLOG.md FOR-014: "Elder profiles with expertise areas and
+  // availability". The frontend (public-profile-view.tsx) already reads
+  // `user.specialization` and renders a whole "Specializations" section
+  // gated on it -- that field never existed on User, only on
+  // VerificationApplication (a one-time snapshot from verification, never
+  // surfaced or made editable afterward), so the section always silently
+  // rendered nothing. This is the real, ongoing, self-editable field the UI
+  // already expected.
+  specialization   String[] @default([])
+  availabilityNote String?
+
+  // COMMUNITY_BACKLOG.md FOR-014 / FOR-006: peer/elder-initiated endorsement,
+  // distinct from admin-awarded UserBadge entries.
+  elderEndorsementsGiven    ElderEndorsement[] @relation("ElderEndorser")
+  elderEndorsementsReceived ElderEndorsement[] @relation("ElderEndorsee")
+
+  // COMMUNITY_BACKLOG.md FOR-004: mentorship matching for new members,
+  // mirroring VendorMentorship's shape but on User directly (mentor pool is
+  // any user with answersElderQuestions=true, not vendor-scoped).
+  communityMentorshipsAsMentor CommunityMentorship[] @relation("CommunityMentor")
+  communityMentorshipsAsMentee CommunityMentorship[] @relation("CommunityMentee")
 
   @@map("users")
+}
+
+// COMMUNITY_BACKLOG.md FOR-014 / FOR-006: "Elder endorsement system for
+// respected members (distinct from admin-awarded badges — an elder-initiated
+// endorsement flow)". Any Babalawo can endorse any member; endorsements are
+// computed into a badge via getUserBadges(), same pattern as every other
+// badge on the platform, not a second recognition system.
+model ElderEndorsement {
+  id         String   @id @default(uuid())
+  endorserId String
+  endorseeId String
+  note       String?
+  createdAt  DateTime @default(now())
+  endorser   User     @relation("ElderEndorser", fields: [endorserId], references: [id], onDelete: Cascade)
+  endorsee   User     @relation("ElderEndorsee", fields: [endorseeId], references: [id], onDelete: Cascade)
+
+  @@unique([endorserId, endorseeId])
+  @@index([endorseeId])
+}
+
+// COMMUNITY_BACKLOG.md FOR-018: a restorative, elder-mediated conflict/harm
+// case -- deliberately separate from PractitionerComplaint (admin-adjudicated,
+// client-vs-practitioner formal complaints with NO_SHOW/FRAUD/etc reasons) and
+// from ElderFlag/ElderReaction (content-accuracy flags on forum posts). This
+// is for interpersonal community conflicts routed to an elder for restorative
+// mediation, not punitive review. Never public -- visible only to the
+// reporter, the named respondent (if any), the assigned elder, and admins.
+model HealingCase {
+  id              String    @id @default(uuid())
+  reporterId      String
+  respondentId    String?
+  category        String // INTERPERSONAL_CONFLICT | SPIRITUAL_HARM_CONCERN | COMMUNITY_TENSION | OTHER
+  description     String
+  status          String    @default("OPEN") // OPEN | IN_MEDIATION | RESOLVED | CLOSED
+  assignedElderId String?
+  assignedAt      DateTime?
+  resolutionNotes String?
+  resolvedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  reporter        User      @relation("HealingCaseReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  respondent      User?     @relation("HealingCaseRespondent", fields: [respondentId], references: [id])
+  assignedElder   User?     @relation("HealingCaseElder", fields: [assignedElderId], references: [id])
+
+  @@index([reporterId])
+  @@index([respondentId])
+  @@index([status])
+}
+
+// COMMUNITY_BACKLOG.md FOR-021: private-by-default dream journal entry.
+// A user can optionally share it publicly (community dream-pattern feed)
+// and/or flag it for a Babalawo's interpretation -- two independent choices,
+// not one "publish" toggle, since sharing publicly and wanting a
+// practitioner's reading are different kinds of consent.
+model DreamEntry {
+  id                      String    @id @default(uuid())
+  authorId                String
+  content                 String
+  isPublic                Boolean   @default(false)
+  interpretationRequested Boolean   @default(false)
+  interpretation          String?
+  interpretedById         String?
+  interpretedAt           DateTime?
+  createdAt               DateTime  @default(now())
+  deletedAt               DateTime?
+  author                  User      @relation("DreamAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  interpretedBy           User?     @relation("DreamInterpreter", fields: [interpretedById], references: [id])
+
+  @@index([authorId])
+  @@index([isPublic])
+  @@index([interpretationRequested])
+  @@index([deletedAt])
+}
+
+model WellbeingCheckIn {
+  id          String    @id @default(uuid())
+  requesterId String
+  message     String?
+  status      String    @default("OPEN") // OPEN | CLAIMED | RESOLVED
+  claimedById String?
+  claimedAt   DateTime?
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  requester   User      @relation("CheckInRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  claimedBy   User?     @relation("CheckInClaimer", fields: [claimedById], references: [id])
+
+  @@index([status])
+  @@index([requesterId])
+}
+
+// COMMUNITY_BACKLOG.md FOR-015: a lightweight community memorial entry --
+// deliberately its own small model rather than a CircleFeedPost variant, so
+// it works platform-wide and isn't tied to any one circle's lifecycle.
+model MemorialEntry {
+  id           String    @id @default(uuid())
+  authorId     String
+  name         String
+  relationship String?
+  message      String
+  isPublic     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  // ProBacklog-v1.md item #3: grief/remembrance content someone wrote about
+  // a lost loved one is exactly the kind of user-generated content a hard
+  // delete has no business permanently destroying with no recovery path.
+  deletedAt    DateTime?
+  author       User      @relation("MemorialAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([authorId])
+  @@index([isPublic])
+  @@index([deletedAt])
+}
+
+// COMMUNITY_BACKLOG.md FOR-Q2: a member-to-member connection request, shown
+// in the directory. Deliberately its own small model rather than reusing
+// Referral/BabalawoClient -- neither represents a symmetric peer-to-peer
+// social connection between two ordinary community members.
+model ConnectionRequest {
+  id          String    @id @default(uuid())
+  fromUserId  String
+  toUserId    String
+  message     String?
+  status      String    @default("PENDING") // PENDING | ACCEPTED | DECLINED
+  createdAt   DateTime  @default(now())
+  respondedAt DateTime?
+  fromUser    User      @relation("ConnectionRequester", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser      User      @relation("ConnectionRecipient", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@unique([fromUserId, toUserId])
+  @@index([toUserId, status])
+  @@index([fromUserId])
 }
 
 model NotificationPreferences {
@@ -213,11 +419,21 @@ model NotificationPreferences {
   pushFollowup        Boolean  @default(true)
   pushForum           Boolean  @default(false)
   pushCircles         Boolean  @default(false)
+  // VENDOR_BACKLOG.md VND-004: "Vendor can toggle each notification type
+  // on/off... choose push only / email only / both." Dispute and withdrawal
+  // notifications are deliberately NOT gated by any preference here (due
+  // process / already-in-flight money shouldn't be silenceable).
+  emailOrder          Boolean  @default(true)
+  pushOrder           Boolean  @default(true)
+  emailReviewReceived Boolean  @default(true)
+  pushReviewReceived  Boolean  @default(false)
+  emailLowStock       Boolean  @default(true)
+  pushLowStock        Boolean  @default(false)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
   // Relations
-  user                User     @relation("UserNotificationPreferences", fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation("UserNotificationPreferences", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -363,8 +579,8 @@ model Document {
   encrypted        Boolean   @default(true)
   createdAt        DateTime  @default(now())
   deletedAt        DateTime? // P0-03: soft delete — Document had no existing
-                             // state field to reuse (unlike ForumThread/Circle's
-                             // `status`), so this is a real additive column.
+  // state field to reuse (unlike ForumThread/Circle's
+  // `status`), so this is a real additive column.
   sharer           User      @relation("SharedDocuments", fields: [sharedWith], references: [id], onDelete: Cascade)
   uploader         User      @relation("UploadedDocuments", fields: [uploadedBy], references: [id], onDelete: Cascade)
 
@@ -388,7 +604,7 @@ model Appointment {
   scheduledAt  DateTime?     @db.Timestamptz
   duration     Int           @default(60)
   status       String        @default("UPCOMING")
-  price        Float?
+  price        Decimal?      @db.Decimal(14, 2)
   notes        String?
   cancelledAt  DateTime?
   cancelledBy  String?
@@ -402,7 +618,7 @@ model Appointment {
   babalawo     User          @relation("BabalawoAppointments", fields: [babalawoId], references: [id], onDelete: Cascade)
   client       User          @relation("ClientAppointments", fields: [clientId], references: [id], onDelete: Cascade)
   guidancePlan GuidancePlan?
-  
+
   // EXP-023: Client Session Notes
   clientSessionNotes ClientSessionNote[]
 
@@ -414,37 +630,41 @@ model Appointment {
 }
 
 model ConsultationNote {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   babalawoId String
   clientId   String
   title      String?
   content    String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
   babalawo User @relation("BabalawoNotes", fields: [babalawoId], references: [id], onDelete: Cascade)
   client   User @relation("ClientNotes", fields: [clientId], references: [id], onDelete: Cascade)
 
   @@index([babalawoId])
   @@index([clientId])
   @@index([createdAt])
+  @@index([deletedAt])
 }
 
 model ClientSessionNote {
-  id            String      @id @default(cuid())
+  id            String    @id @default(cuid())
   appointmentId String
   clientId      String
   title         String?
   content       String
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
   appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
   client      User        @relation("ClientSessionNotes", fields: [clientId], references: [id], onDelete: Cascade)
 
   @@index([appointmentId])
   @@index([clientId])
   @@index([createdAt])
+  @@index([deletedAt])
 }
 
 model GuidancePlan {
@@ -454,8 +674,8 @@ model GuidancePlan {
   clientId           String
   type               String      @default("AKOSE")
   items              Json
-  totalCost          Float
-  platformServiceFee Float       @default(100)
+  totalCost          Decimal     @db.Decimal(14, 2)
+  platformServiceFee Decimal     @default(100) @db.Decimal(14, 2)
   currency           String      @default("NGN")
   instructions       String?
   status             String      @default("PENDING")
@@ -482,18 +702,23 @@ model GuidancePlan {
 }
 
 model GuidancePlanTemplate {
-  id           String   @id @default(uuid())
+  id           String    @id @default(uuid())
   babalawoId   String
   name         String
-  type         String   @default("AKOSE")
+  type         String    @default("AKOSE")
   items        Json
   instructions String?
   notes        String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  babalawo     User     @relation("GuidancePlanTemplates", fields: [babalawoId], references: [id], onDelete: Cascade)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  // ProBacklog-v1.md item #3: a Babalawo's saved guidance-plan template is
+  // real authored work product -- soft-deleted so an accidental delete is
+  // recoverable rather than gone forever.
+  deletedAt    DateTime?
+  babalawo     User      @relation("GuidancePlanTemplates", fields: [babalawoId], references: [id], onDelete: Cascade)
 
   @@index([babalawoId])
+  @@index([deletedAt])
 }
 
 model ForumCategory {
@@ -515,39 +740,48 @@ model ForumCategory {
 }
 
 model ForumThread {
-  id                     String            @id @default(uuid())
+  id                     String              @id @default(uuid())
   categoryId             String
   authorId               String
   title                  String
   content                String
   tags                   String[]
-  status                 String            @default("ACTIVE")
-  isPinned               Boolean           @default(false)
-  isLocked               Boolean           @default(false)
-  isApproved             Boolean           @default(true)
-  isSacred               Boolean           @default(false)
-  isFeatured             Boolean           @default(false)
+  status                 String              @default("ACTIVE")
+  isPinned               Boolean             @default(false)
+  isLocked               Boolean             @default(false)
+  isApproved             Boolean             @default(true)
+  isSacred               Boolean             @default(false)
+  isFeatured             Boolean             @default(false)
   featuredUntil          DateTime?
-  viewCount              Int               @default(0)
-  postCount              Int               @default(0)
+  // COMMUNITY_BACKLOG.md FOR-014: "Elder-led discussion series and
+  // teachings" -- a formal designation an elder can apply at thread
+  // creation, distinct from a thread just happening to be authored by a
+  // verified Babalawo (already visible via the existing author-role badge).
+  // seriesName groups multiple threads into one series; optional since a
+  // single standalone teaching doesn't need a series name.
+  isTeachingSeries       Boolean             @default(false)
+  seriesName             String?
+  viewCount              Int                 @default(0)
+  postCount              Int                 @default(0)
   lastPostAt             DateTime?
   lastPostBy             String?
-  createdAt              DateTime          @default(now())
-  updatedAt              DateTime          @updatedAt
-  circleSuggestionThread Circle?           @relation("CircleSuggestionThread")
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+  circleSuggestionThread Circle?             @relation("CircleSuggestionThread")
   circleSuggestion       CircleSuggestion?
   posts                  ForumPost[]
   bookmarks              ForumBookmark[]
   subscriptions          ForumSubscription[]
-  author                 User              @relation("ThreadAuthor", fields: [authorId], references: [id], onDelete: Cascade)
-  category               ForumCategory     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  lastPoster             User?             @relation("ThreadLastPoster", fields: [lastPostBy], references: [id])
+  author                 User                @relation("ThreadAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  category               ForumCategory       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  lastPoster             User?               @relation("ThreadLastPoster", fields: [lastPostBy], references: [id])
 
   @@index([categoryId])
   @@index([authorId])
   @@index([status])
   @@index([isPinned, createdAt])
   @@index([createdAt])
+  @@index([seriesName])
 }
 
 model ForumPost {
@@ -609,18 +843,18 @@ model ForumBookmark {
 }
 
 model ForumReport {
-  id          String    @id @default(uuid())
-  reporterId  String
-  postId      String
-  reason      String
-  note        String?
-  status      String    @default("PENDING")
-  reviewedBy  String?
-  reviewedAt  DateTime?
-  action      String?
-  createdAt   DateTime  @default(now())
-  reporter    User      @relation("ForumReporter", fields: [reporterId], references: [id], onDelete: Cascade)
-  post        ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  id         String    @id @default(uuid())
+  reporterId String
+  postId     String
+  reason     String
+  note       String?
+  status     String    @default("PENDING")
+  reviewedBy String?
+  reviewedAt DateTime?
+  action     String?
+  createdAt  DateTime  @default(now())
+  reporter   User      @relation("ForumReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  post       ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@unique([reporterId, postId])
   @@index([status])
@@ -641,17 +875,17 @@ model ForumSubscription {
 }
 
 model ElderFlag {
-  id          String    @id @default(uuid())
-  postId      String
-  flaggedBy   String
-  reason      String
-  status      String    @default("PENDING")
-  reviewedBy  String?
-  reviewedAt  DateTime?
-  createdAt   DateTime  @default(now())
-  post        ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-  flagger     User      @relation("ElderFlagsCreated", fields: [flaggedBy], references: [id], onDelete: Cascade)
-  reviewer    User?     @relation("ElderFlagsReviewed", fields: [reviewedBy], references: [id])
+  id         String    @id @default(uuid())
+  postId     String
+  flaggedBy  String
+  reason     String
+  status     String    @default("PENDING")
+  reviewedBy String?
+  reviewedAt DateTime?
+  createdAt  DateTime  @default(now())
+  post       ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  flagger    User      @relation("ElderFlagsCreated", fields: [flaggedBy], references: [id], onDelete: Cascade)
+  reviewer   User?     @relation("ElderFlagsReviewed", fields: [reviewedBy], references: [id])
 
   @@index([postId])
   @@index([status])
@@ -664,7 +898,7 @@ model ForumTip {
   postId     String
   fromUserId String
   toUserId   String
-  amount     Float
+  amount     Decimal   @db.Decimal(14, 2)
   currency   String    @default("NGN")
   status     String    @default("COMPLETED")
   createdAt  DateTime  @default(now())
@@ -693,17 +927,22 @@ model ElderReaction {
 }
 
 model Vendor {
-  id                        String    @id @default(uuid())
-  userId                    String    @unique
+  id                        String          @id @default(uuid())
+  userId                    String          @unique
   businessName              String
   businessLicense           String?
   taxId                     String?
-  status                    String    @default("PENDING")
+  // VENDOR_BACKLOG.md VND-003: self-reported by the vendor, not
+  // admin-verified -- same trust model as taxId above. Used to show the VAT
+  // flag on tax summaries; not enforced or validated against a real VAT registry.
+  vatRegistered             Boolean         @default(false)
+  vatNumber                 String?
+  status                    String          @default("PENDING")
   endorsementBy             String?
   description               String?
   verifiedAt                DateTime?
-  createdAt                 DateTime  @default(now())
-  updatedAt                 DateTime  @updatedAt
+  createdAt                 DateTime        @default(now())
+  updatedAt                 DateTime        @updatedAt
   artisanHeritageProof      String?
   culturalAuthenticityNotes String?
   rejectionReason           String?
@@ -711,13 +950,214 @@ model Vendor {
   reviewedBy                String?
   yorubaProficiencyLevel    String?
   yorubaProficiencyProof    String?
+  // SHOP_BACKLOG.md MSP-016: apprenticeship tier, distinct from `status`
+  // (which only gates PENDING/APPROVED/SUSPENDED/REJECTED). Advanced by
+  // admin/elder action only -- never automatic -- per this doc's own
+  // "no algorithmic black-box decisions" principle.
+  apprenticeshipTier        String          @default("APPRENTICE") // APPRENTICE | RECOGNIZED_ARTISAN | MASTER_PRACTITIONER | ELDER_APPROVED
+  tierUpdatedAt             DateTime?
+  tierUpdatedBy             String?
+  // VENDOR_BACKLOG.md VND-026: distinct from apprenticeshipTier above --
+  // that one is spiritual/cultural, admin/elder-advanced only, and never
+  // automatic (per its own comment). This one is auto-computed from real
+  // commercial metrics (sales, rating, return rate, account age) by
+  // VendorPerformanceTierService, recalculated nightly. NEW_VENDOR |
+  // ESTABLISHED | TRUSTED_VENDOR | SACRED_ARTISAN.
+  performanceTier           String          @default("NEW_VENDOR")
+  performanceTierUpdatedAt  DateTime?
+  // VENDOR_BACKLOG.md VND-017: distinct from both tier fields above --
+  // apprenticeshipTier is the vendor's own spiritual/cultural standing,
+  // performanceTier is auto-computed from commercial metrics. This one is a
+  // trust marker about a vendor's PRODUCTS' authenticity/sourcing, reviewed
+  // per-application (see VendorCertificationApplication below), and is what
+  // actually renders as a badge on product cards/detail pages and drives the
+  // marketplace "Elder Endorsed" filter. COMMUNITY_LISTED (default, no
+  // vetting, self-declared) | COMMUNITY_VERIFIED | ELDER_ENDORSED.
+  culturalCertificationTier String          @default("COMMUNITY_LISTED")
+  // VENDOR_BACKLOG.md VND-016: storefront identity. `description` doubles as
+  // the vendor's bio/about text (no separate field -- the backlog item says
+  // "extended from current description", not a second one). Featured
+  // products are capped at 3 in the service layer, not the schema.
+  bannerImageUrl            String?
+  featuredProductIds        String[]        @default([])
+  // VENDOR_BACKLOG.md VND-023: custom storefront URL, e.g. iluase.com/vendors/oshun-beads-by-adunola.
+  // Optional -- a vendor without one is still reachable via their storefront
+  // route using their userId, same as before this item.
+  slug                      String?         @unique
   orders                    Order[]
   products                  Product[]
-  user                      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bundles                   ProductBundle[]
+  user                      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // VENDOR_BACKLOG.md VND-019 / SHOP_BACKLOG.md MSP-016/MSP-018
+  mentorshipsAsMentor VendorMentorship[]     @relation("VendorMentor")
+  mentorshipsAsMentee VendorMentorship[]     @relation("VendorMentee")
+  spiritualLeaves     VendorSpiritualLeave[]
+
+  // SHOP_BACKLOG.md MSP-005
+  partnershipsCreated VendorPartnership[]
+
+  // SHOP_BACKLOG.md MSP-008
+  eventFeatureRequests EventProductFeature[]
+
+  // VENDOR_BACKLOG.md VND-011
+  shippingZones ShippingZone[]
+
+  // VENDOR_BACKLOG.md VND-010
+  returnRequests ReturnRequest[]
+
+  // VENDOR_BACKLOG.md VND-020
+  promotions VendorPromotion[]
+
+  // VENDOR_BACKLOG.md VND-017
+  certificationApplications VendorCertificationApplication[]
 
   @@index([userId])
   @@index([status])
   @@index([createdAt])
+}
+
+// VENDOR_BACKLOG.md VND-017: application/review history for a vendor
+// requesting a higher cultural-certification tier. One row per application --
+// a declined vendor can reapply, creating a new row rather than overwriting
+// the old one, so the history stays intact.
+model VendorCertificationApplication {
+  id            String    @id @default(uuid())
+  vendorId      String
+  requestedTier String // COMMUNITY_VERIFIED | ELDER_ENDORSED
+  // Provenance statement, sourcing details, artisan lineage -- vendor's own
+  // written submission. Text, not a file upload: matches the existing
+  // Vendor.artisanHeritageProof precedent (also just a String) rather than
+  // introducing a new S3 upload flow for this one field.
+  documentation String
+  status        String    @default("PENDING") // PENDING | APPROVED | DECLINED
+  declineReason String?
+  reviewedBy    String?
+  reviewedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+  @@index([status])
+}
+
+// VENDOR_BACKLOG.md VND-011: vendor-level shipping configuration. Scoped to
+// the vendor rather than per-product for this pass -- a vendor sets up
+// their zones once and every one of their products uses the same zone
+// structure at checkout. "By region" from the backlog's rate-type list is
+// achieved by having multiple zones (e.g. "Nigeria" vs "International"),
+// not a fourth rate type.
+model ShippingZone {
+  id                          String   @id @default(uuid())
+  vendorId                    String
+  name                        String
+  // ISO country names/codes this zone covers. Matched case-insensitively
+  // against the order's shippingCountry at checkout.
+  countries                   String[]
+  rateType                    String   @default("FLAT") // FREE | FLAT | WEIGHT_BASED
+  flatRate                    Float    @default(0)
+  perKgRate                   Float    @default(0)
+  processingTime              String   @default("3-5 business days")
+  // e.g. 10 = 10% off the computed shipping cost when the order has 2+ items
+  combinedShippingDiscountPct Float    @default(0)
+  // Fallback zone used when the customer's country doesn't match any other
+  // zone's `countries` list. A vendor should have at most one of these --
+  // enforced in the service layer, not a DB constraint (a vendor may
+  // temporarily have zero or, mid-edit, briefly more than one).
+  isDefault                   Boolean  @default(false)
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+  vendor                      Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+}
+
+// VENDOR_BACKLOG.md VND-019: new vendors matched with an experienced vendor
+// for a 30-day welcome period. One ACTIVE mentorship per mentee at a time,
+// enforced in application logic (vendor-community.service.ts) rather than a
+// DB constraint, since a vendor may go through more than one mentorship
+// over their lifetime (e.g. after COMPLETED, they could request another).
+model VendorMentorship {
+  id        String   @id @default(uuid())
+  mentorId  String
+  menteeId  String
+  status    String   @default("ACTIVE") // ACTIVE | COMPLETED
+  startedAt DateTime @default(now())
+  endsAt    DateTime
+  mentor    Vendor   @relation("VendorMentor", fields: [mentorId], references: [id], onDelete: Cascade)
+  mentee    Vendor   @relation("VendorMentee", fields: [menteeId], references: [id], onDelete: Cascade)
+
+  @@index([mentorId])
+  @@index([menteeId])
+  @@index([status])
+}
+
+// COMMUNITY_BACKLOG.md FOR-004: "Mentorship matching for new members" --
+// same shape as VendorMentorship (VENDOR_BACKLOG.md VND-019), but the mentor
+// pool is any user with answersElderQuestions=true (COMMUNITY_BACKLOG.md
+// FOR-Q3's "Ask an Elder" opt-in) rather than tenured vendors, and mentees
+// are any authenticated user, not vendor-scoped.
+model CommunityMentorship {
+  id        String   @id @default(uuid())
+  mentorId  String
+  menteeId  String
+  status    String   @default("ACTIVE") // ACTIVE | COMPLETED
+  startedAt DateTime @default(now())
+  endsAt    DateTime
+  mentor    User     @relation("CommunityMentor", fields: [mentorId], references: [id], onDelete: Cascade)
+  mentee    User     @relation("CommunityMentee", fields: [menteeId], references: [id], onDelete: Cascade)
+
+  @@index([mentorId])
+  @@index([menteeId])
+  @@index([status])
+}
+
+// SHOP_BACKLOG.md MSP-018: vendor requests time away from order fulfilment
+// expectations for a ceremony/observance, without it counting against
+// fulfilment-rate metrics elsewhere on the platform.
+model VendorSpiritualLeave {
+  id        String   @id @default(uuid())
+  vendorId  String
+  reason    String
+  startDate DateTime
+  endDate   DateTime
+  createdAt DateTime @default(now())
+  vendor    Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+}
+
+// SHOP_BACKLOG.md MSP-005: a declared, self-service vendor group -- not a
+// marketplace listing, so it needs no admin review (unlike ProductBundle).
+// memberVendorIds is a plain array (same pattern as OralHistoryEntry's
+// relatedProductIds/tags) rather than a join table, since membership here
+// carries no extra per-member data yet.
+// "Shared inventory for large-scale ceremonies" and "joint offerings" are
+// deliberately NOT modeled here -- those genuinely need VND-025 (Wholesale &
+// B2B Sales, unbuilt); a partnership instead points members at ProductBundle
+// (MSP-002, cross-vendor already) for anything resembling a joint listing.
+// "Collaborative cultural education content creation" reuses OralHistoryEntry
+// tags (MSP-022's collection-browsing) rather than a new content model --
+// members tag their submissions with the partnership's auto-generated tag.
+model VendorPartnership {
+  id                   String               @id @default(uuid())
+  name                 String
+  description          String?
+  createdBy            String
+  memberVendorIds      String[]             @default([])
+  plannedEventId       String?
+  // Auto-created in the Vendor Circle forum the moment the partnership is
+  // formed -- reuses Forum (VND-019) rather than a parallel messaging system.
+  coordinationThreadId String?              @unique
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  creator              Vendor               @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  plannedEvent         SacredCalendarEvent? @relation(fields: [plannedEventId], references: [id])
+
+  @@index([createdBy])
+  @@index([plannedEventId])
 }
 
 model Tutor {
@@ -755,7 +1195,7 @@ model TutorSession {
   scheduledAt DateTime? @db.Timestamptz
   duration    Int       @default(60)
   status      String    @default("UPCOMING")
-  price       Float
+  price       Decimal   @db.Decimal(14, 2)
   currency    String    @default("NGN")
   notes       String?
   cancelledAt DateTime?
@@ -772,32 +1212,108 @@ model TutorSession {
 }
 
 model Product {
-  id              String          @id @default(uuid())
-  vendorId        String
-  name            String
-  category           String
-  subcategory        String?
-  type               String          @default("PHYSICAL")
-  description        String
-  longDescription    String?
-  price              Float
-  currency           String          @default("NGN")
-  stock              Int?
-  images             String[]
-  provenance         String?
-  usageProtocol      String?
-  requiresInitiation Boolean         @default(false)
-  status             String          @default("ACTIVE")
-  approvedBy         String?
-  verifiedTier       String          @default("COMMUNITY_LISTED")
-  taxCompliant       Boolean         @default(false)
-  isFeatured         Boolean         @default(false)
-  featuredUntil      DateTime?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  orders          OrderItem[]
-  vendor          Vendor          @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  reviews         ProductReview[]
+  id                        String                   @id @default(uuid())
+  vendorId                  String
+  name                      String
+  category                  String
+  subcategory               String?
+  type                      String                   @default("PHYSICAL")
+  description               String
+  longDescription           String?
+  price                     Decimal                  @db.Decimal(14, 2)
+  currency                  String                   @default("NGN")
+  stock                     Int?
+  images                    String[]
+  provenance                String?
+  usageProtocol             String?
+  // VENDOR_BACKLOG.md VND-011: kg, used by WEIGHT_BASED shipping zones.
+  // Nullable -- a product with no weight set falls back to a 1kg default
+  // during shipping calculation rather than crashing the estimate.
+  weight                    Float?
+  requiresInitiation        Boolean                  @default(false)
+  status                    String                   @default("ACTIVE")
+  approvedBy                String?
+  verifiedTier              String                   @default("COMMUNITY_LISTED")
+  taxCompliant              Boolean                  @default(false)
+  isFeatured                Boolean                  @default(false)
+  featuredUntil             DateTime?
+  // VENDOR_BACKLOG.md VND-018: all optional -- a vendor selling generic goods
+  // isn't required to fill these in, only vendors with an authentic Yoruba
+  // naming/context to add one.
+  yorubaName                String?
+  yorubaDescription         String?
+  pronunciationGuide        String?
+  traditionalUseContext     String?
+  regionOfOrigin            String?
+  // VENDOR_BACKLOG.md VND-023
+  seoTitle                  String?
+  seoDescription            String?
+  tags                      String[]                 @default([])
+  // VENDOR_BACKLOG.md VND-024: exactly one of these two is set for a
+  // type=DIGITAL product with delivery configured -- an S3-hosted upload
+  // (digitalFileKey, never exposed directly; downloads always go through a
+  // freshly-minted signed URL) or a vendor-supplied external link (Google
+  // Drive/Dropbox/etc, per the backlog's explicit "or link to externally
+  // hosted file" allowance -- no upload pipeline needed for that path).
+  digitalFileKey            String?
+  digitalFileUrl            String?
+  digitalFileName           String?
+  digitalFileSizeBytes      Int?
+  digitalDownloads          DigitalProductDownload[]
+  // VENDOR_BACKLOG.md VND-025: wholesalePrice is deliberately never returned
+  // by the public product endpoint (findProductById strips it before
+  // responding) -- only the gated getWholesalePrice() lookup (BABALAWO/
+  // ADMIN only) and createOrder's own pricing logic ever read it directly.
+  wholesaleEnabled          Boolean                  @default(false)
+  wholesaleMinQuantity      Int?
+  wholesalePrice            Decimal?                 @db.Decimal(14, 2)
+  // VENDOR_BACKLOG.md VND-008: "scheduled listing" is expressed as
+  // status=DRAFT + a future scheduledAt, not a separate enum value --
+  // ScheduledListingActivationService flips it to ACTIVE once scheduledAt
+  // passes. showComingSoon opts a still-draft, still-scheduled product into
+  // being visible (as "Coming Soon") in the public marketplace listing
+  // instead of fully hidden like an ordinary draft.
+  scheduledAt               DateTime?
+  showComingSoon            Boolean                  @default(false)
+  // "Stock treated as pre-order slots" per the backlog -- reuses the
+  // existing `stock` field rather than adding a second counter.
+  isPreOrder                Boolean                  @default(false)
+  expectedDeliveryDate      DateTime?
+  // VENDOR_BACKLOG.md VND-005
+  lowStockThreshold         Int                      @default(5)
+  // "Made to Order" -- infinite stock is already how a null `stock` behaves
+  // everywhere stock is checked (createOrder, etc.), so this is a clearer,
+  // explicit label over that existing behavior, not a second stock-tracking
+  // mode. The vendor form sends `stock: null` alongside this flag.
+  isMadeToOrder             Boolean                  @default(false)
+  madeToOrderProcessingTime String?
+  createdAt                 DateTime                 @default(now())
+  updatedAt                 DateTime                 @updatedAt
+  orders                    OrderItem[]
+  vendor                    Vendor                   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  reviews                   ProductReview[]
+  bundleItems               ProductBundleItem[]
+  endorsements              ProductEndorsement[]
+  eventFeatureRequests      EventProductFeature[]
+  stockChangeLogs           StockChangeLog[]
+
+  // SHOP_BACKLOG.md MSP-015: "flagging with gentle education" -- same
+  // heldForReview/reviewReason/reviewedBy/reviewedAt shape ADM-018 uses for
+  // ForumPost, extended to Product. Unlike the ForumPost version (which
+  // exists but is never actually set by any community action -- discovered
+  // while building this), this one is wired end-to-end from the start.
+  heldForReview Boolean   @default(false)
+  reviewReason  String?
+  reviewedBy    String?
+  reviewedAt    DateTime?
+
+  // VENDOR_BACKLOG.md VND-007: up to 3 variant "axes" (e.g. ["Colour",
+  // "Size"]) -- the actual combinations (Yellow/Medium, Yellow/Large, ...)
+  // live as individual ProductVariant rows, one per combination, not one
+  // row per axis. A product with an empty array has no variants and is
+  // ordered exactly as before this item.
+  variantAttributeNames String[]         @default([])
+  variants              ProductVariant[]
 
   @@index([vendorId])
   @@index([category])
@@ -807,36 +1323,210 @@ model Product {
   @@index([vendorId, status])
   @@index([category, status])
   @@index([category, subcategory])
+  @@index([heldForReview])
+}
+
+// VENDOR_BACKLOG.md VND-007: one row per specific variant combination (e.g.
+// Colour=Yellow + Size=Medium), not one row per axis. `attributes` is a
+// small fixed-shape JSON map ({ [axisName]: value }) rather than a separate
+// join table -- there are at most 3 axes (enforced in the service layer),
+// so a normalized attribute table would be pure overhead for no real
+// querying benefit here (variants are always fetched per-product, never
+// filtered by attribute value across products).
+model ProductVariant {
+  id            String   @id @default(uuid())
+  productId     String
+  attributes    Json
+  sku           String?
+  // Both null means "use the parent product's price/stock unmodified" --
+  // most vendors won't want a price difference between colours, and stock
+  // is optional the same way Product.stock already is (VND-005's
+  // isMadeToOrder / infinite-stock convention carries over here).
+  priceOverride Decimal? @db.Decimal(14, 2)
+  stock         Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  product Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orders  OrderItem[]
+
+  @@index([productId])
+}
+
+// VENDOR_BACKLOG.md VND-005: "log of stock changes: who changed it, when,
+// from what to what -- useful for reconciling physical stock against
+// platform records." changedBy is null for order-driven (ORDER_SALE)
+// changes -- there's no human "who" for a sale, the customer isn't a stock
+// manager and attributing it to them would be misleading.
+model StockChangeLog {
+  id            String   @id @default(uuid())
+  productId     String
+  previousStock Int?
+  newStock      Int?
+  source        String // VENDOR_EDIT | BULK_RESTOCK | ORDER_SALE | CSV_IMPORT
+  changedBy     String?
+  createdAt     DateTime @default(now())
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([createdAt])
+}
+
+// SHOP_BACKLOG.md MSP-015: "Community-endorsed authenticity badge" --
+// deliberately its own small join model rather than forced into UserBadge
+// (which is user-centric: {userId, badgeType}), since this is a per-product
+// signal from many different endorsers, not a badge awarded to one user.
+// Follows the same computed-on-read pattern as getUserBadges() -- the badge
+// itself isn't stored, it's derived from endorsement count at read time.
+model ProductEndorsement {
+  id        String   @id @default(uuid())
+  productId String
+  userId    String
+  createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User     @relation("ProductEndorser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, userId])
+  @@index([productId])
+}
+
+// SHOP_BACKLOG.md MSP-002: a curated cross-vendor bundle. No price/discount
+// field here on purpose -- price and availability are always computed from
+// the live component products (see marketplace.service.ts), so a bundle can
+// never go stale relative to a vendor updating their own product's price or
+// stock. Revenue is naturally split because checkout still creates one Order
+// per vendor represented in the bundle -- no new payment-splitting logic
+// needed, "bundle" is purely a curation/discovery layer on top of Product.
+model ProductBundle {
+  id              String              @id @default(uuid())
+  name            String
+  description     String?
+  status          String              @default("PENDING_REVIEW") // PENDING_REVIEW | APPROVED | REJECTED
+  rejectionReason String?
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  createdBy       String
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  creator         Vendor              @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  items           ProductBundleItem[]
+
+  // SHOP_BACKLOG.md MSP-019: Ritual Readiness Kits. ritualGuide extends the
+  // same idea as Product.usageProtocol but at the kit level (a kit combines
+  // several products into one ceremony, so its guide is bigger than any one
+  // item's). guideSourceUrl mirrors OralHistoryEntry.sourceUrl -- an external
+  // audio/video link, not a new upload/media pipeline. Both are set by the
+  // bundle's own vendor after approval (PATCH .../guide), never gated by
+  // admin re-review since they're additive guidance, not a pricing/item change.
+  ritualGuide           String?
+  guideSourceUrl        String?
+  // Auto-created when an admin approves the bundle (reviewBundle in
+  // AdminMarketplaceService) -- reuses Forum (live) rather than a parallel
+  // comment system, per this item's own acceptance criteria.
+  supportThreadId       String?                      @unique
+  reflectionThreadId    String?                      @unique
+  customizationRequests BundleCustomizationRequest[]
+
+  @@index([createdBy])
+  @@index([status])
+}
+
+// SHOP_BACKLOG.md MSP-019: "Kit customization ('I have X, I need Y')" --
+// a lightweight request/response loop, not a live chat (Messaging is paused
+// platform-wide, see CLAUDE.md), same Notification-based pattern used
+// throughout this session for vendor<->buyer coordination without live chat.
+model BundleCustomizationRequest {
+  id             String        @id @default(uuid())
+  bundleId       String
+  requesterId    String
+  haveItems      String
+  needItems      String
+  status         String        @default("OPEN") // OPEN | RESPONDED
+  vendorResponse String?
+  createdAt      DateTime      @default(now())
+  respondedAt    DateTime?
+  bundle         ProductBundle @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  requester      User          @relation(fields: [requesterId], references: [id], onDelete: Cascade)
+
+  @@index([bundleId])
+  @@index([requesterId])
+}
+
+model ProductBundleItem {
+  id        String        @id @default(uuid())
+  bundleId  String
+  productId String
+  quantity  Int           @default(1)
+  bundle    ProductBundle @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  product   Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([bundleId])
+  @@index([productId])
 }
 
 model Order {
-  id              String      @id @default(uuid())
-  customerId      String
-  vendorId        String
-  status          String      @default("PENDING")
-  totalAmount     Float
-  currency        String      @default("NGN")
-  taxAmount       Float?
-  shippingCost    Float?
-  shippingAddress String?
-  paymentMethod   String?
-  paymentId       String?
-  paidAt          DateTime?
-  shippedAt       DateTime?
-  deliveredAt     DateTime?
-  cancelledAt     DateTime?
-  refundedAt      DateTime?
-  refundAmount    Float?
-  refundReason    String?
-  notes           String?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  carrier         String?
-  trackingNumber  String?
-  trackingUrl     String?
-  customer        User        @relation("OrderCustomer", fields: [customerId], references: [id], onDelete: Cascade)
-  vendor          Vendor      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  items           OrderItem[]
+  id                  String      @id @default(uuid())
+  customerId          String
+  vendorId            String
+  status              String      @default("PENDING")
+  totalAmount         Decimal     @db.Decimal(14, 2)
+  currency            String      @default("NGN")
+  taxAmount           Decimal?    @db.Decimal(14, 2)
+  shippingCost        Decimal?    @db.Decimal(14, 2)
+  shippingAddress     String?
+  // VENDOR_BACKLOG.md VND-011: needed to match the order against a vendor's
+  // ShippingZone.countries at checkout. shippingAddress is free text, not
+  // structured, so this is captured as its own field rather than parsed out.
+  shippingCountry     String?
+  // V8-304: persisted so order history/receipts can honestly show the
+  // Devoted free-delivery benefit actually applied, instead of only being
+  // visible transiently in the checkout response (shippingCost alone can't
+  // tell "Devoted waived it" apart from "this vendor's zone is free anyway").
+  devotedFreeDelivery Boolean     @default(false)
+  paymentMethod       String?
+  paymentId           String?
+  paidAt              DateTime?
+  shippedAt           DateTime?
+  deliveredAt         DateTime?
+  cancelledAt         DateTime?
+  refundedAt          DateTime?
+  refundAmount        Decimal?    @db.Decimal(14, 2)
+  refundReason        String?
+  notes               String?
+  // VENDOR_BACKLOG.md VND-009: distinct from `notes` above, which is the
+  // customer's own note captured at checkout -- this is vendor-only and
+  // never returned to the customer-facing order views.
+  vendorNotes         String?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  carrier             String?
+  trackingNumber      String?
+  trackingUrl         String?
+  // VENDOR_BACKLOG.md VND-022: set once a "please review" request has gone
+  // out for this order, whether via the weekly auto-nudge or a vendor's
+  // manual trigger -- both paths check this before sending, so the two
+  // don't double-notify each other and each order only ever gets one ask.
+  reviewRequestSentAt DateTime?
+  customer            User        @relation("OrderCustomer", fields: [customerId], references: [id], onDelete: Cascade)
+  vendor              Vendor      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  items               OrderItem[]
+
+  // SHOP_BACKLOG.md MSP-024: gifting, using the existing Order/checkout
+  // flow rather than a new payment path. isGift + giftRecipientId cover
+  // "gift this item"; dedicatedTo alone (no recipient) covers "dedicate
+  // this purchase to my ancestors" -- two independent, optional uses.
+  isGift          Boolean @default(false)
+  giftRecipientId String?
+  giftMessage     String?
+  dedicatedTo     String?
+  giftRecipient   User?   @relation("OrderGiftRecipient", fields: [giftRecipientId], references: [id])
+
+  // VENDOR_BACKLOG.md VND-010: at most one return request per order --
+  // deliberately not a re-openable/repeatable flow within this pass.
+  returnRequest ReturnRequest?
+
+  // VENDOR_BACKLOG.md VND-024
+  digitalDownloads DigitalProductDownload[]
 
   @@index([customerId])
   @@index([vendorId])
@@ -844,6 +1534,7 @@ model Order {
   @@index([customerId, status])
   @@index([vendorId, status])
   @@index([paidAt])
+  @@index([giftRecipientId])
 }
 
 model OrderItem {
@@ -851,33 +1542,160 @@ model OrderItem {
   orderId   String
   productId String
   quantity  Int
-  price     Float
+  price     Decimal  @db.Decimal(14, 2)
   createdAt DateTime @default(now())
   order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
+  // VENDOR_BACKLOG.md VND-007: which specific variant combination was
+  // purchased, if the product has variants. SetNull (not Cascade) on
+  // variant deletion -- an OrderItem is order history and must survive a
+  // later variant cleanup, even if it loses the variant detail.
+  variantId String?
+  variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
   @@index([orderId])
   @@index([productId])
+  @@index([variantId])
+}
+
+// VENDOR_BACKLOG.md VND-010: one return request per order (Order.returnRequest
+// is @unique on orderId). status: REQUESTED | ACCEPTED | REJECTED |
+// PARTIAL_REFUND_OFFERED | REFUNDED | ESCALATED. reasonCategory is a fixed
+// rule-based set (not freeform-text clustering) so "most common return
+// reasons" analytics are an honest count, not a fabricated NLP summary.
+model ReturnRequest {
+  id                  String    @id @default(uuid())
+  orderId             String    @unique
+  customerId          String
+  vendorId            String
+  reasonCategory      String // NOT_AS_DESCRIBED | DAMAGED_DEFECTIVE | WRONG_ITEM | QUALITY_ISSUE | CHANGED_MIND | OTHER
+  reason              String
+  photos              String[]  @default([])
+  status              String    @default("REQUESTED")
+  vendorResponse      String?
+  offeredRefundAmount Float?
+  returnAddress       String?
+  respondedAt         DateTime?
+  customerConfirmedAt DateTime?
+  refundedAt          DateTime?
+  disputeId           String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  order    Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  customer User   @relation("ReturnRequestCustomer", fields: [customerId], references: [id], onDelete: Cascade)
+  vendor   Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+  @@index([customerId])
+  @@index([status])
+}
+
+// VENDOR_BACKLOG.md VND-020: one flexible model for all 5 promotion types
+// rather than 5 separate tables -- same "typed discriminator + nullable
+// type-specific fields" pattern already used for Dispute/SacredCalendarEvent
+// in this schema. Deliberately supports at most one promotion applying to
+// an order (see calculateBestPromotion() in marketplace.service.ts) rather
+// than a stacking-rules engine -- simpler to reason about and test, and
+// avoids surprising a vendor with combined discounts they didn't design for.
+//
+// type-specific field usage:
+//   DISCOUNT_CODE:     code, discountType, value, maxUses, eligibleProductIds
+//   FLASH_SALE:        productId, discountType, value, startsAt, expiresAt
+//   VOLUME_DISCOUNT:   productId (or null = vendor-wide), minQuantity, discountType, value
+//   BUNDLE_DEAL:       productId + bundleProductId (both required in cart), discountType, value
+//   WELCOME_DISCOUNT:  discountType, value, eligibleProductIds (auto-applied to a customer's first order with this vendor, no code needed)
+model VendorPromotion {
+  id                 String    @id @default(uuid())
+  vendorId           String
+  type               String
+  name               String
+  code               String?
+  discountType       String    @default("PERCENTAGE") // PERCENTAGE | FIXED_AMOUNT
+  value              Decimal   @db.Decimal(14, 2)
+  maxUses            Int?
+  usedCount          Int       @default(0)
+  startsAt           DateTime?
+  expiresAt          DateTime?
+  isActive           Boolean   @default(true)
+  eligibleProductIds String[]  @default([])
+  productId          String?
+  minQuantity        Int?
+  bundleProductId    String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  vendor      Vendor                      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  redemptions VendorPromotionRedemption[]
+
+  @@unique([vendorId, code])
+  @@index([vendorId])
+  @@index([code])
+  @@index([type])
+}
+
+model VendorPromotionRedemption {
+  id          String   @id @default(uuid())
+  promotionId String
+  orderId     String
+  customerId  String
+  discountNgn Float
+  redeemedAt  DateTime @default(now())
+
+  promotion VendorPromotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+
+  @@index([promotionId])
+  @@index([orderId])
+}
+
+// VENDOR_BACKLOG.md VND-024: "customer gets download link (valid 30 days,
+// max 5 downloads)." One grant per (order, product) pair, not per unit --
+// a digital good is not consumed by download count the way physical stock
+// is, so buying 3 copies of the same PDF still grants one 5-download
+// window, not fifteen. downloadCount is incremented server-side each time
+// a fresh signed URL is actually issued, never client-reported.
+model DigitalProductDownload {
+  id            String   @id @default(uuid())
+  orderId       String
+  productId     String
+  customerId    String
+  downloadCount Int      @default(0)
+  maxDownloads  Int      @default(5)
+  expiresAt     DateTime
+  createdAt     DateTime @default(now())
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, productId])
+  @@index([customerId])
+  @@index([orderId])
 }
 
 model ProductReview {
-  id               String    @id @default(uuid())
-  productId        String
-  customerId       String
-  rating           Int
-  title            String?
-  content          String?
-  acknowledgeCount Int       @default(0)
-  status           String    @default("PENDING")
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  flaggedCount     Int       @default(0)
-  moderatedAt      DateTime?
-  moderatedBy      String?
-  moderationNotes  String?
-  orderId          String?
-  customer         User      @relation("ReviewCustomer", fields: [customerId], references: [id], onDelete: Cascade)
-  product          Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id                String    @id @default(uuid())
+  productId         String
+  customerId        String
+  rating            Int
+  title             String?
+  content           String?
+  acknowledgeCount  Int       @default(0)
+  status            String    @default("PENDING")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  flaggedCount      Int       @default(0)
+  moderatedAt       DateTime?
+  moderatedBy       String?
+  moderationNotes   String?
+  orderId           String?
+  // VENDOR_BACKLOG.md VND-022: "one response per review" -- enforced in the
+  // service by refusing to overwrite a non-null vendorResponse, not by a
+  // second table, since a review has at most one.
+  vendorResponse    String?
+  vendorRespondedAt DateTime?
+  customer          User      @relation("ReviewCustomer", fields: [customerId], references: [id], onDelete: Cascade)
+  product           Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([productId, customerId])
   @@index([productId])
@@ -973,7 +1791,7 @@ model Course {
   level              String         @default("BEGINNER")
   thumbnail          String?
   duration           Int?
-  price              Float
+  price              Decimal        @db.Decimal(14, 2)
   currency           String         @default("NGN")
   status             String         @default("DRAFT")
   approvedBy         String?
@@ -1010,10 +1828,12 @@ model Lesson {
   status      String             @default("DRAFT")
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
+  deletedAt   DateTime?
   course      Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
   completions LessonCompletion[]
 
   @@index([courseId, order])
+  @@index([deletedAt])
 }
 
 model Enrollment {
@@ -1054,15 +1874,26 @@ model CourseCertificate {
   enrollmentId   String     @unique
   certificateUrl String
   issuedAt       DateTime   @default(now())
+  deletedAt      DateTime?
   enrollment     Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
 
   @@index([enrollmentId])
+  @@index([deletedAt])
 }
 
 model Wallet {
   id           String        @id @default(uuid())
   userId       String        @unique
-  balance      Float         @default(0)
+  // ProBacklog-v1.md item #15: was Float -- repeated arithmetic over an
+  // account's lifetime (deposits, escrow holds/releases, withdrawal
+  // holds/refunds) could accumulate binary floating-point error. Postgres
+  // NUMERIC now does exact decimal arithmetic for every `increment`/
+  // `decrement` (Prisma translates those into `balance = balance + $1` at
+  // the SQL level, so this fixes drift without needing to rewrite those call
+  // sites). JS-side reads go through DecimalToNumberInterceptor for HTTP
+  // responses, and are explicitly Number()-converted at the two in-process
+  // (non-HTTP) read sites in wallet.service.ts.
+  balance      Decimal       @default(0) @db.Decimal(14, 2)
   currency     String        @default("NGN")
   locked       Boolean       @default(false)
   createdAt    DateTime      @default(now())
@@ -1178,7 +2009,7 @@ model Escrow {
   userId        String
   recipientId   String?
   walletId      String
-  amount        Float
+  amount        Decimal             @db.Decimal(14, 2)
   currency      String              @default("NGN")
   type          String
   relatedId     String?
@@ -1212,10 +2043,15 @@ model WithdrawalRequest {
   id          String    @id @default(uuid())
   userId      String
   escrowId    String?
-  amount      Float
+  amount      Decimal   @db.Decimal(14, 2)
   currency    String    @default("NGN")
   bankAccount String?
   bankName    String?
+  // HUMAN_BACKLOG.md: a Paystack transfer needs the bank's numeric code
+  // (e.g. "058"), not just its display name -- `bankName` alone was never
+  // enough to actually pay anyone. Nullable so pre-existing rows don't break;
+  // new requests require it (enforced in the DTO, not here).
+  bankCode    String?
   accountName String?
   status      String    @default("PENDING")
   adminNotes  String?
@@ -1231,6 +2067,24 @@ model WithdrawalRequest {
   @@index([createdAt])
   @@index([status, createdAt])
   @@index([userId, status])
+}
+
+// VENDOR_BACKLOG.md VND-002: saved payout destinations, so a withdrawal
+// request can be pre-filled from one instead of retyping bank details every
+// time. Capped at 3 per user (enforced in the service layer, not here).
+model BankAccount {
+  id            String   @id @default(uuid())
+  userId        String
+  bankName      String
+  bankCode      String
+  accountNumber String
+  accountName   String
+  isDefault     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation("BankAccountUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Temple {
@@ -1337,38 +2191,81 @@ model Circle {
 }
 
 model CircleFeedPost {
-  id          String   @id @default(cuid())
-  circleId    String
-  authorId    String
-  content     String
-  patronOnly  Boolean  @default(false)
-  isPinned    Boolean  @default(false)
-  likes       Int      @default(0)
-  commentCount Int     @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  author      User     @relation("CircleFeedAuthor", fields: [authorId], references: [id], onDelete: Cascade)
-  circle      Circle   @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  id            String              @id @default(cuid())
+  circleId      String
+  authorId      String
+  content       String
+  patronOnly    Boolean             @default(false)
+  isPinned      Boolean             @default(false)
+  likes         Int                 @default(0)
+  commentCount  Int                 @default(0)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  author        User                @relation("CircleFeedAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  circle        Circle              @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  likesGiven    CircleFeedLike[]
+  commentsGiven CircleFeedComment[]
+
+  // COMMUNITY_BACKLOG.md FOR-015: same F9-602 crisis-keyword detection used
+  // on Forum threads/posts, now also applied to Circle feed posts -- circles
+  // like Grief & Healing are exactly where a hard case is most likely to
+  // surface, so it can't only cover the Forum.
+  hasCrisisSignal Boolean @default(false)
 
   @@index([circleId])
   @@index([authorId])
 }
 
+// Whole-app audit loose end: real like/comment backing for the Like/Comment
+// buttons on circle feed posts (previously no onClick at all -- CircleFeedPost's
+// `likes`/`commentCount` were already denormalized counters with nothing
+// writing to them). A join table (not a bare increment) so a like can be
+// toggled/undone and the same user can't double-like a post.
+model CircleFeedLike {
+  id        String         @id @default(uuid())
+  postId    String
+  userId    String
+  createdAt DateTime       @default(now())
+  post      CircleFeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User           @relation("CircleFeedLikeUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId])
+}
+
+model CircleFeedComment {
+  id        String         @id @default(uuid())
+  postId    String
+  authorId  String
+  content   String
+  createdAt DateTime       @default(now())
+  post      CircleFeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author    User           @relation("CircleFeedCommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+}
+
 model CircleSuggestion {
-  id          String      @id @default(uuid())
+  id          String       @id @default(uuid())
   suggestedBy String
-  threadId    String      @unique
-  circleId    String?     @unique
-  status      String      @default("PENDING")
+  // Nullable: whole-app audit Phase 3d. Originally every suggestion had to
+  // start life as a forum thread (promote-a-thread flow); freeform
+  // suggestions (title/description, no thread) now go through this same
+  // table with threadId left null.
+  threadId    String?      @unique
+  title       String?
+  description String?
+  circleId    String?      @unique
+  status      String       @default("PENDING")
   reviewedBy  String?
   reviewedAt  DateTime?
   notes       String?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  circle      Circle?     @relation(fields: [circleId], references: [id])
-  reviewer    User?       @relation("CircleReviewer", fields: [reviewedBy], references: [id])
-  suggester   User        @relation("CircleSuggester", fields: [suggestedBy], references: [id], onDelete: Cascade)
-  thread      ForumThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  circle      Circle?      @relation(fields: [circleId], references: [id])
+  reviewer    User?        @relation("CircleReviewer", fields: [reviewedBy], references: [id])
+  suggester   User         @relation("CircleSuggester", fields: [suggestedBy], references: [id], onDelete: Cascade)
+  thread      ForumThread? @relation(fields: [threadId], references: [id], onDelete: Cascade)
 
   @@index([status])
   @@index([suggestedBy])
@@ -1406,7 +2303,7 @@ model Event {
   location             String?
   locationType         String              @default("PHYSICAL")
   virtualLink          String?
-  price                Float               @default(0)
+  price                Decimal             @default(0) @db.Decimal(14, 2)
   currency             String              @default("NGN")
   capacity             Int?
   requiresRegistration Boolean             @default(true)
@@ -1418,6 +2315,7 @@ model Event {
   circleId             String?
   createdAt            DateTime            @default(now())
   updatedAt            DateTime            @updatedAt
+  deletedAt            DateTime?
   circle               Circle?             @relation(fields: [circleId], references: [id])
   creator              User                @relation("EventCreator", fields: [creatorId], references: [id], onDelete: Cascade)
   temple               Temple?             @relation(fields: [templeId], references: [id])
@@ -1431,6 +2329,7 @@ model Event {
   @@index([type])
   @@index([templeId])
   @@index([circleId])
+  @@index([deletedAt])
 }
 
 model EventRegistration {
@@ -1617,7 +2516,7 @@ model Payment {
   id            String    @id @default(uuid())
   userId        String
   transactionId String    @unique
-  amount        Float
+  amount        Decimal   @db.Decimal(14, 2)
   currency      String    @default("NGN")
   purpose       String
   provider      String
@@ -1676,20 +2575,32 @@ model AuditLog {
 // ─── V8: Monetisation Models ─────────────────────────────────────────────────
 
 model Subscription {
-  id              String             @id @default(cuid())
-  userId          String
-  plan            SubscriptionPlan
-  status          SubscriptionStatus @default(ACTIVE)
-  paystackSubId   String?            @unique
-  paystackRef     String?            // transaction reference
-  startDate       DateTime
-  endDate         DateTime
-  autoRenew       Boolean            @default(true)
-  amountPaid      Int                // in kobo (₦25,000 = 2500000)
-  currency        String             @default("NGN")
-  reminderSent    Boolean            @default(false)
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
+  id                 String             @id @default(cuid())
+  userId             String
+  plan               SubscriptionPlan
+  status             SubscriptionStatus @default(ACTIVE)
+  paystackSubId      String?            @unique
+  paystackRef        String? // transaction reference
+  // HUMAN_BACKLOG.md: Paystack's /subscription/disable requires both the
+  // subscription_code AND this email_token from the subscription.create
+  // webhook -- without it stored, cancellation can't actually reach Paystack.
+  paystackEmailToken String?
+  startDate          DateTime
+  endDate            DateTime
+  autoRenew          Boolean            @default(true)
+  amountPaid         Int // in kobo (₦25,000 = 2500000)
+  currency           String             @default("NGN")
+  reminderSent       Boolean            @default(false)
+  // V8-503: one free 30-day pause per subscription lifetime (this row spans
+  // renewals -- charge.success extends endDate in place rather than creating
+  // a new row -- so this flag is never reset by a renewal, only by a fresh
+  // subscribe after cancellation, which does create a new row).
+  pausedAt           DateTime?
+  // V8-504: dedupe flag so the daily win-back sweep never emails the same
+  // lapsed subscription twice. Set once the win-back email actually sends.
+  winBackSentAt      DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
 
   user User @relation("UserSubscriptions", fields: [userId], references: [id], onDelete: Cascade)
 
@@ -1718,7 +2629,7 @@ model ProfileView {
   profileId String
   viewedAt  DateTime @default(now())
 
-  viewer  User @relation("ProfileViewGiver",    fields: [viewerId],  references: [id], onDelete: Cascade)
+  viewer  User @relation("ProfileViewGiver", fields: [viewerId], references: [id], onDelete: Cascade)
   profile User @relation("ProfileViewReceiver", fields: [profileId], references: [id], onDelete: Cascade)
 
   @@unique([viewerId, profileId]) // one row per viewer-profile pair (updated on revisit)
@@ -1728,14 +2639,23 @@ model ProfileView {
 }
 
 model Referral {
-  id             String   @id @default(cuid())
-  referrerId     String
-  referredId     String   @unique // each user can only be referred once
-  code           String
-  rewardGranted  Boolean  @default(false)
-  createdAt      DateTime @default(now())
+  id            String   @id @default(cuid())
+  referrerId    String
+  referredId    String   @unique // each user can only be referred once
+  code          String
+  // EXP-027's ₦500-wallet-credit-on-first-completed-booking reward
+  // (appointments.service.ts maybeGrantReferralReward).
+  rewardGranted Boolean  @default(false)
+  // V8-501: the separate 30-free-Devoted-days reward on the referred user's
+  // first subscription (subscriptions.service.ts rewardReferrer). Was
+  // previously sharing `rewardGranted` with the booking reward above --
+  // whichever milestone (first booking vs. first subscribe) happened first
+  // silently consumed the flag and the other reward never paid out. Each
+  // reward now has its own independent flag.
+  subscriptionRewardGranted Boolean @default(false)
+  createdAt     DateTime @default(now())
 
-  referrer User @relation("ReferralsMade",    fields: [referrerId], references: [id], onDelete: Cascade)
+  referrer User @relation("ReferralsMade", fields: [referrerId], references: [id], onDelete: Cascade)
   referred User @relation("ReferralReceived", fields: [referredId], references: [id], onDelete: Cascade)
 
   @@index([referrerId])
@@ -1745,20 +2665,20 @@ model Referral {
 
 // ADM-012: Refund Request Management
 model RefundRequest {
-  id            String    @id @default(uuid())
-  requestedBy   String
-  orderId       String?
-  appointmentId String?
-  amount        Float?    // null = full refund
-  reason        String
-  evidence      String[]  @default([])
-  status        String    @default("PENDING") // PENDING | APPROVED | REJECTED | CANCELLED
-  adminNote     String?
-  approvedAmount Float?   // actual amount approved (may differ from requested)
-  processedBy   String?
-  processedAt   DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id             String    @id @default(uuid())
+  requestedBy    String
+  orderId        String?
+  appointmentId  String?
+  amount         Decimal?  @db.Decimal(14, 2) // null = full refund
+  reason         String
+  evidence       String[]  @default([])
+  status         String    @default("PENDING") // PENDING | APPROVED | REJECTED | CANCELLED
+  adminNote      String?
+  approvedAmount Decimal?  @db.Decimal(14, 2) // actual amount approved (may differ from requested)
+  processedBy    String?
+  processedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   requester User  @relation("RefundRequester", fields: [requestedBy], references: [id], onDelete: Cascade)
   processor User? @relation("RefundProcessor", fields: [processedBy], references: [id])
@@ -1775,8 +2695,8 @@ model Announcement {
   id          String    @id @default(uuid())
   title       String
   content     String
-  type        String    // BANNER | NOTIFICATION | EMAIL_BROADCAST
-  target      String    // ALL | CLIENT | BABALAWO | VENDOR | DEVOTED | SPECIFIC
+  type        String // BANNER | NOTIFICATION | EMAIL_BROADCAST
+  target      String // ALL | CLIENT | BABALAWO | VENDOR | DEVOTED | SPECIFIC
   targetIds   String[]  @default([])
   status      String    @default("DRAFT") // DRAFT | SCHEDULED | ACTIVE | EXPIRED
   scheduledAt DateTime?
@@ -1794,32 +2714,69 @@ model Announcement {
 
 // ADM-008: Practitioner Complaint Handling
 model PractitionerComplaint {
-  id              String    @id @default(uuid())
-  clientId        String
-  practitionerId  String
-  reason          String    // NO_SHOW | INAPPROPRIATE | FRAUD | OTHER
-  description     String
-  evidence        String[]  @default([])
-  status          String    @default("OPEN") // OPEN | UNDER_REVIEW | RESOLVED | DISMISSED
-  resolution      String?
-  resolvedById    String?
-  resolvedAt      DateTime?
-  resolutionNotes String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  client          User      @relation("ClientComplaint", fields: [clientId], references: [id], onDelete: Cascade)
-  practitioner    User      @relation("PractitionerComplaint", fields: [practitionerId], references: [id], onDelete: Cascade)
-  resolvedBy      User?     @relation("ResolverComplaint", fields: [resolvedById], references: [id])
+  id                   String    @id @default(uuid())
+  clientId             String
+  practitionerId       String
+  reason               String // NO_SHOW | INAPPROPRIATE | FRAUD | OTHER
+  description          String
+  evidence             String[]  @default([])
+  status               String    @default("OPEN") // OPEN | UNDER_REVIEW | RESOLVED | DISMISSED
+  resolution           String?
+  resolvedById         String?
+  resolvedAt           DateTime?
+  resolutionNotes      String?
+  // COMMUNITY_BACKLOG.md FOR-016: "Keyword/pattern-based community flagging
+  // (not ML)" -- set at filing time by scanning `description` against active
+  // ContentFlagRule KEYWORD rules (the same curated, human-authored list
+  // ADM-018 uses for ForumPost, previously never evaluated against anything
+  // -- see complaints.service.ts). Used to sort flagged complaints first in
+  // the admin queue, not to auto-act on them.
+  flaggedByKeywordRule Boolean   @default(false)
+  matchedKeywords      String[]  @default([])
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  client               User      @relation("ClientComplaint", fields: [clientId], references: [id], onDelete: Cascade)
+  practitioner         User      @relation("PractitionerComplaint", fields: [practitionerId], references: [id], onDelete: Cascade)
+  resolvedBy           User?     @relation("ResolverComplaint", fields: [resolvedById], references: [id])
 
   @@index([clientId])
   @@index([practitionerId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([flaggedByKeywordRule])
+}
+
+// Whole-app audit loose end: generic report against any user (CLIENT/VENDOR/
+// BABALAWO), mirroring PractitionerComplaint's shape/flow above but not
+// restricted to a practitioner as the target -- profile "Report" for
+// non-babalawo users had no backend at all before this.
+model UserReport {
+  id                   String    @id @default(uuid())
+  reporterId           String
+  reportedUserId       String
+  reason               String // HARASSMENT | SPAM | IMPERSONATION | INAPPROPRIATE | FRAUD | OTHER
+  description          String
+  status               String    @default("OPEN") // OPEN | UNDER_REVIEW | RESOLVED | DISMISSED
+  resolvedById         String?
+  resolvedAt           DateTime?
+  resolutionNotes      String?
+  flaggedByKeywordRule Boolean   @default(false)
+  matchedKeywords      String[]  @default([])
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  reporter             User      @relation("UserReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUser         User      @relation("UserReportReported", fields: [reportedUserId], references: [id], onDelete: Cascade)
+  resolvedBy           User?     @relation("UserReportResolver", fields: [resolvedById], references: [id])
+
+  @@index([reporterId])
+  @@index([reportedUserId])
   @@index([status])
   @@index([createdAt])
 }
 
 // F9-806: Àṣẹ Live audio space
 model LiveSession {
-  id           String    @id @default(uuid())
+  id           String   @id @default(uuid())
   title        String
   hostIds      String[]
   scheduledAt  DateTime
@@ -1827,70 +2784,131 @@ model LiveSession {
   externalUrl  String
   preThreadId  String?
   recordingUrl String?
-  status       String    @default("SCHEDULED")
-  createdAt    DateTime  @default(now())
+  status       String   @default("SCHEDULED")
+  createdAt    DateTime @default(now())
 
   @@index([status])
   @@index([scheduledAt])
 }
 
 model OralHistoryEntry {
-  id             String   @id @default(uuid())
-  title          String
-  category       String
-  babalawoName   String?
-  recordingDate  DateTime?
-  tags           String[] @default([])
-  content        String
-  sourceUrl      String?
-  publishedAt    DateTime?
-  createdBy      String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                String    @id @default(uuid())
+  title             String
+  category          String
+  babalawoName      String?
+  recordingDate     DateTime?
+  tags              String[]  @default([])
+  content           String
+  sourceUrl         String?
+  // COMMUNITY_BACKLOG.md FOR-019: marketplace connection -- Product IDs this
+  // story relates to. A plain ID array rather than a join table, matching the
+  // existing `tags` pattern on this same model; a story-to-item link doesn't
+  // need relational integrity enforcement beyond "does this product exist".
+  relatedProductIds String[]  @default([])
+  publishedAt       DateTime?
+  createdBy         String
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime?
 
-  creator        User     @relation("OralHistoryCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  creator User @relation("OralHistoryCreator", fields: [createdBy], references: [id], onDelete: Cascade)
 
   @@index([category])
   @@index([createdAt])
+  @@index([deletedAt])
   @@index([publishedAt])
 }
 
 model SacredCalendarEvent {
-  id           String   @id @default(uuid())
-  title        String
-  yorubaName   String?
-  description  String
-  date         DateTime
-  endDate      DateTime?
-  type         String   @default("FESTIVAL")
-  bannerColor  String?
-  isActive     Boolean  @default(true)
-  createdBy    String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String    @id @default(uuid())
+  title       String
+  yorubaName  String?
+  description String
+  date        DateTime
+  endDate     DateTime?
+  type        String    @default("FESTIVAL")
+  bannerColor String?
+  isActive    Boolean   @default(true)
+  createdBy   String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  creator      User     @relation("SacredCalendarCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  creator                User                  @relation("SacredCalendarCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  participations         RitualParticipation[]
+  vendorPartnerships     VendorPartnership[]
+  productFeatureRequests EventProductFeature[]
+
+  // SHOP_BACKLOG.md MSP-008: "Post-ceremony/post-season community reflection
+  // tied to Forum" -- auto-created (SeasonalEventReminderService) once the
+  // event's date has passed, same auto-thread pattern as MSP-019's bundle
+  // support/reflection threads. Reuses Forum, not a parallel comment system.
+  reflectionThreadId String? @unique
 
   @@index([date])
   @@index([isActive])
 }
 
+// SHOP_BACKLOG.md MSP-008: "Vendor request flow for seasonal item
+// promotions, routed through existing admin review". Also the real
+// event<->product relation this item's own notes flagged as missing --
+// the "Coming Up" banner's featured-products list can now prefer items
+// actually tagged to the nearest event, instead of only ever falling back
+// to whatever is generically isFeatured.
+model EventProductFeature {
+  id              String              @id @default(uuid())
+  eventId         String
+  productId       String
+  vendorId        String
+  status          String              @default("PENDING") // PENDING | APPROVED | REJECTED
+  rejectionReason String?
+  requestedAt     DateTime            @default(now())
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  event           SacredCalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  product         Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  vendor          Vendor              @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, productId])
+  @@index([eventId])
+  @@index([status])
+}
+
+// COMMUNITY_BACKLOG.md FOR-013: RSVP + optional intention sharing for a
+// SacredCalendarEvent. Deliberately hangs off the existing calendar model
+// rather than a new "ritual" concept -- every virtual ritual this session
+// scopes to IS a SacredCalendarEvent.
+model RitualParticipation {
+  id        String              @id @default(uuid())
+  eventId   String
+  userId    String
+  intention String?
+  isPublic  Boolean             @default(false)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  event     SacredCalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User                @relation("RitualParticipant", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+}
+
 model PlatformSettings {
-  id                           String   @id @default("singleton")
-  consultationCommissionPct    Float    @default(15)
-  marketplaceCommissionPct     Float    @default(10)
-  minPayoutThresholdNgn        Float    @default(5000)
-  maxPayoutWithoutApprovalNgn  Float    @default(100000)
-  quizPassThreshold            Int      @default(2)
-  updatedAt                    DateTime @updatedAt
-  updatedBy                    String?
+  id                          String   @id @default("singleton")
+  consultationCommissionPct   Decimal  @default(15) @db.Decimal(14, 2)
+  marketplaceCommissionPct    Decimal  @default(10) @db.Decimal(14, 2)
+  minPayoutThresholdNgn       Decimal  @default(5000) @db.Decimal(14, 2)
+  maxPayoutWithoutApprovalNgn Decimal  @default(100000) @db.Decimal(14, 2)
+  quizPassThreshold           Int      @default(2)
+  updatedAt                   DateTime @updatedAt
+  updatedBy                   String?
 }
 
 // ADM-028: Cultural Orientation Quiz
 model CulturalQuizQuestion {
   id           String   @id @default(uuid())
   questionText String
-  options      Json     // String[]
+  options      Json // String[]
   correctIndex Int
   sortOrder    Int      @default(0)
   isActive     Boolean  @default(true)
@@ -1904,15 +2922,15 @@ model CulturalQuizQuestion {
 
 // ADM-017: Community Recognition System
 model UserBadge {
-  id         String   @id @default(uuid())
-  userId     String
-  badgeKey   String   // Unique identifier for the badge type
-  awardedAt  DateTime @default(now())
+  id          String   @id @default(uuid())
+  userId      String
+  badgeKey    String // Unique identifier for the badge type
+  awardedAt   DateTime @default(now())
   awardedById String?
-  reason     String?
-  
-  user      User     @relation("UserBadges", fields: [userId], references: [id], onDelete: Cascade)
-  awardedBy User?    @relation("BadgeAwarder", fields: [awardedById], references: [id])
+  reason      String?
+
+  user      User  @relation("UserBadges", fields: [userId], references: [id], onDelete: Cascade)
+  awardedBy User? @relation("BadgeAwarder", fields: [awardedById], references: [id])
 
   @@index([userId])
   @@index([badgeKey])
@@ -1920,10 +2938,10 @@ model UserBadge {
 
 // EXP-012: Onboarding completion email tracking
 model OnboardingEmail {
-  id      String   @id @default(uuid())
-  userId  String
-  email   String   // Store email at time of sending (in case user changes it later)
-  sentAt  DateTime @default(now())
+  id     String   @id @default(uuid())
+  userId String
+  email  String // Store email at time of sending (in case user changes it later)
+  sentAt DateTime @default(now())
 
   user User @relation("OnboardingEmailUser", fields: [userId], references: [id], onDelete: Cascade)
 
@@ -1934,15 +2952,15 @@ model OnboardingEmail {
 // ADM-018: Cultural Integrity Review Queue
 model ContentFlagRule {
   id        String   @id @default(uuid())
-  type      String   // KEYWORD | CATEGORY_MOD
-  value     String   // keyword text OR categoryId
+  type      String // KEYWORD | CATEGORY_MOD
+  value     String // keyword text OR categoryId
   reason    String?
   isActive  Boolean  @default(true)
   createdBy String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  creator   User     @relation("FlagRuleCreator", fields: [createdBy], references: [id])
+  creator User @relation("FlagRuleCreator", fields: [createdBy], references: [id])
 
   @@index([type, isActive])
 }
@@ -1952,7 +2970,7 @@ model EmailCampaign {
   id             String    @id @default(uuid())
   subject        String
   body           String
-  segment        String    // ALL | CLIENTS | BABALAWOS | DEVOTED | FREE_TIER | NEW_30D | INACTIVE_30D | COUNTRY_NG | COUNTRY_UK | COUNTRY_US
+  segment        String // ALL | CLIENTS | BABALAWOS | DEVOTED | FREE_TIER | NEW_30D | INACTIVE_30D | COUNTRY_NG | COUNTRY_UK | COUNTRY_US
   status         String    @default("DRAFT") // DRAFT | SENT | SCHEDULED
   scheduledAt    DateTime?
   sentAt         DateTime?
@@ -1963,7 +2981,7 @@ model EmailCampaign {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  creator        User      @relation("CampaignCreator", fields: [createdBy], references: [id])
+  creator User @relation("CampaignCreator", fields: [createdBy], references: [id])
 
   @@index([status])
   @@index([createdAt])
@@ -1971,35 +2989,35 @@ model EmailCampaign {
 
 // ADM-020: Promo Code & Discount System
 model PromoCode {
-  id             String    @id @default(uuid())
-  code           String    @unique
-  type           String    // PCT_SUBSCRIPTION | FIXED_CONSULTATION | FREE_TRIAL_DAYS | REFERRAL_CREDIT
-  value          Float
-  maxUses        Int?
-  usedCount      Int       @default(0)
-  expiresAt      DateTime?
-  eligibleRoles  String[]  @default([])
-  isActive       Boolean   @default(true)
-  createdBy      String
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id            String    @id @default(uuid())
+  code          String    @unique
+  type          String // PCT_SUBSCRIPTION | FIXED_CONSULTATION | FREE_TRIAL_DAYS | REFERRAL_CREDIT
+  value         Decimal   @db.Decimal(14, 2)
+  maxUses       Int?
+  usedCount     Int       @default(0)
+  expiresAt     DateTime?
+  eligibleRoles String[]  @default([])
+  isActive      Boolean   @default(true)
+  createdBy     String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  creator        User      @relation("PromoCodeCreator", fields: [createdBy], references: [id])
-  redemptions    PromoRedemption[]
+  creator     User              @relation("PromoCodeCreator", fields: [createdBy], references: [id])
+  redemptions PromoRedemption[]
 
   @@index([code])
   @@index([isActive])
 }
 
 model PromoRedemption {
-  id          String    @id @default(uuid())
+  id          String   @id @default(uuid())
   promoCodeId String
   userId      String
-  redeemedAt  DateTime  @default(now())
-  discountNgn Float     @default(0)
+  redeemedAt  DateTime @default(now())
+  discountNgn Float    @default(0)
 
-  promoCode   PromoCode @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
-  user        User      @relation("PromoRedemptions", fields: [userId], references: [id], onDelete: Cascade)
+  promoCode PromoCode @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
+  user      User      @relation("PromoRedemptions", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([promoCodeId])
   @@index([userId])
@@ -2042,4 +3060,29 @@ model AnalyticsEvent {
   @@index([event])
   @@index([createdAt])
   @@index([userId])
+}
+
+// Whole-app audit Phase 3c: a Babalawo's own catalog of consultation service
+// types (name/price/duration). Previously service-offering-view.tsx was pure
+// local useState with no backend at all -- nothing a practitioner "saved"
+// here ever persisted.
+model ServiceOffering {
+  id                String    @id @default(uuid())
+  babalawoId        String
+  name              String
+  description       String
+  category          String
+  durationMinutes   Int
+  priceAmount       Decimal   @db.Decimal(14, 2)
+  priceCurrency     String    @default("NGN")
+  isActive          Boolean   @default(true)
+  maxSessionsPerDay Int?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime?
+
+  babalawo User @relation("ServiceOfferingBabalawo", fields: [babalawoId], references: [id], onDelete: Cascade)
+
+  @@index([babalawoId])
+  @@index([deletedAt])
 }
