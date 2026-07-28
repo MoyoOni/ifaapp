@@ -11,6 +11,7 @@ import { PiiMaskingUtil } from './utils/pii-masking.util';
 import { AuditInterceptor } from './interceptors/audit.interceptor';
 import { JwtAuthGuard } from './guards/auth.guard';
 import { AdminSubRolesGuard } from './guards/admin-sub-roles.guard';
+import { CrisisDetectionService } from './services/crisis-detection.service';
 
 @Global()
 @Module({
@@ -35,6 +36,7 @@ import { AdminSubRolesGuard } from './guards/admin-sub-roles.guard';
     JwtAuthGuard,
     AdminSubRolesGuard,
     SesEmailService,
+    CrisisDetectionService,
   ],
   exports: [
     Reflector,
@@ -46,6 +48,7 @@ import { AdminSubRolesGuard } from './guards/admin-sub-roles.guard';
     JwtAuthGuard,
     AdminSubRolesGuard,
     SesEmailService,
+    CrisisDetectionService,
   ],
 })
 export class SharedModule {}

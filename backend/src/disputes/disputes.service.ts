@@ -10,6 +10,11 @@ import { CreateDisputeDto, DisputeType, DisputeCategory } from './dto/create-dis
 import { ResolveDisputeDto, ResolutionType } from './dto/resolve-dispute.dto';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { WalletService } from '../wallet/wallet.service';
+import {
+  NotificationService,
+  NotificationType as NotifType,
+  NotificationCategory,
+} from '../notifications/notification.service';
 
 /**
  * Disputes Service
@@ -22,7 +27,8 @@ export class DisputesService {
 
   constructor(
     private prisma: PrismaService,
-    private walletService: WalletService
+    private walletService: WalletService,
+    private notificationService: NotificationService
   ) {}
 
   /**
@@ -116,7 +122,95 @@ export class DisputesService {
 
     this.logger.log(`Dispute ${dispute.id} created and routed to ${routing}`);
 
+    // VENDOR_BACKLOG.md VND-004: "Order dispute raised -> urgent push + email"
+    this.notificationService
+      .createNotification({
+        userId: dto.respondentId,
+        type: NotifType.SYSTEM,
+        category: NotificationCategory.WARNING,
+        title: 'A dispute has been raised against you',
+        message: `${dispute.complainant.yorubaName || dispute.complainant.name} raised a dispute: "${dto.title}". Please respond promptly.`,
+        data: { action: 'dispute_raised', disputeId: dispute.id },
+        sendEmail: true,
+        sendPush: true,
+      })
+      .catch(() => undefined);
+
     return dispute;
+  }
+
+  /**
+   * COMMUNITY_BACKLOG.md FOR-016: escalate an already-filed PractitionerComplaint
+   * into a real Dispute, reusing the exact SPIRITUAL/SPIRITUAL_MISCONDUCT routing
+   * (-> ADVISORY_BOARD, URGENT priority) rather than inventing a parallel path.
+   * Called by an admin acting ON BEHALF OF the original complainant, so
+   * complainantId is passed explicitly instead of taken from CurrentUserPayload
+   * like createDispute() above.
+   */
+  async createFromComplaint(
+    complainantId: string,
+    respondentId: string,
+    title: string,
+    description: string
+  ) {
+    const routedTo = this.determineRouting(
+      DisputeType.SPIRITUAL,
+      DisputeCategory.SPIRITUAL_MISCONDUCT
+    );
+    const priority = this.determinePriority(
+      DisputeCategory.SPIRITUAL_MISCONDUCT,
+      DisputeType.SPIRITUAL
+    );
+
+    return this.prisma.dispute.create({
+      data: {
+        complainantId,
+        respondentId,
+        type: DisputeType.SPIRITUAL,
+        category: DisputeCategory.SPIRITUAL_MISCONDUCT,
+        title,
+        description,
+        evidence: [],
+        status: 'OPEN',
+        priority,
+        routedTo,
+      },
+    });
+  }
+
+  /**
+   * VENDOR_BACKLOG.md VND-010: escalate a marketplace ReturnRequest that the
+   * customer and vendor couldn't agree on. Reuses the ORDER/PRODUCT_QUALITY
+   * routing (-> Admin, NORMAL priority) rather than inventing a parallel
+   * escalation path -- same "called on behalf of" pattern as
+   * createFromComplaint() above.
+   */
+  async createFromReturnRequest(
+    complainantId: string,
+    respondentId: string,
+    orderId: string,
+    title: string,
+    description: string,
+    evidence: string[]
+  ) {
+    const routedTo = this.determineRouting(DisputeType.ORDER, DisputeCategory.PRODUCT_QUALITY);
+    const priority = this.determinePriority(DisputeCategory.PRODUCT_QUALITY, DisputeType.ORDER);
+
+    return this.prisma.dispute.create({
+      data: {
+        orderId,
+        complainantId,
+        respondentId,
+        type: DisputeType.ORDER,
+        category: DisputeCategory.PRODUCT_QUALITY,
+        title,
+        description,
+        evidence,
+        status: 'OPEN',
+        priority,
+        routedTo,
+      },
+    });
   }
 
   /**
@@ -292,10 +386,15 @@ export class DisputesService {
       // Refund to complainant - release escrow funds back to sender
       await this.walletService.unfreezeEscrowAfterDispute(dispute.escrowId);
 
-      // Create DTO to release the full amount back to sender (since no recipient specified, it goes back to originator)
+      // Create DTO to release the full amount back to sender (since no recipient specified, it goes back to originator).
+      // Escrow.amount is now Decimal (ProBacklog-v1.md item #15) -- this DTO
+      // is passed to releaseEscrow via an `as any` cast below, which would
+      // otherwise smuggle a raw Decimal into that method's custom-amount
+      // release branch (`releaseAmount = dto.amount`), bypassing the
+      // Number() normalization releaseEscrow does for its own escrow.amount read.
       const releaseDto = {
         escrowId: dispute.escrowId,
-        amount: dispute.escrow.amount, // Full amount for full refund from the escrow
+        amount: Number(dispute.escrow.amount), // Full amount for full refund from the escrow
       };
 
       await this.walletService.releaseEscrow(dispute.escrow.userId, releaseDto as any, currentUser);

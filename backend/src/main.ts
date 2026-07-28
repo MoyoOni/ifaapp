@@ -9,7 +9,9 @@ import { SecurityHardeningService } from './security/security-hardening.service'
 import { InputSanitizationMiddleware } from './middleware/input-sanitization.middleware';
 import { SecurityHeadersMiddleware } from './middleware/security-headers.middleware';
 import { SensitiveFieldStripInterceptor } from './interceptors/sensitive-field-strip.interceptor';
+import { DecimalToNumberInterceptor } from './interceptors/decimal-to-number.interceptor';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
+import { PrismaService } from './prisma/prisma.service';
 
 const logger = new Logger('Bootstrap');
 
@@ -78,7 +80,7 @@ async function bootstrap() {
   // from every response body, however deeply nested, regardless of whether the
   // specific controller remembered to do it by hand. See the interceptor's own
   // doc comment for why this exists instead of a per-endpoint DTO layer.
-  app.useGlobalInterceptors(new SensitiveFieldStripInterceptor());
+  app.useGlobalInterceptors(new SensitiveFieldStripInterceptor(), new DecimalToNumberInterceptor());
 
   // P1-03 discovery: three separate global exception filters existed
   // (GlobalExceptionFilter, SentryExceptionFilter, FriendlyExceptionFilter)
@@ -115,6 +117,21 @@ async function bootstrap() {
   logger.log(`Application is running on: http://localhost:${port}`);
   if (configService.get('NODE_ENV') !== 'production') {
     logger.log(`Swagger documentation available at: http://localhost:${port}/api-docs`);
+
+    // Dev-only: an empty database (e.g. after a `prisma migrate reset`, a
+    // dropped Docker volume, or a wiped local Postgres) silently renders as
+    // blank temples/circles/forum pages with no error anywhere -- this makes
+    // that state impossible to miss instead. Hard-gated to non-production
+    // above; never runs against a real deployment.
+    try {
+      const prisma = app.get(PrismaService);
+      const userCount = await prisma.user.count();
+      if (userCount === 0) {
+        logger.warn('⚠️  DATABASE IS EMPTY (0 users found). Run `npm run seed:all` in backend/ to restore demo data.');
+      }
+    } catch (error) {
+      logger.warn('Could not check whether the database is empty on startup.', error as Error);
+    }
   }
 }
 bootstrap();

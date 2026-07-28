@@ -456,3 +456,75 @@ describe.skip('EventsService', () => {
     });
   });
 });
+
+// ProBacklog-v1.md item #12 (soft-delete audit): covers the current
+// EventsService shape (create/findOne/update/delete), not the pre-refactor
+// API the skipped suite above was written against.
+describe('EventsService - soft delete (ProBacklog-v1.md item #12)', () => {
+  let service: EventsService;
+
+  const mockPrismaService = {
+    event: {
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+    },
+    eventRegistration: {
+      findUnique: jest.fn(),
+    },
+  };
+
+  const currentUser = { id: 'user-1', role: 'CLIENT' } as any;
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    const moduleRef = await Test.createTestingModule({
+      providers: [EventsService, { provide: PrismaService, useValue: mockPrismaService }],
+    }).compile();
+
+    service = moduleRef.get<EventsService>(EventsService);
+  });
+
+  describe('delete', () => {
+    it('soft-deletes by setting deletedAt instead of calling prisma delete', async () => {
+      mockPrismaService.event.findUnique.mockResolvedValue({ id: 'event-1', creatorId: 'user-1' });
+      mockPrismaService.event.update.mockResolvedValue({ id: 'event-1' });
+
+      await service.delete('event-1', currentUser);
+
+      expect(mockPrismaService.event.update).toHaveBeenCalledWith({
+        where: { id: 'event-1' },
+        data: { deletedAt: expect.any(Date) },
+      });
+    });
+
+    it('404s on an already-deleted event instead of re-timestamping it', async () => {
+      mockPrismaService.event.findUnique.mockResolvedValue(null);
+
+      await expect(service.delete('event-1', currentUser)).rejects.toThrow(NotFoundException);
+      const call = mockPrismaService.event.findUnique.mock.calls[0][0];
+      expect(call.where.deletedAt).toBeNull();
+    });
+
+    it('rejects a non-creator, non-admin deleting the event', async () => {
+      mockPrismaService.event.findUnique.mockResolvedValue({ id: 'event-1', creatorId: 'someone-else' });
+
+      await expect(service.delete('event-1', currentUser)).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('read paths filter out soft-deleted events', () => {
+    it('findAll', async () => {
+      mockPrismaService.event.findMany.mockResolvedValue([]);
+      await service.findAll();
+      expect(mockPrismaService.event.findMany.mock.calls[0][0].where.deletedAt).toBeNull();
+    });
+
+    it('findOne', async () => {
+      mockPrismaService.event.findFirst.mockResolvedValue({ id: 'event-1' });
+      await service.findOne('event-1');
+      expect(mockPrismaService.event.findFirst.mock.calls[0][0].where.deletedAt).toBeNull();
+    });
+  });
+});

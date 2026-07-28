@@ -280,7 +280,7 @@ export class AppointmentsService {
     // Handle escrow based on status change
     if (status === 'CANCELLED' || status === 'DECLINED') {
       // Refund escrow to client
-      if ((appointment.price ?? 0) > 0) {
+      if (Number(appointment.price ?? 0) > 0) {
         const escrow = await this.prisma.escrow.findFirst({
           where: {
             relatedId: appointment.id,
@@ -297,7 +297,7 @@ export class AppointmentsService {
 
     if (status === 'COMPLETED') {
       // Release escrow to babalawo
-      if ((appointment.price ?? 0) > 0) {
+      if (Number(appointment.price ?? 0) > 0) {
         const escrow = await this.prisma.escrow.findFirst({
           where: {
             relatedId: appointment.id,
@@ -423,7 +423,14 @@ export class AppointmentsService {
       );
     }
 
-    return updatedAppointment;
+    // updatedAppointment.price is now Decimal (ProBacklog-v1.md item #15);
+    // this method's declared return type is the shared Appointment mirror
+    // type (shared/types/prisma-models.ts), which deliberately avoids a
+    // @prisma/client dependency and still declares price as a plain number.
+    return {
+      ...updatedAppointment,
+      price: updatedAppointment.price !== null ? Number(updatedAppointment.price) : null,
+    };
   }
 
   async findByBabalawo(babalawoId: string, currentUser: CurrentUserPayload) {
@@ -995,7 +1002,7 @@ export class AppointmentsService {
     doc.text(`Service: ${appointment.topic || 'Spiritual Consultation'}`);
     doc.moveDown();
 
-    if (appointment.price && appointment.price > 0) {
+    if (Number(appointment.price ?? 0) > 0) {
       doc.text(`Amount Paid: ₦${Number(appointment.price).toLocaleString()}`);
       doc.text(`Payment Method: Wallet`); // Assuming wallet payment for now
     } else {

@@ -24,7 +24,10 @@ describe('ConsultationNotesService', () => {
     jest.clearAllMocks();
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [ConsultationNotesService, { provide: PrismaService, useValue: mockPrismaService }],
+      providers: [
+        ConsultationNotesService,
+        { provide: PrismaService, useValue: mockPrismaService },
+      ],
     }).compile();
 
     service = module.get<ConsultationNotesService>(ConsultationNotesService);
@@ -80,7 +83,7 @@ describe('ConsultationNotesService', () => {
 
       expect(result).toEqual([{ id: 'note-1', title: 'First session', content: 'Notes...' }]);
       expect(mockPrismaService.consultationNote.findMany).toHaveBeenCalledWith({
-        where: { babalawoId: 'babalawo-1', clientId: 'client-1' },
+        where: { babalawoId: 'babalawo-1', clientId: 'client-1', deletedAt: null },
         orderBy: { createdAt: 'desc' },
       });
     });
@@ -144,7 +147,10 @@ describe('ConsultationNotesService', () => {
         id: 'note-1',
         babalawoId: 'babalawo-1',
       });
-      mockPrismaService.consultationNote.update.mockResolvedValue({ id: 'note-1', content: 'updated' });
+      mockPrismaService.consultationNote.update.mockResolvedValue({
+        id: 'note-1',
+        content: 'updated',
+      });
 
       const result = await service.updateNote(
         'note-1',
@@ -163,25 +169,53 @@ describe('ConsultationNotesService', () => {
       await expect(service.deleteNote('note-1', babalawoUser)).rejects.toThrow(NotFoundException);
     });
 
+    it('excludes already-deleted notes from the lookup (idempotent 404, not a re-timestamp)', async () => {
+      mockPrismaService.consultationNote.findUnique.mockResolvedValue(null);
+
+      await expect(service.deleteNote('note-1', babalawoUser)).rejects.toThrow(NotFoundException);
+      const call = mockPrismaService.consultationNote.findUnique.mock.calls[0][0];
+      expect(call.where.deletedAt).toBeNull();
+    });
+
     it('throws ForbiddenException when the caller did not create the note', async () => {
       mockPrismaService.consultationNote.findUnique.mockResolvedValue({
         id: 'note-1',
         babalawoId: 'babalawo-1',
       });
 
-      await expect(service.deleteNote('note-1', otherBabalawoUser)).rejects.toThrow(ForbiddenException);
+      await expect(service.deleteNote('note-1', otherBabalawoUser)).rejects.toThrow(
+        ForbiddenException
+      );
     });
 
-    it('deletes the note when the caller created it', async () => {
+    // ProBacklog-v1.md item #12 (soft-delete audit): a babalawo's professional
+    // notes about a client -- soft-deleted (deletedAt) instead of a real
+    // Prisma delete.
+    it('soft-deletes by setting deletedAt instead of calling prisma delete', async () => {
       mockPrismaService.consultationNote.findUnique.mockResolvedValue({
         id: 'note-1',
         babalawoId: 'babalawo-1',
       });
-      mockPrismaService.consultationNote.delete.mockResolvedValue({ id: 'note-1' });
+      mockPrismaService.consultationNote.update.mockResolvedValue({ id: 'note-1' });
 
       const result = await service.deleteNote('note-1', babalawoUser);
 
+      expect(mockPrismaService.consultationNote.update).toHaveBeenCalledWith({
+        where: { id: 'note-1' },
+        data: { deletedAt: expect.any(Date) },
+      });
+      expect(mockPrismaService.consultationNote.delete).not.toHaveBeenCalled();
       expect(result).toEqual({ id: 'note-1' });
+    });
+  });
+
+  describe('read paths filter out soft-deleted notes', () => {
+    it('findNotesByBabalawo', async () => {
+      mockPrismaService.consultationNote.findMany.mockResolvedValue([]);
+
+      await service.findNotesByBabalawo('babalawo-1', babalawoUser);
+
+      expect(mockPrismaService.consultationNote.findMany.mock.calls[0][0].where.deletedAt).toBeNull();
     });
   });
 });

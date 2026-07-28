@@ -72,6 +72,7 @@ export class ConsultationNotesService {
       where: {
         babalawoId,
         clientId,
+        deletedAt: null,
       },
       orderBy: {
         createdAt: 'desc',
@@ -88,6 +89,7 @@ export class ConsultationNotesService {
     return await this.prisma.consultationNote.findMany({
       where: {
         babalawoId,
+        deletedAt: null,
       },
       include: {
         client: {
@@ -112,7 +114,7 @@ export class ConsultationNotesService {
   ) {
     // Find the note
     const note = await this.prisma.consultationNote.findUnique({
-      where: { id: noteId },
+      where: { id: noteId, deletedAt: null },
     });
 
     if (!note) {
@@ -134,10 +136,13 @@ export class ConsultationNotesService {
     });
   }
 
+  // ProBacklog-v1.md item #12 (soft-delete audit): a babalawo's professional
+  // record about a client relationship -- soft-deleted like DreamEntry/etc;
+  // every read above filters deletedAt.
   async deleteNote(noteId: string, currentUser: CurrentUserPayload) {
     // Find the note
     const note = await this.prisma.consultationNote.findUnique({
-      where: { id: noteId },
+      where: { id: noteId, deletedAt: null },
     });
 
     if (!note) {
@@ -149,9 +154,10 @@ export class ConsultationNotesService {
       throw new ForbiddenException('You can only delete notes you created');
     }
 
-    // Delete the note
-    return await this.prisma.consultationNote.delete({
+    // Soft-delete the note
+    return await this.prisma.consultationNote.update({
       where: { id: noteId },
+      data: { deletedAt: new Date() },
     });
   }
 }

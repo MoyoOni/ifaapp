@@ -14,6 +14,9 @@ describe('BabalawoClientService', () => {
       findUnique: jest.fn(),
       update: jest.fn(),
     },
+    user: {
+      findMany: jest.fn(),
+    },
   };
 
   const mockCurrentUser = {
@@ -88,6 +91,45 @@ describe('BabalawoClientService', () => {
       const result = await service.getPersonalAwo(clientId, currentUser);
 
       expect(result).toEqual(mockRelationship);
+    });
+  });
+
+  describe('searchClientsForInvite', () => {
+    it('returns an empty array without querying when search is under 3 characters', async () => {
+      const result = await service.searchClientsForInvite('ab');
+
+      expect(result).toEqual([]);
+      expect(mockPrismaService.user.findMany).not.toHaveBeenCalled();
+    });
+
+    it('returns an empty array for an empty/undefined search', async () => {
+      expect(await service.searchClientsForInvite('')).toEqual([]);
+      expect(await service.searchClientsForInvite(undefined as any)).toEqual([]);
+      expect(mockPrismaService.user.findMany).not.toHaveBeenCalled();
+    });
+
+    it('searches only CLIENT-role users by name, email, or Yoruba name', async () => {
+      mockPrismaService.user.findMany.mockResolvedValue([
+        { id: 'client-1', name: 'Amara Johnson', email: 'amara@example.com', avatar: null, yorubaName: null },
+      ]);
+
+      const result = await service.searchClientsForInvite('amara');
+
+      expect(mockPrismaService.user.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            role: 'CLIENT',
+            OR: [
+              { name: { contains: 'amara', mode: 'insensitive' } },
+              { email: { contains: 'amara', mode: 'insensitive' } },
+              { yorubaName: { contains: 'amara', mode: 'insensitive' } },
+            ],
+          },
+          select: { id: true, name: true, email: true, avatar: true, yorubaName: true },
+          take: 20,
+        })
+      );
+      expect(result).toHaveLength(1);
     });
   });
 });

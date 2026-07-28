@@ -302,6 +302,15 @@ export class YorubaWordService {
     return Array.from(new Set(this.yorubaWords.map((w) => w.category)));
   }
 
+  // COMMUNITY_BACKLOG.md FOR-008: full reference glossary. The static
+  // in-memory list is the source of truth for all vocabulary, not the
+  // DailyYorubaWord table (which only gains a row for a term once it's
+  // actually been "today's word" on some date) -- a browsable glossary
+  // needs every term, not just the ones that happen to have rotated through.
+  getGlossary(category?: string) {
+    return category ? this.yorubaWords.filter((w) => w.category === category) : this.yorubaWords;
+  }
+
   /**
    * Track user view of a word
    */

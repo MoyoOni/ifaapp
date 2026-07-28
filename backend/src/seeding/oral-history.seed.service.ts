@@ -86,8 +86,21 @@ export class OralHistorySeedService {
       }
 
       if (!dryRun) {
-        // Clear existing oral history entries if this is a fresh seed
+        // Clear existing oral history entries if this is a fresh seed.
+        // ProBacklog-v1.md item #12 (soft-delete audit): SEED_ACTION=fresh
+        // had no environment guard -- set that env var against a production
+        // DATABASE_URL by mistake and this would permanently wipe every
+        // community-submitted oral history entry (see
+        // admin-cultural-content.service.ts's submitCommunityOralHistory),
+        // not just the seed data it's meant to reset. Matches the same
+        // NODE_ENV guard prisma/seed-ensure-admin.ts already uses for the
+        // same class of risk.
         if (this.configService.get<string>('SEED_ACTION') === 'fresh') {
+          if (this.configService.get<string>('NODE_ENV') === 'production') {
+            throw new Error(
+              'Refusing to run SEED_ACTION=fresh against a production environment -- this permanently deletes all oral history entries.'
+            );
+          }
           await this.prisma.oralHistoryEntry.deleteMany({});
           this.logger.log('Cleared existing oral history entries');
         }

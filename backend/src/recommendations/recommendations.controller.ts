@@ -34,9 +34,26 @@ export class RecommendationsController {
     return this.yorubaWordService.getRandomWord();
   }
 
-  @Get('daily-word/yoruba/:wordId')
-  async getWordById(@Param('wordId') wordId: string) {
-    return this.yorubaWordService.getWordById(wordId);
+  // COMMUNITY_BACKLOG.md FOR-008: these three literal routes were declared
+  // AFTER 'daily-word/yoruba/:wordId' below, so every request to them was
+  // actually being swallowed by getWordById(id) instead -- e.g.
+  // GET .../categories called getWordById('categories'), found no DB row
+  // with that id, and silently returned an empty body. getCategories() and
+  // getUserWordHistory() were unreachable dead code until this fix. Moved
+  // above the :wordId route, same "literal before param" convention used
+  // everywhere else in this codebase (e.g. marketplace.controller.ts's
+  // 'products/upcoming-events' before 'products/:id').
+  @Get('daily-word/yoruba/categories')
+  async getCategories() {
+    return { categories: this.yorubaWordService.getCategories() };
+  }
+
+  // FOR-008: full reference glossary, independent of the day-of-year
+  // rotation -- "pronunciation guides for spiritual terms" needs a browsable
+  // list, not just today's single word.
+  @Get('daily-word/yoruba/glossary')
+  async getGlossary(@Query('category') category?: string) {
+    return this.yorubaWordService.getGlossary(category);
   }
 
   @Get('daily-word/yoruba/history/:userId')
@@ -53,8 +70,8 @@ export class RecommendationsController {
     return this.yorubaWordService.getUserWordHistory(userId, limit ? parseInt(limit, 10) : 30);
   }
 
-  @Get('daily-word/yoruba/categories')
-  async getCategories() {
-    return { categories: this.yorubaWordService.getCategories() };
+  @Get('daily-word/yoruba/:wordId')
+  async getWordById(@Param('wordId') wordId: string) {
+    return this.yorubaWordService.getWordById(wordId);
   }
 }

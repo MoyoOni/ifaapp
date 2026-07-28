@@ -71,8 +71,11 @@ export class CertificateService {
         throw new Error('Course not completed yet');
       }
 
-      // Check if certificate already exists
-      if (enrollment.certificate) {
+      // Check if certificate already exists. A soft-deleted (revoked)
+      // certificate doesn't count -- fall through and re-issue it below,
+      // reusing the same row rather than a second .create() (enrollmentId
+      // is @unique on CourseCertificate).
+      if (enrollment.certificate && !enrollment.certificate.deletedAt) {
         return {
           certificateId: enrollment.certificate.id,
           url: enrollment.certificate.certificateUrl,
@@ -96,15 +99,22 @@ export class CertificateService {
       // Generate signed URL (valid for 1 year)
       const signedUrl = await this.s3Service.getSignedUrl(s3Key, 31536000); // 1 year
 
-      // Save certificate record
-      const certificate = await this.prisma.courseCertificate.create({
-        data: {
-          enrollmentId: enrollment.id,
-          certificateUrl: signedUrl,
-          // filename, // Field doesn't exist in schema
-          issuedAt: new Date(),
-        },
-      });
+      // Save certificate record -- reuse the existing (revoked) row if one
+      // exists, since enrollmentId is @unique and a second create() would
+      // violate that constraint.
+      const certificate = enrollment.certificate
+        ? await this.prisma.courseCertificate.update({
+            where: { enrollmentId: enrollment.id },
+            data: { certificateUrl: signedUrl, issuedAt: new Date(), deletedAt: null },
+          })
+        : await this.prisma.courseCertificate.create({
+            data: {
+              enrollmentId: enrollment.id,
+              certificateUrl: signedUrl,
+              // filename, // Field doesn't exist in schema
+              issuedAt: new Date(),
+            },
+          });
 
       this.logger.log(`Certificate generated for enrollment ${enrollmentId}`, {
         student: enrollment.student.name,
@@ -128,7 +138,11 @@ export class CertificateService {
    */
   async generateBulkCertificates(courseId?: string): Promise<BulkCertificateResult> {
     try {
-      // Find completed enrollments without certificates
+      // Find completed enrollments without certificates. `certificate: null`
+      // means "no CourseCertificate row at all" -- a revoked (soft-deleted)
+      // certificate still has a row, so it's deliberately excluded from this
+      // bulk path rather than silently auto-reissued; re-issuing after a
+      // revocation goes through the explicit admin action instead.
       const where: any = {
         status: 'COMPLETED',
         certificate: null,
@@ -195,7 +209,7 @@ export class CertificateService {
    */
   async getCertificateByEnrollment(enrollmentId: string) {
     return this.prisma.courseCertificate.findUnique({
-      where: { enrollmentId },
+      where: { enrollmentId, deletedAt: null },
       include: {
         enrollment: {
           include: {
@@ -217,11 +231,20 @@ export class CertificateService {
   }
 
   /**
-   * Revoke certificate
+   * Revoke certificate.
+   *
+   * ProBacklog-v1.md item #12 (soft-delete audit): this used to delete both
+   * the S3 PDF and the DB row outright, with no revocation trail at all
+   * (unlike admin-academy.service.ts's separate revokeCertificate, which at
+   * least writes an AuditLog for the same model). Now soft-deletes the row
+   * and leaves the S3 object alone -- deleting it here would defeat the
+   * point of a soft delete, same reasoning documents.service.ts already
+   * applies to Document; permanent S3 cleanup belongs to a separate
+   * retention job, not this action.
    */
   async revokeCertificate(certificateId: string): Promise<void> {
     const certificate = await this.prisma.courseCertificate.findUnique({
-      where: { id: certificateId },
+      where: { id: certificateId, deletedAt: null },
       include: { enrollment: true },
     });
 
@@ -229,18 +252,9 @@ export class CertificateService {
       throw new Error('Certificate not found');
     }
 
-    // Delete from S3
-    try {
-      // const s3Key = `certificates/${certificate.filename}`; // Field doesn't exist
-      const s3Key = `certificates/mock-${certificate.id}.pdf`;
-      await this.s3Service.deleteFile(s3Key);
-    } catch (error) {
-      this.logger.warn(`Failed to delete certificate from S3: ${error}`);
-    }
-
-    // Delete from database
-    await this.prisma.courseCertificate.delete({
+    await this.prisma.courseCertificate.update({
       where: { id: certificateId },
+      data: { deletedAt: new Date() },
     });
 
     // Reset enrollment status

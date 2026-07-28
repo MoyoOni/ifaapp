@@ -10,7 +10,13 @@ import { CreateProductReviewDto } from './dto/create-product-review.dto';
 import { CreateBabalawoReviewDto } from './dto/create-babalawo-review.dto';
 import { CreateCourseReviewDto } from './dto/create-course-review.dto';
 import { ModerateReviewDto } from './dto/moderate-review.dto';
+import { RespondToReviewDto } from './dto/respond-to-review.dto';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
+import {
+  NotificationService,
+  NotificationType,
+  NotificationCategory,
+} from '../notifications/notification.service';
 
 /**
  * Reviews Service
@@ -20,7 +26,10 @@ import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 export class ReviewsService {
   private readonly logger = new Logger(ReviewsService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationService: NotificationService
+  ) {}
 
   // ============================================
   // PRODUCT REVIEWS
@@ -104,6 +113,23 @@ export class ReviewsService {
     this.updateProductRating(productId).catch((err) => {
       this.logger.error(`Failed to update product rating: ${err.message}`);
     });
+
+    // VENDOR_BACKLOG.md VND-004: "Review received -> in-app notification"
+    this.prisma.product
+      .findUnique({ where: { id: productId }, select: { name: true, vendor: { select: { userId: true } } } })
+      .then((p) =>
+        p
+          ? this.notificationService.createNotification({
+              userId: p.vendor.userId,
+              type: NotificationType.REVIEW_RECEIVED,
+              category: NotificationCategory.INFO,
+              title: 'New review received',
+              message: `${review.customer.yorubaName || review.customer.name} left a ${dto.rating}★ review on ${p.name}.`,
+              data: { action: 'review_received', reviewId: review.id, productId },
+            })
+          : undefined
+      )
+      .catch(() => undefined);
 
     return review;
   }
@@ -657,6 +683,161 @@ export class ReviewsService {
       totalReviews: reviews.length,
       ratingDistribution: distribution,
     };
+  }
+
+  // ============================================
+  // VENDOR_BACKLOG.md VND-022: Review & Reputation Management
+  // ============================================
+
+  private async assertOwnsVendorOrAdmin(vendorId: string, currentUser: CurrentUserPayload) {
+    if (currentUser.role === 'ADMIN') return;
+    const vendor = await this.prisma.vendor.findUnique({ where: { id: vendorId } });
+    if (!vendor || vendor.userId !== currentUser.id) {
+      throw new ForbiddenException('You can only manage your own vendor account');
+    }
+  }
+
+  /**
+   * "Vendor can publicly respond to any review (one response per review)" --
+   * a review with an existing vendorResponse is immutable, matching the
+   * backlog's "one response" framing (not "latest response wins").
+   */
+  async respondToReview(
+    reviewId: string,
+    dto: RespondToReviewDto,
+    currentUser: CurrentUserPayload
+  ) {
+    const review = await this.prisma.productReview.findUnique({
+      where: { id: reviewId },
+      include: { product: { select: { vendorId: true, vendor: { select: { userId: true } } } } },
+    });
+    if (!review) {
+      throw new NotFoundException('Review not found');
+    }
+    if (currentUser.role !== 'ADMIN' && review.product.vendor.userId !== currentUser.id) {
+      throw new ForbiddenException('You can only respond to reviews on your own products');
+    }
+    if (review.vendorResponse) {
+      throw new BadRequestException('This review already has a response');
+    }
+
+    return this.prisma.productReview.update({
+      where: { id: reviewId },
+      data: { vendorResponse: dto.response, vendorRespondedAt: new Date() },
+    });
+  }
+
+  /**
+   * "All reviews across all products in one view" + per-product breakdown +
+   * a rule-based trend (last 30 days' average vs. the 30 days before that --
+   * explainable, not a fabricated/ML score).
+   */
+  async getVendorReviews(vendorId: string, currentUser: CurrentUserPayload) {
+    await this.assertOwnsVendorOrAdmin(vendorId, currentUser);
+
+    const reviews = await this.prisma.productReview.findMany({
+      where: { product: { vendorId }, status: 'ACTIVE' },
+      include: {
+        product: { select: { id: true, name: true } },
+        customer: { select: { id: true, name: true, yorubaName: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    const perProductMap = new Map<string, { productId: string; name: string; ratingSum: number; count: number }>();
+    reviews.forEach((r) => {
+      distribution[r.rating as keyof typeof distribution]++;
+      const existing = perProductMap.get(r.productId) ?? {
+        productId: r.productId,
+        name: r.product.name,
+        ratingSum: 0,
+        count: 0,
+      };
+      existing.ratingSum += r.rating;
+      existing.count += 1;
+      perProductMap.set(r.productId, existing);
+    });
+
+    const perProduct = [...perProductMap.values()].map((p) => ({
+      productId: p.productId,
+      name: p.name,
+      averageRating: parseFloat((p.ratingSum / p.count).toFixed(2)),
+      totalReviews: p.count,
+    }));
+
+    const now = new Date();
+    const last30Start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const prior30Start = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+    const avgOf = (rs: typeof reviews) =>
+      rs.length === 0 ? null : rs.reduce((s, r) => s + r.rating, 0) / rs.length;
+    const last30Avg = avgOf(reviews.filter((r) => r.createdAt >= last30Start));
+    const prior30Avg = avgOf(
+      reviews.filter((r) => r.createdAt >= prior30Start && r.createdAt < last30Start)
+    );
+    let trendDirection: 'up' | 'down' | 'flat' | 'insufficient_data' = 'insufficient_data';
+    if (last30Avg !== null && prior30Avg !== null) {
+      const diff = last30Avg - prior30Avg;
+      trendDirection = Math.abs(diff) < 0.1 ? 'flat' : diff > 0 ? 'up' : 'down';
+    }
+
+    return {
+      reviews,
+      totalReviews: reviews.length,
+      averageRating: avgOf(reviews) !== null ? parseFloat((avgOf(reviews) as number).toFixed(2)) : 0,
+      ratingDistribution: distribution,
+      perProduct,
+      trend: {
+        last30DaysAverage: last30Avg !== null ? parseFloat(last30Avg.toFixed(2)) : null,
+        previous30DaysAverage: prior30Avg !== null ? parseFloat(prior30Avg.toFixed(2)) : null,
+        direction: trendDirection,
+      },
+    };
+  }
+
+  /**
+   * "Vendor can trigger manual review request per order (once only)" --
+   * shares the same `reviewRequestSentAt` guard as the automatic 7-day nudge
+   * in review-request-nudge.service.ts, so triggering one manually also
+   * prevents the automatic one from firing later for the same order.
+   */
+  async requestReviewForOrder(orderId: string, currentUser: CurrentUserPayload) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        vendor: { select: { userId: true } },
+        items: { take: 1, select: { productId: true } },
+      },
+    });
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+    if (currentUser.role !== 'ADMIN' && order.vendor.userId !== currentUser.id) {
+      throw new ForbiddenException('You can only request reviews for your own orders');
+    }
+    if (!['COMPLETED', 'DELIVERED'].includes(order.status)) {
+      throw new BadRequestException('Reviews can only be requested for delivered orders');
+    }
+    if (order.reviewRequestSentAt) {
+      throw new BadRequestException('A review request has already been sent for this order');
+    }
+
+    await this.notificationService.createNotification({
+      userId: order.customerId,
+      type: NotificationType.SYSTEM,
+      category: NotificationCategory.INFO,
+      title: 'How was your order?',
+      message: 'The vendor would love to hear your thoughts -- please leave a review.',
+      data: { action: 'review_request', orderId, productId: order.items[0]?.productId },
+      sendEmail: true,
+    });
+
+    await this.prisma.order.update({
+      where: { id: orderId },
+      data: { reviewRequestSentAt: new Date() },
+    });
+
+    return { message: 'Review request sent' };
   }
 
   /**

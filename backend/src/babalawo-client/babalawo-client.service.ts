@@ -335,6 +335,37 @@ export class BabalawoClientService {
     };
   }
 
+  /**
+   * Search CLIENT users by name/email/Yoruba name, for a Babalawo inviting a
+   * new seeker to add. Was previously implemented by calling the admin-only
+   * GET /users, which 403'd for every real babalawo -- this is the scoped
+   * replacement, mirroring getPractitionerDiscovery's public-search pattern.
+   */
+  async searchClientsForInvite(search: string) {
+    if (!search || search.trim().length < 3) {
+      return [];
+    }
+
+    return this.prisma.user.findMany({
+      where: {
+        role: 'CLIENT',
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } },
+          { yorubaName: { contains: search, mode: 'insensitive' } },
+        ],
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        avatar: true,
+        yorubaName: true,
+      },
+      take: 20,
+    });
+  }
+
   async getClientTimeline(babalawoId: string, clientId: string, currentUser: CurrentUserPayload) {
     if (currentUser.id !== babalawoId && currentUser.role !== 'ADMIN') {
       throw new ForbiddenException('Access denied');

@@ -115,6 +115,22 @@ export class AcademyService {
     });
   }
 
+  // Preview-only projection for lessons embedded in a public course response.
+  // findCourseById/findCourseBySlug are @Public() -- no auth, no Devoted
+  // check -- so the embedded lesson list must never carry playable content
+  // (videoUrl/audioUrl/content/resources), or anyone could read paid lesson
+  // media straight off a public course page regardless of subscription
+  // status. Full content is only ever served through findAllLessons/
+  // findLessonById, which do run assertLessonAccess.
+  private static readonly LESSON_PREVIEW_SELECT = {
+    id: true,
+    title: true,
+    order: true,
+    type: true,
+    duration: true,
+    status: true,
+  } as const;
+
   async findCourseById(courseId: string) {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
@@ -128,8 +144,9 @@ export class AcademyService {
           },
         },
         lessons: {
-          where: { status: 'PUBLISHED' },
+          where: { status: 'PUBLISHED', deletedAt: null },
           orderBy: { order: 'asc' },
+          select: AcademyService.LESSON_PREVIEW_SELECT,
         },
         _count: {
           select: { lessons: true, enrollments: true },
@@ -157,8 +174,9 @@ export class AcademyService {
           },
         },
         lessons: {
-          where: { status: 'PUBLISHED' },
+          where: { status: 'PUBLISHED', deletedAt: null },
           orderBy: { order: 'asc' },
+          select: AcademyService.LESSON_PREVIEW_SELECT,
         },
         _count: {
           select: { lessons: true, enrollments: true },
@@ -205,7 +223,7 @@ export class AcademyService {
     // Update lesson count cache
     if (updateData.title || updateData.description) {
       const lessonCount = await this.prisma.lesson.count({
-        where: { courseId },
+        where: { courseId, deletedAt: null },
       });
       updateData.lessonCount = lessonCount;
     }
@@ -243,7 +261,7 @@ export class AcademyService {
 
     // Get max order for lessons in this course
     const maxOrderLesson = await this.prisma.lesson.findFirst({
-      where: { courseId },
+      where: { courseId, deletedAt: null },
       orderBy: { order: 'desc' },
     });
 
@@ -266,7 +284,7 @@ export class AcademyService {
 
     // Update course lesson count
     const lessonCount = await this.prisma.lesson.count({
-      where: { courseId },
+      where: { courseId, deletedAt: null },
     });
     await this.prisma.course.update({
       where: { id: courseId },
@@ -276,7 +294,31 @@ export class AcademyService {
     return lesson;
   }
 
-  async findAllLessons(courseId: string) {
+  // V8_MONETISATION_BACKLOG.md V8-203: the frontend already locks Devoted-only
+  // courses in the UI, but nothing server-side ever checked -- a FREE user
+  // could call these two endpoints directly and read full paid lesson
+  // content. Subscription status is read fresh from the DB rather than the
+  // JWT payload (which doesn't carry it), since a subscription can lapse
+  // without a new token being issued. ADMIN and the course's own instructor
+  // are exempt -- they need to see the content regardless of their own
+  // subscription state.
+  private async assertLessonAccess(
+    course: { instructorId: string; isDevoted: boolean },
+    currentUser: CurrentUserPayload
+  ) {
+    if (!course.isDevoted) return;
+    if (currentUser.role === 'ADMIN' || currentUser.id === course.instructorId) return;
+
+    const requester = await this.prisma.user.findUnique({
+      where: { id: currentUser.id },
+      select: { subscriptionStatus: true },
+    });
+    if (requester?.subscriptionStatus !== 'DEVOTED') {
+      throw new ForbiddenException('This course is available to Devoted subscribers only');
+    }
+  }
+
+  async findAllLessons(courseId: string, currentUser: CurrentUserPayload) {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
     });
@@ -285,21 +327,24 @@ export class AcademyService {
       throw new NotFoundException('Course not found');
     }
 
+    await this.assertLessonAccess(course, currentUser);
+
     return this.prisma.lesson.findMany({
-      where: { courseId },
+      where: { courseId, deletedAt: null },
       orderBy: { order: 'asc' },
     });
   }
 
-  async findLessonById(lessonId: string) {
+  async findLessonById(lessonId: string, currentUser: CurrentUserPayload) {
     const lesson = await this.prisma.lesson.findUnique({
-      where: { id: lessonId },
+      where: { id: lessonId, deletedAt: null },
       include: {
         course: {
           select: {
             id: true,
             title: true,
             instructorId: true,
+            isDevoted: true,
           },
         },
       },
@@ -309,12 +354,14 @@ export class AcademyService {
       throw new NotFoundException('Lesson not found');
     }
 
+    await this.assertLessonAccess(lesson.course, currentUser);
+
     return lesson;
   }
 
   async updateLesson(lessonId: string, dto: UpdateLessonDto, currentUser: CurrentUserPayload) {
     const lesson = await this.prisma.lesson.findUnique({
-      where: { id: lessonId },
+      where: { id: lessonId, deletedAt: null },
       include: { course: true },
     });
 
@@ -333,9 +380,12 @@ export class AcademyService {
     });
   }
 
+  // ProBacklog-v1.md item #12 (soft-delete audit): an instructor's own
+  // authored course material -- soft-deleted like DreamEntry/etc; every read
+  // above filters deletedAt.
   async deleteLesson(lessonId: string, currentUser: CurrentUserPayload) {
     const lesson = await this.prisma.lesson.findUnique({
-      where: { id: lessonId },
+      where: { id: lessonId, deletedAt: null },
       include: { course: true },
     });
 
@@ -348,13 +398,14 @@ export class AcademyService {
       throw new ForbiddenException('You can only delete lessons in your own courses');
     }
 
-    await this.prisma.lesson.delete({
+    await this.prisma.lesson.update({
       where: { id: lessonId },
+      data: { deletedAt: new Date() },
     });
 
     // Update course lesson count
     const lessonCount = await this.prisma.lesson.count({
-      where: { courseId: lesson.courseId },
+      where: { courseId: lesson.courseId, deletedAt: null },
     });
     await this.prisma.course.update({
       where: { id: lesson.courseId },
@@ -367,6 +418,27 @@ export class AcademyService {
   // ==================== Enrollments ====================
 
   async createEnrollment(dto: CreateEnrollmentDto, currentUser: CurrentUserPayload) {
+    // V8_MONETISATION_BACKLOG.md V8-203: block enrollment into a Devoted-only
+    // course up front rather than letting a FREE user "enroll" in content
+    // they can never actually view (assertLessonAccess would just reject
+    // them at every lesson afterward) -- checked here, before the shared
+    // scaffold below, since it needs the requester's own subscription state.
+    if (currentUser.role !== 'ADMIN') {
+      const course = await this.prisma.course.findUnique({
+        where: { id: dto.courseId },
+        select: { isDevoted: true, instructorId: true },
+      });
+      if (course?.isDevoted && currentUser.id !== course.instructorId) {
+        const requester = await this.prisma.user.findUnique({
+          where: { id: currentUser.id },
+          select: { subscriptionStatus: true },
+        });
+        if (requester?.subscriptionStatus !== 'DEVOTED') {
+          throw new ForbiddenException('This course is available to Devoted subscribers only');
+        }
+      }
+    }
+
     const enrollment = await verifyEligibilityCheckConflictAndCreate({
       fetchParent: () => this.prisma.course.findUnique({ where: { id: dto.courseId } }),
       parentNotFoundMessage: 'Course not found',
@@ -482,7 +554,7 @@ export class AcademyService {
               },
             },
             lessons: {
-              where: { status: 'PUBLISHED' },
+              where: { status: 'PUBLISHED', deletedAt: null },
               orderBy: { order: 'asc' },
             },
           },
@@ -590,7 +662,7 @@ export class AcademyService {
 
     // Verify lesson exists and belongs to the course
     const lesson = await this.prisma.lesson.findUnique({
-      where: { id: dto.lessonId },
+      where: { id: dto.lessonId, deletedAt: null },
     });
 
     if (!lesson || lesson.courseId !== enrollment.courseId) {
@@ -626,7 +698,7 @@ export class AcademyService {
 
     // Calculate and update progress
     const totalLessons = await this.prisma.lesson.count({
-      where: { courseId: enrollment.courseId, status: 'PUBLISHED' },
+      where: { courseId: enrollment.courseId, status: 'PUBLISHED', deletedAt: null },
     });
 
     const completedLessons = await this.prisma.lessonCompletion.count({

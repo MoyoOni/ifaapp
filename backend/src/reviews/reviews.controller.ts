@@ -5,6 +5,7 @@ import { CreateProductReviewDto } from './dto/create-product-review.dto';
 import { CreateBabalawoReviewDto } from './dto/create-babalawo-review.dto';
 import { CreateCourseReviewDto } from './dto/create-course-review.dto';
 import { ModerateReviewDto } from './dto/moderate-review.dto';
+import { RespondToReviewDto } from './dto/respond-to-review.dto';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 
 @Controller('reviews')
@@ -52,6 +53,50 @@ export class ReviewsController {
   @Get('products/:productId/stats')
   async getProductRatingStats(@Param('productId') productId: string) {
     return this.reviewsService.getProductRatingStats(productId);
+  }
+
+  // ============================================
+  // VENDOR_BACKLOG.md VND-022: Review & Reputation Management
+  // ============================================
+
+  /**
+   * Vendor's public response to a review
+   * PATCH /reviews/products/:reviewId/respond
+   */
+  @Patch('products/:reviewId/respond')
+  @UseGuards(AuthGuard('jwt'))
+  async respondToReview(
+    @Param('reviewId') reviewId: string,
+    @Body() dto: RespondToReviewDto,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.reviewsService.respondToReview(reviewId, dto, currentUser);
+  }
+
+  /**
+   * All reviews across a vendor's products, with per-product breakdown and trend
+   * GET /reviews/vendors/:vendorId
+   */
+  @Get('vendors/:vendorId')
+  @UseGuards(AuthGuard('jwt'))
+  async getVendorReviews(
+    @Param('vendorId') vendorId: string,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.reviewsService.getVendorReviews(vendorId, currentUser);
+  }
+
+  /**
+   * Vendor-triggered manual review request for a delivered order (once only)
+   * POST /reviews/orders/:orderId/request
+   */
+  @Post('orders/:orderId/request')
+  @UseGuards(AuthGuard('jwt'))
+  async requestReviewForOrder(
+    @Param('orderId') orderId: string,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.reviewsService.requestReviewForOrder(orderId, currentUser);
   }
 
   // ============================================

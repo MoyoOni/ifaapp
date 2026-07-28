@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Roles, RolesGuard } from '../auth/guards/roles.guard';
 import { BabalawoClientService } from './babalawo-client.service';
@@ -10,6 +10,15 @@ import { UserRole } from '@ile-ase/common';
 @UseGuards(AuthGuard('jwt'))
 export class BabalawoClientController {
   constructor(private readonly babalawoClientService: BabalawoClientService) {}
+
+  // Must stay registered before any single-segment param routes below --
+  // static literal path, used by "Find & Add Seeker" to search CLIENT users.
+  @Get('search-clients')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.BABALAWO, UserRole.ADMIN)
+  async searchClientsForInvite(@Query('search') search: string) {
+    return this.babalawoClientService.searchClientsForInvite(search);
+  }
 
   @Post(':babalawoId/clients')
   @UseGuards(RolesGuard)

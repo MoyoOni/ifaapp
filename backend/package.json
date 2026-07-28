@@ -19,12 +19,19 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "seed:demo": "tsx prisma/seed-demo.ts",
-    "seed:real-temples": "tsx prisma/seed-real-temples.ts",
-    "seed:forum-categories": "tsx prisma/seed-forum-categories.ts",
-    "seed:forum-covenant": "tsx prisma/seed-forum-covenant.ts",
-    "seed:forum-starter-threads": "tsx prisma/seed-forum-starter-threads.ts",
-    "seed:academy-courses": "tsx prisma/seed-academy-courses.ts"
+    "seed:all": "npx tsx prisma/seed-all.ts",
+    "seed:demo": "npx tsx prisma/seed-demo.ts",
+    "seed:ensure-admin": "npx tsx prisma/seed-ensure-admin.ts",
+    "seed:real-temples": "npx tsx prisma/seed-real-temples.ts",
+    "seed:forum-categories": "npx tsx prisma/seed-forum-categories.ts",
+    "seed:forum-covenant": "npx tsx prisma/seed-forum-covenant.ts",
+    "seed:forum-starter-threads": "npx tsx prisma/seed-forum-starter-threads.ts",
+    "seed:academy-courses": "npx tsx prisma/seed-academy-courses.ts",
+    "seed:grief-circle": "npx tsx prisma/seed-grief-circle.ts",
+    "seed:dream-circle": "npx tsx prisma/seed-dream-circle.ts",
+    "seed:healing-circle": "npx tsx prisma/seed-healing-circle.ts",
+    "seed:cross-cultural-circle": "npx tsx prisma/seed-cross-cultural-circle.ts",
+    "seed:cultural-flag-rules": "npx tsx prisma/seed-cultural-flag-rules.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.972.0",
@@ -120,7 +127,7 @@
     "typescript": "~5.8.2"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "npx tsx prisma/seed-all.ts"
   },
   "jest": {
     "moduleFileExtensions": [

@@ -113,7 +113,7 @@ export class EventsService {
     circleId?: string;
     upcoming?: boolean;
   }) {
-    const where: any = {};
+    const where: any = { deletedAt: null };
 
     if (filters?.published !== undefined) {
       where.published = filters.published;
@@ -195,6 +195,7 @@ export class EventsService {
     const event = await this.prisma.event.findFirst({
       where: {
         OR: [{ id: identifier }, { slug: identifier }],
+        deletedAt: null,
       },
       include: {
         creator: {
@@ -259,7 +260,7 @@ export class EventsService {
    */
   async update(eventId: string, dto: UpdateEventDto, currentUser: CurrentUserPayload) {
     const event = await this.prisma.event.findUnique({
-      where: { id: eventId },
+      where: { id: eventId, deletedAt: null },
     });
 
     if (!event) {
@@ -302,9 +303,14 @@ export class EventsService {
   /**
    * Delete event
    */
+  // ProBacklog-v1.md item #12 (soft-delete audit): a creator's own event
+  // listing, potentially with real registrants already RSVP'd
+  // (EventRegistration rows) -- a hard delete used to destroy both with no
+  // recovery path. Soft-deleted like DreamEntry/etc; every read above
+  // filters deletedAt.
   async delete(eventId: string, currentUser: CurrentUserPayload) {
     const event = await this.prisma.event.findUnique({
-      where: { id: eventId },
+      where: { id: eventId, deletedAt: null },
     });
 
     if (!event) {
@@ -315,8 +321,9 @@ export class EventsService {
       throw new ForbiddenException('Only the event creator can delete the event');
     }
 
-    await this.prisma.event.delete({
+    await this.prisma.event.update({
       where: { id: eventId },
+      data: { deletedAt: new Date() },
     });
 
     return { success: true };
@@ -327,7 +334,7 @@ export class EventsService {
    */
   async registerForEvent(eventId: string, currentUser: CurrentUserPayload, notes?: string) {
     const event = await this.prisma.event.findUnique({
-      where: { id: eventId },
+      where: { id: eventId, deletedAt: null },
     });
 
     if (!event) {
@@ -396,7 +403,7 @@ export class EventsService {
         userId: currentUser.id,
         status: 'REGISTERED',
         notes,
-        paid: event.price === 0, // Free events are automatically marked as paid
+        paid: Number(event.price) === 0, // Free events are automatically marked as paid
       },
     });
   }
@@ -464,7 +471,7 @@ export class EventsService {
     }
 
     const event = await this.prisma.event.findUnique({
-      where: { id: eventId },
+      where: { id: eventId, deletedAt: null },
       include: { circle: true },
     });
 
@@ -523,7 +530,7 @@ export class EventsService {
    */
   async publishEvent(eventId: string, currentUser: CurrentUserPayload) {
     const event = await this.prisma.event.findUnique({
-      where: { id: eventId },
+      where: { id: eventId, deletedAt: null },
     });
 
     if (!event) {
@@ -545,7 +552,7 @@ export class EventsService {
    */
   async getEventAttendees(eventId: string, currentUser?: CurrentUserPayload) {
     const event = await this.prisma.event.findUnique({
-      where: { id: eventId },
+      where: { id: eventId, deletedAt: null },
     });
 
     if (!event) {

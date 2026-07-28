@@ -11,9 +11,18 @@ import { UserModule } from './modules/user/user.module';
 import { AcademyModule } from './academy/academy.module';
 import { AppointmentsModule } from './appointments/appointments.module';
 import { BabalawoClientModule } from './babalawo-client/babalawo-client.module';
+import { ServiceOfferingsModule } from './service-offerings/service-offerings.module';
 import { CacheModule } from './cache/cache.module';
 import { CertificateModule } from './certificates/certificate.module';
 import { CirclesModule } from './circles/circles.module';
+import { MemorialModule } from './memorials/memorial.module';
+import { WellbeingModule } from './wellbeing/wellbeing.module';
+import { DreamModule } from './dreams/dream.module';
+import { HealingModule } from './healing/healing.module';
+import { ComplaintsModule } from './complaints/complaints.module';
+import { UserReportsModule } from './user-reports/user-reports.module';
+import { VendorCommunityModule } from './vendor-community/vendor-community.module';
+import { CommunityMentorshipModule } from './community-mentorship/community-mentorship.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { DisputesModule } from './disputes/disputes.module';
 import { DocumentsModule } from './documents/documents.module';
@@ -71,9 +80,18 @@ import { RequestIdMiddleware } from './middleware/request-id.middleware';
     AcademyModule,
     AppointmentsModule,
     BabalawoClientModule,
+    ServiceOfferingsModule,
     CacheModule,
     CertificateModule,
     CirclesModule,
+    MemorialModule,
+    WellbeingModule,
+    DreamModule,
+    HealingModule,
+    ComplaintsModule,
+    UserReportsModule,
+    VendorCommunityModule,
+    CommunityMentorshipModule,
     DashboardModule,
     DisputesModule,
     DocumentsModule,

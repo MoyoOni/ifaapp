@@ -50,14 +50,14 @@ export class ClientSessionNotesService {
     }
 
     return this.prisma.clientSessionNote.findMany({
-      where: { appointmentId, clientId: currentUser.sub },
+      where: { appointmentId, clientId: currentUser.sub, deletedAt: null },
       orderBy: { createdAt: 'desc' },
     });
   }
 
   async findByClient(currentUser: CurrentUserPayload) {
     return this.prisma.clientSessionNote.findMany({
-      where: { clientId: currentUser.sub },
+      where: { clientId: currentUser.sub, deletedAt: null },
       include: { appointment: { select: { date: true, notes: true } } },
       orderBy: { createdAt: 'desc' },
     });
@@ -65,7 +65,7 @@ export class ClientSessionNotesService {
 
   async findOne(noteId: string, currentUser: CurrentUserPayload) {
     const note = await this.prisma.clientSessionNote.findUnique({
-      where: { id: noteId },
+      where: { id: noteId, deletedAt: null },
       include: { appointment: { select: { date: true, notes: true } } },
     });
 
@@ -77,7 +77,7 @@ export class ClientSessionNotesService {
   }
 
   async update(noteId: string, currentUser: CurrentUserPayload, dto: UpdateClientSessionNoteDto) {
-    const note = await this.prisma.clientSessionNote.findUnique({ where: { id: noteId } });
+    const note = await this.prisma.clientSessionNote.findUnique({ where: { id: noteId, deletedAt: null } });
 
     if (!note || note.clientId !== currentUser.sub) {
       throw new NotFoundException('Note not found');
@@ -86,13 +86,16 @@ export class ClientSessionNotesService {
     return this.prisma.clientSessionNote.update({ where: { id: noteId }, data: dto });
   }
 
+  // ProBacklog-v1.md item #12 (soft-delete audit): a client's own personal
+  // record of a consultation session -- soft-deleted like DreamEntry/etc;
+  // every read above filters deletedAt.
   async remove(noteId: string, currentUser: CurrentUserPayload) {
-    const note = await this.prisma.clientSessionNote.findUnique({ where: { id: noteId } });
+    const note = await this.prisma.clientSessionNote.findUnique({ where: { id: noteId, deletedAt: null } });
 
     if (!note || note.clientId !== currentUser.sub) {
       throw new NotFoundException('Note not found');
     }
 
-    return this.prisma.clientSessionNote.delete({ where: { id: noteId } });
+    return this.prisma.clientSessionNote.update({ where: { id: noteId }, data: { deletedAt: new Date() } });
   }
 }

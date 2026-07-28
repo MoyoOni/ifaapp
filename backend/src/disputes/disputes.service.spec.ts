@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { DisputesService } from './disputes.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletService } from '../wallet/wallet.service';
+import { NotificationService } from '../notifications/notification.service';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
 
 describe('DisputesService', () => {
@@ -22,6 +23,10 @@ describe('DisputesService', () => {
 
   const mockWalletService = {
     refund: jest.fn(),
+  };
+
+  const mockNotificationService = {
+    createNotification: jest.fn().mockResolvedValue(undefined),
   };
 
   const mockCurrentUser = {
@@ -52,6 +57,10 @@ describe('DisputesService', () => {
           provide: WalletService,
           useValue: mockWalletService,
         },
+        {
+          provide: NotificationService,
+          useValue: mockNotificationService,
+        },
       ],
     }).compile();
 
@@ -77,11 +86,14 @@ describe('DisputesService', () => {
         respondentId: dto.respondentId,
         type: dto.type,
         category: dto.category,
+        title: dto.title,
         description: dto.description,
         status: 'OPEN',
         routedTo: 'ADMIN',
         priority: 'MEDIUM',
         createdAt: new Date(),
+        // Real code fetches this via `include` -- matches production shape.
+        complainant: { id: mockCurrentUser.id, name: 'Complainant', yorubaName: null },
       };
 
       mockPrismaService.user.findUnique.mockResolvedValue({ id: dto.respondentId });
@@ -91,6 +103,68 @@ describe('DisputesService', () => {
 
       expect(result).toEqual(mockDispute);
       expect(prisma.dispute.create).toHaveBeenCalled();
+    });
+
+    it('notifies the respondent urgently, by email and push (VENDOR_BACKLOG.md VND-004)', async () => {
+      const dto = {
+        type: 'ORDER' as any,
+        category: 'PRODUCT_QUALITY' as any,
+        respondentId: 'vendor-user-1',
+        title: 'Item never arrived',
+        description: 'Product was damaged',
+      };
+      const mockDispute = {
+        id: 'dispute-1',
+        complainantId: mockCurrentUser.id,
+        respondentId: dto.respondentId,
+        status: 'OPEN',
+        routedTo: 'ADMIN',
+        priority: 'MEDIUM',
+        complainant: { id: mockCurrentUser.id, name: 'Complainant', yorubaName: null },
+      };
+      mockPrismaService.user.findUnique.mockResolvedValue({ id: dto.respondentId });
+      mockPrismaService.dispute.create.mockResolvedValue(mockDispute);
+
+      await service.createDispute(dto as any, mockCurrentUser);
+
+      expect(mockNotificationService.createNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 'vendor-user-1',
+          sendEmail: true,
+          sendPush: true,
+          data: expect.objectContaining({ disputeId: 'dispute-1' }),
+        })
+      );
+    });
+  });
+
+  describe('createFromReturnRequest (VENDOR_BACKLOG.md VND-010)', () => {
+    it('creates an ORDER/PRODUCT_QUALITY dispute routed to admin, carrying the return photos as evidence', async () => {
+      const mockDispute = { id: 'dispute-1', orderId: 'order-1', status: 'OPEN', routedTo: 'ADMIN' };
+      mockPrismaService.dispute.create.mockResolvedValue(mockDispute);
+
+      const result = await service.createFromReturnRequest(
+        'customer-1',
+        'vendor-user-1',
+        'order-1',
+        'Return dispute for order #ORDER123',
+        'We could not agree on a resolution',
+        ['https://example.com/photo.jpg']
+      );
+
+      expect(result).toEqual(mockDispute);
+      expect(prisma.dispute.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          orderId: 'order-1',
+          complainantId: 'customer-1',
+          respondentId: 'vendor-user-1',
+          type: 'ORDER',
+          category: 'PRODUCT_QUALITY',
+          evidence: ['https://example.com/photo.jpg'],
+          status: 'OPEN',
+          routedTo: 'ADMIN',
+        }),
+      });
     });
   });
 

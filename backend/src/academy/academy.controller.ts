@@ -123,16 +123,19 @@ export class AcademyController {
   @ApiParam({ name: 'courseId', description: 'Course ID' })
   @ApiResponse({ status: 200, description: 'Returns a list of lessons' })
   @Get('courses/:courseId/lessons')
-  async findAllLessons(@Param('courseId') courseId: string) {
-    return this.academyService.findAllLessons(courseId);
+  async findAllLessons(
+    @Param('courseId') courseId: string,
+    @CurrentUser() user: CurrentUserPayload
+  ) {
+    return this.academyService.findAllLessons(courseId, user);
   }
 
   @ApiOperation({ summary: 'Get lesson by ID' })
   @ApiParam({ name: 'id', description: 'Lesson ID' })
   @ApiResponse({ status: 200, description: 'Returns the lesson details' })
   @Get('lessons/:id')
-  async findLessonById(@Param('id') id: string) {
-    return this.academyService.findLessonById(id);
+  async findLessonById(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
+    return this.academyService.findLessonById(id, user);
   }
 
   @ApiOperation({ summary: 'Update a lesson' })

@@ -182,8 +182,12 @@ export class GuidancePlansService {
     }
 
     if (dto.approve) {
-      // Calculate total amount (items cost + platform service fee)
-      const totalAmount = guidancePlan.totalCost + guidancePlan.platformServiceFee;
+      // Calculate total amount (items cost + platform service fee).
+      // ProBacklog-v1.md item #15: both fields are now Decimal -- this used
+      // to be a raw `+` between two Prisma.Decimal instances, which doesn't
+      // add them (no native operator overloading) and would have fed a
+      // silently wrong amount straight into the client's escrow hold below.
+      const totalAmount = Number(guidancePlan.totalCost) + Number(guidancePlan.platformServiceFee);
 
       // Create escrow hold for guidance plan payment (includes platform fee)
       const escrow = await this.walletService.createEscrow(
@@ -902,7 +906,7 @@ export class GuidancePlansService {
       throw new ForbiddenException('Access denied');
     }
     return this.prisma.guidancePlanTemplate.findMany({
-      where: { babalawoId },
+      where: { babalawoId, deletedAt: null },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -927,15 +931,20 @@ export class GuidancePlansService {
     });
   }
 
+  // ProBacklog-v1.md item #3: soft-deleted -- a Babalawo's saved guidance
+  // plan template is real authored work product, not disposable.
   async deleteTemplate(templateId: string, currentUser: CurrentUserPayload) {
     const template = await this.prisma.guidancePlanTemplate.findUnique({
-      where: { id: templateId },
+      where: { id: templateId, deletedAt: null },
       select: { babalawoId: true },
     });
     if (!template) throw new NotFoundException('Template not found');
     if (template.babalawoId !== currentUser.id && currentUser.role !== 'ADMIN') {
       throw new ForbiddenException('Access denied');
     }
-    return this.prisma.guidancePlanTemplate.delete({ where: { id: templateId } });
+    return this.prisma.guidancePlanTemplate.update({
+      where: { id: templateId },
+      data: { deletedAt: new Date() },
+    });
   }
 }
