@@ -328,10 +328,31 @@ export class AdminCulturalContentService {
     return this.prisma.sacredCalendarEvent.update({ where: { id }, data });
   }
 
+  /**
+   * ProBacklog-v1.md structural fix: both RitualParticipation.event and
+   * EventProductFeature.event are onDelete:Cascade, so an unguarded delete
+   * here would silently destroy every RSVP/intention and every vendor
+   * feature-request tied to this event. Deactivate (isActive: false)
+   * instead once either exists, same posture as deleteProduct()/deletePromo().
+   */
   async deleteSacredEvent(id: string) {
     const existing = await this.prisma.sacredCalendarEvent.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Sacred event not found');
-    return this.prisma.sacredCalendarEvent.delete({ where: { id } });
+
+    const [participationCount, featureRequestCount] = await Promise.all([
+      this.prisma.ritualParticipation.count({ where: { eventId: id } }),
+      this.prisma.eventProductFeature.count({ where: { eventId: id } }),
+    ]);
+    if (participationCount > 0 || featureRequestCount > 0) {
+      await this.prisma.sacredCalendarEvent.update({ where: { id }, data: { isActive: false } });
+      return {
+        message: 'This event has RSVPs or vendor feature requests, so it was deactivated instead of deleted, to preserve that history.',
+        deactivated: true,
+      };
+    }
+
+    await this.prisma.sacredCalendarEvent.delete({ where: { id } });
+    return { message: 'Sacred event deleted', deactivated: false };
   }
 
   // ==================== COMMUNITY_BACKLOG.md FOR-013: Ritual Participation ====================

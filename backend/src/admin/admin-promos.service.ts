@@ -124,13 +124,27 @@ export class AdminPromosService {
     };
   }
 
+  /**
+   * ProBacklog-v1.md structural fix: PromoRedemption.promoCode is
+   * onDelete:Cascade, so an unguarded delete here would silently destroy
+   * the redemption/discount history for every order that ever used this
+   * code the moment an admin deleted it. Same "preserve history, block the
+   * hard delete" posture as marketplace.service.ts's deleteProduct().
+   */
   async deletePromo(id: string) {
     const promo = await this.prisma.promoCode.findUnique({
       where: { id },
+      include: { _count: { select: { redemptions: true } } },
     });
 
     if (!promo) {
       throw new NotFoundException('Promo code not found');
+    }
+
+    if (promo._count.redemptions > 0) {
+      throw new BadRequestException(
+        'This promo code has been redeemed and cannot be deleted, to preserve order discount history. Deactivate it instead.'
+      );
     }
 
     await this.prisma.promoCode.delete({

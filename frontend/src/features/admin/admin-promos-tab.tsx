@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { Tag, Plus, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { useToast } from '@/shared/components/toast';
 
 const fmt = new Intl.DateTimeFormat('en-NG', { dateStyle: 'medium' });
 
@@ -115,6 +116,7 @@ function typeLabel(type: string, value: number): string {
 
 export function AdminPromosTab() {
   const qc = useQueryClient();
+  const toast = useToast();
   const [showCreate, setShowCreate] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
 
@@ -138,6 +140,12 @@ export function AdminPromosTab() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/admin/promos/${id}`).then((r) => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'promos'] }),
+    onError: (err: any) => {
+      // A promo with redemption history is rejected, not deleted (see
+      // admin-promos.service.ts) -- surface that clearly rather than
+      // failing silently.
+      toast.error(err?.response?.data?.message ?? 'Failed to delete promo code');
+    },
   });
 
   return (

@@ -425,8 +425,14 @@ const SacredCalendarSection: React.FC = () => {
   });
 
   const { mutate: del } = useMutation({
-    mutationFn: (id: string) => api.delete(`/admin/cultural/sacred-events/${id}`),
-    onSuccess: () => { success('Event deleted'); qc.invalidateQueries({ queryKey: ['admin', 'cultural', 'sacred-events'] }); },
+    mutationFn: (id: string) => api.delete(`/admin/cultural/sacred-events/${id}`).then((r) => r.data),
+    onSuccess: (data: { deactivated?: boolean } | undefined) => {
+      // An event with RSVPs/vendor feature requests is deactivated, not
+      // deleted (see admin-cultural-content.service.ts) -- reflect that
+      // instead of always claiming "deleted".
+      success(data?.deactivated ? 'Event had RSVPs or vendor requests, so it was deactivated instead' : 'Event deleted');
+      qc.invalidateQueries({ queryKey: ['admin', 'cultural', 'sacred-events'] });
+    },
     onError: () => toastError('Delete failed'),
   });
 
