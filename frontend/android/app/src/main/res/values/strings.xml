@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Ìlú Àṣẹ</string>
+    <string name="title_activity_main">Ìlú Àṣẹ</string>
+    <string name="package_name">com.ilease.app</string>
+    <string name="custom_url_scheme">com.ilease.app</string>
+</resources>
