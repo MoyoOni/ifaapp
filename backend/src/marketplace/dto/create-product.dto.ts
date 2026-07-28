@@ -7,10 +7,18 @@ import {
   MinLength,
   IsEnum,
   IsUrl,
+  IsDateString,
   Min,
   ArrayMinSize,
+  ArrayMaxSize,
 } from 'class-validator';
-import { ProductType, VerifiedTier } from '@ile-ase/common';
+import { ProductType, ProductStatus, VerifiedTier } from '@ile-ase/common';
+
+// VENDOR_BACKLOG.md VND-008: only these two make sense to hand-pick at
+// creation time. ARCHIVED/OUT_OF_STOCK/SUSPENDED are outcomes of later
+// lifecycle events (vendor archiving, stock depleting, admin moderation),
+// not something you'd ever choose when first listing a product.
+export const CREATABLE_PRODUCT_STATUSES = [ProductStatus.DRAFT, ProductStatus.ACTIVE] as const;
 
 /**
  * Create Product DTO
@@ -78,4 +86,75 @@ export class CreateProductDto {
   @IsBoolean()
   @IsOptional()
   declare taxCompliant?: boolean; // VAT compliance status
+
+  // VENDOR_BACKLOG.md VND-018: Yoruba language listing fields, all optional
+  @IsString()
+  @IsOptional()
+  declare yorubaName?: string;
+
+  @IsString()
+  @IsOptional()
+  declare yorubaDescription?: string;
+
+  @IsString()
+  @IsOptional()
+  declare pronunciationGuide?: string;
+
+  @IsString()
+  @IsOptional()
+  declare traditionalUseContext?: string;
+
+  @IsString()
+  @IsOptional()
+  declare regionOfOrigin?: string;
+
+  // VENDOR_BACKLOG.md VND-023
+  @IsString()
+  @IsOptional()
+  declare seoTitle?: string;
+
+  @IsString()
+  @IsOptional()
+  declare seoDescription?: string;
+
+  @IsArray()
+  @ArrayMaxSize(10)
+  @IsString({ each: true })
+  @IsOptional()
+  declare tags?: string[];
+
+  // VENDOR_BACKLOG.md VND-008
+  @IsEnum(ProductStatus)
+  @IsOptional()
+  declare status?: ProductStatus;
+
+  @IsDateString()
+  @IsOptional()
+  declare scheduledAt?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  declare showComingSoon?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  declare isPreOrder?: boolean;
+
+  @IsDateString()
+  @IsOptional()
+  declare expectedDeliveryDate?: string;
+
+  // VENDOR_BACKLOG.md VND-005
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  declare lowStockThreshold?: number;
+
+  @IsBoolean()
+  @IsOptional()
+  declare isMadeToOrder?: boolean;
+
+  @IsString()
+  @IsOptional()
+  declare madeToOrderProcessingTime?: string;
 }

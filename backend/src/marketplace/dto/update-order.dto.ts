@@ -25,4 +25,9 @@ export class UpdateOrderDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  // VENDOR_BACKLOG.md VND-009: vendor-only, never shown to the customer
+  @IsString()
+  @IsOptional()
+  vendorNotes?: string;
 }
