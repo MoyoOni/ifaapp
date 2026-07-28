@@ -2906,6 +2906,14 @@ model PlatformSettings {
   // revenue forecast API response. Nullable and no default -- null means
   // "an admin hasn't entered a real figure yet", distinct from a real 0.
   platformCostNgn             Decimal? @db.Decimal(14, 2)
+  // ADM-030: last of the "Platform Settings Panel" fields that were
+  // actually missing (feature flags and forum limits deliberately not
+  // added -- see ILUASE_V1_BACKLOG.md's ADM-030 entry for why; welcome
+  // message is already covered by the existing Announcements system).
+  // Enforced by MaintenanceModeMiddleware -- /admin, /auth, /health, and
+  // /metrics stay reachable so admins can still work and infra monitoring
+  // doesn't false-alarm; everything else 503s.
+  maintenanceMode             Boolean  @default(false)
   updatedAt                   DateTime @updatedAt
   updatedBy                   String?
 }

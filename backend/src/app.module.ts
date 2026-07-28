@@ -57,6 +57,7 @@ import { PractitionerAnalyticsModule } from './practitioners/practitioner-analyt
 import { SentryInitializerService } from './sentry/sentry-initializer.service';
 import { OralHistorySeedService } from './seeding/oral-history.seed.service';
 import { RequestIdMiddleware } from './middleware/request-id.middleware';
+import { MaintenanceModeMiddleware } from './middleware/maintenance-mode.middleware';
 
 @Module({
   imports: [
@@ -139,6 +140,6 @@ import { RequestIdMiddleware } from './middleware/request-id.middleware';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(RequestIdMiddleware).forRoutes('*'); // Removed SentryMiddleware
+    consumer.apply(RequestIdMiddleware, MaintenanceModeMiddleware).forRoutes('*'); // Removed SentryMiddleware
   }
 }
