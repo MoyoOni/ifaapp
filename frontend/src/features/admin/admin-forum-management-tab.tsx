@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     Hash, Pin, Lock, Unlock, Plus, Loader2, CheckCircle2,
     MessageSquare, LayoutList, Archive, ChevronUp, ChevronDown,
-    Edit3, Trash2, Move, Merge
+    Edit3, Trash2, Move, Merge, Star
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/shared/components/toast';
@@ -35,6 +35,7 @@ interface ForumThread {
     status: string;
     isPinned: boolean;
     isLocked: boolean;
+    isFeatured: boolean;
     createdAt: string;
     categoryId: string;
     category: { id: string; name: string };
@@ -59,6 +60,7 @@ const AdminForumManagementTab: React.FC = () => {
     const [deletingCategory, setDeletingCategory] = useState<{ category: ForumCategory; confirmText: string } | null>(null);
     const [movingThread, setMovingThread] = useState<{ thread: ForumThread; targetCategoryId?: string } | null>(null);
     const [mergingThreads, setMergingThreads] = useState<{ primaryId?: string; secondaryId?: string } | null>(null);
+    const [deletingThread, setDeletingThread] = useState<{ thread: ForumThread; reason: string } | null>(null);
     const toast = useToast();
     const qc = useQueryClient();
 
@@ -198,6 +200,37 @@ const AdminForumManagementTab: React.FC = () => {
         },
         onError: (err: any) => {
             toast.error(err?.response?.data?.message ?? 'Failed to merge threads (they must be in the same category)');
+        },
+    });
+
+    // ADM-004: backend has had featureThread()/deleteThreadForAdmin() since
+    // the forum admin actions were built, but this tab never called them --
+    // ILUASE_V1_BACKLOG.md flagged it as the one remaining ADM-004 gap.
+    const { mutate: featureThread, isPending: featuring } = useMutation({
+        mutationFn: async ({ threadId, isFeatured }: { threadId: string; isFeatured: boolean }) => {
+            await api.patch(`/forum/admin/threads/${threadId}/feature`, { isFeatured });
+        },
+        onSuccess: (_, { isFeatured }) => {
+            toast.success(isFeatured ? 'Thread featured' : 'Thread unfeatured');
+            qc.invalidateQueries({ queryKey: ['admin-forum-threads'] });
+        },
+        onError: (err: any) => {
+            toast.error(err?.response?.data?.message ?? 'Failed to feature thread');
+        },
+    });
+
+    const { mutate: deleteThread, isPending: deletingThreadOp } = useMutation({
+        mutationFn: async ({ threadId, reason }: { threadId: string; reason: string }) => {
+            await api.delete(`/forum/admin/threads/${threadId}`, { data: { reason: reason.trim() || undefined } });
+        },
+        onSuccess: () => {
+            toast.success('Thread deleted');
+            setDeletingThread(null);
+            qc.invalidateQueries({ queryKey: ['admin-forum-threads'] });
+            qc.invalidateQueries({ queryKey: ['admin-forum-management-stats'] });
+        },
+        onError: (err: any) => {
+            toast.error(err?.response?.data?.message ?? 'Failed to delete thread');
         },
     });
 
@@ -388,7 +421,12 @@ const AdminForumManagementTab: React.FC = () => {
                                                             <Lock size={10} /> Locked
                                                         </span>
                                                     )}
-                                                    {!thread.isPinned && !thread.isLocked && (
+                                                    {thread.isFeatured && (
+                                                        <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 font-medium">
+                                                            <Star size={10} /> Featured
+                                                        </span>
+                                                    )}
+                                                    {!thread.isPinned && !thread.isLocked && !thread.isFeatured && (
                                                         <span className="text-xs text-muted-foreground">Open</span>
                                                     )}
                                                 </div>
@@ -423,6 +461,16 @@ const AdminForumManagementTab: React.FC = () => {
                                                     >
                                                         <Move size={11} /> Move
                                                     </button>
+                                                    <button
+                                                        type="button"
+                                                        disabled={featuring}
+                                                        onClick={() => featureThread({ threadId: thread.id, isFeatured: !thread.isFeatured })}
+                                                        className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg border border-border hover:bg-muted transition-colors disabled:opacity-50"
+                                                        title={thread.isFeatured ? 'Unfeature' : 'Feature'}
+                                                    >
+                                                        <Star size={11} />
+                                                        {thread.isFeatured ? 'Unfeature' : 'Feature'}
+                                                    </button>
                                                     {thread.status === 'PENDING' && (
                                                         <button
                                                             type="button"
@@ -433,6 +481,14 @@ const AdminForumManagementTab: React.FC = () => {
                                                             <CheckCircle2 size={11} /> Approve
                                                         </button>
                                                     )}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setDeletingThread({ thread, reason: '' })}
+                                                        className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg border border-destructive/40 text-destructive hover:bg-destructive/10 transition-colors"
+                                                        title="Delete thread"
+                                                    >
+                                                        <Trash2 size={11} /> Delete
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -642,6 +698,44 @@ const AdminForumManagementTab: React.FC = () => {
                                 className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold rounded-xl bg-destructive text-white hover:bg-destructive/90 transition-colors disabled:opacity-50"
                             >
                                 {mergingThreadsOp ? <Loader2 size={14} className="animate-spin" /> : 'Merge Threads'}
+                            </button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            )}
+
+            {/* Delete Thread Modal (ADM-004: delete-with-reason) */}
+            {deletingThread && (
+                <Dialog open={!!deletingThread} onOpenChange={(open) => !open && setDeletingThread(null)}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Delete Thread</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                            <p className="text-sm">
+                                Delete "<strong>{deletingThread.thread.title}</strong>"? The thread and its posts are removed from public view; the reason below is logged for the record.
+                            </p>
+                            <div>
+                                <label className="text-sm font-medium">Reason (optional)</label>
+                                <Textarea
+                                    value={deletingThread.reason}
+                                    onChange={(e) => setDeletingThread({ ...deletingThread, reason: e.target.value })}
+                                    rows={3}
+                                    placeholder="e.g. violates community guidelines, spam, duplicate of another thread"
+                                />
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <button type="button" onClick={() => setDeletingThread(null)} className="px-4 py-2 text-sm font-medium rounded-xl border border-border hover:bg-muted transition-colors">
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                disabled={deletingThreadOp}
+                                onClick={() => deleteThread({ threadId: deletingThread.thread.id, reason: deletingThread.reason })}
+                                className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold rounded-xl bg-destructive text-white hover:bg-destructive/90 transition-colors disabled:opacity-50"
+                            >
+                                {deletingThreadOp ? <Loader2 size={14} className="animate-spin" /> : 'Delete Thread'}
                             </button>
                         </DialogFooter>
                     </DialogContent>
