@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { X, Loader2, Wand2 } from 'lucide-react';
 import { getTemplatesForCategory, ForumTemplate } from './forum-templates';
 import api from '@/lib/api';
 import { useToast } from '@/shared/components/toast';
+import { useAuth } from '@/shared/hooks/use-auth';
+import { UserRole } from '@common';
+import YorubaDiacriticToolbar from '@/shared/components/yoruba-diacritic-toolbar';
 
 interface ForumCategory {
   id: string;
@@ -60,6 +63,8 @@ interface CreateThreadFormProps {
 const SUGGESTED_TAGS = [
   'question', 'discussion', 'resource', 'dream', 'odù',
   'herbs', 'events', 'language', 'personal', 'elder-wisdom', 'beginner', 'oral-history',
+  // COMMUNITY_BACKLOG.md FOR-Q3: "Ask an Elder" question categories
+  'spiritual', 'cultural', 'practical', 'historical',
 ];
 
 const CreateThreadForm: React.FC<CreateThreadFormProps> = ({
@@ -70,10 +75,16 @@ const CreateThreadForm: React.FC<CreateThreadFormProps> = ({
   const [searchParams] = useSearchParams();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const contentRef = useRef<HTMLTextAreaElement>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState(categoryId || '');
   const [activeTemplate, setActiveTemplate] = useState<ForumTemplate | null>(null);
   const [isSacred, setIsSacred] = useState(false);
+  // COMMUNITY_BACKLOG.md FOR-014: "Elder-led discussion series and teachings"
+  const [isTeachingSeries, setIsTeachingSeries] = useState(false);
+  const [seriesName, setSeriesName] = useState('');
+  const { user } = useAuth();
+  const isBabalawo = user?.role === UserRole.BABALAWO || user?.role === UserRole.ADMIN;
   const isCircleSuggestion = searchParams.get('suggest') === 'circle';
 
   // Pre-fill circle suggestion template if applicable
@@ -119,7 +130,15 @@ Why this circle is needed: [Explain why this circle would benefit the community]
   };
 
   const createThreadMutation = useMutation({
-    mutationFn: async (data: { categoryId: string; title: string; content: string; tags: string[]; isSacred: boolean }) => {
+    mutationFn: async (data: {
+      categoryId: string;
+      title: string;
+      content: string;
+      tags: string[];
+      isSacred: boolean;
+      isTeachingSeries?: boolean;
+      seriesName?: string;
+    }) => {
       const response = await api.post('/forum/threads', data);
       return response.data;
     },
@@ -167,6 +186,8 @@ Why this circle is needed: [Explain why this circle would benefit the community]
       content: content.trim(),
       tags: selectedTags,
       isSacred,
+      isTeachingSeries: isBabalawo ? isTeachingSeries : undefined,
+      seriesName: isBabalawo && isTeachingSeries ? seriesName.trim() || undefined : undefined,
     });
   };
 
@@ -280,7 +301,9 @@ Why this circle is needed: [Explain why this circle would benefit the community]
             <label className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
               Initial Post
             </label>
+            <YorubaDiacriticToolbar textareaRef={contentRef} value={content} onChange={setContent} />
             <textarea
+              ref={contentRef}
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Share your thoughts... (Yoruba diacritics supported: Àṣẹ, Babaláwo)"
@@ -334,6 +357,36 @@ Why this circle is needed: [Explain why this circle would benefit the community]
               </div>
             </label>
           </div>
+
+          {/* COMMUNITY_BACKLOG.md FOR-014: Elder-led teaching series */}
+          {isBabalawo && (
+            <div className="bg-highlight/5 border border-highlight/20 rounded-xl p-4 space-y-2">
+              <label className="flex items-start gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={isTeachingSeries}
+                  onChange={(e) => setIsTeachingSeries(e.target.checked)}
+                  className="mt-0.5 rounded border-border accent-highlight"
+                />
+                <div className="flex-1">
+                  <span className="text-sm font-semibold text-highlight">Part of a teaching series</span>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Formally designate this as an elder-led teaching, distinct from a regular discussion.
+                  </p>
+                </div>
+              </label>
+              {isTeachingSeries && (
+                <input
+                  type="text"
+                  value={seriesName}
+                  onChange={(e) => setSeriesName(e.target.value)}
+                  placeholder="Series name (e.g. Foundations of Odù, Part 1)"
+                  maxLength={100}
+                  className="w-full bg-muted/50 border border-border rounded-lg p-2.5 text-sm text-white placeholder-muted focus:outline-none focus:ring-2 focus:ring-highlight"
+                />
+              )}
+            </div>
+          )}
 
           {/* Cultural Teachings Notice */}
           {isTeachingsCategory && (

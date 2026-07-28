@@ -37,4 +37,15 @@ export class CreateThreadDto {
   @IsBoolean()
   @IsOptional()
   declare isSacred?: boolean; // Sacred Knowledge tag
+
+  // COMMUNITY_BACKLOG.md FOR-014: "Elder-led discussion series and
+  // teachings" -- Babalawo/Admin only, enforced in forum.service.ts.
+  @IsBoolean()
+  @IsOptional()
+  declare isTeachingSeries?: boolean;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  declare seriesName?: string;
 }

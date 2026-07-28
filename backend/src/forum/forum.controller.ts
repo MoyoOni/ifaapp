@@ -88,12 +88,36 @@ export class ForumController {
     return this.forumService.findCategoryBySlug(slug);
   }
 
+  // COMMUNITY_BACKLOG.md FOR-Q3: "Ask an Elder"
+  @Public()
+  @Get('elders-answering')
+  async findEldersAnswering() {
+    return this.forumService.findEldersAnswering();
+  }
+
   @Post('categories')
   async createCategory(
     @Body() dto: CreateCategoryDto,
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
     return this.forumService.createCategory(dto, currentUser);
+  }
+
+  // ==================== COMMUNITY_BACKLOG.md FOR-004: Learning Pathways ====================
+
+  @Public()
+  @Get('series')
+  async getThreadSeries() {
+    return this.forumService.getThreadSeries();
+  }
+
+  @Public()
+  @Get('series/:seriesName')
+  async getThreadsInSeries(
+    @Param('seriesName') seriesName: string,
+    @CurrentUser() currentUser?: CurrentUserPayload
+  ) {
+    return this.forumService.getThreadsInSeries(seriesName, currentUser ?? null);
   }
 
   // ==================== Threads ====================
@@ -483,8 +507,11 @@ export class ForumController {
   @Patch('admin/crisis-signals/:postId/clear')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
-  async clearCrisisSignal(@Param('postId') postId: string) {
-    return this.forumService.clearCrisisSignal(postId);
+  async clearCrisisSignal(
+    @Param('postId') postId: string,
+    @Query('source') source?: 'forum' | 'circle'
+  ) {
+    return this.forumService.clearCrisisSignal(postId, source || 'forum');
   }
 
   @Post('live-sessions')

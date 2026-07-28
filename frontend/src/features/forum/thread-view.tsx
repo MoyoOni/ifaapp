@@ -10,6 +10,7 @@ import ForumRoleBadge from './forum-role-badge';
 import { useConfirm } from '@/hooks/use-confirm';
 import { getSocket } from '@/lib/socket';
 import { CulturalOrientationGate } from './cultural-orientation-gate';
+import YorubaDiacriticToolbar from '@/shared/components/yoruba-diacritic-toolbar';
 
 interface ForumPost {
   id: string;
@@ -908,6 +909,8 @@ const ThreadView: React.FC<ThreadViewProps> = ({ threadId, onBack }) => {
               <label className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
                 Your Reply
               </label>
+              {/* COMMUNITY_BACKLOG.md FOR-008 */}
+              <YorubaDiacriticToolbar textareaRef={textareaRef} value={replyText} onChange={setReplyText} />
               <div className="relative">
                 <textarea
                   ref={textareaRef}

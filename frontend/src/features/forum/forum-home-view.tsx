@@ -1,11 +1,13 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Lock, Pin, X, Flame, MessageSquare, HelpCircle, BookOpen } from 'lucide-react';
+import { Search, Plus, Lock, Pin, X, Flame, MessageSquare, HelpCircle, BookOpen, GraduationCap, HandHeart } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import api from '@/lib/api';
 import CreateThreadForm from './create-thread-form';
 import ForumRoleBadge from './forum-role-badge';
+import AskAnElderBanner from './ask-an-elder-banner';
+import DailyYorubaWordBanner from './daily-yoruba-word-banner';
 import { useAuth } from '@/shared/hooks/use-auth';
 
 interface ForumCategory {
@@ -28,6 +30,9 @@ interface ForumThread {
   status: string;
   isPinned: boolean;
   isLocked: boolean;
+  // COMMUNITY_BACKLOG.md FOR-014
+  isTeachingSeries?: boolean;
+  seriesName?: string;
   viewCount: number;
   postCount: number;
   lastPostAt?: string;
@@ -204,6 +209,7 @@ const ForumHomeView: React.FC<ForumHomeViewProps> = ({ onSelectThread, onCreateT
   const tourCreateRef = useRef<HTMLButtonElement>(null);
 
   const isBabalawo = user?.role === 'BABALAWO' || user?.role === 'ADMIN';
+  const isVendor = user?.role === 'VENDOR' || user?.role === 'ADMIN';
 
   // Fetch categories
   const { data: rawCategories = [] } = useQuery<ForumCategory[]>({
@@ -214,9 +220,12 @@ const ForumHomeView: React.FC<ForumHomeViewProps> = ({ onSelectThread, onCreateT
     },
   });
 
-  // Hide Practitioners' Inner Circle from non-BABALAWO users
+  // Hide Practitioners' Inner Circle from non-BABALAWO users, and Vendor
+  // Circle (VENDOR_BACKLOG.md VND-019) from non-vendors
   const categories = rawCategories.filter(
-    (c) => c.slug !== 'practitioners-inner-circle' || isBabalawo,
+    (c) =>
+      (c.slug !== 'practitioners-inner-circle' || isBabalawo) &&
+      (c.slug !== 'vendor-circle' || isVendor),
   );
 
   // Fetch trending threads
@@ -419,6 +428,12 @@ const ForumHomeView: React.FC<ForumHomeViewProps> = ({ onSelectThread, onCreateT
 
         {/* Threads Feed */}
         <div className="lg:w-3/5 space-y-6">
+
+          {/* COMMUNITY_BACKLOG.md FOR-Q3: "Ask an Elder" */}
+          {selectedCategoryObj?.slug === 'seeker-questions' && <AskAnElderBanner />}
+
+          {/* COMMUNITY_BACKLOG.md FOR-008: Daily Yoruba Word */}
+          {selectedCategoryObj?.slug === 'yoruba-language-culture' && <DailyYorubaWordBanner />}
 
           {/* 🔥 Hot Right Now — trending threads */}
           {trendingThreads.length > 0 && (
@@ -639,6 +654,12 @@ const ForumHomeView: React.FC<ForumHomeViewProps> = ({ onSelectThread, onCreateT
                           <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-medium shrink-0">
                             {thread.category.name}
                           </span>
+                          {/* COMMUNITY_BACKLOG.md FOR-014 */}
+                          {thread.isTeachingSeries && (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-medium shrink-0">
+                              📖 {thread.seriesName || 'Teaching Series'}
+                            </span>
+                          )}
                         </div>
 
                         {/* Excerpt */}
@@ -720,6 +741,26 @@ const ForumHomeView: React.FC<ForumHomeViewProps> = ({ onSelectThread, onCreateT
                 <span className="font-bold text-emerald-700 dark:text-emerald-300">{totalThreadCount}</span>
               </div>
             </div>
+          </div>
+
+          {/* COMMUNITY_BACKLOG.md FOR-004: Cultural Learning Pathways entry points */}
+          <div className="bg-card rounded-2xl p-4 border border-emerald-100 shadow-sm space-y-1">
+            <button
+              type="button"
+              onClick={() => navigate('/forum/pathways')}
+              className="w-full flex items-center gap-2 px-2 py-2 rounded-xl text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors text-sm font-semibold text-emerald-700 dark:text-emerald-300"
+            >
+              <GraduationCap size={16} className="text-emerald-400 shrink-0" />
+              Learning Pathways
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/community/mentorship')}
+              className="w-full flex items-center gap-2 px-2 py-2 rounded-xl text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors text-sm font-semibold text-emerald-700 dark:text-emerald-300"
+            >
+              <HandHeart size={16} className="text-emerald-400 shrink-0" />
+              Find a Mentor
+            </button>
           </div>
 
           {activeMembers.length > 0 && (

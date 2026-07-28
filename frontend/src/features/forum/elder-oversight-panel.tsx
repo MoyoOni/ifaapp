@@ -169,7 +169,7 @@ const ElderOversightPanel: React.FC = () => {
                 )}
                 <button
                   type="button"
-                  onClick={() => flag.post?.threadId && navigate(`/forum/thread/${flag.post.threadId}`)}
+                  onClick={() => flag.post?.threadId && navigate(`/forum/${flag.post.threadId}`)}
                   className="flex items-center gap-1.5 text-xs text-highlight font-semibold hover:underline"
                 >
                   <Eye size={13} /> View post in thread
@@ -254,7 +254,7 @@ const ElderOversightPanel: React.FC = () => {
                   </p>
                   <button
                     type="button"
-                    onClick={() => reaction.post?.threadId && navigate(`/forum/thread/${reaction.post.threadId}`)}
+                    onClick={() => reaction.post?.threadId && navigate(`/forum/${reaction.post.threadId}`)}
                     className="flex items-center gap-1.5 text-xs text-highlight font-semibold hover:underline mt-2"
                   >
                     <ChevronRight size={13} /> View in thread

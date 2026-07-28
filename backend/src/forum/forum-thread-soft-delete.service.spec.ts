@@ -6,6 +6,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MessagingGateway } from '../messaging/messaging.gateway';
 import { NotificationService } from '../notifications/notification.service';
 import { EmailService } from '../notifications/email.service';
+import { CrisisDetectionService } from '../shared/services/crisis-detection.service';
+import { UsersService } from '../users/users.service';
 
 // P0-03: covers the three ForumThread hard-delete call sites that were fixed
 // to match the existing deleteThread() soft-delete convention (status:
@@ -49,6 +51,8 @@ describe('ForumService — thread soft delete (P0-03)', () => {
         { provide: MessagingGateway, useValue: {} },
         { provide: NotificationService, useValue: { createNotification: jest.fn() } },
         { provide: EmailService, useValue: {} },
+        { provide: CrisisDetectionService, useValue: { detect: jest.fn().mockReturnValue(false) } },
+        { provide: UsersService, useValue: { awardXP: jest.fn() } },
       ],
     }).compile();
 

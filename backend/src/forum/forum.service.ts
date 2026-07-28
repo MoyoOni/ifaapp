@@ -14,7 +14,7 @@ import { CreatePostDto } from './dto/create-post.dto';
 import { UpdateThreadDto } from './dto/update-thread.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
-import { ThreadStatus, PostStatus } from '@ile-ase/common';
+import { ThreadStatus, PostStatus, CourseStatus } from '@ile-ase/common';
 import { MessagingGateway } from '../messaging/messaging.gateway';
 import {
   NotificationService,
@@ -22,6 +22,8 @@ import {
   NotificationCategory,
 } from '../notifications/notification.service';
 import { EmailService } from '../notifications/email.service';
+import { CrisisDetectionService } from '../shared/services/crisis-detection.service';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class ForumService {
@@ -32,27 +34,12 @@ export class ForumService {
     @Inject(forwardRef(() => MessagingGateway))
     private readonly messagingGateway: MessagingGateway,
     private readonly notificationService: NotificationService,
-    private readonly emailService: EmailService
+    private readonly emailService: EmailService,
+    private readonly crisisDetection: CrisisDetectionService,
+    private readonly usersService: UsersService
   ) {}
 
   // ==================== Categories ====================
-
-  // F9-602: Crisis keyword list for mental health detection
-  private readonly CRISIS_KEYWORDS = [
-    'suicide',
-    'kill myself',
-    'end my life',
-    'hurt myself',
-    "can't go on",
-    'want to die',
-    'harm myself',
-    'no reason to live',
-  ];
-
-  private detectCrisis(content: string): boolean {
-    const lower = content.toLowerCase();
-    return this.CRISIS_KEYWORDS.some((kw) => lower.includes(kw));
-  }
 
   private isSameUtcDay(a: Date, b: Date): boolean {
     return (
@@ -98,7 +85,9 @@ export class ForumService {
           lastContributionDate: now,
         },
       })
-      .catch((err) => this.logger.error(`Failed to update contribution streak for user ${userId}`, err));
+      .catch((err) =>
+        this.logger.error(`Failed to update contribution streak for user ${userId}`, err)
+      );
   }
 
   private async isFirstResponderReply(
@@ -122,7 +111,9 @@ export class ForumService {
 
   async findAllCategories() {
     // Lazily ensure this week's Odù of the Week thread exists
-    this.ensureOduOfWeek().catch((err) => this.logger.error('Failed to ensure Odù of the Week thread', err));
+    this.ensureOduOfWeek().catch((err) =>
+      this.logger.error('Failed to ensure Odù of the Week thread', err)
+    );
 
     return this.prisma.forumCategory.findMany({
       where: { isActive: true },
@@ -145,6 +136,17 @@ export class ForumService {
     }
 
     return category;
+  }
+
+  // COMMUNITY_BACKLOG.md FOR-Q3: "Ask an Elder" -- opted-in Babalawos shown
+  // as social proof / response-time context on the Seeker Questions category
+  async findEldersAnswering() {
+    return this.prisma.user.findMany({
+      where: { role: 'BABALAWO', answersElderQuestions: true },
+      select: { id: true, name: true, yorubaName: true, avatar: true, trustScore: true },
+      orderBy: { trustScore: 'desc' },
+      take: 20,
+    });
   }
 
   async createCategory(dto: CreateCategoryDto, currentUser: CurrentUserPayload) {
@@ -461,12 +463,34 @@ Share your reflections, questions, and experiences below. All levels welcome.
       throw new BadRequestException('Cannot create thread in inactive category');
     }
 
+    // VENDOR_BACKLOG.md VND-019: Vendor Circle is vendor-only. Unlike
+    // Practitioners' Inner Circle (frontend-hidden only, no backend check --
+    // a pre-existing gap, not fixed here), this one is actually enforced,
+    // since it can carry vendor pricing/sourcing detail.
+    if (
+      category.slug === 'vendor-circle' &&
+      currentUser.role !== 'VENDOR' &&
+      currentUser.role !== 'ADMIN'
+    ) {
+      throw new ForbiddenException('Vendor Circle is open to approved vendors only');
+    }
+
     // Check if teachings category - requires approval
     const isApproved = category.isTeachings
       ? false
       : dto.isApproved !== undefined
         ? dto.isApproved
         : true;
+
+    // COMMUNITY_BACKLOG.md FOR-014: "Elder-led discussion series and
+    // teachings" -- a formal designation, Babalawo/Admin only, distinct from
+    // a thread simply being authored by a Babalawo (already visible via the
+    // existing author-role badge).
+    if (dto.isTeachingSeries && currentUser.role !== 'BABALAWO' && currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException(
+        'Only Babalawo can designate a thread as part of a teaching series'
+      );
+    }
 
     // Create thread
     const thread = await this.prisma.forumThread.create({
@@ -479,6 +503,8 @@ Share your reflections, questions, and experiences below. All levels welcome.
         status: ThreadStatus.ACTIVE,
         isApproved,
         isSacred: dto.isSacred ?? false,
+        isTeachingSeries: dto.isTeachingSeries ?? false,
+        seriesName: dto.isTeachingSeries ? dto.seriesName : undefined,
         postCount: 1, // First post is the thread content
       },
       include: {
@@ -503,7 +529,7 @@ Share your reflections, questions, and experiences below. All levels welcome.
     });
 
     // Create first post (thread content)
-    await this.prisma.forumPost.create({
+    const firstPost = await this.prisma.forumPost.create({
       data: {
         threadId: thread.id,
         authorId: currentUser.id,
@@ -543,12 +569,30 @@ Share your reflections, questions, and experiences below. All levels welcome.
     }
 
     // F9-602: Crisis detection in thread content
-    const crisisDetected = this.detectCrisis(dto.content);
+    // Bug fix (COMMUNITY_BACKLOG.md FOR-002): the reply path already persists
+    // hasCrisisSignal on the post it flags (see the reply-creation method
+    // below), but this thread-creation path only fired the one-time admin
+    // notification and never updated the post itself -- meaning a missed
+    // notification meant the flag was gone for good, with nothing left in the
+    // durable admin/forum/admin/crisis-signals queue to catch up on later.
+    // A thread's very first post (someone opening a new thread to express
+    // distress) is arguably the single most likely real-world case this
+    // detector needs to catch, so this silently dropped the most important
+    // half of the feature.
+    const crisisDetected = this.crisisDetection.detect(dto.content);
     if (crisisDetected) {
+      await this.prisma.forumPost
+        .update({
+          where: { id: firstPost.id },
+          data: { hasCrisisSignal: true },
+        })
+        .catch((err) =>
+          this.logger.error(`Failed to flag crisis signal on post ${firstPost.id}`, err)
+        );
       this.notifyAdmins(
         'Thread flagged for welfare review',
         `A newly created thread may contain a distress signal. Thread: "${thread.title}"`,
-        { threadId: thread.id }
+        { threadId: thread.id, postId: firstPost.id }
       );
     }
 
@@ -917,6 +961,15 @@ Share your reflections, questions, and experiences below. All levels welcome.
       }
     }
 
+    // VENDOR_BACKLOG.md VND-019: same vendor-only gate as createThread
+    if (
+      thread.category?.slug === 'vendor-circle' &&
+      currentUser.role !== 'VENDOR' &&
+      currentUser.role !== 'ADMIN'
+    ) {
+      throw new ForbiddenException('Vendor Circle is open to approved vendors only');
+    }
+
     // F9-902: Cultural Onboarding Gate — check BEFORE creating post
     const restrictedCategories = ['ifa-divination-studies', 'practitioners-inner-circle'];
     if (restrictedCategories.includes(thread.category?.slug ?? '')) {
@@ -991,13 +1044,19 @@ Share your reflections, questions, and experiences below. All levels welcome.
     );
     if (thread.postCount + 1 === 20) {
       this.incrementXP(thread.authorId, 25).catch((err) =>
-        this.logger.error(`Failed to increment XP for user ${thread.authorId} (20-reply bonus)`, err)
+        this.logger.error(
+          `Failed to increment XP for user ${thread.authorId} (20-reply bonus)`,
+          err
+        )
       );
     }
     // +15 bonus for thread author when thread hits 100 views
     if (thread.viewCount >= 100 && thread.postCount + 1 === 1) {
       this.incrementXP(thread.authorId, 15).catch((err) =>
-        this.logger.error(`Failed to increment XP for user ${thread.authorId} (100-view bonus)`, err)
+        this.logger.error(
+          `Failed to increment XP for user ${thread.authorId} (100-view bonus)`,
+          err
+        )
       );
     }
 
@@ -1007,7 +1066,7 @@ Share your reflections, questions, and experiences below. All levels welcome.
     );
 
     // F9-602: Crisis detection
-    const crisisDetected = this.detectCrisis(dto.content);
+    const crisisDetected = this.crisisDetection.detect(dto.content);
     if (crisisDetected) {
       await this.prisma.forumPost
         .update({
@@ -1048,34 +1107,17 @@ Share your reflections, questions, and experiences below. All levels welcome.
 
   // ==================== XP & Cultural Level ====================
 
-  private readonly XP_THRESHOLDS: Array<{ level: string; xp: number }> = [
-    { level: 'Omo Awo', xp: 5000 },
-    { level: 'Aremo', xp: 1500 },
-    { level: 'Oye', xp: 500 },
-    { level: 'Akeko', xp: 100 },
-    { level: 'Omo Ilé', xp: 0 },
-  ];
-
+  // V8-305: this used to be a second, independent XP system -- own
+  // `rankXP { increment }` write, own culturalLevel threshold table (with
+  // different level *names* than users.service.ts's: "Omo Awo"/"Aremo"/
+  // "Oye"/"Akeko" here vs. "Awo Agba"/"Awo"/"Akọ̀wé"/"Ẹ̀kọ́ Jinlẹ̀"/"Ẹ̀kọ́"/
+  // "Ọmọ Ilé Tuntun" there), and critically no Devoted 2× multiplier at all.
+  // Both wrote the same `user.culturalLevel` field, so whichever XP source
+  // fired most recently silently overwrote the other's level name on the
+  // user's profile. Delegating to the one real implementation
+  // (UsersService.awardXP) fixes both problems at once.
   private async incrementXP(userId: string, amount: number) {
-    const updated = await this.prisma.user
-      .update({
-        where: { id: userId },
-        data: { rankXP: { increment: amount } },
-        select: { rankXP: true, culturalLevel: true },
-      })
-      .catch(() => null);
-
-    if (!updated) return;
-
-    const newLevel = this.XP_THRESHOLDS.find((t) => updated.rankXP >= t.xp)?.level ?? 'Omo Ilé';
-    if (newLevel !== updated.culturalLevel) {
-      await this.prisma.user
-        .update({
-          where: { id: userId },
-          data: { culturalLevel: newLevel },
-        })
-        .catch((err) => this.logger.error(`Failed to update cultural level for user ${userId}`, err));
-    }
+    await this.usersService.awardXP(userId, amount);
   }
 
   private async sendForumNotifications(
@@ -1109,7 +1151,9 @@ Share your reflections, questions, and experiences below. All levels welcome.
           message: `${displayName} replied to "${thread.title}"`,
           data: { threadId: thread.id, postId: post.id },
         })
-        .catch((err) => this.logger.error(`Failed to send reply notification to user ${userId}`, err));
+        .catch((err) =>
+          this.logger.error(`Failed to send reply notification to user ${userId}`, err)
+        );
     });
 
     // ── F9-302: Parse @mentions ───────────────────────────────────────────────
@@ -1138,7 +1182,9 @@ Share your reflections, questions, and experiences below. All levels welcome.
             message: `${displayName} mentioned you in "${thread.title}"`,
             data: { threadId: thread.id, postId: post.id },
           })
-          .catch((err) => this.logger.error(`Failed to send mention notification to user ${userId}`, err));
+          .catch((err) =>
+            this.logger.error(`Failed to send mention notification to user ${userId}`, err)
+          );
       });
     }
   }
@@ -1894,6 +1940,132 @@ Share your reflections, questions, and experiences below. All levels welcome.
     }));
   }
 
+  // ==================== COMMUNITY_BACKLOG.md FOR-004: Learning Pathways ====================
+
+  // "Structured thread series for core concepts (curated, not auto-generated)".
+  // Threads already carry isTeachingSeries/seriesName (set only by
+  // Babalawo/Admin at creation, see createThread above) -- the only real gap
+  // was a way to browse them grouped by series, which didn't exist yet.
+  async getThreadSeries() {
+    const threads = await this.prisma.forumThread.findMany({
+      where: { isTeachingSeries: true, seriesName: { not: null }, status: ThreadStatus.ACTIVE },
+      select: {
+        seriesName: true,
+        category: { select: { id: true, name: true, slug: true } },
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    const bySeries = new Map<
+      string,
+      {
+        seriesName: string;
+        category: { id: string; name: string; slug: string };
+        threadCount: number;
+        startedAt: Date;
+      }
+    >();
+    for (const t of threads) {
+      const key = t.seriesName as string;
+      const existing = bySeries.get(key);
+      if (existing) {
+        existing.threadCount += 1;
+      } else {
+        bySeries.set(key, {
+          seriesName: key,
+          category: t.category,
+          threadCount: 1,
+          startedAt: t.createdAt,
+        });
+      }
+    }
+
+    return [...bySeries.values()].sort((a, b) => a.startedAt.getTime() - b.startedAt.getTime());
+  }
+
+  async getThreadsInSeries(seriesName: string, currentUser?: CurrentUserPayload | null) {
+    const threads = await this.prisma.forumThread.findMany({
+      where: { isTeachingSeries: true, seriesName, status: ThreadStatus.ACTIVE },
+      orderBy: { createdAt: 'asc' },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            yorubaName: true,
+            avatar: true,
+            verified: true,
+            culturalLevel: true,
+          },
+        },
+        category: { select: { id: true, name: true, slug: true } },
+      },
+    });
+
+    // "Progress tracking for community learning" -- how many of this
+    // series's threads the current user has posted in, reusing ForumPost
+    // rather than a new tracking model.
+    let myProgress: { postedInThreads: number; totalThreads: number } | null = null;
+    if (currentUser && threads.length > 0) {
+      const postedThreadIds = await this.prisma.forumPost.findMany({
+        where: { authorId: currentUser.id, threadId: { in: threads.map((t) => t.id) } },
+        select: { threadId: true },
+        distinct: ['threadId'],
+      });
+      myProgress = { postedInThreads: postedThreadIds.length, totalThreads: threads.length };
+    }
+
+    return {
+      seriesName,
+      threads,
+      myProgress,
+      recommendedCourses:
+        threads.length > 0 ? await this.getRecommendedCoursesForSeries(seriesName, threads) : [],
+    };
+  }
+
+  // "Integration with Academy course recommendations" -- rule-based, same
+  // keyword-match approach as getRelatedProducts above, not ML/semantic.
+  // Course has no shared taxonomy with ForumCategory/ForumThread, so this
+  // matches on plain keyword overlap between the series' thread titles and
+  // course title/description/category.
+  private async getRecommendedCoursesForSeries(seriesName: string, threads: { title: string }[]) {
+    const text = `${seriesName} ${threads.map((t) => t.title).join(' ')}`;
+    const words = text
+      .toLowerCase()
+      .replace(/[^\w\s]/g, ' ')
+      .split(/\s+/)
+      .filter((w) => w.length > 3);
+    const keywords = [...new Set(words)];
+    if (keywords.length === 0) return [];
+
+    const courses = await this.prisma.course.findMany({
+      where: {
+        status: CourseStatus.APPROVED,
+        OR: keywords
+          .slice(0, 10)
+          .flatMap((kw) => [
+            { title: { contains: kw, mode: 'insensitive' as const } },
+            { category: { contains: kw, mode: 'insensitive' as const } },
+          ]),
+      },
+      take: 3,
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        category: true,
+        level: true,
+        thumbnail: true,
+        price: true,
+        currency: true,
+      },
+    });
+
+    return courses;
+  }
+
   // ==================== F9-702: Forum Digest Email ====================
 
   async getDigestContent() {
@@ -2485,7 +2657,10 @@ Share your reflections, questions, and experiences below. All levels welcome.
           data: { postId: flag.postId, threadId: flag.post.threadId },
         })
         .catch((err) =>
-          this.logger.error(`Failed to notify user ${flag.post.authorId} of elder edit request`, err)
+          this.logger.error(
+            `Failed to notify user ${flag.post.authorId} of elder edit request`,
+            err
+          )
         );
     }
 
@@ -2497,25 +2672,53 @@ Share your reflections, questions, and experiences below. All levels welcome.
 
   // ==================== D3: Crisis Signal Admin View ====================
 
+  // COMMUNITY_BACKLOG.md FOR-015: merges Forum and Circle crisis-flagged
+  // content into the one admin queue (AdminCrisisAlertsTab.tsx) rather than
+  // building a second review screen for Circles. Volume here is expected to
+  // stay low (this is a rare-event safety queue, not a high-traffic list),
+  // so both sources are fetched in full and merged/paginated in memory
+  // instead of fighting cross-table SQL pagination.
   async getCrisisSignalPosts(page = 1, limit = 20) {
-    const skip = (page - 1) * limit;
-    const [posts, total] = await Promise.all([
+    const [forumPosts, circlePosts] = await Promise.all([
       this.prisma.forumPost.findMany({
         where: { hasCrisisSignal: true },
         orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
+        take: 100,
         include: {
           author: { select: { id: true, name: true, email: true, role: true } },
           thread: { select: { id: true, title: true, categoryId: true } },
         },
       }),
-      this.prisma.forumPost.count({ where: { hasCrisisSignal: true } }),
+      (this.prisma as any).circleFeedPost.findMany({
+        where: { hasCrisisSignal: true },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+        include: {
+          author: { select: { id: true, name: true, email: true, role: true } },
+          circle: { select: { id: true, name: true, slug: true } },
+        },
+      }),
     ]);
+
+    const combined = [
+      ...forumPosts.map((p: any) => ({ ...p, source: 'forum' as const })),
+      ...circlePosts.map((p: any) => ({ ...p, source: 'circle' as const })),
+    ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    const total = combined.length;
+    const skip = (page - 1) * limit;
+    const posts = combined.slice(skip, skip + limit);
+
     return { posts, total, page, limit };
   }
 
-  async clearCrisisSignal(postId: string) {
+  async clearCrisisSignal(postId: string, source: 'forum' | 'circle' = 'forum') {
+    if (source === 'circle') {
+      return (this.prisma as any).circleFeedPost.update({
+        where: { id: postId },
+        data: { hasCrisisSignal: false },
+      });
+    }
     return this.prisma.forumPost.update({
       where: { id: postId },
       data: { hasCrisisSignal: false },

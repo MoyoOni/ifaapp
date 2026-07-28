@@ -5,6 +5,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MessagingGateway } from '../messaging/messaging.gateway';
 import { NotificationService } from '../notifications/notification.service';
 import { EmailService } from '../notifications/email.service';
+import { CrisisDetectionService } from '../shared/services/crisis-detection.service';
+import { UsersService } from '../users/users.service';
 
 // Covers only the moderator sub-role authorization change made alongside
 // gating moderateThread's controller route with @AdminRoles(MODERATOR, SUPER)
@@ -38,12 +40,25 @@ describe('ForumService moderation authorization', () => {
         { provide: MessagingGateway, useValue: {} },
         { provide: NotificationService, useValue: { createNotification: jest.fn() } },
         { provide: EmailService, useValue: {} },
+        { provide: CrisisDetectionService, useValue: { detect: jest.fn().mockReturnValue(false) } },
+        { provide: UsersService, useValue: { awardXP: jest.fn() } },
       ],
     }).compile();
 
     service = module.get<ForumService>(ForumService);
     prisma = module.get<PrismaService>(PrismaService);
     jest.clearAllMocks();
+  });
+
+  describe('incrementXP (V8-305: must delegate to the one real XP implementation)', () => {
+    it('delegates to UsersService.awardXP instead of maintaining a separate rankXP/culturalLevel system', async () => {
+      const mockAwardXP = jest.fn().mockResolvedValue(undefined);
+      (service as any).usersService = { awardXP: mockAwardXP };
+
+      await (service as any).incrementXP('user-1', 10);
+
+      expect(mockAwardXP).toHaveBeenCalledWith('user-1', 10);
+    });
   });
 
   describe('deletePost', () => {
