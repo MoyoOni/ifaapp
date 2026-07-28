@@ -3938,15 +3938,15 @@ export class MarketplaceService {
    * equivalent of a Babalawo's /practitioner/earnings.
    *
    * "Platform commission deducted (shown clearly)" / "Net earnings after
-   * commission" from the original spec are reported honestly, not
-   * fabricated: `PlatformSettings.marketplaceCommissionPct` exists but is
-   * never actually deducted anywhere in the real money-movement code (order
-   * escrow is created for the full order amount, and `releaseEscrow` pays
-   * the vendor that full amount -- confirmed while investigating the
-   * VND-010 escrow fix). Net === gross today. The `commission` field below
-   * reports the *configured rate* and says plainly that it isn't applied
-   * yet, rather than presenting a fabricated deduction that doesn't match
-   * what vendors actually receive.
+   * commission" -- `walletService.releaseEscrow()` now actually deducts
+   * `PlatformSettings.marketplaceCommissionPct` for EscrowType.ORDER
+   * releases (see ILUASE_V1_BACKLOG.md's top 🔴 Critical item, fixed). The
+   * `commission` field below reports the real amount retained so far, read
+   * from the COMMISSION-type Transaction rows that fix writes -- not a
+   * fabricated rate x gross estimate. Orders whose escrow already released
+   * *before* this fix won't have a matching COMMISSION transaction, so
+   * `totalRetainedAllTime` only reflects commission actually collected
+   * going forward, not a retroactive recompute of historical payouts.
    */
   async getVendorEarnings(vendorId: string, currentUser: CurrentUserPayload) {
     await this.assertOwnsVendorOrAdmin(vendorId, currentUser);
@@ -3996,14 +3996,19 @@ export class MarketplaceService {
       weeklyEarnings.push({ weekStart: weekStart.toISOString().slice(0, 10), revenue: sumInRange(weekStart, weekEnd) });
     }
 
-    const [wallet, pendingEscrows, paidOutWithdrawals, platformSettings] = await Promise.all([
+    const [wallet, pendingEscrows, paidOutWithdrawals, platformSettings, commissionTransactions] = await Promise.all([
       this.walletService.getOrCreateWallet(vendor.userId),
       this.prisma.escrow.findMany({
         where: { recipientId: vendor.userId, type: EscrowType.ORDER, status: { in: ['HOLD', 'PARTIALLY_RELEASED'] } },
       }),
       this.prisma.withdrawalRequest.findMany({ where: { userId: vendor.userId, status: 'PROCESSED' } }),
       this.prisma.platformSettings.findUnique({ where: { id: 'singleton' } }),
+      this.prisma.transaction.findMany({
+        where: { userId: vendor.userId, type: 'COMMISSION' },
+        select: { amount: true },
+      }),
     ]);
+    const totalCommissionRetained = commissionTransactions.reduce((s, t) => s + Number(t.amount), 0);
 
     // A HOLD escrow's full amount is still pending. A PARTIALLY_RELEASED
     // escrow has already paid out its released tier(s) into the wallet --
@@ -4036,8 +4041,9 @@ export class MarketplaceService {
       breakdown: { pending: pendingAmount, available: availableAmount, paidOut: paidOutAmount },
       commission: {
         ratePct: platformSettings?.marketplaceCommissionPct ?? 10,
-        deducted: false,
-        note: 'Not yet deducted from marketplace order payouts -- you currently receive the full order amount.',
+        deducted: true,
+        totalRetainedAllTime: totalCommissionRetained,
+        note: 'Automatically deducted when your order escrow releases into your wallet.',
       },
       payoutEligibility: {
         minPayoutThresholdNgn: minPayoutThreshold,
@@ -4052,11 +4058,13 @@ export class MarketplaceService {
 
   /**
    * VENDOR_BACKLOG.md VND-003: "commission deducted" on the monthly
-   * statement and tax summary is reported the same honest way as VND-001's
-   * earnings view -- `marketplaceCommissionPct` exists but is never actually
-   * deducted from a real payout, so it's shown as the configured rate with
-   * an explicit "not yet deducted" note, not fabricated as a real deduction
-   * line that doesn't match what the vendor actually received.
+   * statement and tax summary now reports the real amount retained via the
+   * COMMISSION-type Transaction rows `walletService.releaseEscrow()` writes
+   * (see the fix in wallet.service.ts) -- not a fabricated rate x gross
+   * estimate. Commission transactions are dated by when the escrow released
+   * (shipment/delivery), not the order's own createdAt, so this is scoped
+   * by transaction date within the statement period, which is the honest
+   * answer to "what did the platform actually retain this period."
    */
   async generateMonthlyStatement(
     vendorId: string,
@@ -4070,14 +4078,19 @@ export class MarketplaceService {
 
     const rangeStart = new Date(year, month - 1, 1);
     const rangeEnd = new Date(year, month, 1);
-    const [orders, settings] = await Promise.all([
+    const [orders, settings, commissionTransactions] = await Promise.all([
       this.prisma.order.findMany({
         where: { vendorId, createdAt: { gte: rangeStart, lt: rangeEnd } },
         include: { customer: { select: { name: true } } },
         orderBy: { createdAt: 'asc' },
       }),
       this.prisma.platformSettings.findUnique({ where: { id: 'singleton' } }),
+      this.prisma.transaction.findMany({
+        where: { userId: vendor.userId, type: 'COMMISSION', createdAt: { gte: rangeStart, lt: rangeEnd } },
+        select: { amount: true },
+      }),
     ]);
+    const commissionRetained = commissionTransactions.reduce((s, t) => s + Number(t.amount), 0);
 
     const grossSales = orders
       .filter((o) => ['COMPLETED', 'DELIVERED', 'PAID', 'SHIPPED'].includes(o.status))
@@ -4085,7 +4098,7 @@ export class MarketplaceService {
     const refundsIssued = orders
       .filter((o) => o.status === 'REFUNDED')
       .reduce((s, o) => s + Number(o.refundAmount ?? o.totalAmount), 0);
-    const netEarnings = grossSales - refundsIssued;
+    const netEarnings = grossSales - refundsIssued - commissionRetained;
     const statementRef = `STMT-${vendorId.slice(0, 8).toUpperCase()}-${year}${String(month).padStart(2, '0')}`;
 
     const doc = new PDFDocument({ margin: 50 });
@@ -4117,7 +4130,7 @@ export class MarketplaceService {
     doc.fontSize(10);
     doc.text(`Gross sales: ₦${grossSales.toLocaleString()}`);
     doc.text(
-      `Platform commission (${settings?.marketplaceCommissionPct ?? 10}%): not yet deducted from payouts`
+      `Platform commission (${settings?.marketplaceCommissionPct ?? 10}%): ₦${commissionRetained.toLocaleString()} deducted`
     );
     doc.text(`Refunds issued: ₦${refundsIssued.toLocaleString()}`);
     doc.moveDown(0.3);
@@ -4186,12 +4199,16 @@ export class MarketplaceService {
 
     const rangeStart = new Date(year, 0, 1);
     const rangeEnd = new Date(year + 1, 0, 1);
-    const [orders, settings] = await Promise.all([
+    const [orders, settings, commissionTransactions] = await Promise.all([
       this.prisma.order.findMany({
         where: { vendorId, createdAt: { gte: rangeStart, lt: rangeEnd } },
         select: { totalAmount: true, refundAmount: true, status: true },
       }),
       this.prisma.platformSettings.findUnique({ where: { id: 'singleton' } }),
+      this.prisma.transaction.findMany({
+        where: { userId: vendor.userId, type: 'COMMISSION', createdAt: { gte: rangeStart, lt: rangeEnd } },
+        select: { amount: true },
+      }),
     ]);
 
     const totalGrossSales = orders
@@ -4200,13 +4217,14 @@ export class MarketplaceService {
     const totalRefunds = orders
       .filter((o) => o.status === 'REFUNDED')
       .reduce((s, o) => s + Number(o.refundAmount ?? o.totalAmount), 0);
-    const netRevenue = totalGrossSales - totalRefunds;
+    const totalCommission = commissionTransactions.reduce((s, t) => s + Number(t.amount), 0);
+    const netRevenue = totalGrossSales - totalRefunds - totalCommission;
 
     return {
       year,
       totalGrossSales,
-      totalCommission: 0,
-      commissionNote: `Platform commission is configured at ${settings?.marketplaceCommissionPct ?? 10}% but not yet deducted from marketplace order payouts.`,
+      totalCommission,
+      commissionNote: `Platform commission is configured at ${settings?.marketplaceCommissionPct ?? 10}% and is deducted automatically when your order escrow releases.`,
       totalRefunds,
       netRevenue,
       vatRegistered: vendor.vatRegistered,

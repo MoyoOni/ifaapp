@@ -649,6 +649,22 @@ export class WalletService {
       newStatus = EscrowStatus.RELEASED;
     }
 
+    // VENDOR_BACKLOG.md VND-026 / ILUASE_V1_BACKLOG.md top 🔴 Critical item:
+    // marketplace order escrows previously paid the recipient the full
+    // releaseAmount with zero commission deducted anywhere in the codebase.
+    // Scoped to EscrowType.ORDER only -- BOOKING/TUTOR_SESSION/GUIDANCE_PLAN
+    // escrows (paused Consultations feature) are deliberately left at 100%
+    // passthrough, unchanged from before.
+    const isMarketplaceOrderEscrow = escrow.type === EscrowType.ORDER;
+    let commissionPct = 0;
+    if (isMarketplaceOrderEscrow) {
+      const settings = await this.prisma.platformSettings.findUnique({ where: { id: 'singleton' } });
+      commissionPct = Number(settings?.marketplaceCommissionPct ?? 10);
+    }
+    const round2 = (n: number) => Math.round(n * 100) / 100;
+    const commissionAmount = isMarketplaceOrderEscrow ? round2((releaseAmount * commissionPct) / 100) : 0;
+    const netReleaseAmount = round2(releaseAmount - commissionAmount);
+
     // All escrow release steps must be atomic
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const updatedEscrow = await tx.escrow.update({
@@ -672,7 +688,7 @@ export class WalletService {
           where: { id: recipientWallet.id },
           data: {
             balance: {
-              increment: releaseAmount,
+              increment: netReleaseAmount,
             },
           },
         });
@@ -682,20 +698,43 @@ export class WalletService {
             walletId: recipientWallet.id,
             userId: escrow.recipientId,
             type: TransactionType.ESCROW_RELEASE,
-            amount: releaseAmount,
+            amount: netReleaseAmount,
             currency: escrow.currency,
             status: TransactionStatus.COMPLETED,
-            description: `Escrow release${dto.tier ? ` (${dto.tier})` : ''}: ${escrow.type} - ${releaseAmount} ${escrow.currency}`,
+            description: `Escrow release${dto.tier ? ` (${dto.tier})` : ''}: ${escrow.type} - ${netReleaseAmount} ${escrow.currency}${commissionAmount > 0 ? ` (${commissionAmount} platform commission deducted)` : ''}`,
             metadata: {
               escrowId: escrow.id,
               type: escrow.type,
               relatedId: escrow.relatedId,
               tier: dto.tier,
-              releaseAmount,
+              releaseAmount: netReleaseAmount,
+              grossAmount: releaseAmount,
+              commissionAmount,
+              commissionPct,
               totalAmount: escrowAmount,
             },
           },
         });
+
+        if (commissionAmount > 0) {
+          await tx.transaction.create({
+            data: {
+              walletId: recipientWallet.id,
+              userId: escrow.recipientId,
+              type: TransactionType.COMMISSION,
+              amount: commissionAmount,
+              currency: escrow.currency,
+              status: TransactionStatus.COMPLETED,
+              description: `Platform commission (${commissionPct}%) retained on marketplace order escrow release`,
+              metadata: {
+                escrowId: escrow.id,
+                relatedId: escrow.relatedId,
+                grossAmount: releaseAmount,
+                commissionPct,
+              },
+            },
+          });
+        }
       } else {
         await tx.wallet.update({
           where: { id: escrow.walletId },

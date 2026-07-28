@@ -11,6 +11,7 @@ export enum TransactionType {
   ESCROW_HOLD = 'ESCROW_HOLD',
   ESCROW_RELEASE = 'ESCROW_RELEASE',
   TRANSFER = 'TRANSFER',
+  COMMISSION = 'COMMISSION',
 }
 
 export enum TransactionStatus {

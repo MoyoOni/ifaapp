@@ -151,6 +151,11 @@ describe('MarketplaceService', () => {
     platformSettings: {
       findUnique: jest.fn().mockResolvedValue({ minPayoutThresholdNgn: 5000, marketplaceCommissionPct: 10 }),
     },
+    // ILUASE_V1_BACKLOG.md top 🔴 Critical fix: commission-retained figures
+    // are now read from real COMMISSION-type Transaction rows.
+    transaction: {
+      findMany: jest.fn().mockResolvedValue([]),
+    },
     sacredCalendarEvent: {
       findMany: jest.fn(),
       findUnique: jest.fn(),
@@ -3556,15 +3561,17 @@ describe('MarketplaceService', () => {
       );
     });
 
-    it('reports the commission rate honestly as not-yet-deducted, not a fabricated net figure', async () => {
+    it('reports the commission rate and the real amount retained via COMMISSION transactions, not a fabricated figure', async () => {
       mockPrismaService.order.findMany.mockResolvedValue([]);
+      mockPrismaService.transaction.findMany.mockResolvedValueOnce([{ amount: 150 }, { amount: 75 }]);
 
       const result = await service.getVendorEarnings('vendor-1', vendorOwner);
 
       expect(result.commission).toEqual({
         ratePct: 10,
-        deducted: false,
-        note: expect.stringContaining('Not yet deducted'),
+        deducted: true,
+        totalRetainedAllTime: 225,
+        note: expect.stringContaining('Automatically deducted'),
       });
     });
 
@@ -3676,21 +3683,22 @@ describe('MarketplaceService', () => {
     });
 
     describe('getTaxSummary', () => {
-      it('computes gross sales, refunds, and net revenue, and reports commission honestly', async () => {
+      it('computes gross sales, refunds, and net revenue, and reports the real commission retained', async () => {
         mockPrismaService.order.findMany.mockResolvedValue([
           { totalAmount: 5000, refundAmount: null, status: 'DELIVERED' },
           { totalAmount: 3000, refundAmount: null, status: 'COMPLETED' },
           { totalAmount: 1000, refundAmount: 1000, status: 'REFUNDED' },
         ]);
         mockPrismaService.platformSettings.findUnique.mockResolvedValue({ marketplaceCommissionPct: 10 });
+        mockPrismaService.transaction.findMany.mockResolvedValueOnce([{ amount: 500 }, { amount: 300 }]);
 
         const result = await service.getTaxSummary('vendor-1', 2026, vendorOwner);
 
         expect(result.totalGrossSales).toBe(8000);
         expect(result.totalRefunds).toBe(1000);
-        expect(result.netRevenue).toBe(7000);
-        expect(result.totalCommission).toBe(0);
-        expect(result.commissionNote).toContain('not yet deducted');
+        expect(result.totalCommission).toBe(800);
+        expect(result.netRevenue).toBe(6200);
+        expect(result.commissionNote).toContain('deducted automatically');
         expect(result.vatRegistered).toBe(true);
         expect(result.vatNumber).toBe('GB123456789');
       });

@@ -705,6 +705,115 @@ describe('WalletService', () => {
         data: { balance: { increment: 1000 } },
       });
     });
+
+    // ILUASE_V1_BACKLOG.md top 🔴 Critical item: marketplace order escrows
+    // used to pay the vendor the full releaseAmount with zero commission
+    // deducted anywhere in the codebase. This is the fix.
+    describe('commission deduction on EscrowType.ORDER (VND-026 / ILUASE_V1_BACKLOG.md fix)', () => {
+      const vendorUser = {
+        id: 'vendor-user-1',
+        sub: 'vendor-user-1',
+        email: 'vendor@example.com',
+        role: 'VENDOR',
+        verified: true,
+      };
+      const mockOrderEscrow = {
+        id: 'escrow-order-1',
+        walletId: 'wallet-1',
+        userId: 'customer-1',
+        recipientId: 'vendor-user-1',
+        amount: new Prisma.Decimal('1000.00'),
+        type: 'ORDER',
+        status: 'HOLD',
+        relatedId: 'order-1',
+        currency: 'NGN',
+        releaseTiers: null,
+        releasedAt: null,
+      };
+
+      it('deducts the configured marketplaceCommissionPct and credits the vendor only the net amount', async () => {
+        (prisma.escrow.findUnique as jest.Mock).mockResolvedValue({ ...mockOrderEscrow, wallet: {} });
+        (prisma.wallet.findUnique as jest.Mock).mockResolvedValue({
+          id: 'wallet-2',
+          userId: 'vendor-user-1',
+          balance: 0,
+          currency: 'NGN',
+          locked: false,
+        });
+        (prisma.platformSettings.findUnique as jest.Mock).mockResolvedValueOnce({ marketplaceCommissionPct: 10 });
+        (txClient.escrow.update as jest.Mock).mockResolvedValue({ ...mockOrderEscrow, status: 'RELEASED' });
+        (txClient.wallet.update as jest.Mock).mockResolvedValue({});
+        (txClient.transaction.create as jest.Mock).mockResolvedValue({});
+
+        await service.releaseEscrow('vendor-user-1', { escrowId: 'escrow-order-1' }, vendorUser);
+
+        // 10% of 1000 = 100 commission, vendor gets the net 900.
+        expect(txClient.wallet.update).toHaveBeenCalledWith({
+          where: { id: 'wallet-2' },
+          data: { balance: { increment: 900 } },
+        });
+        // Two transaction rows: the net ESCROW_RELEASE and a separate COMMISSION record.
+        expect(txClient.transaction.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({ type: TransactionType.ESCROW_RELEASE, amount: 900 }),
+          })
+        );
+        expect(txClient.transaction.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({ type: TransactionType.COMMISSION, amount: 100 }),
+          })
+        );
+      });
+
+      it('falls back to a 10% default rate when PlatformSettings has no row', async () => {
+        (prisma.escrow.findUnique as jest.Mock).mockResolvedValue({ ...mockOrderEscrow, wallet: {} });
+        (prisma.wallet.findUnique as jest.Mock).mockResolvedValue({
+          id: 'wallet-2',
+          userId: 'vendor-user-1',
+          balance: 0,
+          currency: 'NGN',
+          locked: false,
+        });
+        (prisma.platformSettings.findUnique as jest.Mock).mockResolvedValueOnce(null);
+        (txClient.escrow.update as jest.Mock).mockResolvedValue({ ...mockOrderEscrow, status: 'RELEASED' });
+        (txClient.wallet.update as jest.Mock).mockResolvedValue({});
+        (txClient.transaction.create as jest.Mock).mockResolvedValue({});
+
+        await service.releaseEscrow('vendor-user-1', { escrowId: 'escrow-order-1' }, vendorUser);
+
+        expect(txClient.wallet.update).toHaveBeenCalledWith({
+          where: { id: 'wallet-2' },
+          data: { balance: { increment: 900 } },
+        });
+      });
+
+      it('does not touch commission logic for non-ORDER escrow types (BOOKING/GUIDANCE_PLAN stay at 100% passthrough)', async () => {
+        const bookingEscrow = { ...mockOrderEscrow, type: 'BOOKING' };
+        (prisma.escrow.findUnique as jest.Mock).mockResolvedValue({ ...bookingEscrow, wallet: {} });
+        (prisma.wallet.findUnique as jest.Mock).mockResolvedValue({
+          id: 'wallet-2',
+          userId: 'vendor-user-1',
+          balance: 0,
+          currency: 'NGN',
+          locked: false,
+        });
+        (txClient.escrow.update as jest.Mock).mockResolvedValue({ ...bookingEscrow, status: 'RELEASED' });
+        (txClient.wallet.update as jest.Mock).mockResolvedValue({});
+        (txClient.transaction.create as jest.Mock).mockResolvedValue({});
+
+        await service.releaseEscrow('vendor-user-1', { escrowId: 'escrow-order-1' }, vendorUser);
+
+        // Full 1000 passthrough, no PlatformSettings lookup, no COMMISSION transaction.
+        expect(prisma.platformSettings.findUnique).not.toHaveBeenCalled();
+        expect(txClient.wallet.update).toHaveBeenCalledWith({
+          where: { id: 'wallet-2' },
+          data: { balance: { increment: 1000 } },
+        });
+        expect(txClient.transaction.create).not.toHaveBeenCalledWith(
+          expect.objectContaining({ data: expect.objectContaining({ type: TransactionType.COMMISSION }) })
+        );
+      });
+    });
   });
 
   describe('expireEscrows', () => {

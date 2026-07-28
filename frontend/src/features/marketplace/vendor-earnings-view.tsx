@@ -14,7 +14,7 @@ interface VendorEarnings {
   earningsByProduct: Array<{ productId: string; name: string; revenue: number }>;
   weeklyEarnings: Array<{ weekStart: string; revenue: number }>;
   breakdown: { pending: number; available: number; paidOut: number };
-  commission: { ratePct: number; deducted: boolean; note: string };
+  commission: { ratePct: number; deducted: boolean; totalRetainedAllTime?: number; note: string };
   payoutEligibility: { minPayoutThresholdNgn: number; isEligibleNow: boolean; amountNeeded: number; nextEscrowReleaseDate: string | null };
 }
 
@@ -89,6 +89,11 @@ const VendorEarningsView: React.FC = () => {
             <div>
               <p className="text-sm font-bold text-foreground">Platform commission: {earnings.commission.ratePct}%</p>
               <p className="text-sm text-muted-foreground">{earnings.commission.note}</p>
+              {earnings.commission.deducted && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Total commission retained to date: {fmt(earnings.commission.totalRetainedAllTime ?? 0)}
+                </p>
+              )}
             </div>
           </div>
 
