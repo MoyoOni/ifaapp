@@ -11,6 +11,8 @@ interface DigitalDownload {
   downloadCount: number;
   maxDownloads: number;
   expiresAt: string;
+  // VENDOR_BACKLOG.md VND-010: set when a confirmed return refunded this order.
+  revoked: boolean;
   product: { id: string; name: string; images: string[] };
 }
 
@@ -58,7 +60,7 @@ const MyDownloadsView: React.FC = () => {
           {downloads.map((d) => {
             const expired = new Date(d.expiresAt) < new Date();
             const exhausted = d.downloadCount >= d.maxDownloads;
-            const disabled = expired || exhausted || downloadMutation.isPending;
+            const disabled = expired || exhausted || d.revoked || downloadMutation.isPending;
             return (
               <div key={d.id} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between gap-4 flex-wrap">
                 <div>
@@ -66,8 +68,9 @@ const MyDownloadsView: React.FC = () => {
                   <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                     <Clock size={12} /> {d.downloadCount}/{d.maxDownloads} downloads used · expires {new Date(d.expiresAt).toLocaleDateString()}
                   </p>
-                  {expired && <p className="text-xs font-bold text-red-500 mt-1">Expired</p>}
-                  {!expired && exhausted && <p className="text-xs font-bold text-red-500 mt-1">Download limit reached</p>}
+                  {d.revoked && <p className="text-xs font-bold text-red-500 mt-1">Access revoked — this order was refunded</p>}
+                  {!d.revoked && expired && <p className="text-xs font-bold text-red-500 mt-1">Expired</p>}
+                  {!d.revoked && !expired && exhausted && <p className="text-xs font-bold text-red-500 mt-1">Download limit reached</p>}
                 </div>
                 <button
                   type="button"

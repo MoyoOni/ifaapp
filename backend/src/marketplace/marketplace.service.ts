@@ -1857,6 +1857,9 @@ export class MarketplaceService {
     if (grant.customerId !== currentUser.id && currentUser.role !== 'ADMIN') {
       throw new ForbiddenException('This download does not belong to you');
     }
+    if (grant.revoked) {
+      throw new BadRequestException('This download was revoked because the order was refunded');
+    }
     if (grant.expiresAt < new Date()) {
       throw new BadRequestException('This download link has expired');
     }
@@ -3403,6 +3406,17 @@ export class MarketplaceService {
       `Return request ${returnRequestId.slice(0, 8)} confirmed by customer`,
       currentUser.id
     );
+
+    // VENDOR_BACKLOG.md VND-010: a refunded order's digital-item download
+    // access is revoked -- previously the customer kept unlimited access
+    // (up to maxDownloads/expiresAt) to a digital good they'd just been
+    // refunded for. Non-blocking: a failure here shouldn't undo the refund
+    // that already succeeded above.
+    await this.prisma.digitalProductDownload
+      .updateMany({ where: { orderId: returnRequest.orderId }, data: { revoked: true } })
+      .catch((err) =>
+        this.logger.error(`Failed to revoke digital downloads for order ${returnRequest.orderId}`, err)
+      );
 
     const updated = await this.prisma.returnRequest.update({
       where: { id: returnRequestId },

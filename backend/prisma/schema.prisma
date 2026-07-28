@@ -1663,6 +1663,11 @@ model DigitalProductDownload {
   downloadCount Int      @default(0)
   maxDownloads  Int      @default(5)
   expiresAt     DateTime
+  // VENDOR_BACKLOG.md VND-010: set when a confirmed return refunds this
+  // order -- getDigitalDownloadUrl() refuses to mint a fresh signed URL
+  // once this is true, even if downloadCount/expiresAt would otherwise
+  // still allow it.
+  revoked       Boolean  @default(false)
   createdAt     DateTime @default(now())
 
   order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)

@@ -1423,6 +1423,22 @@ describe('MarketplaceService', () => {
 
         await expect(service.getDigitalDownloadUrl('download-1', customer)).rejects.toThrow(ForbiddenException);
       });
+
+      // VENDOR_BACKLOG.md VND-010: revoked on a confirmed return refund.
+      it('rejects a download grant that was revoked after the order was refunded', async () => {
+        mockPrismaService.digitalProductDownload.findUnique.mockResolvedValue({
+          id: 'download-1',
+          customerId: 'customer-1',
+          maxDownloads: 5,
+          downloadCount: 0,
+          revoked: true,
+          expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
+          product: { digitalFileKey: 'key', digitalFileUrl: null, digitalFileName: 'file.pdf' },
+        });
+
+        await expect(service.getDigitalDownloadUrl('download-1', customer)).rejects.toThrow('revoked');
+        expect(mockPrismaService.digitalProductDownload.updateMany).not.toHaveBeenCalled();
+      });
     });
   });
 
@@ -3404,6 +3420,28 @@ describe('MarketplaceService', () => {
           'NGN',
           'customer-1'
         );
+      });
+
+      // VENDOR_BACKLOG.md VND-010: digital-item "revoke access" on return.
+      it('revokes digital download access for the order once the refund is confirmed', async () => {
+        mockPrismaService.returnRequest.findUnique.mockResolvedValue({
+          id: returnRequestId,
+          orderId,
+          customerId: 'customer-1',
+          status: 'ACCEPTED',
+          offeredRefundAmount: null,
+          order: mockOrder,
+          vendor: { userId: 'vendor-user-1' },
+        });
+        mockPrismaService.order.update.mockResolvedValue({ ...mockOrder, status: 'REFUNDED' });
+        mockPrismaService.returnRequest.update.mockResolvedValue({ id: returnRequestId, status: 'REFUNDED' });
+
+        await service.confirmReturnRequest(returnRequestId, customer);
+
+        expect(mockPrismaService.digitalProductDownload.updateMany).toHaveBeenCalledWith({
+          where: { orderId },
+          data: { revoked: true },
+        });
       });
 
       it('refunds only the offered amount when PARTIAL_REFUND_OFFERED', async () => {
