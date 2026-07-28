@@ -1,3 +1,5 @@
+> ⚠️ **SUPERSEDED as of July 28, 2026** — see [`ILUASE_V1_BACKLOG.md`](ILUASE_V1_BACKLOG.md) for the current single source of truth. This doc's F9-904 status directly contradicts CLAUDE.md's — reconcile before trusting either. Its "not building yet" list is carried forward as context in the master doc's Deferred/Long-Term section.
+
 # V9 Forum Launch Backlog — Ìlú Àṣẹ
 ## "Dialogue" — The Living Room of the Culture
 

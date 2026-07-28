@@ -1,6 +1,8 @@
 # EXPERIENCE_BACKLOG.md — OBSOLETE
 
-**Status:** ✅ CONSOLIDATED into Z1_BACKLOG.md
+> ⚠️ **SUPERSEDED as of July 28, 2026** — see [`ILUASE_V1_BACKLOG.md`](ILUASE_V1_BACKLOG.md) for the current single source of truth. This doc's one open item (EXP-007, real video content) is carried forward there.
+
+**Status:** ✅ CONSOLIDATED into Z1_BACKLOG.md (superseded — see banner above)
 **Date:** April 19, 2026
 **Reason:** All experience features verified complete except EXP-007 (real video content).
 

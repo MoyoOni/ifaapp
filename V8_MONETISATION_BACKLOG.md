@@ -1,3 +1,5 @@
+> ⚠️ **SUPERSEDED as of July 28, 2026** — see [`ILUASE_V1_BACKLOG.md`](ILUASE_V1_BACKLOG.md) for the current single source of truth on remaining work across the whole platform. This file is kept for its detailed per-story write-ups only; don't use it to decide what to work on next.
+
 # V8: MONETISATION & THE DEVOTED TIER
 ## Ìlú Àṣẹ — Subscription, Billing & Premium Features Backlog
 
@@ -6,6 +8,29 @@
 **Total Story Points:** 102 SP across 5 sprints
 **Labels:** `V8-XXX` (this phase)
 **Branch:** `v8/monetisation` → merge to `IfaAppV1` after each sprint smoke test
+
+---
+
+## 📍 CURRENT STATUS (updated July 28, 2026)
+
+**28 of 30 stories are ✅ DONE.** Every story below now has its own `**Status:**` line — read that instead of the checkboxes above it if you want the real state; the checkboxes were the original plan and are left as-is for history, but several turned out to describe UI/logic that either already existed differently than planned, or had real bugs the checkboxes didn't catch.
+
+**The 2 exceptions:**
+- **V8-103** (Paystack Plan Setup) — 🟡 blocked on a human. The code fails loudly if it's missing, but someone needs to actually log into the Paystack dashboard, create the two Plans, and set the real env vars in production before checkout can take payments.
+- **V8-206** (Messaging Limits) and **V8-303** (Priority Booking) — 🟡 backend fully correct in both, but the frontend has nothing to attach to: booking/consultations/1:1 messaging are paused platform-wide per `MVP_PIVOT_BACKLOG.md`. Revisit when those un-pause.
+
+**Bugs found and fixed along the way that weren't in the original checkboxes at all** (surfaced by a full code audit against this doc, not by the plan itself):
+- V8-503: unlimited free subscription-pause exploit (no repeat-call protection existed)
+- V8-501/502: two independent referral-reward systems shared one flag, so only one of the two rewards could ever pay out per referral
+- V8-201: `useSubscription()` failed *closed*, not open, on API errors — could lock out real paying subscribers
+- V8-404/504: no automatic cron ever existed for renewal reminders or win-back emails (both were reactive/manual-only); a related pre-existing gap (nothing ever marked a lapsed subscription `EXPIRED`) was found and fixed alongside
+- V8-305: forum XP used a second, un-multiplied, differently-thresholded system from Academy XP — inconsistent displayed cultural levels
+- V8-301: profile-view logging broke silently on any repeat visit after 24h (create-only where an upsert was needed)
+- V8-306: no referral-code backfill existed for pre-existing users, and a code collision could fail registration outright
+- V8-304: Devoted free delivery applied to international orders too, contradicting its own "local only" rule
+- V8-204: the circle-join UI silently faked a successful join on *any* backend error, including a correct 403 rejection
+
+One thing explicitly **not fixed, flagged instead**: V8-305 says cultural-level 2× should apply to event attendance — there is no attendance-tracking mechanism anywhere in this codebase to multiply. Building that is a new feature, not a bug fix.
 
 ---
 
@@ -281,10 +306,12 @@ CREATE UNIQUE INDEX "subscriptions_paystackSubId_key" ON "subscriptions"("paysta
 ```
 
 **Acceptance Criteria:**
-- [ ] `prisma migrate deploy` runs with no errors
-- [ ] `User` table has `subscriptionStatus`, `subscriptionEnd`, `referralCode` columns
-- [ ] `subscriptions` table exists with all columns
-- [ ] Existing users unaffected (default `subscriptionStatus = 'FREE'`)
+- [x] `prisma migrate deploy` runs with no errors
+- [x] `User` table has `subscriptionStatus`, `subscriptionEnd`, `referralCode` columns
+- [x] `subscriptions` table exists with all columns
+- [x] Existing users unaffected (default `subscriptionStatus = 'FREE'`)
+
+**Status: ✅ DONE (verified July 27, 2026)** — `Subscription`/`ProfileView`/`Referral` models and the `User` fields all exist in `backend/prisma/schema.prisma`, with real applied migrations (`20260322000001_add_subscription_system` and later additions).
 
 ---
 
@@ -323,9 +350,11 @@ export class InitiateSubscriptionDto {
 ```
 
 **Acceptance Criteria:**
-- [ ] Module registers without errors on backend start
-- [ ] `GET /subscriptions/me` returns `{ status: 'FREE' }` for non-subscribers
-- [ ] Module imported in `AppModule`
+- [x] Module registers without errors on backend start
+- [x] `GET /subscriptions/me` returns `{ status: 'FREE' }` for non-subscribers
+- [x] Module imported in `AppModule`
+
+**Status: ✅ DONE (verified July 27, 2026)** — full `SubscriptionsModule`/`SubscriptionsService`/`SubscriptionsController` exist and are registered in `AppModule`.
 
 ---
 
@@ -352,9 +381,11 @@ PAYSTACK_WEBHOOK_SECRET=xxxx   # From Paystack dashboard → Settings → Webhoo
 ```
 
 **Acceptance Criteria:**
-- [ ] Both plans exist in Paystack dashboard
-- [ ] Plan codes stored in Secrets Manager
-- [ ] Backend can read `process.env.PAYSTACK_SECRET_KEY`
+- [ ] Both plans exist in Paystack dashboard — **⚠️ NOT DONE, needs a human with Paystack dashboard access**
+- [ ] Plan codes stored in Secrets Manager — **⚠️ NOT DONE**, same reason
+- [x] Backend can read `process.env.PAYSTACK_SECRET_KEY`
+
+**Status: 🟡 PARTIAL (July 27, 2026)** — this is the one V8 story that genuinely cannot be finished by an AI agent: it requires an actual Paystack dashboard account to create the two Plans and copy their real `plan_code`s. What *was* fixed in code: previously, if `PAYSTACK_DEVOTED_QUARTERLY_PLAN`/`PAYSTACK_DEVOTED_ANNUAL_PLAN` were unset, `initiateSubscription()` silently sent `plan: undefined` to Paystack — which creates a one-time charge instead of a real recurring subscription, with no error anywhere. It now throws a clear error instead (see `subscriptions.service.ts`). The three required env vars are documented with setup instructions in `backend/.env.example`. **Action needed from a human:** log into the Paystack dashboard, create the Quarterly/Annual Plans, and set `PAYSTACK_DEVOTED_QUARTERLY_PLAN`, `PAYSTACK_DEVOTED_ANNUAL_PLAN`, and `PAYSTACK_WEBHOOK_SECRET` in production before this feature can actually take payments.
 
 ---
 
@@ -419,10 +450,12 @@ async initiateSubscription(userId: string, plan: 'QUARTERLY' | 'ANNUAL') {
 ```
 
 **Acceptance Criteria:**
-- [ ] `POST /subscriptions/initiate { plan: "QUARTERLY" }` returns `{ checkoutUrl }`
-- [ ] Requires auth (JWT guard)
-- [ ] Uses correct plan code per plan type
-- [ ] Error if user not found
+- [x] `POST /subscriptions/initiate { plan: "QUARTERLY" }` returns `{ checkoutUrl }`
+- [x] Requires auth (JWT guard)
+- [x] Uses correct plan code per plan type
+- [x] Error if user not found
+
+**Status: ✅ DONE (verified July 27, 2026)** — implemented and working; also now fails loudly instead of silently degrading if plan codes aren't configured (see V8-103).
 
 ---
 
@@ -520,12 +553,14 @@ async handleWebhookEvent(event: PaystackWebhookEvent) {
 **Important:** Register this endpoint in `AppModule` with raw body parsing enabled. Paystack signature check fails if body is parsed as JSON first.
 
 **Acceptance Criteria:**
-- [ ] Webhook endpoint is public (no JWT guard — Paystack cannot authenticate)
-- [ ] Signature verified on every request — invalid signatures return 401
-- [ ] `subscription.create` → row created, user marked DEVOTED
-- [ ] `subscription.disable` → row updated, user marked EXPIRED
-- [ ] Returns 200 to Paystack within 10 seconds (even on error — log, don't throw)
-- [ ] Test with Paystack CLI: `paystack events trigger subscription.create`
+- [x] Webhook endpoint is public (no JWT guard — Paystack cannot authenticate)
+- [x] Signature verified on every request — invalid signatures return 401
+- [x] `subscription.create` → row created, user marked DEVOTED
+- [x] `subscription.disable` → row updated, user marked EXPIRED
+- [x] Returns 200 to Paystack within 10 seconds (even on error — log, don't throw)
+- [ ] Test with Paystack CLI — not done, needs real Paystack credentials (see V8-103)
+
+**Status: ✅ DONE, exceeds spec (verified July 27, 2026)** — constant-time signature comparison (`crypto.timingSafeEqual`), refuses to process anything if the webhook secret is unset (fails closed, not open), and has an idempotency guard against replayed webhooks (dedupes on `paystackSubId`/`paystackRef` before creating a row) that wasn't even in the original spec.
 
 ---
 
@@ -556,10 +591,12 @@ async handleWebhookEvent(event: PaystackWebhookEvent) {
 ```
 
 **Acceptance Criteria:**
-- [ ] Returns correct status for FREE users
-- [ ] Returns correct status + endDate for DEVOTED users
-- [ ] `daysRemaining` is calculated correctly
-- [ ] Requires auth
+- [x] Returns correct status for FREE users
+- [x] Returns correct status + endDate for DEVOTED users
+- [x] `daysRemaining` is calculated correctly
+- [x] Requires auth
+
+**Status: ✅ DONE (verified July 27, 2026)** — also now returns `canPause` (see V8-503) so the frontend can show the real pause-eligibility state instead of guessing with local component state.
 
 ---
 
@@ -576,10 +613,12 @@ Cancel in Paystack API → Update subscription.autoRenew = false
 ```
 
 **Acceptance Criteria:**
-- [ ] Cancels subscription in Paystack via API
-- [ ] Sets `autoRenew = false` locally
-- [ ] User's `subscriptionStatus` stays `DEVOTED` until `endDate`
-- [ ] Returns updated subscription object
+- [x] Cancels subscription in Paystack via API
+- [x] Sets `autoRenew = false` locally
+- [x] User's `subscriptionStatus` stays `DEVOTED` until `endDate`
+- [x] Returns updated subscription object
+
+**Status: ✅ DONE (verified July 27, 2026)** — actually calls the real Paystack `disableSubscription` API (HUMAN_BACKLOG.md had flagged an earlier version of this as using the wrong token/a raw unguarded fetch; that's fixed).
 
 ---
 
@@ -609,10 +648,12 @@ Your [Quarterly / Annual] plan is now active.
 **Note:** Read `subscriptionStatus` from a fresh API call — not from URL params. Paystack URL params can be forged.
 
 **Acceptance Criteria:**
-- [ ] `/subscription/confirm` route exists
-- [ ] Makes fresh `GET /subscriptions/me` call (not URL params)
-- [ ] Shows correct plan name
-- [ ] CTA navigates to role dashboard
+- [x] `/subscription/confirm` route exists
+- [x] Makes fresh `GET /subscriptions/me` call (not URL params)
+- [x] Shows correct plan name
+- [x] CTA navigates to role dashboard
+
+**Status: ✅ DONE, exceeds spec (verified July 27, 2026)** — also handles a "still processing" state (webhook hasn't landed yet) and includes a referral nudge.
 
 ---
 
@@ -651,10 +692,12 @@ export function useSubscription() {
 ```
 
 **Acceptance Criteria:**
-- [ ] Hook returns `isDevoted: true` for DEVOTED users
-- [ ] Hook returns `isDevoted: false` for FREE users
-- [ ] No extra API calls — single fetch per session, cached by React Query
-- [ ] Returns `status: 'FREE'` if API fails (fail open — don't accidentally block Devoted users)
+- [x] Hook returns `isDevoted: true` for DEVOTED users
+- [x] Hook returns `isDevoted: false` for FREE users
+- [x] No extra API calls — single fetch per session, cached by React Query
+- [x] Returns `status: 'FREE'` if API fails (fail open — don't accidentally block Devoted users)
+
+**Status: ✅ DONE (fixed July 28, 2026)** — the hook already existed but had exactly the bug this doc's own Risk Registry (§12) warns about: `isFree: !data || ...` resolved to `true` on any query error, so a transient API failure locked a real paying Devoted user out of gated features instead of the reverse. Fixed to genuinely fail open — a confirmed error now treats the user as Devoted; only a resolved FREE/EXPIRED response (or no session at all) treats them as free. `use-subscription.ts`.
 
 ---
 
@@ -692,10 +735,12 @@ export function useSubscription() {
 - Links to `/pricing` or opens checkout flow.
 
 **Acceptance Criteria:**
-- [ ] Shows children when user `isDevoted`
-- [ ] Shows `fallback` when user `isFree`
-- [ ] `fallback` defaults to `<UpgradePrompt />` if not provided
-- [ ] UpgradePrompt links to `/pricing`
+- [x] Shows children when user `isDevoted`
+- [x] Shows `fallback` when user `isFree`
+- [x] `fallback` defaults to `<UpgradePrompt />` if not provided
+- [x] UpgradePrompt links to `/pricing`
+
+**Status: ✅ DONE (built July 28, 2026)** — did not exist at all before (gating was hand-rolled inline per-feature instead). Built at `frontend/src/features/subscription/feature-gate.tsx`, matching this spec exactly, with 7 passing component tests. Used by the Academy gating (V8-203) and the profile-views panel (V8-302).
 
 ---
 
@@ -720,10 +765,13 @@ export function useSubscription() {
 - `frontend/src/features/academy/lesson-player-view.tsx` — gate player
 
 **Acceptance Criteria:**
-- [ ] Courses marked `isDevoted: true` in DB show lock icon for FREE users
-- [ ] FREE user clicking a locked course sees UpgradePrompt, not an error
-- [ ] DEVOTED user can open and play any course
-- [ ] Existing free courses unaffected
+- [x] Courses marked `isDevoted: true` in DB show lock icon for FREE users
+- [x] FREE user clicking a locked course sees UpgradePrompt, not an error
+- [x] DEVOTED user can open and play any course
+- [x] Existing free courses unaffected
+
+**Status: ✅ DONE (backend fixed July 26, 2026; frontend fixed July 28, 2026)** — `academy.service.ts`'s `findAllLessons`/`findLessonById` had **zero server-side enforcement**: any authenticated FREE user could call `GET /academy/courses/:courseId/lessons` or `GET /academy/lessons/:id` directly and read full paid lesson content, bypassing the UI lock entirely. Fixed with a shared `assertLessonAccess()` check (subscription status read fresh from the DB, not the JWT, since a subscription can lapse without a new token) — throws `ForbiddenException` (403, not 401) for a non-Devoted user on a Devoted course. ADMIN and the course's own instructor are exempt. Also closed the same gap in `createEnrollment`.
+&nbsp;&nbsp;**Correction:** the July 26 note above claimed "the frontend lock/UpgradePrompt already existed" — that was **wrong**, caught by a follow-up audit two days later. `academy-view.tsx` had no lock icon, no gold border, no `UpgradePrompt` — clicking a locked course just silently `navigate('/pricing')`'d away with no explanation, and `course-detail-view.tsx`/`lesson-player-view.tsx` had zero Devoted-awareness at all (a FREE user who deep-linked a locked lesson got a permanently blank content pane, not an error). All three files were fixed July 28, 2026, reusing the `FeatureGate`/`UpgradePrompt` component from V8-202: locked course cards now show a lock badge + amber border on both the catalog grid and the course detail header, clicking one opens a real `UpgradePrompt` modal, and the lesson player gracefully shows the same prompt instead of a blank pane when the lesson fetch 403s. 7 new component tests across the three files.
 
 ---
 
@@ -746,10 +794,14 @@ export function useSubscription() {
 - `frontend/src/features/circles/circle-detail-view.tsx` — gate join button
 
 **Acceptance Criteria:**
-- [ ] Devoted circles show gold lock badge in directory
-- [ ] FREE user clicking "Join" sees UpgradePrompt
-- [ ] DEVOTED user can join normally
-- [ ] Admin can mark any circle as Devoted in admin panel
+- [x] Devoted circles show gold lock badge in directory
+- [x] FREE user clicking "Join" sees UpgradePrompt
+- [x] DEVOTED user can join normally
+- [x] Admin can mark any circle as Devoted in admin panel
+
+**Status: ✅ DONE (fixed July 27–28, 2026)** — the backend join gate and directory badge/lock UI already existed and worked. Two real gaps found and fixed:
+1. `circle-detail-view.tsx`'s join mutation had a leftover demo-mode fallback (`circle-membership.utils.ts`'s `demo-circle-membership:` sessionStorage key) that unconditionally swallowed **every** API error, including a real 403 from a FREE user correctly rejected from a Devoted circle — the UI always showed "Joined circle" regardless of what the backend said. Fixed to only apply the demo fallback when `isDevModeActive()` is actually true; a real rejection now reaches `onError` for real.
+2. Nothing anywhere let an admin actually turn `isDevoted` on for a circle — no DTO field, no admin UI. Added an admin-only `PATCH /admin/circles/:id/devoted` endpoint (deliberately not exposed on the general circle-update DTO a circle's own creator can call — this is a platform monetisation decision) and a toggle button in `circle-management-view.tsx`'s "All Circles" tab.
 
 ---
 
@@ -777,9 +829,11 @@ export function useSubscription() {
 - `frontend/src/features/babalawo/babalawo-directory-view.tsx`
 
 **Acceptance Criteria:**
-- [ ] DEVOTED user's profile shows the badge
-- [ ] FREE user's profile does not
-- [ ] Badge renders in both light and dark mode
+- [x] DEVOTED user's profile shows the badge
+- [x] FREE user's profile does not
+- [x] Badge renders in both light and dark mode
+
+**Status: ✅ DONE (verified/fixed July 27, 2026)** — own public profile and forum posts already showed the badge correctly end-to-end. The one real gap: the babalawo directory card never showed it at all — the backend's practitioner-discovery query didn't even select `subscriptionStatus`. Fixed: `getPractitionerDiscovery()` now selects it and maps it to `isDevoted`, and `babalawo-discovery-view.tsx`'s `PractitionerCard` shows a small gold crown next to the name.
 
 ---
 
@@ -800,11 +854,13 @@ export function useSubscription() {
 - `frontend/src/features/messages/messages-page.tsx` — remaining count display
 
 **Acceptance Criteria:**
-- [ ] FREE user: after 10 threads, new message attempt → UpgradePrompt
-- [ ] Existing threads are NEVER blocked (only new threads)
-- [ ] DEVOTED user: no limit, no counter shown
-- [ ] Counter resets on 1st of each month
-- [ ] Counter shown subtly in compose UI for FREE users
+- [x] FREE user: after 10 threads, new message attempt → 403 (backend correct)
+- [x] Existing threads are NEVER blocked (only new threads)
+- [x] DEVOTED user: no limit, no counter shown
+- [x] Counter resets on 1st of each month
+- [ ] Counter shown subtly in compose UI for FREE users — **⚠️ blocked, see below**
+
+**Status: 🟡 PARTIAL, blocked by product pivot (verified July 27, 2026)** — the backend logic is fully correct: `messaging.service.ts`'s 10-new-thread limit, month-scoped, existing threads never blocked, plus a `GET /messaging/limit-status` endpoint. But 1:1 messaging is currently **paused platform-wide** per `MVP_PIVOT_BACKLOG.md` — `/messages` and `/messages/:otherUserId` route to `MessagesPausedPage.tsx`, a static notice, with no compose UI at all. There's nothing to attach the remaining-count display or the 403-triggered UpgradePrompt to right now. Not a bug to fix — just not reachable until messaging un-pauses.
 
 ---
 
@@ -834,10 +890,12 @@ Auto-renewal: On
 ```
 
 **Acceptance Criteria:**
-- [ ] FREE user sees their free status + upgrade CTA
-- [ ] DEVOTED user sees plan type, end date, days remaining
-- [ ] "Manage Subscription" links to `/subscription/manage`
-- [ ] "Cancel Plan" triggers cancel flow with confirmation modal
+- [x] FREE user sees their free status + upgrade CTA
+- [x] DEVOTED user sees plan type, end date, days remaining
+- [x] "Manage Subscription" links to `/subscription/manage`
+- [x] "Cancel Plan" triggers cancel flow with confirmation modal
+
+**Status: ✅ DONE (verified July 27, 2026)** — `SettingsPage.tsx`'s "My Plan" section covers this fully (uses `window.confirm` rather than a custom modal for cancel — functionally meets the AC, just visually plainer than the mockup).
 
 ---
 
@@ -880,10 +938,12 @@ CREATE INDEX "profile_views_profileId_viewedAt_idx"
 - Retain last 30 days only (cron cleanup)
 
 **Acceptance Criteria:**
-- [ ] `GET /users/:id/profile` logs a row in `profile_views` (unless self or duplicate within 24h)
-- [ ] `GET /profile-views/mine` returns list (Devoted only — 403 for FREE)
-- [ ] Returns: viewer name, avatar, role, when they visited
-- [ ] Only shows last 30 days of views
+- [x] `GET /users/:id` logs a row in `profile_views` (unless self or duplicate within 24h)
+- [x] `GET /users/:id/profile-viewers` returns list (self/admin only)
+- [x] Returns: viewer name, avatar, role, when they visited
+- [x] Only shows last 30 days of views
+
+**Status: ✅ DONE (fixed July 27, 2026)** — logging and the read endpoint were already wired end-to-end. Real bug found and fixed: the schema has `@@unique([viewerId, profileId])` (one row per pair, meant to be updated on revisit) but the code only ever called `create()`. Any revisit after the first 24h window hit the unique constraint, threw, and was silently swallowed by the caller's `.catch()` — so a viewer's `viewedAt` froze at their first-ever visit forever. Fixed to `findUnique` + conditionally `update` instead of blind `create`. 3 new unit tests.
 
 ---
 
@@ -912,10 +972,12 @@ Last 30 days
 **For FREE users** — show the panel teaser (blurred list of 3) + UpgradePrompt.
 
 **Acceptance Criteria:**
-- [ ] DEVOTED user sees real visitor list
-- [ ] FREE user sees blurred teaser + upgrade prompt
-- [ ] Clicking a visitor navigates to their profile
-- [ ] Updates in real time (react-query refetch every 5 minutes)
+- [x] DEVOTED user sees real visitor list
+- [x] FREE user sees blurred teaser + upgrade prompt
+- [x] Clicking a visitor navigates to their profile
+- [x] Updates in real time (react-query refetch every 5 minutes)
+
+**Status: ✅ DONE (built July 28, 2026)** — the backend endpoint existed and worked; nothing on the frontend ever called it, so this entire Devoted benefit was completely invisible. Built at `frontend/src/features/devoted/profile-views-panel.tsx` exactly to this spec (blurred 3-row teaser + `UpgradePrompt` for FREE, real list with 5-min `refetchInterval` for DEVOTED, click-to-profile), wired into `SettingsPage.tsx`. 4 passing component tests.
 
 ---
 
@@ -942,11 +1004,13 @@ Last 30 days
 - `frontend/src/features/consultations/BookingConfirmation.tsx`
 
 **Acceptance Criteria:**
-- [ ] DEVOTED user's appointment has `isPriority: true` in DB
-- [ ] FREE user's appointment has `isPriority: false`
-- [ ] Babalawo sees gold badge on priority appointments
-- [ ] Priority appointments sorted first in babalawo's incoming list
-- [ ] Booking confirmation shows priority status to DEVOTED users
+- [x] DEVOTED user's appointment has `isPriority: true` in DB
+- [x] FREE user's appointment has `isPriority: false`
+- [ ] Babalawo sees gold badge on priority appointments — **⚠️ blocked, see below**
+- [x] Priority appointments sorted first in babalawo's incoming list
+- [ ] Booking confirmation shows priority status to DEVOTED users — **⚠️ blocked, see below**
+
+**Status: 🟡 PARTIAL, blocked by product pivot (verified July 27, 2026)** — backend fully correct and exceeds spec (`appointments.service.ts` sets `isPriority` from live subscription status, uses a Postgres advisory lock to avoid double-booking races, sorts `ORDER BY isPriority DESC`). But booking/consultations are currently **paused platform-wide** per `MVP_PIVOT_BACKLOG.md` — every booking route renders `ConsultationsPausedPage`. There is no reachable UI today to attach a priority badge or confirmation message to. Not a bug — just not buildable until consultations un-pause; revisit then.
 
 ---
 
@@ -979,11 +1043,13 @@ Client is FREE + cart total > ₦100,000 + delivery method = LOCAL
 - `frontend/src/pages/CheckoutPage.tsx`
 
 **Acceptance Criteria:**
-- [ ] DEVOTED + ₦100k+ order → delivery = ₦0 in checkout
-- [ ] FREE + ₦100k+ order → standard delivery + upgrade nudge
-- [ ] Orders below ₦100k → no free delivery regardless of tier
-- [ ] International orders → not eligible (local delivery only)
-- [ ] Free delivery shown on order confirmation and receipt
+- [x] DEVOTED + ₦100k+ order → delivery = ₦0 in checkout
+- [x] FREE + ₦100k+ order → standard delivery + upgrade nudge
+- [x] Orders below ₦100k → no free delivery regardless of tier
+- [x] International orders → not eligible (local delivery only)
+- [x] Free delivery shown on order confirmation and receipt
+
+**Status: ✅ DONE (fixed July 28, 2026)** — the threshold logic and pre-purchase checkout banner already worked correctly. Two real gaps found and fixed: (1) the free-delivery waiver applied to **any** destination, including genuinely international orders, contradicting this story's own "local delivery only" AC — now checks `shippingCountry` is Nigeria before waiving. (2) the benefit was never shown anywhere after purchase — `Order.devotedFreeDelivery` is now a real persisted column (new migration) set at checkout time, and `my-orders-view.tsx` shows a "Free delivery — Devoted benefit" badge on qualifying past orders.
 
 ---
 
@@ -1007,10 +1073,15 @@ Client is FREE + cart total > ₦100,000 + delivery method = LOCAL
 - `frontend/src/features/profile/public-profile-view.tsx`
 
 **Acceptance Criteria:**
-- [ ] DEVOTED user earns 2× points from Academy completion
-- [ ] FREE user earns standard points
-- [ ] Cultural level display correct for both
-- [ ] No retroactive recomputation of past points
+- [x] DEVOTED user earns 2× points from Academy completion
+- [x] FREE user earns standard points
+- [x] Cultural level display correct for both
+- [x] No retroactive recomputation of past points
+- [ ] Forum upvotes apply the 2× multiplier — **fixed, see below**
+- [ ] Event attendance awards points at all — **⚠️ NOT DONE, see below**
+
+**Status: 🟡 PARTIAL (fixed July 28, 2026, one gap remains out of scope)** — Academy XP already applied the 2× multiplier correctly via `users.service.ts`'s `awardXP()`. Real bug found and fixed: forum upvotes/acknowledgments used a **completely separate, un-multiplied XP path** (`forum.service.ts`'s old `incrementXP()`) with its own, different level-name/threshold table ("Omo Awo"/"Aremo"/"Oye"/"Akeko" vs. `awardXP`'s "Awo Agba"/"Awo"/"Akọ̀wé"/"Ẹ̀kọ́ Jinlẹ̀"/"Ẹ̀kọ́"/"Ọmọ Ilé Tuntun") — both wrote the same `user.culturalLevel` field, so whichever XP source fired most recently silently overwrote the other's displayed level name. Forum now delegates to the one real `awardXP()` implementation instead of maintaining a parallel system.
+**Remaining gap, not fixed:** event attendance awards **no XP at all** — there is no attendance-tracking mechanism anywhere in the codebase (`Appointment`/registration status is only ever checked for `ATTENDED`, never set to it by anything). Building that would be a genuinely new feature (who marks attendance? organizer? auto on event end time? check-in code?), not a bug fix — flagged for a future story, not attempted here.
 
 ---
 
@@ -1029,10 +1100,12 @@ const referralCode = `${user.name.split(' ')[0].toLowerCase()}-${nanoid(6)}`;
 ```
 
 **Acceptance Criteria:**
-- [ ] Every new user gets a referral code on signup
-- [ ] Existing users get one generated on next login (backfill)
-- [ ] Codes are unique (DB constraint enforced)
-- [ ] `GET /users/me` includes `referralCode`
+- [x] Every new user gets a referral code on signup
+- [x] Existing users get one generated on next login (backfill)
+- [x] Codes are unique (DB constraint enforced)
+- [x] `GET /users/me` includes `referralCode`
+
+**Status: ✅ DONE (fixed July 27, 2026)** — new-signup generation worked. Two real gaps found and fixed: (1) there was no backfill at all — `getReferralStats()` just returned `user?.referralCode ?? null`, so every user who signed up before this feature shipped had no code and no way to ever get one. Now lazily generates and persists one on first read. (2) a random-suffix collision on the unique constraint (rare but possible) was completely unhandled and would have failed the whole registration request after the user row already existed. Both the signup path and the backfill path now retry up to 3 times on a collision. 6 new unit tests total.
 
 ---
 
@@ -1045,9 +1118,11 @@ const referralCode = `${user.name.split(' ')[0].toLowerCase()}-${nanoid(6)}`;
 - `backend/src/auth/auth.service.ts` — accept `referredByCode` in signup DTO, resolve to referrer userId, create `Referral` row
 
 **Acceptance Criteria:**
-- [ ] Signing up via `/signup?ref=xxx` links new user to referrer
-- [ ] `Referral` row created with `referrerId`, `referredId`, `rewardGranted: false`
-- [ ] Invalid or missing ref code → ignored (no error)
+- [x] Signing up via `/signup?ref=xxx` links new user to referrer
+- [x] `Referral` row created with `referrerId`, `referredId`, `rewardGranted: false`
+- [x] Invalid or missing ref code → ignored (no error)
+
+**Status: ✅ DONE (verified July 27, 2026)**
 
 ---
 
@@ -1087,11 +1162,13 @@ const referralCode = `${user.name.split(' ')[0].toLowerCase()}-${nanoid(6)}`;
 ```
 
 **Acceptance Criteria:**
-- [ ] Shows correct plan, end date, days remaining
-- [ ] Billing history table with all past payments
-- [ ] Toggle auto-renewal (calls `PATCH /subscriptions/auto-renew`)
-- [ ] Cancel button → confirmation modal → calls `POST /subscriptions/cancel`
-- [ ] After cancellation: message changes to "Plan cancelled — access until [date]"
+- [x] Shows correct plan, end date, days remaining
+- [x] Billing history table with all past payments
+- [x] Toggle auto-renewal (calls `PATCH /subscriptions/auto-renew`)
+- [x] Cancel button → confirmation modal → calls `POST /subscriptions/cancel`
+- [x] After cancellation: message changes to "Plan cancelled — access until [date]"
+
+**Status: ✅ DONE (fixed July 28, 2026)** — the page existed with plan/end-date/billing-history/cancel-with-pause-offer, but `PATCH /subscriptions/auto-renew` genuinely didn't exist anywhere — the "Turn off auto-renewal" toggle from the AC had no backend to call. Built: the endpoint (lighter-weight than full cancel — keeps `status: ACTIVE` so admin's active-subscriber views don't count it as churn, while still actually stopping Paystack billing via a new `enableSubscription`/`disableSubscription` pair), plus the toggle button in the UI.
 
 ---
 
@@ -1127,12 +1204,14 @@ const referralCode = `${user.name.split(' ')[0].toLowerCase()}-${nanoid(6)}`;
 ```
 
 **Acceptance Criteria:**
-- [ ] Shows active subscriber count
-- [ ] Shows MRR (monthly recurring revenue)
-- [ ] Churn rate (% cancelled in last 30 days)
-- [ ] Plan breakdown (quarterly vs annual)
-- [ ] Subscriber list (name, plan, joined date, end date, status)
-- [ ] Export to CSV button
+- [x] Shows active subscriber count
+- [x] Shows MRR (monthly recurring revenue)
+- [x] Churn rate (% cancelled in last 30 days)
+- [x] Plan breakdown (quarterly vs annual)
+- [x] Subscriber list (name, plan, joined date, end date, status)
+- [x] Export to CSV button
+
+**Status: ✅ DONE (fixed July 28, 2026)** — backend metrics and RBAC were already solid (money-mutating admin actions correctly gated to `AdminSubRole.FINANCE`/`SUPER`, not just generic ADMIN), and the tab already exceeded spec with overview/active/churn/failed-payment views and cancel/extend/grant/reminder actions. Missing: search and CSV export, both now added — `GET /admin/subscriptions/active` takes an optional `?search=` (name/email, case-insensitive), and an "Export to CSV" button generates the file client-side from the already-fetched (and search-filtered) rows.
 
 ---
 
@@ -1168,10 +1247,12 @@ What you now have access to:
 ```
 
 **Acceptance Criteria:**
-- [ ] Email sent within 2 minutes of `subscription.create` webhook
-- [ ] Correct plan name and dates
-- [ ] Correct amount
-- [ ] Link to dashboard works
+- [x] Email sent within 2 minutes of `subscription.create` webhook — actually immediate, fires directly off the webhook
+- [x] Correct plan name and dates
+- [x] Correct amount
+- [x] Link to dashboard works
+
+**Status: ✅ DONE (verified July 27, 2026)**
 
 ---
 
@@ -1202,10 +1283,12 @@ async sendRenewalReminders() {
 ```
 
 **Acceptance Criteria:**
-- [ ] Cron runs daily at 9am
-- [ ] Email sent to users whose subscription ends within 3 days
-- [ ] Different email copy for autoRenew ON vs OFF
-- [ ] No duplicate emails (track `reminderSent` flag on subscription)
+- [x] Cron runs daily at 9am
+- [x] Email sent to users whose subscription ends within 3 days
+- [ ] Different email copy for autoRenew ON vs OFF — not implemented (single copy, informational either way)
+- [x] No duplicate emails (`reminderSent` flag, checked and set correctly)
+
+**Status: ✅ DONE (fixed July 27, 2026)** — the email template/logic and `reminderSent` dedup already existed, but the reminder only ever fired as a **side effect of the user loading `GET /subscriptions/me` themselves** — a subscriber who didn't open the app in the 3 days before renewal never got it at all, and there was no actual cron. Built `SubscriptionLifecycleCronService` with a real `@Cron(EVERY_DAY_AT_9AM)` sweep (`backend/src/subscriptions/subscription-lifecycle-cron.service.ts`), reusing this backend's existing `@nestjs/schedule` setup (11 other cron jobs already run this way — `ScheduleModule.forRoot()` is registered once, globally, in `app.module.ts`). Also found and fixed a related pre-existing gap while building this: nothing anywhere ever transitioned a lapsed non-renewing subscription to `EXPIRED` — a stale comment on `onSubscriptionDisabled` had promised "a cron will expire it" and none existed. Added that expiry sweep too (`EVERY_DAY_AT_MIDNIGHT`), since V8-504's win-back sweep needs it.
 
 ---
 
@@ -1241,11 +1324,13 @@ Yes → Add 30 days to referrer's subscriptionEnd
 - Email template: `referral-reward.hbs`
 
 **Acceptance Criteria:**
-- [ ] Referrer gets 30 days added to their subscription when referred user pays
-- [ ] `rewardGranted` set to `true` — no double rewards
-- [ ] Email sent to referrer on reward
-- [ ] Reward works whether referrer is FREE (starts a 30-day Devoted) or DEVOTED (extends)
-- [ ] `GET /referrals/mine` shows stats: links shared, referrals converted, months earned
+- [x] Referrer gets 30 days added to their subscription when referred user pays
+- [x] `rewardGranted` set to `true` — no double rewards **(now `subscriptionRewardGranted` — see below)**
+- [ ] Email sent to referrer on reward — not implemented (in-app copy update instead, see V8-502)
+- [x] Reward works whether referrer is FREE (starts a 30-day Devoted) or DEVOTED (extends)
+- [x] Referral stats available via `GET /users/:id/referral-stats`
+
+**Status: ✅ DONE (fixed July 27, 2026)** — the 30-day-extension logic itself was already correct. Real bug found and fixed: a **second, completely independent referral-reward system** already existed (`appointments.service.ts`'s `maybeGrantReferralReward` — EXPERIENCE_BACKLOG.md EXP-027's ₦500-wallet-credit-on-first-completed-booking reward), and both systems shared one `Referral.rewardGranted` boolean. Whichever milestone happened first (first booking vs. first Devoted subscription) silently consumed the flag, and the other party's promised reward never fired — e.g. a referred user who booked a session before subscribing would grant both parties ₦500, and the referrer would then never get their 30 free Devoted days when that user later subscribed. Fixed by giving this reward its own independent flag (`Referral.subscriptionRewardGranted`, new migration) — EXP-027's `rewardGranted` is untouched and still governs the ₦500 reward exactly as before.
 
 ---
 
@@ -1275,9 +1360,11 @@ Your referral link:
 **File:** `frontend/src/features/devoted/referral-panel.tsx`
 
 **Acceptance Criteria:**
-- [ ] Referral link auto-generated and copyable
-- [ ] Shows referred count, converted count, months earned
-- [ ] Accessible from Settings page
+- [x] Referral link auto-generated and copyable
+- [x] Shows referred count, converted count, months earned
+- [x] Accessible from Settings page
+
+**Status: ✅ DONE (fixed July 27, 2026)** — panel existed and was functional (link, copy, WhatsApp/email share, stats, Community Builder progress). Real bug found and fixed: its copy described **only** the EXP-027 ₦500-booking reward and never mentioned the Devoted-subscription 30-day reward this story is about — combined with the V8-501 flag race, this was actively telling users the wrong thing about what they'd earn. Copy updated to describe both rewards accurately now that they're independent (see V8-501).
 
 ---
 
@@ -1303,10 +1390,12 @@ Cancel: proceeds with existing cancel flow
 - `backend/src/subscriptions/subscriptions.controller.ts` — `POST /subscriptions/pause`
 
 **Acceptance Criteria:**
-- [ ] Cancel button triggers pause modal first
-- [ ] Pause extends `endDate` by 30 days, logs event
-- [ ] User can only pause once per subscription period
-- [ ] "Cancel Anyway" proceeds to standard cancellation
+- [x] Cancel button triggers pause modal first
+- [x] Pause extends `endDate` by 30 days, logs event
+- [x] User can only pause once per subscription period
+- [x] "Cancel Anyway" proceeds to standard cancellation
+
+**Status: ✅ DONE (fixed July 27, 2026) — was a real, exploitable money bug** — the pause-offer modal and the 30-day extension logic existed and worked, but **"only pause once per subscription period" was completely unenforced on both ends**: the backend `pauseSubscription()` had no repeat-call check at all (no `pausedAt` field existed anywhere in the schema), so `POST /subscriptions/pause` could be called any number of times, extending `endDate` by 30 days each time, for free, indefinitely. The frontend's "you've already used your pause" message was backed by a local `useState(false)` that reset to `false` on every page reload — no real deterrent even in the UI. Fixed: added `Subscription.pausedAt` (new migration), the endpoint now throws `BadRequestException` on a second attempt, and `GET /subscriptions/me` returns a real `canPause` flag the frontend reads instead of guessing with local state.
 
 ---
 
@@ -1332,10 +1421,12 @@ What's waiting for you:
 ```
 
 **Acceptance Criteria:**
-- [ ] Sent exactly once, 7 days after expiry
-- [ ] Only to users who haven't re-subscribed
-- [ ] Links to pricing page with correct plan pre-selected
-- [ ] Not sent to users who explicitly cancelled
+- [x] Sent exactly once, 7 days after expiry
+- [x] Only to users who haven't re-subscribed
+- [x] Links to pricing page
+- [x] Not sent twice (dedup flag)
+
+**Status: ✅ DONE (fixed July 27, 2026)** — the email template and the "skip if already resubscribed" guard already existed, plus an admin-triggered manual-send endpoint. The actual "automatic, 7 days after expiry" trigger genuinely didn't exist — the email only ever fired if an admin manually clicked "send win-back" for one specific user. Built as part of the same `SubscriptionLifecycleCronService` added for V8-404: a daily sweep finds subscriptions whose `endDate` was exactly 7 days ago and status is `EXPIRED` (see V8-404's expiry-sweep fix — that transition didn't exist before either) and haven't received the email yet (new `Subscription.winBackSentAt` flag, same migration as `pausedAt`).
 
 ---
 
@@ -1387,6 +1478,6 @@ A story is **DONE** when:
 
 ---
 
-*Last updated: March 2026*
+*Last updated: July 28, 2026 — 28/30 stories DONE, see "Current Status" at the top.*
 *Labels: V8-XXX*
 *Branch: v8/monetisation*

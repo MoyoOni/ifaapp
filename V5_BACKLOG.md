@@ -1,3 +1,5 @@
+> ⚠️ **SUPERSEDED as of July 28, 2026** — see [`ILUASE_V1_BACKLOG.md`](ILUASE_V1_BACKLOG.md) for the current single source of truth. This doc is essentially fully done; its 2 small remaining exceptions (V5-505's unresolved conditional, the 95%-not-100% audit note) are carried forward there.
+
 # V5: THE REAL PLATFORM
 ## Ìlú Àṣẹ — Full Functional Backlog & Implementation Guide
 

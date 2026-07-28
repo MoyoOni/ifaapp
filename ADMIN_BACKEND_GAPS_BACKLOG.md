@@ -1,3 +1,5 @@
+> ⚠️ **SUPERSEDED as of July 28, 2026** — see [`ILUASE_V1_BACKLOG.md`](ILUASE_V1_BACKLOG.md) for the current single source of truth. This doc's findings were fully absorbed there (🔴 Critical section) — its evidence-based, file:line-referenced findings were treated as authoritative over ADMIN_BACKLOG.md's stale "done" claims. Keep this file around for the detailed per-ticket reproduction steps if you need to re-verify one.
+
 # Admin Backend Gaps — Backlog & Execution Plan for an AI Coding Agent
 
 > **Written**: 2026-07-07

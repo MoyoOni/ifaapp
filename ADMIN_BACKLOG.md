@@ -1,6 +1,8 @@
 # ADMIN_BACKLOG.md — OBSOLETE
 
-**Status:** ✅ CONSOLIDATED into Z1_BACKLOG.md
+> ⚠️ **SUPERSEDED as of July 28, 2026** — see [`ILUASE_V1_BACKLOG.md`](ILUASE_V1_BACKLOG.md) for the current single source of truth. **Important correction:** this file's own "All admin operations work verified complete" claim below turned out to be wrong — `ADMIN_BACKEND_GAPS_BACKLOG.md` independently re-audited it against live code on 2026-07-07 and found 14 endpoints this doc marks ✅ DONE actually 404, plus 3 more partially real and 2 internal self-contradictions. Full list in `ILUASE_V1_BACKLOG.md`'s 🔴 Critical section. Do not trust the "Status" line directly below this banner.
+
+**Status:** ✅ CONSOLIDATED into Z1_BACKLOG.md (superseded — see banner above)
 **Date:** April 19, 2026
 **Reason:** All admin operations work verified complete. No remaining items.
 

@@ -1,3 +1,5 @@
+> ⚠️ **SUPERSEDED as of July 28, 2026** — see [`ILUASE_V1_BACKLOG.md`](ILUASE_V1_BACKLOG.md). This doc's "Status: 🔵 Planned" line below is stale — all 14 PIV-XXX stories were independently verified fully implemented on July 28, 2026 (see the master doc's "Paused Platform Features" section). Kept here for the detailed per-story implementation notes.
+
 # MVP Pivot Backlog — Ìlú Àṣẹ
 ## Narrowing to a Focused 8-Feature Surface
 

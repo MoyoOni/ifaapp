@@ -1,3 +1,5 @@
+> ⚠️ **SUPERSEDED as of July 28, 2026** — see [`ILUASE_V1_BACKLOG.md`](ILUASE_V1_BACKLOG.md)'s ⚪ "Needs a Human" section for the current consolidated list. This doc's full context/reasoning per item is still the place to read for detail; its open items as of July 26, 2026 are all carried forward there.
+
 # Human Backlog
 
 Things that came up during recent work that need a human — an external console,
@@ -5,7 +7,111 @@ a credential only you hold, a product/business call, or a real browser to click
 through. Everything here is **not code I can fix myself**; the code-side fixes
 that prompted these items are already done and verified where noted.
 
-Last updated: 2026-07-09
+Last updated: 2026-07-26
+
+---
+
+## ✅ 2026-07-26: Vendor escrow creation required the customer's internal wallet balance — vendors were never actually paid
+
+Follow-up to the entry directly below this one. That fix made the Paystack
+webhook correctly reach `processSuccessfulPayment` → `processMarketplaceOrderPayment`
+for `MARKETPLACE_ORDER` payments — described there as "fully-correct." It
+wasn't: `processMarketplaceOrderPayment` calls `WalletService.createEscrow`
+to hold the vendor's payout, and `createEscrow` requires the **depositor's
+own internal wallet balance** to already contain the escrow amount, then
+decrements it. That's correct for BOOKING/TUTOR_SESSION/GUIDANCE_PLAN
+escrows (customers really do fund those from wallet balance) — it's wrong
+for `MARKETPLACE_ORDER` escrows, where the money came from an external
+Paystack charge and never touched the customer's wallet at all. A fresh
+wallet defaults to balance 0, so `createEscrow` throws `Insufficient funds`
+on essentially every real order. That error was silently swallowed by
+`processMarketplaceOrderPayment`'s per-order `try/catch`, so the order still
+showed `PAID` to the customer — but no escrow was ever created, meaning the
+vendor was never actually paid, with no error surfaced to anyone.
+
+Found while building `VENDOR_BACKLOG.md`'s VND-010 (returns/refunds), which
+needed to reverse an order's escrow hold on refund — tracing that logic
+back to how the escrow was created in the first place surfaced this.
+Flagged to the user before fixing, same reasoning as the entry below: real
+money, already live (my own earlier fix this session was what made this
+code path reachable from the live webhook in the first place).
+
+Fixed:
+- `WalletService.createExternallyFundedEscrow(userId, dto)` — new method,
+  creates the same `HOLD` escrow row as `createEscrow` but skips the
+  wallet-balance check/decrement and the misleading debit `Transaction`
+  entirely (the `Payment` row and `Order.paidAt` already carry the audit
+  trail for where the money came from). `processMarketplaceOrderPayment`
+  now calls this instead of `createEscrow`.
+- `WalletService.refundMarketplaceOrder(orderId, customerId, refundAmount, currency, refundedBy)`
+  — new method. `MarketplaceService.refundOrder` previously only flipped
+  the `Order` row's `status`/`refundAmount` fields; **no money ever
+  actually moved** on a refund, for any order, ever. Now cancels the
+  order's escrow if still `HOLD` (so the vendor can't later be paid out for
+  a refunded order) and credits the customer's wallet with the real refund
+  amount — works correctly for partial refunds too, and is safe to call on
+  orders that predate this fix (no escrow existed for those; it just
+  credits the wallet directly).
+- Known, documented simplification: if the escrow is `PARTIALLY_RELEASED`
+  (a shipped/delivered tier already paid out to the vendor before the
+  refund), that portion is left alone — recovering money already paid to a
+  vendor is a manual payout-deduction operation, out of scope here. The
+  customer is still made whole via the direct wallet credit either way.
+- 6 new backend unit tests across `wallet.service.spec.ts` (both new
+  methods) and `marketplace.service.spec.ts` (`refundOrder` calls the new
+  method with the right args, full and partial refund amounts), plus the
+  `payments.service.spec.ts` assertion updated to check for
+  `createExternallyFundedEscrow` instead of `createEscrow`.
+
+---
+
+## ✅ 2026-07-26: Marketplace card payments were silently crediting buyer wallets instead of paying orders
+
+Discovered while auditing `VENDOR_BACKLOG.md`'s VND-004 (vendor sales
+notifications) — checking whether "order payment confirmed" notifications
+actually fire led straight to this. **This was live in production**: any
+marketplace order paid via real Paystack card checkout never actually got
+marked as paid.
+
+Root cause: `PaymentsService.handlePaystackWebhook`'s `charge.success` handler
+treated **every** successful charge as a wallet top-up, unconditionally,
+regardless of `metadata.purpose`. A `MARKETPLACE_ORDER` payment's money went
+into the buyer's wallet balance instead of marking their order `PAID` — the
+order stayed `PENDING` forever, the vendor was never notified, and no escrow
+was ever created. The purpose-aware completion logic
+(`processSuccessfulPayment`'s `MARKETPLACE_ORDER`/`BOOKING`/etc. switch,
+including a fully-correct `processMarketplaceOrderPayment` that marks the
+order PAID, creates the 50/50-tier vendor escrow, and notifies both
+customer and vendor) already existed — but it was only reachable via the
+admin-only `manuallyVerifyPayment` action, because **nothing ever created a
+`Payment` database row for a real gateway-initiated payment** for this to
+look up. It had no way to fire from a live webhook.
+
+Fixed, scoped narrowly to the confirmed bug (not the untouched/unverified
+BOOKING/COURSE_ENROLLMENT cases, which weren't reported or audited here):
+- `PaymentsService.initializePayment` now creates a `Payment` row (status
+  `PENDING`) when `purpose === MARKETPLACE_ORDER`, keyed by the gateway
+  reference, before redirecting to Paystack.
+- `handlePaystackWebhook`'s `charge.success` handler now checks
+  `metadata.purpose` first: for a `MARKETPLACE_ORDER` with a matching
+  `Payment` row, it marks the row `success` and calls the existing
+  `processSuccessfulPayment` dispatch (idempotent — a replayed webhook
+  delivery for an already-`success` row is a no-op). Anything else (no
+  matching row, or any other purpose) falls through to the **exact same**
+  wallet-deposit code that ran before this fix — zero behavior change for
+  wallet top-ups or any other payment purpose.
+- `InitializePaymentDto.relatedId` was `@IsUUID()`, which would have
+  rejected marketplace checkout's comma-joined multi-vendor order-id list
+  outright (`processMarketplaceOrderPayment` already expected and split on
+  commas) — relaxed to `@IsString()` so the fix actually works for
+  multi-vendor carts, not just single-vendor ones.
+- 6 new backend unit tests: Payment-row creation on initialize, correct
+  order/escrow/notification side effects on webhook, idempotent replay, and
+  the legacy-fallback path for non-order payments.
+
+Flagged to the user directly before fixing, given the severity (real money,
+already live) and that it required touching the core payment webhook —
+fixed only after explicit go-ahead, not fixed silently mid-backlog-sweep.
 
 ---
 
@@ -195,23 +301,52 @@ unrelated IPs / normal traffic are unaffected.
 
 ## 🔴 Blocking — needed to finish testing what was just built
 
-- [ ] **Withdrawal approval doesn't move real money and has a double-spend
-  gap — decided against fixing for now, but this is load-bearing on the
-  refund decision below, so flagging here rather than burying it.**
-  `AdminFinanceService.processWithdrawal` (`admin-finance.service.ts:236-273`)
-  only flips `WithdrawalRequest.status` — it never debits the wallet balance
-  and never calls a real bank-transfer/payout API (there is no transfer/payout
-  integration anywhere in the codebase; `paystack-api.service.ts` only has
-  `initializeTransaction`/`verifyTransaction`/`createRefund`, no
-  `initiateTransfer`). Worse, `WalletService.createWithdrawalRequest`
-  (`wallet.service.ts:984-1031`) never reserves/debits funds at request time
-  either, so a user can submit the same wallet balance as multiple withdrawal
-  requests with no double-spend protection. **Net effect: "refund to wallet,
-  let them withdraw it" (the decided refund policy below) does not currently
-  get anyone real money — withdrawal is a dead end today, not a working
-  path.** Decision as of 2026-07-08: document only, don't fix yet. Revisit
-  before withdrawals go live for real users, and definitely before relying on
-  "they can withdraw it" as the answer to any refund/payout question.
+- [x] **Withdrawal approval doesn't move real money and has a double-spend
+  gap.** — **FIXED July 26, 2026.** This was a bigger fix than it looked:
+  the intake form (`payout-management.tsx`) was also sending a nested
+  `bankDetails: {...}` body while the backend DTO expected flat fields — the
+  global `ValidationPipe`'s `whitelist: true` silently stripped it, meaning
+  **every withdrawal request ever filed through that form had no bank
+  details captured at all**, on top of the missing debit/transfer logic.
+  Fixed the whole pipeline:
+  - `WalletService.createWithdrawalRequest` now holds funds atomically at
+    request time (the EMG-06 conditional-decrement pattern: `balance: {
+    gte: amount }` checked and applied in one `updateMany`, closing the
+    double-spend gap) instead of only checking balance and leaving the
+    wallet untouched.
+  - Added `bankCode` to `WithdrawalRequest` (migration `20260726140224`) —
+    a Paystack transfer needs the bank's numeric code, not a free-typed
+    name, which is all the form used to collect.
+  - `PaystackApiService` gained `listBanks()`, `createTransferRecipient()`,
+    and `initiateTransfer()` (real Paystack Transfer API calls, using the
+    existing retry-on-network-failure-only policy for the mutating calls —
+    same conservative philosophy as `createRefund`). New `GET
+    /payments/banks` endpoint backs a real bank-picker dropdown in the
+    withdrawal form (replacing the free-text bank name field).
+  - `AdminFinanceService.processWithdrawal` now actually calls Paystack on
+    APPROVE and refunds the held amount (via a new
+    `WalletService.refundWithdrawalAmount`) on REJECT or on any Paystack
+    failure — previously it only flipped `status` to the literal strings
+    `'APPROVE'`/`'REJECT'` (not even the real `WithdrawalStatus` enum
+    values). A failed Paystack call now refunds the hold and puts the
+    request back to `PENDING` for retry, rather than silently pretending
+    success.
+  - Added `transfer.success`/`transfer.failed`/`transfer.reversed` webhook
+    handling in `payments.service.ts` to reconcile transfers that Paystack
+    completes asynchronously rather than in the initial API response
+    (idempotent — a repeated webhook delivery after the first refund is a
+    no-op).
+  - `payout-approvals-view.tsx` (admin) previously had no error handling on
+    the approve/reject mutation — a failed approval looked identical to a
+    successful one. Now surfaces the failure via toast.
+  - 44 new backend unit tests across `wallet.service.spec.ts`,
+    `admin-finance.service.spec.ts`, `payments.service.spec.ts`, and
+    `paystack-api.service.spec.ts`.
+  - **Not built**: OTP finalization for Paystack accounts with "OTP for
+    API-initiated transfers" enabled — this platform has no OTP-entry UI,
+    so that Paystack account setting needs to stay disabled for this flow
+    to work unattended. That's a Paystack dashboard configuration decision,
+    not something fixable in code.
 
 - [ ] **EC2 staging deploy is failing — the instance looks unreachable, not a
   code problem.** CI/CD's `test-backend` and `test-frontend` gates are fixed
@@ -264,22 +399,30 @@ unrelated IPs / normal traffic are unaffected.
   rather than reversing the original Paystack/Flutterwave charge — confirmed
   this is already how it's coded, no change needed there. The intent is that
   users withdraw that balance as real money via the existing withdrawal
-  request flow. **That withdraw half isn't actually wired up yet** — see the
-  withdrawal item at the top of the 🔴 Blocking section above. Until that's
-  fixed, this decision is directionally right but not yet delivering real
-  money to anyone.
+  request flow. **The withdraw half is now actually wired up** — see the
+  withdrawal item at the top of the 🔴 Blocking section above (fixed July 26,
+  2026) — so this decision now genuinely delivers real money, not just an
+  in-app number.
 
-- [ ] **Admin-cancelled subscriptions don't cancel the Paystack recurring
-  charge.** The self-service cancel path (`subscriptions.service.ts`,
-  `cancelSubscription`) calls Paystack's disable-subscription API before
-  updating the local DB. The new admin-initiated cancel I built
-  (`cancelSubscriptionById`) only updates the local DB status — it does not
-  touch Paystack. Net effect: an admin could "cancel" a subscription in the
-  dashboard and the customer's card could still get charged by Paystack on
-  the next billing cycle. Decide if this needs fixing before it's used for
-  real (I'd copy the same try/disable/proceed-on-failure pattern the
-  self-service path already uses — quick fix, just needs a decision that it's
-  wanted).
+- [x] **Admin-cancelled subscriptions don't cancel the Paystack recurring
+  charge.** — **FIXED July 26, 2026.** Turned out to be two bugs, not one:
+  (1) the admin path (`AdminFinanceService.cancelSubscriptionById`) never
+  touched Paystack at all, only the local DB row; (2) the self-service path
+  (`SubscriptionsService.cancelSubscription`) *did* call Paystack, but with
+  the wrong `token` value — it passed the subscription code as both `code`
+  and `token`, when Paystack's `/subscription/disable` actually requires a
+  separate `email_token` from the original `subscription.create` webhook,
+  which was never being stored. So the self-service path would have silently
+  failed against the real API too. Fixed by: adding `paystackEmailToken` to
+  the `Subscription` model (migration `20260726135131`), storing it from the
+  webhook payload, adding a real `disableSubscription()` method to
+  `PaystackApiService` (using its existing retry/timeout-configured client
+  instead of a raw unguarded `fetch()`), and extracting a shared
+  `disablePaystackSubscription()` helper on `SubscriptionsService` that both
+  the self-service and admin cancel paths now call. Gracefully no-ops (with
+  a warning log) for pre-existing subscription rows that predate this fix
+  and have no stored email token. 12 new unit tests across
+  `subscriptions.service.spec.ts` and `admin-finance.service.spec.ts`.
 
 - [ ] **Decide the fate of the orphaned Passport `GoogleStrategy`.**
   `backend/src/auth/strategies/google.strategy.ts` is a second, complete,

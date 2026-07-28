@@ -1,4 +1,4 @@
-> **OBSOLETE NOTICE**: This document has been superseded by an updated version reflecting the actual implementation status as of April 19, 2026. Please see the corrected status in the document body below.
+> ⚠️ **SUPERSEDED as of July 28, 2026** — see [`ILUASE_V1_BACKLOG.md`](ILUASE_V1_BACKLOG.md) for the current single source of truth. (The "OBSOLETE NOTICE" that used to be here pointed at "an updated version... in the document body below" — that was this same file describing itself, not a real separate doc. `ILUASE_V1_BACKLOG.md` is the real successor now.) The genuinely open items this doc never finished — Z1-801/802/803, Z1-1001/1002/1003, Z1-1101/1102, Z1-1201, plus the shared EXP-007/Z1-301 video-content gap — are all carried forward there; this doc's own "27/30 done" headline undercounts by silently excluding Sprints Z1-10/11/12 from its total.
 
 # Z1 Backlog — Ìlú Àṣẹ: The Final Frontier
 ## "What Remains" — Production-Ready Platform Completion
