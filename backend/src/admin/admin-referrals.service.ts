@@ -1,9 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { WalletService } from '../wallet/wallet.service';
+import { NotificationService, NotificationType, NotificationCategory } from '../notifications/notification.service';
+import { AppointmentsService } from '../appointments/appointments.service';
 
 @Injectable()
 export class AdminReferralsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private walletService: WalletService,
+    private notificationService: NotificationService
+  ) {}
 
   async getStats() {
     const total = await this.prisma.referral.count();
@@ -67,6 +74,19 @@ export class AdminReferralsService {
     };
   }
 
+  /**
+   * VENDOR_BACKLOG.md VND-021 / ILUASE_V1_BACKLOG.md fix: this used to just
+   * flip `rewardGranted: true` with no money moving at all -- its own old
+   * comment said "the actual reward... would typically happen here." Now it
+   * actually pays the same EXP-027 ₦500-to-both-parties reward
+   * `appointments.service.ts`'s `maybeGrantReferralReward()` pays
+   * automatically on a referred user's first completed booking. This admin
+   * action exists specifically because that automatic trigger can never fire
+   * right now -- Consultations (bookings) are paused platform-wide -- so
+   * admins need a manual way to honor a legitimate referral in the meantime.
+   * Uses the exact same `AppointmentsService.REFERRAL_REWARD_NGN` constant
+   * so the two paths can never pay different amounts.
+   */
   async creditReferral(id: string) {
     const referral = await this.prisma.referral.findUnique({
       where: { id },
@@ -74,17 +94,26 @@ export class AdminReferralsService {
     });
 
     if (!referral) {
-      throw new Error('Referral not found');
+      throw new NotFoundException('Referral not found');
     }
 
     if (referral.rewardGranted) {
-      throw new Error('Reward already granted');
+      throw new BadRequestException('Reward already granted');
     }
 
-    // Update the referral to mark as rewarded
-    // Based on existing implementations in appointments and subscriptions services,
-    // the actual reward (wallet deposit or subscription upgrade) would typically happen here
-    return this.prisma.referral.update({
+    const rewardNgn = AppointmentsService.REFERRAL_REWARD_NGN;
+    const rewardDto = {
+      amount: rewardNgn,
+      currency: 'NGN' as any,
+      reference: `referral_reward_admin_${referral.id}`,
+    };
+    await this.walletService.depositFunds(referral.referrerId, rewardDto);
+    await this.walletService.depositFunds(referral.referredId, {
+      ...rewardDto,
+      reference: `referral_welcome_admin_${referral.id}`,
+    });
+
+    const updated = await this.prisma.referral.update({
       where: { id },
       data: { rewardGranted: true },
       include: {
@@ -92,5 +121,28 @@ export class AdminReferralsService {
         referred: { select: { id: true, name: true, email: true } },
       },
     });
+
+    await this.notificationService.createNotification({
+      userId: referral.referrerId,
+      type: NotificationType.SYSTEM,
+      category: NotificationCategory.SUCCESS,
+      title: '🎉 Referral reward earned!',
+      message: `₦${rewardNgn} has been added to your wallet for your referral.`,
+      data: { action: 'referral_reward', amount: rewardNgn },
+      sendEmail: false,
+      sendPush: false,
+    });
+    await this.notificationService.createNotification({
+      userId: referral.referredId,
+      type: NotificationType.SYSTEM,
+      category: NotificationCategory.SUCCESS,
+      title: '🎉 Welcome bonus earned!',
+      message: `₦${rewardNgn} has been added to your wallet as a welcome gift from your referral.`,
+      data: { action: 'referral_reward', amount: rewardNgn },
+      sendEmail: false,
+      sendPush: false,
+    });
+
+    return updated;
   }
 }

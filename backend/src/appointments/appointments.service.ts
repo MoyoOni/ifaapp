@@ -30,6 +30,14 @@ const DEFAULT_TIMEZONE = 'Africa/Lagos';
 export class AppointmentsService {
   private readonly logger = new Logger(AppointmentsService.name);
 
+  // EXP-027: flat referral reward, credited to both referrer and referred
+  // on the referred user's first completed booking. Public (not a local
+  // const inside the method below) so admin-referrals.service.ts's manual
+  // credit action -- needed because Consultations being paused means this
+  // automatic trigger can never fire right now -- pays the exact same
+  // amount instead of a second, driftable copy of this number.
+  static readonly REFERRAL_REWARD_NGN = 500;
+
   constructor(
     private prisma: PrismaService,
     private notificationService: NotificationService,
@@ -872,7 +880,7 @@ export class AppointmentsService {
     });
     if (!referral || referral.rewardGranted) return;
 
-    const REWARD_NGN = 500;
+    const REWARD_NGN = AppointmentsService.REFERRAL_REWARD_NGN;
 
     const rewardDto = {
       amount: REWARD_NGN,
