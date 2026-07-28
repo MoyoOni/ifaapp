@@ -36,7 +36,7 @@
 
 ### Resolved since the doc was first written (moved from here to ✅ below, listed so you don't go looking)
 
-The following 🔴 items from the original pass are now **✅ done** — see the ✅ section for evidence: the 14 "missing" admin endpoints, the 3 "partially real" admin features, the ban/unban endpoint, and the `trustScore` schema-drift risk. **ADM-004** (forum thread admin actions) and **ADM-030** (platform settings panel) are **partially** resolved — see 🟡 Admin Operations below for what's still actually missing.
+The following 🔴 items from the original pass are now **✅ done** — see the ✅ section for evidence: the 14 "missing" admin endpoints, the 3 "partially real" admin features, the ban/unban endpoint, the `trustScore` schema-drift risk, and **ADM-004** (forum thread admin actions, fully wired July 28, 2026). **ADM-030** (platform settings panel) is still **partially** resolved — see 🟡 Admin Operations below for what's still actually missing.
 
 ---
 
@@ -78,7 +78,7 @@ Full detail in `V8_MONETISATION_BACKLOG.md` (superseded for planning, kept as de
 
 🔵 **The bulk of this is now done** — see ✅ below for the 14+3 previously-missing admin endpoints and the ban/unban endpoint, all confirmed implemented this session. What's still actually open:
 
-- **ADM-004 (forum thread admin actions) — frontend gap, not backend.** Backend has all 7 actions including delete-with-reason (`forum.service.ts` `adminDeleteThread()`, soft-delete + logged reason) and `move`/`feature`/`merge`/`pin`/`unpin`/`lock`/`unlock`. But `admin-forum-management-tab.tsx` only calls move, merge, and the pin/unpin/lock/unlock/approve moderate-action endpoint — it never calls `/feature` or the delete-with-reason `DELETE admin/threads/:id` route. Small, well-scoped frontend wiring task.
+- **ADM-004 (forum thread admin actions) — 🔵 FIXED, July 28, 2026.** `admin-forum-management-tab.tsx` now calls `PATCH admin/threads/:id/feature` (with a Feature/Unfeature button + "Featured" badge) and `DELETE admin/threads/:id` (with a reason textarea, matching the category-delete modal's pattern). All 7 backend actions are now reachable from the UI. Move to ✅ below.
 - **ADM-030 Platform Settings Panel — 🔵 still open for feature-flags/maintenance-mode/welcome-message/forum-limits.** `PlatformSettings` model now also has `platformCostNgn` (added fixing the fabrication item, see ✅ below) alongside `consultationCommissionPct`, `marketplaceCommissionPct`, `minPayoutThresholdNgn`, `maxPayoutWithoutApprovalNgn`, `quizPassThreshold`. Still no feature-flags, maintenance-mode, welcome-message, or forum-limits fields.
 
 ### Vendor / Marketplace
@@ -191,6 +191,7 @@ Explicitly out of scope by design, not oversights. Not re-checked this pass (no 
 
 ## ✅ WHAT'S ACTUALLY FULLY DONE (so you don't re-litigate it)
 
+- **ADM-004 forum thread admin actions — 🔵 FIXED July 28, 2026.** All 7 backend actions (pin/unpin/lock/unlock/approve/move/merge/feature/delete-with-reason) now reachable from `admin-forum-management-tab.tsx`.
 - **Money-as-Float, ProBacklog-v1.md item #15 — 🔵 FULLY RESOLVED July 28, 2026.** Every money field across the codebase is now `Decimal`, including the last four (`Transaction.amount` + 3 others) closed out this session. See 🔴 Critical section above for the full field list and migration reference.
 - **Marketplace commission deduction — 🔵 FIXED July 28, 2026,** the former top 🔴 Critical item. `walletService.releaseEscrow()` now deducts `marketplaceCommissionPct` and records it via a real `COMMISSION` transaction on every marketplace-order escrow release; earnings/statement/tax-summary views report the real retained amount. See 🔴 Critical section above for full detail and the VND-026 tier-benefit follow-up this unblocks.
 - **`platformCostNgn` fabrication — 🔵 FIXED July 28, 2026.** Real nullable `PlatformSettings.platformCostNgn` column, honest `null`/`platformCostNote` until an admin sets one, real configured commission rates replace the old flat-10% assumption. See 🔴 Critical section above for full detail and the two still-open `* 0.1` follow-up spots this doesn't cover.
