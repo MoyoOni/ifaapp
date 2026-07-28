@@ -4,12 +4,17 @@ import { AlertTriangle, CheckCircle, ExternalLink, Loader2, User } from 'lucide-
 import api from '@/lib/api';
 import { useToast } from '@/shared/components/toast';
 
+// COMMUNITY_BACKLOG.md FOR-015: this queue now merges Forum posts and Circle
+// feed posts (see forum.service.ts's getCrisisSignalPosts) -- `source`
+// discriminates which, `thread`/`circle` are mutually exclusive depending on it.
 interface CrisisPost {
   id: string;
   content: string;
   createdAt: string;
+  source: 'forum' | 'circle';
   author: { id: string; name: string; email: string; role: string };
-  thread: { id: string; title: string; categoryId: string };
+  thread?: { id: string; title: string; categoryId: string };
+  circle?: { id: string; name: string; slug: string };
 }
 
 const AdminCrisisAlertsTab: React.FC = () => {
@@ -23,7 +28,8 @@ const AdminCrisisAlertsTab: React.FC = () => {
   });
 
   const clearMutation = useMutation({
-    mutationFn: (postId: string) => api.patch(`/forum/admin/crisis-signals/${postId}/clear`),
+    mutationFn: ({ postId, source }: { postId: string; source: 'forum' | 'circle' }) =>
+      api.patch(`/forum/admin/crisis-signals/${postId}/clear?source=${source}`),
     onSuccess: () => {
       toastSuccess('Crisis signal cleared');
       queryClient.invalidateQueries({ queryKey: ['admin-crisis-signals'] });
@@ -42,7 +48,7 @@ const AdminCrisisAlertsTab: React.FC = () => {
           <AlertTriangle size={22} className="text-red-500" /> Crisis Signal Alerts
         </h2>
         <p className="text-muted-foreground text-sm mt-1">
-          Forum posts flagged by the automated welfare detection system. Review and clear when actioned.
+          Forum and Circle posts flagged by the automated welfare detection system. Review and clear when actioned.
         </p>
       </div>
 
@@ -73,6 +79,9 @@ const AdminCrisisAlertsTab: React.FC = () => {
                     <span className="text-muted-foreground">·</span>
                     <span className="text-muted-foreground">{post.author.email}</span>
                     <span className="text-xs bg-muted/60 px-2 py-0.5 rounded-full text-muted-foreground">{post.author.role}</span>
+                    <span className="text-xs bg-muted/60 px-2 py-0.5 rounded-full text-muted-foreground uppercase">
+                      {post.source}
+                    </span>
                   </div>
                   <span className="text-xs text-muted-foreground whitespace-nowrap">
                     {new Date(post.createdAt).toLocaleString()}
@@ -81,9 +90,15 @@ const AdminCrisisAlertsTab: React.FC = () => {
 
                 <div className="text-xs text-muted-foreground flex items-center gap-1">
                   <ExternalLink size={12} />
-                  <a href={`/forum/thread/${post.thread.id}`} target="_blank" rel="noreferrer" className="hover:text-highlight underline">
-                    {post.thread.title}
-                  </a>
+                  {post.source === 'forum' && post.thread ? (
+                    <a href={`/forum/${post.thread.id}`} target="_blank" rel="noreferrer" className="hover:text-highlight underline">
+                      {post.thread.title}
+                    </a>
+                  ) : post.circle ? (
+                    <a href={`/circles/${post.circle.slug}`} target="_blank" rel="noreferrer" className="hover:text-highlight underline">
+                      {post.circle.name}
+                    </a>
+                  ) : null}
                 </div>
 
                 <div className="bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/40 rounded-xl p-3 text-sm text-foreground leading-relaxed whitespace-pre-wrap break-words">
@@ -92,7 +107,7 @@ const AdminCrisisAlertsTab: React.FC = () => {
 
                 <div className="flex justify-end">
                   <button
-                    onClick={() => clearMutation.mutate(post.id)}
+                    onClick={() => clearMutation.mutate({ postId: post.id, source: post.source })}
                     disabled={clearMutation.isPending}
                     className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50"
                   >

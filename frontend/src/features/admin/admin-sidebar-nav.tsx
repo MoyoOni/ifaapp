@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Menu, Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/shared/hooks/use-auth';
 import { ADMIN_NAV_GROUPS, findAdminNavGroupId, type AdminTab } from './admin-nav-config';
 
 const STORAGE_KEY = 'admin-nav-expanded-groups';
@@ -61,17 +62,28 @@ const NavListBody: React.FC<{
   onToggleGroup: (groupId: string) => void;
 }> = ({ activeTab, onSelectTab, expanded, onToggleGroup }) => {
   const [query, setQuery] = useState('');
+  const { user } = useAuth();
+
+  // Mirrors the requiredAdminSubRoles filter sidebar-layout.tsx already
+  // applies to the outer nav -- without this, a sub-role-restricted admin
+  // sees every tab here regardless, then gets a silent 403 from the tab's
+  // own data fetch once they click in.
+  const canSeeItem = (item: { requiredAdminSubRoles?: string[] }) => {
+    if (user?.role !== 'ADMIN' || !item.requiredAdminSubRoles) return true;
+    if (user?.adminSubRole === 'SUPER') return true;
+    return item.requiredAdminSubRoles.includes(user?.adminSubRole as string);
+  };
 
   const filteredGroups = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return ADMIN_NAV_GROUPS;
     return ADMIN_NAV_GROUPS
       .map(group => ({
         ...group,
-        items: group.items.filter(item => item.label.toLowerCase().includes(q)),
+        items: group.items.filter(item => canSeeItem(item) && (!q || item.label.toLowerCase().includes(q))),
       }))
       .filter(group => group.items.length > 0);
-  }, [query]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, user?.role, user?.adminSubRole]);
 
   const isSearching = query.trim().length > 0;
 

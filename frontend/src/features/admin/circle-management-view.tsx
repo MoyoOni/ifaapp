@@ -6,7 +6,8 @@ import {
   X,
   Clock,
   Trash2,
-  Loader2
+  Loader2,
+  Crown,
 } from 'lucide-react';
 import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
@@ -17,7 +18,10 @@ import { usePrompt } from '@/hooks/use-prompt';
 interface CircleSuggestion {
   id: string;
   suggestedBy: string;
-  threadId: string;
+  threadId?: string | null;
+  // Freeform suggestions (no thread) carry these directly instead.
+  title?: string | null;
+  description?: string | null;
   circleId?: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   reviewedBy?: string;
@@ -36,7 +40,7 @@ interface CircleSuggestion {
     name: string;
     yorubaName?: string;
   };
-  thread: {
+  thread?: {
     id: string;
     title: string;
     content: string;
@@ -46,7 +50,7 @@ interface CircleSuggestion {
       name: string;
       slug: string;
     };
-  };
+  } | null;
   circle?: {
     id: string;
     name: string;
@@ -62,6 +66,7 @@ interface Circle {
   status: string;
   memberCount: number;
   createdAt: string;
+  isDevoted?: boolean;
   creator: {
     id: string;
     name: string;
@@ -159,6 +164,23 @@ const CircleManagementView: React.FC = () => {
     },
   });
 
+  // V8-204: admin-only toggle for gating a circle behind the Devoted tier.
+  // The backend gate (circles.service.ts join check) already existed --
+  // nothing anywhere could turn it on for any circle until this.
+  const toggleDevotedMutation = useMutation({
+    mutationFn: async ({ circleId, isDevoted }: { circleId: string; isDevoted: boolean }) => {
+      const response = await api.patch(`/admin/circles/${circleId}/devoted`, { isDevoted });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-circles'] });
+      success('Circle updated');
+    },
+    onError: (error: any) => {
+      toastError(error?.response?.data?.message || 'Failed to update circle');
+    },
+  });
+
   // Moderate circle mutation
   const { showModal } = useModal();
 
@@ -183,6 +205,20 @@ const CircleManagementView: React.FC = () => {
 
   const handleApproveClick = (suggestion: CircleSuggestion) => {
     setSelectedSuggestion(suggestion);
+
+    if (!suggestion.thread) {
+      // Freeform suggestion -- no structured thread content to parse.
+      setCircleFormData({
+        name: suggestion.title ?? '',
+        description: suggestion.description ?? '',
+        privacy: 'PUBLIC',
+        topics: [],
+        location: '',
+      });
+      setShowCreateForm(true);
+      return;
+    }
+
     // Pre-fill form from thread content
     const content = suggestion.thread.content;
     const nameMatch = content.match(/Circle Name:\s*(.+)/i);
@@ -308,9 +344,10 @@ const CircleManagementView: React.FC = () => {
               {suggestions.map((suggestion) => (
                 <div key={suggestion.id} className="p-4 flex items-center justify-between">
                   <div>
-                    <h3 className="font-medium text-foreground">{suggestion.thread.title}</h3>
+                    <h3 className="font-medium text-foreground">{suggestion.thread?.title ?? suggestion.title}</h3>
                     <p className="text-sm text-muted-foreground mt-1">
                       by {suggestion.suggester.name} &middot; {suggestion.status}
+                      {!suggestion.thread && ' · freeform suggestion'}
                     </p>
                     <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full ${
                       suggestion.status === 'PENDING' ? 'bg-yellow-500/10 text-yellow-400' :
@@ -353,18 +390,38 @@ const CircleManagementView: React.FC = () => {
               {circles.map((circle) => (
                 <div key={circle.id} className="p-4 flex items-center justify-between">
                   <div>
-                    <h3 className="font-medium text-foreground">{circle.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-medium text-foreground">{circle.name}</h3>
+                      {circle.isDevoted && (
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 rounded-full">
+                          <Crown size={10} /> Devoted
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm text-muted-foreground">
                       {circle.status} &middot; {circle.memberCount || 0} members
                     </p>
                   </div>
-                  <button
-                    onClick={() => handleDeleteCircle(circle)}
-                    className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                    title="Delete Circle"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => toggleDevotedMutation.mutate({ circleId: circle.id, isDevoted: !circle.isDevoted })}
+                      disabled={toggleDevotedMutation.isPending}
+                      className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 ${
+                        circle.isDevoted
+                          ? 'border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20'
+                          : 'border border-border text-muted-foreground hover:bg-muted'
+                      }`}
+                    >
+                      {circle.isDevoted ? 'Remove Devoted gate' : 'Make Devoted-only'}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteCircle(circle)}
+                      className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                      title="Delete Circle"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

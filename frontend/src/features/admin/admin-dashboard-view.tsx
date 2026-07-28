@@ -35,6 +35,7 @@ import AdminAuditLogTab from './admin-audit-log-tab';
 import AdminSacredContentTab from './admin-sacred-content-tab';
 import PractitionerPerformanceTab from './practitioner-performance-tab'; // New import for Practitioner Performance tab
 import PractitionerComplaintsTab from './practitioner-complaints-tab'; // New import for Practitioner Complaints tab
+import UserReportsTab from './user-reports-tab';
 import InactivePractitionerTab from './inactive-practitioner-tab'; // New import for Inactive Practitioner tab
 import FinancialCommandCentreTab from './financial-command-centre-tab'; // New import for Financial Command Centre tab
 import TrustScoreManagementTab from './trust-score-management-tab';
@@ -261,6 +262,8 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ initialTab }) =
         return <TabErrorBoundary fallback={<TabFallback icon={Crown} label="Featured Practitioners" />} tabName="featured"><FeaturedPractitionersTab /></TabErrorBoundary>;
       case 'complaints':
         return <TabErrorBoundary fallback={<TabFallback icon={AlertTriangle} label="Practitioner Complaints" />} tabName="complaints"><PractitionerComplaintsTab /></TabErrorBoundary>;
+      case 'user-reports':
+        return <TabErrorBoundary fallback={<TabFallback icon={AlertTriangle} label="User Reports" />} tabName="user-reports"><UserReportsTab /></TabErrorBoundary>;
       case 'inactive-practitioners':
         return <TabErrorBoundary fallback={<TabFallback icon={Activity} label="Inactive Practitioners" />} tabName="inactive-practitioners"><InactivePractitionerTab /></TabErrorBoundary>;
       case 'financial-command':

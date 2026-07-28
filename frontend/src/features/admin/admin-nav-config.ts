@@ -4,6 +4,7 @@ import {
   ScrollText, Settings, Shield, ShieldAlert, Star, Store, Tag, TrendingUp,
   Users, type LucideIcon,
 } from 'lucide-react';
+import { AdminSubRole } from '@common';
 
 export type AdminTab =
   | 'morning-brief' | 'overview' | 'verification' | 'temples' | 'vendors'
@@ -12,7 +13,7 @@ export type AdminTab =
   | 'admin-management' | 'payment-verification' | 'subscriptions'
   | 'forum-reports' | 'forum-management' | 'audit-log' | 'sacred-content'
   | 'inactive-practitioners' | 'financial-command'
-  | 'practitioners' | 'featured' | 'complaints' | 'announcements'
+  | 'practitioners' | 'featured' | 'complaints' | 'user-reports' | 'announcements'
   | 'trust-scores' | 'refunds' | 'cultural-content' | 'featured-content' | 'community' | 'forum-intelligence' | 'integrity'
   | 'campaigns' | 'promos' | 'referrals' | 'market-intelligence' | 'forecasting' | 'lifecycle' | 'security' | 'cultural-quiz'
   | 'trust-score-audit' | 'platform-settings' | 'marketplace-admin' | 'academy-admin' | 'compliance' | 'crisis-alerts';
@@ -21,6 +22,11 @@ export interface AdminNavItem {
   id: AdminTab;
   label: string;
   icon: LucideIcon;
+  // Matches the @AdminRoles(...) gate on the tab's backing endpoint(s) in
+  // admin.controller.ts. A SUPER admin can always see everything (mirrors
+  // the sidebar-layout.tsx filter for the outer nav) -- absent means every
+  // admin sub-role can see it (the endpoint has no extra @AdminRoles gate).
+  requiredAdminSubRoles?: AdminSubRole[];
 }
 
 export interface AdminNavGroup {
@@ -50,8 +56,8 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     items: [
       { id: 'morning-brief', label: 'Morning Brief', icon: Activity },
       { id: 'overview', label: 'Overview', icon: BarChart3 },
-      { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-      { id: 'health', label: 'Platform Health', icon: Activity },
+      { id: 'analytics', label: 'Analytics', icon: BarChart3, requiredAdminSubRoles: [AdminSubRole.FINANCE, AdminSubRole.SUPER] },
+      { id: 'health', label: 'Platform Health', icon: Activity, requiredAdminSubRoles: [AdminSubRole.COMPLIANCE, AdminSubRole.SUPER] },
     ],
   },
   {
@@ -59,9 +65,9 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     label: 'People & Trust',
     icon: Users,
     items: [
-      { id: 'users', label: 'User Management', icon: Users },
-      { id: 'verification', label: 'Verification Queue', icon: Shield },
-      { id: 'admin-management', label: 'Admin Management', icon: Shield },
+      { id: 'users', label: 'User Management', icon: Users, requiredAdminSubRoles: [AdminSubRole.SUPPORT, AdminSubRole.SUPER] },
+      { id: 'verification', label: 'Verification Queue', icon: Shield, requiredAdminSubRoles: [AdminSubRole.COMPLIANCE, AdminSubRole.SUPER] },
+      { id: 'admin-management', label: 'Admin Management', icon: Shield, requiredAdminSubRoles: [AdminSubRole.SUPER] },
       { id: 'trust-scores', label: 'Trust Score Management', icon: Shield },
       { id: 'trust-score-audit', label: 'Trust Score Audit', icon: Shield },
       { id: 'security', label: 'Security & Sessions', icon: Shield },
@@ -99,7 +105,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     label: 'Content & Culture',
     icon: BookOpen,
     items: [
-      { id: 'content', label: 'Content Moderation', icon: MessageSquare },
+      { id: 'content', label: 'Content Moderation', icon: MessageSquare, requiredAdminSubRoles: [AdminSubRole.MODERATOR, AdminSubRole.SUPER] },
       { id: 'sacred-content', label: 'Sacred Content', icon: Lock },
       { id: 'cultural-content', label: 'Cultural Content', icon: BookOpen },
       { id: 'cultural-quiz', label: 'Cultural Quiz', icon: BookOpen },
@@ -123,10 +129,10 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     icon: DollarSign,
     items: [
       { id: 'financial-command', label: 'Financial Command', icon: DollarSign },
-      { id: 'withdrawals', label: 'Payout Approvals', icon: DollarSign },
+      { id: 'withdrawals', label: 'Payout Approvals', icon: DollarSign, requiredAdminSubRoles: [AdminSubRole.FINANCE, AdminSubRole.SUPER] },
       { id: 'payment-verification', label: 'Payment Verification', icon: DollarSign },
-      { id: 'refunds', label: 'Refund Management', icon: RotateCcw },
-      { id: 'subscriptions', label: 'Subscriptions', icon: Crown },
+      { id: 'refunds', label: 'Refund Management', icon: RotateCcw, requiredAdminSubRoles: [AdminSubRole.FINANCE, AdminSubRole.SUPER] },
+      { id: 'subscriptions', label: 'Subscriptions', icon: Crown, requiredAdminSubRoles: [AdminSubRole.FINANCE, AdminSubRole.SUPER] },
       { id: 'market-intelligence', label: 'Market Intelligence', icon: TrendingUp },
       { id: 'forecasting', label: 'Revenue Forecasting', icon: BarChart3 },
     ],
@@ -148,9 +154,10 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     icon: AlertTriangle,
     items: [
       { id: 'disputes', label: 'Dispute Center', icon: AlertTriangle },
-      { id: 'fraud', label: 'Fraud Alerts', icon: AlertTriangle },
-      { id: 'quality', label: 'Quality Assurance', icon: BarChart3 },
-      { id: 'audit-log', label: 'Audit Log', icon: ScrollText },
+      { id: 'fraud', label: 'Fraud Alerts', icon: AlertTriangle, requiredAdminSubRoles: [AdminSubRole.COMPLIANCE, AdminSubRole.SUPER] },
+      { id: 'quality', label: 'Quality Assurance', icon: BarChart3, requiredAdminSubRoles: [AdminSubRole.MODERATOR, AdminSubRole.SUPER] },
+      { id: 'user-reports', label: 'User Reports', icon: Flag, requiredAdminSubRoles: [AdminSubRole.MODERATOR, AdminSubRole.SUPER] },
+      { id: 'audit-log', label: 'Audit Log', icon: ScrollText, requiredAdminSubRoles: [AdminSubRole.SUPER] },
     ],
   },
   {

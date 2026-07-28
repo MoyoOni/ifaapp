@@ -1,3 +1,8 @@
+// Whole-app audit note: this tab and trust-score-management-tab.tsx both
+// edit trust scores against the same PATCH /admin/trust-scores/override/:userId
+// endpoint. Not a bug -- deliberately different views, not consolidated:
+// this one is single-user search + full audit/override history; the other
+// is the bulk list + per-row override dialog.
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Shield, Search, Clock, ChevronDown, ChevronUp } from 'lucide-react';

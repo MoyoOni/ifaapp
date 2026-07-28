@@ -22,6 +22,7 @@ export interface AdminUser {
     bannedAt?: string;
     banReason?: string;
     warnCount?: number;
+    isCommunityCarer?: boolean;
 }
 
 export interface VerificationApplication {

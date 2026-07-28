@@ -1,7 +1,12 @@
+// Whole-app audit note: this tab and admin-trust-score-audit-tab.tsx both
+// edit trust scores against the same PATCH /admin/trust-scores/override/:userId
+// endpoint. Not a bug -- deliberately different views, not consolidated:
+// this one is the bulk list + per-row override dialog; the other is a
+// single-user search with full audit/override history.
 import React, { useState } from 'react';
-import { 
-  Shield, 
-  Star, 
+import {
+  Shield,
+  Star,
   Search,
   Edit,
   BarChart3,

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle, XCircle, Loader2, AlertTriangle } from 'lucide-react';
 import api from '@/lib/api';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { useToast } from '@/shared/components/toast';
 
 interface WithdrawalRequest {
   id: string;
@@ -34,6 +35,7 @@ interface WithdrawalRequest {
  */
 const PayoutApprovalsView: React.FC = () => {
   const queryClient = useQueryClient();
+  const { error: toastError } = useToast();
   const [selectedWithdrawal, setSelectedWithdrawal] = useState<WithdrawalRequest | null>(null);
   const [approvalNotes, setApprovalNotes] = useState('');
   const [threshold, setThreshold] = useState(500);
@@ -85,6 +87,15 @@ const PayoutApprovalsView: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
       setSelectedWithdrawal(null);
       setApprovalNotes('');
+    },
+    // HUMAN_BACKLOG.md: approving now actually attempts a real Paystack
+    // transfer, which can genuinely fail (bad account details, insufficient
+    // platform balance) -- this used to have no error handling at all, so a
+    // failed approval would look identical to a successful one in the UI.
+    onError: (err: any) => {
+      toastError(
+        err?.response?.data?.message ?? 'Failed to process this withdrawal. Please try again.'
+      );
     },
   });
 

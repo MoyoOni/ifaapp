@@ -33,6 +33,7 @@ interface OralHistory {
   tags: string[];
   content: string;
   sourceUrl?: string;
+  relatedProductIds: string[];
   publishedAt?: string;
   createdAt: string;
   creator?: { id: string; name: string };
@@ -80,7 +81,7 @@ const blankWord = () => ({
 
 const blankOral = () => ({
   title: '', category: 'Elder Teaching', babalawoName: '', recordingDate: '',
-  tags: '', content: '', sourceUrl: '', publish: false,
+  tags: '', content: '', sourceUrl: '', relatedProductIds: '', publish: false,
 });
 
 const blankEvent = () => ({
@@ -268,7 +269,11 @@ const OralHistorySection: React.FC = () => {
 
   const { mutate: save, isPending: saving } = useMutation({
     mutationFn: () => {
-      const payload = { ...form, tags: form.tags.split(',').map(t => t.trim()).filter(Boolean) };
+      const payload = {
+        ...form,
+        tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
+        relatedProductIds: form.relatedProductIds.split(',').map(t => t.trim()).filter(Boolean),
+      };
       return editId
         ? api.patch(`/admin/cultural/oral-histories/${editId}`, payload)
         : api.post('/admin/cultural/oral-histories', payload);
@@ -295,7 +300,7 @@ const OralHistorySection: React.FC = () => {
   });
 
   const openEdit = (e: OralHistory) => {
-    setForm({ title: e.title, category: e.category, babalawoName: e.babalawoName ?? '', recordingDate: e.recordingDate?.slice(0, 10) ?? '', tags: e.tags.join(', '), content: e.content, sourceUrl: e.sourceUrl ?? '', publish: !!e.publishedAt });
+    setForm({ title: e.title, category: e.category, babalawoName: e.babalawoName ?? '', recordingDate: e.recordingDate?.slice(0, 10) ?? '', tags: e.tags.join(', '), content: e.content, sourceUrl: e.sourceUrl ?? '', relatedProductIds: (e.relatedProductIds ?? []).join(', '), publish: !!e.publishedAt });
     setEditId(e.id); setShowForm(true);
   };
 
@@ -333,6 +338,7 @@ const OralHistorySection: React.FC = () => {
                 </div>
                 {e.babalawoName && <p className="text-xs text-muted-foreground mt-0.5">By {e.babalawoName}</p>}
                 {e.tags.length > 0 && <p className="text-xs text-muted-foreground mt-0.5">{e.tags.join(' · ')}</p>}
+                {e.relatedProductIds?.length > 0 && <p className="text-xs text-muted-foreground mt-0.5">Linked to {e.relatedProductIds.length} product{e.relatedProductIds.length === 1 ? '' : 's'}</p>}
                 <p className="text-xs text-muted-foreground mt-0.5">Added {fmtDate(e.createdAt)}</p>
               </div>
               <div className="flex gap-1 shrink-0">
@@ -363,6 +369,7 @@ const OralHistorySection: React.FC = () => {
             <Field label="Audio/source URL (optional)"><Input value={form.sourceUrl} onChange={set('sourceUrl')} placeholder="https://…" className="text-sm" /></Field>
           </div>
           <Field label="Tags (comma-separated)"><Input value={form.tags} onChange={set('tags')} placeholder="Ìwà Pẹ̀lẹ́, character, ethics" className="text-sm" /></Field>
+          <Field label="Related marketplace product IDs (comma-separated, optional)"><Input value={form.relatedProductIds} onChange={set('relatedProductIds')} placeholder="e.g. product IDs this story relates to" className="text-sm" /></Field>
           <Field label="Transcription / content">
             <textarea value={form.content} onChange={set('content')} placeholder="Full transcription or summary of the teaching…" rows={5} className="w-full bg-muted/40 border border-border rounded-xl px-3 py-2 text-sm text-foreground outline-none focus:border-primary resize-none" />
           </Field>

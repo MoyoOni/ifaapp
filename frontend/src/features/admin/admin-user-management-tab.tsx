@@ -158,6 +158,20 @@ const AdminUserManagementTab: React.FC<AdminUserManagementTabProps> = ({
         },
     });
 
+    // COMMUNITY_BACKLOG.md FOR-017
+    const { mutate: toggleCarer, isPending: togglingCarer } = useMutation({
+        mutationFn: async ({ userId, isCarer }: { userId: string; isCarer: boolean }) => {
+            await api.patch(`/admin/users/${userId}/community-carer`, { isCarer });
+        },
+        onSuccess: (_, { isCarer }) => {
+            toast.success(isCarer ? 'Marked as a Community Carer' : 'Removed as a Community Carer');
+            qc.invalidateQueries({ queryKey: ['admin-users'] });
+        },
+        onError: () => {
+            toast.error('Failed to update Community Carer status');
+        },
+    });
+
     const handleShowWarningModal = (userId: string) => {
         setCurrentUserId(userId);
         setShowWarningModal(true);
@@ -380,6 +394,26 @@ const AdminUserManagementTab: React.FC<AdminUserManagementTabProps> = ({
                                                                         </button>
                                                                     )}
                                                                 </div>
+                                                            </div>
+
+                                                            {/* COMMUNITY_BACKLOG.md FOR-017: Community Carer */}
+                                                            <div className="space-y-2">
+                                                                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+                                                                    <UserCheck size={12} /> Wellbeing
+                                                                </p>
+                                                                <button
+                                                                    type="button"
+                                                                    disabled={togglingCarer}
+                                                                    onClick={() => toggleCarer({ userId: user.id, isCarer: !user.isCommunityCarer })}
+                                                                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors disabled:opacity-50 ${
+                                                                        user.isCommunityCarer
+                                                                            ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                                                                            : 'border border-border hover:bg-muted'
+                                                                    }`}
+                                                                >
+                                                                    {togglingCarer ? <Loader2 size={11} className="animate-spin" /> : <UserCheck size={11} />}
+                                                                    {user.isCommunityCarer ? 'Community Carer' : 'Mark as Community Carer'}
+                                                                </button>
                                                             </div>
                                                         </div>
                                                     </td>

@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Crown, Users, TrendingUp, DollarSign, Calendar, Loader2,
   AlertCircle, Gift, CheckCircle, ChevronDown, ChevronUp,
-  XCircle, RefreshCw, AlertTriangle, Bell,
+  XCircle, RefreshCw, AlertTriangle, Bell, Search, Download,
 } from 'lucide-react';
 import api from '@/lib/api';
 import { Button } from '@/shared/components/ui/button';
@@ -186,6 +186,29 @@ const SubscriberRow: React.FC<{
 
 // ─── Main Tab ─────────────────────────────────────────────────────────────────
 
+// V8-402: "Export to CSV" for the active-subscriber list. Generated
+// client-side from the already-fetched rows -- no separate backend export
+// endpoint needed, and it always reflects whatever search filter is active.
+function downloadSubscribersCsv(subscribers: Subscriber[]) {
+  const headers = ['Name', 'Email', 'Plan', 'Status', 'Amount Paid (NGN)', 'Start Date', 'End Date', 'Auto-Renew'];
+  const escape = (value: string) => `"${value.replace(/"/g, '""')}"`;
+  const rows = subscribers.map(s => [
+    s.name, s.email, s.plan, s.status, String(s.amountPaid),
+    new Date(s.startDate).toISOString().slice(0, 10),
+    new Date(s.endDate).toISOString().slice(0, 10),
+    s.autoRenew ? 'Yes' : 'No',
+  ].map(escape).join(','));
+  const csv = [headers.map(escape).join(','), ...rows].join('\n');
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `devoted-subscribers-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 const AdminSubscriptionTab: React.FC = () => {
   const qc = useQueryClient();
   const { success, error: toastError } = useToast();
@@ -194,6 +217,7 @@ const AdminSubscriptionTab: React.FC = () => {
   const [grantPlan, setGrantPlan] = useState<'QUARTERLY' | 'ANNUAL'>('QUARTERLY');
   const [grantReason, setGrantReason] = useState('');
   const [grantSuccess, setGrantSuccess] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const { data: stats, isLoading: statsLoading } = useQuery<SubscriptionStats>({
     queryKey: ['admin-subscription-stats'],
@@ -202,8 +226,11 @@ const AdminSubscriptionTab: React.FC = () => {
   });
 
   const { data: activeList = [], isLoading: activeLoading, refetch: refetchActive } = useQuery<Subscriber[]>({
-    queryKey: ['admin', 'subscriptions', 'active'],
-    queryFn: () => api.get('/admin/subscriptions/active').then(r => r.data),
+    queryKey: ['admin', 'subscriptions', 'active', searchTerm],
+    queryFn: () =>
+      api
+        .get('/admin/subscriptions/active', { params: searchTerm ? { search: searchTerm } : {} })
+        .then(r => r.data),
     enabled: view === 'active',
     staleTime: 2 * 60 * 1000,
   });
@@ -394,12 +421,31 @@ const AdminSubscriptionTab: React.FC = () => {
       {/* ── Active Subscribers ── */}
       {view === 'active' && (
         <>
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center gap-3 flex-wrap">
             <p className="text-sm text-muted-foreground">{activeList.length} active / past-due subscribers</p>
-            <Button variant="outline" size="sm" onClick={() => refetchActive()} disabled={activeLoading}>
-              <RefreshCw size={14} className={`mr-1.5 ${activeLoading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Input
+                type="text"
+                placeholder="Search by name or email…"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                leftIcon={<Search size={14} />}
+                className="w-56"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => downloadSubscribersCsv(activeList)}
+                disabled={activeList.length === 0}
+              >
+                <Download size={14} className="mr-1.5" />
+                Export to CSV
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => refetchActive()} disabled={activeLoading}>
+                <RefreshCw size={14} className={`mr-1.5 ${activeLoading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
           </div>
           {activeLoading ? (
             <div className="flex justify-center py-16"><Loader2 size={28} className="animate-spin text-muted-foreground" /></div>

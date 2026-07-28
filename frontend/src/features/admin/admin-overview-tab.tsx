@@ -26,6 +26,8 @@ const MorningBriefing: React.FC<{
 }> = ({ adminName, pendingVerifications, statsLoading }) => {
     const { text: greeting, Icon: GreetingIcon } = getGreeting();
     const today = new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
+    const { user } = useAuth();
+    const canSeeReportedContent = user?.adminSubRole === 'MODERATOR' || user?.adminSubRole === 'SUPER';
 
     const { data: openDisputes } = useQuery<number>({
         queryKey: ['admin-open-disputes-count'],
@@ -45,7 +47,7 @@ const MorningBriefing: React.FC<{
             const items: unknown[] = res.data?.reports ?? res.data ?? [];
             return items.length;
         },
-        enabled: !isDevModeActive(),
+        enabled: !isDevModeActive() && canSeeReportedContent,
         staleTime: 120000,
     });
 

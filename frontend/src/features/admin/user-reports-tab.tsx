@@ -1,22 +1,21 @@
 import React, { useState } from 'react';
-import { 
-  AlertTriangle, 
-  User, 
-  Clock, 
-  CheckCircle, 
+import {
+  AlertTriangle,
+  User,
+  Clock,
+  CheckCircle,
   FileText,
   Search,
-  Shield,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
-import { 
-  Select, 
-  SelectTrigger, 
-  SelectValue, 
-  SelectContent, 
-  SelectItem 
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem
 } from '@/shared/components/ui/select';
 import { Badge } from '@/shared/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
@@ -27,96 +26,62 @@ import { Label } from '@/shared/components/ui/label';
 import { Skeleton } from '@/shared/components/ui/skeleton';
 import api from '@/lib/api';
 
-interface PractitionerComplaint {
+interface UserReport {
   id: string;
-  clientId: string;
-  client: {
-    id: string;
-    name: string;
-    email: string;
-  };
-  practitionerId: string;
-  practitioner: {
-    id: string;
-    name: string;
-    email: string;
-    isVerified: boolean;
-  };
+  reporterId: string;
+  reporter: { id: string; name: string; email: string };
+  reportedUserId: string;
+  reportedUser: { id: string; name: string; email: string; role: string };
   reason: string;
   description: string;
-  // COMMUNITY_BACKLOG.md FOR-016: keyword-rule match at filing time
   flaggedByKeywordRule?: boolean;
   matchedKeywords?: string[];
   status: 'PENDING' | 'RESOLVED' | 'DISMISSED';
   resolutionNotes?: string;
-  resolvedBy?: string;
-  resolver?: {
-    name: string;
-  };
+  resolvedBy?: { name: string };
   resolvedAt?: string;
   createdAt: string;
-  updatedAt: string;
 }
 
-const PractitionerComplaintsTab: React.FC = () => {
+// Whole-app audit loose end: generic version of practitioner-complaints-tab.tsx,
+// for reports filed against any user (not just practitioners).
+const UserReportsTab: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [editingComplaint, setEditingComplaint] = useState<PractitionerComplaint | null>(null);
+  const [editingReport, setEditingReport] = useState<UserReport | null>(null);
   const [resolutionAction, setResolutionAction] = useState<string>('WARN');
   const [resolutionNotes, setResolutionNotes] = useState<string>('');
-  const [clientNotification, setClientNotification] = useState<string>('');
-  
+
   const queryClient = useQueryClient();
 
-  const { data: complaints = [], isLoading } = useQuery<PractitionerComplaint[]>({
-    queryKey: ['practitioner-complaints'],
-    queryFn: async () => {
-      const response = await api.get('/admin/complaints');
-      return response.data;
-    }
+  const { data: reports = [], isLoading } = useQuery<UserReport[]>({
+    queryKey: ['user-reports'],
+    queryFn: async () => (await api.get('/admin/user-reports')).data,
   });
 
-  const resolveComplaintMutation = useMutation({
-    mutationFn: async ({ complaintId, action, resolutionNotes, clientNotification }: { 
-      complaintId: string, 
-      action: string, 
-      resolutionNotes: string, 
-      clientNotification: string 
-    }) => {
-      const response = await api.post(`/admin/complaints/${complaintId}/resolve`, {
-        action,
-        resolutionNotes,
-        clientNotification
-      });
-      return response.data;
-    },
+  const resolveReportMutation = useMutation({
+    mutationFn: async ({ reportId, action, resolutionNotes }: { reportId: string; action: string; resolutionNotes: string }) =>
+      (await api.post(`/admin/user-reports/${reportId}/resolve`, { action, resolutionNotes })).data,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['practitioner-complaints'] });
-      setEditingComplaint(null);
+      queryClient.invalidateQueries({ queryKey: ['user-reports'] });
+      setEditingReport(null);
     }
   });
 
-  // Apply search and filter
-  const filteredComplaints = complaints.filter(complaint => {
-    const matchesSearch = complaint.practitioner.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          complaint.client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          complaint.reason.toLowerCase().includes(searchTerm.toLowerCase());
-    
+  const filteredReports = reports.filter(report => {
+    const matchesSearch = report.reportedUser.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      report.reporter.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      report.reason.toLowerCase().includes(searchTerm.toLowerCase());
+
     if (statusFilter !== 'all') {
-      return complaint.status === statusFilter;
+      return report.status === statusFilter;
     }
     return matchesSearch;
   });
 
-  const handleResolveComplaint = () => {
-    if (!editingComplaint) return;
-    
-    resolveComplaintMutation.mutate({
-      complaintId: editingComplaint.id,
-      action: resolutionAction,
-      resolutionNotes,
-      clientNotification
-    });
+  const handleResolveReport = () => {
+    if (!editingReport) return;
+    resolveReportMutation.mutate({ reportId: editingReport.id, action: resolutionAction, resolutionNotes });
   };
 
   const getStatusColor = (status: string) => {
@@ -130,15 +95,15 @@ const PractitionerComplaintsTab: React.FC = () => {
 
   const getReasonColor = (reason: string) => {
     switch (reason) {
-      case 'no-show': return 'bg-orange-100 text-orange-800';
-      case 'inappropriate': return 'bg-red-100 text-red-800';
-      case 'fraud': return 'bg-purple-100 text-purple-800';
+      case 'HARASSMENT': return 'bg-red-100 text-red-800';
+      case 'FRAUD': return 'bg-purple-100 text-purple-800';
+      case 'SPAM': return 'bg-orange-100 text-orange-800';
       default: return 'bg-blue-100 text-blue-800';
     }
   };
 
-  const renderSkeletonRows = () => {
-    return Array.from({ length: 5 }).map((_, index) => (
+  const renderSkeletonRows = () =>
+    Array.from({ length: 5 }).map((_, index) => (
       <TableRow key={index}>
         <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
         <TableCell><Skeleton className="h-4 w-[80px]" /></TableCell>
@@ -148,14 +113,13 @@ const PractitionerComplaintsTab: React.FC = () => {
         <TableCell><Skeleton className="h-4 w-[80px]" /></TableCell>
       </TableRow>
     ));
-  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
           <AlertTriangle size={22} />
-          Practitioner Complaints Management
+          User Reports
         </h2>
       </div>
 
@@ -164,14 +128,14 @@ const PractitionerComplaintsTab: React.FC = () => {
           <CardHeader className="p-4">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <AlertTriangle size={16} />
-              Total Complaints
+              Total Reports
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4">
-            <div className="text-2xl font-bold">{complaints.length}</div>
+            <div className="text-2xl font-bold">{reports.length}</div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="p-4">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -181,11 +145,11 @@ const PractitionerComplaintsTab: React.FC = () => {
           </CardHeader>
           <CardContent className="p-4">
             <div className="text-2xl font-bold">
-              {complaints.filter(c => c.status === 'PENDING').length}
+              {reports.filter(r => r.status === 'PENDING').length}
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="p-4">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -195,21 +159,21 @@ const PractitionerComplaintsTab: React.FC = () => {
           </CardHeader>
           <CardContent className="p-4">
             <div className="text-2xl font-bold">
-              {complaints.filter(c => c.status === 'RESOLVED').length}
+              {reports.filter(r => r.status === 'RESOLVED').length}
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="p-4">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <User size={16} />
-              Unique Practitioners
+              Unique Reported Users
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4">
             <div className="text-2xl font-bold">
-              {[...new Set(complaints.map(c => c.practitionerId))].length}
+              {[...new Set(reports.map(r => r.reportedUserId))].length}
             </div>
           </CardContent>
         </Card>
@@ -217,12 +181,12 @@ const PractitionerComplaintsTab: React.FC = () => {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-base font-medium">Complaints List</CardTitle>
+          <CardTitle className="text-base font-medium">Reports List</CardTitle>
           <div className="flex items-center gap-2">
             <div className="relative">
               <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search complaints..."
+                placeholder="Search reports..."
                 className="pl-8 w-[200px]"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -245,9 +209,9 @@ const PractitionerComplaintsTab: React.FC = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Complaint</TableHead>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Practitioner</TableHead>
+                  <TableHead>Report</TableHead>
+                  <TableHead>Reporter</TableHead>
+                  <TableHead>Reported User</TableHead>
                   <TableHead>Reason</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Date</TableHead>
@@ -257,53 +221,44 @@ const PractitionerComplaintsTab: React.FC = () => {
               <TableBody>
                 {isLoading ? (
                   renderSkeletonRows()
-                ) : filteredComplaints.length > 0 ? (
-                  filteredComplaints.map((complaint) => (
-                    <TableRow key={complaint.id}>
+                ) : filteredReports.length > 0 ? (
+                  filteredReports.map((report) => (
+                    <TableRow key={report.id}>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
                           <FileText size={14} className="text-muted-foreground" />
-                          <span>#{complaint.id.substring(0, 8)}</span>
+                          <span>#{report.id.substring(0, 8)}</span>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                            <span className="text-xs">{complaint.client.name.charAt(0)}</span>
+                            <span className="text-xs">{report.reporter.name.charAt(0)}</span>
                           </div>
                           <div>
-                            <div className="font-medium">{complaint.client.name}</div>
-                            <div className="text-xs text-muted-foreground truncate max-w-[100px]">{complaint.client.email}</div>
+                            <div className="font-medium">{report.reporter.name}</div>
+                            <div className="text-xs text-muted-foreground truncate max-w-[100px]">{report.reporter.email}</div>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                            complaint.practitioner.isVerified ? 'bg-green-100' : 'bg-muted'
-                          }`}>
-                            <span className={`text-xs ${complaint.practitioner.isVerified ? 'text-green-800' : 'text-muted-foreground'}`}>
-                              {complaint.practitioner.name.charAt(0)}
-                            </span>
+                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                            <span className="text-xs">{report.reportedUser.name.charAt(0)}</span>
                           </div>
                           <div>
-                            <div className="font-medium flex items-center gap-1">
-                              {complaint.practitioner.name}
-                              {complaint.practitioner.isVerified && (
-                                <Shield size={12} className="text-green-600 fill-green-300" />
-                              )}
-                            </div>
-                            <div className="text-xs text-muted-foreground truncate max-w-[100px]">{complaint.practitioner.email}</div>
+                            <div className="font-medium">{report.reportedUser.name}</div>
+                            <div className="text-xs text-muted-foreground">{report.reportedUser.role}</div>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-1 items-start">
-                          <Badge className={getReasonColor(complaint.reason)}>
-                            {complaint.reason}
+                          <Badge className={getReasonColor(report.reason)}>
+                            {report.reason}
                           </Badge>
-                          {complaint.flaggedByKeywordRule && (
-                            <span title={complaint.matchedKeywords?.join(', ')}>
+                          {report.flaggedByKeywordRule && (
+                            <span title={report.matchedKeywords?.join(', ')}>
                               <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
                                 ⚠ Flagged
                               </Badge>
@@ -312,86 +267,82 @@ const PractitionerComplaintsTab: React.FC = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge className={getStatusColor(complaint.status)}>
-                          {complaint.status}
+                        <Badge className={getStatusColor(report.status)}>
+                          {report.status}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {new Date(complaint.createdAt).toLocaleDateString()}
+                        {new Date(report.createdAt).toLocaleDateString()}
                       </TableCell>
                       <TableCell>
-                        <Dialog 
-                          open={editingComplaint?.id === complaint.id} 
-                          onOpenChange={(open) => setEditingComplaint(open ? complaint : null)}
+                        <Dialog
+                          open={editingReport?.id === report.id}
+                          onOpenChange={(open) => setEditingReport(open ? report : null)}
                         >
                           <DialogTrigger asChild>
                             <Button variant="outline" size="sm">
-                              {complaint.status === 'PENDING' ? 'Resolve' : 'View'}
+                              {report.status === 'PENDING' ? 'Resolve' : 'View'}
                             </Button>
                           </DialogTrigger>
                           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                             <DialogHeader>
                               <DialogTitle>
-                                {complaint.status === 'PENDING' ? 'Resolve Complaint' : 'View Complaint Details'}
+                                {report.status === 'PENDING' ? 'Resolve Report' : 'View Report Details'}
                               </DialogTitle>
                             </DialogHeader>
-                            
+
                             <div className="space-y-4">
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                  <h4 className="font-medium mb-2">Client</h4>
+                                  <h4 className="font-medium mb-2">Reporter</h4>
                                   <div className="text-sm p-3 bg-muted rounded">
-                                    <div className="font-medium">{complaint.client.name}</div>
-                                    <div className="text-muted-foreground">{complaint.client.email}</div>
+                                    <div className="font-medium">{report.reporter.name}</div>
+                                    <div className="text-muted-foreground">{report.reporter.email}</div>
                                   </div>
                                 </div>
-                                
+
                                 <div>
-                                  <h4 className="font-medium mb-2">Practitioner</h4>
+                                  <h4 className="font-medium mb-2">Reported User</h4>
                                   <div className="text-sm p-3 bg-muted rounded">
-                                    <div className="font-medium">{complaint.practitioner.name}</div>
-                                    <div className="text-muted-foreground">{complaint.practitioner.email}</div>
-                                    {complaint.practitioner.isVerified && (
-                                      <div className="mt-1 flex items-center gap-1 text-xs text-green-600">
-                                        <Shield size={12} /> Verified
-                                      </div>
-                                    )}
+                                    <div className="font-medium">{report.reportedUser.name}</div>
+                                    <div className="text-muted-foreground">{report.reportedUser.email}</div>
+                                    <div className="mt-1 text-xs text-muted-foreground">{report.reportedUser.role}</div>
                                   </div>
                                 </div>
                               </div>
-                              
+
                               <div>
-                                <h4 className="font-medium mb-2">Complaint Details</h4>
+                                <h4 className="font-medium mb-2">Report Details</h4>
                                 <div className="text-sm p-3 bg-muted rounded">
                                   <div className="flex items-center gap-2 mb-2">
-                                    <Badge className={getReasonColor(complaint.reason)}>
-                                      {complaint.reason}
+                                    <Badge className={getReasonColor(report.reason)}>
+                                      {report.reason}
                                     </Badge>
-                                    <Badge className={getStatusColor(complaint.status)}>
-                                      {complaint.status}
+                                    <Badge className={getStatusColor(report.status)}>
+                                      {report.status}
                                     </Badge>
                                     <span className="text-xs text-muted-foreground">
-                                      Filed: {new Date(complaint.createdAt).toLocaleString()}
+                                      Filed: {new Date(report.createdAt).toLocaleString()}
                                     </span>
                                   </div>
-                                  <p>{complaint.description}</p>
+                                  <p>{report.description}</p>
                                 </div>
                               </div>
-                              
-                              {complaint.status === 'RESOLVED' && (
+
+                              {report.status !== 'PENDING' && (
                                 <div>
                                   <h4 className="font-medium mb-2">Resolution Details</h4>
                                   <div className="text-sm p-3 bg-muted rounded">
                                     <div className="flex items-center gap-2 mb-2">
-                                      <span>Resolved by: {complaint.resolver?.name || 'Unknown'}</span>
-                                      <span className="text-muted-foreground">at {complaint.resolvedAt ? new Date(complaint.resolvedAt).toLocaleString() : 'N/A'}</span>
+                                      <span>Resolved by: {report.resolvedBy?.name || 'Unknown'}</span>
+                                      <span className="text-muted-foreground">at {report.resolvedAt ? new Date(report.resolvedAt).toLocaleString() : 'N/A'}</span>
                                     </div>
-                                    <p><strong>Action:</strong> {complaint.resolutionNotes}</p>
+                                    <p><strong>Notes:</strong> {report.resolutionNotes}</p>
                                   </div>
                                 </div>
                               )}
-                              
-                              {complaint.status === 'PENDING' && (
+
+                              {report.status === 'PENDING' && (
                                 <div className="space-y-4">
                                   <div>
                                     <Label htmlFor="action">Resolution Action</Label>
@@ -400,15 +351,13 @@ const PractitionerComplaintsTab: React.FC = () => {
                                         <SelectValue placeholder="Select action" />
                                       </SelectTrigger>
                                       <SelectContent>
-                                        <SelectItem value="WARN">Warn Practitioner</SelectItem>
-                                        <SelectItem value="SUSPEND_BOOKINGS">Suspend Bookings (30 days)</SelectItem>
-                                        <SelectItem value="REVOKE_VERIFICATION">Revoke Verification</SelectItem>
-                                        <SelectItem value="ESCALATE">Escalate to Dispute (Advisory Board)</SelectItem>
+                                        <SelectItem value="WARN">Warn User</SelectItem>
+                                        <SelectItem value="SUSPEND">Suspend Account (30 days)</SelectItem>
                                         <SelectItem value="DISMISS">Dismiss (no action)</SelectItem>
                                       </SelectContent>
                                     </Select>
                                   </div>
-                                  
+
                                   <div>
                                     <Label htmlFor="notes">Resolution Notes</Label>
                                     <Textarea
@@ -418,34 +367,23 @@ const PractitionerComplaintsTab: React.FC = () => {
                                       placeholder="Add notes about the resolution..."
                                     />
                                   </div>
-                                  
-                                  <div>
-                                    <Label htmlFor="notification">Client Notification</Label>
-                                    <Textarea
-                                      id="notification"
-                                      value={clientNotification}
-                                      onChange={(e) => setClientNotification(e.target.value)}
-                                      placeholder="Message to send to the client about the resolution..."
-                                    />
-                                  </div>
-                                  
+
                                   <div className="flex gap-2">
-                                    <Button 
-                                      variant="outline" 
+                                    <Button
+                                      variant="outline"
                                       onClick={() => {
-                                        setEditingComplaint(null);
+                                        setEditingReport(null);
                                         setResolutionAction('WARN');
                                         setResolutionNotes('');
-                                        setClientNotification('');
                                       }}
                                     >
                                       Cancel
                                     </Button>
-                                    <Button 
-                                      onClick={handleResolveComplaint}
-                                      disabled={resolveComplaintMutation.isPending}
+                                    <Button
+                                      onClick={handleResolveReport}
+                                      disabled={resolveReportMutation.isPending || resolutionNotes.trim().length === 0}
                                     >
-                                      {resolveComplaintMutation.isPending ? 'Resolving...' : 'Resolve Complaint'}
+                                      {resolveReportMutation.isPending ? 'Resolving...' : 'Resolve Report'}
                                     </Button>
                                   </div>
                                 </div>
@@ -459,7 +397,7 @@ const PractitionerComplaintsTab: React.FC = () => {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      No complaints found
+                      No reports found
                     </TableCell>
                   </TableRow>
                 )}
@@ -468,12 +406,8 @@ const PractitionerComplaintsTab: React.FC = () => {
           </div>
         </CardContent>
       </Card>
-
-      <div className="text-sm text-muted-foreground">
-        <p>Handle complaints about practitioners separately from forum reports.</p>
-      </div>
     </div>
   );
 };
 
-export default PractitionerComplaintsTab;
+export default UserReportsTab;

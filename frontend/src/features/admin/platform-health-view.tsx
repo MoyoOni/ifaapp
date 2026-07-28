@@ -1,89 +1,140 @@
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Activity, Shield, Server, Database, Zap, HardDrive } from 'lucide-react';
+import { Activity, Server, Database, Clock, AlertCircle } from 'lucide-react';
+import api from '@/lib/api';
+import { Skeleton } from '@/shared/components/ui';
 
+interface HealthCheckEntry {
+  status: 'up' | 'down';
+  message?: string;
+}
+
+interface HealthResponse {
+  status: 'ok' | 'error';
+  info: Record<string, HealthCheckEntry>;
+  error: Record<string, HealthCheckEntry>;
+  details: Record<string, HealthCheckEntry>;
+  timestamp: string;
+  uptime: number;
+}
+
+function formatUptime(seconds: number): string {
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
+
+const CHECK_LABELS: Record<string, string> = {
+  database: 'PostgreSQL Database',
+  google: 'External Connectivity',
+};
+
+// Real data only -- this used to be 100% hardcoded fake metrics (99.99%
+// uptime, 45ms latency, etc). GET /health (Terminus + a live Postgres SELECT
+// 1) is the only real signal the backend exposes; there's no backing metric
+// for the other numbers this view used to invent, so they're left out rather
+// than replaced with different fake ones. Full Prometheus metrics exist at
+// GET /metrics if a richer dashboard is wanted later.
 const PlatformHealthView: React.FC = () => {
+  const { data, isLoading, isError, dataUpdatedAt } = useQuery<HealthResponse>({
+    queryKey: ['platform-health'],
+    queryFn: async () => (await api.get('/health')).data,
+    refetchInterval: 30000,
+  });
+
+  if (isLoading) {
     return (
-        <div className="space-y-6 animate-in fade-in duration-500">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {[
-                    { label: 'API Uptime', value: '99.99%', icon: Server, color: 'text-green-400', bg: 'bg-green-400/10' },
-                    { label: 'DB Latency', value: '45ms', icon: Database, color: 'text-blue-400', bg: 'bg-blue-400/10' },
-                    { label: 'Error Rate', value: '0.02%', icon: Zap, color: 'text-highlight', bg: 'bg-highlight/10' },
-                    { label: 'Disk Usage', value: '62%', icon: HardDrive, color: 'text-purple-400', bg: 'bg-purple-400/10' }
-                ].map(item => (
-                    <motion.div
-                        key={item.label}
-                        whileHover={{ scale: 1.05 }}
-                        className="bg-card p-5 rounded-2xl border border-border"
-                    >
-                        <div className="flex items-center gap-3 mb-3">
-                            <div className={`p-2 rounded-lg ${item.bg} ${item.color}`}>
-                                <item.icon size={20} />
-                            </div>
-                            <span className="text-xs font-bold text-stone-400 uppercase tracking-widest">{item.label}</span>
-                        </div>
-                        <p className="text-2xl font-bold text-stone-900 dark:text-stone-100">{item.value}</p>
-                    </motion.div>
-                ))}
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-card rounded-2xl p-6 border border-border">
-                    <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100 mb-6 flex items-center gap-2">
-                        <Activity size={20} className="text-highlight" />
-                        Infrastructure Status
-                    </h2>
-                    <div className="space-y-4">
-                        {[
-                            { name: 'US-East Production', status: 'Operational', color: 'bg-green-500' },
-                            { name: 'Global CDN (Vercel)', status: 'Operational', color: 'bg-green-500' },
-                            { name: 'PostgreSQL Primary', status: 'Healthy', color: 'bg-green-500' },
-                            { name: 'Redis Cache Layer', status: 'Healthy', color: 'bg-green-500' },
-                            { name: 'Auth Service (Clerk)', status: 'Operational', color: 'bg-green-500' }
-                        ].map(shard => (
-                            <div key={shard.name} className="flex items-center justify-between p-3 bg-muted/40 rounded-xl border border-border/50">
-                                <span className="text-sm text-stone-300">{shard.name}</span>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs font-bold text-stone-500 uppercase">{shard.status}</span>
-                                    <div className="relative flex h-2 w-2">
-                                        <motion.span
-                                            animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
-                                            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-                                            className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${shard.color}`}
-                                        ></motion.span>
-                                        <div className={`relative inline-flex rounded-full h-2 w-2 ${shard.color}`}></div>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                <div className="bg-card rounded-2xl p-6 border border-border">
-                    <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100 mb-6 flex items-center gap-2">
-                        <Shield size={20} className="text-highlight" />
-                        Security Posture
-                    </h2>
-                    <div className="space-y-4">
-                        <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-bold text-stone-900 dark:text-stone-100">SSL Certificates</p>
-                                <p className="text-xs text-stone-400 mt-1">Renewed 12 days ago • Valid for 11 months</p>
-                            </div>
-                            <Shield size={24} className="text-green-500 dark:text-green-400" />
-                        </div>
-                        <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-bold text-stone-900 dark:text-stone-100">WAF Policies</p>
-                                <p className="text-xs text-stone-400 mt-1">Filtering 2.4k malicious requests/month</p>
-                            </div>
-                            <Activity size={24} className="text-blue-500 dark:text-blue-400" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {Array.from({ length: 3 }).map((_, idx) => (
+          <div key={idx} className="bg-card p-5 rounded-2xl border border-border space-y-3">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-8 w-16" />
+          </div>
+        ))}
+      </div>
     );
+  }
+
+  if (isError || !data) {
+    return (
+      <div className="bg-card p-6 rounded-2xl border border-destructive/30 flex items-center gap-3">
+        <AlertCircle className="text-destructive" size={24} />
+        <div>
+          <p className="font-bold text-foreground">Could not reach the health endpoint</p>
+          <p className="text-sm text-muted-foreground">This itself is a signal something's wrong with the API.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const checks = Object.entries(data.details);
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <motion.div whileHover={{ scale: 1.02 }} className="bg-card p-5 rounded-2xl border border-border">
+          <div className="flex items-center gap-3 mb-3">
+            <div className={`p-2 rounded-lg ${data.status === 'ok' ? 'bg-green-400/10 text-green-500' : 'bg-red-400/10 text-red-500'}`}>
+              <Server size={20} />
+            </div>
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Overall Status</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground capitalize">{data.status}</p>
+        </motion.div>
+        <motion.div whileHover={{ scale: 1.02 }} className="bg-card p-5 rounded-2xl border border-border">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 rounded-lg bg-blue-400/10 text-blue-500">
+              <Clock size={20} />
+            </div>
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Server Uptime</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">{formatUptime(data.uptime)}</p>
+        </motion.div>
+        <motion.div whileHover={{ scale: 1.02 }} className="bg-card p-5 rounded-2xl border border-border">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 rounded-lg bg-purple-400/10 text-purple-500">
+              <Database size={20} />
+            </div>
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Checks Passing</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">
+            {Object.values(data.info).length} / {checks.length}
+          </p>
+        </motion.div>
+      </div>
+
+      <div className="bg-card rounded-2xl p-6 border border-border">
+        <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
+          <Activity size={20} className="text-highlight" />
+          Infrastructure Status
+        </h2>
+        <div className="space-y-4">
+          {checks.map(([key, check]) => {
+            const isUp = check.status === 'up';
+            return (
+              <div key={key} className="flex items-center justify-between p-3 bg-muted/40 rounded-xl border border-border/50">
+                <span className="text-sm text-foreground">{CHECK_LABELS[key] ?? key}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-muted-foreground uppercase">{isUp ? 'Healthy' : (check.message ?? 'Down')}</span>
+                  <div className="relative flex h-2 w-2">
+                    <div className={`relative inline-flex rounded-full h-2 w-2 ${isUp ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <p className="text-xs text-muted-foreground text-right">
+        Last checked {new Date(dataUpdatedAt).toLocaleTimeString()} · refreshes every 30s
+      </p>
+    </div>
+  );
 };
 
 export default PlatformHealthView;
