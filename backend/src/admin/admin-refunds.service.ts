@@ -109,12 +109,17 @@ export class AdminRefundsService {
     // Falls back to the originally requested amount only if the admin didn't override
     // it; if neither exists (a "full refund" request with no admin-entered amount),
     // there's nothing to safely credit, so this is rejected rather than guessed.
-    const approvedAmount = dto.approvedAmount ?? request.amount ?? undefined;
-    if (approvedAmount == null) {
+    const rawApprovedAmount = dto.approvedAmount ?? request.amount ?? undefined;
+    if (rawApprovedAmount == null) {
       throw new BadRequestException(
         'An approved amount is required -- this request has no default amount to fall back to'
       );
     }
+    // ProBacklog-v1.md item #15: request.amount is now Decimal, but
+    // dto.approvedAmount is a plain number -- normalize to a number here so
+    // everything downstream (depositFunds' DTO, .toLocaleString() below)
+    // gets a consistent type regardless of which side of the `??` fired.
+    const approvedAmount = Number(rawApprovedAmount);
 
     await this.walletService.depositFunds(
       request.requestedBy,

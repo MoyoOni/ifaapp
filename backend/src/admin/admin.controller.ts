@@ -32,6 +32,8 @@ import { AdminCulturalContentService } from './admin-cultural-content.service';
 import { AdminFeaturedContentService } from './admin-featured-content.service';
 import { AdminIntegrityService } from './admin-integrity.service';
 import { AdminComplaintsService } from './admin-complaints.service';
+import { AdminUserReportsService } from './admin-user-reports.service';
+import { AdminQualityMetricsService } from './admin-quality-metrics.service';
 import { AdminMarketIntelligenceService } from './admin-market-intelligence.service';
 import { AdminPractitionerPerformanceService } from './admin-practitioner-performance.service';
 import { AdminMorningBriefService } from './admin-morning-brief.service';
@@ -49,6 +51,9 @@ import { AdminSubRole } from '@common/enums/admin-sub-role.enum';
 import { LogPiiRevealDto } from './dto/log-pii-reveal.dto';
 import { ProcessWithdrawalDto } from './dto/process-withdrawal.dto';
 import { ReviewVendorDto } from './dto/review-vendor.dto';
+import { ReviewBundleDto } from './dto/review-bundle.dto';
+import { ReviewVendorCertificationDto } from './dto/review-vendor-certification.dto';
+import { SetCommunityCarerDto } from './dto/set-community-carer.dto';
 import { ResolveReportedContentDto } from './dto/resolve-reported-content.dto';
 import { RejectWithReasonDto } from './dto/reject-with-reason.dto';
 import { ModerateCircleDto } from './dto/moderate-circle.dto';
@@ -74,6 +79,7 @@ import { RejectPostDto } from './dto/reject-post.dto';
 import { CreateFlagRuleDto } from './dto/create-flag-rule.dto';
 import { UpdateFlagRuleDto } from './dto/update-flag-rule.dto';
 import { ResolveComplaintDto } from './dto/resolve-complaint.dto';
+import { ResolveUserReportDto } from './dto/resolve-user-report.dto';
 import { SuspendUserDto } from './dto/suspend-user.dto';
 import { WarnUserDto } from './dto/warn-user.dto';
 import { BanUserDto } from './dto/ban-user.dto';
@@ -82,6 +88,8 @@ import { ChangeUserRoleDto } from './dto/change-user-role.dto';
 import { ProcessRefundRequestDto } from './dto/process-refund-request.dto';
 import { AdminCancelSubscriptionDto } from './dto/admin-cancel-subscription.dto';
 import { AdminExtendSubscriptionDto } from './dto/admin-extend-subscription.dto';
+import { UpdateVendorTierDto } from '../vendor-community/dto/vendor-community.dto';
+import { ReviewEventFeatureDto } from '../marketplace/dto/event-product-feature.dto';
 
 @Controller('admin')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
@@ -105,6 +113,8 @@ export class AdminController {
     private readonly featuredContentService: AdminFeaturedContentService,
     private readonly integrityService: AdminIntegrityService,
     private readonly complaintsService: AdminComplaintsService,
+    private readonly userReportsService: AdminUserReportsService,
+    private readonly qualityMetricsService: AdminQualityMetricsService,
     private readonly marketIntelligenceService: AdminMarketIntelligenceService,
     private readonly morningBriefService: AdminMorningBriefService,
     private readonly practitionerPerformanceService: AdminPractitionerPerformanceService,
@@ -516,6 +526,16 @@ export class AdminController {
     return this.adminService.moderateCircle(circleId, dto.action, currentUser);
   }
 
+  @Patch('circles/:id/devoted')
+  @Roles(UserRole.ADMIN)
+  async setCircleDevoted(
+    @Param('id') circleId: string,
+    @Body() dto: { isDevoted: boolean },
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.adminService.setCircleDevoted(circleId, dto.isDevoted, currentUser);
+  }
+
   @Post('circle-events/:id/approve')
   @Roles(UserRole.ADMIN)
   async approveCircleEvent(
@@ -652,6 +672,13 @@ export class AdminController {
   @Roles(UserRole.ADMIN)
   async forceLogoutUser(@Param('userId') userId: string) {
     return this.adminService.forceLogoutUser(userId);
+  }
+
+  // COMMUNITY_BACKLOG.md FOR-017: admin-assigned community carer flag
+  @Patch('users/:userId/community-carer')
+  @Roles(UserRole.ADMIN)
+  async setCommunityCarer(@Param('userId') userId: string, @Body() dto: SetCommunityCarerDto) {
+    return this.adminService.setCommunityCarer(userId, dto.isCarer);
   }
 
   // ADM-028: Cultural Orientation Quiz Management
@@ -826,6 +853,81 @@ export class AdminController {
     return this.marketplaceService.getCategories();
   }
 
+  // SHOP_BACKLOG.md MSP-016: apprenticeship tier advancement, admin/elder-only
+  @Patch('marketplace/vendors/:id/tier')
+  @Roles(UserRole.ADMIN)
+  async updateVendorTier(
+    @Param('id') id: string,
+    @Body() dto: UpdateVendorTierDto,
+    @CurrentUser() admin: CurrentUserPayload
+  ) {
+    return this.marketplaceService.updateVendorTier(id, dto, admin.id);
+  }
+
+  // SHOP_BACKLOG.md MSP-008: vendor seasonal item feature requests
+  @Get('marketplace/events/feature-requests')
+  @Roles(UserRole.ADMIN)
+  async getPendingEventFeatureRequests() {
+    return this.marketplaceService.getPendingEventFeatureRequests();
+  }
+
+  @Patch('marketplace/events/feature-requests/:id/review')
+  @Roles(UserRole.ADMIN)
+  async reviewEventFeatureRequest(
+    @Param('id') id: string,
+    @Body() dto: ReviewEventFeatureDto,
+    @CurrentUser() admin: CurrentUserPayload
+  ) {
+    return this.marketplaceService.reviewEventFeatureRequest(id, dto, admin.id);
+  }
+
+  // SHOP_BACKLOG.md MSP-015/MSP-003: flagged-listing review queue
+  @Get('marketplace/products/flagged')
+  @Roles(UserRole.ADMIN)
+  async getFlaggedProducts() {
+    return this.marketplaceService.getFlaggedProducts();
+  }
+
+  @Patch('marketplace/products/:id/clear-flag')
+  @Roles(UserRole.ADMIN)
+  async clearProductFlag(@Param('id') id: string, @CurrentUser() admin: CurrentUserPayload) {
+    return this.marketplaceService.clearProductFlag(id, admin.id);
+  }
+
+  // VENDOR_BACKLOG.md VND-017: cultural certification review queue
+  @Get('marketplace/certifications/pending')
+  @Roles(UserRole.ADMIN)
+  async getCertificationApplications() {
+    return this.marketplaceService.getCertificationApplications();
+  }
+
+  @Post('marketplace/certifications/:id/review')
+  @Roles(UserRole.ADMIN)
+  async reviewCertificationApplication(
+    @Param('id') id: string,
+    @Body() dto: ReviewVendorCertificationDto,
+    @CurrentUser() admin: CurrentUserPayload
+  ) {
+    return this.marketplaceService.reviewCertificationApplication(id, dto, admin.id);
+  }
+
+  // SHOP_BACKLOG.md MSP-002: cross-vendor bundle approval
+  @Get('marketplace/bundles/pending')
+  @Roles(UserRole.ADMIN)
+  async getPendingBundles() {
+    return this.marketplaceService.getPendingBundles();
+  }
+
+  @Post('marketplace/bundles/:bundleId/review')
+  @Roles(UserRole.ADMIN)
+  async reviewBundle(
+    @Param('bundleId') bundleId: string,
+    @Body() dto: ReviewBundleDto,
+    @CurrentUser() admin: CurrentUserPayload
+  ) {
+    return this.marketplaceService.reviewBundle(bundleId, dto, admin.id);
+  }
+
   // ADM-019: Segmented Email Campaigns
 
   @Get('campaigns')
@@ -912,8 +1014,8 @@ export class AdminController {
 
   @Get('subscriptions/active')
   @Roles(UserRole.ADMIN)
-  async getActiveSubscribers() {
-    return this.adminService.getActiveSubscribers();
+  async getActiveSubscribers(@Query('search') search?: string) {
+    return this.adminService.getActiveSubscribers(search);
   }
 
   @Get('subscriptions/cancelled')
@@ -1331,6 +1433,38 @@ export class AdminController {
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
     return this.complaintsService.resolveComplaint(id, dto, currentUser);
+  }
+
+  // Whole-app audit loose end: generic version of the Complaints endpoints
+  // above, for reports filed against any user (not just practitioners).
+  @Get('user-reports')
+  @Roles(UserRole.ADMIN)
+  @AdminRoles(AdminSubRole.MODERATOR, AdminSubRole.SUPER)
+  async getUserReports(
+    @CurrentUser() currentUser: CurrentUserPayload,
+    @Query('status') status?: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 20
+  ) {
+    return this.userReportsService.getReports(currentUser, status, page, limit);
+  }
+
+  @Post('user-reports/:id/resolve')
+  @Roles(UserRole.ADMIN)
+  @AdminRoles(AdminSubRole.MODERATOR, AdminSubRole.SUPER)
+  async resolveUserReport(
+    @Param('id') id: string,
+    @Body() dto: ResolveUserReportDto,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.userReportsService.resolveReport(id, dto, currentUser);
+  }
+
+  @Get('quality-metrics')
+  @Roles(UserRole.ADMIN)
+  @AdminRoles(AdminSubRole.MODERATOR, AdminSubRole.SUPER)
+  async getQualityMetrics(@CurrentUser() currentUser: CurrentUserPayload) {
+    return this.qualityMetricsService.getMetrics(currentUser);
   }
 
   // ADM-030: Morning Brief

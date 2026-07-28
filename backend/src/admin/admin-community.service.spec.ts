@@ -107,4 +107,37 @@ describe('AdminCommunityService', () => {
       );
     });
   });
+
+  describe('setCircleDevoted (V8-204: admin-only Devoted-tier gate toggle)', () => {
+    const mockCircle = { id: 'circle-1', status: 'ACTIVE', active: true, isDevoted: false };
+
+    it('turns isDevoted on for an admin', async () => {
+      (prisma.circle.findUnique as jest.Mock).mockResolvedValue(mockCircle);
+      const updateSpy = prisma.circle.update as jest.Mock;
+      updateSpy.mockResolvedValue({ ...mockCircle, isDevoted: true });
+
+      const result = await service.setCircleDevoted('circle-1', true, mockAdminUser as any);
+
+      expect(result.isDevoted).toBe(true);
+      expect(updateSpy).toHaveBeenCalledWith({
+        where: { id: 'circle-1' },
+        data: { isDevoted: true },
+      });
+    });
+
+    it('rejects a non-admin -- this is a monetisation decision, not something a circle owner can set', async () => {
+      await expect(
+        service.setCircleDevoted('circle-1', true, mockNonAdminUser as any)
+      ).rejects.toThrow('Only admins can mark a circle as Devoted-only');
+      expect(prisma.circle.update).not.toHaveBeenCalled();
+    });
+
+    it('404s on a missing circle', async () => {
+      (prisma.circle.findUnique as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        service.setCircleDevoted('missing', true, mockAdminUser as any)
+      ).rejects.toThrow('Circle not found');
+    });
+  });
 });

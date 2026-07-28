@@ -430,6 +430,31 @@ export class AdminCommunityService {
   }
 
   /**
+   * V8-204: Circle.isDevoted already existed in the schema and
+   * circles.service.ts already gates joining on it -- but nothing anywhere
+   * let anyone actually turn it on for a circle. Deliberately admin-only
+   * (not exposed on the general circle-update DTO a circle's own
+   * creator/circle-admin can call) since gating a circle behind the paid
+   * tier is a platform monetisation decision, not something a circle owner
+   * should be able to flip on their own circle unilaterally.
+   */
+  async setCircleDevoted(circleId: string, isDevoted: boolean, currentUser: CurrentUserPayload) {
+    if (currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Only admins can mark a circle as Devoted-only');
+    }
+
+    const circle = await this.prisma.circle.findUnique({ where: { id: circleId } });
+    if (!circle) {
+      throw new NotFoundException('Circle not found');
+    }
+
+    return this.prisma.circle.update({
+      where: { id: circleId },
+      data: { isDevoted },
+    });
+  }
+
+  /**
    * Approve circle event
    */
   async approveCircleEvent(eventId: string, currentUser: CurrentUserPayload) {

@@ -108,6 +108,7 @@ describe('AdminUsersService', () => {
           bannedAt: true,
           banReason: true,
           warnCount: true,
+          isCommunityCarer: true,
         },
         orderBy: { name: 'asc' },
       });

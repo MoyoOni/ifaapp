@@ -45,7 +45,7 @@ export class AdminPractitionerPerformanceService {
       const totalConsultationsThisMonth = thisMonthCompleted.length;
 
       // Revenue
-      const revenueGenerated = completed.reduce((sum, a) => sum + (a.price || 0), 0);
+      const revenueGenerated = completed.reduce((sum, a) => sum + Number(a.price || 0), 0);
 
       // Reviews
       const reviews = p.babalawoReviewsReceived;
@@ -54,7 +54,8 @@ export class AdminPractitionerPerformanceService {
         totalReviews > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews : 0;
 
       // Response rate: confirmed / (confirmed + no-show?) – simplified: confirmed vs total
-      const responseRate = allAppointments.length > 0 ? confirmed.length / allAppointments.length : 0;
+      const responseRate =
+        allAppointments.length > 0 ? confirmed.length / allAppointments.length : 0;
 
       // No-show rate: count appointments with status NO_SHOW (if exists)
       const noShows = allAppointments.filter((a) => a.status === 'NO_SHOW');
@@ -63,13 +64,19 @@ export class AdminPractitionerPerformanceService {
       // Days since last login
       const lastSession = p.userSessions[0];
       const daysSinceLastLogin = lastSession
-        ? Math.floor((now.getTime() - new Date(lastSession.lastSeenAt).getTime()) / (1000 * 60 * 60 * 24))
+        ? Math.floor(
+            (now.getTime() - new Date(lastSession.lastSeenAt).getTime()) / (1000 * 60 * 60 * 24)
+          )
         : 999;
 
       // Days since last consultation
-      const lastConsultation = completed.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+      const lastConsultation = completed.sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      )[0];
       const daysSinceLastConsultation = lastConsultation
-        ? Math.floor((now.getTime() - new Date(lastConsultation.date).getTime()) / (1000 * 60 * 60 * 24))
+        ? Math.floor(
+            (now.getTime() - new Date(lastConsultation.date).getTime()) / (1000 * 60 * 60 * 24)
+          )
         : 999;
 
       // Status

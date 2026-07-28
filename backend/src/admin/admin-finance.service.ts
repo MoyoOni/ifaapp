@@ -10,12 +10,15 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { WalletService } from '../wallet/wallet.service';
 import { PaymentsService } from '../payments/payments.service';
+import { PaystackApiService } from '../payments/paystack-api.service';
 import { AuditService } from './audit.service';
 import {
   NotificationService,
   NotificationType,
   NotificationCategory,
 } from '../notifications/notification.service';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import { TransactionStatus, WithdrawalStatus } from '@ile-ase/common';
 
 @Injectable()
 export class AdminFinanceService {
@@ -25,8 +28,10 @@ export class AdminFinanceService {
     private prisma: PrismaService,
     private walletService: WalletService,
     private paymentsService: PaymentsService,
+    private paystackApiService: PaystackApiService,
     private auditService: AuditService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private subscriptionsService: SubscriptionsService
   ) {}
 
   /**
@@ -156,8 +161,9 @@ export class AdminFinanceService {
         throw new BadRequestException('Refund amount required for partial refund');
       }
 
-      // Release partial amount to provider, refund rest to client
-      const providerAmount = escrow.amount - dto.refundAmount;
+      // Release partial amount to provider, refund rest to client. Escrow.amount
+      // is now Decimal (ProBacklog-v1.md item #15).
+      const providerAmount = Number(escrow.amount) - dto.refundAmount;
       if (providerAmount > 0 && escrow.recipientId) {
         // This is simplified - in production, you'd need a more sophisticated release mechanism
         await this.walletService.releaseEscrow(
@@ -171,8 +177,10 @@ export class AdminFinanceService {
         );
       }
 
-      // Refund remainder
-      if (dto.refundAmount < escrow.amount) {
+      // Refund remainder. Escrow.amount is now Decimal (ProBacklog-v1.md
+      // item #15) -- dto here is typed `any`, so this comparison would
+      // silently compile either way; made explicit for clarity.
+      if (dto.refundAmount < Number(escrow.amount)) {
         await this.walletService.cancelEscrow(escrow.userId, escrowId, currentUser);
       }
     }
@@ -231,7 +239,19 @@ export class AdminFinanceService {
   }
 
   /**
-   * Approve or reject withdrawal request
+   * Approve or reject withdrawal request.
+   *
+   * HUMAN_BACKLOG.md: this previously only flipped WithdrawalRequest.status
+   * to the literal strings 'APPROVE'/'REJECT' (not the real WithdrawalStatus
+   * enum values) -- never touched the wallet balance and never called any
+   * real transfer API, so an "approved" withdrawal was pure fiction as far
+   * as the user's bank account was concerned. The funds are actually held
+   * (decremented from the wallet) at request-creation time now
+   * (createWithdrawalRequest) -- REJECT refunds that hold; APPROVE attempts
+   * a real Paystack transfer and only keeps the hold if that succeeds or is
+   * genuinely pending (Paystack transfers can be asynchronous -- see
+   * payments.service.ts's transfer.success/transfer.failed webhook handling
+   * for how a pending one gets finally resolved).
    */
   async processWithdrawal(
     withdrawalId: string,
@@ -251,25 +271,111 @@ export class AdminFinanceService {
       throw new NotFoundException('Withdrawal request not found');
     }
 
-    if (withdrawal.status !== 'PENDING') {
+    if (withdrawal.status !== WithdrawalStatus.PENDING) {
       throw new BadRequestException('Withdrawal request is not pending');
     }
 
-    const updated = await this.prisma.withdrawalRequest.update({
-      where: { id: withdrawalId },
-      data: {
-        status: action,
-        adminNotes: notes,
-        processedAt: new Date(),
-        processedBy: processedBy.id,
-      },
-    });
+    if (action === 'REJECT') {
+      await this.walletService.refundWithdrawalAmount(withdrawal.id);
 
-    this.logger.log(
-      `Withdrawal ${withdrawalId} ${action === 'APPROVE' ? 'approved' : 'rejected'} by admin ${processedBy.id}`
-    );
+      const updated = await this.prisma.withdrawalRequest.update({
+        where: { id: withdrawalId },
+        data: {
+          status: WithdrawalStatus.REJECTED,
+          adminNotes: notes,
+          processedAt: new Date(),
+          processedBy: processedBy.id,
+        },
+      });
 
-    return updated;
+      await this.notificationService.createNotification({
+        userId: withdrawal.userId,
+        type: NotificationType.SYSTEM,
+        category: NotificationCategory.INFO,
+        title: 'Withdrawal request rejected',
+        message: notes
+          ? `Your withdrawal request was rejected: ${notes}. The held amount has been returned to your wallet.`
+          : 'Your withdrawal request was rejected. The held amount has been returned to your wallet.',
+        sendEmail: true,
+      });
+
+      this.logger.log(`Withdrawal ${withdrawalId} rejected by admin ${processedBy.id}`);
+      return updated;
+    }
+
+    // APPROVE
+    if (!withdrawal.bankAccount || !withdrawal.bankCode || !withdrawal.accountName) {
+      throw new BadRequestException(
+        'This withdrawal request is missing bank account details and cannot be paid out'
+      );
+    }
+
+    try {
+      const recipient = await this.paystackApiService.createTransferRecipient({
+        name: withdrawal.accountName,
+        account_number: withdrawal.bankAccount,
+        bank_code: withdrawal.bankCode,
+        currency: withdrawal.currency,
+      });
+      if (!recipient.status) {
+        throw new Error(recipient.message || 'Failed to register the payout recipient with Paystack');
+      }
+
+      const transfer = await this.paystackApiService.initiateTransfer({
+        // WithdrawalRequest.amount is now Decimal (ProBacklog-v1.md item #15)
+        // -- this feeds the real Paystack transfer amount (in kobo), so
+        // getting this normalization right actually moves real money.
+        amount: Math.round(Number(withdrawal.amount) * 100),
+        recipientCode: recipient.data.recipient_code,
+        reason: `Ìlú Àṣẹ withdrawal ${withdrawal.id}`,
+        reference: withdrawal.id,
+      });
+      if (!transfer.status) {
+        throw new Error(transfer.message || 'Paystack transfer was not accepted');
+      }
+
+      // A 'success' status means Paystack already completed the transfer;
+      // anything else (typically 'pending') means it's still in flight and
+      // the transfer.success/transfer.failed webhook resolves it later.
+      const transactionStatus =
+        transfer.data.status === 'success' ? TransactionStatus.COMPLETED : TransactionStatus.PENDING;
+      await this.prisma.transaction.updateMany({
+        where: { reference: withdrawal.id, status: TransactionStatus.PENDING },
+        data: { status: transactionStatus },
+      });
+
+      const updated = await this.prisma.withdrawalRequest.update({
+        where: { id: withdrawalId },
+        data: {
+          status: WithdrawalStatus.PROCESSED,
+          adminNotes: notes,
+          processedAt: new Date(),
+          processedBy: processedBy.id,
+        },
+      });
+
+      await this.notificationService.createNotification({
+        userId: withdrawal.userId,
+        type: NotificationType.SYSTEM,
+        category: NotificationCategory.INFO,
+        title: 'Withdrawal approved',
+        message: `Your withdrawal of ${Number(withdrawal.amount).toLocaleString()} ${withdrawal.currency} has been approved and sent to your bank account.`,
+        sendEmail: true,
+      });
+
+      this.logger.log(`Withdrawal ${withdrawalId} approved and transferred by admin ${processedBy.id}`);
+      return updated;
+    } catch (err) {
+      // The transfer never happened (or we can't confirm it did) -- return
+      // the held funds and leave the request PENDING so it can be
+      // investigated or retried, rather than silently marking it approved.
+      await this.walletService.refundWithdrawalAmount(withdrawal.id);
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      this.logger.error(`Failed to process withdrawal ${withdrawalId} via Paystack: ${message}`, err);
+      throw new BadRequestException(
+        `Payout failed: ${message}. The held amount has been returned to the user's wallet — resolve the issue and try approving again.`
+      );
+    }
   }
 
   /**
@@ -622,7 +728,7 @@ export class AdminFinanceService {
     if (settings) {
       // Calculate based on commission percentages and other settings
       // Using a combination of values as an estimate of platform costs
-      return (settings.consultationCommissionPct + settings.marketplaceCommissionPct) * 10000; // placeholder calculation
+      return (Number(settings.consultationCommissionPct) + Number(settings.marketplaceCommissionPct)) * 10000; // placeholder calculation
     }
     // Default fallback
     return 500000; // 500k NGN as placeholder
@@ -634,7 +740,7 @@ export class AdminFinanceService {
       where: { status: 'PENDING' },
       select: { amount: true },
     });
-    return pending.reduce((sum, w) => sum + w.amount, 0);
+    return pending.reduce((sum, w) => sum + Number(w.amount), 0);
   }
 
   private async getRevenueTrend(months: number = 6) {
@@ -659,7 +765,7 @@ export class AdminFinanceService {
           },
         }),
       ]);
-      const gmv = (apptSum._sum?.price || 0) + (orderSum._sum?.totalAmount || 0);
+      const gmv = Number(apptSum._sum?.price || 0) + Number(orderSum._sum?.totalAmount || 0);
       const revenue = gmv * 0.1;
       trend.push({
         month: monthStart.toLocaleString('default', { month: 'short', year: 'numeric' }),
@@ -669,9 +775,25 @@ export class AdminFinanceService {
     return trend;
   }
 
-  async getActiveSubscribers() {
+  // V8-402: AC called for a "searchable + exportable" subscriber list; this
+  // only ever returned the unfiltered full table. Search matches user
+  // name/email (case-insensitive) -- CSV export is generated client-side
+  // from this same data, no separate export endpoint needed.
+  async getActiveSubscribers(search?: string) {
     const subscriptions = await this.prisma.subscription.findMany({
-      where: { status: 'ACTIVE' },
+      where: {
+        status: 'ACTIVE',
+        ...(search
+          ? {
+              user: {
+                OR: [
+                  { name: { contains: search, mode: 'insensitive' } },
+                  { email: { contains: search, mode: 'insensitive' } },
+                ],
+              },
+            }
+          : {}),
+      },
       include: {
         user: { select: { id: true, name: true, email: true, avatar: true } },
       },
@@ -745,6 +867,12 @@ export class AdminFinanceService {
     if (!subscription) {
       throw new NotFoundException('Subscription not found');
     }
+
+    // HUMAN_BACKLOG.md: this previously only updated the local row --
+    // Paystack kept billing the customer on schedule regardless of the
+    // admin's cancellation. Shares the same guard/logging/error-swallowing
+    // logic as the user's own self-service cancel path.
+    await this.subscriptionsService.disablePaystackSubscription(subscription);
 
     await this.prisma.subscription.update({
       where: { id: subscriptionId },
@@ -884,7 +1012,7 @@ export class AdminFinanceService {
         where: { status: { in: ['DELIVERED', 'SHIPPED'] } },
       }),
     ]);
-    const totalGmv = (apptAgg._sum?.price || 0) + (orderAgg._sum?.totalAmount || 0);
+    const totalGmv = Number(apptAgg._sum?.price || 0) + Number(orderAgg._sum?.totalAmount || 0);
 
     // 3. Platform revenue (10% of GMV)
     const platformRevenue = totalGmv * 0.1;

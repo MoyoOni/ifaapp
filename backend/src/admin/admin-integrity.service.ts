@@ -17,8 +17,12 @@ export class AdminIntegrityService {
       this.prisma.forumPost.findMany({
         where: { heldForReview: true },
         include: {
-          author: { select: { id: true, name: true, email: true, avatar: true, culturalLevel: true } },
-          thread: { select: { id: true, title: true, category: { select: { id: true, name: true } } } },
+          author: {
+            select: { id: true, name: true, email: true, avatar: true, culturalLevel: true },
+          },
+          thread: {
+            select: { id: true, title: true, category: { select: { id: true, name: true } } },
+          },
         },
         orderBy: { createdAt: 'asc' },
         skip,

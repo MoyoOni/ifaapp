@@ -373,6 +373,11 @@ export class AdminService {
     return this.adminUsersService.forceLogoutUser(userId);
   }
 
+  // COMMUNITY_BACKLOG.md FOR-017
+  async setCommunityCarer(userId: string, isCarer: boolean) {
+    return this.adminUsersService.setCommunityCarer(userId, isCarer);
+  }
+
   async getRecentLogins(limit = 50) {
     return this.adminUsersService.getRecentLogins(limit);
   }
@@ -560,6 +565,14 @@ export class AdminService {
   }
 
   /**
+   * V8-204: admin-only toggle for Circle.isDevoted (gates joining behind the
+   * Devoted subscription tier).
+   */
+  async setCircleDevoted(circleId: string, isDevoted: boolean, currentUser: CurrentUserPayload) {
+    return this.adminCommunityService.setCircleDevoted(circleId, isDevoted, currentUser);
+  }
+
+  /**
    * Approve and promote circle event to main events directory
    */
   async approveCircleEvent(eventId: string, currentUser: CurrentUserPayload) {
@@ -598,8 +611,8 @@ export class AdminService {
     return this.adminFinanceService.getRevenueForecast();
   }
 
-  async getActiveSubscribers() {
-    return this.adminFinanceService.getActiveSubscribers();
+  async getActiveSubscribers(search?: string) {
+    return this.adminFinanceService.getActiveSubscribers(search);
   }
 
   async getCancelledSubscribers() {

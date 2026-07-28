@@ -19,10 +19,10 @@ export class AdminFeaturedContentService {
       this.prisma.product.findMany({
         where: { isFeatured: true },
         include: {
-          vendor: { 
-            include: { 
-              user: { select: { email: true } } 
-            } 
+          vendor: {
+            include: {
+              user: { select: { email: true } },
+            },
           },
         },
         orderBy: { featuredUntil: 'asc' },
@@ -68,10 +68,10 @@ export class AdminFeaturedContentService {
         items = await this.prisma.product.findMany({
           where: { name: { contains: query, mode: 'insensitive' } },
           include: {
-            vendor: { 
-              include: { 
-                user: { select: { email: true } } 
-              } 
+            vendor: {
+              include: {
+                user: { select: { email: true } },
+              },
             },
           },
           take: 20,
@@ -151,10 +151,10 @@ export class AdminFeaturedContentService {
       id: p.id,
       title: p.name,
       type: 'product',
-      owner: { 
-        id: p.vendor.id, 
-        name: p.vendor.businessName, 
-        email: p.vendor.user?.email 
+      owner: {
+        id: p.vendor.id,
+        name: p.vendor.businessName,
+        email: p.vendor.user?.email,
       },
       label: p.name,
       isFeatured: p.isFeatured,

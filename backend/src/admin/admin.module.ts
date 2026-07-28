@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { AdminController } from './admin.controller';
+import { CommunityCulturalContentController } from './community-cultural-content.controller';
 import { AuditService } from './audit.service';
 import { InactivePractitionerMonitorService } from './inactive-practitioner-monitor.service';
 import { AdminMarketplaceService } from './admin-marketplace.service';
@@ -19,6 +20,8 @@ import { AdminCulturalContentService } from './admin-cultural-content.service';
 import { AdminFeaturedContentService } from './admin-featured-content.service';
 import { AdminIntegrityService } from './admin-integrity.service';
 import { AdminComplaintsService } from './admin-complaints.service';
+import { AdminUserReportsService } from './admin-user-reports.service';
+import { AdminQualityMetricsService } from './admin-quality-metrics.service';
 import { AdminMarketIntelligenceService } from './admin-market-intelligence.service';
 import { AdminPractitionerPerformanceService } from './admin-practitioner-performance.service';
 import { AdminMorningBriefService } from './admin-morning-brief.service';
@@ -32,6 +35,9 @@ import { WalletModule } from '../wallet/wallet.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { CirclesModule } from '../circles/circles.module';
 import { SharedModule } from '../shared/shared.module';
+import { DisputesModule } from '../disputes/disputes.module';
+import { UsersModule } from '../users/users.module';
+import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 
 // NotificationService/NotificationPreferencesService provided directly here
 // for the same reason as WalletModule/AppointmentsModule/etc — see wallet.module.ts.
@@ -54,8 +60,11 @@ import { SharedModule } from '../shared/shared.module';
     PaymentsModule,
     CirclesModule,
     SharedModule,
+    DisputesModule,
+    UsersModule,
+    SubscriptionsModule,
   ],
-  controllers: [AdminController],
+  controllers: [AdminController, CommunityCulturalContentController],
   providers: [
     AdminService,
     AdminUsersService,
@@ -76,6 +85,8 @@ import { SharedModule } from '../shared/shared.module';
     AdminFeaturedContentService,
     AdminIntegrityService,
     AdminComplaintsService,
+    AdminUserReportsService,
+    AdminQualityMetricsService,
     AdminMarketIntelligenceService,
     AdminPractitionerPerformanceService,
     AdminMorningBriefService,

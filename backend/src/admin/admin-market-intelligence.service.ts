@@ -30,16 +30,20 @@ export class AdminMarketIntelligenceService {
       const allBookings = p.appointmentsAsBabalawo;
       const thisMonthBookings = allBookings.filter((a: any) => new Date(a.date) >= startOfMonth);
       const lastMonthBookings = allBookings.filter(
-        (a: any) => new Date(a.date) >= startOfLastMonth && new Date(a.date) < startOfMonth,
+        (a: any) => new Date(a.date) >= startOfLastMonth && new Date(a.date) < startOfMonth
       );
       const totalBookings = allBookings.length;
-      const thisMonthRevenue = thisMonthBookings.reduce((sum: number, a: any) => sum + (a.price || 0), 0);
+      const thisMonthRevenue = thisMonthBookings.reduce(
+        (sum: number, a: any) => sum + (a.price || 0),
+        0
+      );
       const totalRevenue = allBookings.reduce((sum: number, a: any) => sum + (a.price || 0), 0);
       const avgConsultationPrice = totalBookings > 0 ? totalRevenue / totalBookings : 0;
       const totalReviews = p.babalawoReviewsReceived.length;
       const averageRating =
         totalReviews > 0
-          ? p.babalawoReviewsReceived.reduce((sum: number, r: any) => sum + r.rating, 0) / totalReviews
+          ? p.babalawoReviewsReceived.reduce((sum: number, r: any) => sum + r.rating, 0) /
+            totalReviews
           : 0;
       const momGrowth =
         lastMonthBookings.length > 0
@@ -90,14 +94,14 @@ export class AdminMarketIntelligenceService {
         },
         templesFounded: {
           select: {
-            specialties: true
-          }
+            specialties: true,
+          },
         },
         templesJoined: {
           select: {
-            specialties: true
-          }
-        }
+            specialties: true,
+          },
+        },
       },
     });
 
@@ -112,7 +116,7 @@ export class AdminMarketIntelligenceService {
 
     // Top specialisations - aggregate from all temples associated with practitioners
     const specCount: Record<string, number> = {};
-    
+
     for (const p of practitioners) {
       // Add specialties from temples they founded
       if (p.templesFounded) {
@@ -120,7 +124,7 @@ export class AdminMarketIntelligenceService {
           specCount[spec] = (specCount[spec] || 0) + 1;
         }
       }
-      
+
       // Add specialties from temples they're members of
       for (const temple of p.templesJoined) {
         for (const spec of temple.specialties) {
@@ -128,7 +132,7 @@ export class AdminMarketIntelligenceService {
         }
       }
     }
-    
+
     const topSpecialisations = Object.entries(specCount)
       .map(([term, count]) => ({ term, count }))
       .sort((a, b) => b.count - a.count)
@@ -138,7 +142,8 @@ export class AdminMarketIntelligenceService {
     const prices = practitioners
       .flatMap((p) => p.appointmentsAsBabalawo.map((a: any) => a.price))
       .filter((p) => p > 0);
-    const avgConsultationPrice = prices.length > 0 ? prices.reduce((a: number, b: number) => a + b, 0) / prices.length : 0;
+    const avgConsultationPrice =
+      prices.length > 0 ? prices.reduce((a: number, b: number) => a + b, 0) / prices.length : 0;
     const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
     const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
 

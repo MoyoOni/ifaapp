@@ -30,7 +30,23 @@ export class AdminTrustScoreService {
       include: { user: { select: { id: true, name: true } } },
     });
 
-    // Score breakdown — mirrors recomputeTrustScore() logic for admin visibility
+    // SHOP_BACKLOG.md MSP-006: this override tool (applyOverride below) was
+    // already generic -- any userId, including a vendor's -- but this
+    // breakdown was hardcoded to babalawo-shaped signals (appointments,
+    // reviews, forum activity), so an admin reviewing a vendor's trust score
+    // saw all-zero/irrelevant numbers with no way to see the vendor conduct
+    // history (disputes, fulfillment) an override/restoration decision
+    // should actually be based on. That's the missing connective tissue
+    // between "a conflict was resolved" and "trust can be restored" --
+    // reusing existing Dispute/ReturnRequest/ProductReview/VND-017
+    // certification data, not a parallel trust system.
+    const vendor = await this.prisma.vendor.findUnique({ where: { userId } });
+    const breakdown = vendor ? await this.getVendorBreakdown(vendor) : await this.getPractitionerBreakdown(userId);
+
+    return { user, breakdown, auditEntries };
+  }
+
+  private async getPractitionerBreakdown(userId: string) {
     const [appointments, reviews, posts, threads, referrals, certificates] = await Promise.all([
       this.prisma.appointment.count({ where: { babalawoId: userId, status: 'COMPLETED' } }),
       this.prisma.babalawoReview.aggregate({
@@ -44,7 +60,7 @@ export class AdminTrustScoreService {
       this.prisma.certificate.count({ where: { userId } }),
     ]);
 
-    const breakdown = [
+    return [
       {
         component: 'Completed consultations',
         value: appointments,
@@ -60,8 +76,43 @@ export class AdminTrustScoreService {
       { component: 'Referrals', value: referrals, points: Math.min(referrals * 3, 15) },
       { component: 'Certificates', value: certificates, points: Math.min(certificates * 5, 15) },
     ];
+  }
 
-    return { user, breakdown, auditEntries };
+  private async getVendorBreakdown(vendor: { id: string; userId: string }) {
+    const [reviewAgg, disputes, returnCount, orderCount, endorsements] = await Promise.all([
+      this.prisma.productReview.aggregate({
+        where: { product: { vendorId: vendor.id }, status: 'ACTIVE' },
+        _avg: { rating: true },
+        _count: { id: true },
+      }),
+      this.prisma.dispute.findMany({
+        where: { respondentId: vendor.userId, orderId: { not: null } },
+        select: { status: true },
+      }),
+      this.prisma.returnRequest.count({ where: { vendorId: vendor.id } }),
+      this.prisma.order.count({ where: { vendorId: vendor.id } }),
+      this.prisma.elderEndorsement.count({ where: { endorseeId: vendor.userId } }),
+    ]);
+
+    const resolvedDisputes = disputes.filter((d) => d.status === 'RESOLVED').length;
+    const disputeResolutionRate = disputes.length > 0 ? Math.round((resolvedDisputes / disputes.length) * 100) : null;
+
+    return [
+      {
+        component: 'Average product rating',
+        value: reviewAgg._avg.rating?.toFixed(1) ?? 'N/A',
+        points: reviewAgg._count.id > 0 ? Math.round((reviewAgg._avg.rating ?? 0) * 4) : 0,
+      },
+      { component: 'Product reviews', value: reviewAgg._count.id, points: Math.min(reviewAgg._count.id, 15) },
+      {
+        component: 'Order disputes (resolved / total)',
+        value: `${resolvedDisputes}/${disputes.length}`,
+        points: disputeResolutionRate === null ? 0 : Math.round((disputeResolutionRate / 100) * 15),
+      },
+      { component: 'Return requests', value: returnCount, points: 0 },
+      { component: 'Total orders', value: orderCount, points: Math.min(Math.round(orderCount / 5), 15) },
+      { component: 'Elder endorsements', value: endorsements, points: Math.min(endorsements * 5, 15) },
+    ];
   }
 
   async applyOverride(userId: string, override: number | null, reason: string, adminId: string) {

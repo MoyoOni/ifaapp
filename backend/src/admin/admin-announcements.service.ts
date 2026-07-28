@@ -37,7 +37,9 @@ export class AdminAnnouncementsService {
     createdAt: Date;
   }): AnnouncementView {
     const now = new Date();
-    const isLive = row.status === 'ACTIVE' || (row.status === 'SCHEDULED' && (!row.scheduledAt || row.scheduledAt <= now));
+    const isLive =
+      row.status === 'ACTIVE' ||
+      (row.status === 'SCHEDULED' && (!row.scheduledAt || row.scheduledAt <= now));
     const isExpired = !!row.expiresAt && row.expiresAt <= now;
     return {
       id: row.id,
@@ -52,7 +54,10 @@ export class AdminAnnouncementsService {
     };
   }
 
-  async create(dto: CreateAnnouncementDto, currentUser: CurrentUserPayload): Promise<AnnouncementView> {
+  async create(
+    dto: CreateAnnouncementDto,
+    currentUser: CurrentUserPayload
+  ): Promise<AnnouncementView> {
     if (currentUser.role !== 'ADMIN') {
       throw new ForbiddenException('Only admins can publish announcements');
     }

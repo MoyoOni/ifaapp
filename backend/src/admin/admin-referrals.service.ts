@@ -11,7 +11,9 @@ export class AdminReferralsService {
     const conversionRate = total > 0 ? (rewarded / total) * 100 : 0;
 
     // Leaderboard: top referrers by referral count
-    const leaderboardRaw = await this.prisma.$queryRaw<Array<{ referrerId: string; count: number }>>`
+    const leaderboardRaw = await this.prisma.$queryRaw<
+      Array<{ referrerId: string; count: number }>
+    >`
       SELECT "referrerId", COUNT(*) as count
       FROM referrals
       GROUP BY "referrerId"
@@ -43,7 +45,7 @@ export class AdminReferralsService {
 
   async getReferrals(page: number = 1, limit: number = 20) {
     const skip = (page - 1) * limit;
-    
+
     const [items, total] = await Promise.all([
       this.prisma.referral.findMany({
         skip,
@@ -70,11 +72,11 @@ export class AdminReferralsService {
       where: { id },
       include: { referrer: true },
     });
-    
+
     if (!referral) {
       throw new Error('Referral not found');
     }
-    
+
     if (referral.rewardGranted) {
       throw new Error('Reward already granted');
     }

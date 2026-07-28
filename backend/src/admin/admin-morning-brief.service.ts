@@ -11,7 +11,7 @@ export class AdminMorningBriefService {
     private prisma: PrismaService,
     private financeService: AdminFinanceService,
     private integrityService: AdminIntegrityService,
-    private complaintsService: AdminComplaintsService,
+    private complaintsService: AdminComplaintsService
   ) {}
 
   async getMorningBrief(admin: CurrentUserPayload) {
@@ -33,7 +33,8 @@ export class AdminMorningBriefService {
         },
       }),
     ]);
-    const trend = yesterdaySignups > 0 ? (todaySignups - yesterdaySignups) / yesterdaySignups : null;
+    const trend =
+      yesterdaySignups > 0 ? (todaySignups - yesterdaySignups) / yesterdaySignups : null;
 
     // ---- Pending Actions ----
     // Reuse existing methods
@@ -71,14 +72,11 @@ export class AdminMorningBriefService {
         author: { select: { id: true, name: true, avatar: true } },
         posts: {
           where: {
-            AND: [
-              { status: 'ACTIVE' },
-              { reports: { some: { status: 'PENDING' } } }
-            ]
+            AND: [{ status: 'ACTIVE' }, { reports: { some: { status: 'PENDING' } } }],
           },
           select: { id: true },
-          take: 1
-        }
+          take: 1,
+        },
       },
     });
 
@@ -142,7 +140,7 @@ export class AdminMorningBriefService {
         },
       }),
     ]);
-    const gmv = (apptAgg._sum?.price || 0) + (orderAgg._sum?.totalAmount || 0);
+    const gmv = Number(apptAgg._sum?.price || 0) + Number(orderAgg._sum?.totalAmount || 0);
     return gmv * 0.1; // 10% platform fee
   }
 

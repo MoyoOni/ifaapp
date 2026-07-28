@@ -9,29 +9,29 @@ export class AdminPromosService {
   async getAllPromos(includeInactive: boolean = false) {
     const promos = await this.prisma.promoCode.findMany({
       where: {
-        ...(includeInactive ? {} : { isActive: true })
+        ...(includeInactive ? {} : { isActive: true }),
       },
       include: {
         creator: {
           select: {
             id: true,
-            name: true
-          }
+            name: true,
+          },
         },
         _count: {
           select: {
-            redemptions: true
-          }
-        }
+            redemptions: true,
+          },
+        },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
 
     // Transform the response to match the frontend expectations
-    return promos.map(promo => ({
+    return promos.map((promo) => ({
       ...promo,
       creator: promo.creator,
-      redemptions: promo._count.redemptions
+      redemptions: promo._count.redemptions,
     }));
   }
 
@@ -45,7 +45,7 @@ export class AdminPromosService {
     eligibleRoles: string[] = []
   ) {
     const promoCode = code.toUpperCase(); // Ensure code is uppercase
-    
+
     try {
       const newPromo = await this.prisma.promoCode.create({
         data: {
@@ -61,22 +61,22 @@ export class AdminPromosService {
           creator: {
             select: {
               id: true,
-              name: true
-            }
+              name: true,
+            },
           },
           _count: {
             select: {
-              redemptions: true
-            }
-          }
-        }
+              redemptions: true,
+            },
+          },
+        },
       });
 
       // Transform the response to match the frontend expectations
       return {
         ...newPromo,
         creator: newPromo.creator,
-        redemptions: newPromo._count.redemptions
+        redemptions: newPromo._count.redemptions,
       };
     } catch (error: any) {
       // Handle unique constraint violation for code
@@ -89,7 +89,7 @@ export class AdminPromosService {
 
   async updatePromo(id: string, isActive: boolean) {
     const promo = await this.prisma.promoCode.findUnique({
-      where: { id }
+      where: { id },
     });
 
     if (!promo) {
@@ -99,34 +99,34 @@ export class AdminPromosService {
     const updatedPromo = await this.prisma.promoCode.update({
       where: { id },
       data: {
-        isActive
+        isActive,
       },
       include: {
         creator: {
           select: {
             id: true,
-            name: true
-          }
+            name: true,
+          },
         },
         _count: {
           select: {
-            redemptions: true
-          }
-        }
-      }
+            redemptions: true,
+          },
+        },
+      },
     });
 
     // Transform the response to match the frontend expectations
     return {
       ...updatedPromo,
       creator: updatedPromo.creator,
-      redemptions: updatedPromo._count.redemptions
+      redemptions: updatedPromo._count.redemptions,
     };
   }
 
   async deletePromo(id: string) {
     const promo = await this.prisma.promoCode.findUnique({
-      where: { id }
+      where: { id },
     });
 
     if (!promo) {
@@ -134,7 +134,7 @@ export class AdminPromosService {
     }
 
     await this.prisma.promoCode.delete({
-      where: { id }
+      where: { id },
     });
   }
 }

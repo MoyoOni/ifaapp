@@ -67,6 +67,7 @@ export class AdminUsersService {
         bannedAt: true,
         banReason: true,
         warnCount: true,
+        isCommunityCarer: true,
       },
       orderBy: { name: 'asc' },
     });
@@ -612,6 +613,18 @@ export class AdminUsersService {
       data: { isActive: false, loggedOutAt: new Date() },
     });
     return { success: true, message: 'All sessions invalidated' };
+  }
+
+  // COMMUNITY_BACKLOG.md FOR-017: admin-assigned carer flag, same
+  // human-designated pattern as isCommunityBuilder/isFeatured elsewhere.
+  async setCommunityCarer(userId: string, isCarer: boolean) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { isCommunityCarer: isCarer },
+      select: { id: true, name: true, isCommunityCarer: true },
+    });
   }
 
   async getRecentLogins(limit = 50) {

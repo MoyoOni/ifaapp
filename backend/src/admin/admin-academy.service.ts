@@ -64,15 +64,16 @@ export class AdminAcademyService {
     return courses.map((c) => {
       const completed = c.enrollments.filter((e) => e.completedAt).length;
       const total = c.enrollments.length;
+      const price = Number(c.price);
       return {
         id: c.id,
         title: c.title,
-        price: c.price,
+        price,
         currency: c.currency,
         enrollments: total,
         completions: completed,
         completionRate: total > 0 ? Math.round((completed / total) * 100) : 0,
-        revenue: c.price * total,
+        revenue: price * total,
       };
     });
   }
@@ -101,10 +102,20 @@ export class AdminAcademyService {
     const enrollment = await this.prisma.enrollment.findUnique({ where: { id: enrollmentId } });
     if (!enrollment) throw new NotFoundException('Enrollment not found');
     const existing = await this.prisma.courseCertificate.findUnique({ where: { enrollmentId } });
-    if (existing) return existing;
-    const cert = await this.prisma.courseCertificate.create({
-      data: { enrollmentId, certificateUrl: '' },
-    });
+    if (existing && !existing.deletedAt) return existing;
+
+    // ProBacklog-v1.md item #12 (soft-delete audit): enrollmentId is @unique
+    // on CourseCertificate, so re-issuing after a revocation must reuse
+    // (un-revoke) that same row rather than create a second one -- a plain
+    // .create() here would hit the unique constraint.
+    const cert = existing
+      ? await this.prisma.courseCertificate.update({
+          where: { enrollmentId },
+          data: { certificateUrl: '', issuedAt: new Date(), deletedAt: null },
+        })
+      : await this.prisma.courseCertificate.create({
+          data: { enrollmentId, certificateUrl: '' },
+        });
     await this.prisma.auditLog.create({
       data: {
         userId: adminId,
@@ -116,11 +127,22 @@ export class AdminAcademyService {
     return cert;
   }
 
+  // ProBacklog-v1.md item #12 (soft-delete audit): an issued credential --
+  // revoking it for cause is legitimate, but destroying the record entirely
+  // loses provenance (unlike the AuditLog entry below, which is the only
+  // trace that survived before this fix). Soft-deleted like the other 7
+  // models in this pass; the "doesn't have a revokedAt field" workaround
+  // this comment used to describe is now just deletedAt, matching the rest
+  // of the codebase's convention instead of a bespoke field name.
   async revokeCertificate(enrollmentId: string, reason: string, adminId: string) {
-    const cert = await this.prisma.courseCertificate.findUnique({ where: { enrollmentId } });
+    const cert = await this.prisma.courseCertificate.findUnique({
+      where: { enrollmentId, deletedAt: null },
+    });
     if (!cert) throw new NotFoundException('Certificate not found');
-    // Log revocation — CourseCertificate doesn't have a revokedAt field so we delete the record
-    await this.prisma.courseCertificate.delete({ where: { enrollmentId } });
+    await this.prisma.courseCertificate.update({
+      where: { enrollmentId },
+      data: { deletedAt: new Date() },
+    });
     await this.prisma.auditLog.create({
       data: {
         userId: adminId,
