@@ -764,7 +764,7 @@ export class AdminFinanceService {
     for (let i = months - 1; i >= 0; i--) {
       const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
-      const [apptSum, orderSum] = await Promise.all([
+      const [apptSum, orderSum, commissionSum] = await Promise.all([
         this.prisma.appointment.aggregate({
           _sum: { price: true },
           where: {
@@ -779,11 +779,25 @@ export class AdminFinanceService {
             status: { in: ['DELIVERED', 'SHIPPED'] },
           },
         }),
+        // ILUASE_V1_BACKLOG.md 🔴 Critical fix: "revenue" used to be a
+        // fabricated `gmv * 0.1` guess. Now that walletService.releaseEscrow()
+        // actually deducts and records real commission (COMMISSION-type
+        // Transaction rows), this reads the real amount collected instead of
+        // estimating it -- honestly $0 for the consultation side, since
+        // Consultations are paused and no commission is ever collected there.
+        this.prisma.transaction.aggregate({
+          _sum: { amount: true },
+          where: {
+            type: 'COMMISSION',
+            createdAt: { gte: monthStart.toISOString(), lt: monthEnd.toISOString() },
+          },
+        }),
       ]);
       const gmv = Number(apptSum._sum?.price || 0) + Number(orderSum._sum?.totalAmount || 0);
-      const revenue = gmv * 0.1;
+      const revenue = Number(commissionSum._sum?.amount || 0);
       trend.push({
         month: monthStart.toLocaleString('default', { month: 'short', year: 'numeric' }),
+        gmv,
         revenue,
       });
     }
@@ -1029,8 +1043,17 @@ export class AdminFinanceService {
     ]);
     const totalGmv = Number(apptAgg._sum?.price || 0) + Number(orderAgg._sum?.totalAmount || 0);
 
-    // 3. Platform revenue (10% of GMV)
-    const platformRevenue = totalGmv * 0.1;
+    // 3. Platform revenue -- ILUASE_V1_BACKLOG.md 🔴 Critical fix: this was
+    // a fabricated "10% of GMV" guess. Now sums the real, all-time
+    // COMMISSION-type Transaction rows walletService.releaseEscrow() writes
+    // when marketplace order escrows release (consultation side is
+    // honestly $0 -- Consultations are paused and no commission is ever
+    // collected there).
+    const commissionAgg = await this.prisma.transaction.aggregate({
+      _sum: { amount: true },
+      where: { type: 'COMMISSION' },
+    });
+    const platformRevenue = Number(commissionAgg._sum?.amount || 0);
 
     // 4. Pending payouts (reuse existing method)
     const pendingPayouts = await this.getPendingPayoutsTotal();

@@ -102,6 +102,7 @@ describe('AdminFinanceService', () => {
             },
             transaction: {
               updateMany: jest.fn(),
+              aggregate: jest.fn().mockResolvedValue({ _sum: { amount: 0 } }),
             },
             // ILUASE_V1_BACKLOG.md 🔴 Critical fix: getRevenueForecast no
             // longer fabricates platformCostNgn -- it reads the real column.
@@ -113,6 +114,9 @@ describe('AdminFinanceService', () => {
             },
             platformSettings: {
               findFirst: jest.fn().mockResolvedValue(null),
+            },
+            refundRequest: {
+              count: jest.fn().mockResolvedValue(0),
             },
           },
         },
@@ -512,6 +516,49 @@ describe('AdminFinanceService', () => {
       // this-month platform revenue = 1000*0.20 + 4000*0.05 = 400, annualized = 4800
       // (a flat-10% assumption on the 5000 GMV would have wrongly given 500/6000)
       expect(result.projectedAnnualPlatformRevenue).toBe(4800);
+    });
+
+    it("includes each month's real gmv in the trend chart, not just revenue (was silently undefined before)", async () => {
+      (prisma as any).platformSettings.findFirst.mockResolvedValue(null);
+      (prisma as any).transaction.aggregate.mockResolvedValue({ _sum: { amount: 250 } });
+
+      const result = await service.getRevenueForecast();
+
+      expect(result.trend).toHaveLength(3);
+      for (const point of result.trend) {
+        expect(point.gmv).toBe(5000); // 1000 appointment + 4000 order, per beforeEach
+        expect(point.revenue).toBe(250); // real COMMISSION transactions, not a gmv*0.1 guess
+      }
+    });
+  });
+
+  describe('getFinancialCommandCentre (ILUASE_V1_BACKLOG.md fix: real commission, not a 10%-of-GMV guess)', () => {
+    beforeEach(() => {
+      (prisma as any).subscription.findMany.mockResolvedValue([]);
+      (prisma as any).subscription.count.mockResolvedValue(0);
+      (prisma as any).appointment.aggregate.mockResolvedValue({ _sum: { price: 20000 } });
+      (prisma as any).order.aggregate.mockResolvedValue({ _sum: { totalAmount: 80000 } });
+      (prisma as any).escrow.findMany.mockResolvedValue([]);
+      (prisma as any).withdrawalRequest.findMany.mockResolvedValue([]);
+      (prisma as any).refundRequest.count.mockResolvedValue(0);
+    });
+
+    it('reports platformRevenue as the real sum of COMMISSION transactions, not 10% of total GMV', async () => {
+      (prisma as any).transaction.aggregate.mockResolvedValue({ _sum: { amount: 4321 } });
+
+      const result = await service.getFinancialCommandCentre();
+
+      // Total GMV here is 100000; the old code would have fabricated 10000.
+      expect(result.metrics.totalGmv).toBe(100000);
+      expect(result.metrics.platformRevenue).toBe(4321);
+    });
+
+    it('reports platformRevenue as 0 (not a fabricated non-zero guess) when no commission has been collected yet', async () => {
+      (prisma as any).transaction.aggregate.mockResolvedValue({ _sum: { amount: null } });
+
+      const result = await service.getFinancialCommandCentre();
+
+      expect(result.metrics.platformRevenue).toBe(0);
     });
   });
 });
