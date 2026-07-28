@@ -1,10 +1,10 @@
 # Ìlú Àṣẹ V1 Backlog — The Single Source of Truth
 
-**This is now the only backlog doc to read for "what's left."** Every other `*_BACKLOG.md`/`ProBacklog-v1.md` file in this repo is superseded as of July 28, 2026 — each has a banner at its own top pointing back here. They're kept for historical detail (file:line references, the reasoning behind past decisions) but none of them should be used to decide what to work on next. This one is.
+**This is now the only backlog doc to read for "what's left."** Every other `*_BACKLOG.md`/`ProBacklog-v1.md` file in this repo is superseded — each has a banner at its own top pointing back here. They're kept for historical detail (file:line references, the reasoning behind past decisions) but none of them should be used to decide what to work on next. This one is.
 
-**How this doc was built:** six parallel extraction passes (one per source-doc group) pulled every item each source doc itself describes as not-done, plus one doc (ADMIN_BACKEND_GAPS_BACKLOG.md) that had already independently re-verified a whole domain against live code. A handful of items (marked 🔵 **verified this session**) were personally checked against the running code by direct inspection, not just extracted from a doc's own claim. Everything else is marked 📄 **as claimed by source doc** — trustworthy in that it's what the most recent status note in that doc says, but not re-verified against code in this pass. Given this platform's history of stale "✅ DONE" claims turning out to be wrong once someone actually checked, treat 📄 items as "probably true, worth a 5-minute spot-check before relying on it," not gospel.
+**How this doc was built:** originally assembled July 28, 2026 from six parallel extraction passes over 13 source docs. That same day, a **second reconciliation pass** (also July 28, 2026) discovered that ~426 files / ~26,000 lines of real prior-session work had been sitting **uncommitted** in the working tree the whole time — meaning most of the doc's "still open" claims were already stale the moment it was written. That work was committed (13 commits, grouped by subsystem, full test suites green before and after), then four parallel agents independently re-verified every claim in this doc against the now-committed code. **Every item below reflects that second-pass verification** — treat 🔵 **verified [date]** as trustworthy (checked against real code, with file:line evidence), and 📄 **as claimed by source doc** as unverified in this pass. Given this platform's repeated history of stale "✅ DONE" claims, still spot-check 📄 items before relying on them.
 
-**Story IDs are preserved** from their original docs (ADM-XXX, VND-XXX, MSP-XXX, FOR-XXX, EXP-XXX, Z1-XXX, V8-XXX, V5-XXX, F9-XXX, P0/P1/P2/P3-XX) so you can still search a source doc for the full original write-up if you need more detail than the one-liner here.
+**Story IDs are preserved** from their original docs (ADM-XXX, VND-XXX, MSP-XXX, FOR-XXX, EXP-XXX, Z1-XXX, V8-XXX, V5-XXX, F9-XXX, P0/P1/P2/P3-XX) so you can still search a source doc for the full original write-up if you need more detail than the one-liner here. **Warning:** `COMMUNITY_BACKLOG.md`'s FOR-XXX numbering has shifted/been reused since earlier extraction passes — match by content/title, not just number, if something looks off.
 
 ---
 
@@ -22,224 +22,217 @@
 
 ## 🔴 CRITICAL — Money & Security
 
-- **Marketplace commission is never actually deducted from any vendor payout.** `PlatformSettings.marketplaceCommissionPct` (10% default) is configured in the admin settings UI (ADM-014) and displayed in places, but no real money-movement code anywhere — not order creation, not escrow release, not payout processing — actually deducts it. Vendors currently receive 100% of order value; the platform takes 0% commission on every marketplace sale. This also blocks VND-026's tier-benefit half (can't give a "reduced commission" tier perk when there's no commission being charged at all) and affects VND-001/VND-003's earnings displays (both had to be rewritten to honestly show "not yet deducted" instead of a fabricated number). 📄 *(VENDOR_BACKLOG.md, cross-referenced under VND-001/003/026)*
+- **Marketplace commission is still never actually deducted from any vendor payout — 🔵 confirmed still true, July 28, 2026.** `backend/src/marketplace/marketplace.service.ts` returns this explicitly in three places: the vendor earnings response (`commission: { deducted: false, note: 'Not yet deducted from marketplace order payouts -- you currently receive the full order amount.' }`, ~L4037), the monthly statement PDF (~L4120, "not yet deducted from payouts"), and a dedicated `commissionNote` field (~L4209). `backend/src/wallet/wallet.service.ts` has zero commission/fee-deduction logic anywhere in withdrawal/payout code. The new `vendor-performance-tier.service.ts` (added this session) only sorts product listings by tier — it does not touch commission or fees at all, so VND-026's "reduced commission for top-tier vendors" perk is still fully unbuilt on top of an unbuilt base. This remains the single most important open item in the codebase.
 
-- **14 admin-dashboard features are marked "✅ DONE / all tests passing" in ADMIN_BACKLOG.md but the backend endpoint they call literally 404s.** This was independently re-verified against live code by `ADMIN_BACKEND_GAPS_BACKLOG.md` (which explicitly warns not to trust ADMIN_BACKLOG.md's completion claims). The frontend UI for every one of these renders correctly and looks finished — the gap is invisible until you actually click the button:
-  - **ADM-019** Segmented Email Campaigns — `GET/POST /admin/campaigns` etc. don't exist; the actual "resolve segment → send" mechanism is unresolved even in design.
-  - **ADM-020** Promo Code & Discount System — `/admin/promos` CRUD doesn't exist.
-  - **ADM-021** Referral Program Management — `/admin/referrals/*` doesn't exist (the underlying `Referral` data is real and used elsewhere, just no admin-facing routes).
-  - **ADM-017** Community Recognition System — `/admin/community/stars`, badge award/revoke don't exist. Also a real field-name mismatch: frontend expects `badgeName`/`badgeSlug`, model has `badgeKey`/`reason`.
-  - **ADM-015** Cultural Content Calendar — all 12 endpoints across Daily Words/Oral History/Sacred Calendar missing. Plus a mismatch: frontend sends `publish: boolean`, model only has `publishedAt: DateTime?`.
-  - **ADM-016** Featured Content Management — `/admin/featured-content` endpoints missing (underlying `isFeatured`/`featuredUntil` fields do exist and match schema).
-  - **ADM-025** Revenue Forecasting — `/admin/forecasting/revenue` doesn't exist. Also: no data source anywhere for `platformCostNgn` (operating cost) — needs a real `PlatformSettings` field, not a guess.
-  - **ADM-018** Cultural Integrity Review Queue — queue/approve/reject/flag-rules CRUD all missing. Open design question: what should "reject" do to post visibility, and does the author get notified?
-  - **ADM-024** Practitioner Leaderboard & Market Intelligence — `/admin/market-intelligence/*` doesn't exist.
-  - **ADM-001** Morning Dashboard — `/admin/morning-brief` aggregator doesn't exist (depends on ADM-025/018/024 logic existing first).
-  - **ADM-007** Featured Practitioners — endpoints missing (the `isFeatured`/`featuredOrder`/`featuredExpiry` User columns do exist).
-  - **ADM-011** Financial Command Centre — `/admin/financial-command-centre` doesn't exist.
-  - **ADM-008** Practitioner Complaint Handling — endpoints missing. Plus two response-shape mismatches: frontend status values (`PENDING/RESOLVED/DISMISSED`) vs. schema (`OPEN/UNDER_REVIEW/RESOLVED/DISMISSED`), and frontend expects `resolver: {name}` vs. the actual `resolvedBy` relation name.
-  - **ADM-006** Practitioner Performance Dashboard — `/admin/practitioner-performance` doesn't exist. Open decision: exact Active/Quiet/Inactive/At-Risk thresholds are undefined anywhere.
-  📄 *(ADMIN_BACKLOG.md vs. ADMIN_BACKEND_GAPS_BACKLOG.md — the gaps doc wins on conflict, per its own stated purpose)*
+- **`admin-finance.service.ts` now returns a *fabricated* `platformCostNgn` value in a live API response — 🔵 new finding, July 28, 2026.** The `getPlatformCost()` helper (~L724) computes `platformCostNgn` as `(consultationCommissionPct + marketplaceCommissionPct) * 10000` with its own code comment reading `// placeholder calculation`, falling back to a hardcoded `500000` if no settings row exists. This feeds the `/admin/forecasting/revenue` endpoint (see ✅ below — the endpoint itself is now real). This is arguably worse than the original "field doesn't exist" gap: it now looks like real operating-cost data to anyone reading the revenue forecast, directly conflicting with this repo's own principle of not fabricating data (see CLAUDE.md "Engineering Principles" #5). **No real `PlatformSettings.platformCostNgn` column exists in schema.prisma** — needs either a real field + admin input UI, or the forecast endpoint should say "operating cost: not yet tracked" instead of showing a computed-looking number.
 
-- **3 more admin features are partially real** — one action works, a companion listing/view endpoint doesn't:
-  - **ADM-009/029** Trust Score — override action works; `GET /admin/trust-score-adjustments` listing doesn't exist.
-  - **ADM-010** Inactive Practitioner Re-engagement — the query logic exists but is only used by a cron job, no controller route exposes it to the UI at all; two action endpoints don't exist.
-  - **ADM-013** Subscription Management — cancel/extend/grant/reminder genuinely work; the three list endpoints (`/active`, `/cancelled`, `/failed-payments`) don't exist. *(Note: this specific gap was independently found and fixed as part of V8-402 this session — worth re-checking whether ADM-013's frontend now actually uses the same endpoint V8-402 built, or still points at something that doesn't exist.)*
-  📄 *(ADMIN_BACKEND_GAPS_BACKLOG.md)*
+- **Money is still `Float` for a handful of fields — 🔵 narrowed, July 28, 2026 (was "13+ tables", now much smaller).** Eight `float_to_decimal` migrations landed this session and converted: `Escrow.amount`, `WithdrawalRequest.amount`, `Order.totalAmount`/`taxAmount`, `Product.price`, `Course.price`, `Appointment.price`, `GuidancePlan.totalCost`/`platformServiceFee`, `TutorSession.price`, `Event.price`, `ForumTip.amount`, `Payment.amount`, `RefundRequest.amount`/`approvedAmount`, all of `PlatformSettings`'s money fields, and `PromoCode.value`. **Still `Float`:** `Transaction.amount` (schema.prisma ~L1913, the one field the doc originally named that never got converted) plus three not previously flagged: `ReturnRequest.offeredRefundAmount` (~L1577), `VendorPromotionRedemption.discountNgn` (~L1643), `PromoRedemption.discountNgn` (~L3017). `Float` arithmetic in JS can still silently lose cents on any calculation touching these four fields.
 
-- **2 admin stories contradict themselves within ADMIN_BACKLOG.md** (no independent code check, just the doc disagreeing with itself):
-  - **ADM-004** Forum Category & Thread Management — summary tables say ✅ DONE, but the story's own detail section is headed "🟡 PARTIAL" and says thread-level admin actions (pin/unpin/lock/move/feature/delete-with-reason/merge) aren't built — only category CRUD is.
-  - **ADM-030** Platform Settings Panel — summary says ✅ DONE, but a later note in the same doc instructs "add missing settings: feature flags, maintenance mode, welcome message, forum limits," implying only the commission-rate slice (ADM-014) is actually built.
-  📄 *(ADMIN_BACKLOG.md, internal contradiction)*
+- **CI/CD workflow gates on a branch that may not match reality — 🔵 new finding, July 28, 2026.** `.github/workflows/ci-cd.yml` has a comment noting "no `main` branch exists on this remote" and gates deploy on `july-2026-hardening-pass`, but the local repo's actual working branch is `main` (confirmed: `git remote -v` → `origin https://github.com/MoyoOni/ifaapp.git`; `git branch -a` shows local `main`, `origin/HEAD -> origin/IfaAppV1`, `origin/IfaAppV1`, `origin/july-2026-hardening-pass`). Worth a human confirming which branch is actually meant to trigger CI/CD before assuming deploys work as configured.
 
-- **No backend "ban user" endpoint exists at all**, despite CLAUDE.md documenting ADM-003 as a complete "suspension & ban system." `suspendedUntil`/`bannedAt`/`banReason` exist on the `User` model and are *read* elsewhere, but nothing anywhere ever *sets* them. 📄 *(ProBacklog-v1.md, P3-11 "found, not fixed" note)*
+- **A batch of ~15 Prisma migrations has no recorded confirmation of being applied to production — 🔵 new finding, July 28, 2026.** The float-to-Decimal batch, `add_vendor_cultural_certification`, `add_service_offerings`, plus several soft-delete/user-reports/circle-reactions migrations all landed in this session's checkpoint commit with no migration-status artifact anywhere in the repo. See ⚪ Needs a Human below.
 
-- **Money is still stored as `Float`, not `Decimal`, in 13+ tables.** Only `Wallet.balance` was converted this session (see the "money stored as Float" fix earlier in this project's history). Still `Float`: `Transaction.amount`, `Escrow.amount`, `WithdrawalRequest.amount`, `Order.totalAmount`, and fields on Product/Course/Appointment/GuidancePlan/TutorSession/Event/ForumTip/Payment/RefundRequest/PlatformSettings/PromoCode. `Float` arithmetic in JS can silently lose cents on every calculation that touches these fields. 📄 *(ProBacklog-v1.md, 🔴🔴 EXPLOITABLE NOW tier, item 15)*
+- **Unlimited free subscription-pause exploit — 🔵 verified and FIXED (July 27, 2026), still fixed.** `POST /subscriptions/pause` had zero repeat-call protection; fixed via a `pausedAt` flag. See `V8_MONETISATION_BACKLOG.md`'s V8-503 for full detail. No action needed.
 
-- **Schema drift risk on `trustScore`.** Missing `trustScoreOverride*` columns, a `trustScore` type/default mismatch (actual column is `INTEGER`, schema says `Float @default(0.5)`), and a missing unique index on `notificationPreferencesId`. Deliberately not blind-fixed — a wrong migration here risks silently mis-scaling every user's trust score by 100x. Needs someone to manually reconcile schema vs. actual DB column types before writing the migration. 📄 *(ProBacklog-v1.md, P3-19)*
+### Resolved since the doc was first written (moved from here to ✅ below, listed so you don't go looking)
 
-- **Unlimited free subscription-pause exploit — 🔵 verified and FIXED this session (July 27, 2026).** Listed here only so it's not accidentally "rediscovered" as still-open: `POST /subscriptions/pause` had zero repeat-call protection; fixed via a new `pausedAt` flag. See `V8_MONETISATION_BACKLOG.md`'s V8-503 for full detail. No action needed.
+The following 🔴 items from the original pass are now **✅ done** — see the ✅ section for evidence: the 14 "missing" admin endpoints, the 3 "partially real" admin features, the ban/unban endpoint, and the `trustScore` schema-drift risk. **ADM-004** (forum thread admin actions) and **ADM-030** (platform settings panel) are **partially** resolved — see 🟡 Admin Operations below for what's still actually missing.
 
 ---
 
 ## 🟠 STRUCTURAL / TECH DEBT
 
-All 📄 *(ProBacklog-v1.md)* unless noted — this doc is the platform's own code-quality/structural audit, distinct from feature backlogs.
+All 📄 *(ProBacklog-v1.md)* unless noted — this doc is the platform's own code-quality/structural audit, distinct from feature backlogs. Re-verified July 28, 2026.
 
-- **Test coverage is still far below target.** P1-03 fixed the *broken build/tooling* (compile errors, 5 broken Jest suites), and is marked "done" for that — but the actual CI coverage gate only moved from 17/15/13/17% to **20/18/16/20%** (backend/frontend/branches/functions), nowhere near the 80%/60%/20+E2E target this item and the old V2 backlog both set. "Done" here means "the tooling works," not "coverage is adequate."
-- **No DTO/serialization layer.** P0-04 shipped a global `SensitiveFieldStripInterceptor` (a real safety net for `passwordHash`/`emailVerificationToken` specifically) instead of the originally-scoped `ClassSerializerInterceptor` + `@Exclude()`-decorated DTOs. 114+ endpoints across `users`/`payments`/`wallet`/`admin` still return raw Prisma objects with no formal response shape.
-- **Frontend anti-corruption/DTO-mapping layer only covers the auth flow** (login/register/quickAccess). The other ~50+ API call sites across the app, including the richer `GET /users/:id` shape, remain untyped passthroughs. (P2-01)
-- **`forum.service.ts` is still 2437 lines** (the one monolith P2-04 didn't split) — deliberately deferred because its existing test suites tested a fictional never-implemented schema and had to be deleted, leaving zero real test coverage to protect a split. Needs characterization tests written first.
-- **17 structured-data fields stored as opaque `Json`/`Json?` blobs** (order line items, `availability`, `advisoryBoardVotes`, etc.) — no story anywhere addresses this. No status update at all; presumably exactly as originally found.
-- **Soft-delete pattern only covers 2 of 35 original raw-delete call sites.** `ForumThread`/`Circle`/`Document` (+ later `MemorialEntry`/`GuidancePlanTemplate`) were converted; the other 33 — across `admin-*` services, `temples`, `academy`, `gdpr`, `certificates`, `events`, `dreams`, `notification.service.ts` — remain hard-deletes, un-triaged. (Some may legitimately stay hard-deleted, e.g. expired-token cleanup — needs individual review, not a blanket conversion.)
-- **`hard_delete_audit` table was never built** — the one specifically-caveated open item from P0-03. Admin deletions currently have only `Logger.log()` calls as an audit trail, not a queryable table.
-- **Git repo has no remote, no branch protection, no documented branch strategy.** `git init` + first commit happened (P0-01); everything past that is blocked on the platform owner's account/credentials. The existing `.github/workflows/` CI skeleton also hasn't been reviewed against this task's original intent.
-- **2 orphaned frontend components call backend routes that don't exist:** `role-management-tab.tsx` → `/admin/roles` (no route at all); `profile-views-panel.tsx` → `GET /users/profile-views/mine` (the service method `getProfileViewers()` exists but nothing exposes it via a controller — **note:** this may already be resolved by this session's V8-302 work, which built a real profile-viewers panel and wired `GET /users/:id/profile-viewers` — worth checking whether this is the same gap closed under a different name before treating it as still open).
-- **591 `@typescript-eslint/no-explicit-any` violations** (425 in production code, 115 files) — deliberately deferred as multi-session work; blocks adding a backend lint CI gate.
-- **2304 hardcoded-Tailwind-color-class lint violations** (`no-restricted-syntax`) — same story on the frontend; blocks the frontend lint CI gate.
-- **87 unaudited high/critical npm CVEs** (60 backend, 27 frontend) — `npm audit` now runs in CI but is deliberately non-blocking; none of the 87 have been triaged.
-- **P3-18: no custom-permission JSON layer for admin sub-role RBAC** — explicitly deferred by product-owner decision ("keep it simple, don't build yet"). Not a gap, just a captured decision so it isn't re-litigated from scratch.
-- **3 architecture "sins" never independently audited:** generic marketing landing page quality (#6), full onboarding-edge-case audit beyond ghost-record-creation (#7), AI-generated-code review checklist (#28). Status genuinely unknown, not "presumed open."
-- **P3-15's two open product questions:** whether 3 dead `push-notification.controller.ts` admin routes should just be deleted, and whether `ADVISORY_BOARD_MEMBER` should retain user-impersonation ability at all.
-- **P3-19's other caveat:** worth re-verifying the CLAUDE.md-documented V6-206 "RDS backup restore test" actually replayed migrations from a truly fresh DB — this story suggests that path may have been broken in a way the restore test wouldn't have caught.
+- **Test coverage thresholds — 🔵 confirmed unchanged.** `backend/package.json`'s jest `coverageThreshold.global` is statements 20 / branches 18 / functions 16 / lines 20 — matches the doc's prior claim exactly, still far below the 80%/60%/20+E2E target. No regression, no progress either.
+- **No DTO/serialization layer — 🔵 confirmed still open.** Only `SensitiveFieldStripInterceptor` exists; its own header comment states plainly: *"there is no DTO/ClassSerializerInterceptor layer in this codebase... sensitive-field stripping is done ad hoc per call site."* Zero `@Exclude()` usages anywhere in `backend/src`.
+- **Frontend anti-corruption/DTO-mapping layer still auth-only — 🔵 confirmed still open.** `frontend/src/types/api/mappers/` contains only `auth.mapper.ts` + test. No mapper for `GET /users/:id` or other endpoints yet.
+- **`forum.service.ts` is now 2727 lines — 🔵 grew, not shrank (was 2437).** Still one monolith, still deliberately deferred pending characterization tests.
+- **19 structured-data fields still stored as opaque `Json`/`Json?` blobs — 🔵 count updated (was 17).** Spot-checked `User.availability` and `advisoryBoardVotes` — both still `Json?`. No conversions found; count went up, not down.
+- **Soft-delete pattern — 🔵 real progress, was understated as "2 of 35."** `deletedAt`-style soft-delete now covers **12 models** (up from 5): `DreamEntry`, `MemorialEntry`, `Message`, `Document`, `ConsultationNote`, `ClientSessionNote`, `GuidancePlanTemplate`, `Lesson`, `CourseCertificate`, `Event`, `OralHistoryEntry`, `ServiceOffering` (plus `ForumThread`/`Circle` use a `status`-field convention). Raw `prisma.<model>.delete(` call sites are down to **19** (was 33), and the doc's specifically-named `academy`/`gdpr`/`certificates`/`events`/`dreams` areas now have **zero** raw deletes — fully converted. Still hard-deleting: `circles.service.ts`, `marketplace.service.ts`, `admin-promos.service.ts`, `admin-campaigns.service.ts`, `admin-integrity.service.ts`, `admin-content.service.ts`, `admin-cultural-content.service.ts`, `temples.service.ts`, `admin-community.service.ts`, `forum.service.ts`, `users.service.ts`, `wallet.service.ts`, `notification.service.ts` (~L306), `modules/user/user.service.ts`.
+- **`hard_delete_audit` table — 🔵 confirmed still open.** No `HardDeleteAudit` model anywhere in schema.prisma. Admin deletions still only have `Logger.log()` calls.
+- **Git repo now has a real remote — 🔵 updated.** `origin https://github.com/MoyoOni/ifaapp.git` exists (was previously "no remote"). Branch-protection status not checkable from this environment (no authenticated `gh` CLI). See the CI/CD branch-mismatch item under 🔴 Critical above — that's the more urgent git-related issue now.
+- **2 orphaned frontend components — 🔵 one resolved, one moot.** `profile-views-panel.tsx` is **back and fully wired** — `frontend/src/features/devoted/profile-views-panel.tsx` calls `GET /users/:id/profile-viewers`, which is real (`backend/src/users/users.controller.ts` ~L168, backed by `usersService.getProfileViewers()`). Move to ✅. `role-management-tab.tsx` — confirmed absent on **both** sides (no frontend file, no `/admin/roles` backend route) — there's no orphan because neither half exists; drop this half of the item rather than "fix" it.
+- **`@typescript-eslint/no-explicit-any` — 🔵 rule is `'warn'` not `'error'` on frontend (checked `.eslintrc.cjs`); rough proxy count `grep -rn ": any" backend/src` = 288 (not an exact violation count, doesn't match doc's 591 methodology — needs a real lint run to get a comparable number).** Still open, no CI gate.
+- **Hardcoded-Tailwind-color lint rule — 🔵 rule status update.** `frontend/.eslintrc.cjs` (~L37-42) has the `no-restricted-syntax` rule for literal Tailwind color classes set to `'error'`, not disabled — the rule itself may already be enabled/blocking. Worth a fresh violation count (`npx eslint` run) to see if the frontend lint CI gate is actually achievable now or still blocked by volume.
+- **87 unaudited npm CVEs — 🔵 partial progress, still non-blocking.** `.github/workflows/ci-cd.yml` (~L202-204) runs `npm audit --workspaces --audit-level=high` with `continue-on-error: true` (still non-blocking) but a comment (P3-03) notes it's "no longer double-suppressed with `|| true`" — real pass/fail is now visible in the Actions UI even though it doesn't fail the build. None of the 87 CVEs confirmed triaged.
+- **P3-18: no custom-permission JSON layer for admin sub-role RBAC** — unchanged, explicitly deferred by product-owner decision. Not re-verified this pass (no code claim to check).
+- **3 architecture "sins" never independently audited** (#6 landing page quality, #7 onboarding-edge-case audit, #28 AI-code review checklist) — not covered in this pass either; status still genuinely unknown.
+- **P3-15's two open product questions** (dead push-notification admin routes, `ADVISORY_BOARD_MEMBER` impersonation ability) — not covered in this pass; still open.
+- **P3-19's backup-restore-test caveat** — not covered in this pass (needs infra access); still open.
+- **The orphaned `GoogleStrategy` is now *imported* but still functionally unused — 🔵 nuance update.** `backend/src/auth/auth.module.ts` now registers `GoogleStrategy` in its `providers` array (no longer literally unreferenced), but no route anywhere uses `AuthGuard('google')` — the real flow is `POST /auth/google/token` (ID-token verification in `auth.controller.ts`). Still dead weight, just less "orphaned" than before. Human decision to delete/keep still open — see ⚪ below.
 
 ---
 
 ## 🟡 FEATURE GAPS BY DOMAIN
 
 ### Monetisation (Devoted tier)
-Full detail in `V8_MONETISATION_BACKLOG.md` (kept as a deep-dive reference even though superseded for planning purposes — its per-story status write-ups are more detailed than what's practical to repeat here).
 
-- **V8-103** — needs a human with real Paystack dashboard access to create the Quarterly/Annual Plans and set 3 env vars in production. Code fails loudly rather than silently degrading until this happens.
-- **V8-206 / V8-303** — backend is fully correct (message limits, priority booking) but has no reachable frontend since messaging/booking are paused platform-wide. Revisit when those un-pause.
-- **V8-305** — event-attendance XP has nothing to hook into; there's no attendance-tracking mechanism anywhere in this codebase. Would be a new feature, not a fix.
+Full detail in `V8_MONETISATION_BACKLOG.md` (superseded for planning, kept as deep-dive reference).
+
+- **V8-103** — still needs a human with real Paystack dashboard access for Quarterly/Annual Plans + 3 env vars. 🔵 Code confirmed to fail loudly: `subscriptions.service.ts` (~L65-78) throws naming the exact missing var; `subscriptions.controller.ts` (~L133-135) and `security-hardening.service.ts` (~L66-69) both refuse to process the webhook without `PAYSTACK_WEBHOOK_SECRET` rather than silently skipping verification (this replaced a previously-unsafe skip). `.env.example` now documents all 3 vars with explanatory comments.
+- **V8-206 / V8-303** — 🔵 confirmed still open, correcting a stale file reference: the message-limit logic lives in `backend/src/messaging/messaging.service.ts` (~L76-104, L254-282 — "10 conversations/month for FREE, unlimited for DEVOTED"), not `messages/messages.service.ts` as previously written. Priority booking (`isPriority` sort-to-top for DEVOTED) confirmed in `appointments.service.ts` + `schema.prisma`. Frontend confirmed still unreachable — `frontend/src/features/messages/` and the booking half of `frontend/src/features/consultations/` were deleted in this session's MVP-pivot-cleanup commit; only an unrelated `consultation-notes-panel.tsx` remains. Revisit when Messaging/Consultations un-pause.
+- **V8-305** — 🔵 confirmed still open. `grep -rin "attendance" backend/src` returns zero hits. No attendance-tracking mechanism exists anywhere; would be new feature work.
 
 ### Admin Operations
-See 🔴 Critical above — the bulk of open admin work is money/security-adjacent and listed there (14 missing endpoints, 3 partial, 2 self-contradicting stories, missing ban endpoint).
+
+🔵 **The bulk of this is now done** — see ✅ below for the 14+3 previously-missing admin endpoints and the ban/unban endpoint, all confirmed implemented this session. What's still actually open:
+
+- **ADM-004 (forum thread admin actions) — frontend gap, not backend.** Backend has all 7 actions including delete-with-reason (`forum.service.ts` `adminDeleteThread()`, soft-delete + logged reason) and `move`/`feature`/`merge`/`pin`/`unpin`/`lock`/`unlock`. But `admin-forum-management-tab.tsx` only calls move, merge, and the pin/unpin/lock/unlock/approve moderate-action endpoint — it never calls `/feature` or the delete-with-reason `DELETE admin/threads/:id` route. Small, well-scoped frontend wiring task.
+- **ADM-030 Platform Settings Panel — 🔵 confirmed still open, exactly as claimed.** `PlatformSettings` model (schema.prisma ~L2896-2905) only has `consultationCommissionPct`, `marketplaceCommissionPct`, `minPayoutThresholdNgn`, `maxPayoutWithoutApprovalNgn`, `quizPassThreshold`. No feature-flags, maintenance-mode, welcome-message, or forum-limits fields anywhere (grepped all casings, zero hits).
+- **The fabricated `platformCostNgn` in the revenue forecast** — see 🔴 Critical above, it's an admin-ops item but serious enough to live there.
 
 ### Vendor / Marketplace
-📄 *(VENDOR_BACKLOG.md + SHOP_BACKLOG.md)*
 
-- **VND-012** Customer Communication Hub — entirely unbuilt, blocked on Messaging (paused).
-- **VND-025** Wholesale & B2B Sales — wholesale mode is built; "temple purchasing" (bulk orders from a shared temple wallet) isn't — no `Temple` wallet concept exists anywhere, needs its own design project first.
-- **VND-026** Vendor Performance Tiers — tiers/badges/search-tiebreaker are real; the actual tier *benefit* (reduced commission, waived withdrawal fees) can't work until commission is actually deducted (see 🔴 Critical above).
-- Smaller sub-gaps inside otherwise-✅-DONE items: VND-009 (no per-order communication log, blocked on Messaging), VND-010 (digital-item "revoke access" on return — worth checking if VND-024 incidentally covered this; admin dispute view's message history, blocked on Messaging), VND-011 (no "shipping presets" quick-apply), VND-013 (no view/add-to-cart event tracking, low priority), VND-014 (no message-response-rate metric, blocked on Messaging), VND-016 (no storefront "response time" stat, blocked on Messaging), VND-021 (referral is flat ₦500, not true per-purchase ongoing commission — real scope gap, recommend its own item), VND-023 (SEO meta tags stored but not injected into real `<meta>` tags — blocked on no SSR/per-route meta injection existing).
-- **MSP-002** Cross-Vendor Bundling — cross-sell recommendations based on ritual completeness not built.
-- **MSP-003** Cultural Appropriation Prevention — no documented blacklist of prohibited items/categories; vendor education module still thin.
-- **MSP-005** Vendor Collaboration Spaces — shared inventory for large ceremonies blocked on VND-025 (above, unbuilt).
-- **MSP-006** — 🔵 verified this session, mostly done. One sub-item still open: vendor accountability/shipping-reliability data isn't tracked anywhere — would need a new signal.
-- **MSP-009** International Shipping & Customs — customs docs + shipping insurance both blocked on VND-011 data plus real external expertise/provider integrations the team doesn't have in-house.
-- **MSP-013** Vendor-to-Client Relationship Cultivation — entirely unbuilt, explicitly sequenced after Messaging relaunch.
-- **MSP-015** Community-Supported Authenticity — item-level cultural wiki content, vendor education, and "this speaks to me" storytelling (coordinate with FOR-019) all unbuilt — mostly content-authoring tasks.
-- **MSP-017** Vendor Cooperative Spaces — entirely unbuilt, blocked on VND-025.
-- **MSP-018** Vendor Wellbeing & Ritual Support — no dedicated support-request flow beyond the existing forum/wellness-checkin; fuller resource directory is a content task.
-- **MSP-021** Marketplace as Spiritual Journey Companion — entirely unbuilt; Spiritual Journey feature itself is deprioritized (not paused) — confirm priority with its owner before starting.
-- **MSP-022** Cultural Preservation Archive — interactive map of item origins not built (needs new regional data + mapping library); rest of item is done.
-- **MSP-023** Vendor-to-Client Mentorship Marketplace — entirely unbuilt; flagged as a possible Devoted-tier monetization perk, raise with Product before scoping.
-- **MSP-024** Cultural Gifts & Offerings — group/pooled gifting, gifting recognition threads, per-occasion cultural guidance, and gifting-history badges all unbuilt (core gift/dedication loop is done).
+📄 *(VENDOR_BACKLOG.md + SHOP_BACKLOG.md)*, re-verified 🔵 July 28, 2026.
+
+- **VND-012** Customer Communication Hub — 🔵 confirmed still entirely unbuilt, blocked on Messaging.
+- **VND-025** Wholesale & B2B — wholesale mode (price-gating for BABALAWO/ADMIN) is solid and working. "Temple purchasing" (shared temple wallet) is still unbuilt — 🔵 confirmed no `TempleWallet` concept anywhere. Note: the new `bulk-order-view.tsx` is **not** this — it's a single-vendor bulk-quantity form for one buyer, confirmed by its own code comment. Temple purchasing (pooled/shared wallet across a temple's members) remains a from-scratch design project.
+- **VND-026** Vendor Performance Tiers — tiers/badges/sort-tiebreaker are real and now backed by a real nightly cron (`vendor-performance-tier.service.ts`), but 🔵 confirmed the tier *benefit* (reduced commission, waived fees) is still 100% unbuilt — the service only affects listing sort order, and there's no commission logic anywhere for it to hook into (see 🔴 Critical). `vendor-performance-tier-panel.tsx` has zero mentions of commission/fee/waive.
+- **VND-021 referral reward — 🔵 worse than previously stated.** `admin-referrals.service.ts` `creditReferral()` (~L78-90) only flips `rewardGranted: true` — no wallet deposit or subscription credit actually happens; the code's own comment says "the actual reward... would typically happen here." Not "flat ₦500 instead of ongoing commission" as previously written — **no money moves at all yet.**
+- Sub-gaps, re-verified: **VND-009** (per-order comm log) still open, blocked on Messaging. **VND-010** (digital revoke-access) partially resolved — `return-request.dto.ts` now has a structured `ReturnReasonCategory` enum, but actual digital-download access revocation on return still doesn't exist. **VND-011** (shipping presets) still open — full shipping-zone CRUD exists now but it's fully manual entry, no quick-apply templates. **VND-013** (view/cart tracking) still open. **VND-014** (message-response-rate) resolved *differently* — new `vendor-insights-panel.tsx`/`getVendorInsights()` ships a real scorecard (`avgDaysToShip`, `ratingAverage`, `returnRate`), genuinely useful, but not the specific response-rate metric (still blocked on Messaging for that one). **VND-016** (storefront response-time stat) still open. **VND-023** (SEO meta injection) still open — no `react-helmet`/SSR meta injection found.
+- **MSP-002** Cross-Vendor Bundling — 🔵 **NOW RESOLVED.** `create-bundle.dto.ts` + `marketplace.service.ts` (~L1372-1520): vendors can propose bundles from any vendor's products, requires elder/admin approval, has a customization-request flow. Move to ✅.
+- **MSP-003** Cultural Appropriation Prevention — 🔵 **NOW RESOLVED (mostly).** `marketplace.service.ts` (~L341-398) blocks Akose/Ebo sacred-prescription terms and counterfeit/replica language at product creation; `flagProduct()` (~L980) gives community flagging → `heldForReview` queue. Move to ✅.
+- **MSP-005** Vendor Collaboration Spaces — 🔵 **PARTIALLY RESOLVED.** New `VendorPartnership` feature (`vendor-partnership.dto.ts`, `marketplace.service.ts` ~L1185-1330): self-service vendor groups with auto-created forum coordination threads, tied to a planned event. This is coordination, not literal shared-inventory pooling — the doc's original "shared inventory for large ceremonies" framing isn't fully met, but the collaboration-space need substantially is.
+- **MSP-006** — already ✅, unchanged.
+- **MSP-009** International Shipping & Customs — 🔵 confirmed still open. `shipping-zone.dto.ts` has only country/rate/processing-time fields, no customs-docs or insurance.
+- **MSP-013** Vendor-to-Client Relationship Cultivation — 🔵 confirmed still open, blocked on Messaging. New vendor-community/insights panels are vendor-to-vendor or vendor-to-self, not vendor-to-client.
+- **MSP-015** Community-Supported Authenticity — 🔵 **NOW RESOLVED.** `marketplace.service.ts` (~L889-909): `ProductEndorsement`/`communityEndorsed` ("this speaks to me"), `relatedStories` (item-level cultural wiki via oral-history links), plus the MSP-003 flagging-with-education flow. Move to ✅.
+- **MSP-017** Vendor Cooperative Spaces — 🔵 **NOW RESOLVED**, same `VendorPartnership` feature as MSP-005. Move to ✅.
+- **MSP-018** Vendor Wellbeing & Ritual Support — 🔵 **NOW RESOLVED.** `backend/src/vendor-community/vendor-community.service.ts` (`requestSpiritualLeave`, ~L178-197) + the new `backend/src/wellbeing/` module (consent-based check-in queue, claim/resolve by designated community carers) — code comment explicitly ties this to MSP-018. Move to ✅.
+- **MSP-021** Marketplace as Spiritual Journey Companion — 🔵 confirmed still open (only a stray subtitle-copy match, no real feature).
+- **MSP-022** Cultural Preservation Archive (interactive map) — 🔵 confirmed still open, no mapping library in `frontend/package.json`.
+- **MSP-023** Vendor-to-Client Mentorship Marketplace — 🔵 confirmed still open. `service-offerings.service.ts` is a plain babalawo service catalog (no purchase/booking layer); `community-mentorship.service.ts` is general newcomer mentorship, not vendor-specific commerce.
+- **MSP-024** Cultural Gifts & Offerings — 🔵 **PARTIALLY RESOLVED.** `create-order.dto.ts` + `marketplace.service.ts` (~L2497-2644, migration `add_order_gifting`): solid single-recipient gift-by-email with message + recipient notification. Still open: pooled/group gifting, gifting recognition threads, gifting-history badges.
 
 ### Community / Forum
-📄 *(COMMUNITY_BACKLOG.md)* — 22 items with open scope, most are either content-authoring tasks (need a human writer, not an engineer) or explicitly deferred pending a product/community-governance decision. Full one-liners:
 
-- **FOR-001** — flag-rule engine exists but nothing in the actual post-creation path ever checks against it; the admin review queue it feeds will always be empty in practice.
-- **FOR-002** — no dedicated crisis-path unit test; no temporary content restriction during active crisis review; Babalawo-availability integration blocked on Consultations relaunch.
-- **FOR-003** — entirely unbuilt: dedicated guidance-request thread type, privacy controls, closure/archiving, booking integration (blocked on Consultations).
-- **FOR-005** — no moderation-queue mechanism exists for Circle content at all (platform-wide gap); expert facilitators is a staffing task.
-- **FOR-006** — no event-triggered milestone-celebration notification (badges are computed live-on-read); storytelling deferred to FOR-019.
-- **FOR-007** — no automatic thread-highlighting on spiritual calendar days; no calendar-tied discussion threads; no Marketplace connection.
-- **FOR-009** — 🔵 verified this session, mostly done. One sub-item open: tech assistance for elders using the platform (distinct from mentorship-matching, which is done).
-- **FOR-010 / FOR-011** — VR/AR sacred spaces, blockchain oral-history preservation — greenfield, no infrastructure exists.
-- **FOR-013** — cross-timezone ritual coordination display, post-ritual sharing pattern, calendar-tied prep guides, community-generated-ritual approval (governance decision), consent-based virtual-ceremony recording all open.
-- **FOR-014** — elder governance on cultural matters and succession planning both deliberately unbuilt pending a real product/community-leadership decision (voting rights? formal council?).
-- **FOR-015** — healing-support practitioner referrals (may already be covered by existing Babalawo discovery, unconfirmed), grief-practice content, post-grief reintegration pattern.
-- **FOR-016** — healthy-spiritual-boundaries education content not authored (needs a human writer).
-- **FOR-017** — dedicated referral pathway beyond the interim `hello@iluase.com` contact; mental-health support content; restoration-journey pattern (needs product input).
-- **FOR-018** — restoration pathways for those who caused harm, reconciliation ceremonies, conflict-feedback loop, forgiveness/trust-restoration process — all vague-scope, deferred pending product input.
-- **FOR-019** — storytelling *events* (virtual gatherings) not built; could reuse `SacredCalendarEvent`.
-- **FOR-020** — entirely unbuilt: video guidance, practice guides/threads, elder workshops, practice verification/documentation.
-- **FOR-021** — Yoruba dream-interpretation framework content not authored; anti-manipulation/anxiety protection is a policy question for Product.
-- **FOR-023** — mentor-matching-per-milestone (worth re-checking against FOR-009's now-done matching system — may be closeable), privacy-control verification, Academy/Marketplace growth-support connection.
-- **FOR-024** — revision history, accuracy discussion, licensing, governance model all open (submission path itself is done).
-- **FOR-Q2** — multi-language array deliberately not built; reused existing single-value `dialectPreference` instead.
+📄 *(COMMUNITY_BACKLOG.md — note this source doc was itself substantially rewritten this session with real code-verified statuses; its claims held up under independent spot-check)*. Re-verified 🔵 July 28, 2026. **Numbering has shifted since the original extraction — matched by content below.**
+
+- **FOR-001** (flag-rule engine unused) — 🔵 confirmed still open, deliberately: the seed script's own header says wiring real-time auto-flagging into `forum.service.ts` "would be a genuine, separate engineering decision."
+- **FOR-002** (crisis path) — 🔵 **PARTIALLY RESOLVED.** Real `crisis-detection.service.ts` now exists (keyword-based), wired into `forum.service.ts` and `circles.service.ts`, flags `hasCrisisSignal` and notifies admins. Still missing: a dedicated unit test for the crisis path, and any temporary content restriction during review (flagged content stays fully visible). Babalawo-availability integration still blocked on paused Consultations.
+- **FOR-003** (guidance-request threads) — 🔵 confirmed still open, entirely unbuilt.
+- **FOR-005** (Circle content moderation queue) — 🔵 confirmed still open. `CircleFeedPost` has no review-queue field; only whole-Circle suspend/archive exists, plus the crisis-specific flag (not a general queue).
+- **FOR-006** (milestone-celebration notifications) — 🔵 confirmed still open; badges still compute live-on-read only.
+- **FOR-007** (calendar/marketplace/forum connection) — 🔵 **PARTIALLY RESOLVED.** New `seasonal-event-reminder.service.ts` (weekly cron) auto-creates post-event "Reflections" forum threads tied to `SacredCalendarEvent.reflectionThreadId` and sends pre-event reminders — real marketplace↔calendar↔forum wiring. Still missing: automatic thread-highlighting *during* upcoming significant days (only after-the-fact reflection threads exist).
+- **FOR-009** (elder tech assistance) — 🔵 confirmed still a distinct open gap. `ask-an-elder-banner.tsx` is Q&A, `community-mentorship.service.ts` is general newcomer mentorship — neither is tech assistance for elders using the platform.
+- **FOR-010 / FOR-011** — greenfield (VR/AR, blockchain), unchanged, still open.
+- **FOR-013** (ritual coordination) — 🔵 **PARTIALLY RESOLVED.** New `RitualParticipation` model + live panel handles RSVP + public/private intention. Still open: cross-timezone coordination, post-ritual sharing threads, calendar-tied prep guides tied to Marketplace, community-generated-ritual approval, consent-based recording.
+- **FOR-014** (elder governance/succession) — unchanged, deliberately deferred by product decision, not a code gap.
+- **FOR-015** (grief/ancestral support) — 🔵 **PARTIALLY RESOLVED.** A seeded Grief Circle + new `MemorialEntry`/remembrance-wall module + crisis-integration into Circles shipped. Still open: practitioner referrals, grief-practice content, post-grief reintegration pattern. **Naming trap:** `backend/src/healing/healing.service.ts`'s own header labels itself "FOR-018" (conflict mediation), not FOR-015 — don't confuse the two modules.
+- **FOR-016** (healthy-boundaries content) — 🔵 confirmed narrowed to a pure content gap; everything else in this item (keyword-flagging on complaints, elder review, restoration referral) already shipped.
+- **FOR-017** (referral pathway / mental-health content / restoration pattern) — 🔵 **PARTIALLY RESOLVED.** New `/wellbeing` module (check-in request/claim/resolve loop with designated community carers) shipped. Referral beyond `hello@iluase.com`, cultural mental-health content, and the "restoration journey" pattern all still open.
+- **FOR-018** (restoration/reconciliation) — 🔵 **PARTIALLY RESOLVED.** New `HealingCase` model + `/healing` module ships elder-mediated conflict mediation (report → claim → resolve, verified privacy — non-parties get 403). Still open: structured restoration-plan data, formal reconciliation ceremonies, conflict-feedback loop, forgiveness/trust-restoration process. Note `backend/src/user-reports/` is a **separate, unrelated** generic "report a user" flow — don't conflate with this item.
+- **FOR-019** (storytelling events) — 🔵 **PARTIALLY RESOLVED, clarified.** The new marketplace "stories" feature (`relatedProductIds` on `OralHistoryEntry`, `stories-browse-view.tsx`) is a **marketplace-item-story link**, entirely separate from forum "storytelling events" (virtual gatherings), which is the part still genuinely unbuilt.
+- **FOR-020** (video guidance/practice threads/elder workshops) — 🔵 confirmed still entirely unbuilt.
+- **FOR-021** (dream interpretation) — 🔵 **PARTIALLY RESOLVED.** New `DreamEntry` model + `/dreams` module ships a real private-by-default journal, public sharing opt-in, Babalawo-only interpretation-request queue. Still open: the actual Yoruba dream-interpretation cultural framework content, and "anti-manipulation" is still an undefined policy question, not a scoped feature.
+- **FOR-023** (milestone-triggered mentor matching) — 🔵 **PARTIALLY RESOLVED, clarified.** `community-mentorship.service.ts` is general 30-day newcomer mentorship (self-service, capped 3 mentees/mentor), **not** milestone-triggered matching. Milestone tracking itself already exists separately (`GET /users/:id/badges`). Mentor-matching-per-milestone-stage and the Academy/Marketplace growth-support connection remain unbuilt.
+- **FOR-024** (oral history revision/licensing/governance) — 🔵 **PARTIALLY RESOLVED.** Community submission path (draft → admin review → publish) fully shipped and verified end-to-end. Revision history, accuracy discussion, licensing, governance model all still open.
+- **FOR-Q2** (multi-language array) — unchanged, deliberately not built, reused `dialectPreference`.
 
 ### Experience / Platform Polish
-📄 *(EXPERIENCE_BACKLOG.md + Z1_BACKLOG.md)* — these two docs' "27/30 done" and "31/32 done" headlines both silently exclude real open work; here's what they exclude:
 
-- **EXP-007 / Z1-301** (same real-world gap, tracked under two IDs) — the 3 cultural-onboarding videos are still placeholders; UI/tabs are built, no real video content exists. Blocked on content production, not engineering.
-- **Z1-801** Circle Patron Tier (20 SP) — not started.
-- **Z1-802** Spiritual Journey Tracker (30 SP) — not started.
-- **Z1-803** Sentiment Analysis & Crisis Prevention enhancements (15 SP) — not started (only basic crisis detection exists today).
-- **Z1-1001** Error State Improvements (10 SP) — not started.
-- **Z1-1002** Edge Case Handling — network failures, concurrent ops (10 SP) — not started.
-- **Z1-1003** Internationalization Prep (5 SP) — not started.
-- **Z1-1101** Operations Runbook (10 SP) — not started.
-- **Z1-1102** Monitoring Dashboard Setup — Grafana, alerts (10 SP) — not started.
-- **Z1-1201** Production Readiness Checklist (15 SP) — not started.
-- Z1_BACKLOG.md also has several internal self-contradictions worth knowing about if you go read it directly: a self-referential "obsolete, see below" notice pointing at itself, a "27/30 done" total that quietly drops 3 whole sprints (Z1-10/11/12) from the denominator, and a sprint marked "✅ COMPLETED (Partially...)" which is a contradiction in terms.
+📄 *(EXPERIENCE_BACKLOG.md + Z1_BACKLOG.md)*, re-verified 🔵 July 28, 2026 — **the doc was meaningfully wrong about several of these, worth reading closely if you were about to duplicate this work:**
+
+- **EXP-007 / Z1-301** — 🔵 confirmed still open, pure content gap (3 onboarding videos still placeholders; `cultural-onboarding-path.tsx` still has an empty "Video Guide" tab).
+- **Z1-801 Circle Patron Tier — 🔵 DOC WAS WRONG, NOW RESOLVED.** Despite `Z1_BACKLOG.md` still saying "❌ NOT STARTED," `circles.service.ts` (~L587-614) has a full `becomePatron()` flow gated on `subscriptionStatus === 'DEVOTED'`, `patronOnly` feed posts, and a live frontend flow (`circle-detail-view.tsx` ~L222-296, `POST /circles/:id/become-patron`). Only missing: patron-leader direct messaging (blocked on paused Messaging) and dedicated patron badges. **Move to ✅.**
+- **Z1-802 Spiritual Journey Tracker** — 🔵 confirmed consistent with CLAUDE.md: exists, routed at `/client/spiritual-journey`, deprioritized not paused. No change.
+- **Z1-803 Sentiment Analysis & Crisis Prevention** — 🔵 **PARTIALLY RESOLVED.** Automated admin/elder alerts on crisis-signal detection already exist (`notifyAdmins`). Still open: `crisis-detection.service.ts` is literally an 8-keyword `.includes()` scan — no real sentiment analysis, no intervention workflow.
+- **Z1-1001/1002 Error States / Edge Cases** — 🔵 **PARTIALLY RESOLVED**, not a blank slate as claimed: `error-boundary.tsx`/`tab-error-boundary.tsx` exist, plus an outbox/retry-backoff pattern landed (git history: "P1: outbox pattern, retry/backoff"). No systematic edge-case audit found though.
+- **Z1-1003 Internationalization Prep** — 🔵 confirmed still open, no `i18next`/`react-i18next` anywhere.
+- **Z1-1101/1102/1201 (Ops Runbook / Monitoring Dashboard / Production Readiness Checklist) — 🔵 DOC WAS WRONG, NOW RESOLVED.** `docs/active/OPERATIONS_RUNBOOK.md` (208 lines), `MONITORING_DASHBOARDS.md` (102 lines), `MONITORING_DASHBOARD_SETUP.md` (253 lines), `PRE_LAUNCH_CHECKLIST.md` (330 lines) all exist with real content, contradicting "NOT STARTED." **Move to ✅** — but flag `OPERATIONS_RUNBOOK.md` itself as stale: it describes Docker Compose production deployment, which doesn't match CLAUDE.md's actual current infra (ECS Fargate) — needs its own refresh pass, tracked as a new small doc-freshness item.
+- Z1_BACKLOG.md's other internal self-contradictions (self-referential "obsolete" notice, sprint-count denominator issue) — unchanged, not re-checked this pass.
 
 ### V5 / V9 (both otherwise essentially complete)
-📄 *(V5_BACKLOG.md + V9_FORUM_BACKLOG.md)*
 
-- **V5-505** Set Availability: Persist to Backend — the doc's own instructions were conditional ("if no endpoint exists, mark blocked") and the condition was never resolved one way or the other in the document. Worth a 2-minute check: does a real availability-persistence endpoint exist today or not?
-- V5's own closing audit says **95%, not 100%**, real-data wired — demo-mode-guarded fallback code still exists in forum/temple views (deemed production-safe, but present).
-- **F9-904 Oral History Archive** — V9_FORUM_BACKLOG.md says ✅ DONE; CLAUDE.md says "🟡 Deferred to separate seeding task (structure ready)." These directly disagree — reconcile before assuming either is current.
-- Both docs have explicit "not building yet" lists (12 items in V5, 8 in V9) covering things like real-time notification badges, global search, rich-text/media embeds in forum, forum moderation AI, sub-categories, WebRTC audio — genuinely out of scope, not oversights, listed in 🔵 below only if worth remembering.
+📄 *(V5_BACKLOG.md + V9_FORUM_BACKLOG.md)*, re-verified 🔵 July 28, 2026.
+
+- **V5-505 Set Availability: Persist to Backend — 🔵 NOW MOOT, not open.** `set-availability-view.tsx` was deleted this session as part of the MVP-pivot cleanup (Consultations paused). Backend still has `babalawo.availability` (JSON, read-only, used by `checkAvailability` during booking) but no dedicated write endpoint — and since the only UI that would call one is gone, there's nothing to build right now. Reclassify as moot/blocked-on-Consultations-relaunch rather than "condition never resolved."
+- V5's own 95%-not-100% caveat (demo-mode fallback code in forum/temple views) — not re-checked this pass, presumed unchanged.
+- **F9-904 Oral History Archive — 🔵 RECONCILED, both source claims were actually about different things.** (a) The pinned "Share Your Story" forum thread (`seed-forum-categories.ts` ~L120-235, tag `oral-history`) is real, seeded, and live — done as originally scoped. (b) Separately, `backend/src/seeding/oral-history.seed.service.ts`'s `loadSeedData()` looks for `data/oral-history-data.json`, which **does not exist in the repo** — it silently falls back to 3 hardcoded placeholder entries (`getDefaultOralHistoryData()`, fake `createdBy: 'admin-user-id'`). That's the part CLAUDE.md correctly calls "deferred to separate seeding task" — real, authored oral-history content records still don't exist. State both facts rather than treating this as one contradiction to resolve either way.
+- Both docs' explicit "not building yet" lists — unchanged, not re-checked, still genuinely out of scope.
 
 ---
 
 ## ⚪ NEEDS A HUMAN (not code work)
 
-📄 *(HUMAN_BACKLOG.md — read that doc directly for full context on each; these are the still-open items as of its last update, July 26, 2026)*
+📄 *(HUMAN_BACKLOG.md)*, re-verified 🔵 July 28, 2026 where code-checkable.
 
-- **EC2 staging deploy failing** — instance appears unreachable (connection timeout on health check), not a CI/workflow problem. Needs someone with AWS console access to check whether the instance is running/reachable.
-- **Restart both local dev servers** — `.env` changes (Google OAuth) need a restart to take effect; neither Vite nor NestJS's `ConfigService` hot-reloads env vars.
-- **Google Cloud Console: authorize `localhost:8100`** for OAuth (Authorized JavaScript origins) — without this, "Continue with Google" will trigger Google's flow but get rejected with an origin-mismatch error.
-- **Verify production Google OAuth origins** — confirm `iluase.com`/`www.iluase.com` are already authorized (probably yes, but worth a 30-second check).
-- **Decide the fate of the orphaned `GoogleStrategy`** (`backend/src/auth/strategies/google.strategy.ts`) — a second, complete, unused Google-auth implementation. Delete or keep both?
-- **Decide whether `role-management-tab.tsx`/`profile-views-panel.tsx` should come back** — both deleted in an earlier cleanup pass; recoverable from git history if wanted. *(Note: this may partially overlap with this session's V8-302 profile-viewers panel — worth checking before restoring the old one.)*
-- **Manual QA: click through the admin dashboard end-to-end** with the real `admin-test@iluase.test` account — everything fixed in that session was verified via API calls/code tracing, never an actual rendered browser session.
-- **Visually check the new Google Sign-In button** — renders via Google's own widget now, won't be pixel-identical to the old custom button.
-- **7 local-dev placeholder env vars** still need real values before their corresponding flows can be tested locally: `PAYSTACK_SECRET_KEY`/`FLUTTERWAVE_SECRET_KEY`/`FLUTTERWAVE_SECRET_HASH`, `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`, `SENDGRID_API_KEY`, `AGORA_APP_ID`/`AGORA_APP_CERTIFICATE`, `GOOGLE_CLIENT_SECRET` (currently harmless), all 7 `VITE_FIREBASE_*` values (push notifications need a real Firebase project), and `BOOTSTRAP_ADMIN_PASSWORD` (still literally `ChangeMe123!` — check it isn't still this in production).
-- **Confirm what's actually in AWS Secrets Manager for production** — CLAUDE.md's Sprint 10 table flags Stripe keys and Sentry DSN as launch-blocking/not-done, but the codebase integrates Paystack/Flutterwave (not Stripe) and `VITE_SENTRY_DSN` already has a real value in `frontend/.env.production` — that CLAUDE.md line may just be stale. Worth confirming against the actual Secrets Manager contents rather than the doc.
+- **EC2 staging deploy failing**, **restart local dev servers**, **authorize `localhost:8100` in Google Cloud Console**, **verify production Google OAuth origins**, **manual QA click-through of admin dashboard**, **visually check new Google Sign-In button**, **confirm AWS Secrets Manager contents** — none of these are code-checkable from this environment; still listed as-is, unchanged.
+- **Decide the fate of `GoogleStrategy`** — 🔵 updated nuance: it's now *imported* into `auth.module.ts` (no longer literally orphaned/unreferenced) but still has zero routes using the `'google'` passport strategy — the real flow is `POST /auth/google/token`. Decision to delete/keep still open, just with better information.
+- **Decide whether `role-management-tab.tsx`/`profile-views-panel.tsx` should come back** — 🔵 **half-resolved.** `profile-views-panel.tsx` **is back**, fully wired to a real endpoint (`GET /users/:id/profile-viewers`) — no decision needed for that half anymore. `role-management-tab.tsx` was never restored and its target route (`/admin/roles`) still doesn't exist either — decision only remains open for this half, and since nothing currently depends on it, it's low urgency.
+- **7 local-dev placeholder env vars** — 🔵 unchanged in substance; `.env.example` now documents 3 of them (the Paystack Devoted plan vars) with clearer comments about fail-loud behavior, but still needs real values before those flows work locally. `BOOTSTRAP_ADMIN_PASSWORD` still needs a production check.
+- **NEW — Confirm the ~15 pending Prisma migrations from this session's checkpoint have been applied to production.** 🔵 New finding, July 28, 2026: the float-to-Decimal batch, vendor-cultural-certification, service-offerings, soft-delete, and user-reports/circle-reactions migrations all landed in the checkpoint commit with no migration-status artifact anywhere. Someone needs to run `prisma migrate deploy` against production RDS and confirm.
+- **NEW — Confirm which branch CI/CD is actually meant to deploy from.** 🔵 New finding: `.github/workflows/ci-cd.yml` gates on `july-2026-hardening-pass`, but the repo's real working branch is `main`. Worth a human decision before assuming deploys are wired correctly.
+- **NEW — Mobile (Capacitor/Android) needs several human steps before it can ship.** 🔵 New finding: `README_MOBILE.md`'s own "Future Enhancements" section lists app icon/splash-screen asset generation, App Store/Play Store signing + distribution, and deep-linking support as not-yet-done. Only Android is scaffolded (`frontend/android/`) — no `frontend/ios/` exists yet, so iOS needs `npx cap add ios` on a macOS/Xcode machine first. Ties into the existing `VITE_FIREBASE_*` placeholder-vars item above for native push credentials.
 
-Related, from this session's V8 work: **someone needs real Paystack dashboard access** to create the Devoted Quarterly/Annual Plans and set `PAYSTACK_DEVOTED_QUARTERLY_PLAN`/`PAYSTACK_DEVOTED_ANNUAL_PLAN`/`PAYSTACK_WEBHOOK_SECRET` in production (V8-103, see Monetisation above) — checkout can't take real payments until this happens.
+Related, still open: **someone needs real Paystack dashboard access** to create the Devoted Quarterly/Annual Plans and set the 3 env vars in production (V8-103, see Monetisation above) — checkout can't take real payments until this happens.
 
 ---
 
 ## 📌 Paused Platform Features — Context, Not Action Items
 
-🔵 **Verified this session.** Consultations, 1:1 Messaging, and (as a consequence) Guidance Plans creation are paused platform-wide, frontend-only and fully reversible, per `MVP_PIVOT_BACKLOG.md`. All 14 PIV-XXX stories in that doc are done — every route/component described there exists and is wired exactly as specified (spot-checked `PausedFeatureNotice`, `ConsultationsPausedPage`, `MessagesPausedPage`, the `App.tsx` route swap). This isn't itself remaining work — it's why so many items above say "blocked on Messaging/Consultations." When those features un-pause, revisit: V8-206, V8-303, VND-012, VND-009's comm log, VND-014/016's response-rate metrics, MSP-013, FOR-002's Babalawo-availability integration, FOR-003's booking half.
+🔵 **Re-verified July 28, 2026, still fully intact.** Consultations, 1:1 Messaging, and Guidance Plans creation remain paused platform-wide, frontend-only and fully reversible. `frontend/src/pages/BookingPage.tsx`/`MessagesPage.tsx` confirmed absent; `PausedFeatureNotice`, `ConsultationsPausedPage`, `MessagesPausedPage` confirmed present and routed (11 call sites in `App.tsx`). Only a harmless unrelated remnant (`consultation-notes-panel.tsx`, session-notes feature) remains under `features/consultations/`. This isn't itself remaining work — it's why so many items above say "blocked on Messaging/Consultations." When those features un-pause, revisit: V8-206, V8-303, VND-012, VND-009's comm log, VND-014/016's response-rate metrics, MSP-013, FOR-002's Babalawo-availability integration, FOR-003's booking half, Z1-801's patron-leader messaging.
 
 ---
 
 ## 🔵 DELIBERATELY DEFERRED / LONG-TERM / GREENFIELD
 
-Explicitly out of scope by design, not oversights. Listed compactly so nobody re-discovers these as "gaps":
+Explicitly out of scope by design, not oversights. Not re-checked this pass (no new evidence either way) — listed compactly so nobody re-discovers these as "gaps":
 
-**Infrastructure-dependent (no AR/VR/blockchain/video infra exists anywhere in this codebase):** FOR-010 (VR/AR community spaces), FOR-011 (blockchain oral-history), MSP-010 (AR/VR product visualization), MSP-011 (blockchain provenance tracking).
+**Infrastructure-dependent:** FOR-010 (VR/AR community spaces), FOR-011 (blockchain oral-history), MSP-010 (AR/VR product visualization), MSP-011 (blockchain provenance tracking).
 
-**From V5_BACKLOG.md's "not in any sprint yet" list:** real-time notification badges, global search (Cmd+K), bulk admin actions, admin activity log, email notification templates, Babalawo availability-calendar integration, platform-wide announcement broadcast, subscription/recurring bookings, API response envelope standardization, optimistic updates everywhere, WebSocket real-time for admin (fraud/verification/withdrawal), offline detection banner.
+**From V5_BACKLOG.md's "not in any sprint yet" list:** real-time notification badges, global search (Cmd+K), bulk admin actions, admin activity log, email notification templates, Babalawo availability-calendar integration, platform-wide announcement broadcast, subscription/recurring bookings, API response envelope standardization, optimistic updates everywhere, WebSocket real-time for admin, offline detection banner.
 
-**From V9_FORUM_BACKLOG.md's "not building yet" table:** rich text editor/media embeds (YouTube/Instagram/TikTok), forum moderation AI/NLP auto-flagging, inter-tradition dialogue space (planned at 1,000+ verified members), embeddable "Ask a Babalawo" widget, Temple API, native WebRTC for Àṣẹ Live (external-platform scheduling is built instead), forum coins/token rewards (XP system used instead), sub-categories/nested categories.
+**From V9_FORUM_BACKLOG.md's "not building yet" table:** rich text editor/media embeds, forum moderation AI/NLP, inter-tradition dialogue space (1,000+ members), embeddable "Ask a Babalawo" widget, Temple API, native WebRTC for Àṣẹ Live, forum coins/token rewards, sub-categories/nested categories.
 
-**From V8_MONETISATION_BACKLOG.md's "not building yet" table:** HD session recordings, AI transcripts, Masterclass vault, family plans (revisit at 1,000+ subscribers), two-tier pricing (revisit if conversion <3% at 6 months), advanced search filters, Babalawo premium placement.
+**From V8_MONETISATION_BACKLOG.md's "not building yet" table:** HD session recordings, AI transcripts, Masterclass vault, family plans, two-tier pricing, advanced search filters, Babalawo premium placement.
 
 ---
 
 ## ✅ WHAT'S ACTUALLY FULLY DONE (so you don't re-litigate it)
 
-- **V8 Monetisation** — 28/30 stories, 🔵 verified this session. Full detail + real bugs found/fixed in `V8_MONETISATION_BACKLOG.md`.
-- **Whole-app UX/UI wiring audit** — ~30 issues across CLIENT/BABALAWO/VENDOR/ADMIN (403s, dead links, dead buttons, duplicate routes, fake data), all independently re-verified fixed on July 28, 2026. See CLAUDE.md.
-- **VND-017/018/019** (Cultural Integrity sprint) — all 3 done, 🔵 verified this session.
-- **MSP-006** (Marketplace Trust) — 🔵 verified/completed this session.
-- **FOR-009** (Intergenerational Bridge) — mostly 🔵 verified this session (one tech-assistance sub-item still open, listed above).
-- **MVP Pivot (all 14 PIV stories)** — 🔵 verified this session, done and stable.
-- **P0/P1 tiers of ProBacklog-v1.md** — done except the specifically-caveated P0-01 (git remote/branch protection) and P0-03 (audit table) items listed under Structural/Tech Debt above.
-- **V5 (8 sprints, 187 SP)** and **V9 Forum (9 sprints, 180 SP)** — both essentially complete; see the two small exceptions under V5/V9 above.
-- Most of VENDOR_BACKLOG.md (23+ of 26 items), COMMUNITY_BACKLOG.md, and SHOP_BACKLOG.md — only the items explicitly listed under Feature Gaps above remain open; everything else in those three docs is done.
+- **14 previously-missing admin endpoints — 🔵 verified July 28, 2026, all real.** Campaigns, promos, referrals, community stars/badges, cultural content calendar, featured-content, revenue forecasting, integrity review queue, market-intelligence, morning-brief, featured practitioners, financial-command-centre, complaints, practitioner-performance — all confirmed wired to real services in `admin.controller.ts`, not stubs. (Revenue forecasting's `platformCostNgn` sub-field is fabricated placeholder data — see 🔴 Critical, that's a data-quality issue on an otherwise-real endpoint, not a missing endpoint.)
+- **3 partially-real admin features — 🔵 verified, all real now.** `GET /admin/trust-score-adjustments`, the practitioner re-engagement action endpoint, and all 3 subscription list endpoints (`/active`, `/cancelled`, `/failed-payments`) all confirmed present in `admin.controller.ts`.
+- **Ban/unban endpoint — 🔵 verified, fully implemented.** `POST /admin/users/:id/ban` and `/unban` in `admin.controller.ts`, backed by `admin-users.service.ts` `banUser()`/`unbanUser()`, sets `bannedAt`/`banReason` for real.
+- **`trustScore` schema drift — 🔵 verified, fully fixed.** Migration `20260705120000_reconcile_schema_drift` altered the column to `DOUBLE PRECISION`, added `trustScoreOverride*` columns, and created the `notificationPreferencesId` unique index. A follow-up migration fixed a default-value bug (0.5 vs. the intended 0-100 scale).
+- **`profile-views-panel.tsx` — 🔵 verified, back and fully wired** to the real `GET /users/:id/profile-viewers` endpoint.
+- **MSP-002, MSP-003, MSP-015, MSP-017, MSP-018 — 🔵 verified, all now resolved.** See Vendor/Marketplace section above for evidence per item.
+- **Z1-801 Circle Patron Tier — 🔵 verified, fully built** despite Z1_BACKLOG.md saying otherwise.
+- **Z1-1101/1102/1201 (Ops Runbook, Monitoring Dashboards, Production Readiness Checklist) — 🔵 verified, all exist** with real content (though the runbook itself needs a Docker-Compose→ECS-Fargate refresh).
+- **Soft-delete pattern — 🔵 verified, substantially expanded** from 5 to 12 models, raw-delete sites down from 33 to 19.
+- **V8 Monetisation** — 28/30 stories, 🔵 verified prior session. Full detail in `V8_MONETISATION_BACKLOG.md`.
+- **Whole-app UX/UI wiring audit** — ~30 issues across CLIENT/BABALAWO/VENDOR/ADMIN, all independently re-verified fixed. See CLAUDE.md.
+- **VND-017/018/019** (Cultural Integrity sprint) — all 3 done, 🔵 verified prior session.
+- **MSP-006** (Marketplace Trust) — 🔵 verified/completed prior session.
+- **FOR-009** (Intergenerational Bridge) — mostly 🔵 verified (elder tech-assistance sub-item still open, listed above).
+- **MVP Pivot (all 14 PIV stories)** — 🔵 verified July 28, 2026, done and stable, including after this session's cleanup commit.
+- **P0/P1 tiers of ProBacklog-v1.md** — done except the specifically-caveated P0-03 (hard-delete audit table) item under Structural/Tech Debt above. P0-01 (git remote) is now partially resolved — see Structural section.
+- **V5 (8 sprints, 187 SP)** and **V9 Forum (9 sprints, 180 SP)** — both essentially complete; see the small exceptions under V5/V9 above.
+- Most of VENDOR_BACKLOG.md, COMMUNITY_BACKLOG.md, and SHOP_BACKLOG.md — only the items explicitly listed under Feature Gaps above remain open; everything else in those three docs is done.
 
 ---
 
 ## 📚 Source Document Index
 
-Every doc below has (or will have, as of this consolidation) a superseded-banner at its own top pointing back here. Kept for historical detail only.
+Every doc below has (or will have) a superseded-banner at its own top pointing back here. Kept for historical detail only.
 
 | Doc | What it covered | Status baked into this doc |
 |---|---|---|
 | `V8_MONETISATION_BACKLOG.md` | Devoted subscription tier, billing, referrals | 3 items carried forward |
-| `ADMIN_BACKLOG.md` | Admin dashboard features (ADM-XXX) | Superseded by `ADMIN_BACKEND_GAPS_BACKLOG.md`'s findings — 19 items carried forward |
-| `ADMIN_BACKEND_GAPS_BACKLOG.md` | Evidence-based re-audit of ADMIN_BACKLOG.md's claims | Source of truth for admin gaps — fully absorbed above |
-| `VENDOR_BACKLOG.md` | Vendor operations (VND-XXX) | 3 whole items + 8 sub-gaps + 1 cross-cutting (commission) carried forward |
-| `SHOP_BACKLOG.md` | Marketplace-wide features (MSP-XXX) | 16 items carried forward |
-| `COMMUNITY_BACKLOG.md` | Community/forum features (FOR-XXX) | 22 items carried forward |
-| `EXPERIENCE_BACKLOG.md` | Practitioner/client experience (EXP-XXX) | 1 item carried forward (shared with Z1-301) |
-| `Z1_BACKLOG.md` | Consolidated production-readiness sprints (Z1-XXX) | 10 items carried forward (3 deferred features, 6 polish/ops items, video content) |
-| `ProBacklog-v1.md` | Code-quality/structural-integrity audit (P0–P3, EMG) | Most of 🔴 Critical + all of 🟠 Structural carried forward |
-| `V5_BACKLOG.md` | Real-data platform wiring (V5-XXX) | 2 small items carried forward |
-| `V9_FORUM_BACKLOG.md` | Forum launch (F9-XXX) | 1 contradiction + deferred-feature list carried forward |
-| `HUMAN_BACKLOG.md` | Action items needing a human (not code) | All open items carried forward into ⚪ section |
-| `MVP_PIVOT_BACKLOG.md` | Consultations/Messaging pause (PIV-XXX) | 🔵 Verified fully done — nothing carried forward, kept as context in 📌 section |
+| `ADMIN_BACKLOG.md` | Admin dashboard features (ADM-XXX) | Superseded by `ADMIN_BACKEND_GAPS_BACKLOG.md`'s findings — nearly all now resolved, 2 partial items remain |
+| `ADMIN_BACKEND_GAPS_BACKLOG.md` | Evidence-based re-audit of ADMIN_BACKLOG.md's claims | Now stale itself — its 14+3 gaps are resolved, see ✅ above |
+| `VENDOR_BACKLOG.md` | Vendor operations (VND-XXX) | Re-verified; commission-deduction gap confirmed still real, several sub-gaps updated |
+| `SHOP_BACKLOG.md` | Marketplace-wide features (MSP-XXX) | Re-verified; 6 of 16 items now resolved |
+| `COMMUNITY_BACKLOG.md` | Community/forum features (FOR-XXX) | Re-verified; most items partially resolved, numbering has shifted |
+| `EXPERIENCE_BACKLOG.md` | Practitioner/client experience (EXP-XXX) | Re-verified; unchanged |
+| `Z1_BACKLOG.md` | Consolidated production-readiness sprints (Z1-XXX) | Re-verified; doc was wrong about 4 items (Z1-801, 1101, 1102, 1201) — all actually done |
+| `ProBacklog-v1.md` | Code-quality/structural-integrity audit (P0–P3, EMG) | Re-verified; real progress on soft-delete and trustScore, most else unchanged |
+| `V5_BACKLOG.md` | Real-data platform wiring (V5-XXX) | Re-verified; V5-505 now moot |
+| `V9_FORUM_BACKLOG.md` | Forum launch (F9-XXX) | Re-verified; F9-904 contradiction reconciled (both claims were true, about different things) |
+| `HUMAN_BACKLOG.md` | Action items needing a human (not code) | Re-verified where checkable; 3 new human items added |
+| `MVP_PIVOT_BACKLOG.md` | Consultations/Messaging pause (PIV-XXX) | 🔵 Re-verified still fully done and stable |
 
 ---
 
-*Built July 28, 2026, from 6 parallel extraction passes over the 13 docs above plus direct reading of HUMAN_BACKLOG.md and MVP_PIVOT_BACKLOG.md. Update this doc, not the source docs, as work gets done — add a 🔵 verified/fixed note the same way this doc's own predecessor items were annotated, and move completed items down to the ✅ section rather than deleting them, so the "why isn't this still open" history stays visible.*
+*Originally built July 28, 2026 from 6 parallel extraction passes over the 13 docs above. Reconciled a second time the same day (July 28, 2026) after discovering ~426 files of real prior-session work had been sitting uncommitted — that work was committed in 13 subsystem-grouped commits, then 4 parallel verification agents independently re-checked every claim in this doc against the resulting code. Update this doc, not the source docs, as work gets done — add a 🔵 verified/fixed note the same way this doc's own items are annotated, and move completed items down to the ✅ section rather than deleting them, so the "why isn't this still open" history stays visible.*
