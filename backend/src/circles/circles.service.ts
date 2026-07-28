@@ -9,6 +9,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateCircleDto } from './dto/create-circle.dto';
 import { UpdateCircleDto } from './dto/update-circle.dto';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
+import { CrisisDetectionService } from '../shared/services/crisis-detection.service';
+import {
+  NotificationService,
+  NotificationType,
+  NotificationCategory,
+} from '../notifications/notification.service';
 
 /**
  * Circles Service
@@ -18,7 +24,43 @@ import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 export class CirclesService {
   private readonly logger = new Logger(CirclesService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly crisisDetection: CrisisDetectionService,
+    private readonly notificationService: NotificationService
+  ) {}
+
+  // COMMUNITY_BACKLOG.md FOR-015: mirrors ForumService's private notifyAdmins
+  // helper -- small enough (loop admins, create notification) that sharing it
+  // isn't worth a cross-module dependency, unlike the crisis keyword logic
+  // itself which now lives in exactly one place (CrisisDetectionService).
+  private async notifyAdminsOfCrisis(
+    title: string,
+    message: string,
+    data: Record<string, unknown>
+  ) {
+    try {
+      const admins = await this.prisma.user.findMany({
+        where: { role: 'ADMIN' },
+        select: { id: true },
+        take: 5,
+      });
+      admins.forEach(({ id }) => {
+        this.notificationService
+          .createNotification({
+            userId: id,
+            type: NotificationType.SYSTEM,
+            category: NotificationCategory.WARNING,
+            title,
+            message,
+            data,
+          })
+          .catch((err) => this.logger.error(`Failed to notify admin ${id}: ${title}`, err));
+      });
+    } catch (err) {
+      this.logger.error('Failed to notify admins of crisis signal', err);
+    }
+  }
 
   /**
    * Generate URL-friendly slug from name
@@ -209,6 +251,26 @@ export class CirclesService {
     });
 
     return circle;
+  }
+
+  /**
+   * Freeform "suggest a new circle" (any logged-in user). Whole-app audit
+   * Phase 3d: circle-directory.tsx's "Suggest a New Circle" button used to
+   * show a fake success toast with no API call at all -- CircleSuggestion
+   * previously required an existing forum thread (promote-a-thread flow),
+   * which doesn't match a simple idea-submission button. threadId is now
+   * nullable to support this path; admin's existing suggestion review queue
+   * reads title/description directly when there's no thread to fall back on.
+   */
+  async suggestCircle(dto: { title: string; description: string }, currentUser: CurrentUserPayload) {
+    return this.prisma.circleSuggestion.create({
+      data: {
+        suggestedBy: currentUser.id,
+        title: dto.title,
+        description: dto.description,
+        status: 'PENDING',
+      },
+    });
   }
 
   /**
@@ -661,6 +723,15 @@ export class CirclesService {
       },
     });
 
+    const postIds = posts.map((p: any) => p.id);
+    const myLikes = postIds.length
+      ? await this.prisma.circleFeedLike.findMany({
+          where: { postId: { in: postIds }, userId: currentUserId },
+          select: { postId: true },
+        })
+      : [];
+    const likedPostIds = new Set(myLikes.map((l) => l.postId));
+
     return posts.map((p: any) => ({
       id: p.id,
       authorId: p.author.id,
@@ -672,8 +743,81 @@ export class CirclesService {
       isPinned: p.isPinned,
       likes: p.likes,
       comments: p.commentCount,
+      likedByMe: likedPostIds.has(p.id),
       createdAt: p.createdAt,
     }));
+  }
+
+  // Whole-app audit loose end: real like/comment backing for circle feed
+  // posts (the buttons previously had no onClick at all, and `likes`/
+  // `commentCount` were denormalized counters nothing ever wrote to).
+  async toggleFeedPostLike(postId: string, userId: string) {
+    const post = await this.prisma.circleFeedPost.findUnique({ where: { id: postId } });
+    if (!post) throw new NotFoundException('Post not found');
+
+    const existing = await this.prisma.circleFeedLike.findUnique({
+      where: { postId_userId: { postId, userId } },
+    });
+
+    if (existing) {
+      await this.prisma.$transaction([
+        this.prisma.circleFeedLike.delete({ where: { id: existing.id } }),
+        this.prisma.circleFeedPost.update({ where: { id: postId }, data: { likes: { decrement: 1 } } }),
+      ]);
+      return { liked: false, likes: Math.max(0, post.likes - 1) };
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.circleFeedLike.create({ data: { postId, userId } }),
+      this.prisma.circleFeedPost.update({ where: { id: postId }, data: { likes: { increment: 1 } } }),
+    ]);
+    return { liked: true, likes: post.likes + 1 };
+  }
+
+  async getFeedPostComments(postId: string) {
+    const comments = await this.prisma.circleFeedComment.findMany({
+      where: { postId },
+      orderBy: { createdAt: 'asc' },
+      include: { author: { select: { id: true, name: true, avatar: true } } },
+    });
+    return comments.map((c) => ({
+      id: c.id,
+      authorId: c.author.id,
+      authorName: c.author.name,
+      authorAvatar: c.author.avatar,
+      content: c.content,
+      createdAt: c.createdAt,
+    }));
+  }
+
+  async addFeedPostComment(postId: string, authorId: string, content: string) {
+    const post = await this.prisma.circleFeedPost.findUnique({ where: { id: postId } });
+    if (!post) throw new NotFoundException('Post not found');
+
+    const membership = await this.prisma.circleMember.findUnique({
+      where: { circleId_userId: { circleId: post.circleId, userId: authorId } },
+      select: { status: true },
+    });
+    if (!membership || membership.status !== 'ACTIVE') {
+      throw new ForbiddenException('You must be a member to comment in this circle');
+    }
+
+    const [comment] = await this.prisma.$transaction([
+      this.prisma.circleFeedComment.create({
+        data: { postId, authorId, content },
+        include: { author: { select: { id: true, name: true, avatar: true } } },
+      }),
+      this.prisma.circleFeedPost.update({ where: { id: postId }, data: { commentCount: { increment: 1 } } }),
+    ]);
+
+    return {
+      id: comment.id,
+      authorId: comment.author.id,
+      authorName: comment.author.name,
+      authorAvatar: comment.author.avatar,
+      content: comment.content,
+      createdAt: comment.createdAt,
+    };
   }
 
   async createCircleFeedPost(
@@ -695,11 +839,33 @@ export class CirclesService {
       throw new ForbiddenException('Only patrons can create patron-only posts');
     }
 
-    return (this.prisma as any).circleFeedPost.create({
-      data: { circleId, authorId: currentUser.id, content, patronOnly },
+    const crisisDetected = this.crisisDetection.detect(content);
+
+    const post = await (this.prisma as any).circleFeedPost.create({
+      data: {
+        circleId,
+        authorId: currentUser.id,
+        content,
+        patronOnly,
+        hasCrisisSignal: crisisDetected,
+      },
       include: {
         author: { select: { id: true, name: true, avatar: true, role: true } },
       },
     });
+
+    if (crisisDetected) {
+      const circle = await this.prisma.circle.findUnique({
+        where: { id: circleId },
+        select: { name: true },
+      });
+      this.notifyAdminsOfCrisis(
+        'Circle post flagged for welfare review',
+        `A newly posted circle update in "${circle?.name || 'a circle'}" may contain a distress signal.`,
+        { circleId, postId: post.id }
+      );
+    }
+
+    return post;
   }
 }

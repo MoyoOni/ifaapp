@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
-import { CirclesService } from './circles.service';
-import { CirclesController } from './circles.controller';
+import { HealingService } from './healing.service';
+import { HealingController } from './healing.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [PrismaModule, NotificationsModule],
-  controllers: [CirclesController],
-  providers: [CirclesService],
-  exports: [CirclesService],
+  controllers: [HealingController],
+  providers: [HealingService],
+  exports: [HealingService],
 })
-export class CirclesModule {}
+export class HealingModule {}

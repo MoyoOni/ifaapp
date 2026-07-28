@@ -15,6 +15,7 @@ import { UserRole } from '@ile-ase/common';
 import { CirclesService } from './circles.service';
 import { CreateCircleDto } from './dto/create-circle.dto';
 import { UpdateCircleDto } from './dto/update-circle.dto';
+import { CreateCircleSuggestionDto } from './dto/create-circle-suggestion.dto';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 
 @Controller('circles')
@@ -31,6 +32,19 @@ export class CirclesController {
   @Roles(UserRole.ADMIN)
   async create(@Body() dto: CreateCircleDto, @CurrentUser() currentUser: CurrentUserPayload) {
     return this.circlesService.create(dto, currentUser);
+  }
+
+  /**
+   * Freeform "suggest a new circle" -- any logged-in user.
+   * POST /circles/suggestions
+   */
+  @Post('suggestions')
+  @UseGuards(AuthGuard('jwt'))
+  async suggest(
+    @Body() dto: CreateCircleSuggestionDto,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.circlesService.suggestCircle(dto, currentUser);
   }
 
   /**
@@ -155,5 +169,30 @@ export class CirclesController {
       body.patronOnly ?? false,
       currentUser
     );
+  }
+
+  @Post('feed/:postId/like')
+  @UseGuards(AuthGuard('jwt'))
+  async toggleFeedPostLike(
+    @Param('postId') postId: string,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.circlesService.toggleFeedPostLike(postId, currentUser.id);
+  }
+
+  @Get('feed/:postId/comments')
+  @UseGuards(AuthGuard('jwt'))
+  async getFeedPostComments(@Param('postId') postId: string) {
+    return this.circlesService.getFeedPostComments(postId);
+  }
+
+  @Post('feed/:postId/comments')
+  @UseGuards(AuthGuard('jwt'))
+  async addFeedPostComment(
+    @Param('postId') postId: string,
+    @Body() body: { content: string },
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.circlesService.addFeedPostComment(postId, currentUser.id, body.content);
   }
 }
