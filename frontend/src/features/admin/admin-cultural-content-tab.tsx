@@ -165,7 +165,9 @@ const DailyWordsSection: React.FC = () => {
   const { mutate: del } = useMutation({
     mutationFn: (id: string) => api.delete(`/admin/cultural/daily-words/${id}`),
     onSuccess: () => { success('Word deleted'); qc.invalidateQueries({ queryKey: ['admin', 'cultural', 'daily-words'] }); },
-    onError: () => toastError('Delete failed'),
+    // A word already shown to users is rejected, not deleted (see
+    // admin-cultural-content.service.ts), to preserve their word-history list.
+    onError: (err: any) => toastError(err?.response?.data?.message ?? 'Delete failed'),
   });
 
   const openEdit = (w: DailyWord) => {

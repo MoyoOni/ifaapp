@@ -1,20 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { AdminCulturalContentService } from './admin-cultural-content.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from '../notifications/notification.service';
 
-// ProBacklog-v1.md structural fix: SacredCalendarEvent was deliberately left
-// as a permanent hard-delete (see admin-cultural-content.service.spec.ts's
-// own scoping comment) -- but unguarded, RitualParticipation.event and
-// EventProductFeature.event are both onDelete:Cascade, so deleting an event
-// that had RSVPs or vendor feature requests silently destroyed that history.
-// This doesn't add a deletedAt/soft-delete column (still "permanent" as
-// decided) -- it reuses the existing isActive field to block the unsafe
-// case instead. Separate small spec file, same pattern as
+// ProBacklog-v1.md structural fix: two cascade-loss guards in this service's
+// other delete methods (SacredCalendarEvent was deliberately left as a
+// permanent hard-delete -- see admin-cultural-content.service.spec.ts's own
+// scoping comment -- and DailyYorubaWord similarly had none). Both had real
+// onDelete:Cascade dependents with no guard: RitualParticipation.event /
+// EventProductFeature.event for events, UserWordHistory.word for words.
+// Separate small spec file, same pattern as
 // forum-thread-soft-delete.service.spec.ts, rather than expanding the
 // deliberately-narrow OralHistoryEntry-only spec above.
-describe('AdminCulturalContentService — deleteSacredEvent cascade guard', () => {
+describe('AdminCulturalContentService — cascade-loss delete guards', () => {
   let service: AdminCulturalContentService;
 
   const mockPrismaService = {
@@ -27,6 +26,13 @@ describe('AdminCulturalContentService — deleteSacredEvent cascade guard', () =
       count: jest.fn(),
     },
     eventProductFeature: {
+      count: jest.fn(),
+    },
+    dailyYorubaWord: {
+      findUnique: jest.fn(),
+      delete: jest.fn(),
+    },
+    userWordHistory: {
       count: jest.fn(),
     },
   };
@@ -90,6 +96,32 @@ describe('AdminCulturalContentService — deleteSacredEvent cascade guard', () =
 
       expect(mockPrismaService.sacredCalendarEvent.delete).not.toHaveBeenCalled();
       expect(result).toMatchObject({ deactivated: true });
+    });
+  });
+
+  describe('deleteDailyWord', () => {
+    it('404s on a missing word', async () => {
+      mockPrismaService.dailyYorubaWord.findUnique.mockResolvedValue(null);
+
+      await expect(service.deleteDailyWord('missing')).rejects.toThrow(NotFoundException);
+    });
+
+    it('deletes a word nobody has viewed yet', async () => {
+      mockPrismaService.dailyYorubaWord.findUnique.mockResolvedValue({ id: 'word-1' });
+      mockPrismaService.userWordHistory.count.mockResolvedValue(0);
+      mockPrismaService.dailyYorubaWord.delete.mockResolvedValue({ id: 'word-1' });
+
+      await service.deleteDailyWord('word-1');
+
+      expect(mockPrismaService.dailyYorubaWord.delete).toHaveBeenCalledWith({ where: { id: 'word-1' } });
+    });
+
+    it('rejects deleting a word that has view history, instead of cascading it away from user history lists', async () => {
+      mockPrismaService.dailyYorubaWord.findUnique.mockResolvedValue({ id: 'word-1' });
+      mockPrismaService.userWordHistory.count.mockResolvedValue(12);
+
+      await expect(service.deleteDailyWord('word-1')).rejects.toThrow(BadRequestException);
+      expect(mockPrismaService.dailyYorubaWord.delete).not.toHaveBeenCalled();
     });
   });
 });

@@ -76,9 +76,27 @@ export class AdminCulturalContentService {
     return this.prisma.dailyYorubaWord.update({ where: { id }, data });
   }
 
+  /**
+   * ProBacklog-v1.md structural fix: UserWordHistory.word is
+   * onDelete:Cascade, and getUserWordHistory() (yoruba-word.service.ts)
+   * is a real user-facing "words you've seen" list -- deleting a word a
+   * user had already viewed silently dropped it from their history with
+   * no explanation. No isActive-style field exists on this model to
+   * deactivate instead (unlike deleteProduct/deletePromo/deleteSacredEvent),
+   * so this just blocks the delete outright once it has view history --
+   * content admins rarely need to force-delete an already-shown word.
+   */
   async deleteDailyWord(id: string) {
     const existing = await this.prisma.dailyYorubaWord.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Daily word not found');
+
+    const viewHistoryCount = await this.prisma.userWordHistory.count({ where: { wordId: id } });
+    if (viewHistoryCount > 0) {
+      throw new BadRequestException(
+        'This word has already been shown to users and cannot be deleted, to preserve their word-history list.'
+      );
+    }
+
     return this.prisma.dailyYorubaWord.delete({ where: { id } });
   }
 
