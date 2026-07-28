@@ -762,18 +762,21 @@ export class PaymentsService {
     const priorRefunds = await this.prisma.transaction.findMany({
       where: { reference, type: 'REFUND' },
     });
-    const alreadyRefunded = priorRefunds.reduce((sum, tx) => sum + tx.amount, 0);
+    const alreadyRefunded = priorRefunds.reduce((sum, tx) => sum + Number(tx.amount), 0);
+    // Transaction.amount is now Decimal (ProBacklog-v1.md item #15) --
+    // normalized once here since the refund math below is plain number math.
+    const originalTxAmount = Number(originalTx.amount);
 
     // Apply refund policy based on cancellation reason
     let refundAmount = amount;
     if (cancellationReason && !amount) {
-      refundAmount = this.calculateRefundAmount(originalTx.amount, cancellationReason);
+      refundAmount = this.calculateRefundAmount(originalTxAmount, cancellationReason);
     }
-    refundAmount = refundAmount ?? originalTx.amount - alreadyRefunded;
+    refundAmount = refundAmount ?? originalTxAmount - alreadyRefunded;
 
-    if (alreadyRefunded + refundAmount > originalTx.amount) {
+    if (alreadyRefunded + refundAmount > originalTxAmount) {
       throw new BadRequestException(
-        `Refund amount exceeds remaining refundable balance (already refunded ${alreadyRefunded} of ${originalTx.amount})`
+        `Refund amount exceeds remaining refundable balance (already refunded ${alreadyRefunded} of ${originalTxAmount})`
       );
     }
 

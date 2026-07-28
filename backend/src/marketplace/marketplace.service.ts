@@ -3394,7 +3394,7 @@ export class MarketplaceService {
 
     const refundAmount =
       returnRequest.status === 'PARTIAL_REFUND_OFFERED'
-        ? (returnRequest.offeredRefundAmount as number)
+        ? Number(returnRequest.offeredRefundAmount)
         : Number(returnRequest.order.totalAmount);
 
     await this.executeOrderRefund(

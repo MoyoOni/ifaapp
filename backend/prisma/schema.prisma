@@ -1574,7 +1574,7 @@ model ReturnRequest {
   photos              String[]  @default([])
   status              String    @default("REQUESTED")
   vendorResponse      String?
-  offeredRefundAmount Float?
+  offeredRefundAmount Decimal?  @db.Decimal(14, 2)
   returnAddress       String?
   respondedAt         DateTime?
   customerConfirmedAt DateTime?
@@ -1640,7 +1640,7 @@ model VendorPromotionRedemption {
   promotionId String
   orderId     String
   customerId  String
-  discountNgn Float
+  discountNgn Decimal  @db.Decimal(14, 2)
   redeemedAt  DateTime @default(now())
 
   promotion VendorPromotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
@@ -1910,7 +1910,7 @@ model Transaction {
   walletId           String
   userId             String
   type               String
-  amount             Float
+  amount             Decimal   @db.Decimal(14, 2)
   currency           String    @default("NGN")
   status             String    @default("PENDING")
   description        String?
@@ -2639,21 +2639,21 @@ model ProfileView {
 }
 
 model Referral {
-  id            String   @id @default(cuid())
-  referrerId    String
-  referredId    String   @unique // each user can only be referred once
-  code          String
+  id                        String   @id @default(cuid())
+  referrerId                String
+  referredId                String   @unique // each user can only be referred once
+  code                      String
   // EXP-027's ₦500-wallet-credit-on-first-completed-booking reward
   // (appointments.service.ts maybeGrantReferralReward).
-  rewardGranted Boolean  @default(false)
+  rewardGranted             Boolean  @default(false)
   // V8-501: the separate 30-free-Devoted-days reward on the referred user's
   // first subscription (subscriptions.service.ts rewardReferrer). Was
   // previously sharing `rewardGranted` with the booking reward above --
   // whichever milestone (first booking vs. first subscribe) happened first
   // silently consumed the flag and the other reward never paid out. Each
   // reward now has its own independent flag.
-  subscriptionRewardGranted Boolean @default(false)
-  createdAt     DateTime @default(now())
+  subscriptionRewardGranted Boolean  @default(false)
+  createdAt                 DateTime @default(now())
 
   referrer User @relation("ReferralsMade", fields: [referrerId], references: [id], onDelete: Cascade)
   referred User @relation("ReferralReceived", fields: [referredId], references: [id], onDelete: Cascade)
@@ -3020,7 +3020,7 @@ model PromoRedemption {
   promoCodeId String
   userId      String
   redeemedAt  DateTime @default(now())
-  discountNgn Float    @default(0)
+  discountNgn Decimal  @default(0) @db.Decimal(14, 2)
 
   promoCode PromoCode @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
   user      User      @relation("PromoRedemptions", fields: [userId], references: [id], onDelete: Cascade)
