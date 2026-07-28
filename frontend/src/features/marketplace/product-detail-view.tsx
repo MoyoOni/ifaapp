@@ -9,6 +9,7 @@ import { useToast } from '@/shared/components/toast';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { getCategoryBySlug, getSubcategoryLabel } from './marketplace-categories';
 import { isDevModeActive } from '@/shared/utils/dev-mode';
+import { usePageMeta } from '@/shared/hooks/use-page-meta';
 import SocialShareButton from './social-share-button';
 
 // COMMUNITY_BACKLOG.md FOR-024/FOR-026: same categories the admin oral-history
@@ -35,6 +36,10 @@ interface Product {
   type: string;
   description: string;
   longDescription?: string;
+  // VENDOR_BACKLOG.md VND-023: vendor-authored SEO overrides, previously
+  // captured in vendor-product-form.tsx but never read anywhere.
+  seoTitle?: string;
+  seoDescription?: string;
   price: number;
   currency: string;
   stock?: number;
@@ -159,6 +164,14 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ productId, onBack
       return response.data;
     },
     enabled: !!productId && !isDevModeActive(),
+  });
+
+  // VENDOR_BACKLOG.md VND-023: falls back to the product's own name/
+  // description when the vendor hasn't set an SEO override.
+  usePageMeta({
+    title: product ? `${product.seoTitle || product.name} | Ìlú Àṣẹ Marketplace` : undefined,
+    description: product ? product.seoDescription || product.description : undefined,
+    image: product?.images?.[0],
   });
 
   // VENDOR_BACKLOG.md VND-007
