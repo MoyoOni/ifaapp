@@ -36,7 +36,7 @@
 
 ### Resolved since the doc was first written (moved from here to ✅ below, listed so you don't go looking)
 
-The following 🔴 items from the original pass are now **✅ done** — see the ✅ section for evidence: the 14 "missing" admin endpoints, the 3 "partially real" admin features, the ban/unban endpoint, the `trustScore` schema-drift risk, and **ADM-004** (forum thread admin actions, fully wired July 28, 2026). **ADM-030** (platform settings panel) is still **partially** resolved — see 🟡 Admin Operations below for what's still actually missing.
+The following 🔴 items from the original pass are now **✅ done** — see the ✅ section for evidence: the 14 "missing" admin endpoints, the 3 "partially real" admin features, the ban/unban endpoint, the `trustScore` schema-drift risk, **ADM-004** (forum thread admin actions, fully wired July 28, 2026), and **ADM-030** (platform settings panel, resolved July 28, 2026 — see 🟡 Admin Operations below for what was actually built vs. deliberately not built).
 
 ---
 
@@ -79,7 +79,7 @@ Full detail in `V8_MONETISATION_BACKLOG.md` (superseded for planning, kept as de
 🔵 **The bulk of this is now done** — see ✅ below for the 14+3 previously-missing admin endpoints and the ban/unban endpoint, all confirmed implemented this session. What's still actually open:
 
 - **ADM-004 (forum thread admin actions) — 🔵 FIXED, July 28, 2026.** `admin-forum-management-tab.tsx` now calls `PATCH admin/threads/:id/feature` (with a Feature/Unfeature button + "Featured" badge) and `DELETE admin/threads/:id` (with a reason textarea, matching the category-delete modal's pattern). All 7 backend actions are now reachable from the UI. Move to ✅ below.
-- **ADM-030 Platform Settings Panel — 🔵 still open for feature-flags/maintenance-mode/welcome-message/forum-limits.** `PlatformSettings` model now also has `platformCostNgn` (added fixing the fabrication item, see ✅ below) alongside `consultationCommissionPct`, `marketplaceCommissionPct`, `minPayoutThresholdNgn`, `maxPayoutWithoutApprovalNgn`, `quizPassThreshold`. Still no feature-flags, maintenance-mode, welcome-message, or forum-limits fields.
+- **ADM-030 Platform Settings Panel — 🔵 RESOLVED, July 28, 2026 (each sub-item checked individually rather than blindly building all 4).** `maintenanceMode` built with real enforcement (`MaintenanceModeMiddleware`, global, blocks all traffic with a 503 except `/admin`/`/auth`/`/health`/`/metrics`, 15s-cached, 11 tests) and a toggle in `admin-platform-settings-tab.tsx`. `platformCostNgn` (added earlier this session, see 🔴 Critical above) was missing from the settings UI entirely — fixed, now a slider there too. **Deliberately not built:** welcome-message (already covered, better, by the existing Announcements system — `admin-announcements.service.ts` + `AnnouncementBanner`, full CRUD + dedicated admin tab, supports multiple typed/dismissible announcements, not just one string); feature-flags (no concrete flag exists anywhere in the codebase to gate — would be unused infrastructure); forum-limits (`forum.service.ts`'s `createThread()` has its own comment that thread limits are "intentionally disabled during platform growth phase" — enforcing limits now would contradict a real, already-made product decision).
 
 ### Vendor / Marketplace
 
@@ -191,6 +191,7 @@ Explicitly out of scope by design, not oversights. Not re-checked this pass (no 
 
 ## ✅ WHAT'S ACTUALLY FULLY DONE (so you don't re-litigate it)
 
+- **ADM-030 Platform Settings Panel — 🔵 RESOLVED July 28, 2026.** `maintenanceMode` with real global-middleware enforcement, `platformCostNgn` now exposed in the settings UI. Welcome-message/feature-flags/forum-limits deliberately not built — see 🟡 Admin Operations section above for why each specifically.
 - **VND-026 Vendor Performance Tiers, including the tier benefit — 🔵 FIXED July 28, 2026.** 0/10/20/30% commission discount by tier, confirmed with the platform owner, applied in `releaseEscrow()` and surfaced in the vendor performance-tier panel. See 🔴 Critical section above for full detail.
 - **ADM-004 forum thread admin actions — 🔵 FIXED July 28, 2026.** All 7 backend actions (pin/unpin/lock/unlock/approve/move/merge/feature/delete-with-reason) now reachable from `admin-forum-management-tab.tsx`.
 - **Money-as-Float, ProBacklog-v1.md item #15 — 🔵 FULLY RESOLVED July 28, 2026.** Every money field across the codebase is now `Decimal`, including the last four (`Transaction.amount` + 3 others) closed out this session. See 🔴 Critical section above for the full field list and migration reference.
