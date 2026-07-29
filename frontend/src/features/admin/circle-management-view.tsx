@@ -8,6 +8,8 @@ import {
   Trash2,
   Loader2,
   Crown,
+  Flag,
+  EyeOff,
 } from 'lucide-react';
 import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
@@ -58,6 +60,22 @@ interface CircleSuggestion {
   };
 }
 
+interface FeedReport {
+  id: string;
+  reason: string;
+  note?: string;
+  status: 'PENDING' | 'REVIEWED';
+  createdAt: string;
+  reporter: { id: string; name: string; yorubaName?: string };
+  post: {
+    id: string;
+    content: string;
+    status: string;
+    author: { id: string; name: string; yorubaName?: string };
+    circle: { id: string; name: string };
+  };
+}
+
 interface Circle {
   id: string;
   name: string;
@@ -88,7 +106,7 @@ const CircleManagementView: React.FC = () => {
   const { success, error: toastError } = useToast();
   const { PromptDialog, prompt } = usePrompt();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<'suggestions' | 'circles'>('suggestions');
+  const [activeTab, setActiveTab] = useState<'suggestions' | 'circles' | 'moderation'>('suggestions');
   const [selectedSuggestion, setSelectedSuggestion] = useState<CircleSuggestion | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [circleFormData, setCircleFormData] = useState({
@@ -127,6 +145,42 @@ const CircleManagementView: React.FC = () => {
       }
     },
     staleTime: 10 * 60 * 1000,
+  });
+
+  // COMMUNITY_BACKLOG.md FOR-005: content moderation queue for reported
+  // Circle feed posts, same pattern as the Suggestions/Circles tabs.
+  const { data: feedReports = [], isLoading: feedReportsLoading } = useQuery<FeedReport[]>({
+    queryKey: ['admin-circle-feed-reports'],
+    queryFn: async () => {
+      try {
+        const response = await api.get('/circles/feed/reports');
+        return response.data;
+      } catch (e) {
+        logger.error('Failed to fetch circle feed reports', e);
+        return [];
+      }
+    },
+    staleTime: 60 * 1000,
+  });
+
+  const reviewReportMutation = useMutation({
+    mutationFn: async ({
+      reportId,
+      action,
+    }: {
+      reportId: string;
+      action: 'dismiss' | 'hide_post' | 'warn_user';
+    }) => {
+      const response = await api.patch(`/circles/feed/reports/${reportId}`, { action });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-circle-feed-reports'] });
+      success('Report reviewed');
+    },
+    onError: (error: any) => {
+      toastError(error?.response?.data?.message || 'Failed to review report');
+    },
   });
 
   const pendingSuggestions = suggestions.filter(s => s.status === 'PENDING');
@@ -258,7 +312,7 @@ const CircleManagementView: React.FC = () => {
     }
   };
 
-  if (suggestionsLoading || circlesLoading) {
+  if (suggestionsLoading || circlesLoading || feedReportsLoading) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -295,10 +349,77 @@ const CircleManagementView: React.FC = () => {
           >
             All Circles ({circles.length})
           </button>
+          <button
+            onClick={() => setActiveTab('moderation')}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'moderation'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+            }`}
+          >
+            Reported Posts ({feedReports.length})
+          </button>
         </div>
       </div>
 
-      {activeTab === 'suggestions' ? (
+      {activeTab === 'moderation' ? (
+        <div className="bg-card rounded-xl border border-input overflow-hidden">
+          {feedReports.length > 0 ? (
+            <div className="divide-y divide-border">
+              {feedReports.map((report) => (
+                <div key={report.id} className="p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-red-500 uppercase tracking-widest flex items-center gap-1">
+                      <Flag size={12} /> {report.reason}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      in {report.post.circle.name} &middot; reported by {report.reporter.name}
+                    </span>
+                  </div>
+                  <p className="text-sm text-foreground bg-muted/50 rounded-lg p-3">{report.post.content}</p>
+                  {report.note && (
+                    <p className="text-xs text-muted-foreground">Note: {report.note}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Author: {report.post.author.name}
+                    {report.post.status === 'HIDDEN' && (
+                      <span className="ml-2 text-red-500 font-semibold">Already hidden</span>
+                    )}
+                  </p>
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      onClick={() => reviewReportMutation.mutate({ reportId: report.id, action: 'hide_post' })}
+                      disabled={reviewReportMutation.isPending || report.post.status === 'HIDDEN'}
+                      className="px-3 py-1.5 text-xs bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center gap-1"
+                    >
+                      <EyeOff size={12} /> Hide Post
+                    </button>
+                    <button
+                      onClick={() => reviewReportMutation.mutate({ reportId: report.id, action: 'warn_user' })}
+                      disabled={reviewReportMutation.isPending}
+                      className="px-3 py-1.5 text-xs bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50"
+                    >
+                      Warn Author
+                    </button>
+                    <button
+                      onClick={() => reviewReportMutation.mutate({ reportId: report.id, action: 'dismiss' })}
+                      disabled={reviewReportMutation.isPending}
+                      className="px-3 py-1.5 text-xs bg-muted text-muted-foreground rounded-lg hover:bg-muted/80 disabled:opacity-50"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <Flag className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+              <p className="text-muted-foreground">No pending reports</p>
+            </div>
+          )}
+        </div>
+      ) : activeTab === 'suggestions' ? (
         <div className="bg-card rounded-xl border border-input overflow-hidden">
           {showCreateForm && selectedSuggestion ? (
             <div className="p-6 space-y-4">

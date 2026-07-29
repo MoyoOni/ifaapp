@@ -714,6 +714,7 @@ export class CirclesService {
     const posts = await (this.prisma as any).circleFeedPost.findMany({
       where: {
         circleId,
+        status: 'VISIBLE',
         ...(isPatron ? {} : { patronOnly: false }),
       },
       orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }],
@@ -867,5 +868,98 @@ export class CirclesService {
     }
 
     return post;
+  }
+
+  // COMMUNITY_BACKLOG.md FOR-005: general content moderation queue for
+  // Circle feed posts, mirroring ForumService's reportPost/getReports/
+  // reviewReport exactly -- previously the only lever was suspending or
+  // archiving an entire circle, nothing scoped to a single post.
+
+  async reportFeedPost(
+    postId: string,
+    reason: string,
+    note: string | undefined,
+    currentUser: CurrentUserPayload
+  ) {
+    const post = await (this.prisma as any).circleFeedPost.findUnique({ where: { id: postId } });
+    if (!post || post.status === 'HIDDEN') throw new NotFoundException('Post not found');
+
+    try {
+      await (this.prisma as any).circleFeedReport.create({
+        data: { reporterId: currentUser.id, postId, reason, note },
+      });
+    } catch {
+      throw new BadRequestException('You have already reported this post');
+    }
+
+    return { reported: true };
+  }
+
+  async getFeedReports(currentUser: CurrentUserPayload, status = 'PENDING') {
+    if (currentUser.role !== 'ADMIN') throw new ForbiddenException('Admins only');
+
+    return (this.prisma as any).circleFeedReport.findMany({
+      where: { status },
+      include: {
+        reporter: { select: { id: true, name: true, yorubaName: true, avatar: true } },
+        post: {
+          include: {
+            author: { select: { id: true, name: true, yorubaName: true } },
+            circle: { select: { id: true, name: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async reviewFeedReport(
+    reportId: string,
+    action: 'dismiss' | 'hide_post' | 'warn_user',
+    currentUser: CurrentUserPayload
+  ) {
+    if (currentUser.role !== 'ADMIN') throw new ForbiddenException('Admins only');
+
+    const report = await (this.prisma as any).circleFeedReport.findUnique({
+      where: { id: reportId },
+      include: { post: { select: { authorId: true, circleId: true } } },
+    });
+    if (!report) throw new NotFoundException('Report not found');
+
+    if (action === 'hide_post') {
+      await (this.prisma as any).circleFeedPost.update({
+        where: { id: report.postId },
+        data: { status: 'HIDDEN' },
+      });
+    }
+
+    if (action === 'warn_user') {
+      await this.notificationService
+        .createNotification({
+          userId: report.post.authorId,
+          type: NotificationType.SYSTEM,
+          category: NotificationCategory.WARNING,
+          title: 'Community guidelines reminder',
+          message:
+            'A moderator has reviewed a report about your circle post. Please review our community guidelines.',
+          data: { postId: report.postId, circleId: report.post.circleId },
+        })
+        .catch((err) =>
+          this.logger.error(
+            `Failed to notify user ${report.post.authorId} of circle moderation action (${action})`,
+            err
+          )
+        );
+    }
+
+    return (this.prisma as any).circleFeedReport.update({
+      where: { id: reportId },
+      data: {
+        status: 'REVIEWED',
+        action,
+        reviewedBy: currentUser.id,
+        reviewedAt: new Date(),
+      },
+    });
   }
 }

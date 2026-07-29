@@ -11,6 +11,7 @@ import {
   Loader2,
   Crown,
   Lock,
+  Flag,
 } from 'lucide-react';
 import api from '@/lib/api';
 import { FeedPost } from '../types/circle.types';
@@ -56,6 +57,19 @@ const PostReactions: React.FC<{ post: FeedPost; circleId?: string }> = ({ post, 
   const queryClient = useQueryClient();
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [commentDraft, setCommentDraft] = useState('');
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [reportNote, setReportNote] = useState('');
+  const [reportSubmitted, setReportSubmitted] = useState(false);
+
+  const reportMutation = useMutation({
+    mutationFn: () =>
+      api.post(`/circles/feed/${post.id}/report`, {
+        reason: reportReason,
+        note: reportNote || undefined,
+      }),
+    onSuccess: () => setReportSubmitted(true),
+  });
 
   const invalidateFeed = () => queryClient.invalidateQueries({ queryKey: ['circle-feed', circleId] });
 
@@ -100,7 +114,89 @@ const PostReactions: React.FC<{ post: FeedPost; circleId?: string }> = ({ post, 
           <MessageCircle size={16} />
           <span className="text-sm">{post.comments}</span>
         </button>
+        <button
+          type="button"
+          onClick={() => setReportOpen(true)}
+          className="flex items-center gap-1 hover:text-red-500 transition-colors ml-auto"
+          aria-label="Report this post"
+        >
+          <Flag size={14} />
+        </button>
       </div>
+
+      {reportOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-background border border-border rounded-2xl w-full max-w-md p-6 space-y-4">
+            {reportSubmitted ? (
+              <div className="text-center py-6">
+                <div className="text-3xl mb-3">✅</div>
+                <p className="font-bold text-foreground">Report submitted.</p>
+                <p className="text-sm text-muted-foreground mt-1">Our community moderators will review it.</p>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                    <Flag size={16} className="text-red-400" /> Report Post
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setReportOpen(false)}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                    Reason
+                  </label>
+                  <select
+                    value={reportReason}
+                    onChange={(e) => setReportReason(e.target.value)}
+                    aria-label="Report reason"
+                    className="w-full bg-muted/50 border border-border rounded-xl p-3 text-foreground focus:outline-none focus:ring-2 focus:ring-highlight"
+                  >
+                    <option value="">Select a reason…</option>
+                    <option value="Spam">Spam or repetitive content</option>
+                    <option value="Harassment">Harassment or personal attacks</option>
+                    <option value="Cultural Disrespect">Cultural disrespect or mockery</option>
+                    <option value="Exploitation">Exploitation or financial scam</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                    Additional note (optional)
+                  </label>
+                  <textarea
+                    value={reportNote}
+                    onChange={(e) => setReportNote(e.target.value)}
+                    rows={2}
+                    placeholder="Any context that helps the moderator…"
+                    className="w-full bg-muted/50 border border-border rounded-xl p-3 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-highlight resize-none"
+                  />
+                </div>
+                <div className="flex gap-3 justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setReportOpen(false)}
+                    className="px-4 py-2 border border-border text-foreground rounded-xl text-sm font-bold hover:bg-muted transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!reportReason || reportMutation.isPending}
+                    onClick={() => reportMutation.mutate()}
+                    className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm font-bold hover:bg-red-600 transition-colors disabled:opacity-50"
+                  >
+                    Submit Report
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {commentsOpen && (
         <div className="mt-3 pl-2 border-l-2 border-border space-y-3">

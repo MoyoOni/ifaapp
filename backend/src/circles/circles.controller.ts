@@ -195,4 +195,35 @@ export class CirclesController {
   ) {
     return this.circlesService.addFeedPostComment(postId, currentUser.id, body.content);
   }
+
+  @Post('feed/:postId/report')
+  @UseGuards(AuthGuard('jwt'))
+  async reportFeedPost(
+    @Param('postId') postId: string,
+    @Body() body: { reason: string; note?: string },
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.circlesService.reportFeedPost(postId, body.reason, body.note, currentUser);
+  }
+
+  @Get('feed/reports')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async getFeedReports(
+    @CurrentUser() currentUser: CurrentUserPayload,
+    @Query('status') status?: string
+  ) {
+    return this.circlesService.getFeedReports(currentUser, status);
+  }
+
+  @Patch('feed/reports/:reportId')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async reviewFeedReport(
+    @Param('reportId') reportId: string,
+    @Body() body: { action: 'dismiss' | 'hide_post' | 'warn_user' },
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.circlesService.reviewFeedReport(reportId, body.action, currentUser);
+  }
 }

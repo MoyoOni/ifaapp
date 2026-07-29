@@ -76,6 +76,7 @@ model User {
   threadsLastPoster         ForumThread[]            @relation("ThreadLastPoster")
   forumBookmarks            ForumBookmark[]
   forumReports              ForumReport[]            @relation("ForumReporter")
+  circleFeedReports         CircleFeedReport[]       @relation("CircleFeedReporter")
   forumSubscriptions        ForumSubscription[]
   elderFlagsCreated         ElderFlag[]              @relation("ElderFlagsCreated")
   elderFlagsReviewed        ElderFlag[]              @relation("ElderFlagsReviewed")
@@ -301,15 +302,15 @@ model ElderEndorsement {
 // mediation, not punitive review. Never public -- visible only to the
 // reporter, the named respondent (if any), the assigned elder, and admins.
 model HealingCase {
-  id              String    @id @default(uuid())
-  reporterId      String
-  respondentId    String?
-  category        String // INTERPERSONAL_CONFLICT | SPIRITUAL_HARM_CONCERN | COMMUNITY_TENSION | OTHER
-  description     String
-  status          String    @default("OPEN") // OPEN | IN_MEDIATION | RESOLVED | CLOSED
-  assignedElderId String?
-  assignedAt      DateTime?
-  resolutionNotes String?
+  id                String    @id @default(uuid())
+  reporterId        String
+  respondentId      String?
+  category          String // INTERPERSONAL_CONFLICT | SPIRITUAL_HARM_CONCERN | COMMUNITY_TENSION | OTHER
+  description       String
+  status            String    @default("OPEN") // OPEN | IN_MEDIATION | RESOLVED | CLOSED
+  assignedElderId   String?
+  assignedAt        DateTime?
+  resolutionNotes   String?
   // Unstructured notes for the assigned elder/admin only -- never returned to
   // the reporter or respondent. Deliberately not a structured restoration-plan
   // model: FOR-018 decision (platform owner, July 29, 2026) is that formal
@@ -317,12 +318,12 @@ model HealingCase {
   // this just lets an elder privately record what was agreed without the app
   // forcing a workflow onto it.
   elderPrivateNotes String?
-  resolvedAt      DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  reporter        User      @relation("HealingCaseReporter", fields: [reporterId], references: [id], onDelete: Cascade)
-  respondent      User?     @relation("HealingCaseRespondent", fields: [respondentId], references: [id])
-  assignedElder   User?     @relation("HealingCaseElder", fields: [assignedElderId], references: [id])
+  resolvedAt        DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  reporter          User      @relation("HealingCaseReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  respondent        User?     @relation("HealingCaseRespondent", fields: [respondentId], references: [id])
+  assignedElder     User?     @relation("HealingCaseElder", fields: [assignedElderId], references: [id])
 
   @@index([reporterId])
   @@index([respondentId])
@@ -2224,8 +2225,36 @@ model CircleFeedPost {
   // surface, so it can't only cover the Forum.
   hasCrisisSignal Boolean @default(false)
 
+  // COMMUNITY_BACKLOG.md FOR-005: general content moderation queue, same
+  // shape as ForumPost/ForumReport -- previously only whole-Circle
+  // suspend/archive existed, no way to act on a single post.
+  status  String             @default("VISIBLE") // VISIBLE | HIDDEN
+  reports CircleFeedReport[]
+
   @@index([circleId])
   @@index([authorId])
+}
+
+// COMMUNITY_BACKLOG.md FOR-005: mirrors ForumReport's shape exactly, kept as
+// its own model (not a polymorphic one) for the same reason ForumReport is
+// its own model rather than shared with anything else in this schema.
+model CircleFeedReport {
+  id         String         @id @default(uuid())
+  reporterId String
+  postId     String
+  reason     String
+  note       String?
+  status     String         @default("PENDING") // PENDING | REVIEWED
+  reviewedBy String?
+  reviewedAt DateTime?
+  action     String? // dismiss | hide_post | warn_user
+  createdAt  DateTime       @default(now())
+  reporter   User           @relation("CircleFeedReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  post       CircleFeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([reporterId, postId])
+  @@index([status])
+  @@index([postId])
 }
 
 // Whole-app audit loose end: real like/comment backing for the Like/Comment
