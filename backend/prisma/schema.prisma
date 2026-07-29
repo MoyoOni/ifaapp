@@ -310,6 +310,13 @@ model HealingCase {
   assignedElderId String?
   assignedAt      DateTime?
   resolutionNotes String?
+  // Unstructured notes for the assigned elder/admin only -- never returned to
+  // the reporter or respondent. Deliberately not a structured restoration-plan
+  // model: FOR-018 decision (platform owner, July 29, 2026) is that formal
+  // restoration/reconciliation stays an offline, human, pastoral process --
+  // this just lets an elder privately record what was agreed without the app
+  // forcing a workflow onto it.
+  elderPrivateNotes String?
   resolvedAt      DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt

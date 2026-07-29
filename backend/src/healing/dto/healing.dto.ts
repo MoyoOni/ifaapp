@@ -25,3 +25,8 @@ export class ResolveHealingCaseDto {
   @MinLength(1)
   resolutionNotes!: string;
 }
+
+export class UpdateElderNotesDto {
+  @IsString()
+  elderPrivateNotes!: string;
+}

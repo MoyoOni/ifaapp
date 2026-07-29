@@ -28,6 +28,7 @@ const DreamJournalView: React.FC = () => {
   const [content, setContent] = useState('');
   const [isPublic, setIsPublic] = useState(false);
   const [interpretationRequested, setInterpretationRequested] = useState(false);
+  const [disclaimerAcknowledged, setDisclaimerAcknowledged] = useState(false);
   const [interpretationDrafts, setInterpretationDrafts] = useState<Record<string, string>>({});
 
   const isBabalawo = user?.role === 'BABALAWO' || user?.role === 'ADMIN';
@@ -58,6 +59,7 @@ const DreamJournalView: React.FC = () => {
       setContent('');
       setIsPublic(false);
       setInterpretationRequested(false);
+      setDisclaimerAcknowledged(false);
       setShowForm(false);
     },
     onError: () => error('Could not save your dream — please try again'),
@@ -124,15 +126,42 @@ const DreamJournalView: React.FC = () => {
                   <input
                     type="checkbox"
                     checked={interpretationRequested}
-                    onChange={(e) => setInterpretationRequested(e.target.checked)}
+                    onChange={(e) => {
+                      setInterpretationRequested(e.target.checked);
+                      if (!e.target.checked) setDisclaimerAcknowledged(false);
+                    }}
                   />
                   Request a Babalawo's interpretation
                 </label>
+                {interpretationRequested && (
+                  <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3 space-y-2">
+                    <p className="text-xs text-amber-800 dark:text-amber-300">
+                      An interpretation is offered as spiritual guidance from a Babalawo, not professional
+                      medical, psychological, or legal advice, and it is never a basis for a Babalawo to
+                      direct your personal, financial, or relationship decisions. If you're in crisis or
+                      feel unsafe, please contact <strong>hello@iluase.com</strong> or your local emergency
+                      services first.
+                    </p>
+                    <label className="flex items-start gap-2 text-xs font-medium text-amber-900 dark:text-amber-200">
+                      <input
+                        type="checkbox"
+                        checked={disclaimerAcknowledged}
+                        onChange={(e) => setDisclaimerAcknowledged(e.target.checked)}
+                        className="mt-0.5"
+                      />
+                      I understand and wish to request an interpretation
+                    </label>
+                  </div>
+                )}
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => createDream.mutate()}
-                    disabled={!content.trim() || createDream.isPending}
+                    disabled={
+                      !content.trim() ||
+                      createDream.isPending ||
+                      (interpretationRequested && !disclaimerAcknowledged)
+                    }
                     className="px-4 py-2 bg-highlight text-foreground rounded-lg font-bold text-sm hover:bg-secondary transition-colors disabled:opacity-50"
                   >
                     {createDream.isPending ? 'Saving…' : 'Save Dream'}

@@ -10,7 +10,7 @@ import {
   NotificationType,
   NotificationCategory,
 } from '../notifications/notification.service';
-import { ReportHealingCaseDto, ResolveHealingCaseDto } from './dto/healing.dto';
+import { ReportHealingCaseDto, ResolveHealingCaseDto, UpdateElderNotesDto } from './dto/healing.dto';
 
 // COMMUNITY_BACKLOG.md FOR-018: Community Healing & Reconciliation.
 // Restorative, elder-mediated -- not the same system as PractitionerComplaint
@@ -77,13 +77,15 @@ export class HealingService {
   }
 
   async findMine(userId: string) {
-    return this.prisma.healingCase.findMany({
+    const cases = await this.prisma.healingCase.findMany({
       where: { OR: [{ reporterId: userId }, { respondentId: userId }] },
       orderBy: { createdAt: 'desc' },
       include: {
         assignedElder: { select: { id: true, name: true, yorubaName: true } },
       },
     });
+    // The reporter/respondent must never see the elder's private notes.
+    return cases.map(({ elderPrivateNotes, ...rest }) => rest);
   }
 
   private async assertElder(userId: string) {
@@ -147,6 +149,30 @@ export class HealingService {
     if (!this.canView(healingCase, userId, role)) {
       throw new ForbiddenException('You do not have access to this healing case');
     }
+    // Only the assigned elder or an admin gets to see elderPrivateNotes --
+    // the reporter/respondent, even though they can view the rest of the case, cannot.
+    const canSeePrivateNotes = role === 'ADMIN' || healingCase.assignedElderId === userId;
+    if (!canSeePrivateNotes) {
+      const { elderPrivateNotes, ...rest } = healingCase;
+      return rest;
+    }
     return healingCase;
+  }
+
+  async updateElderNotes(
+    caseId: string,
+    userId: string,
+    isAdmin: boolean,
+    dto: UpdateElderNotesDto
+  ) {
+    const healingCase = await this.prisma.healingCase.findUnique({ where: { id: caseId } });
+    if (!healingCase) throw new NotFoundException('Healing case not found');
+    if (healingCase.assignedElderId !== userId && !isAdmin) {
+      throw new ForbiddenException('Only the assigned elder or an admin can add private notes');
+    }
+    return this.prisma.healingCase.update({
+      where: { id: caseId },
+      data: { elderPrivateNotes: dto.elderPrivateNotes },
+    });
   }
 }

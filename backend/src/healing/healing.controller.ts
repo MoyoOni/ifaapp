@@ -2,7 +2,7 @@ import { Controller, Get, Post, Patch, Param, Body, UseGuards } from '@nestjs/co
 import { JwtAuthGuard } from '../shared/guards/auth.guard';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { HealingService } from './healing.service';
-import { ReportHealingCaseDto, ResolveHealingCaseDto } from './dto/healing.dto';
+import { ReportHealingCaseDto, ResolveHealingCaseDto, UpdateElderNotesDto } from './dto/healing.dto';
 
 @Controller('healing')
 @UseGuards(JwtAuthGuard)
@@ -41,5 +41,14 @@ export class HealingController {
     @CurrentUser() user: CurrentUserPayload
   ) {
     return this.healingService.resolve(id, dto, user.id, user.role === 'ADMIN');
+  }
+
+  @Patch('cases/:id/elder-notes')
+  async updateElderNotes(
+    @Param('id') id: string,
+    @Body() dto: UpdateElderNotesDto,
+    @CurrentUser() user: CurrentUserPayload
+  ) {
+    return this.healingService.updateElderNotes(id, user.id, user.role === 'ADMIN', dto);
   }
 }

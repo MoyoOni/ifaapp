@@ -28,6 +28,7 @@ interface HealingCase {
 interface QueueCase extends HealingCase {
   reporter: { id: string; name: string; yorubaName?: string };
   respondent?: { id: string; name: string; yorubaName?: string };
+  elderPrivateNotes?: string;
 }
 
 const STATUS_STYLES: Record<string, string> = {
@@ -46,6 +47,7 @@ const HealingView: React.FC = () => {
   const [description, setDescription] = useState('');
   const [respondentEmail, setRespondentEmail] = useState('');
   const [resolutionDrafts, setResolutionDrafts] = useState<Record<string, string>>({});
+  const [elderNotesDrafts, setElderNotesDrafts] = useState<Record<string, string>>({});
 
   const isElder = user?.role === 'BABALAWO' || user?.role === 'ADMIN';
 
@@ -91,6 +93,16 @@ const HealingView: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['healing-cases-queue'] });
     },
     onError: () => error('Could not resolve this case'),
+  });
+
+  const saveElderNotes = useMutation({
+    mutationFn: async (id: string) =>
+      api.patch(`/healing/cases/${id}/elder-notes`, { elderPrivateNotes: elderNotesDrafts[id] }),
+    onSuccess: () => {
+      success('Private notes saved');
+      queryClient.invalidateQueries({ queryKey: ['healing-cases-queue'] });
+    },
+    onError: () => error('Could not save your notes'),
   });
 
   return (
@@ -220,23 +232,47 @@ const HealingView: React.FC = () => {
                       Take This Case
                     </button>
                   )}
-                  {c.status === 'IN_MEDIATION' && c.assignedElder?.id === user?.id && (
-                    <div className="space-y-2">
-                      <textarea
-                        value={resolutionDrafts[c.id] || ''}
-                        onChange={(e) => setResolutionDrafts((prev) => ({ ...prev, [c.id]: e.target.value }))}
-                        placeholder="Resolution notes..."
-                        rows={2}
-                        className="w-full px-2 py-1.5 rounded-lg border border-border bg-background text-xs resize-none"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => resolve.mutate(c.id)}
-                        disabled={!resolutionDrafts[c.id]?.trim() || resolve.isPending}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 transition-colors disabled:opacity-50"
-                      >
-                        <Check size={12} /> Mark Resolved
-                      </button>
+                  {c.assignedElder?.id === user?.id && (
+                    <div className="space-y-3">
+                      {c.status === 'IN_MEDIATION' && (
+                        <div className="space-y-2">
+                          <textarea
+                            value={resolutionDrafts[c.id] || ''}
+                            onChange={(e) => setResolutionDrafts((prev) => ({ ...prev, [c.id]: e.target.value }))}
+                            placeholder="Resolution notes (shown to those involved)..."
+                            rows={2}
+                            className="w-full px-2 py-1.5 rounded-lg border border-border bg-background text-xs resize-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => resolve.mutate(c.id)}
+                            disabled={!resolutionDrafts[c.id]?.trim() || resolve.isPending}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                          >
+                            <Check size={12} /> Mark Resolved
+                          </button>
+                        </div>
+                      )}
+                      <div className="space-y-1.5 border-t border-border pt-2">
+                        <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
+                          Your Private Notes (never shown to those involved)
+                        </p>
+                        <textarea
+                          value={elderNotesDrafts[c.id] ?? c.elderPrivateNotes ?? ''}
+                          onChange={(e) => setElderNotesDrafts((prev) => ({ ...prev, [c.id]: e.target.value }))}
+                          placeholder="Restoration steps agreed, follow-up plans, anything for your own record..."
+                          rows={2}
+                          className="w-full px-2 py-1.5 rounded-lg border border-border bg-background text-xs resize-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => saveElderNotes.mutate(c.id)}
+                          disabled={saveElderNotes.isPending}
+                          className="px-3 py-1.5 bg-muted text-foreground rounded-lg text-xs font-bold hover:bg-muted/70 transition-colors disabled:opacity-50"
+                        >
+                          Save Private Notes
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
