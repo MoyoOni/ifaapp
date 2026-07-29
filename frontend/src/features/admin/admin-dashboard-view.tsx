@@ -146,6 +146,10 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ initialTab }) =
   const { PromptDialog, prompt: promptInput } = usePrompt();
 
   const impersonateUser = async (id: string, name: string) => {
+    if (currentUser?.role !== 'ADMIN') {
+      error('Impersonation is restricted to admins.');
+      return;
+    }
     try {
       const reason = await promptInput({
         title: 'User Impersonation (Audited)',

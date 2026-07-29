@@ -87,7 +87,7 @@ export class AuthController {
 
   @Post('impersonate')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.ADVISORY_BOARD_MEMBER)
+  @Roles(UserRole.ADMIN)
   @AdminRoles(AdminSubRole.SUPER)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Initiate user impersonation (admin only)' })

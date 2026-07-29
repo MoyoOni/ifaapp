@@ -80,13 +80,18 @@ describe('RolesGuard', () => {
     expect(guard.canActivate(ctx)).toBe(true);
   });
 
-  it('does not apply sub-role scoping to a non-ADMIN role permitted by @Roles (e.g. ADVISORY_BOARD_MEMBER on auth/impersonate)', () => {
+  it('does not apply sub-role scoping to a non-ADMIN role permitted by @Roles (the sub-role check only ever runs for role === ADMIN)', () => {
+    // Generic guard behavior in isolation. Real routes should not combine a
+    // non-ADMIN role in @Roles(...) with an @AdminRoles(...) restriction and
+    // expect the sub-role check to apply to that role -- it won't (see the
+    // auth/impersonate fix below, where ADVISORY_BOARD_MEMBER was removed
+    // from @Roles(...) entirely rather than relying on this guard to scope it).
     const ctx = makeContext(
       {
-        roles: [UserRole.ADMIN, UserRole.ADVISORY_BOARD_MEMBER],
+        roles: [UserRole.ADMIN, UserRole.BABALAWO],
         adminSubRoles: [AdminSubRole.SUPER],
       },
-      { role: UserRole.ADVISORY_BOARD_MEMBER }
+      { role: UserRole.BABALAWO }
     );
     expect(guard.canActivate(ctx)).toBe(true);
   });
@@ -120,6 +125,12 @@ describe('RolesGuard', () => {
       const ctor = getCtor();
       const subRoles = reflector.get(ADMIN_SUB_ROLES_KEY, ctor.prototype[methodName]);
       expect(subRoles).toEqual(expected);
+    });
+
+    it('AuthController.impersonate only grants @Roles(ADMIN) -- ADVISORY_BOARD_MEMBER was removed, security decision July 29, 2026', () => {
+      const { AuthController } = require('../auth.controller');
+      const roles = reflector.get(ROLES_KEY, AuthController.prototype.impersonate);
+      expect(roles).toEqual([UserRole.ADMIN]);
     });
   });
 });

@@ -72,17 +72,14 @@ export class ImpersonationService {
   }
 
   private canImpersonate(user: User): boolean {
-    // Admins and super admins can impersonate users
-    if (user.role === UserRole.ADMIN) {
-      return true;
+    // Only SUPER admins can impersonate -- this is a nuclear-option capability
+    // (full write access as the target user), not a support-tier one.
+    // Admins with no adminSubRole set are legacy/bootstrap accounts, treated as SUPER.
+    if (user.role !== UserRole.ADMIN) {
+      return false;
     }
 
-    // Check if user has specific admin sub-role that permits impersonation
-    if (user.adminSubRole) {
-      return ['SUPER', 'SUPPORT'].includes(user.adminSubRole);
-    }
-
-    return false;
+    return !user.adminSubRole || user.adminSubRole === 'SUPER';
   }
 
   private isUserAdmin(user: User): boolean {
