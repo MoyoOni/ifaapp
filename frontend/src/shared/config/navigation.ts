@@ -18,6 +18,7 @@ import {
   MessagesSquare,
   UserPlus,
   ClipboardList,
+  LifeBuoy,
   type LucideIcon
 } from 'lucide-react';
 import { UserRole, AdminSubRole } from '@common';
@@ -59,6 +60,9 @@ const BABALAWO_NAV_ITEMS: NavItem[] = [
   { id: 'wallet', label: 'Wallet', icon: Wallet, path: '/wallet' },
   { id: 'forum', label: 'Forum', icon: MessagesSquare, path: '/forum' },
   { id: 'professional-growth', label: 'Academy', icon: TrendingUp, path: '/academy' },
+  // COMMUNITY_BACKLOG.md FOR-009: low-friction platform-usage help board,
+  // distinct from spiritual Q&A -- elders ask, any community member answers.
+  { id: 'tech-help', label: 'Tech Help', icon: LifeBuoy, path: '/tech-help' },
   { id: 'profile', label: 'My Profile', icon: User, path: '/profile' },
 ];
 

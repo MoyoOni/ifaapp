@@ -62,6 +62,8 @@ model User {
   circleSuggestions         CircleSuggestion[]       @relation("CircleSuggester")
   ritualProposals           RitualProposal[]         @relation("RitualProposer")
   ritualProposalsReviewed   RitualProposal[]         @relation("RitualProposalReviewer")
+  techHelpRequests          TechHelpRequest[]        @relation("TechHelpRequester")
+  techHelpAnswers           TechHelpRequest[]        @relation("TechHelpAnswerer")
   coursesInstructed         Course[]                 @relation("CourseInstructor")
   courseReviewsGiven        CourseReview[]           @relation("CourseReviewStudent")
   deviceTokens              DeviceToken[]            @relation("DeviceTokens")
@@ -2938,6 +2940,27 @@ model RitualProposal {
   createdAt     DateTime  @default(now())
   proposedBy    User      @relation("RitualProposer", fields: [proposedById], references: [id], onDelete: Cascade)
   reviewer      User?     @relation("RitualProposalReviewer", fields: [reviewedBy], references: [id])
+
+  @@index([status])
+}
+
+// COMMUNITY_BACKLOG.md FOR-009 (platform owner decision, July 29, 2026):
+// "elders need a dedicated low-friction support channel" for using the
+// platform itself -- distinct from "Ask an Elder" (spiritual Q&A elders
+// answer) and community-mentorship (general newcomer mentorship). Here an
+// elder (BABALAWO) asks, and any community member can answer -- a small,
+// open help board, not a ticket system with assigned support staff.
+model TechHelpRequest {
+  id           String    @id @default(uuid())
+  requesterId  String
+  question     String
+  status       String    @default("OPEN") // OPEN | ANSWERED
+  answer       String?
+  answeredById String?
+  answeredAt   DateTime?
+  createdAt    DateTime  @default(now())
+  requester    User      @relation("TechHelpRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  answeredBy   User?     @relation("TechHelpAnswerer", fields: [answeredById], references: [id])
 
   @@index([status])
 }

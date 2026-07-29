@@ -19,6 +19,7 @@ import { MemorialModule } from './memorials/memorial.module';
 import { WellbeingModule } from './wellbeing/wellbeing.module';
 import { DreamModule } from './dreams/dream.module';
 import { HealingModule } from './healing/healing.module';
+import { TechHelpModule } from './tech-help/tech-help.module';
 import { ComplaintsModule } from './complaints/complaints.module';
 import { UserReportsModule } from './user-reports/user-reports.module';
 import { VendorCommunityModule } from './vendor-community/vendor-community.module';
@@ -89,6 +90,7 @@ import { MaintenanceModeMiddleware } from './middleware/maintenance-mode.middlew
     WellbeingModule,
     DreamModule,
     HealingModule,
+    TechHelpModule,
     ComplaintsModule,
     UserReportsModule,
     VendorCommunityModule,

@@ -14,6 +14,7 @@ import RemembranceWallView from './features/community/remembrance-wall-view'; //
 import WellbeingView from './features/community/wellbeing-view'; // COMMUNITY_BACKLOG.md FOR-017
 import DreamJournalView from './features/community/dream-journal-view'; // COMMUNITY_BACKLOG.md FOR-021
 import HealingView from './features/community/healing-view'; // COMMUNITY_BACKLOG.md FOR-018
+import TechHelpView from './features/community/tech-help-view'; // COMMUNITY_BACKLOG.md FOR-009
 import ProfilePage from './pages/ProfilePage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
@@ -456,6 +457,13 @@ function App() {
                         <React.Suspense fallback={<LoadingSpinner />}>
                           <ErrorBoundary>
                             <HealingView />
+                          </ErrorBoundary>
+                        </React.Suspense>
+                      } />
+                      <Route path="/tech-help" element={
+                        <React.Suspense fallback={<LoadingSpinner />}>
+                          <ErrorBoundary>
+                            <TechHelpView />
                           </ErrorBoundary>
                         </React.Suspense>
                       } />
