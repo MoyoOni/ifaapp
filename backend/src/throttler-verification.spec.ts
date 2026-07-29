@@ -4,7 +4,7 @@
  */
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, Reflector } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { Controller, Get } from '@nestjs/common';
 import * as request from 'supertest';
@@ -24,7 +24,7 @@ describe('Rate limiting (PB-204.3)', () => {
     const moduleRef = await Test.createTestingModule({
       imports: [ThrottlerModule.forRoot([{ ttl: 60000, limit: 3 }])],
       controllers: [PingController],
-      providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
+      providers: [Reflector, { provide: APP_GUARD, useClass: ThrottlerGuard }],
     }).compile();
 
     app = moduleRef.createNestApplication();
