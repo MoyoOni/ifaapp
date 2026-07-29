@@ -52,7 +52,17 @@ interface SacredEvent {
   createdAt: string;
 }
 
-type ContentView = 'daily-words' | 'oral-history' | 'sacred-calendar';
+interface RitualProposal {
+  id: string;
+  title: string;
+  description: string;
+  suggestedDate?: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  createdAt: string;
+  proposedBy: { id: string; name: string; yorubaName?: string };
+}
+
+type ContentView = 'daily-words' | 'oral-history' | 'sacred-calendar' | 'ritual-proposals';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -558,6 +568,85 @@ const SacredCalendarSection: React.FC = () => {
   );
 };
 
+// COMMUNITY_BACKLOG.md FOR-013: community-proposed rituals review queue
+// (platform owner decision, July 29, 2026). Approving does NOT auto-create
+// a SacredCalendarEvent -- the admin uses "Add Event" in the Sacred Calendar
+// section above, with their own edits, same as circle suggestions.
+const RitualProposalsSection: React.FC = () => {
+  const qc = useQueryClient();
+  const { success, error: toastError } = useToast();
+
+  const { data: proposals = [], isLoading } = useQuery<RitualProposal[]>({
+    queryKey: ['admin', 'cultural', 'ritual-proposals'],
+    queryFn: () => api.get('/admin/cultural/ritual-proposals').then((r) => r.data),
+    staleTime: 60 * 1000,
+  });
+
+  const { mutate: review, isPending: reviewing } = useMutation({
+    mutationFn: ({ id, action }: { id: string; action: 'approve' | 'reject' }) =>
+      api.patch(`/admin/cultural/ritual-proposals/${id}`, { action }),
+    onSuccess: (_data, { action }) => {
+      success(action === 'approve' ? 'Proposal approved' : 'Proposal rejected');
+      qc.invalidateQueries({ queryKey: ['admin', 'cultural', 'ritual-proposals'] });
+    },
+    onError: () => toastError('Could not review this proposal'),
+  });
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-base font-semibold text-foreground">Community-Proposed Rituals</h3>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Approving doesn't auto-create a calendar event — add it yourself via "Add Event" above,
+          with your own edits, once you've decided it belongs on the calendar.
+        </p>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-8">
+          <Loader2 size={24} className="animate-spin text-muted-foreground" />
+        </div>
+      ) : proposals.length === 0 ? (
+        <p className="text-sm text-muted-foreground py-8 text-center">No pending proposals</p>
+      ) : (
+        <div className="space-y-2">
+          {proposals.map((p) => (
+            <div key={p.id} className="bg-card border border-border rounded-xl p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-sm text-foreground">{p.title}</span>
+                <span className="text-xs text-muted-foreground">
+                  by {p.proposedBy.yorubaName || p.proposedBy.name}
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground">{p.description}</p>
+              {p.suggestedDate && (
+                <p className="text-xs text-muted-foreground">Suggested date: {fmtDate(p.suggestedDate)}</p>
+              )}
+              <div className="flex gap-2 pt-1">
+                <Button
+                  size="sm"
+                  disabled={reviewing}
+                  onClick={() => review({ id: p.id, action: 'approve' })}
+                >
+                  <CheckCircle size={14} className="mr-1" /> Approve
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={reviewing}
+                  onClick={() => review({ id: p.id, action: 'reject' })}
+                >
+                  <X size={14} className="mr-1" /> Reject
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ─── Main Tab ─────────────────────────────────────────────────────────────────
 
 const AdminCulturalContentTab: React.FC = () => {
@@ -567,6 +656,7 @@ const AdminCulturalContentTab: React.FC = () => {
     { id: 'daily-words', label: 'Daily Word Queue', icon: BookOpen },
     { id: 'oral-history', label: 'Oral History Archive', icon: Mic },
     { id: 'sacred-calendar', label: 'Sacred Calendar', icon: Calendar },
+    { id: 'ritual-proposals', label: 'Community Proposals', icon: Plus },
   ];
 
   return (
@@ -602,6 +692,7 @@ const AdminCulturalContentTab: React.FC = () => {
       {view === 'daily-words' && <DailyWordsSection />}
       {view === 'oral-history' && <OralHistorySection />}
       {view === 'sacred-calendar' && <SacredCalendarSection />}
+      {view === 'ritual-proposals' && <RitualProposalsSection />}
     </div>
   );
 };

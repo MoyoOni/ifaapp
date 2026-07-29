@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Sparkles, Check, X } from 'lucide-react';
+import { Sparkles, Check, X, Clock } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/shared/components/toast';
 import { isDevModeActive } from '@/shared/utils/dev-mode';
+import { formatRitualDateTime, isViewerInWatTimeZone } from '@/shared/utils/format-ritual-time';
 
 // COMMUNITY_BACKLOG.md FOR-013: RSVP + optional public/private intention
 // for a SacredCalendarEvent, hung off the existing calendar model.
@@ -19,9 +20,10 @@ interface ParticipationResponse {
 
 interface RitualParticipationPanelProps {
   eventId: string;
+  eventDate?: string;
 }
 
-const RitualParticipationPanel: React.FC<RitualParticipationPanelProps> = ({ eventId }) => {
+const RitualParticipationPanel: React.FC<RitualParticipationPanelProps> = ({ eventId, eventDate }) => {
   const { success, error } = useToast();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
@@ -57,9 +59,17 @@ const RitualParticipationPanel: React.FC<RitualParticipationPanelProps> = ({ eve
   });
 
   const isParticipating = !!data?.myParticipation;
+  const time = eventDate ? formatRitualDateTime(eventDate) : null;
+  const viewerInWat = isViewerInWatTimeZone();
 
   return (
     <div className="mt-3 pt-3 border-t border-highlight/20">
+      {time && (
+        <p className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
+          <Clock size={12} />
+          {viewerInWat ? time.wat : `${time.local} your time (${time.wat} WAT)`}
+        </p>
+      )}
       <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
         <p className="text-xs text-muted-foreground">
           {data?.count ?? 0} {data?.count === 1 ? 'person' : 'people'} joining this ritual

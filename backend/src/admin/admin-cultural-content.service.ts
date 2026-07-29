@@ -440,4 +440,85 @@ export class AdminCulturalContentService {
     ]);
     return { count, publicIntentions, myParticipation: mine };
   }
+
+  // ==================== COMMUNITY_BACKLOG.md FOR-013: Community-Proposed
+  // Rituals (platform owner decision, July 29, 2026) -- freeform proposal
+  // + admin review, same shape as CircleSuggestion. Approval does NOT
+  // auto-create a SacredCalendarEvent: the admin uses the existing
+  // createSacredEvent flow with their own edits, same judgment-in-the-loop
+  // precedent already established for circle suggestions. ====================
+
+  async submitRitualProposal(
+    dto: { title: string; description: string; suggestedDate?: string },
+    userId: string
+  ) {
+    return this.prisma.ritualProposal.create({
+      data: {
+        proposedById: userId,
+        title: dto.title,
+        description: dto.description,
+        suggestedDate: dto.suggestedDate ? new Date(dto.suggestedDate) : undefined,
+      },
+    });
+  }
+
+  async getMyRitualProposals(userId: string) {
+    return this.prisma.ritualProposal.findMany({
+      where: { proposedById: userId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async getRitualProposals(status = 'PENDING') {
+    return this.prisma.ritualProposal.findMany({
+      where: { status },
+      include: {
+        proposedBy: { select: { id: true, name: true, yorubaName: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async reviewRitualProposal(
+    id: string,
+    action: 'approve' | 'reject',
+    reviewNote: string | undefined,
+    admin: CurrentUserPayload
+  ) {
+    const proposal = await this.prisma.ritualProposal.findUnique({ where: { id } });
+    if (!proposal) throw new NotFoundException('Ritual proposal not found');
+    if (proposal.status !== 'PENDING') {
+      throw new BadRequestException('This proposal has already been reviewed');
+    }
+
+    const updated = await this.prisma.ritualProposal.update({
+      where: { id },
+      data: {
+        status: action === 'approve' ? 'APPROVED' : 'REJECTED',
+        reviewedBy: admin.id,
+        reviewedAt: new Date(),
+        reviewNote,
+      },
+    });
+
+    this.notificationService
+      .createNotification({
+        userId: proposal.proposedById,
+        type: NotificationType.SYSTEM,
+        category: action === 'approve' ? NotificationCategory.SUCCESS : NotificationCategory.INFO,
+        title:
+          action === 'approve'
+            ? `Your ritual proposal "${proposal.title}" was approved`
+            : `Your ritual proposal "${proposal.title}" was not approved`,
+        message:
+          reviewNote ||
+          (action === 'approve'
+            ? "An elder will be in touch about scheduling — thank you for bringing this to the community's calendar."
+            : 'Thank you for the suggestion. Feel free to propose another one anytime.'),
+        data: { ritualProposalId: proposal.id },
+      })
+      .catch(() => undefined);
+
+    return updated;
+  }
 }

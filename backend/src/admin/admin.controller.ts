@@ -1216,6 +1216,24 @@ export class AdminController {
     return this.culturalContentService.deleteSacredEvent(id, admin);
   }
 
+  // COMMUNITY_BACKLOG.md FOR-013: community-proposed rituals review queue.
+
+  @Get('cultural/ritual-proposals')
+  @Roles(UserRole.ADMIN)
+  async getRitualProposals(@Query('status') status?: string) {
+    return this.culturalContentService.getRitualProposals(status);
+  }
+
+  @Patch('cultural/ritual-proposals/:id')
+  @Roles(UserRole.ADMIN)
+  async reviewRitualProposal(
+    @Param('id') id: string,
+    @Body() body: { action: 'approve' | 'reject'; reviewNote?: string },
+    @CurrentUser() admin: CurrentUserPayload
+  ) {
+    return this.culturalContentService.reviewRitualProposal(id, body.action, body.reviewNote, admin);
+  }
+
   // ADM-024: Featured Content Management
 
   @Get('featured-content')

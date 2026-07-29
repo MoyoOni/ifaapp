@@ -8,6 +8,7 @@ import { useCart } from '@/shared/contexts/cart-context';
 import { MARKETPLACE_CATEGORIES, getCategoryBySlug } from './marketplace-categories';
 import { isDevModeActive } from '@/shared/utils/dev-mode';
 import RitualParticipationPanel from '@/features/community/ritual-participation-panel';
+import ProposeRitualPanel from '@/features/community/propose-ritual-panel';
 import { useAuth } from '@/shared/hooks/use-auth';
 
 interface Vendor {
@@ -350,7 +351,10 @@ const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onSelectProduct }) =>
             </div>
           </div>
           {/* COMMUNITY_BACKLOG.md FOR-013: RSVP + intention sharing */}
-          <RitualParticipationPanel eventId={upcoming.upcomingEvents[0].id} />
+          <RitualParticipationPanel
+            eventId={upcoming.upcomingEvents[0].id}
+            eventDate={upcoming.upcomingEvents[0].date}
+          />
           {upcoming.featuredProducts.length > 0 && (
             <div>
               {/* SHOP_BACKLOG.md MSP-008: only claim "for this event" once
@@ -375,6 +379,9 @@ const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onSelectProduct }) =>
           )}
         </div>
       )}
+
+      {/* COMMUNITY_BACKLOG.md FOR-013: propose a ritual for the community calendar */}
+      <ProposeRitualPanel />
 
       {/* Ritual Kits & Bundles -- SHOP_BACKLOG.md MSP-002 */}
       {bundles.length > 0 && (

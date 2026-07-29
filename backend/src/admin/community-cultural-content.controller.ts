@@ -67,4 +67,20 @@ export class CommunityCulturalContentController {
   ) {
     return this.culturalContentService.getEventParticipation(eventId, user.id);
   }
+
+  // COMMUNITY_BACKLOG.md FOR-013: community-proposed rituals -- any
+  // authenticated user can propose one; an admin reviews it (see
+  // admin.controller.ts's cultural/ritual-proposals routes).
+  @Post('ritual-proposals')
+  async submitRitualProposal(
+    @Body() body: { title: string; description: string; suggestedDate?: string },
+    @CurrentUser() user: CurrentUserPayload
+  ) {
+    return this.culturalContentService.submitRitualProposal(body, user.id);
+  }
+
+  @Get('ritual-proposals/mine')
+  async getMyRitualProposals(@CurrentUser() user: CurrentUserPayload) {
+    return this.culturalContentService.getMyRitualProposals(user.id);
+  }
 }

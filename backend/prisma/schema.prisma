@@ -60,6 +60,8 @@ model User {
   circleMemberships         CircleMember[]           @relation("CircleMembers")
   circleSuggestionsReviewed CircleSuggestion[]       @relation("CircleReviewer")
   circleSuggestions         CircleSuggestion[]       @relation("CircleSuggester")
+  ritualProposals           RitualProposal[]         @relation("RitualProposer")
+  ritualProposalsReviewed   RitualProposal[]         @relation("RitualProposalReviewer")
   coursesInstructed         Course[]                 @relation("CourseInstructor")
   courseReviewsGiven        CourseReview[]           @relation("CourseReviewStudent")
   deviceTokens              DeviceToken[]            @relation("DeviceTokens")
@@ -2918,6 +2920,28 @@ model EventProductFeature {
 // SacredCalendarEvent. Deliberately hangs off the existing calendar model
 // rather than a new "ritual" concept -- every virtual ritual this session
 // scopes to IS a SacredCalendarEvent.
+// COMMUNITY_BACKLOG.md FOR-013: "community-generated-ritual approval" --
+// mirrors CircleSuggestion's shape exactly (freeform proposal, admin
+// reviews and, if approved, manually creates the real SacredCalendarEvent
+// via the existing admin create-event flow with their own edits, rather
+// than this auto-creating one -- same judgment-in-the-loop precedent).
+model RitualProposal {
+  id            String    @id @default(uuid())
+  proposedById  String
+  title         String
+  description   String
+  suggestedDate DateTime?
+  status        String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  reviewedBy    String?
+  reviewedAt    DateTime?
+  reviewNote    String?
+  createdAt     DateTime  @default(now())
+  proposedBy    User      @relation("RitualProposer", fields: [proposedById], references: [id], onDelete: Cascade)
+  reviewer      User?     @relation("RitualProposalReviewer", fields: [reviewedBy], references: [id])
+
+  @@index([status])
+}
+
 model RitualParticipation {
   id        String              @id @default(uuid())
   eventId   String
