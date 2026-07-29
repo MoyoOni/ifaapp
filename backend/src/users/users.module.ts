@@ -9,13 +9,14 @@ import { EmailService } from '../notifications/email.service';
 import { ProfileCompletenessService } from './profile-completeness.service'; // Add this import
 import { ProfileCompletenessController } from './profile-completeness.controller'; // Add this import
 import { ImageModule } from '../images/image.module'; // Add this import
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   // CacheModule is imported (rather than providing CacheManagerService
   // directly) because CacheManagerService itself depends on
   // RedisCacheService — providing it standalone here left that dependency
   // unresolved, which only surfaced once the full AppModule graph compiled.
-  imports: [ImageModule, CacheModule],
+  imports: [ImageModule, CacheModule, NotificationsModule],
   controllers: [UsersController, ProfileCompletenessController], // Add the new controller
   providers: [
     UsersService,

@@ -13,6 +13,11 @@ import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { normalizeYorubaText, validateYorubaName } from '../utils/yoruba-validation.util';
 import { SearchService } from '../search/search.service';
 import { OnboardingEmailService } from '../notifications/onboarding-email.service';
+import {
+  NotificationService,
+  NotificationType,
+  NotificationCategory,
+} from '../notifications/notification.service';
 import { ImageOptimizationService, OptimizedImage } from '../images/image-optimization.service'; // Import the service and types
 
 interface FindAllFilters {
@@ -40,7 +45,8 @@ export class UsersService {
     private cacheManager: CacheManagerService,
     private searchService: SearchService,
     private onboardingEmailService: OnboardingEmailService,
-    private imageOptimizationService: ImageOptimizationService // Add this dependency
+    private imageOptimizationService: ImageOptimizationService, // Add this dependency
+    private notificationService: NotificationService
   ) {}
 
   async findAll(filters: FindAllFilters = {}) {
@@ -1049,7 +1055,7 @@ export class UsersService {
    * data already tracked elsewhere (no new schema). Only earned badges are
    * returned; the profile UI just renders whatever comes back.
    */
-  async getUserBadges(userId: string) {
+  async getUserBadges(userId: string, viewerId?: string) {
     const [user, certificateCount, elderAnswerCount, vendor, elderEndorsementCount, seriesThreads] =
       await Promise.all([
         this.prisma.user.findUnique({
@@ -1233,6 +1239,44 @@ export class UsersService {
       }
     }
 
+    // FOR-006: celebrate the moment a milestone is actually crossed, not
+    // just render it silently. Badges here are computed live on every read
+    // (no schema for "badge earned at"), so the closest honest approximation
+    // of "the moment" is the next time the owner views their own badges --
+    // reuses the existing (previously admin-only) UserBadge table as the
+    // durable "have we already told them about this one" record, rather
+    // than inventing a parallel one. Only runs on self-view, never when a
+    // stranger views someone else's public profile badges.
+    if (viewerId && viewerId === userId && badges.length > 0) {
+      this.notifyNewlyEarnedBadges(userId, badges).catch(() => undefined);
+    }
+
     return badges;
+  }
+
+  private async notifyNewlyEarnedBadges(
+    userId: string,
+    badges: { key: string; emoji: string; label: string; description: string }[]
+  ) {
+    const existing = await this.prisma.userBadge.findMany({
+      where: { userId, badgeKey: { in: badges.map((b) => b.key) } },
+      select: { badgeKey: true },
+    });
+    const alreadyKnown = new Set(existing.map((b) => b.badgeKey));
+    const newlyEarned = badges.filter((b) => !alreadyKnown.has(b.key));
+
+    for (const badge of newlyEarned) {
+      await this.prisma.userBadge.create({
+        data: { userId, badgeKey: badge.key, reason: 'Automatically earned' },
+      });
+      await this.notificationService.createNotification({
+        userId,
+        type: NotificationType.SYSTEM,
+        category: NotificationCategory.SUCCESS,
+        title: `${badge.emoji} You earned a new badge: ${badge.label}`,
+        message: badge.description,
+        data: { badgeKey: badge.key },
+      });
+    }
   }
 }

@@ -5,6 +5,7 @@ import { CacheManagerService } from '../cache/cache-manager.service';
 import { SearchService } from '../search/search.service';
 import { OnboardingEmailService } from '../notifications/onboarding-email.service';
 import { ImageOptimizationService } from '../images/image-optimization.service';
+import { NotificationService } from '../notifications/notification.service';
 import {
   NotFoundException,
   UnauthorizedException,
@@ -53,6 +54,14 @@ describe('UsersService', () => {
     notification: {
       create: jest.fn(),
     },
+    userBadge: {
+      findMany: jest.fn().mockResolvedValue([]),
+      create: jest.fn(),
+    },
+  };
+
+  const mockNotificationService = {
+    createNotification: jest.fn().mockResolvedValue(undefined),
   };
 
   beforeEach(async () => {
@@ -82,6 +91,10 @@ describe('UsersService', () => {
         {
           provide: ImageOptimizationService,
           useValue: { optimizeImage: jest.fn(), optimizeAndUpload: jest.fn() },
+        },
+        {
+          provide: NotificationService,
+          useValue: mockNotificationService,
         },
       ],
     }).compile();
@@ -728,6 +741,58 @@ describe('UsersService', () => {
       const badges = await service.getUserBadges('user-1');
 
       expect(badges.some((b) => b.key === 'pathway-graduate')).toBe(false);
+    });
+
+    describe('FOR-006 milestone-celebration notification (self-view only)', () => {
+      beforeEach(() => {
+        mockPrismaService.user.findUnique.mockResolvedValue({
+          ...baseUser,
+          subscriptionStatus: 'DEVOTED',
+        });
+        mockPrismaService.forumThread.findMany.mockResolvedValue([]);
+      });
+
+      it('does not check for or send notifications when viewerId is omitted (public profile view)', async () => {
+        await service.getUserBadges('user-1');
+        // give the fire-and-forget .catch() chain a tick, then assert nothing ran
+        await new Promise((r) => setImmediate(r));
+        expect(mockPrismaService.userBadge.findMany).not.toHaveBeenCalled();
+        expect(mockNotificationService.createNotification).not.toHaveBeenCalled();
+      });
+
+      it('does not notify when a stranger views someone else\'s badges', async () => {
+        await service.getUserBadges('user-1', 'someone-else');
+        await new Promise((r) => setImmediate(r));
+        expect(mockPrismaService.userBadge.findMany).not.toHaveBeenCalled();
+      });
+
+      it('records and notifies once for a badge earned for the first time, on self-view', async () => {
+        mockPrismaService.userBadge.findMany.mockResolvedValue([]);
+        mockPrismaService.userBadge.create.mockResolvedValue({});
+
+        await service.getUserBadges('user-1', 'user-1');
+        await new Promise((r) => setImmediate(r));
+
+        expect(mockPrismaService.userBadge.create).toHaveBeenCalledWith({
+          data: { userId: 'user-1', badgeKey: 'devoted-member', reason: 'Automatically earned' },
+        });
+        expect(mockNotificationService.createNotification).toHaveBeenCalledWith(
+          expect.objectContaining({
+            userId: 'user-1',
+            data: { badgeKey: 'devoted-member' },
+          })
+        );
+      });
+
+      it('does not re-notify for a badge already recorded', async () => {
+        mockPrismaService.userBadge.findMany.mockResolvedValue([{ badgeKey: 'devoted-member' }]);
+
+        await service.getUserBadges('user-1', 'user-1');
+        await new Promise((r) => setImmediate(r));
+
+        expect(mockPrismaService.userBadge.create).not.toHaveBeenCalled();
+        expect(mockNotificationService.createNotification).not.toHaveBeenCalled();
+      });
     });
   });
 

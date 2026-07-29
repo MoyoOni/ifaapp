@@ -135,9 +135,12 @@ export class UsersController {
 
   // EXP-029: badges are shown on public profiles -- intentionally viewable
   // by any authenticated user, not restricted to self/admin like findOne().
+  // currentUser is passed through so getUserBadges can tell a self-view
+  // (fires the FOR-006 "you just earned this" notification) from someone
+  // else viewing this profile's badges (never fires one).
   @Get(':id/badges')
-  async getBadges(@Param('id') id: string) {
-    return this.usersService.getUserBadges(id);
+  async getBadges(@Param('id') id: string, @CurrentUser() currentUser: CurrentUserPayload) {
+    return this.usersService.getUserBadges(id, currentUser.sub);
   }
 
   // COMMUNITY_BACKLOG.md FOR-014/FOR-006: elder-initiated endorsement,
