@@ -4,7 +4,6 @@ import {
   HealthCheckError,
   HealthCheckService,
   HealthIndicatorResult,
-  HttpHealthIndicator,
 } from '@nestjs/terminus';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -12,17 +11,20 @@ import { PrismaService } from '../prisma/prisma.service';
 export class HealthController {
   constructor(
     private health: HealthCheckService,
-    private http: HttpHealthIndicator,
     private prisma: PrismaService
   ) {}
 
   @Get()
   @HealthCheck()
   async check() {
-    const healthCheckResult = await this.health.check([
-      () => this.checkDatabase(),
-      () => this.http.pingCheck('google', 'https://google.com'),
-    ]);
+    // This endpoint gates ECS/ALB/Docker liveness -- it must only fail for
+    // things that mean *this app* is unhealthy. It used to also ping
+    // https://google.com, which meant a NAT/outbound-internet hiccup with
+    // zero impact on the app or DB could still get a perfectly healthy
+    // container cycled by the orchestrator. Removed rather than made
+    // non-fatal, since there's no real liveness signal an unrelated third
+    // party can give us anyway.
+    const healthCheckResult = await this.health.check([() => this.checkDatabase()]);
 
     return {
       ...healthCheckResult,

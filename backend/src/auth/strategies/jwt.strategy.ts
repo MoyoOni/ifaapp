@@ -3,7 +3,9 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
+import { RedisCacheService } from '../../cache/redis-cache.service';
 import { UserRole } from '@ile-ase/common';
+import { TOKEN_DENYLIST_PREFIX } from '../token-denylist.constants';
 
 export interface JwtPayload {
   sub: string; // userId
@@ -12,13 +14,16 @@ export interface JwtPayload {
   verified: boolean;
   isImpersonated?: boolean;
   impersonatorId?: string;
+  jti?: string; // unique per token pair, used for logout/revocation
+  exp?: number; // standard JWT claim, populated by passport-jwt at verify time
 }
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     private configService: ConfigService,
-    private prisma: PrismaService
+    private prisma: PrismaService,
+    private redisCache: RedisCacheService
   ) {
     const jwtSecret = configService.get<string>('JWT_SECRET');
     if (!jwtSecret) {
@@ -32,6 +37,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
+    // Revoked on logout (see AuthService.logout) — a stateless JWT is otherwise
+    // valid until natural expiry with no way to invalidate it early.
+    if (payload.jti && (await this.redisCache.exists(`${TOKEN_DENYLIST_PREFIX}${payload.jti}`))) {
+      throw new UnauthorizedException('Token has been revoked');
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
     });
@@ -54,6 +65,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       adminSubRole: user.adminSubRole ?? undefined,
       isImpersonated: payload.isImpersonated || false,
       impersonatorId: payload.impersonatorId,
+      jti: payload.jti,
+      exp: payload.exp,
     };
   }
 }

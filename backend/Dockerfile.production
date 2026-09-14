@@ -23,8 +23,38 @@ RUN cd common && npx tsc
 # Copy backend source
 COPY backend ./backend
 
+# Prisma Client is generated from schema.prisma into node_modules/@prisma/client
+# -- without this, `npm run build`'s type-check fails across every file that
+# uses a Prisma model type (not just Prisma call sites), since the client's
+# generated types don't exist yet. Matches backend/Dockerfile's build order.
+RUN cd backend && npx prisma generate
+
 # Build backend
 RUN cd backend && npm run build
+
+# npm workspaces hoists most backend dependencies (e.g. @nestjs/core) to the
+# root node_modules, not backend/node_modules -- the runtime stage used to
+# copy only backend/node_modules, which is missing exactly the packages the
+# app actually needs to boot ("Cannot find module '@nestjs/core'"). Merge
+# backend's own non-hoisted packages into the root so a single copy of root
+# node_modules in the runtime stage has everything. Matches backend/Dockerfile.
+RUN if [ -d ./backend/node_modules ] && [ "$(ls -A ./backend/node_modules 2>/dev/null)" ]; then \
+      for pkg in ./backend/node_modules/[!@]*/; do \
+        [ -d "$pkg" ] || continue; \
+        name=$(basename "$pkg"); \
+        [ -d "./node_modules/$name" ] || cp -r "$pkg" "./node_modules/$name"; \
+      done; \
+      for scope in ./backend/node_modules/@*/; do \
+        [ -d "$scope" ] || continue; \
+        scopename=$(basename "$scope"); \
+        mkdir -p "./node_modules/$scopename"; \
+        for spkg in "$scope"*/; do \
+          [ -d "$spkg" ] || continue; \
+          spkgname=$(basename "$spkg"); \
+          [ -d "./node_modules/$scopename/$spkgname" ] || cp -r "$spkg" "./node_modules/$scopename/$spkgname"; \
+        done; \
+      done; \
+    fi
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs &&\
@@ -35,10 +65,39 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-# Copy built application from builder
+# The builder stage's `nestjs` user only exists in the builder stage's own
+# filesystem -- COPY --chown can reference it by name across stages, but
+# `USER nestjs` below runs against *this* stage's /etc/passwd, which has no
+# such entry unless created here too. Without this, the container never
+# started at all ("unable to find user nestjs: no matching entries in
+# passwd file").
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nestjs -u 1001
+
+# Prisma's query engine binary dlopen()s libssl at runtime and auto-detects
+# which variant to use from what's actually present on the box -- without
+# this, node:22-alpine has neither libssl.so.1.1 nor a resolvable libssl.so.3
+# setup, and the engine fails to load ("Error loading shared library
+# libssl.so.1.1: No such file or directory") even though schema.prisma
+# already declares the correct linux-musl-openssl-3.0.x binaryTarget.
+# Matches backend/Dockerfile's runtime stage.
+RUN apk add --no-cache openssl && rm -rf /var/cache/apk/*
+
+# Copy built application from builder. node_modules comes from the merged
+# root (see the builder-stage RUN above) -- copying backend/node_modules
+# alone silently omitted every hoisted package the app actually imports.
 COPY --from=builder --chown=nestjs:nodejs /app/backend/dist ./dist
-COPY --from=builder --chown=nestjs:nodejs /app/backend/node_modules ./node_modules
-COPY --from=builder --chown=nestjs:nodejs /app/common/dist ./common/dist
+COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
+# @ile-ase/common is resolved as node_modules/@ile-ase/common at runtime
+# (there's no workspace symlink once npm workspaces' own bookkeeping is left
+# behind in the builder stage) -- placed directly inside node_modules rather
+# than at a bare top-level ./common, which nothing would actually resolve to.
+COPY --from=builder --chown=nestjs:nodejs /app/common/package.json ./node_modules/@ile-ase/common/package.json
+COPY --from=builder --chown=nestjs:nodejs /app/common/dist ./node_modules/@ile-ase/common/dist
+# Without this, the HEALTHCHECK below (`node healthcheck.js`) fails on every
+# single run with "Cannot find module" -- healthcheck.js was never part of
+# `backend/dist`, it's a standalone script that has to be copied explicitly.
+COPY --from=builder --chown=nestjs:nodejs /app/backend/healthcheck.js ./healthcheck.js
 
 # Create non-root user
 USER nestjs
@@ -48,4 +107,4 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
   CMD node healthcheck.js
 
-CMD ["node", "dist/src/main.js"]
+CMD ["node", "dist/backend/src/main.js"]

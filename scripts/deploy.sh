@@ -12,6 +12,11 @@
 set -e
 
 APP_DIR="/home/ubuntu/ifa_app"
+# Was hardcoded to `v4/quality` regardless of which branch actually triggered
+# a deploy -- meaning CI could test one commit and this script would silently
+# deploy a completely different one. CI now passes the real trigger branch as
+# DEPLOY_BRANCH; this default only applies to a manual run on the box itself.
+BRANCH="${DEPLOY_BRANCH:-v4/quality}"
 
 echo "========================================="
 echo "  Ìlú Àṣẹ - Deploy"
@@ -19,9 +24,9 @@ echo "========================================="
 
 # --- 1. Pull latest code ---
 echo ""
-echo "[1/6] Pulling latest code..."
+echo "[1/6] Pulling latest code (branch: $BRANCH)..."
 cd "$APP_DIR"
-git pull origin v4/quality
+git pull origin "$BRANCH"
 
 # --- 2. Install dependencies ---
 # P3-03: npm ci (not npm install) so a deploy always gets exactly what

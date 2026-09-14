@@ -9,11 +9,13 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { UserModule } from '../modules/user/user.module';
 import { SharedModule } from '../shared/shared.module';
 import { MessagingModule } from '../messaging/messaging.module';
+import { CacheModule } from '../cache/cache.module';
 
 @Module({
   imports: [
     UserModule,
     PassportModule,
+    CacheModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({

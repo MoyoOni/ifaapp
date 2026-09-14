@@ -14,11 +14,20 @@ import { Currency, PaymentPurpose } from '@ile-ase/common';
 const PAYSTACK_TEST_SECRET = 'paystack-secret';
 const FLUTTERWAVE_TEST_HASH = 'fw-hash';
 
+function paystackRawBody(payload: unknown): Buffer {
+  return Buffer.from(JSON.stringify(payload));
+}
+
 function signPaystackPayload(payload: unknown): string {
-  return crypto
-    .createHmac('sha512', PAYSTACK_TEST_SECRET)
-    .update(JSON.stringify(payload))
-    .digest('hex');
+  return crypto.createHmac('sha512', PAYSTACK_TEST_SECRET).update(paystackRawBody(payload)).digest('hex');
+}
+
+// The real Paystack webhook route verifies against raw request bytes, not a
+// pre-parsed object -- see payments.controller.ts/payments.service.ts. This
+// mirrors that: `service.handleWebhook`'s Paystack branch ignores `payload`
+// entirely and reads `rawBody` instead.
+function callPaystackWebhook(service: PaymentsService, payload: unknown, signature?: string) {
+  return service.handleWebhook(undefined, PaymentProvider.PAYSTACK, signature, paystackRawBody(payload));
 }
 
 const mockPaystackApi = {
@@ -239,11 +248,7 @@ describe('PaymentsService', () => {
     it('should process Paystack success webhook when the signature is valid (EMG-02)', async () => {
       mockWalletService.depositFunds.mockResolvedValue({ transaction: { id: 'tx-1' } });
 
-      const result = await service.handleWebhook(
-        payload,
-        PaymentProvider.PAYSTACK,
-        signPaystackPayload(payload)
-      );
+      const result = await callPaystackWebhook(service, payload, signPaystackPayload(payload));
 
       expect(result.success).toBe(true);
       expect(mockWalletService.depositFunds).toHaveBeenCalledWith(
@@ -265,11 +270,7 @@ describe('PaymentsService', () => {
         transaction: { id: 'tx-1', webhookReceived: true },
       });
 
-      const result = await service.handleWebhook(
-        payload,
-        PaymentProvider.PAYSTACK,
-        signPaystackPayload(payload)
-      );
+      const result = await callPaystackWebhook(service, payload, signPaystackPayload(payload));
 
       expect(result.success).toBe(true);
       expect(mockPrismaService.transaction.update).not.toHaveBeenCalled();
@@ -316,11 +317,7 @@ describe('PaymentsService', () => {
         mockPrismaService.payment.update.mockResolvedValue({ ...mockPaymentRow, status: 'success' });
         mockPrismaService.order.findUnique.mockResolvedValue(mockOrder);
 
-        const result = await service.handleWebhook(
-          orderPayload,
-          PaymentProvider.PAYSTACK,
-          signPaystackPayload(orderPayload)
-        );
+        const result = await callPaystackWebhook(service, orderPayload, signPaystackPayload(orderPayload));
 
         expect(result.success).toBe(true);
         expect(mockWalletService.depositFunds).not.toHaveBeenCalled();
@@ -363,7 +360,7 @@ describe('PaymentsService', () => {
         mockPrismaService.payment.update.mockResolvedValue({ ...mockPaymentRow, status: 'success' });
         mockPrismaService.order.findUnique.mockResolvedValue(digitalOrder);
 
-        await service.handleWebhook(orderPayload, PaymentProvider.PAYSTACK, signPaystackPayload(orderPayload));
+        await callPaystackWebhook(service, orderPayload, signPaystackPayload(orderPayload));
 
         expect(mockPrismaService.digitalProductDownload.upsert).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -395,7 +392,7 @@ describe('PaymentsService', () => {
         mockPrismaService.payment.update.mockResolvedValue({ ...mockPaymentRow, status: 'success' });
         mockPrismaService.order.findUnique.mockResolvedValue(mixedOrder);
 
-        await service.handleWebhook(orderPayload, PaymentProvider.PAYSTACK, signPaystackPayload(orderPayload));
+        await callPaystackWebhook(service, orderPayload, signPaystackPayload(orderPayload));
 
         // The digital item still gets its download grant...
         expect(mockPrismaService.digitalProductDownload.upsert).toHaveBeenCalled();
@@ -410,11 +407,7 @@ describe('PaymentsService', () => {
       it('does not reprocess an order payment on a replayed webhook delivery', async () => {
         mockPrismaService.payment.findUnique.mockResolvedValue({ ...mockPaymentRow, status: 'success' });
 
-        const result = await service.handleWebhook(
-          orderPayload,
-          PaymentProvider.PAYSTACK,
-          signPaystackPayload(orderPayload)
-        );
+        const result = await callPaystackWebhook(service, orderPayload, signPaystackPayload(orderPayload));
 
         expect(result.success).toBe(true);
         expect(mockPrismaService.payment.update).not.toHaveBeenCalled();
@@ -425,24 +418,22 @@ describe('PaymentsService', () => {
         mockPrismaService.payment.findUnique.mockResolvedValue(null);
         mockWalletService.depositFunds.mockResolvedValue({ transaction: { id: 'tx-1' } });
 
-        await service.handleWebhook(orderPayload, PaymentProvider.PAYSTACK, signPaystackPayload(orderPayload));
+        await callPaystackWebhook(service, orderPayload, signPaystackPayload(orderPayload));
 
         expect(mockWalletService.depositFunds).toHaveBeenCalled();
       });
     });
 
     it('rejects a Paystack webhook with no signature header instead of skipping verification (EMG-02)', async () => {
-      await expect(service.handleWebhook(payload, PaymentProvider.PAYSTACK)).rejects.toThrow(
-        UnauthorizedException
-      );
+      await expect(callPaystackWebhook(service, payload)).rejects.toThrow(UnauthorizedException);
 
       expect(mockWalletService.depositFunds).not.toHaveBeenCalled();
     });
 
     it('rejects a Paystack webhook with an incorrect signature', async () => {
-      await expect(
-        service.handleWebhook(payload, PaymentProvider.PAYSTACK, 'forged-signature')
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(callPaystackWebhook(service, payload, 'forged-signature')).rejects.toThrow(
+        UnauthorizedException
+      );
 
       expect(mockWalletService.depositFunds).not.toHaveBeenCalled();
     });
@@ -453,7 +444,7 @@ describe('PaymentsService', () => {
       );
 
       await expect(
-        service.handleWebhook(payload, PaymentProvider.PAYSTACK, signPaystackPayload(payload))
+        callPaystackWebhook(service, payload, signPaystackPayload(payload))
       ).rejects.toThrow(UnauthorizedException);
 
       expect(mockWalletService.depositFunds).not.toHaveBeenCalled();
@@ -472,11 +463,7 @@ describe('PaymentsService', () => {
         data: { reference: 'withdrawal-1', transfer_code: 'TRF_123', status: 'success' },
       };
 
-      const result = await service.handleWebhook(
-        transferPayload,
-        PaymentProvider.PAYSTACK,
-        signPaystackPayload(transferPayload)
-      );
+      const result = await callPaystackWebhook(service, transferPayload, signPaystackPayload(transferPayload));
 
       expect(result.success).toBe(true);
       expect(mockPrismaService.transaction.updateMany).toHaveBeenCalledWith({
@@ -505,7 +492,7 @@ describe('PaymentsService', () => {
         data: { reference: 'withdrawal-1', transfer_code: 'TRF_123', status: 'success' },
       };
 
-      await service.handleWebhook(transferPayload, PaymentProvider.PAYSTACK, signPaystackPayload(transferPayload));
+      await callPaystackWebhook(service, transferPayload, signPaystackPayload(transferPayload));
 
       expect(mockPrismaService.withdrawalRequest.update).not.toHaveBeenCalled();
       expect(mockNotificationService.createNotification).not.toHaveBeenCalled();
@@ -521,11 +508,7 @@ describe('PaymentsService', () => {
         data: { reference: 'withdrawal-1', transfer_code: 'TRF_123', status: 'failed' },
       };
 
-      const result = await service.handleWebhook(
-        transferPayload,
-        PaymentProvider.PAYSTACK,
-        signPaystackPayload(transferPayload)
-      );
+      const result = await callPaystackWebhook(service, transferPayload, signPaystackPayload(transferPayload));
 
       expect(result.success).toBe(true);
       expect(mockWalletService.refundWithdrawalAmount).toHaveBeenCalledWith('withdrawal-1');
@@ -545,11 +528,7 @@ describe('PaymentsService', () => {
         data: { reference: 'withdrawal-1', transfer_code: 'TRF_123', status: 'failed' },
       };
 
-      await service.handleWebhook(
-        transferPayload,
-        PaymentProvider.PAYSTACK,
-        signPaystackPayload(transferPayload)
-      );
+      await callPaystackWebhook(service, transferPayload, signPaystackPayload(transferPayload));
 
       expect(mockWalletService.refundWithdrawalAmount).not.toHaveBeenCalled();
     });

@@ -11,6 +11,8 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { OAuth2Client } from 'google-auth-library';
 import { PrismaService } from '@/prisma/prisma.service';
+import { RedisCacheService } from '../cache/redis-cache.service';
+import { TOKEN_DENYLIST_PREFIX } from './token-denylist.constants';
 import { MessagingService } from '../messaging/messaging.service';
 import { LoginDto } from './dto/login.dto';
 import { Request } from 'express';
@@ -33,7 +35,8 @@ export class AuthService {
     private messagingService: MessagingService,
     private readonly userService: UserService,
     private readonly impersonationService: ImpersonationService,
-    private readonly sesEmailService: SesEmailService
+    private readonly sesEmailService: SesEmailService,
+    private readonly redisCache: RedisCacheService
   ) {}
 
   async register(dto: RegisterDto) {
@@ -438,6 +441,13 @@ Aboru Aboye.`;
         secret: jwtRefreshSecret,
       });
 
+      if (
+        payload.jti &&
+        (await this.redisCache.exists(`${TOKEN_DENYLIST_PREFIX}${payload.jti}`))
+      ) {
+        throw new UnauthorizedException('Refresh token has been revoked');
+      }
+
       const user = await this.prisma.user.findUnique({
         where: { id: payload.sub },
       });
@@ -452,6 +462,12 @@ Aboru Aboye.`;
         role: user.role as any,
         verified: user.verified,
       });
+
+      // Rotate: the refresh token just spent can't be replayed even though
+      // it hasn't naturally expired yet.
+      if (payload.jti) {
+        await this.logout(payload.jti, payload.exp);
+      }
 
       return tokens;
     } catch (error) {
@@ -532,20 +548,40 @@ Aboru Aboye.`;
       throw new Error('JWT_REFRESH_SECRET environment variable is required');
     }
 
-    const accessToken = this.jwtService.sign(payload, {
+    // Shared jti ties the access/refresh pair together as one "session" so
+    // logout() (and refresh-token rotation, below) can revoke both at once
+    // via a single denylist entry — see TOKEN_DENYLIST_PREFIX.
+    const sessionPayload = { ...payload, jti: randomUUID() };
+
+    const accessToken = this.jwtService.sign(sessionPayload, {
       secret: jwtSecret,
-      expiresIn: '1h', // Longer for impersonation sessions
+      // `as any`: @nestjs/jwt's `expiresIn` type wants a `StringValue` template
+      // literal from `ms`, not `string` — matches the existing cast in
+      // auth.module.ts's JwtModule.registerAsync default signOptions.
+      expiresIn: this.configService.get<string>('JWT_EXPIRES_IN', '15m') as any,
     });
 
-    const refreshToken = this.jwtService.sign(payload, {
+    const refreshToken = this.jwtService.sign(sessionPayload, {
       secret: jwtRefreshSecret,
-      expiresIn: '7d',
+      expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '7d') as any,
     });
 
     return {
       accessToken,
       refreshToken,
     };
+  }
+
+  /**
+   * Revokes the current session's token pair (both access and refresh share
+   * one jti). `exp` is the token's own expiry claim — the denylist entry's
+   * TTL is capped to it so revoked entries don't outlive the token they
+   * block and don't accumulate in Redis forever.
+   */
+  async logout(jti: string, exp?: number): Promise<{ message: string }> {
+    const ttlSeconds = exp ? Math.max(exp - Math.floor(Date.now() / 1000), 1) : 7 * 24 * 60 * 60;
+    await this.redisCache.set(`${TOKEN_DENYLIST_PREFIX}${jti}`, '1', ttlSeconds);
+    return { message: 'Logged out successfully' };
   }
 
   async setPassword(userId: string, newPassword: string) {

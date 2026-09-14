@@ -27,6 +27,11 @@ import { UserRole } from '@common/enums/user-role.enum';
 import { AdminSubRole } from '@common/enums/admin-sub-role.enum';
 import { PaystackWebhookPayload, FlutterwaveWebhookPayload } from './types/webhook-payloads';
 
+// Extend Request to include rawBody (enabled in main.ts via { rawBody: true })
+interface RawBodyRequest extends Request {
+  rawBody?: Buffer;
+}
+
 @Controller('payments')
 export class PaymentsController {
   constructor(
@@ -126,15 +131,22 @@ export class PaymentsController {
    * Paystack webhook
    * POST /payments/webhook/paystack
    * 20 requests/minute (HC-204.3)
+   *
+   * Signature verification needs the exact bytes Paystack sent -- reading
+   * `@Body()` here would hand the service a value Nest already JSON-parsed
+   * and would re-serialize before hashing, which doesn't reliably round-trip
+   * back to the original bytes (key order, numeric formatting, whitespace),
+   * silently failing verification for legitimate webhooks. `main.ts` enables
+   * `rawBody: true` specifically so `req.rawBody` is available here.
    */
   @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Post('webhook/paystack')
   @HttpCode(HttpStatus.OK)
   async paystackWebhook(
-    @Body() payload: PaystackWebhookPayload,
+    @Req() req: RawBodyRequest,
     @Headers('x-paystack-signature') signature?: string
   ) {
-    return this.paymentsService.handleWebhook(payload, PaymentProvider.PAYSTACK, signature);
+    return this.paymentsService.handleWebhook(undefined, PaymentProvider.PAYSTACK, signature, req.rawBody);
   }
 
   /**

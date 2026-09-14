@@ -8,6 +8,7 @@ import { MessagingService } from '../messaging/messaging.service';
 import { UserService } from '../modules/user/user.service';
 import { ImpersonationService } from '../shared/services/impersonation.service';
 import { SesEmailService } from '../shared/services/ses-email.service';
+import { RedisCacheService } from '../cache/redis-cache.service';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -51,6 +52,13 @@ describe('AuthService', () => {
     sendEmail: jest.fn(),
   };
 
+  const mockRedisCacheService = {
+    get: jest.fn().mockResolvedValue(null),
+    set: jest.fn().mockResolvedValue(true),
+    exists: jest.fn().mockResolvedValue(false),
+    del: jest.fn().mockResolvedValue(true),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -76,6 +84,10 @@ describe('AuthService', () => {
         {
           provide: ImpersonationService,
           useValue: {},
+        },
+        {
+          provide: RedisCacheService,
+          useValue: mockRedisCacheService,
         },
       ],
     }).compile();
@@ -206,6 +218,33 @@ describe('AuthService', () => {
       });
     });
 
+    it('signs the access token with the configured JWT_EXPIRES_IN, not a hardcoded value', async () => {
+      const loginDto: LoginDto = { email: 'test@example.com', password: 'password123' };
+      const user = {
+        id: 'user123',
+        email: loginDto.email,
+        passwordHash: 'hashedPassword123',
+        role: UserRole.CLIENT,
+      };
+
+      (mockPrismaService.user.findUnique as jest.Mock).mockResolvedValue(user);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      const signSpy = jest.spyOn(jwtService, 'sign').mockReturnValue('token' as any);
+
+      await service.login(loginDto);
+
+      // Regression guard: generateTokens() used to hardcode expiresIn: '1h'
+      // regardless of JWT_EXPIRES_IN/.env.example's documented 15m default.
+      expect(signSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ jti: expect.any(String) }),
+        expect.objectContaining({ expiresIn: '15m' })
+      );
+      expect(signSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ jti: expect.any(String) }),
+        expect.objectContaining({ expiresIn: '7d' })
+      );
+    });
+
     it('should throw UnauthorizedException when credentials are invalid', async () => {
       const loginDto: LoginDto = {
         email: 'test@example.com',
@@ -237,6 +276,72 @@ describe('AuthService', () => {
       expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith({
         where: { email: loginDto.email },
       });
+    });
+  });
+
+  describe('logout / token revocation', () => {
+    beforeEach(() => {
+      mockRedisCacheService.set.mockClear();
+      mockRedisCacheService.exists.mockClear();
+      mockRedisCacheService.exists.mockResolvedValue(false);
+    });
+
+    it('logout() denylists the session jti with a TTL capped to the token`s own remaining lifetime', async () => {
+      const nowSeconds = Math.floor(Date.now() / 1000);
+      const exp = nowSeconds + 900; // 15 minutes out
+
+      await service.logout('session-jti-1', exp);
+
+      expect(mockRedisCacheService.set).toHaveBeenCalledWith(
+        'auth:denylist:session-jti-1',
+        '1',
+        expect.any(Number)
+      );
+      const ttlArg = mockRedisCacheService.set.mock.calls[0][2];
+      expect(ttlArg).toBeGreaterThan(0);
+      expect(ttlArg).toBeLessThanOrEqual(900);
+    });
+
+    it('refreshToken() rejects a refresh token whose jti has already been revoked', async () => {
+      jest.spyOn(jwtService, 'verify').mockReturnValue({
+        sub: 'user123',
+        email: 'test@example.com',
+        role: UserRole.CLIENT,
+        verified: true,
+        jti: 'revoked-jti',
+        exp: Math.floor(Date.now() / 1000) + 1000,
+      } as any);
+      mockRedisCacheService.exists.mockResolvedValue(true); // already denylisted
+
+      await expect(service.refreshToken('some.refresh.token')).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('refreshToken() rotates: the spent refresh token is denylisted so it cannot be replayed', async () => {
+      const oldExp = Math.floor(Date.now() / 1000) + 1000;
+      jest.spyOn(jwtService, 'verify').mockReturnValue({
+        sub: 'user123',
+        email: 'test@example.com',
+        role: UserRole.CLIENT,
+        verified: true,
+        jti: 'old-jti',
+        exp: oldExp,
+      } as any);
+      jest.spyOn(jwtService, 'sign').mockReturnValue('new-token' as any);
+      (mockPrismaService.user.findUnique as jest.Mock).mockResolvedValue({
+        id: 'user123',
+        email: 'test@example.com',
+        role: UserRole.CLIENT,
+        verified: true,
+      });
+
+      const result = await service.refreshToken('some.refresh.token');
+
+      expect(result).toMatchObject({ accessToken: 'new-token', refreshToken: 'new-token' });
+      expect(mockRedisCacheService.set).toHaveBeenCalledWith(
+        'auth:denylist:old-jti',
+        '1',
+        expect.any(Number)
+      );
     });
   });
 

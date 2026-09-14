@@ -203,33 +203,46 @@ jobs:
         run: npm audit --workspaces --audit-level=high
         continue-on-error: true
 
-  # --- Deploy to EC2 staging (july-2026-hardening-pass is the active branch; no `main` branch exists on this remote) ---
-  deploy:
+  # --- Deploy to EC2 staging only (july-2026-hardening-pass is the active branch; no `main` branch exists on this remote) ---
+  # This job runs `scripts/deploy.sh` (git pull + npm build + PM2 restart) on
+  # the EC2 staging box only -- it never touches AWS/ECR/ECS. Production
+  # (ECS Fargate) has no automated deploy from this pipeline; it's deployed
+  # by a human running the *repo-root* `deploy.sh` (ECR push + `aws ecs
+  # update-service`) manually, per docs/active/AWS_SETUP_GUIDE.md. These are
+  # two different scripts that happen to share a filename in different
+  # directories -- don't conflate them.
+  deploy-staging:
     needs: [test-backend, test-frontend]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/july-2026-hardening-pass' && github.event_name == 'push'
+    environment: staging
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy to staging via SSH
+      - name: Deploy to EC2 staging via SSH
         uses: appleboy/ssh-action@v1
         with:
           # Secrets configured in GitHub repository settings
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: DEPLOY_BRANCH
           script: |
             cd /home/ubuntu/ifa_app
 
             # Create pre-deploy backup
             ./scripts/backup-db.sh
 
-            # Pull and deploy
+            # Pull and deploy the exact branch that just passed CI above --
+            # deploy.sh previously always pulled a hardcoded `v4/quality`
+            # regardless of what triggered this job.
             ./scripts/deploy.sh
 
             # Verify health
             sleep 5
             curl -sf http://localhost:3000/api/health || echo "WARNING: Health check failed"
+        env:
+          DEPLOY_BRANCH: ${{ github.ref_name }}
 
       - name: Verify deployment
         if: success()

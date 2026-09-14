@@ -85,6 +85,22 @@ export class AuthController {
     return this.authService.verifyGoogleToken(body.credential);
   }
 
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Log out and revoke the current session' })
+  @ApiResponse({ status: 200, description: 'Successfully logged out' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async logout(@CurrentUser() user: { jti?: string; exp?: number }) {
+    if (!user.jti) {
+      // Tokens issued before this feature shipped have no jti to revoke —
+      // they'll simply expire naturally rather than being invalidated early.
+      return { message: 'Logged out successfully' };
+    }
+    return this.authService.logout(user.jti, user.exp);
+  }
+
   @Post('impersonate')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)

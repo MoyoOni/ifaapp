@@ -402,9 +402,10 @@ export class PaymentsService {
    * Handle payment webhook
    */
   async handleWebhook(
-    payload: PaymentWebhookPayload,
+    payload: PaymentWebhookPayload | undefined,
     provider: PaymentProvider,
-    signature?: string
+    signature?: string,
+    rawBody?: Buffer
   ) {
     try {
       // The `provider` param (set by which controller route received the
@@ -412,7 +413,9 @@ export class PaymentsService {
       // here, not anything inspectable on `payload` itself, so TypeScript
       // can't narrow the union automatically between these two branches.
       if (provider === PaymentProvider.PAYSTACK) {
-        return await this.handlePaystackWebhook(payload as PaystackWebhookPayload, signature);
+        // Paystack verification needs the raw bytes, not a re-serialized
+        // `payload` — see the doc comment on the controller route.
+        return await this.handlePaystackWebhook(rawBody, signature);
       } else {
         return await this.handleFlutterwaveWebhook(payload as FlutterwaveWebhookPayload, signature);
       }
@@ -455,25 +458,36 @@ export class PaymentsService {
   /**
    * Handle Paystack webhook
    */
-  private async handlePaystackWebhook(payload: PaystackWebhookPayload, signature?: string) {
+  private async handlePaystackWebhook(rawBody?: Buffer, signature?: string) {
     // Verify webhook signature — mandatory, no bypass (EMG-02).
     // A missing signature header used to skip verification entirely; a forged
     // `charge.success` payload with no header was trusted outright.
+    //
+    // Verification (and parsing) happens against the raw bytes Paystack sent,
+    // not a JSON.stringify() of an already-parsed object -- re-serializing
+    // doesn't reliably reproduce the original bytes (key order, numeric
+    // formatting, whitespace), which silently failed verification for
+    // legitimate webhooks. `req.rawBody` is populated by main.ts's
+    // `rawBody: true` and threaded through from the controller.
     const secretKey = this.configService.get<string>('PAYSTACK_SECRET_KEY');
     if (!secretKey) {
       this.logger.error('PAYSTACK_SECRET_KEY is not configured — refusing to process webhook');
       throw new UnauthorizedException('Webhook processing is not configured');
     }
-    if (!signature) {
+    if (!signature || !rawBody) {
       throw new UnauthorizedException('Missing webhook signature');
     }
 
-    const expectedHash = crypto
-      .createHmac('sha512', secretKey)
-      .update(JSON.stringify(payload))
-      .digest('hex');
+    const expectedHash = crypto.createHmac('sha512', secretKey).update(rawBody).digest('hex');
     if (!this.timingSafeCompare(expectedHash, signature)) {
       throw new UnauthorizedException('Invalid webhook signature');
+    }
+
+    let payload: PaystackWebhookPayload;
+    try {
+      payload = JSON.parse(rawBody.toString('utf8'));
+    } catch {
+      throw new BadRequestException('Invalid webhook payload');
     }
 
     const event = payload.event;
