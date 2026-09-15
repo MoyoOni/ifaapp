@@ -171,6 +171,8 @@ storage: new ThrottlerStorageRedisService(redisClient),
 
 ## 5. Recommended AWS Architecture
 
+**Correction, September 15, 2026:** this section (and Section 6's cost estimate below) was written taking `AWS_SETUP_GUIDE.md`'s ECS/ALB/Multi-AZ-RDS/ElastiCache description at face value. A production outage the day after this audit revealed that architecture was actually retired on March 25, 2026 — its ECS log groups have 0 bytes ever logged — in favor of a single EC2 instance (`iluase-prod-single`) behind CloudFront, which has been real production since then. Full account in `docs/active/DISASTER_RECOVERY_REBUILD_PLAN.md`. The recommendation below is **superseded** — don't rebuild the ECS/ALB architecture; it's the ~$225–300/month setup that was deliberately abandoned. Left in place below only so the reasoning trail is visible, not as current guidance.
+
 The architecture already described in `AWS_SETUP_GUIDE.md` is fundamentally sound for this app's current scale — the recommendation here is to **codify and harden what already exists**, not replace it:
 
 ```
