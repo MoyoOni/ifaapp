@@ -56,4 +56,15 @@ describe('HealthController', () => {
 
     await expect(controller.check()).rejects.toThrow();
   });
+
+  it('is exempt from rate limiting (@SkipThrottle) — a liveness probe must never itself be throttled', () => {
+    // Regression guard for the Route53-health-check-triggered outage: the
+    // "auth" throttle bucket is shared globally, and Route53 probes this
+    // route from many source IPs concurrently by design -- without this
+    // exemption, the health check itself gets rate-limited, which is
+    // exactly backwards for a liveness signal.
+    const metadataKeys = Reflect.getMetadataKeys(HealthController.prototype.check);
+    const hasSkipThrottleMetadata = metadataKeys.some((key) => String(key).startsWith('THROTTLER:SKIP'));
+    expect(hasSkipThrottleMetadata).toBe(true);
+  });
 });

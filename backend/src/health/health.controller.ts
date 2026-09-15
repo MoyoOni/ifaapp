@@ -1,4 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import {
   HealthCheck,
   HealthCheckError,
@@ -14,6 +15,12 @@ export class HealthController {
     private prisma: PrismaService
   ) {}
 
+  // A liveness/readiness probe must never be subject to abuse rate-limiting --
+  // that turns "too many health checks" into a false unhealthy signal, which
+  // is exactly backwards. This alone doesn't fix shared-bucket exhaustion for
+  // *other* routes (see main.ts's trust-proxy fix for that), but this route
+  // specifically should never have been throttled at all.
+  @SkipThrottle()
   @Get()
   @HealthCheck()
   async check() {

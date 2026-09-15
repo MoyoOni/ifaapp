@@ -21,6 +21,18 @@ const logger = new Logger('Bootstrap');
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { rawBody: true });
 
+  // Production sits behind two proxy hops (CloudFront, then an nginx
+  // container on the same box) before reaching this app. Without this,
+  // Express's req.ip never parses X-Forwarded-For and just returns the
+  // nginx container's internal Docker IP for every single request --
+  // meaning every visitor (and every rate-limited route, including ones
+  // sharing the global "auth" throttle bucket) is treated as the same
+  // one client. That's not just wrong, it's a site-wide outage risk: it
+  // only takes 10 requests/min combined across all real users before
+  // everyone starts getting 429'd. `2` walks back both hops to the real
+  // client IP.
+  app.getHttpAdapter().getInstance().set('trust proxy', 2);
+
   // Get security configuration service
   const securityService = app.get(SecurityConfigService);
   const configService = app.get(ConfigService);
