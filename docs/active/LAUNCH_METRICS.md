@@ -1,5 +1,7 @@
 # Launch Metrics & Alerting — Ilé Àṣẹ
 
+**⚠️ Historical launch-window snapshot, labeled September 18, 2026.** Written for the March 2026 ECS-era architecture — production is now the single-EC2 `iluase-prod-single` setup. Specific alert thresholds/dashboards referenced here weren't re-verified against current infrastructure.
+
 **Target launch date:** April 1, 2026
 **Owner:** Engineering / DevOps on-call
 **Related:** [PRE_LAUNCH_CHECKLIST.md](PRE_LAUNCH_CHECKLIST.md) · [DEPLOYMENT_PROCEDURES.md](DEPLOYMENT_PROCEDURES.md) · [SECRET_ROTATION.md](SECRET_ROTATION.md)

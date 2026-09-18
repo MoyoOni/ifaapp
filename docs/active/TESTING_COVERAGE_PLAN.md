@@ -1,5 +1,7 @@
 # Testing Coverage Plan - Sprint Z1-6
 
+> **⚠️ Target-state doc, labeled September 18, 2026.** The enforced Jest coverage thresholds as of this date (`backend/package.json`) are statements 20% / branches 18% / functions 16% / lines 20% — far below whatever target this plan describes. Treat targets in this doc as aspirational, not current state.
+
 ## Goal
 Increase test coverage to meet targets:
 - 80% backend unit test coverage

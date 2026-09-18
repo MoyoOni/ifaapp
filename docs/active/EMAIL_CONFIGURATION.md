@@ -1,358 +1,116 @@
 # Email Configuration Guide
 
+**Corrected September 18, 2026:** this doc previously described SendGrid end-to-end — wrong. Ilé Àṣẹ sends transactional email via **AWS SES** (`backend/src/shared/services/ses-email.service.ts`), not SendGrid. There is no `SENDGRID_API_KEY` anywhere in the codebase. Rewritten below to match the real implementation.
+
 ## Overview
 
-Ilé Àṣẹ uses SendGrid for email delivery. This guide explains how to configure and test the email system.
+`SesEmailService` is a thin wrapper around `@aws-sdk/client-ses`'s `SendEmailCommand`. It authenticates using whatever AWS credentials are available in the environment (currently: `AWS_REGION` env var + ambient AWS credentials — this was originally written assuming an ECS task role; on the current single-EC2 production box, worth confirming what credential source is actually in effect, e.g. an instance profile or explicit `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` in the docker-compose env). No SES-specific API key exists or is needed — it's the same AWS credential model S3 uses.
+
+**Dev/non-production behavior:** `SesEmailService` checks `NODE_ENV === 'production'`. Outside production, it never calls SES at all — it just logs `[EMAIL-DEV] To: ... | Subject: ...` and returns. This is a hard gate in the service itself, not an opt-in flag.
 
 ---
 
-## SendGrid Setup
+## AWS SES Setup
 
-### 1. Create SendGrid Account
+### 1. Verify a sending identity
 
-1. Go to [SendGrid.com](https://sendgrid.com)
-2. Sign up for a free account (100 emails/day)
-3. Verify your email address
+SES requires the "from" address (or its domain) to be verified before it will send:
 
-### 2. Create API Key
+1. AWS Console → SES → **Verified identities** → **Create identity**
+2. For production, verify the domain (`iluase.com`) via DNS (adds SPF/DKIM records) rather than a single address — this also gets you domain-wide sending and avoids per-address verification.
+3. If the account is still in the SES **sandbox**, every recipient address also needs to be individually verified, and daily send volume is capped low — request production access (AWS Console → SES → **Account dashboard** → **Request production access**) before relying on this for real users.
 
-1. Log in to SendGrid dashboard
-2. Navigate to **Settings** → **API Keys**
-3. Click **Create API Key**
-4. Name: `ilease-production` (or `ilease-development`)
-5. Permissions: **Full Access** (or **Mail Send** only)
-6. Click **Create & View**
-7. **Copy the API key** (you won't see it again!)
+### 2. IAM permissions
 
-### 3. Verify Sender Identity
-
-**For Development/Testing**:
-1. Navigate to **Settings** → **Sender Authentication**
-2. Click **Verify a Single Sender**
-3. Fill in your details:
-   - From Name: `Ilé Àṣẹ`
-   - From Email: `noreply@ilease.ng` (or your test email)
-   - Reply To: `support@ilease.ng`
-4. Verify your email
-
-**For Production**:
-1. Navigate to **Settings** → **Sender Authentication**
-2. Click **Authenticate Your Domain**
-3. Follow DNS setup instructions
-4. Add CNAME records to your domain
-5. Wait for verification (can take up to 48 hours)
+Whatever credentials the app runs with need `ses:SendEmail` (and `ses:SendRawEmail` if that's ever used) on the verified identity's ARN. Check the current production credential source and confirm this permission is actually attached — not verified as part of this doc correction.
 
 ---
 
 ## Environment Configuration
 
-### Backend (.env)
-
-Add these variables to `backend/.env`:
+Real env vars, per `backend/.env.example` and `ses-email.service.ts`:
 
 ```env
-# SendGrid Configuration
-SENDGRID_API_KEY=SG.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-EMAIL_FROM=noreply@ilease.ng
+# AWS SES
+AWS_REGION=us-east-1
+SES_FROM_EMAIL=noreply@iluase.com   # falls back to this if unset — override per environment if needed
 
-# Frontend URL (for email links)
-FRONTEND_URL=http://localhost:5173
+# Frontend URL (used to build links inside email bodies, e.g. verification/reset links)
+FRONTEND_URL=https://iluase.com
 ```
 
-### Production (.env.production)
-
-```env
-# SendGrid Configuration
-SENDGRID_API_KEY=SG.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-EMAIL_FROM=noreply@ilease.ng
-
-# Frontend URL (for email links)
-FRONTEND_URL=https://ilease.ng
-```
+There is no `SENDGRID_API_KEY`, no `EMAIL_SERVICE_PROVIDER` variable, and no separate email-specific API key — sending is authorized via the same AWS credentials as everything else (S3, etc.).
 
 ---
 
 ## Testing Email Delivery
 
-### Development Mode (No SendGrid)
+### Local/non-production
 
-If `SENDGRID_API_KEY` is not set, emails will be logged to console:
+Nothing to configure — `NODE_ENV` won't be `production` locally, so every call to `sesEmailService.sendEmail()` just logs and returns:
 
 ```
-[EmailService] SendGrid not configured. Email notifications will be logged only.
-[EmailService] [EMAIL] To: user@example.com
-[EmailService] [EMAIL] Subject: Appointment Confirmed - Ilé Àṣẹ
-[EmailService] [EMAIL] Body: Your appointment has been confirmed...
+[SesEmailService] [EMAIL-DEV] To: user@example.com | Subject: Verify your email — Ilé Àṣẹ
 ```
 
-### Test with SendGrid
+### Against real SES
 
-1. Set `SENDGRID_API_KEY` in `.env`
-2. Restart backend: `npm run dev`
-3. Trigger an email (e.g., create appointment)
-4. Check your inbox
-5. Check SendGrid dashboard for delivery stats
-
-### Manual Test Script
-
-Create `backend/scripts/test-email.ts`:
-
-```typescript
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from '../src/app.module';
-import { EmailService } from '../src/notifications/email.service';
-
-async function testEmail() {
-  const app = await NestFactory.createApplicationContext(AppModule);
-  const emailService = app.get(EmailService);
-
-  // Test password reset email
-  await emailService.sendPasswordResetEmail(
-    'your-email@example.com',
-    'test-token-123',
-    'Test User'
-  );
-
-  console.log('Test email sent!');
-  await app.close();
-}
-
-testEmail();
-```
-
-Run:
-```bash
-cd backend
-npx ts-node scripts/test-email.ts
-```
+1. Set `NODE_ENV=production` and valid AWS credentials with SES send permission on the verified identity.
+2. Trigger a flow that sends email — e.g. register a new account (`auth.service.ts` sends a verification email), or check `notifications/email.service.ts` for the full list of templated sends.
+3. Check the recipient inbox, and the SES sending statistics in the AWS Console (SES → **Reputation and health** / **Sending statistics**) for bounces/complaints.
 
 ---
 
-## Email Types
+## Where emails actually get sent from
 
-### 1. Appointment Notifications
-- **Trigger**: Appointment created/confirmed/cancelled
-- **Recipients**: Client + Babalawo
-- **Template**: `APPOINTMENT`
-
-### 2. Payment Confirmations
-- **Trigger**: Payment successful
-- **Recipients**: User
-- **Template**: `PAYMENT`
-
-### 3. Guidance Plan Updates
-- **Trigger**: Plan created/approved/completed
-- **Recipients**: Client or Babalawo
-- **Template**: `GUIDANCE_PLAN`
-
-### 4. Order Updates
-- **Trigger**: Order placed/paid/shipped
-- **Recipients**: Customer + Vendor
-- **Template**: `ORDER`
-
-### 5. Password Reset
-- **Trigger**: User requests password reset
-- **Recipients**: User
-- **Template**: Custom (password reset template)
-
----
-
-## Email Template Structure
-
-All emails follow this structure:
-
-```
-┌─────────────────────────────────────┐
-│  Ilé Àṣẹ Header (Gradient)          │
-│  Digital Nexus for Isese/Ifá        │
-└─────────────────────────────────────┘
-┌─────────────────────────────────────┐
-│  Àṣẹ [User Name],                   │
-│                                     │
-│  ┌───────────────────────────────┐ │
-│  │ [Notification Title]          │ │
-│  │ [Notification Message]        │ │
-│  └───────────────────────────────┘ │
-│                                     │
-│  [Footer]                           │
-│  © 2026 Ilé Àṣẹ                     │
-└─────────────────────────────────────┘
-```
-
-**Features**:
-- Amber/brown gradient header
-- Cultural greeting ("Àṣẹ")
-- Personalized with Yoruba name (if available)
-- Responsive design
-- Professional styling
+`backend/src/notifications/email.service.ts` wraps `SesEmailService` with the app's actual templates — password reset (`sendPasswordResetEmail`), and generic notification emails driven by `NotificationService`'s `sendEmail?: boolean` flag on individual notification-creation calls (used across appointments, marketplace orders, admin actions, disputes, refunds, wallet events, subscriptions, and more — grep `sendEmail: true` in `backend/src` for the full call-site list). `auth.service.ts` and `subscriptions.service.ts` also call `sesEmailService.sendEmail()` directly for verification and Devoted-tier welcome emails respectively, bypassing the notification-flag pattern.
 
 ---
 
 ## Troubleshooting
 
-### Emails Not Sending
+### Emails not sending
 
-**Check**:
-1. Is `SENDGRID_API_KEY` set correctly?
-2. Is the API key valid? (check SendGrid dashboard)
-3. Is sender email verified?
-4. Check backend logs for errors
+**Check:**
+1. Is `NODE_ENV` actually `production`? (Outside production, sending is a no-op by design — this is usually not a bug.)
+2. Is the "from" identity/domain verified in SES?
+3. If the SES account is still in sandbox mode, is the recipient address also verified?
+4. Do the running credentials have `ses:SendEmail` permission?
+5. Check backend logs — `SesEmailService` logs `Email sent via SES to <address>` on success, and AWS SDK errors will surface as thrown exceptions from `sendEmail()` (callers generally catch-and-log rather than fail the request — check the specific caller).
 
-**Solution**:
-```bash
-# Check if SendGrid is configured
-cd backend
-npm run dev
-# Look for: "SendGrid email service configured"
-```
+### Emails going to spam
 
-### Emails Going to Spam
+- Domain not verified / no SPF-DKIM (see setup above — this is exactly what domain verification in SES sets up for you).
+- Cold sending domain/IP reputation — SES's shared IP pool reputation applies unless using a dedicated IP.
 
-**Causes**:
-- Sender domain not authenticated
-- High spam score
-- No SPF/DKIM records
+### Rate limiting
 
-**Solution**:
-1. Authenticate your domain in SendGrid
-2. Add SPF/DKIM DNS records
-3. Use professional email content
-4. Avoid spam trigger words
-
-### Rate Limiting
-
-**SendGrid Free Tier Limits**:
-- 100 emails/day
-- 40,000 emails/month (first month)
-- 100 emails/day after first month
-
-**Solution**:
-- Upgrade to paid plan
-- Implement email queue (see V3 backlog)
-- Batch non-critical emails
-
-### Template Not Rendering
-
-**Check**:
-1. Is HTML valid?
-2. Are variables populated correctly?
-3. Test in different email clients
-
-**Solution**:
-- Use [Litmus](https://litmus.com) or [Email on Acid](https://www.emailonacid.com) for testing
-- Test in Gmail, Outlook, Apple Mail
+SES enforces a sending rate (requests/second) and a daily quota, both visible in the SES console and scaling automatically with account reputation and history — check current limits there rather than assuming a fixed number.
 
 ---
 
 ## Monitoring
 
-### SendGrid Dashboard
-
-Monitor email delivery:
-1. Log in to SendGrid
-2. Navigate to **Activity**
-3. View:
-   - Delivered emails
-   - Bounces
-   - Spam reports
-   - Opens (if tracking enabled)
-   - Clicks (if tracking enabled)
-
-### Backend Logs
-
-Check backend logs for email sending:
-
-```bash
-cd backend
-npm run dev
-# Look for:
-# [EmailService] Email sent to user@example.com for notification abc-123
-# [EmailService] Password reset email sent to user@example.com
-```
-
-### Database Tracking
-
-Check `emailSent` flag in notifications:
-
-```sql
-SELECT id, type, title, "emailSent", "createdAt"
-FROM "Notification"
-WHERE "emailSent" = true
-ORDER BY "createdAt" DESC
-LIMIT 10;
-```
+- **AWS Console → SES → Reputation and health / Sending statistics** — bounces, complaints, delivery.
+- **Backend logs** — `SesEmailService` logs each send attempt.
+- **Database:** `Notification.emailSent` flag tracks whether the app believes it sent an email for a given notification:
+  ```sql
+  SELECT id, type, title, "emailSent", "createdAt"
+  FROM "Notification"
+  WHERE "emailSent" = true
+  ORDER BY "createdAt" DESC
+  LIMIT 10;
+  ```
 
 ---
 
 ## Best Practices
 
-### 1. Use Environment Variables
-
-Never hardcode API keys:
-```typescript
-// ❌ Bad
-const apiKey = 'SG.xxxxx';
-
-// ✅ Good
-const apiKey = this.configService.get('SENDGRID_API_KEY');
-```
-
-### 2. Handle Errors Gracefully
-
-```typescript
-try {
-  await emailService.sendNotificationEmail(userId, notification);
-} catch (error) {
-  // Log error but don't fail the request
-  this.logger.error(`Email failed: ${error.message}`);
-}
-```
-
-### 3. Test Before Deploying
-
-Always test emails in staging before production:
-1. Send test emails
-2. Check spam score
-3. Verify links work
-4. Test in multiple email clients
-
-### 4. Monitor Delivery
-
-Set up alerts for:
-- High bounce rate (>5%)
-- High spam complaint rate (>0.1%)
-- Low delivery rate (<95%)
+1. **Never hardcode credentials or the from-address** — read from `ConfigService`, as `SesEmailService` already does.
+2. **Handle errors gracefully** — most call sites already catch-and-log rather than fail the parent request; keep that pattern for any new email trigger.
+3. **Test in non-production first** — the dev no-op logging makes this safe by default; only flip `NODE_ENV=production` locally with real AWS creds if you specifically need to test real delivery.
+4. **Monitor bounce/complaint rate** in the SES console — AWS can throttle or suspend sending ability if these get too high, independent of anything in this app's own code.
 
 ---
 
-## Production Checklist
-
-Before launching:
-
-- [ ] SendGrid account created
-- [ ] API key generated
-- [ ] Sender domain authenticated
-- [ ] SPF/DKIM records added
-- [ ] Environment variables set
-- [ ] Test emails sent successfully
-- [ ] Templates tested in multiple clients
-- [ ] Spam score checked (<5)
-- [ ] Monitoring set up
-- [ ] Rate limits understood
-
----
-
-## Support
-
-**SendGrid Support**:
-- Documentation: https://docs.sendgrid.com
-- Support: https://support.sendgrid.com
-
-**Ilé Àṣẹ Email Issues**:
-- Check backend logs
-- Review SendGrid activity
-- Contact development team
-
----
-
-**Last Updated**: February 11, 2026
+**Last corrected:** September 18, 2026

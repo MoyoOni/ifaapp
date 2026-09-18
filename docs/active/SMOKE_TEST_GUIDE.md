@@ -1,5 +1,7 @@
 # 🧪 Smoke Test Guide — Ìlú Àṣẹ Platform
 
+**⚠️ Historical launch-window snapshot, labeled September 18, 2026.** Written for the March 2026 ECS-era architecture and the now-decommissioned staging box referenced elsewhere in these docs. The manual-verification flows themselves are likely still directionally useful, but URLs/infra-specific steps weren't re-verified against current production.
+
 **Purpose:** Manual verification that key user flows work end-to-end before launch
 **Time Required:** 20-30 minutes
 **Last Updated:** March 13, 2026

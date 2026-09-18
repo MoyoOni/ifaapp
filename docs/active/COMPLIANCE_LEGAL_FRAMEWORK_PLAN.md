@@ -1,5 +1,7 @@
 # Compliance & Legal Framework Plan for Ìlú Àṣẹ
 
+> **⚠️ Forward-looking plan, labeled September 18, 2026 — not a description of current legal/compliance implementation.** Not independently verified against current code as part of this pass; read as a plan, not a status report.
+
 ## Overview
 
 This document outlines the comprehensive compliance and legal framework for the Ìlú Àṣẹ platform, designed to ensure adherence to Nigerian Data Protection Act (NDPA) 2023, General Data Protection Regulation (GDPR), and other relevant legal requirements while respecting the cultural and spiritual nature of the Ifá digital heritage platform.

@@ -1,8 +1,10 @@
 # 🚀 Deployment Procedures — Ìlú Àṣẹ Platform
 
-**Version:** 1.1
-**Last Updated:** March 23, 2026
-**Production:** https://iluase.com (LIVE — April 1, 2026 go-live)
+**Version:** 1.2
+**Last Updated:** September 18, 2026
+**Production:** https://iluase.com (LIVE)
+
+**Correction, September 18, 2026:** this doc's "Production Deployment" section previously described AWS ECS Fargate, Kubernetes, and Vercel as deploy targets, and its env var template listed Stripe. None of that matches reality and following it would either do nothing or fail outright. Real production is a **single EC2 instance** (`iluase-prod-single`) behind CloudFront, running Docker Compose (`postgres`, `redis`, `backend`, `nginx`, `proxy` services) with images pulled from ECR — no ECS, no Kubernetes, no Vercel, no Stripe (payments are Paystack + Flutterwave; email is AWS SES, not SendGrid). The sections below are corrected to match. `AWS_SETUP_GUIDE.md` describes an earlier ECS-based architecture that was retired March 25, 2026 — don't cross-reference it for current deploy steps.
 
 ---
 
@@ -12,7 +14,7 @@
 1. [Pre-Deployment Checklist](#pre-deployment-checklist)
 2. [Environment Setup](#environment-setup)
 3. [Staging Locally (Docker)](#staging-locally-docker)
-4. [Production Deployment (AWS ECS)](#production-deployment)
+4. [Staging Deployment](#staging-deployment) / [Real Production Deployment](#real-production-deployment)
 5. [Post-Deployment Verification](#post-deployment-verification)
 6. [Rollback Procedures](#rollback-procedures)
 
@@ -171,45 +173,53 @@ npm --version   # v10.x.x or higher
 
 ### Environment Variables
 
-**Backend `.env` Template**
+**Backend `.env` Template** (matches `backend/.env.example` — that file is the authoritative source, this is a quick-reference copy)
 ```env
-# Database
-DATABASE_URL="postgresql://user:password@localhost:5432/ilu_ase_prod?connection_limit=10"
+# Database — on iluase-prod-single, "postgres" is the docker-compose service
+# name for the self-hosted Postgres container, not an RDS endpoint.
+DATABASE_URL="postgresql://iluase_admin:<password>@postgres:5432/iluase_production?schema=public&connection_limit=10"
 
 # Authentication
-JWT_SECRET=<generate-with-crypto.randomBytes(32).toString('hex')>
-JWT_EXPIRY=24h
-REFRESH_TOKEN_EXPIRY=7d
+JWT_SECRET=<generate-with-crypto.randomBytes(64).toString('hex')>
+JWT_REFRESH_SECRET=<generate separately, same way>
+JWT_EXPIRES_IN=15m
+JWT_REFRESH_EXPIRES_IN=7d
+
+# Message encryption — required, exactly 32 characters
+ENCRYPTION_KEY=<generate-with-crypto.randomBytes(16).toString('hex')>
 
 # Frontend configuration
-FRONTEND_URL=https://app.ilu-ase.com  # or staging domain
+FRONTEND_URL=https://iluase.com
+CORS_ALLOWED_ORIGINS=https://iluase.com
 
 # Error Monitoring
-SENTRY_DSN=https://xxxxx@sentry.io/xxxxx
+SENTRY_DSN=https://xxxxx@xxxxx.ingest.sentry.io/xxxxx
 SENTRY_ENVIRONMENT=production
-SENTRY_TRACES_SAMPLE_RATE=0.1
 
-# Payment Gateway (Stripe or similar)
-STRIPE_SECRET_KEY=sk_live_xxxxx
-STRIPE_PUBLISHABLE_KEY=pk_live_xxxxx
-STRIPE_WEBHOOK_SECRET=whsec_xxxxx
+# Payment Gateways — Paystack and Flutterwave. There is no Stripe
+# integration anywhere in this codebase.
+PAYSTACK_SECRET_KEY=sk_live_xxxxx
+PAYSTACK_WEBHOOK_SECRET=xxxxx
+FLUTTERWAVE_SECRET_KEY=FLWSECK-xxxxx
+FLUTTERWAVE_SECRET_HASH=xxxxx
+PAYSTACK_DEVOTED_QUARTERLY_PLAN=PLN_xxxxx
+PAYSTACK_DEVOTED_ANNUAL_PLAN=PLN_xxxxx
 
 # Storage (AWS S3)
-S3_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
-S3_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-S3_BUCKET=ilu-ase-prod
-S3_REGION=us-east-1
+AWS_REGION=us-east-1
+AWS_S3_BUCKET_NAME=<bucket-name>
+AWS_ACCESS_KEY_ID=<key>
+AWS_SECRET_ACCESS_KEY=<secret>
 
-# Email Service
-EMAIL_SERVICE_PROVIDER=sendgrid  # or mailgun, aws-ses
-EMAIL_SERVICE_API_KEY=SG.xxxxx
-EMAIL_FROM=hello@ilu-ase.com
+# Email — AWS SES, not SendGrid/Mailgun. `ses-email.service.ts` reads
+# SES_FROM_EMAIL (falls back to noreply@iluase.com if unset); it does not
+# read an API key env var since it authenticates via the IAM role/creds
+# above, the same way S3 does.
+SES_FROM_EMAIL=noreply@iluase.com
 
-# Cache (Redis)
-REDIS_URL=redis://localhost:6379
-
-# Logging
-LOG_LEVEL=info
+# Cache (Redis) — "redis" is the docker-compose service name for the
+# self-hosted Redis container on iluase-prod-single, not ElastiCache.
+REDIS_URL=redis://:<password>@redis:6379
 ```
 
 **Frontend `.env` Template**
@@ -224,9 +234,9 @@ VITE_SENTRY_DSN=https://xxxxx@sentry.io/xxxxx
 
 ---
 
-## Production Deployment
+## Staging Deployment
 
-> **Note:** Staging locally is documented above. This section covers deploying to the EC2 staging server (http://100.52.200.113:4040) and production (ECS Fargate / https://iluase.com).
+> **Note:** this section is mislabeled "Production Deployment" further down in an older version of this doc — this one, despite the header below, is actually about the separate EC2 **staging** box (http://100.52.200.113:4040 — unconfirmed reachable as of this writing, see `ILUASE_V1_BACKLOG.md`'s ⚪ Needs a Human section). Real production steps are in the section titled "Real Production Deployment" further down.
 
 ### 1. Prepare Staging Environment
 
@@ -368,103 +378,79 @@ docker logs ilu-ase-backend-staging  # or tail logs from PM2/systemd
 
 ---
 
-## Production Deployment
+## Real Production Deployment
 
-### ⚠️ Production Deployment Requires Sign-Off
+Production is one EC2 instance (`iluase-prod-single`, t3.small, instance ID `i-0ac1e9e2c4984af72`) behind CloudFront, running a 5-container Docker Compose stack at `/home/ubuntu/app/docker-compose.yml` on the box: `postgres`, `redis`, `backend`, `nginx` (frontend static files, container name `iluase-frontend`), `proxy`. Postgres and Redis are self-hosted containers on the box's own EBS volume — not RDS/ElastiCache. There is no orchestrator (no ECS, no Kubernetes) and no automated CD pipeline to this box; every deploy is a manual sequence run by a human.
 
-Before proceeding, ensure:
-- [ ] CTO/Tech Lead approval
-- [ ] Product approval
-- [ ] DevOps approval
-- [ ] All staging smoke tests passing
-- [ ] Database backup scheduled and tested
-- [ ] Incident response team standing by
+### ⚠️ Before deploying
 
-### 1. Create Release
+- [ ] Tests passing locally (`npm test` in `backend/`, `npx vitest run` in `frontend/`)
+- [ ] `tsc --noEmit` clean in both `backend/` and `frontend/`
+- [ ] Know which service(s) you're touching — deploy only what changed, not the whole stack, to minimize blast radius
+
+### 1. Build and push to ECR
+
+Run from the repo root, on a machine with Docker and AWS credentials for account `091653536932`. **Build for `linux/amd64`** — the EC2 instance is x86_64; building on an Apple Silicon Mac without `--platform linux/amd64` produces an image that won't run there.
 
 ```bash
-# Tag release
-git tag -a v1.0.0 -m "Production release - April 1, 2026"
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 091653536932.dkr.ecr.us-east-1.amazonaws.com
 
-# Push tag
-git push origin v1.0.0
+GIT_SHA=$(git rev-parse --short HEAD)
+
+# Backend (only if backend/ changed)
+docker build --platform linux/amd64 -f backend/Dockerfile \
+  -t 091653536932.dkr.ecr.us-east-1.amazonaws.com/iluase/backend:$GIT_SHA \
+  -t 091653536932.dkr.ecr.us-east-1.amazonaws.com/iluase/backend:latest .
+docker push 091653536932.dkr.ecr.us-east-1.amazonaws.com/iluase/backend:$GIT_SHA
+docker push 091653536932.dkr.ecr.us-east-1.amazonaws.com/iluase/backend:latest
+
+# Frontend (only if frontend/ changed)
+docker build --platform linux/amd64 -f frontend/Dockerfile.production \
+  -t 091653536932.dkr.ecr.us-east-1.amazonaws.com/iluase/frontend:$GIT_SHA \
+  -t 091653536932.dkr.ecr.us-east-1.amazonaws.com/iluase/frontend:latest .
+docker push 091653536932.dkr.ecr.us-east-1.amazonaws.com/iluase/frontend:$GIT_SHA
+docker push 091653536932.dkr.ecr.us-east-1.amazonaws.com/iluase/frontend:latest
 ```
 
-### 2. Production Database Setup
+Tagging by git SHA (not just `:latest`) matters — it's what makes rollback (below) possible.
+
+### 2. SSH into the box and pull the new image(s)
+
+If you have the `ile-ase-key` private key, SSH normally. If not, you can get in via **EC2 Instance Connect** without it (generates a short-lived keypair, pushes the public half via the API):
 
 ```bash
-# Create production database (one-time setup)
-# Done by DevOps/DBA before deployment
-
-# Verify production DATABASE_URL
-echo $DATABASE_URL
-# Should point to production PostgreSQL
-
-# Apply all migrations
-cd backend
-npx prisma migrate deploy
-
-# Verify all migrations applied
-npx prisma migrate status
-
-cd ..
+ssh-keygen -t ed25519 -f ./eic_temp_key -N ""
+aws ec2-instance-connect send-ssh-public-key \
+  --instance-id i-0ac1e9e2c4984af72 --instance-os-user ubuntu \
+  --ssh-public-key file://./eic_temp_key.pub --availability-zone us-east-1a --region us-east-1
+ssh -i ./eic_temp_key ubuntu@32.192.127.137   # window is short (~60s) — connect immediately after
 ```
 
-### 3. Deploy Backend (Production)
+Then, on the box:
 
 ```bash
-# Set production environment
-export NODE_ENV=production
-export LOG_LEVEL=warn
+aws ecr get-login-password --region us-east-1 | sudo docker login --username AWS --password-stdin 091653536932.dkr.ecr.us-east-1.amazonaws.com
+cd /home/ubuntu/app
 
-# Option A: Container deployment
-docker build -t ilu-ase-backend:v1.0.0 backend/
-docker push <registry>/ilu-ase-backend:v1.0.0
+# Backend
+sudo docker compose pull backend
+sudo docker compose up -d --no-deps backend
 
-# Deploy with orchestration tool (ECS, Kubernetes, etc.)
-# kubectl apply -f k8s/backend-prod.yml
-# OR
-# aws ecs update-service --cluster prod --service backend --force-new-deployment
-
-# Option B: Direct deployment
-cd backend
-npm install --production  # Only install production dependencies
-npm start
-
-# Backend should be listening on port 3000
-# Verify: curl https://api.ilu-ase.com/api/health
+# Frontend — the compose SERVICE name is "nginx", not "frontend"
+# (container_name: iluase-frontend, but the service key is nginx)
+sudo docker compose pull nginx
+sudo docker compose up -d --no-deps nginx
 ```
 
-### 4. Deploy Frontend (Production)
+`docker-entrypoint.sh` runs `prisma migrate deploy` automatically on every backend container start — no separate migration step needed for routine deploys.
+
+### 3. Verify
 
 ```bash
-# Vercel deployment
-cd frontend
-vercel --prod --env-file .env.production
-
-# OR Traditional deployment
-scp -r frontend/dist/ user@prod-server:/var/www/ilu-ase/
-sudo systemctl restart nginx
-```
-
-### 5. Verify Production Deployment
-
-```bash
-# Health check
-curl https://api.ilu-ase.com/api/health
-
-# Frontend loads
-open https://ilu-ase.com
-
-# Sentry receiving events
-# Check Sentry dashboard: should see debug/info events, no errors
-
-# Database connectivity
-# Check Sentry for DB connection errors: should be none
-
-# Monitor error rate
-# Check Sentry dashboard for 5 minutes
-# Expected: error rate < 0.5%
+curl -sf https://iluase.com/api/health
+curl -sf https://iluase.com/
+sudo docker ps --format 'table {{.Names}}\t{{.Status}}'   # both should show "healthy"/"Up"
+sudo docker logs iluase-backend --since 2m   # watch for startup errors
 ```
 
 ---
@@ -528,17 +514,22 @@ npx prisma migrate deploy
 # DO NOT use this unless absolutely necessary; losing data is bad.
 ```
 
-#### Option 3: Rollback Infrastructure
+#### Option 3: Rollback the running container (real production process)
+
+No Kubernetes, no ECS, no Vercel. Rollback means pointing the box's docker-compose service at the previous image tag — this is exactly why step 1 above tags by git SHA, not just `:latest`:
 
 ```bash
-# If using container orchestration (Kubernetes, ECS)
-kubectl rollout undo deployment/ilu-ase-backend
-# OR
-aws ecs update-service --cluster prod --service backend --force-new-deployment --image k8s/backend:previous-tag
-
-# If using Vercel
-vercel rollback  # Automatically redeploy previous version
+# On the box (see "Real Production Deployment" above for SSH/EC2 Instance
+# Connect access), edit /home/ubuntu/app/docker-compose.yml to pin the
+# service's image to the previous known-good tag, e.g.:
+#   image: 091653536932.dkr.ecr.us-east-1.amazonaws.com/iluase/backend:<previous-sha>
+# then:
+cd /home/ubuntu/app
+sudo docker compose pull backend      # or nginx, for the frontend
+sudo docker compose up -d --no-deps backend
 ```
+
+Revert the pin back to `:latest` (or the new SHA) once the fix ships properly — don't leave the compose file permanently pointed at an old tag.
 
 ---
 
@@ -551,15 +542,16 @@ See **[SECRET_ROTATION.md](SECRET_ROTATION.md)** for the full runbook covering:
 - `ENCRYPTION_KEY` rotation (requires maintenance window + re-encryption script)
 - Database password, payment API keys, and other secrets
 
-### Weekly Database Backup
+### Database Backup
 
+**There is currently no automated backup of production Postgres at all** — confirmed September 15, 2026, no crontab exists on `iluase-prod-single` for either `ubuntu` or `root`. It's a self-hosted container (`iluase-postgres`) on the box's own EBS volume, not RDS — `aws rds describe-db-snapshots` finds nothing because there's no RDS instance to back up. This is a real, standing risk (see `docs/active/DISASTER_RECOVERY_REBUILD_PLAN.md`) — setting up a scheduled `pg_dump` + off-box upload (S3) is still an open task, not yet done.
+
+Manual backup in the meantime:
 ```bash
-# Automated backups (AWS RDS, Azure Database, etc.)
-# Verify backup completed:
-aws rds describe-db-snapshots --db-instance-identifier ilu-ase-prod
-
-# For manual backup:
-pg_dump -U ilu_ase_user -h prod-db.rds.amazonaws.com ilu_ase_prod > backup-$(date +%Y%m%d).sql
+# From the box (SSH or EC2 Instance Connect, see above)
+sudo docker exec iluase-postgres pg_dump -U iluase_admin iluase_production | gzip > backup-$(date +%Y%m%d).sql.gz
+# Then copy it off the box — a single EBS volume is not a backup:
+scp ubuntu@<box>:~/backup-*.sql.gz .
 ```
 
 ### Log Rotation

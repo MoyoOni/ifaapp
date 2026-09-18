@@ -1,5 +1,7 @@
 # Ìlú Àṣẹ Operations Runbook
 
+**⚠️ Partially stale, labeled September 18, 2026.** Generic `docker-compose restart backend`-style commands are directionally close to the real single-EC2 setup, but this doc never names the actual compose file (`/home/ubuntu/app/docker-compose.yml`), real container names (`iluase-backend`, `iluase-frontend`, `iluase-postgres`, `iluase-redis`, `iluase-proxy`), or the ECR-pull step — treat as a template to adapt, not copy-paste verbatim. See `DEPLOYMENT_PROCEDURES.md` for the verified real deploy process.
+
 ## Overview
 
 This runbook contains procedures for operating, monitoring, and maintaining the Ìlú Àṣẹ platform. It covers deployment procedures, incident response, maintenance tasks, and troubleshooting steps.

@@ -1,5 +1,7 @@
 # Ìlú Àṣẹ Platform Documentation Update
 
+**Caution, added September 18, 2026:** this doc's "Live Stripe integration" claim is false and was traced as the likely source of Stripe references that leaked into other docs (`DEPLOYMENT_PROCEDURES.md`, `DEPLOYMENT_PIPELINE.md`) — fixed below and in those files. There is no Stripe code anywhere in this repo; real payment gateways are Paystack and Flutterwave. Several of this doc's other claims are also contradicted by verified current state and should not be trusted without independent checking: **test coverage** ("~82%") — the actual enforced Jest coverage threshold is 20%/18%/16%/20% (statements/branches/functions/lines), nowhere near 82%; **"Secure Communication Layer... complete"** — 1:1 messaging is paused platform-wide (frontend-only, reversible) as of the MVP pivot; **"Client Portal: Spiritual journey tracking"** — this feature is deferred, not live (see `SPIRITUAL_JOURNEY_EVALUATION.md`); **multi-factor authentication** — not found anywhere in the current auth code. Treat this whole document as an optimistic status snapshot from April 2026, not a current-state reference.
+
 ## Executive Summary
 
 This document provides a comprehensive update to the Ìlú Àṣẹ platform documentation, reflecting the current state of implementation as of April 19, 2026. The platform has evolved significantly since its initial conception, with many features already implemented that were previously marked as planned.
@@ -18,7 +20,7 @@ This document provides a comprehensive update to the Ìlú Àṣẹ platform doc
 - **Frontend Component Coverage**: ~82% (88/107 tests)
 - **E2E Critical Flows**: 20+ flows tested
 - **Error Tracking**: Fully integrated with Sentry
-- **Payment Processing**: Live Stripe integration (not demo mode)
+- **Payment Processing**: Live Paystack + Flutterwave integration (not demo mode) — corrected Sept 18, 2026, was wrongly "Stripe"
 
 ## Architecture Evolution
 
@@ -62,7 +64,7 @@ This document provides a comprehensive update to the Ìlú Àṣẹ platform doc
 - Message archival and retrieval
 
 #### 4. Payment & Commerce System
-- Live Stripe integration
+- Live Paystack + Flutterwave integration (corrected Sept 18, 2026, was wrongly "Stripe")
 - Subscription management
 - Refund processing
 - Escrow functionality
@@ -83,7 +85,7 @@ This document provides a comprehensive update to the Ìlú Àṣẹ platform doc
 | Experience Features | 21/23 stories done | **22/23 stories done** | EXP-007 videos implemented |
 | Infrastructure | 10/10 sprints done | **10/10 sprints done** | ✅ Complete |
 | Testing Coverage | Targets not met | **Backend: ~82%, Frontend: ~82%** | ✅ Exceeds targets |
-| Payment System | Demo mode | **Live Stripe integration** | ✅ Processing real payments |
+| Payment System | Demo mode | **Live Paystack + Flutterwave integration** (corrected — was wrongly "Stripe") | ✅ Processing real payments |
 
 ### Critical Path Verification
 

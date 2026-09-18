@@ -4,6 +4,8 @@
 > **Last Updated:** February 26, 2026
 > **Stack:** React + TypeScript (frontend) · NestJS (backend) · Prisma + PostgreSQL (database)
 
+> **⚠️ Stale-flow notice, added September 18, 2026:** this doc predates the MVP pivot. **Consultations, 1:1 Messaging, and Guidance Plan creation are paused platform-wide** (frontend-only, reversible) — every route below under those flows (`/client/consultations`, `/practitioner/consultations`, `/messages`, `/prescriptions/create`) actually renders a paused-feature notice page today, not the UI this doc describes. The flows are left documented as-is below because they're still the real intended design for when these features un-pause — just don't read them as current behavior. Also: this doc's `/prescription-creation` route references are wrong even for the pre-pause design — the real route was always `/prescriptions/create`.
+
 ---
 
 ## Table of Contents
@@ -100,7 +102,7 @@
 └─────────────────────────────────────────────────────────┘
 ```
 
-**Desktop Header Actions:** Notifications bell, Language switcher, Dark/Light mode toggle, Orisha theme selector
+**Desktop Header Actions:** Notifications bell, Language switcher, Dark/Light/System mode toggle (no separate "Orisha theme selector" exists — see `THEME_GUIDE.md`, corrected September 18, 2026)
 
 **Mobile Layout:** Burger menu → slide-in drawer with same nav items + quick actions (Profile, Messages, Wallet, Settings, Help, Logout)
 
@@ -469,14 +471,14 @@ Route: `/onboarding` (no sidebar shell — full-screen experience)
 | `/practitioner/temple-connection` | Link practice to a temple |
 | `/practitioner/earnings-report` | Revenue and earnings breakdown |
 | `/practitioner/consultations` | Manage consultation requests |
-| `/prescription-creation` | Create guidance plans for clients |
+| `/prescriptions/create` | Create guidance plans for clients |
 
 #### Babalawo Key Flows
 
 **Consultation Delivery Flow:**
 1. Client books → appears on Babalawo's calendar
 2. Babalawo conducts consultation (online/in-person)
-3. Creates guidance plan at `/prescription-creation`
+3. Creates guidance plan at `/prescriptions/create`
 4. Client receives plan at `/guidance-plans`
 5. Client approves at `/prescription-approval`
 6. Track in `/prescription-history`
@@ -1257,7 +1259,7 @@ When `VITE_DEMO_MODE=true`:
 | `/wallet` | WalletDashboardView | Wallet hub |
 | `/wallet/transactions` | TransactionHistoryView | Transaction history |
 | `/guidance-plans` | GuidancePlansPage | Guidance plan overview |
-| `/prescription-creation` | PrescriptionCreationPage | Create guidance plan |
+| `/prescriptions/create` | PrescriptionCreationPage | Create guidance plan |
 | `/prescription-approval` | PrescriptionApprovalPage | Approve guidance plan |
 | `/prescription-history` | PrescriptionHistoryPage | Plan history |
 | `/consultations` | ConsultationList | Consultations list |

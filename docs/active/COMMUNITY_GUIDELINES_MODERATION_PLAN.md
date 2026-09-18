@@ -1,5 +1,7 @@
 # Community Guidelines & Moderation Plan for Ìlú Àṣẹ
 
+> **⚠️ Forward-looking plan, labeled September 18, 2026 — not a description of current moderation implementation.** Real moderation code (content flags, forum admin actions, Circle feed reports) exists and was spot-checked accurate elsewhere in `ILUASE_V1_BACKLOG.md`'s Community/Forum section — this doc wasn't independently re-verified against it as part of this pass; read as a plan, not a status report.
+
 ## Overview
 
 This document outlines the comprehensive community guidelines and moderation strategy for the Ìlú Àṣẹ platform, designed to ensure a respectful, safe, and culturally appropriate environment for all users while preserving the sacred nature of Ifá traditions and Yoruba culture.

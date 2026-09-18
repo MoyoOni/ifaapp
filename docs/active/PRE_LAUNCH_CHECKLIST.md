@@ -1,5 +1,7 @@
 # 🚀 Pre-Launch Checklist — Ìlú Àṣẹ Platform
 
+**⚠️ Historical launch-window snapshot, labeled September 18, 2026.** Written for the March 2026 ECS-era architecture (references AWS Secrets Manager, `STRIPE_SECRET_KEY`) — production is now the single-EC2 `iluase-prod-single` setup (see `DEPLOYMENT_PROCEDURES.md`). Useful as a record of what launch readiness looked like then, not as a current checklist to re-run verbatim.
+
 **Target Launch Date:** April 1, 2026
 **Status:** Production live at https://iluase.com — smoke tests + load test remaining
 **Last Updated:** March 13, 2026

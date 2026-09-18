@@ -1,5 +1,7 @@
 # iluAse Academy Curriculum Framework
 
+**⚠️ Roadmap document, labeled September 18, 2026 — describes the full proposed curriculum, not what's live.** Only 1 of the 16 courses described here actually exists in production today ("Ori — The Metaphysics of Consciousness", seeded via `backend/prisma/seed-academy-courses.ts`, which explicitly implements only this single "Phase One" flagship course per this doc's own prospectus recommending a phased rollout). Read this as the target curriculum, not current catalog contents.
+
 ## Document Purpose
 This document organizes the proposed iluAse Academy curriculum into a professional, web-ready structure for publishing, teaching, and future course development. It presents the academy as a coherent learning framework rooted in Oodua knowledge systems, while maintaining clear ethical boundaries between education, guided reflection, and initiated practice.
 

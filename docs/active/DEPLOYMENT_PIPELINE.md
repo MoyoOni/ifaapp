@@ -1,4 +1,6 @@
-# Deployment Pipeline for Ìlú Àṣẹ
+# Deployment Pipeline for Ìlú Àṣẹ (target design — not current state)
+
+**Label added September 18, 2026:** this document describes an aspirational target pipeline — blue-green deployments, `./scripts/validate-env.sh`/`blue-green-deploy.sh`/`comprehensive-healthcheck.sh`/`send-notification.sh` (none of which exist in `scripts/`), a staffed DevOps/QA rotation, and a weekly Tuesday-night deploy schedule. **None of this is how deployment actually works today.** For the real, current process — a manual sequence of `docker build` → ECR push → SSH into `iluase-prod-single` → `docker compose pull`/`up -d` — see **[DEPLOYMENT_PROCEDURES.md](DEPLOYMENT_PROCEDURES.md)**. Keep this doc as a possible future direction if the team ever grows into needing it, but don't follow its commands expecting them to work.
 
 ## Overview
 
@@ -135,9 +137,10 @@ services:
       # Encryption
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
       
-      # External services
+      # External services — real gateways are Paystack + Flutterwave, not Stripe
       SENTRY_DSN: ${SENTRY_DSN}
-      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      PAYSTACK_SECRET_KEY: ${PAYSTACK_SECRET_KEY}
+      FLUTTERWAVE_SECRET_KEY: ${FLUTTERWAVE_SECRET_KEY}
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
       

@@ -1,5 +1,7 @@
 # iluAse Academy Prospectus
 
+**⚠️ Roadmap document, labeled September 18, 2026 — describes the full proposed curriculum, not what's live.** Only 1 of the 16 courses described here actually exists in production today ("Ori — The Metaphysics of Consciousness"). This doc's own "Launch Recommendation" section (further down) correctly advises starting with one flagship course rather than the full catalog — that recommendation is what actually happened; the rest of the catalog above it is still a plan.
+
 A professional curriculum and institutional overview for the study of Oodua knowledge systems, consciousness, social philosophy, ecology, civilizational thought, and applied indigenous frameworks.
 
 ---

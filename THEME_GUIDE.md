@@ -1,107 +1,44 @@
-# Ìlú Àṣẹ Theme System - Orisha-Based Color Guide
+# Ìlú Àṣẹ Theme System — Color Guide
+
+**Rewritten September 18, 2026:** this doc previously described an Orisha-based multi-theme system (Osun Gold, Ogun Iron, Shango Thunder, Yemoja Ocean, Oshun Forest, a theme selector in the header, a `src/lib/tailwind/orisha-colors.ts` file). None of that exists in the current codebase — no orisha-specific color tokens, no theme selector, no such file anywhere in `frontend/src`. What actually exists is a generic semantic-token palette (light/dark, no per-Orisha variants). Rewritten below to match reality; if Orisha-themed styling is still a design goal, it hasn't been built yet and would need to start from what's documented here.
 
 ## Overview
 
-The Ìlú Àṣẹ application implements a culturally significant theme system based on traditional Yoruba Orisha colors. This system creates a consistent, meaningful visual experience that connects users with the cultural heritage represented in the application.
+Colors are defined once as CSS custom properties in `frontend/src/index.css` (HSL triplets, no `hsl()` wrapper — Tailwind adds that), then exposed as Tailwind utility classes via `frontend/tailwind.config.js`. Components use the Tailwind classes (`bg-primary`, `text-destructive`, etc.), never raw hex/HSL values directly — that indirection is what makes light/dark mode and any future re-theming work without touching component code.
 
-## Core Orisha Themes
+## Current tokens
 
-### Osun Theme (`osun`)
-- **Primary Color**: Osun Gold (#DAA520 equivalent: `hsl(38 92% 50%)`)
-- **Symbolism**: River goddess, abundance, fertility, prosperity
-- **Usage**: Primary actions, important highlights, prosperity features
-- **Characteristics**: Warm golden yellow tones
+| Token | Light | Dark | Tailwind classes |
+|---|---|---|---|
+| `--primary` | `142 76% 36%` (emerald-600) | same | `bg-primary`, `text-primary`, `border-primary` |
+| `--secondary` | `210 20% 98%` (slate-50) | `217.2 32.6% 17.5%` (slate-800) | `bg-secondary`, `text-secondary` |
+| `--accent` | `142 76% 36%` (emerald-600) | same | `bg-accent`, `text-accent` |
+| `--highlight` | `45 100% 51%` (amber-500) | same | `bg-highlight`, `text-highlight` |
+| `--success` | `142 76% 36%` (emerald-600) | — | `bg-success`, `text-success` |
+| `--warning` | `45 100% 51%` (amber-500) | — | `bg-warning`, `text-warning` |
+| `--error` / `--destructive` | `0 100% 50%` (red-500) | — | `bg-error`/`bg-destructive`, etc. |
+| `--info` | `221 83% 53%` (blue-500) | — | `bg-info`, `text-info` |
+| `--background` / `--foreground` | white / `222.2 47.4% 11.2%` (near-black) | `222 47% 3.5%` (stone-950) / `213 31% 91%` (slate-100) | `bg-background`, `text-foreground` |
+| `--muted`, `--card`, `--popover`, `--border`, `--input`, `--ring` | standard shadcn-style neutrals | dark equivalents | `bg-muted`, `bg-card`, etc. |
 
-### Ogun Theme (`ogun`)
-- **Primary Color**: Ogun Iron (`hsl(350 90% 45%)`) - Deep red
-- **Secondary Color**: Ogun Rust (`hsl(15 70% 45%)`) - Rust brown
-- **Symbolism**: War god, strength, iron, justice
-- **Usage**: Secondary actions, strength indicators, protective features
-- **Characteristics**: Strong, powerful reds and earth tones
+Each color also has a paired `-foreground` token (e.g. `--primary-foreground`) for text/icon color that stays readable on top of it — use `text-primary-foreground` on anything sitting on a `bg-primary` background rather than guessing at a contrasting color.
 
-### Shango Theme (`shango`)
-- **Primary Color**: Shango Thunder (`hsl(0 85% 55%)`) - Bright red
-- **Accent Color**: Shango White (`hsl(0 0% 100%)`) - Pure white
-- **Symbolism**: God of thunder and lightning, power, energy
-- **Usage**: High energy elements, attention-grabbing features
-- **Characteristics**: Bold, energetic reds with clean contrasts
+## Light / dark / system mode
 
-### Yemoja Theme (`yemoja`)
-- **Primary Color**: Yemoja Ocean (`hsl(200 60% 35%)`) - Deep blue-green
-- **Secondary Color**: Yemoja Wave (`hsl(190 50% 65%)`) - Light blue-green
-- **Symbolism**: Goddess of oceans, motherhood, healing
-- **Usage**: Calming features, water-themed elements, healing content
-- **Characteristics**: Cool blues and greens representing water
+`frontend/src/shared/contexts/theme-provider.tsx` exposes a `useTheme()` hook (`{ theme, setTheme }`, values `'light' | 'dark' | 'system'`), backed by a `.dark` class toggle on `<html>` (see `darkMode: 'class'` in `tailwind.config.js`) and persisted to `localStorage`. There is no per-Orisha theme switcher — light/dark/system is the entire theme-switching surface today.
 
-### Oshun Theme (`oshun`)
-- **Primary Color**: Oshun Forest (`hsl(142 86% 28%)`) - Emerald green
-- **Symbolism**: River goddess, love, beauty, diplomacy
-- **Usage**: Growth elements, nature features, fertility content
-- **Characteristics**: Rich, fertile greens
-
-## Implementation Guidelines
-
-### Semantic Color Tokens
-
-The system maps Orisha colors to semantic tokens:
-
-- `--primary`: Uses Osun Gold for primary actions
-- `--secondary`: Uses Ogun Iron for secondary actions
-- `--accent`: Uses Ogun Rust for accent elements
-- `--highlight`: Uses Shango Thunder for highlights
-- `--success`: Uses Oshun Forest for positive feedback
-- `--warning`: Uses Ogun Rust for warnings
-- `--error`: Uses Shango Thunder for errors
-- `--background`, `--foreground`: Sacred Ivory and Deep Sacred for base colors
-
-### Theme Switching
-
-Users can switch between themes using the theme selector in the header:
-
-1. Default theme maintains standard colors
-2. Orisha-specific themes adjust accent colors accordingly
-3. System automatically respects OS-level light/dark preferences
-
-### Accessibility Considerations
-
-- All color combinations meet WCAG AA contrast ratios
-- Dark mode versions maintain cultural color significance while ensuring readability
-- Text colors automatically adjust for optimal legibility
-- Interactive elements maintain visibility regardless of theme
-
-## Using the Theme System
-
-### In Components
+## Using the tokens in components
 
 ```tsx
-// Use semantic tokens rather than hardcoded colors
+// Use semantic tokens, never hardcoded hex/HSL values
 <div className="bg-primary text-primary-foreground">Primary background</div>
 <button className="bg-secondary hover:bg-secondary/90">Secondary button</button>
 <span className="text-destructive">Error text</span>
 ```
 
-### Adding Orisha-Themed Sections
-
-Components can incorporate specific Orisha themes:
-
-```tsx
-// For Osun-themed sections
-<div className="bg-osun-primary/10 border-l-4 border-osun-primary">
-  Osun-themed content
-</div>
-
-// For Yemoja-themed sections
-<div className="bg-yemoja-secondary/20">
-  Water-themed content
-</div>
-```
-
-## Cultural Sensitivity
-
-This theme system honors Yoruba traditions while providing a modern, functional interface. The colors selected are respectful interpretations that connect the digital space with the cultural heritage of Ifá and Yoruba traditions.
+`frontend/.eslintrc.cjs` has a `no-restricted-syntax` lint rule (set to `'error'`) specifically to catch literal Tailwind color classes (e.g. `bg-emerald-600` instead of `bg-primary`) — if you're adding a new color, add a token in `index.css`/`tailwind.config.js` first rather than reaching for a raw palette class.
 
 ## Maintenance
 
-- Update the [src/lib/tailwind/orisha-colors.ts](file://c:\Users\Test\ifa_app\frontend\src\lib\tailwind\orisha-colors.ts) file to modify color definitions
-- The CSS variables are automatically generated from these definitions
-- All components use semantic tokens, so changing the base definitions updates the entire application
+- Add or change a color: edit the CSS custom property in `frontend/src/index.css` (both the `:root` light block and the `.dark` block if it should differ), then expose it as a Tailwind color in `frontend/tailwind.config.js` if it isn't already.
+- There is no code-generation step — the CSS variables are the source of truth, read directly by Tailwind's `hsl(var(--x) / <alpha-value>)` pattern.

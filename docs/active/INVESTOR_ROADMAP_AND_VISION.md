@@ -1,6 +1,8 @@
 # Ilé Àṣẹ: Future Vision & Investor Roadmap
 > *The Digital Sanctuary for Ancient Wisdom*
 
+> **⚠️ Vision/roadmap document, labeled September 18, 2026 — describes future direction, not current implementation.** For actual current state, see `ILUASE_V1_BACKLOG.md`.
+
 ## 1. Executive Summary
 Ilé Àṣẹ has successfully established its **MVP (Minimum Viable Product)** as a "Digital Sanctuary"—a premium, trusted platform connecting the Ifá community. We have digitized the core pillars: **Identity** (Verification), **Commerce** (Marketplace), **Community** (Temples/Circles), and **Guidance** (Babalawo Connections).
 

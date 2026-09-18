@@ -37,7 +37,7 @@ cp backend/.env.example backend/.env
 | `DATABASE_URL` | PostgreSQL connection string (e.g. `postgresql://user:pass@localhost:5432/ilease`) |
 | `JWT_SECRET` | At least 32 characters; use a secure random string in production |
 
-**Optional (with defaults):** `PORT` (3000), `NODE_ENV` (development), `FRONTEND_URL` (http://localhost:5173), `JWT_EXPIRES_IN`, `JWT_REFRESH_EXPIRES_IN`, `JWT_REFRESH_SECRET`. For messaging encryption set `ENCRYPTION_KEY` (exactly 32 characters). See `backend/.env.example` for payment, email, S3, and other optional services. For production build checklist (source maps, bundle analysis, security headers), see [docs/PRODUCTION_BUILD.md](docs/PRODUCTION_BUILD.md).
+**Optional (with defaults):** `PORT` (3000), `NODE_ENV` (development), `FRONTEND_URL` (http://localhost:5173), `JWT_EXPIRES_IN`, `JWT_REFRESH_EXPIRES_IN`, `JWT_REFRESH_SECRET`. For messaging encryption set `ENCRYPTION_KEY` (exactly 32 characters). See `backend/.env.example` for payment, email, S3, and other optional services. For production build checklist (source maps, bundle analysis, security headers), see [docs/active/PRODUCTION_BUILD.md](docs/active/PRODUCTION_BUILD.md).
 
 ```bash
 # Install dependencies for all workspaces
@@ -69,7 +69,7 @@ For development and demo purposes, use Quick Access buttons in the login form:
 - **Babalawo:** `babalawo@ilease.ng`  
 - **Client:** `client@ilease.ng`
 
-See `FIXES.md` for all permanent fixes and verification checklist.
+See [ILUASE_V1_BACKLOG.md](ILUASE_V1_BACKLOG.md) for the current single source of truth on what's fixed/open — the `FIXES.md` this line used to point to doesn't exist.
 
 ## Cultural Integrity
 

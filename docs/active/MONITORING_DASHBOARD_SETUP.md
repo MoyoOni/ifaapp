@@ -1,5 +1,7 @@
 # Monitoring Dashboard Setup for Ìlú Àṣẹ
 
+> **⚠️ Target-state doc, labeled September 18, 2026 — not current infrastructure.** No Grafana, ELK, or OpenTelemetry collector was found configured anywhere in this repo or on production (`iluase-prod-single`). What actually exists today: `/api/metrics` (Prometheus-format) and `/api/health`/`/api/health/detailed` (see `MONITORING_DASHBOARDS.md`, which is accurate). Treat this doc as a future direction, not something you can log into right now.
+
 ## Overview
 
 This document describes the setup and configuration of monitoring dashboards for the Ìlú Àṣẹ platform. It covers metrics collection, visualization tools, alert configurations, and dashboard layouts.

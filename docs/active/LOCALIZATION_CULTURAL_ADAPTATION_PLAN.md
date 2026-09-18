@@ -1,5 +1,7 @@
 # Localization & Cultural Adaptation Plan for Ìlú Àṣẹ
 
+> **⚠️ Forward-looking plan, labeled September 18, 2026 — not a description of current localization implementation.** Not independently verified against current code as part of this pass; read as a plan, not a status report.
+
 ## Overview
 
 This document outlines the comprehensive localization and cultural adaptation strategy for the Ìlú Àṣẹ platform, designed to ensure the platform remains respectful, authentic, and accessible to Yoruba speakers and practitioners of Ifá traditions worldwide.

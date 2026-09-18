@@ -1,5 +1,7 @@
 # Production Observability Plan for Ìlú Àṣẹ
 
+> **⚠️ Target-state doc, labeled September 18, 2026 — not current infrastructure.** No Grafana/ELK/OpenTelemetry stack exists on production. See `MONITORING_DASHBOARDS.md` for what's actually live (`/api/metrics`, `/api/health`).
+
 ## Overview
 
 This document outlines the comprehensive observability strategy for the Ìlú Àṣẹ platform, designed to ensure reliable, maintainable, and culturally respectful operation in production environments.

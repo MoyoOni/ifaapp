@@ -1,5 +1,7 @@
 # User Onboarding Experience Plan for Ìlú Àṣẹ
 
+> **⚠️ Forward-looking plan, labeled September 18, 2026 — not a description of the current onboarding implementation.** For the real current onboarding flow, see `frontend/src/features/onboarding/`. Not independently verified against current code as part of this pass.
+
 ## Overview
 
 This document outlines the comprehensive user onboarding experience for the Ìlú Àṣẹ platform, designed to ensure new users have a smooth, culturally respectful, and engaging introduction to the Ifá digital heritage platform.
