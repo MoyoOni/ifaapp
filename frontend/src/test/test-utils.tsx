@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { CartProvider } from '@/shared/contexts/cart-context';
 import { ToastProvider } from '@/shared/components/toast';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { AuthProvider } from '@/shared/hooks/use-auth';
 
 // Create a fresh QueryClient for each test
 const createTestQueryClient = () =>
@@ -33,11 +34,13 @@ const AllTheProviders: React.FC<WrapperProps> = ({ children }) => {
   return (
     <GoogleOAuthProvider clientId="test-client-id">
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <ToastProvider>
-            <CartProvider>{children}</CartProvider>
-          </ToastProvider>
-        </BrowserRouter>
+        <AuthProvider>
+          <BrowserRouter>
+            <ToastProvider>
+              <CartProvider>{children}</CartProvider>
+            </ToastProvider>
+          </BrowserRouter>
+        </AuthProvider>
       </QueryClientProvider>
     </GoogleOAuthProvider>
   );

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { UserRole, AdminSubRole } from '@common';
 import api from '@/lib/api';
@@ -18,19 +18,30 @@ interface AuthState {
   isLoading: boolean;
 }
 
-/**
- * Authentication Hook
- * Manages user authentication state and user data
- */
-export function useAuth(): AuthState & {
+type AuthContextValue = AuthState & {
   login: (email: string, password: string) => Promise<void>;
   quickAccess: (email: string) => Promise<void>;
   register: (email: string, password: string, name: string, role: UserRole, phone?: string, referredByCode?: string) => Promise<void>;
   logout: () => void;
   setUser: (user: User | null) => void;
+  setTokenCheck: (authenticated: boolean) => void;
   devLogin: (role: UserRole) => void;
   impersonate: (userId: string, reason: string) => Promise<void>;
-} {
+};
+
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+/**
+ * All the actual auth state/logic — a plain hook, not exported. Every
+ * previous call site of `useAuth()` ran this independently, each with its
+ * own isolated `useState`, so a login completed in one component (e.g. the
+ * login form) was invisible to a different component's own `useAuth()` call
+ * (e.g. the page deciding whether to redirect) until a full page refresh
+ * remounted everything and re-read localStorage from scratch. `AuthProvider`
+ * below runs this exactly once per app; every `useAuth()` call now reads the
+ * same shared value via context instead.
+ */
+function useAuthState(): AuthContextValue {
   const [user, setUser] = useState<User | null>(null);
   const [tokenCheck, setTokenCheck] = useState(() => !!localStorage.getItem('accessToken'));
   const [isInitializing, setIsInitializing] = useState(true);
@@ -282,6 +293,7 @@ export function useAuth(): AuthState & {
       localStorage.removeItem('dev_mode_role');
     },
     setUser,
+    setTokenCheck,
     devLogin,
     impersonate: async (userId: string, reason: string) => {
       try {
@@ -322,5 +334,29 @@ export function useAuth(): AuthState & {
       }
     },
   };
+}
+
+/**
+ * Wraps the app once (see main.tsx) so every `useAuth()` call site shares
+ * one real auth state instead of each maintaining its own independent copy.
+ */
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const value = useAuthState();
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+/**
+ * Authentication Hook
+ * Reads the shared auth state from AuthProvider. Every component gets the
+ * same `user`/`isAuthenticated` — a state change from any one of them (e.g.
+ * a login form) is immediately visible to all the others (e.g. the page
+ * that redirects once logged in), with no refresh required.
+ */
+export function useAuth(): AuthContextValue {
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
+    throw new Error('useAuth() must be used within an <AuthProvider>');
+  }
+  return ctx;
 }
 

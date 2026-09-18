@@ -2,7 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '../test/test-utils';
 import ProfilePage from './ProfilePage';
 
-vi.mock('@/shared/hooks/use-auth', () => ({ useAuth: vi.fn() }));
+vi.mock('@/shared/hooks/use-auth', () => ({
+  useAuth: vi.fn(),
+  AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-router-dom')>();
   return { ...actual, useParams: vi.fn(), useNavigate: vi.fn(() => vi.fn()) };

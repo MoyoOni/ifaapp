@@ -9,6 +9,7 @@ vi.mock('@/shared/contexts/cart-context', () => ({
 
 vi.mock('@/shared/hooks/use-auth', () => ({
   useAuth: vi.fn(() => ({ user: { id: 'user-1' } })),
+  AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 import { useCart } from '@/shared/contexts/cart-context';

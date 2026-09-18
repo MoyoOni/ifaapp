@@ -26,6 +26,7 @@ vi.mock('@/shared/contexts/cart-context', async (importOriginal) => {
 
 vi.mock('@/shared/hooks/use-auth', () => ({
   useAuth: () => ({ user: { id: 'u1', name: 'Test User' } }),
+  AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 vi.mock('@/lib/api', () => ({ default: { post: vi.fn().mockResolvedValue({ data: { id: 'order-1' } }) } }));

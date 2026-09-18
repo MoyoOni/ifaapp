@@ -4,6 +4,8 @@ import { Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { logger } from '@/shared/utils/logger';
+import { mapAuthUserToUser } from '@/types/api/mappers/auth.mapper';
+import type { AuthResponse } from '@/types/api/auth';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
@@ -25,7 +27,7 @@ interface GoogleAuthButtonProps {
  * "Invalid Google token" regardless of configuration.
  */
 const GoogleLoginButton: React.FC<GoogleAuthButtonProps> = ({ onSuccess, onError, label }) => {
-  const { setUser } = useAuth();
+  const { setUser, setTokenCheck } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSuccess = async (credentialResponse: CredentialResponse) => {
@@ -35,15 +37,23 @@ const GoogleLoginButton: React.FC<GoogleAuthButtonProps> = ({ onSuccess, onError
     }
     setIsLoading(true);
     try {
-      const response = await api.post('/auth/google/token', {
+      const response = await api.post<AuthResponse>('/auth/google/token', {
         credential: credentialResponse.credential,
       });
 
       const { user, accessToken, refreshToken } = response.data;
+      const mappedUser = mapAuthUserToUser(user);
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
-      localStorage.setItem('userId', user.id);
-      setUser(user);
+      localStorage.setItem('userId', mappedUser.id);
+      // Every other auth entry point (login/register/quickAccess) sets both
+      // of these together -- this one only set `user`, leaving
+      // `isAuthenticated` (and the GET /users/:id query it gates) stuck
+      // false until a manual refresh re-synced it from localStorage. That's
+      // the "need to refresh before redirect" bug reported after Google
+      // sign-in/sign-up.
+      setTokenCheck(true);
+      setUser(mappedUser);
       onSuccess?.();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Google sign-in failed';
