@@ -23,6 +23,7 @@ jest.mock('bcrypt', () => ({
 describe('AuthService', () => {
   let service: AuthService;
   let jwtService: JwtService;
+  let configService: ConfigService;
 
   const mockPrismaService = {
     user: {
@@ -94,6 +95,7 @@ describe('AuthService', () => {
 
     service = module.get<AuthService>(AuthService);
     jwtService = module.get<JwtService>(JwtService);
+    configService = module.get<ConfigService>(ConfigService);
   });
 
   describe('register', () => {
@@ -341,6 +343,23 @@ describe('AuthService', () => {
         'auth:denylist:old-jti',
         '1',
         expect.any(Number)
+      );
+    });
+  });
+
+  describe('verifyGoogleToken', () => {
+    it('refuses to verify when GOOGLE_CLIENT_ID is not configured, instead of silently verifying with no audience restriction', async () => {
+      // Regression guard: production ran with GOOGLE_CLIENT_ID entirely
+      // unset for a while -- new OAuth2Client(undefined) + audience:
+      // undefined doesn't fail in an obviously diagnosable way, it either
+      // throws a generic "Invalid Google token" or verifies without
+      // actually restricting the token's audience to this app.
+      jest.spyOn(configService, 'get').mockImplementation((key: string) =>
+        key === 'GOOGLE_CLIENT_ID' ? undefined : 'irrelevant'
+      );
+
+      await expect(service.verifyGoogleToken('some-credential')).rejects.toThrow(
+        'Google sign-in is not configured'
       );
     });
   });

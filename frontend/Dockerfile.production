@@ -24,9 +24,20 @@ RUN cd common && npx tsc
 COPY frontend ./frontend
 
 # Build frontend (pass build args as env vars)
+#
+# VITE_GOOGLE_CLIENT_ID default matches frontend/.env.production's real
+# value -- that file itself never reaches this build (`.dockerignore`
+# excludes .env.* broadly, `.env.production` included, despite the root
+# .gitignore's deliberate exception marking it safe to track since it's
+# public, non-secret VITE_-prefixed config). deploy.sh also never passes
+# this as an explicit --build-arg. Without a real default here, this ARG
+# silently built as an empty string, and GoogleAuthButton renders nothing
+# at all when its client ID is empty -- Google Sign-In was invisible in
+# production with no error anywhere. Follows the same pattern already
+# working correctly for VITE_API_URL below.
 ARG VITE_API_URL=https://iluase.com/api
 ARG VITE_BASE_PATH=/
-ARG VITE_GOOGLE_CLIENT_ID=""
+ARG VITE_GOOGLE_CLIENT_ID=559744613223-klf56010kv4dm2c2lbd3f3imgrmgcls5.apps.googleusercontent.com
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_BASE_PATH=$VITE_BASE_PATH
 ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID

@@ -371,6 +371,16 @@ Aboru Aboye.`;
    */
   async verifyGoogleToken(credential: string) {
     const clientId = this.configService.get<string>('GOOGLE_CLIENT_ID');
+    // Without this, `new OAuth2Client(undefined)` + `audience: undefined`
+    // doesn't fail closed the way you'd want -- it either throws a generic,
+    // hard-to-diagnose "Invalid Google token" for every request, or (worse)
+    // verifies a token without actually restricting it to this app's
+    // audience. Fail loud and specific instead, matching the
+    // Paystack/Flutterwave config-guard pattern elsewhere in this file.
+    if (!clientId) {
+      this.logger.error('GOOGLE_CLIENT_ID is not configured — refusing to verify Google sign-in');
+      throw new UnauthorizedException('Google sign-in is not configured');
+    }
     const client = new OAuth2Client(clientId);
 
     let payload: any;
