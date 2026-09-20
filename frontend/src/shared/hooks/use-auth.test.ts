@@ -163,3 +163,41 @@ describe('useAuth — shared state via AuthProvider (regression: "need to refres
     spy.mockRestore();
   });
 });
+
+describe('useAuth — logout revokes the session server-side', () => {
+  afterEach(() => {
+    window.localStorage.clear();
+  });
+
+  it('sends the access token on POST /auth/logout even though it clears localStorage right after', async () => {
+    const api = (await import('@/lib/api')).default as unknown as { post: ReturnType<typeof vi.fn> };
+    api.post.mockReset();
+    api.post.mockResolvedValue({ data: {} });
+    window.localStorage.setItem('accessToken', 'access-abc');
+    window.localStorage.setItem('refreshToken', 'refresh-xyz');
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    act(() => {
+      result.current.logout();
+    });
+
+    // Explicit header: api's request interceptor reads localStorage a tick later,
+    // by which point logout() has already removed the token.
+    expect(api.post).toHaveBeenCalledWith('/auth/logout', undefined, {
+      headers: { Authorization: 'Bearer access-abc' },
+    });
+    expect(window.localStorage.getItem('accessToken')).toBeNull();
+    expect(window.localStorage.getItem('refreshToken')).toBeNull();
+  });
+
+  it('still clears the local session (and skips the call) when there is no token', async () => {
+    const api = (await import('@/lib/api')).default as unknown as { post: ReturnType<typeof vi.fn> };
+    api.post.mockReset();
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    act(() => {
+      result.current.logout();
+    });
+    expect(api.post).not.toHaveBeenCalledWith('/auth/logout', expect.anything(), expect.anything());
+    expect(window.localStorage.getItem('accessToken')).toBeNull();
+  });
+});

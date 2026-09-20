@@ -210,7 +210,18 @@ function useAuthState(): AuthContextValue {
     // Best-effort server-side revocation — fire and forget so a network blip
     // never blocks the user from clearing their local session. Local
     // logout below is what actually matters for this device.
-    api.post('/auth/logout').catch(() => {});
+    //
+    // The token is read and passed explicitly *before* localStorage is cleared
+    // below: api's request interceptor reads localStorage when the request is
+    // actually sent (a tick later), so relying on it here sent the request with
+    // no Authorization header, 401'd, and the server-side revocation never
+    // happened -- every logout left its tokens valid until they expired.
+    const accessToken = localStorage.getItem('accessToken');
+    if (accessToken) {
+      api
+        .post('/auth/logout', undefined, { headers: { Authorization: `Bearer ${accessToken}` } })
+        .catch(() => {});
+    }
     clearLogContext();
     deregisterPushNotifications().catch(() => {});
     localStorage.removeItem('accessToken');
