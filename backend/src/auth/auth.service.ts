@@ -594,6 +594,35 @@ Aboru Aboye.`;
     return { message: 'Logged out successfully' };
   }
 
+  /**
+   * Revokes the session behind whichever token(s) the caller presents, by
+   * verifying each signature itself (this runs without JwtAuthGuard so it
+   * still works once the short-lived access token has expired). Access and
+   * refresh tokens share one jti, so a valid refresh token alone revokes both.
+   * Idempotent -- a token that fails verification (forged, malformed, already
+   * expired) has nothing left to revoke and is ignored rather than rejected.
+   */
+  async revokeSession(tokens: { accessToken?: string; refreshToken?: string }): Promise<{ message: string }> {
+    const candidates = [
+      { token: tokens.refreshToken, secret: this.configService.get<string>('JWT_REFRESH_SECRET') },
+      { token: tokens.accessToken, secret: this.configService.get<string>('JWT_SECRET') },
+    ];
+    const revoked = new Set<string>();
+    for (const { token, secret } of candidates) {
+      if (!token || !secret) continue;
+      try {
+        const payload = this.jwtService.verify<JwtPayload>(token, { secret });
+        if (payload.jti && !revoked.has(payload.jti)) {
+          revoked.add(payload.jti);
+          await this.logout(payload.jti, payload.exp);
+        }
+      } catch {
+        // nothing to revoke for an unverifiable or expired token
+      }
+    }
+    return { message: 'Logged out successfully' };
+  }
+
   async setPassword(userId: string, newPassword: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },

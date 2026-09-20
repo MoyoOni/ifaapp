@@ -217,9 +217,17 @@ function useAuthState(): AuthContextValue {
     // no Authorization header, 401'd, and the server-side revocation never
     // happened -- every logout left its tokens valid until they expired.
     const accessToken = localStorage.getItem('accessToken');
-    if (accessToken) {
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (accessToken || refreshToken) {
+      // Send the refresh token too: the access token only lives 15 minutes, and
+      // once it has expired the server can still revoke the session from the
+      // (7-day) refresh token alone.
       api
-        .post('/auth/logout', undefined, { headers: { Authorization: `Bearer ${accessToken}` } })
+        .post(
+          '/auth/logout',
+          refreshToken ? { refreshToken } : undefined,
+          accessToken ? { headers: { Authorization: `Bearer ${accessToken}` } } : undefined
+        )
         .catch(() => {});
     }
     clearLogContext();

@@ -345,6 +345,65 @@ describe('AuthService', () => {
         expect.any(Number)
       );
     });
+
+    describe('revokeSession() — logout that works after the access token has expired', () => {
+      const ACCESS_SECRET = 'test-access-secret-at-least-32-characters!!';
+      const REFRESH_SECRET = 'test-refresh-secret-at-least-32-characters!';
+
+      beforeEach(() => {
+        jest.spyOn(configService, 'get').mockImplementation(((key: string) =>
+          ({ JWT_SECRET: ACCESS_SECRET, JWT_REFRESH_SECRET: REFRESH_SECRET } as Record<string, string>)[key]) as any);
+      });
+      afterEach(() => jest.restoreAllMocks());
+
+      const sign = (secret: string, jti: string, expiresIn: string) =>
+        jwtService.sign({ sub: 'user123', jti }, { secret, expiresIn });
+
+      it('revokes the session from a valid refresh token even though the access token is already expired', async () => {
+        const expiredAccess = sign(ACCESS_SECRET, 'sess-1', '-10s');
+        const refresh = sign(REFRESH_SECRET, 'sess-1', '7d');
+
+        await expect(service.revokeSession({ accessToken: expiredAccess, refreshToken: refresh })).resolves.toEqual({
+          message: 'Logged out successfully',
+        });
+
+        expect(mockRedisCacheService.set).toHaveBeenCalledTimes(1);
+        expect(mockRedisCacheService.set).toHaveBeenCalledWith('auth:denylist:sess-1', '1', expect.any(Number));
+      });
+
+      it('revokes from a valid access token alone', async () => {
+        await service.revokeSession({ accessToken: sign(ACCESS_SECRET, 'sess-2', '15m') });
+        expect(mockRedisCacheService.set).toHaveBeenCalledWith('auth:denylist:sess-2', '1', expect.any(Number));
+      });
+
+      it('denylists a shared jti only once when both tokens are presented', async () => {
+        await service.revokeSession({
+          accessToken: sign(ACCESS_SECRET, 'sess-3', '15m'),
+          refreshToken: sign(REFRESH_SECRET, 'sess-3', '7d'),
+        });
+        expect(mockRedisCacheService.set).toHaveBeenCalledTimes(1);
+      });
+
+      it('ignores forged, wrong-secret and garbage tokens: nothing is revoked, and it still succeeds', async () => {
+        const result = await service.revokeSession({
+          accessToken: sign('some-other-secret-that-is-long-enough-xx', 'victim-jti', '15m'),
+          refreshToken: 'not.a.jwt',
+        });
+        expect(result).toEqual({ message: 'Logged out successfully' });
+        expect(mockRedisCacheService.set).not.toHaveBeenCalled();
+      });
+
+      it('does not let an access token stand in for a refresh token (secrets are not interchangeable)', async () => {
+        // an access token presented in the refresh slot must fail verification against the refresh secret
+        await service.revokeSession({ refreshToken: sign(ACCESS_SECRET, 'sess-4', '15m') });
+        expect(mockRedisCacheService.set).not.toHaveBeenCalled();
+      });
+
+      it('succeeds with no tokens at all', async () => {
+        await expect(service.revokeSession({})).resolves.toEqual({ message: 'Logged out successfully' });
+        expect(mockRedisCacheService.set).not.toHaveBeenCalled();
+      });
+    });
   });
 
   describe('verifyGoogleToken', () => {

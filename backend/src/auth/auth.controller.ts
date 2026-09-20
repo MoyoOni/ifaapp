@@ -12,6 +12,7 @@ import {
   UnauthorizedException,
   BadRequestException,
   Req,
+  Headers,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { IsString } from 'class-validator';
@@ -27,6 +28,7 @@ import { CurrentUser } from '@/shared/decorators/current-user.decorator';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags, ApiBody } from '@nestjs/swagger';
 import { RegisterDto } from './dto/register.dto';
 import { QuickAccessDto } from './dto/quick-access.dto';
+import { LogoutDto } from './dto/logout.dto';
 
 // DTO for impersonation request
 class ImpersonateUserDto {
@@ -98,20 +100,24 @@ export class AuthController {
     return this.authService.verifyGoogleToken(body.credential);
   }
 
+  /**
+   * Deliberately has no JwtAuthGuard: the point of logging out is to end a
+   * session, and that session's access token may already have expired
+   * (15 min) -- behind the guard the request would 401 before this handler
+   * ran, leaving the
+   * still-valid 7-day refresh token alive. Instead the handler verifies the
+   * signature of whichever token(s) the caller supplies and revokes that
+   * session. Access and refresh tokens share one jti, so either is enough.
+   * Idempotent: an unverifiable or already-expired token has nothing left to
+   * revoke and still gets a 200.
+   */
   @Post('logout')
-  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Log out and revoke the current session' })
+  @ApiOperation({ summary: 'Log out and revoke the session (accepts an access and/or refresh token)' })
   @ApiResponse({ status: 200, description: 'Successfully logged out' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async logout(@CurrentUser() user: { jti?: string; exp?: number }) {
-    if (!user.jti) {
-      // Tokens issued before this feature shipped have no jti to revoke —
-      // they'll simply expire naturally rather than being invalidated early.
-      return { message: 'Logged out successfully' };
-    }
-    return this.authService.logout(user.jti, user.exp);
+  async logout(@Body() body: LogoutDto, @Headers('authorization') authorization?: string) {
+    const accessToken = authorization?.startsWith('Bearer ') ? authorization.slice(7) : undefined;
+    return this.authService.revokeSession({ accessToken, refreshToken: body?.refreshToken });
   }
 
   @Post('impersonate')

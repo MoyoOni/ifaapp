@@ -183,11 +183,27 @@ describe('useAuth — logout revokes the session server-side', () => {
 
     // Explicit header: api's request interceptor reads localStorage a tick later,
     // by which point logout() has already removed the token.
-    expect(api.post).toHaveBeenCalledWith('/auth/logout', undefined, {
-      headers: { Authorization: 'Bearer access-abc' },
-    });
+    expect(api.post).toHaveBeenCalledWith(
+      '/auth/logout',
+      { refreshToken: 'refresh-xyz' },
+      { headers: { Authorization: 'Bearer access-abc' } }
+    );
     expect(window.localStorage.getItem('accessToken')).toBeNull();
     expect(window.localStorage.getItem('refreshToken')).toBeNull();
+  });
+
+  it('still revokes via the refresh token when the access token is gone/expired', async () => {
+    const api = (await import('@/lib/api')).default as unknown as { post: ReturnType<typeof vi.fn> };
+    api.post.mockReset();
+    api.post.mockResolvedValue({ data: {} });
+    window.localStorage.setItem('refreshToken', 'refresh-only');
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    act(() => {
+      result.current.logout();
+    });
+
+    expect(api.post).toHaveBeenCalledWith('/auth/logout', { refreshToken: 'refresh-only' }, undefined);
   });
 
   it('still clears the local session (and skips the call) when there is no token', async () => {

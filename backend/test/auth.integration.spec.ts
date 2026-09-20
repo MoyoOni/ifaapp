@@ -349,4 +349,67 @@ describe('Authentication Critical-Path Tests (V4-807)', () => {
       expect(meRes2.body.id).toBe(userId);
     });
   });
+
+  describe('AC-6: Logout revokes the session even after the access token has expired', () => {
+    async function freshSession() {
+      const email = `logout-${Date.now()}-${Math.floor(Math.random() * 1e6)}@example.com`;
+      const reg = await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({ email, password: TEST_PASSWORD, name: 'Logout Test', role: UserRole.CLIENT })
+        .expect(201);
+      return { userId: reg.body.user.id, accessToken: reg.body.accessToken, refreshToken: reg.body.refreshToken };
+    }
+
+    it('accepts the refresh token alone (no valid access token) and kills both tokens', async () => {
+      const { userId, accessToken, refreshToken } = await freshSession();
+      const expiredAccess = new JwtService({}).sign(
+        { sub: userId, jti: 'irrelevant' },
+        { secret: process.env.JWT_SECRET!, expiresIn: '-10s' }
+      );
+
+      // The access token the client is holding has expired -> before this fix the
+      // JwtAuthGuard 401'd here and the 7-day refresh token stayed alive.
+      await request(app.getHttpServer())
+        .post('/auth/logout')
+        .set('Authorization', `Bearer ${expiredAccess}`)
+        .send({ refreshToken })
+        .expect(200);
+
+      // refresh token is dead...
+      await request(app.getHttpServer()).post('/auth/refresh').send({ refreshToken }).expect(401);
+      // ...and so is the (still unexpired) access token, since they share one jti
+      await request(app.getHttpServer())
+        .get(`/users/${userId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(401);
+    });
+
+    it('still works with just a valid access token (existing behaviour)', async () => {
+      const { userId, accessToken } = await freshSession();
+      await request(app.getHttpServer()).post('/auth/logout').set('Authorization', `Bearer ${accessToken}`).expect(200);
+      await request(app.getHttpServer())
+        .get(`/users/${userId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(401);
+    });
+
+    it('is idempotent and never errors: no tokens, or a garbage refresh token, still 200 and revoke nothing', async () => {
+      await request(app.getHttpServer()).post('/auth/logout').send({}).expect(200);
+      await request(app.getHttpServer()).post('/auth/logout').send({ refreshToken: 'not.a.jwt' }).expect(200);
+    });
+
+    it("cannot be used to revoke someone else's session with a forged token", async () => {
+      const { userId, accessToken } = await freshSession();
+      const forged = new JwtService({}).sign(
+        { sub: userId, jti: 'whatever' },
+        { secret: 'attacker-guess-of-the-secret-that-is-32chars-long', expiresIn: '7d' }
+      );
+      await request(app.getHttpServer()).post('/auth/logout').send({ refreshToken: forged }).expect(200);
+      // the real session is untouched
+      await request(app.getHttpServer())
+        .get(`/users/${userId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+    });
+  });
 });
