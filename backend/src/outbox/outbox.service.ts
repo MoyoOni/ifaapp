@@ -51,6 +51,23 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   private getConnectionOptions(): ConnectionOptions {
+    // Every real environment (local, staging, production) sets REDIS_URL --
+    // confirmed nothing sets REDIS_HOST/REDIS_PORT/REDIS_PASSWORD as
+    // separate vars anywhere except the already-dead docker-compose.production.yml.
+    // Reading only the separate vars meant this queue's connection silently
+    // fell back to 'localhost:6379' in every real environment and retried +
+    // failed once a second, continuously, since production went live in March.
+    const redisUrl = process.env.REDIS_URL;
+    if (redisUrl) {
+      const url = new URL(redisUrl);
+      return {
+        host: url.hostname,
+        port: parseInt(url.port || '6379', 10),
+        password: url.password || undefined,
+      };
+    }
+    // Fallback only for some future environment that sets these separately --
+    // no environment does today.
     return {
       host: process.env.REDIS_HOST || 'localhost',
       port: parseInt(process.env.REDIS_PORT || '6379', 10),

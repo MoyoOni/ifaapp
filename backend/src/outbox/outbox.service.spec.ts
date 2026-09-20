@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { Queue, Worker } from 'bullmq';
 import { OutboxService } from './outbox.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from '../notifications/notification.service';
@@ -332,6 +333,48 @@ describe('OutboxService (P1-01)', () => {
         where: { id: 'evt-1' },
         data: { status: 'PENDING', retries: 0, lastError: null },
       });
+    });
+  });
+
+  describe('Redis connection options', () => {
+    const ORIGINAL_ENV = process.env;
+
+    afterEach(() => {
+      process.env = ORIGINAL_ENV;
+    });
+
+    it('parses REDIS_URL for the BullMQ connection, instead of the unset REDIS_HOST/REDIS_PORT that every real environment leaves undefined', async () => {
+      // Regression guard: this previously read only REDIS_HOST/REDIS_PORT,
+      // which no real environment (local, staging, production) actually
+      // sets -- every one of them sets the combined REDIS_URL, the same as
+      // every other Redis consumer in the app. The old code silently fell
+      // back to 'localhost:6379' and retried+failed once a second forever.
+      process.env = { ...ORIGINAL_ENV, REDIS_URL: 'redis://:s3cr3t@redis:6379' };
+
+      await service.onModuleInit();
+
+      const expectedConnection = { host: 'redis', port: 6379, password: 's3cr3t' };
+      expect(Queue).toHaveBeenLastCalledWith(
+        'outbox',
+        expect.objectContaining({ connection: expectedConnection })
+      );
+      expect(Worker).toHaveBeenLastCalledWith(
+        'outbox',
+        expect.any(Function),
+        expect.objectContaining({ connection: expectedConnection })
+      );
+    });
+
+    it('falls back to REDIS_HOST/REDIS_PORT only when REDIS_URL is entirely unset', async () => {
+      process.env = { ...ORIGINAL_ENV, REDIS_URL: undefined, REDIS_HOST: 'fallback-host', REDIS_PORT: '6400' };
+      delete process.env.REDIS_URL;
+
+      await service.onModuleInit();
+
+      expect(Queue).toHaveBeenLastCalledWith(
+        'outbox',
+        expect.objectContaining({ connection: { host: 'fallback-host', port: 6400, password: undefined } })
+      );
     });
   });
 });
