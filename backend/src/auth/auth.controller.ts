@@ -15,7 +15,6 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { IsString } from 'class-validator';
-import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { SetPasswordDto } from './dto/set-password.dto';
@@ -48,19 +47,33 @@ export class AuthController {
 
   constructor(private readonly authService: AuthService) {}
 
-  /** 10 requests per minute (HC-204.3) to mitigate brute-force */
+  /**
+   * 10 requests per minute (HC-204.3) to mitigate brute-force — enforced by
+   * the module-level 'auth' named throttler (throttler.config.ts), which
+   * already defaults to exactly 10/60s and is the one actually tunable via
+   * THROTTLE_AUTH_LIMIT/THROTTLE_AUTH_TTL. No per-route @Throttle() here
+   * deliberately — a route-level @Throttle({ default: {...} }) used to sit
+   * on this route with a *literal* limit of 10, which is a hardcoded
+   * override that no env var can ever move, regardless of which named
+   * throttler key it targets. That silently defeated CI's
+   * THROTTLE_AUTH_LIMIT=1000 override (see ci-cd.yml's P1-03 comment, which
+   * assumed raising that env var would give integration tests headroom —
+   * it couldn't, no matter which bucket name the decorator used), causing
+   * real, intermittent 429s in integration tests since whenever that
+   * decorator was added. Relying purely on the module config instead means
+   * production keeps the same 10/60s limit, but CI's env override now
+   * actually works.
+   */
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: 201, description: 'User successfully registered' })
   @ApiResponse({ status: 400, description: 'Validation error' })
   @ApiResponse({ status: 409, description: 'User already exists' })
-  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('register')
   async register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
   }
 
-  /** 10 requests per minute to mitigate brute-force (same as register) */
-  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  /** 10 requests per minute to mitigate brute-force, via the module-level 'auth' throttler (see note above) */
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'User login' })

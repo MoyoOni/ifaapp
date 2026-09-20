@@ -61,7 +61,13 @@ describe('Payment Idempotency Critical-Path Tests (V4-807)', () => {
       imports: [AppModule],
     }).compile();
 
-    app = moduleFixture.createNestApplication();
+    // { rawBody: true } is required here to match main.ts's real bootstrap
+    // (NestFactory.create(AppModule, { rawBody: true })) — the Paystack
+    // webhook handler verifies its HMAC signature against req.rawBody
+    // (the exact bytes received, not a re-serialized JSON.stringify of the
+    // parsed body), so without this every webhook call in this suite gets a
+    // 401 regardless of whether the signature was computed correctly.
+    app = moduleFixture.createNestApplication({ rawBody: true });
     app.useGlobalPipes(new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: false,
@@ -171,7 +177,7 @@ describe('Payment Idempotency Critical-Path Tests (V4-807)', () => {
 
     it('reflects only one deposit in the wallet balance after a retried webhook', async () => {
       const wallet = await prisma.wallet.findUnique({ where: { userId } });
-      const balanceBefore = wallet?.balance ?? 0;
+      const balanceBefore = Number(wallet?.balance ?? 0);
 
       const reference = 'BALANCE-CHECK-' + Date.now();
       const payload = paystackChargeSuccess(reference, 300);
@@ -191,7 +197,7 @@ describe('Payment Idempotency Critical-Path Tests (V4-807)', () => {
         .expect(200);
 
       const walletAfter = await prisma.wallet.findUnique({ where: { userId } });
-      expect(walletAfter!.balance).toBe(balanceBefore + 300);
+      expect(Number(walletAfter!.balance)).toBe(balanceBefore + 300);
     });
   });
 

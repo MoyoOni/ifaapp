@@ -125,7 +125,11 @@ describe('WalletService Integration Tests (V4-807)', () => {
 
       expect(result.wallet).toBeDefined();
       expect(result.transaction).toBeDefined();
-      expect(result.wallet.balance).toBe(50000);
+      // wallet.balance is a Prisma Decimal here — depositFunds() returns the
+      // raw tx.wallet.update() result, unlike getBalance()/refund paths which
+      // explicitly wrap in Number(...) for non-HTTP callers. Only HTTP
+      // responses get the free Number conversion, via DecimalToNumberInterceptor.
+      expect(Number(result.wallet.balance)).toBe(50000);
       expect(result.transaction.type).toBe(TransactionType.DEPOSIT);
       expect(result.transaction.status).toBe(TransactionStatus.COMPLETED);
     });
@@ -173,7 +177,7 @@ describe('WalletService Integration Tests (V4-807)', () => {
       expect(result.transaction).toBeDefined();
       expect(result.transaction.type).toBe(TransactionType.DEPOSIT);
       expect(result.transaction.status).toBe(TransactionStatus.COMPLETED);
-      expect(result.wallet.balance).toBeGreaterThanOrEqual(75000);
+      expect(Number(result.wallet.balance)).toBeGreaterThanOrEqual(75000);
     });
   });
 
@@ -209,7 +213,7 @@ describe('WalletService Integration Tests (V4-807)', () => {
 
       // Should return the same transaction
       expect(txId1).toBe(txId2);
-      expect(result2.wallet.balance).toBe(100000); // Only one deposit counted
+      expect(Number(result2.wallet.balance)).toBe(100000); // Only one deposit counted
 
       // Verify only one transaction exists
       const txCount = await prismaService.transaction.count({
@@ -238,7 +242,7 @@ describe('WalletService Integration Tests (V4-807)', () => {
 
       expect(result1.transaction.id).not.toBe(result2.transaction.id);
       // Final balance should have both deposits
-      expect(result2.wallet.balance).toBeGreaterThanOrEqual(50000);
+      expect(Number(result2.wallet.balance)).toBeGreaterThanOrEqual(50000);
     });
   });
 
@@ -304,7 +308,7 @@ describe('WalletService Integration Tests (V4-807)', () => {
         });
 
         expectedBalance += dep.amount;
-        expect(result.wallet.balance).toBe(expectedBalance);
+        expect(Number(result.wallet.balance)).toBe(expectedBalance);
       }
 
       // Cleanup
@@ -348,7 +352,7 @@ describe('WalletService Integration Tests (V4-807)', () => {
 
       expect(wallet).toBeDefined();
       expect(tx).toBeDefined();
-      expect(wallet?.balance).toBe(50000);
+      expect(Number(wallet?.balance)).toBe(50000);
       expect(tx?.status).toBe(TransactionStatus.COMPLETED);
 
       // Cleanup
