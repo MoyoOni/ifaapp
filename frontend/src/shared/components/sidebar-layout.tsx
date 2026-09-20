@@ -18,6 +18,7 @@ import {
     Users,
     Shield,
     Crown,
+    MessagesSquare,
     type LucideIcon,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -38,6 +39,7 @@ import { ProfileMenuDropdown } from './profile-menu-dropdown';
 import { User as UserType } from '@common';
 import { isDevModeActive } from '@/shared/utils/dev-mode';
 import { AnnouncementBanner } from './announcement-banner';
+import { VisitorAuthCard } from './visitor-auth-card';
 
 interface SidebarLayoutProps {
     children: React.ReactNode;
@@ -53,6 +55,17 @@ interface BottomTab {
 }
 
 function getMobileBottomTabs(role: string | undefined): BottomTab[] {
+    // Logged-out visitors: public destinations only (the CLIENT default below
+    // points at login-gated /client/* routes).
+    if (!role) {
+        return [
+            { id: 'home', label: 'Home', icon: LayoutDashboard, path: '/' },
+            { id: 'temples', label: 'Temples', icon: Building2, path: '/temples' },
+            { id: 'circles', label: 'Circles', icon: Users, path: '/circles' },
+            { id: 'forum', label: 'Forum', icon: MessagesSquare, path: '/forum' },
+            { id: 'more', label: 'More', icon: Menu, action: 'more' },
+        ];
+    }
     switch (role) {
         case 'BABALAWO':
             return [
@@ -361,8 +374,15 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                     </div>
                 )}
 
+                {/* Logged-out visitors get a sign-in card instead of a fake identity */}
+                {showExpanded && !user && (
+                    <div className="p-4 border-t border-border/50 bg-card/50">
+                        <VisitorAuthCard />
+                    </div>
+                )}
+
                 {/* User Profile Hub (Bottom Fixed) */}
-                {showExpanded && (
+                {showExpanded && user && (
                     <div className="p-4 border-t border-border/50 bg-card/50" data-profile-menu>
                         <div className="relative">
                             <button
@@ -427,8 +447,14 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                     </div>
                 )}
 
+                {!showExpanded && !user && (
+                    <div className="p-3 border-t border-border/50">
+                        <VisitorAuthCard compact />
+                    </div>
+                )}
+
                 {/* Collapsed User Avatar */}
-                {!showExpanded && (
+                {!showExpanded && user && (
                     <div className="p-3 border-t border-border/50" data-profile-menu>
                         <button
                             onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
@@ -501,6 +527,11 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                             </div>
 
                             {/* Mobile Footer */}
+                            {!user ? (
+                                <div className="p-3 border-t border-border bg-card/50 flex-shrink-0">
+                                    <VisitorAuthCard />
+                                </div>
+                            ) : (
                             <div className="p-3 border-t border-border bg-card/50 flex-shrink-0">
                                 {/* User chip */}
                                 <div className="flex items-center gap-2 px-2 py-2 mb-2">
@@ -544,6 +575,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                                     Log Out
                                 </button>
                             </div>
+                            )}
                         </motion.aside>
                     </>
                 )}
@@ -578,6 +610,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                     </button>
                     <div className="flex items-center gap-1">
                         <ModeToggle />
+                        {user && (
                         <div className="relative">
                             <button
                                 type="button"
@@ -594,6 +627,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                                 <NotificationDropdown onClose={() => setShowNotificationDropdown(false)} />
                             )}
                         </div>
+                        )}
                     </div>
                 </header>
 
@@ -620,6 +654,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
 
                     {/* Actions */}
                     <div className="flex items-center gap-3">
+                        {user && (
                         <div className="relative">
                             <button
                                 type="button"
@@ -636,6 +671,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                                 <NotificationDropdown onClose={() => setShowNotificationDropdown(false)} />
                             )}
                         </div>
+                        )}
                         <LanguageSwitcher />
                         <ModeToggle />
                     </div>

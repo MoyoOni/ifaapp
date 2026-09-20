@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ErrorBoundary from './components/common/error-boundary';
 import FallbackErrorComponent from './components/common/fallback-error-component';
 import NotFound from './pages/not-found';
-import { ProtectedRoute, AdminRoute } from './shared/components/protected-route';
+import { ProtectedRoute, AdminRoute, RequireAuth } from './shared/components/protected-route';
 import { UserRole } from '@common';
 import OfflineIndicator from './shared/components/offline-indicator';
 import SpiritualJourneyView from './features/client-hub/spiritual-journey-view';
@@ -426,11 +426,13 @@ function App() {
                         </React.Suspense>
                       } />
                       <Route path="/directory" element={
-                        <React.Suspense fallback={<LoadingSpinner />}>
-                          <ErrorBoundary>
-                            <MemberDirectoryView />
-                          </ErrorBoundary>
-                        </React.Suspense>
+                        <RequireAuth>
+                          <React.Suspense fallback={<LoadingSpinner />}>
+                            <ErrorBoundary>
+                              <MemberDirectoryView />
+                            </ErrorBoundary>
+                          </React.Suspense>
+                        </RequireAuth>
                       } />
                       <Route path="/remembrance-wall" element={
                         <React.Suspense fallback={<LoadingSpinner />}>
@@ -496,11 +498,13 @@ function App() {
                         </React.Suspense>
                       } />
                       <Route path="/community/mentorship" element={
-                        <React.Suspense fallback={<LoadingSpinner />}>
-                          <ErrorBoundary>
-                            <CommunityMentorshipView />
-                          </ErrorBoundary>
-                        </React.Suspense>
+                        <RequireAuth>
+                          <React.Suspense fallback={<LoadingSpinner />}>
+                            <ErrorBoundary>
+                              <CommunityMentorshipView />
+                            </ErrorBoundary>
+                          </React.Suspense>
+                        </RequireAuth>
                       } />
                       <Route path="/practitioner/elder-oversight" element={
                         <React.Suspense fallback={<LoadingSpinner />}>
@@ -549,18 +553,22 @@ function App() {
                         </React.Suspense>
                       } />
                       <Route path="/wallet" element={
-                        <React.Suspense fallback={<LoadingSpinner />}>
-                          <ErrorBoundary>
-                            <WalletPage />
-                          </ErrorBoundary>
-                        </React.Suspense>
+                        <RequireAuth>
+                          <React.Suspense fallback={<LoadingSpinner />}>
+                            <ErrorBoundary>
+                              <WalletPage />
+                            </ErrorBoundary>
+                          </React.Suspense>
+                        </RequireAuth>
                       } />
                       <Route path="/wallet/transactions" element={
-                        <React.Suspense fallback={<LoadingSpinner />}>
-                          <ErrorBoundary>
-                            <WalletTransactionsPage />
-                          </ErrorBoundary>
-                        </React.Suspense>
+                        <RequireAuth>
+                          <React.Suspense fallback={<LoadingSpinner />}>
+                            <ErrorBoundary>
+                              <WalletTransactionsPage />
+                            </ErrorBoundary>
+                          </React.Suspense>
+                        </RequireAuth>
                       } />
                       <Route path="/client/my-awo" element={
                         <React.Suspense fallback={<LoadingSpinner />}>
@@ -803,18 +811,22 @@ function App() {
                         </React.Suspense>
                       } />
                       <Route path="/profile" element={
-                        <React.Suspense fallback={<LoadingSpinner />}>
-                          <ErrorBoundary>
-                            <ProfilePage />
-                          </ErrorBoundary>
-                        </React.Suspense>
+                        <RequireAuth>
+                          <React.Suspense fallback={<LoadingSpinner />}>
+                            <ErrorBoundary>
+                              <ProfilePage />
+                            </ErrorBoundary>
+                          </React.Suspense>
+                        </RequireAuth>
                       } />
                       <Route path="/profile/:userId" element={
-                        <React.Suspense fallback={<LoadingSpinner />}>
-                          <ErrorBoundary>
-                            <ProfilePage />
-                          </ErrorBoundary>
-                        </React.Suspense>
+                        <RequireAuth>
+                          <React.Suspense fallback={<LoadingSpinner />}>
+                            <ErrorBoundary>
+                              <ProfilePage />
+                            </ErrorBoundary>
+                          </React.Suspense>
+                        </RequireAuth>
                       } />
                       <Route path="/events" element={
                         <React.Suspense fallback={<LoadingSpinner />}>

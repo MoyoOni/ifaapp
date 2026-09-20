@@ -51,6 +51,19 @@ const CLIENT_NAV_ITEMS: NavItem[] = [
   { id: 'profile', label: 'My Profile', icon: User, path: '/profile' },
 ];
 
+// Logged-out visitors: only destinations that are genuinely browsable without an
+// account (each backed by public endpoints). The CLIENT menu used to be the
+// fallback here, which showed anonymous visitors Wallet / My Profile / Member
+// Directory and pointed Home/Temples at login-gated /client/* routes.
+const VISITOR_NAV_ITEMS: NavItem[] = [
+  { id: 'home', label: 'Home', icon: User, path: '/' },
+  { id: 'temples', label: 'Temples', icon: Building2, path: '/temples' },
+  { id: 'learning-path', label: 'Academy', icon: GraduationCap, path: '/academy' },
+  { id: 'community-circles', label: 'Community Circles', icon: Users, path: '/circles' },
+  { id: 'forum', label: 'Forum', icon: MessagesSquare, path: '/forum' },
+  { id: 'marketplace', label: 'Marketplace', icon: ShoppingBag, path: '/marketplace' },
+];
+
 // Babalawo/Practitioner-specific navigation
 const BABALAWO_NAV_ITEMS: NavItem[] = [
   { id: 'practice-center', label: 'Practice Center', icon: LayoutDashboard, path: '/practitioner/dashboard' },
@@ -158,7 +171,7 @@ const ROLE_NAV_MAP: Record<UserRole, NavItem[]> = {
  */
 export function getNavItemsForRole(role: UserRole | string | undefined): NavItem[] {
   if (!role) {
-    return [...CLIENT_NAV_ITEMS];
+    return [...VISITOR_NAV_ITEMS];
   }
 
   const roleKey = role as UserRole;

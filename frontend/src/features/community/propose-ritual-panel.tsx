@@ -4,6 +4,7 @@ import { Sparkles, X } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/shared/components/toast';
 import { isDevModeActive } from '@/shared/utils/dev-mode';
+import { useAuth } from '@/shared/hooks/use-auth';
 
 // COMMUNITY_BACKLOG.md FOR-013: "community-generated-ritual approval"
 // (platform owner decision, July 29, 2026). Freeform proposal, reviewed by
@@ -25,6 +26,7 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 const ProposeRitualPanel: React.FC = () => {
+  const { isAuthenticated } = useAuth();
   const { success, error } = useToast();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
@@ -35,7 +37,8 @@ const ProposeRitualPanel: React.FC = () => {
   const { data: mine = [] } = useQuery<RitualProposal[]>({
     queryKey: ['ritual-proposals-mine'],
     queryFn: async () => (await api.get('/cultural/ritual-proposals/mine')).data,
-    enabled: !isDevModeActive(),
+    // "mine" is per-user, so there is nothing to fetch for a logged-out visitor
+    enabled: isAuthenticated && !isDevModeActive(),
   });
 
   const propose = useMutation({

@@ -209,7 +209,8 @@ const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onSelectProduct }) =>
       const response = await api.get('/marketplace/vendors?status=APPROVED');
       return response.data || [];
     },
-    enabled: !isDevModeActive(),
+    // login-only endpoint; browsing the marketplace anonymously must not fire it
+    enabled: isAuthenticated && !isDevModeActive(),
   });
 
   // SHOP_BACKLOG.md MSP-002: approved cross-vendor ritual bundles/kits

@@ -100,3 +100,27 @@ export const VendorRoute: React.FC<{ children: React.ReactNode }> = ({ children 
     {children}
   </ProtectedRoute>
 );
+
+/**
+ * For pages that need a logged-in user but aren't role-specific (wallet,
+ * profile, member directory...). Sends anonymous visitors to login, passing the
+ * intended location in router state like ProtectedRoute does.
+ */
+export const RequireAuth: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, isLoading } = useAuth();
+  const location = useLocation();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted/40">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  return <>{children}</>;
+};
