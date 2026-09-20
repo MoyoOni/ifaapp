@@ -203,19 +203,32 @@ jobs:
         run: npm audit --workspaces --audit-level=high
         continue-on-error: true
 
-  # --- Deploy to EC2 staging only (july-2026-hardening-pass is the active branch; no `main` branch exists on this remote) ---
-  # This job runs `scripts/deploy.sh` (git pull + npm build + PM2 restart) on
-  # the EC2 staging box only -- it never touches AWS/ECR/ECS. Production
-  # (ECS Fargate) has no automated deploy from this pipeline; it's deployed
-  # by a human running the *repo-root* `deploy.sh` (ECR push + `aws ecs
-  # update-service`) manually, per docs/active/AWS_SETUP_GUIDE.md. These are
-  # two different scripts that happen to share a filename in different
-  # directories -- don't conflate them.
+  # --- Deploy to EC2 staging only ---
+  # STATUS, checked September 20, 2026: this job's target, the staging box
+  # at 100.52.200.113:4040, is unreachable (direct curl times out) and has
+  # been failing on every run as a result -- see ILUASE_V1_BACKLOG.md's
+  # Needs a Human section. `continue-on-error: true` below keeps this job
+  # from failing the whole pipeline over a known, already-documented infra
+  # gap that isn't a code problem, while leaving it running (not disabled)
+  # so it self-heals the moment someone brings the box back, and so it stays
+  # visible as a reminder rather than silently disappearing. Remove
+  # continue-on-error once the box is confirmed back up.
+  #
+  # The script below is also stale and would need fixing before it'd work
+  # even with the box reachable: it assumes a PM2-managed process at
+  # /home/ubuntu/ifa_app running ./scripts/deploy.sh + ./scripts/backup-db.sh
+  # (neither exists at that path) -- real production (a *different* box,
+  # iluase-prod-single) runs Docker Compose at /home/ubuntu/app and is
+  # deployed via ECR image pulls, per DEPLOYMENT_PROCEDURES.md's "Real
+  # Production Deployment" section. This job was never updated after that
+  # architecture changed and was pointed at a separate, older staging box
+  # that predates it.
   deploy-staging:
     needs: [test-backend, test-frontend]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/july-2026-hardening-pass' && github.event_name == 'push'
     environment: staging
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
