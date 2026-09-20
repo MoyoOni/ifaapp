@@ -5,6 +5,7 @@ import YorubaInputHelper from '@/shared/components/yoruba-input-helper';
 import NarratorControl from '@/shared/components/narrator-control';
 import { UserRole } from '@common';
 import { useOnboarding } from './hooks/use-onboarding';
+import { getOnboardingProgress } from './onboarding-progress';
 
 interface OnboardingViewProps {
   userId?: string;
@@ -72,6 +73,8 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
     clearProgress,
   } = useOnboarding({ userId: userIdProp, userRole: userRoleProp, onComplete });
 
+  const progress = getOnboardingProgress(userRole as UserRole | undefined, onboardingStep);
+
   return (
     <div className="min-h-screen bg-muted/40 flex flex-col items-center justify-center p-6 relative">
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] pointer-events-none"></div>
@@ -95,17 +98,17 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
           </div>
         )}
 
-        {/* Progress indicator */}
-        {onboardingStep !== 'welcome' && !showCulturalOnboarding && (
-          <div className="bg-card rounded-2xl p-4 border border-border/50 shadow-sm" role="progressbar" aria-valuenow={onboardingStep === 'intent' ? 1 : onboardingStep === 'preferences' ? 2 : onboardingStep === 'role-setup' ? 3 : onboardingStep === 'heritage' ? 4 : onboardingStep === 'discover-temples' ? 5 : onboardingStep === 'form' ? 6 : 7} aria-valuemin={1} aria-valuemax={7}>
+        {/* Progress indicator -- step list is per-role (see onboarding-progress.ts) */}
+        {onboardingStep !== 'welcome' && !showCulturalOnboarding && progress && (
+          <div className="bg-card rounded-2xl p-4 border border-border/50 shadow-sm" role="progressbar" aria-valuenow={progress.current} aria-valuemin={1} aria-valuemax={progress.total}>
             <div className="flex justify-between text-xs text-stone-500 mb-1">
-              <span>Step {onboardingStep === 'intent' ? 1 : onboardingStep === 'preferences' ? 2 : onboardingStep === 'role-setup' ? 3 : onboardingStep === 'heritage' ? 4 : onboardingStep === 'discover-temples' ? 5 : onboardingStep === 'form' ? 6 : 7} of 7</span>
-              <span>{Math.round(((onboardingStep === 'intent' ? 1 : onboardingStep === 'preferences' ? 2 : onboardingStep === 'role-setup' ? 3 : onboardingStep === 'heritage' ? 4 : onboardingStep === 'discover-temples' ? 5 : onboardingStep === 'form' ? 6 : 7) / 7) * 100)}%</span>
+              <span>Step {progress.current} of {progress.total}</span>
+              <span>{progress.percent}%</span>
             </div>
             <div className="w-full bg-stone-200 rounded-full h-2">
-              <div 
-                className="bg-highlight h-2 rounded-full transition-all duration-500 ease-out" 
-                style={{ width: `${(onboardingStep === 'intent' ? 1 : onboardingStep === 'preferences' ? 2 : onboardingStep === 'role-setup' ? 3 : onboardingStep === 'heritage' ? 4 : onboardingStep === 'discover-temples' ? 5 : onboardingStep === 'form' ? 6 : 7) * (100/7)}%` }}
+              <div
+                className="bg-highlight h-2 rounded-full transition-all duration-500 ease-out"
+                style={{ width: `${progress.percent}%` }}
               ></div>
             </div>
           </div>
