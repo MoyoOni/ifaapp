@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Info, AlertTriangle, CheckCircle2, AlertCircle, X } from 'lucide-react';
 import api from '@/lib/api';
+import { useAuth } from '../hooks/use-auth';
 
 interface Announcement {
     id: string;
@@ -23,10 +24,15 @@ const typeConfig: Record<string, { icon: React.ElementType; cls: string }> = {
  */
 export const AnnouncementBanner: React.FC = () => {
     const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+    const { isAuthenticated } = useAuth();
 
     const { data: announcements = [] } = useQuery<Announcement[]>({
         queryKey: ['active-announcements'],
         queryFn: async () => (await api.get('/admin/announcements/active')).data,
+        // The endpoint requires a logged-in user, but SidebarLayout also wraps the
+        // public-browse pages (temples/circles/academy) -- without this gate every
+        // anonymous page view 401s, and those 401s count against the rate limit.
+        enabled: isAuthenticated,
         staleTime: 5 * 60 * 1000, // 5 minutes
         refetchInterval: 10 * 60 * 1000, // re-check every 10 minutes
     });

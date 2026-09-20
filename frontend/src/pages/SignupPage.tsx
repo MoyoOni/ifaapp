@@ -11,10 +11,13 @@ const SignupPage: React.FC = () => {
     const { user } = useAuth();
     const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
 
-    // Redirect if already logged in
+    // Redirect if already logged in. A just-registered user is "logged in" the
+    // instant the shared auth state updates (before RegisterForm's onSuccess
+    // runs), so this must send un-onboarded users to /onboarding, not the
+    // dashboard -- otherwise every new signup skips onboarding entirely.
     React.useEffect(() => {
         if (user) {
-            navigate(getDashboardPathForRole(user.role), { replace: true });
+            navigate(user.hasOnboarded ? getDashboardPathForRole(user.role) : '/onboarding', { replace: true });
         }
     }, [user, navigate]);
 
