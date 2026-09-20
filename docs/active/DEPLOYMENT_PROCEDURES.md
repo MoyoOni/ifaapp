@@ -1,10 +1,12 @@
 # 🚀 Deployment Procedures — Ìlú Àṣẹ Platform
 
-**Version:** 1.2
-**Last Updated:** September 18, 2026
+**Version:** 1.3
+**Last Updated:** September 20, 2026
 **Production:** https://iluase.com (LIVE)
 
-**Correction, September 18, 2026:** this doc's "Production Deployment" section previously described AWS ECS Fargate, Kubernetes, and Vercel as deploy targets, and its env var template listed Stripe. None of that matches reality and following it would either do nothing or fail outright. Real production is a **single EC2 instance** (`iluase-prod-single`) behind CloudFront, running Docker Compose (`postgres`, `redis`, `backend`, `nginx`, `proxy` services) with images pulled from ECR — no ECS, no Kubernetes, no Vercel, no Stripe (payments are Paystack + Flutterwave; email is AWS SES, not SendGrid). The sections below are corrected to match. `AWS_SETUP_GUIDE.md` describes an earlier ECS-based architecture that was retired March 25, 2026 — don't cross-reference it for current deploy steps.
+**Correction, September 18, 2026:** this doc's "Production Deployment" section previously described AWS ECS Fargate, Kubernetes, and Vercel as deploy targets, and its env var template listed Stripe. None of that matches reality and following it would either do nothing or fail outright. Real production is a **single EC2 instance** (`iluase-prod-single`) behind CloudFront, running Docker Compose (`postgres`, `redis`, `backend`, `nginx`, `proxy` services) with images pulled from ECR — no ECS, no Kubernetes, no Vercel, no Stripe (payments are Paystack + Flutterwave; email is AWS SES, not SendGrid). The "Real Production Deployment" section below reflects that and is verified against actual deploys performed this session. `AWS_SETUP_GUIDE.md` describes an earlier ECS-based architecture that was retired March 25, 2026 — don't cross-reference it for current deploy steps (it now carries its own stale banner too).
+
+**Correction, September 20, 2026:** a pass through the rest of this doc found several more sections that survived the September 18 correction unedited — a "Staging Deployment" walkthrough built around a git branch (`v4/quality`) that no longer exists, a frontend env template with the wrong API domain, a "production Redis" note that still says to use ElastiCache (retired along with everything else in March), Post-Deployment Verification steps referencing APM tooling (Datadog/New Relic) that was never set up and a Sentry error-rate check when Sentry isn't actually initializing in production, and Log Rotation/Disk Space steps written for a bare-metal deployment instead of the real Docker Compose one. All fixed below; each fix is marked with what was checked to confirm it.
 
 ---
 
@@ -14,7 +16,7 @@
 1. [Pre-Deployment Checklist](#pre-deployment-checklist)
 2. [Environment Setup](#environment-setup)
 3. [Staging Locally (Docker)](#staging-locally-docker)
-4. [Staging Deployment](#staging-deployment) / [Real Production Deployment](#real-production-deployment)
+4. [Staging Deployment](#staging-deployment-remote-ec2-box) / [Real Production Deployment](#real-production-deployment)
 5. [Post-Deployment Verification](#post-deployment-verification)
 6. [Rollback Procedures](#rollback-procedures)
 
@@ -133,7 +135,7 @@ To wipe staging data for a fresh run: `docker-compose -f docker-compose.staging.
 
 Before deploying to any environment, ensure:
 
-- [ ] All code merged to `v4/quality` branch
+- [ ] All code merged to `main` (tracks `origin/july-2026-hardening-pass` as upstream — `v4/quality`, referenced by an earlier version of this checklist, no longer exists as a branch)
 - [ ] All integration tests passing: `npm run test:integration`
 - [ ] Frontend build successful: `npm run build` (0 errors)
 - [ ] Backend build successful: `npm run build` (0 errors)
@@ -160,9 +162,11 @@ max_connections=200
 
 **Redis (optional, required for WebSocket scaling)**
 ```bash
-# For development/staging
+# For local development
 redis-server --port 6379
-# For production, use managed service (AWS ElastiCache, etc.)
+# Production runs a self-hosted Redis 7 container ("redis" service in
+# docker-compose.yml on iluase-prod-single) — NOT AWS ElastiCache.
+# ElastiCache was part of the earlier ECS architecture, retired March 25, 2026.
 ```
 
 **Node.js 20+ with npm**
@@ -222,159 +226,26 @@ SES_FROM_EMAIL=noreply@iluase.com
 REDIS_URL=redis://:<password>@redis:6379
 ```
 
-**Frontend `.env` Template**
+**Frontend `.env` Template** (checked against the real `frontend/.env.production`, which is the authoritative source — `VITE_WS_URL` in the old version of this template doesn't exist anywhere in the codebase, dropped)
 ```env
-VITE_API_URL=https://api.ilu-ase.com
-VITE_WS_URL=wss://api.ilu-ase.com
+VITE_API_URL=https://iluase.com/api
 VITE_DEMO_MODE=false
-VITE_SENTRY_DSN=https://xxxxx@sentry.io/xxxxx
+VITE_SENTRY_DSN=https://xxxxx@xxxxx.ingest.sentry.io/xxxxx
+VITE_ENVIRONMENT=production
+VITE_GOOGLE_CLIENT_ID=<from Google Cloud Console — public, not secret>
 ```
 
 ✅ **Never commit these files.** Store in secure vault (AWS Secrets Manager, HashiCorp Vault, GitHub Secrets).
 
 ---
 
-## Staging Deployment
+## Staging Deployment (remote EC2 box)
 
-> **Note:** this section is mislabeled "Production Deployment" further down in an older version of this doc — this one, despite the header below, is actually about the separate EC2 **staging** box (http://100.52.200.113:4040 — unconfirmed reachable as of this writing, see `ILUASE_V1_BACKLOG.md`'s ⚪ Needs a Human section). Real production steps are in the section titled "Real Production Deployment" further down.
+**Status, verified September 20, 2026: this section is unreliable, don't follow it as written.** A separate EC2 staging box was documented at `http://100.52.200.113:4040` — a direct connectivity check just now timed out (`curl` exit 28, no response), consistent with `ILUASE_V1_BACKLOG.md`'s ⚪ Needs a Human note that it "may currently be unreachable." Beyond that, the deploy steps this section used to describe were never reconciled with reality: they referenced a `v4/quality` git branch that **does not exist** in this repo (`git branch -a` shows only `main`, `IfaAppV1`, `july-2026-hardening-pass`), a `staging-db.rds.amazonaws.com` RDS endpoint (RDS was retired platform-wide in March), and Vercel/Kubernetes deploy options that were never used for this app. None of it is safe to run as-is.
 
-### 1. Prepare Staging Environment
+**If you need a staging-like environment today, use [Staging Locally (Docker)](#staging-locally-docker) above** — it's a real, working, verified Docker Compose stack you can run on your own machine right now.
 
-```bash
-# Clone repository (if first time)
-git clone https://github.com/MoyoOni/ifa_app.git
-cd ifa_app
-
-# Checkout v4/quality branch
-git checkout v4/quality
-
-# Pull latest changes
-git pull origin v4/quality
-```
-
-### 2. Install Dependencies
-
-```bash
-# Install root dependencies
-npm install
-
-# Install backend dependencies
-cd backend && npm install && cd ..
-
-# Install frontend dependencies
-cd frontend && npm install && cd ..
-
-# Install common dependencies
-cd common && npm install && cd ..
-```
-
-### 3. Build for Staging
-
-```bash
-# Build backend
-cd backend && npm run build && cd ..
-
-# Build frontend
-cd frontend && npm run build && cd ..
-
-# Verify builds succeeded (exit code 0)
-echo $?
-```
-
-### 4. Database Migration (Staging)
-
-```bash
-# Set staging DATABASE_URL
-export DATABASE_URL="postgresql://user:password@staging-db.rds.amazonaws.com:5432/ilu_ase_staging?connection_limit=10"
-
-# Apply all migrations
-cd backend
-npx prisma migrate deploy
-
-# Verify schema is in sync
-npx prisma db push
-
-# Check migration status
-npx prisma migrate status
-
-# Seed demo data (optional, for testing)
-npx prisma db seed
-
-cd ..
-```
-
-### 5. Deploy Backend (Staging)
-
-Option A: **Container Deployment (Recommended)**
-```bash
-# Build Docker image
-docker build -t ilu-ase-backend:staging-v1 backend/
-
-# Push to registry
-docker push <registry>/ilu-ase-backend:staging-v1
-
-# Deploy via docker-compose or Kubernetes
-docker-compose -f docker-compose.staging.yml up -d
-```
-
-Option B: **Direct Node.js Deployment**
-```bash
-# Navigate to backend
-cd backend
-
-# Start backend in production mode
-NODE_ENV=production npm start
-
-# Backend should be listening on port 3000
-curl -s http://localhost:3000/api/health
-# Expected: {"status":"ok"}
-```
-
-### 6. Deploy Frontend (Staging)
-
-Option A: **Vercel Deployment (Recommended)**
-```bash
-# Install Vercel CLI
-npm i -g vercel
-
-# Login to Vercel
-vercel login
-
-# Deploy frontend
-cd frontend
-vercel --prod --env-file .env.staging
-
-# Get staging URL from Vercel
-# Update FRONTEND_URL in backend .env
-```
-
-Option B: **Traditional Web Server**
-```bash
-# Copy frontend dist to web server
-scp -r frontend/dist/ user@staging-server:/var/www/ilu-ase/
-
-# Configure nginx/Apache to serve frontend, proxy /api to backend
-# Restart web server
-sudo systemctl restart nginx
-```
-
-### 7. Verify Staging Deployment
-
-```bash
-# Check backend health
-curl https://api-staging.ilu-ase.com/api/health
-
-# Check frontend loads
-open https://app-staging.ilu-ase.com
-
-# Run essential tests
-cd backend
-npm run test:integration -- --testPathPattern="wallet"
-# Expected: ✓ 9 passed
-
-# Check logs for errors
-docker logs ilu-ase-backend-staging  # or tail logs from PM2/systemd
-```
+**If the remote staging box needs to be brought back:** that's an infra decision (is it worth keeping vs. relying on local staging + production itself), not a doc fix — flag it to a human rather than guessing at new deploy steps for a box whose current state is unknown.
 
 ---
 
@@ -457,28 +328,28 @@ sudo docker logs iluase-backend --since 2m   # watch for startup errors
 
 ## Post-Deployment Verification
 
+**Note, September 20, 2026:** the checklist below previously assumed a Sentry dashboard and an APM tool (Datadog/New Relic) were both live in production. Neither is. `SENTRY_DSN` is set as a backend env var, but the box's own logs show `[SentryInitializerService] Sentry module could not be loaded, skipping initialization` on every startup — error tracking is not actually active right now (worth a follow-up to find out why the module fails to load). No APM tool is set up at all. Until that's fixed, "logs check" below (real, via `docker logs`) is the only real signal you have — don't assume a dashboard is catching errors for you.
+
 ### Immediate (0-5 minutes)
 
-- [ ] **Error rate normal:** Check Sentry dashboard (should be <0.5%)
-- [ ] **Response times normal:** Check APM (Datadog, New Relic, Sentry, etc.)
-- [ ] **No connection errors:** Database, Redis, external APIs
-- [ ] **Logs check:** No critical errors in application logs
+- [ ] **No connection errors:** `sudo docker logs iluase-backend --since 5m | grep -iE "ECONNREFUSED|connection error"` — database, Redis, external APIs
+- [ ] **Logs check:** `sudo docker logs iluase-backend --since 5m` — no repeating errors or stack traces
+- [ ] **Containers healthy:** `sudo docker ps --format 'table {{.Names}}\t{{.Status}}'` — all should show "healthy"/"Up", none restarting
 
 ### First Hour
 
 - [ ] **User signups flowing:** Check database for new user records
 - [ ] **Wallet tests:** Quick manual test (deposit, check balance)
-- [ ] **Booking test:** Browse babalawo → Book consultation
-- [ ] **Messages test:** Send test message between users, verify real-time
+- [ ] **Marketplace test:** Browse vendor → buy a product (Consultations/booking is paused platform-wide, see `CLAUDE.md` — don't use it as a smoke test)
 - [ ] **Admin test:** Log in as admin, verify dashboard loads
 
 ### Daily (Week 1)
 
-- [ ] **Error rate trending:** Sentry showing <0.5%
+- [ ] **Error rate trending:** no dashboard for this yet (Sentry isn't initializing — see note above); spot-check `docker logs iluase-backend` for repeating errors instead
 - [ ] **User feedback:** Check support email/Slack for issues
-- [ ] **Payment success rate:** Should be >99%
-- [ ] **Database size:** Monitor disk usage
-- [ ] **API response times:** p95 < 2s for most endpoints
+- [ ] **Payment success rate:** Should be >99% (no automated tracking — check `Transaction`/`Payment` table status fields directly if this needs a real number)
+- [ ] **Database size:** `sudo docker exec iluase-postgres psql -U <user> -d <db> -c "SELECT pg_size_pretty(pg_database_size(current_database()));"`, or `df -h` on the box for overall disk
+- [ ] **API response times:** no APM tool set up — no real signal available for this yet
 
 ---
 
@@ -556,24 +427,30 @@ Manual/on-demand backup:
 
 ### Log Rotation
 
-```bash
-# If using file-based logging
-logrotate /etc/logrotate.d/ilu-ase
+**Checked September 20, 2026: this is a real, unaddressed gap.** The app runs in Docker containers (`/home/ubuntu/app/docker-compose.yml` on `iluase-prod-single`), not bare-metal — there's no `/var/log/ilu-ase/` and no `logrotate` config for it. Container logs use Docker's default `json-file` driver, and `docker-compose.yml` has no `logging:` block setting size/rotation limits, so container logs can grow unbounded on the box's own disk. This hasn't caused a problem yet but is worth fixing properly (add a `logging: { driver: json-file, options: { max-size: "10m", max-file: "3" } }` block per service) rather than just noting it here.
 
-# Check logs
-tail -f /var/log/ilu-ase/backend.log
-tail -f /var/log/ilu-ase/frontend.log
+```bash
+# View logs for a running container (what actually exists today)
+sudo docker logs iluase-backend --since 1h
+sudo docker logs iluase-backend -f          # follow, live tail
+
+# Check how much disk a container's logs are actually using
+sudo docker inspect --format='{{.LogPath}}' iluase-backend | xargs sudo du -h
 ```
 
 ### Monitor Disk Space
 
 ```bash
-# Check disk usage
-df -h
+# Check disk usage on the box (checked September 20, 2026: 76% used, 4.8GB free of 20GB —
+# worth watching, not yet critical)
+df -h /
 
-# If >80% used, archive old logs:
-gzip /var/log/ilu-ase/*.log
-tar czf logs-archive-$(date +%Y%m%d).tar.gz /var/log/ilu-ase/
+# Docker-specific usage breakdown — images/containers/volumes/build cache
+sudo docker system df
+
+# Reclaim space from old/unused images (safe — ECR lifecycle policy now
+# prevents these from piling up going forward, see ILUASE_V1_BACKLOG.md)
+sudo docker image prune -a -f
 ```
 
 ---
@@ -589,6 +466,6 @@ tar czf logs-archive-$(date +%Y%m%d).tar.gz /var/log/ilu-ase/
 
 ---
 
-**Document Version:** 1.0  
-**Next Review:** March 25, 2026  
+**Document Version:** 1.3 (see header — this footer previously showed a stale, inconsistent 1.0/March 2026 that never got updated alongside the header)
+**Next Review:** whenever `iluase-prod-single`'s deploy mechanism changes, or in 3 months if nothing changes first
 **Approved By:** ________ (CTO)

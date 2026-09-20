@@ -6,7 +6,11 @@
 
 ---
 
-## ✅ Production Environment — LIVE (March 13, 2026)
+> ⚠️ **STALE — this architecture was retired March 25, 2026, twelve days after this doc's "Last Updated" date.** Everything below (ECS Fargate, the ALB, managed multi-AZ RDS, ElastiCache Redis) was deliberately replaced with a single self-hosted EC2 instance (`iluase-prod-single`) behind the same CloudFront distribution — almost certainly a cost-cutting move (the ECS setup ran ~$225-300/month; the current one targets ~£25/month). This doc is kept for historical/reference value only (e.g. the IAM/CloudTrail/Route53 setup steps may still be partially relevant). **For the real, current architecture and deploy process, see [DEPLOYMENT_PROCEDURES.md](DEPLOYMENT_PROCEDURES.md)'s "Real Production Deployment" section and [DISASTER_RECOVERY_REBUILD_PLAN.md](DISASTER_RECOVERY_REBUILD_PLAN.md).** Discovered and documented September 15, 2026, during the investigation into a production outage that turned out to have nothing to do with any of the resources listed below (most had already been deleted, not down).
+
+---
+
+## ✅ Production Environment — LIVE (March 13, 2026) — ⚠️ retired March 25, 2026, see banner above
 
 **URL:** https://iluase.com
 
