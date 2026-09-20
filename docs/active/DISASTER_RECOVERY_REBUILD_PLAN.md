@@ -94,6 +94,7 @@ Point `iluase-prod-single`'s `DATABASE_URL` at the new RDS endpoint and restart 
 
 - ✅ **CloudTrail was not configured at all** — this is why the original March 25 architecture change and the recent stop event had to be reconstructed from CPU metrics and launch timestamps instead of just reading a log. Fixed: multi-region trail `ilu-ase-prod-trail`, logging to a new private/encrypted bucket `ilu-ase-cloudtrail-logs-091653536932`, log-file validation on, actively logging as of September 15, 2026.
 - ✅ **Billing alerts were checked, not actually a gap** — a Cost Budget ($50/month, both 85%/100% actual and 100% forecasted thresholds) already exists with real email subscribers. This incident was a payment-method failure, not overspending, which a cost budget doesn't catch — nothing to fix here, just worth knowing it wasn't the hole.
+- ✅ **No automated backup of the self-hosted Postgres — fixed September 20, 2026.** Item 3's "confirm it has automated backups... if not, set that up now" from Section 2 above — it didn't, so it's now done: `scripts/backup-prod-db.sh` runs via cron every 6 hours on `iluase-prod-single`, dumping `iluase-postgres` and uploading to a dedicated private/encrypted/versioned S3 bucket (`ilu-ase-prod-db-backups-091653536932`, 90-day lifecycle). The box's IAM instance role (`iluase-ec2-ecr`, previously ECR-read-only only) got a scoped inline policy for exactly this bucket. Tested end-to-end — a real dump uploaded successfully during setup.
 
 ---
 

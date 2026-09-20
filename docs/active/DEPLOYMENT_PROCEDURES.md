@@ -544,14 +544,14 @@ See **[SECRET_ROTATION.md](SECRET_ROTATION.md)** for the full runbook covering:
 
 ### Database Backup
 
-**There is currently no automated backup of production Postgres at all** — confirmed September 15, 2026, no crontab exists on `iluase-prod-single` for either `ubuntu` or `root`. It's a self-hosted container (`iluase-postgres`) on the box's own EBS volume, not RDS — `aws rds describe-db-snapshots` finds nothing because there's no RDS instance to back up. This is a real, standing risk (see `docs/active/DISASTER_RECOVERY_REBUILD_PLAN.md`) — setting up a scheduled `pg_dump` + off-box upload (S3) is still an open task, not yet done.
+**Automated as of September 20, 2026** — `scripts/backup-prod-db.sh` (also deployed at `/home/ubuntu/app/backup-prod-db.sh` on `iluase-prod-single`) runs via cron every 6 hours, dumps `iluase-postgres` via `docker exec` + `pg_dump`, and uploads to a dedicated private/encrypted/versioned S3 bucket (`ilu-ase-prod-db-backups-091653536932`, 90-day lifecycle expiration). Before this date there was no automated backup at all for this self-hosted Postgres container — see `docs/active/DISASTER_RECOVERY_REBUILD_PLAN.md` for the full history of why this mattered.
 
-Manual backup in the meantime:
+Check it's running: `ssh` in and `crontab -l` (should show the `backup-prod-db.sh` line), or `aws s3 ls s3://ilu-ase-prod-db-backups-091653536932/` to see recent dumps directly.
+
+Manual/on-demand backup:
 ```bash
 # From the box (SSH or EC2 Instance Connect, see above)
-sudo docker exec iluase-postgres pg_dump -U iluase_admin iluase_production | gzip > backup-$(date +%Y%m%d).sql.gz
-# Then copy it off the box — a single EBS volume is not a backup:
-scp ubuntu@<box>:~/backup-*.sql.gz .
+/home/ubuntu/app/backup-prod-db.sh
 ```
 
 ### Log Rotation
