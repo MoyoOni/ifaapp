@@ -3,7 +3,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
-import { ThrottlerGuard } from '@nestjs/throttler';
 import { ThrottlerBehindProxyFix } from './throttler-behind-proxy.guard';
 import { getThrottlerConfig } from './config/throttler.config';
 import { AuthModule } from './auth/auth.module';
@@ -128,13 +127,12 @@ import { MaintenanceModeMiddleware } from './middleware/maintenance-mode.middlew
     PractitionerAnalyticsModule,
   ],
   providers: [
+    // ONE global throttler guard. ThrottlerBehindProxyFix extends ThrottlerGuard,
+    // so registering both (as this used to) made every request increment every
+    // counter twice and silently halved all limits (auth 10 -> 5/min, etc.).
     {
       provide: APP_GUARD,
       useClass: ThrottlerBehindProxyFix,
-    },
-    {
-      provide: APP_GUARD,
-      useClass: ThrottlerGuard,
     },
     SentryInitializerService, // Ensure Sentry initializer service is registered
     OralHistorySeedService, // Register the oral history seed service

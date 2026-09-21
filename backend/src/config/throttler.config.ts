@@ -1,6 +1,13 @@
+import { ExecutionContext } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ThrottlerModuleOptions, ThrottlerOptions } from '@nestjs/throttler';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
+
+// Matched by name rather than imported to avoid a config -> auth module import
+// cycle; throttler.config.spec.ts asserts AuthController still has this name.
+export const AUTH_CONTROLLER_NAME = 'AuthController';
+const isAuthRoute = (context: ExecutionContext): boolean =>
+  context.getClass().name === AUTH_CONTROLLER_NAME;
 
 /**
  * Configuration for rate limiting (throttling)
@@ -34,6 +41,12 @@ export const getThrottlerConfig = (configService: ConfigService): ThrottlerModul
       name: 'auth',
       ttl: authTtl,
       limit: authLimit,
+      // Every named throttler is checked on EVERY route unless it opts out, and
+      // counters are per endpoint per IP. Without this, the strict auth limit
+      // (10/min) capped every endpoint in the API -- GET /users/:id, analytics,
+      // onboarding -- and a whole carrier-NAT'd neighbourhood shared that budget.
+      // It exists for brute-force protection, so it only applies to auth routes.
+      skipIf: (context) => !isAuthRoute(context),
     },
     {
       name: 'api',
