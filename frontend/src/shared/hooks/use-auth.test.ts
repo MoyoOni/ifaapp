@@ -1,5 +1,5 @@
 import React from 'react';
-import { renderHook, render, screen, act } from '@testing-library/react';
+import { renderHook, render, screen, act, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { vi } from 'vitest';
 import { UserRole } from '@common';
@@ -19,6 +19,7 @@ vi.mock('@/lib/firebase-messaging', () => ({
 vi.mock('@sentry/react', () => ({
   setUser: vi.fn(),
   setContext: vi.fn(),
+  captureException: vi.fn(),
 }));
 
 import { useAuth, AuthProvider } from './use-auth';
@@ -215,5 +216,38 @@ describe('useAuth — logout revokes the session server-side', () => {
     });
     expect(api.post).not.toHaveBeenCalledWith('/auth/logout', expect.anything(), expect.anything());
     expect(window.localStorage.getItem('accessToken')).toBeNull();
+  });
+});
+
+describe('useAuth — a failed session check only ends the session when the server says so', () => {
+  const seed = () => {
+    window.localStorage.setItem('userId', 'u1');
+    window.localStorage.setItem('accessToken', 'access-abc');
+    window.localStorage.setItem('refreshToken', 'refresh-xyz');
+  };
+  afterEach(() => window.localStorage.clear());
+
+  async function run(errorStatus: number | undefined) {
+    const api = (await import('@/lib/api')).default as unknown as { get: ReturnType<typeof vi.fn> };
+    api.get.mockReset();
+    api.get.mockRejectedValue(errorStatus ? { response: { status: errorStatus } } : new Error('Network Error'));
+    seed();
+    renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => expect(api.get).toHaveBeenCalled());
+    // let the rejection settle through react-query
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+  }
+
+  it.each([[429], [500], [503], [undefined]])('keeps the tokens on a transient failure (%s)', async (status) => {
+    await run(status as number | undefined);
+    expect(window.localStorage.getItem('accessToken')).toBe('access-abc');
+    expect(window.localStorage.getItem('refreshToken')).toBe('refresh-xyz');
+    expect(window.localStorage.getItem('userId')).toBe('u1');
+  });
+
+  it.each([[401], [403], [404]])('clears the tokens when the server rejects the session (%s)', async (status) => {
+    await run(status);
+    expect(window.localStorage.getItem('accessToken')).toBeNull();
+    expect(window.localStorage.getItem('refreshToken')).toBeNull();
   });
 });

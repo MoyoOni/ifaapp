@@ -74,12 +74,21 @@ function useAuthState(): AuthContextValue {
           extra: { userId }
         });
 
-        // Token might be invalid
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('userId');
-        setTokenCheck(false);
-        return null;
+        // Only an authoritative "this session is gone" answer may end the
+        // session. A 401 here means the api client's refresh already failed;
+        // 403/404 mean the account can't be used. Anything else -- a 429 rate
+        // limit, a 5xx, a dropped connection -- is transient, and wiping the
+        // tokens for it silently logged people out. Rethrow so react-query
+        // retries and the tokens survive.
+        const status = error?.response?.status;
+        if (status === 401 || status === 403 || status === 404) {
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('userId');
+          setTokenCheck(false);
+          return null;
+        }
+        throw error;
       }
     },
     enabled: isAuthenticated && !!userId && !isDevModeActive(),

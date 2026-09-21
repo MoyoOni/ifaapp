@@ -44,6 +44,30 @@ api.interceptors.request.use(
   }
 );
 
+// The server rotates refresh tokens: every /auth/refresh revokes the one it was
+// given and returns a new pair. So (1) BOTH tokens must be stored, otherwise the
+// second refresh (about 30 minutes in) sends a revoked token and logs the user
+// out, and (2) concurrent 401s must share ONE refresh -- each extra call would
+// present the already-spent token and fail, logging the user out.
+let refreshInFlight: Promise<string> | null = null;
+
+function refreshAccessToken(): Promise<string> {
+  if (!refreshInFlight) {
+    refreshInFlight = (async () => {
+      const refreshToken = localStorage.getItem('refreshToken');
+      if (!refreshToken) throw new Error('No refresh token available');
+      const response = await axios.post('/api/auth/refresh', { refreshToken });
+      const { accessToken, refreshToken: rotatedRefreshToken } = response.data;
+      localStorage.setItem('accessToken', accessToken);
+      if (rotatedRefreshToken) localStorage.setItem('refreshToken', rotatedRefreshToken);
+      return accessToken as string;
+    })().finally(() => {
+      refreshInFlight = null;
+    });
+  }
+  return refreshInFlight;
+}
+
 // Response interceptor: capture trace ID for logging, then token refresh / error handling
 api.interceptors.response.use(
   (response) => {
@@ -59,23 +83,16 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      try {
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (refreshToken) {
-          const response = await axios.post('/api/auth/refresh', {
-            refreshToken,
-          });
-
-          const { accessToken } = response.data;
-          localStorage.setItem('accessToken', accessToken);
-
+      if (localStorage.getItem('refreshToken')) {
+        try {
+          const accessToken = await refreshAccessToken();
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
           return api(originalRequest);
+        } catch (refreshError) {
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          window.location.href = '/login';
         }
-      } catch (refreshError) {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
       }
     }
 
