@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@/test/test-utils';
+import { render, screen, fireEvent, waitFor } from '@/test/test-utils';
+import api from '@/lib/api';
 import CheckoutView from './checkout-view';
 
 const mockCartItem = {
@@ -90,5 +91,46 @@ describe('CheckoutView', () => {
     const backBtn = screen.getByRole('button', { name: /Go back/i });  // Changed to look for the correct label
     fireEvent.click(backBtn);
     expect(onBack).toHaveBeenCalled();
+  });
+
+  describe('when the order request fails in production (not dev mode)', () => {
+    const goToPay = () => {
+      render(<CheckoutView onBack={onBack} onSuccess={onSuccess} />);
+      fireEvent.change(screen.getByPlaceholderText('123 Ifa Street'), { target: { value: '123 Street' } });
+      fireEvent.change(screen.getByPlaceholderText('Lagos'), { target: { value: 'Lagos' } });
+      fireEvent.click(screen.getByRole('button', { name: /Continue to Payment/i }));
+      fireEvent.click(screen.getByRole('button', { name: /Pay ₦/ }));
+    };
+
+    beforeEach(() => {
+      mockCartState.clearCart.mockClear();
+      (api.post as ReturnType<typeof vi.fn>).mockReset();
+    });
+
+    it.each([
+      ['a 429 rate limit', { response: { status: 429, data: { message: 'Too many requests. Please slow down.' } } }, /Too many requests/],
+      ['a 500', { response: { status: 500, data: {} } }, /Failed to place order/],
+      ['a dropped connection', new Error('Network Error'), /Failed to place order/],
+    ])('shows the error and does NOT report success or clear the cart (%s)', async (_label, failure, message) => {
+      (api.post as ReturnType<typeof vi.fn>).mockRejectedValue(failure);
+
+      goToPay();
+
+      // this used to fabricate a "DEMO-..." success: the customer was told the
+      // order went through and the cart was emptied, but no order existed
+      expect(await screen.findByText(message)).toBeInTheDocument();
+      expect(onSuccess).not.toHaveBeenCalled();
+      expect(mockCartState.clearCart).not.toHaveBeenCalled();
+    });
+
+    it('still proceeds to payment when the order is really created', async () => {
+      (api.post as ReturnType<typeof vi.fn>).mockResolvedValue({ data: { id: 'order-1' } });
+
+      goToPay();
+
+      await waitFor(() => expect(api.post).toHaveBeenCalledWith('/marketplace/orders', expect.objectContaining({ vendorId: 'v1' })));
+      expect(screen.queryByText(/Failed to place order/)).not.toBeInTheDocument();
+      expect(onSuccess).not.toHaveBeenCalled(); // success only comes after the payment modal completes
+    });
   });
 });

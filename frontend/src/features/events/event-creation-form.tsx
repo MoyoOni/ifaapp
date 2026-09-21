@@ -5,6 +5,7 @@ import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { logger } from '@/shared/utils/logger';
 import { useToast } from '@/shared/components/toast';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface EventCreationFormProps {
   onSuccess?: () => void;
@@ -55,6 +56,9 @@ const EventCreationForm: React.FC<EventCreationFormProps> = ({
         const response = await api.post('/events', data);
         return response.data;
       } catch (error) {
+        // Same rule as checkout: the demo fallback is dev/QA only. In production
+        // a failed create must surface, not report a phantom "published" event.
+        if (!isDevModeActive()) throw error;
         logger.warn('Failed to create event, using demo fallback');
         const slugBase = data.title
           ? String(data.title).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')

@@ -8,6 +8,7 @@ import { useAuth } from '@/shared/hooks/use-auth';
 import { logger } from '@/shared/utils/logger';
 import { Currency, PaymentPurpose } from '@common';
 import PaymentModal from '@/features/payments/payment-modal';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface CheckoutViewProps {
     onBack: () => void;
@@ -183,6 +184,12 @@ const CheckoutView: React.FC<CheckoutViewProps> = ({ onBack, onSuccess }) => {
                     isDemo: false
                 };
             } catch (error) {
+                // A demo order is a dev/QA-only convenience. In production a failed
+                // request (429, 5xx, offline...) used to fall through to here and
+                // fabricate a "DEMO-..." success -- the customer was told their order
+                // went through and their cart was cleared, but no order existed.
+                // Real failures must surface (onError shows the message).
+                if (!isDevModeActive()) throw error;
                 logger.warn('Failed to create marketplace order, using demo fallback', error);
                 const orderIds = buildDemoOrderIds();
                 return {
