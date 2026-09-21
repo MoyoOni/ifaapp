@@ -315,7 +315,18 @@ sudo docker compose up -d --no-deps nginx
 
 `docker-entrypoint.sh` runs `prisma migrate deploy` automatically on every backend container start — no separate migration step needed for routine deploys.
 
-### 3. Verify
+### 3. Verify — by digest, not by "it says Started"
+
+A deploy that changed nothing looks identical to a real one: `docker compose up -d` prints `Running` if the pull failed (the box's ECR login expires after 12h, and a `| grep`/`| tail` on the pull output hides the "authorization token has expired" error), and a build piped through `tail` reports success even when it failed. So always confirm the running image is the one you built:
+
+```bash
+# on your machine: the digest you pushed (both tags must match)
+aws ecr describe-images --repository-name iluase/backend --region us-east-1 --image-ids imageTag=<sha> --query 'imageDetails[0].imageDigest' --output text
+# on the box: the digest actually running
+img=$(sudo docker inspect -f '{{.Image}}' iluase-backend); sudo docker image inspect $img --format '{{index .RepoDigests 0}}'
+```
+
+The two must be equal. `docker ps` should also show the container `Up` for seconds/minutes, not hours, right after a deploy. Build with `set -euo pipefail` (or a script that checks the tag exists and that `:latest` and `:<sha>` share a digest) rather than piping `docker build`. In `zsh`, write `"${REPO}:latest"` — `$REPO:latest` is parsed as a `:l` lowercase modifier and silently pushes to the wrong repository name.
 
 ```bash
 curl -sf https://iluase.com/api/health
