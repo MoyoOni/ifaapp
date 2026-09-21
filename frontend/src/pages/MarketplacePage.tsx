@@ -13,7 +13,7 @@ const MarketplacePage: React.FC = () => {
         } else if (productId === 'my-orders') {
           navigate('/my-orders');
         } else {
-          navigate(`/product/${productId}`);
+          navigate(`/marketplace/${productId}`);
         }
       }}
     />

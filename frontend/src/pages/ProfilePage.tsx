@@ -61,7 +61,7 @@ const ProfilePage: React.FC = () => {
         break;
       case 'product-detail':
         if (params) {
-          navigate(`/product/${params}`);
+          navigate(`/marketplace/${params}`);
         } else {
           navigate('/marketplace');
         }
