@@ -33,7 +33,6 @@ interface OnboardingData {
   preferredLanguage?: string;
   timezone?: string;
   hasOnboarded?: boolean;
-  onboardedAt?: Date;
 }
 
 @Injectable()
@@ -843,11 +842,19 @@ export class UsersService {
       throw new UnauthorizedException('You can only complete your own onboarding');
     }
 
-    // Update user with onboarding data
+    // Allowlist -- never spread the caller's object into the update. Anything
+    // else (role, verified, adminSubRole...) would otherwise be user-writable.
+    // preferredLanguage is accepted by the DTO but has no column, so it is
+    // deliberately not written.
+    const { yorubaName, location, intentTags, timezone } = onboardingData;
+
     const updatedUser = await this.prisma.user.update({
       where: { id },
       data: {
-        ...onboardingData,
+        ...(yorubaName !== undefined && { yorubaName }),
+        ...(location !== undefined && { location }),
+        ...(intentTags !== undefined && { intentTags }),
+        ...(timezone !== undefined && { timezone }),
         hasOnboarded: true,
         updatedAt: new Date(),
       },

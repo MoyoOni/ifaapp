@@ -289,7 +289,6 @@ export function useOnboarding({ userId: userIdProp, userRole: userRoleProp, onCo
         return;
       }
 
-      clearProgress();
       const response = await api.patch(`/users/${userId}/onboarding`, {
         yorubaName,
         location,
@@ -299,8 +298,19 @@ export function useOnboarding({ userId: userIdProp, userRole: userRoleProp, onCo
         hasOnboarded: true,
       });
 
+      // Only discard the saved progress once the server has accepted it -- it
+      // used to be cleared before the request, so a failure lost everything.
+      clearProgress();
+
       if (userRole === UserRole.BABALAWO && slugValue.length >= 3 && slugAvailable === true) {
-        await api.patch(`/users/${userId}`, { slug: slugValue });
+        // Optional and already-onboarded by this point: a taken/failed slug must
+        // not strand the user on this screen; they can set it from their profile.
+        try {
+          await api.patch(`/users/${userId}`, { slug: slugValue });
+        } catch (slugError) {
+          logger.warn('Could not save profile URL during onboarding:', slugError);
+          showError('Your profile URL could not be saved -- you can set it later from your profile.');
+        }
       }
 
       const updatedUser = { ...response.data, hasOnboarded: true };
@@ -319,6 +329,8 @@ export function useOnboarding({ userId: userIdProp, userRole: userRoleProp, onCo
       }
     } catch (error) {
       logger.error('Onboarding failed:', error);
+      // This used to fail silently -- "Skip for now" just appeared to do nothing.
+      showError("We couldn't finish setting up your account. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

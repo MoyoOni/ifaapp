@@ -425,20 +425,15 @@ describe('UsersService', () => {
       verified: true,
     };
 
-    it('should mark user as onboarded with provided data', async () => {
+    it('should mark user as onboarded and persist only the allowed onboarding fields', async () => {
       const onboardingData = {
-        culturalLevel: 'BEGINNER',
-        interests: ['Divination', 'Herbalism'],
+        yorubaName: 'Adé',
         location: 'Lagos',
+        intentTags: ['Divination', 'Herbalism'],
+        timezone: 'Africa/Lagos',
       };
 
-      const mockUpdatedUser = {
-        id: 'user-1',
-        sub: 'user-1',
-        ...onboardingData,
-        hasOnboarded: true,
-      };
-
+      const mockUpdatedUser = { id: 'user-1', sub: 'user-1', ...onboardingData, hasOnboarded: true };
       mockPrismaService.user.update.mockResolvedValue(mockUpdatedUser);
 
       const result = await service.completeOnboarding('user-1', onboardingData, currentUser);
@@ -446,12 +441,33 @@ describe('UsersService', () => {
       expect(result).toEqual(mockUpdatedUser);
       expect(prisma.user.update).toHaveBeenCalledWith({
         where: { id: 'user-1' },
-        data: {
-          ...onboardingData,
-          hasOnboarded: true,
-          updatedAt: expect.any(Date),
-        },
+        data: { ...onboardingData, hasOnboarded: true, updatedAt: expect.any(Date) },
       });
+    });
+
+    it('never writes fields outside the allowlist, even if a caller passes them (no privilege escalation)', async () => {
+      mockPrismaService.user.update.mockResolvedValue({ id: 'user-1', hasOnboarded: true });
+
+      await service.completeOnboarding(
+        'user-1',
+        {
+          location: 'Lagos',
+          role: 'ADMIN',
+          verified: true,
+          adminSubRole: 'SUPER',
+          trustScore: 100,
+          preferredLanguage: 'en', // accepted by the DTO but has no column
+        } as any,
+        currentUser
+      );
+
+      const data = (prisma.user.update as jest.Mock).mock.calls.at(-1)[0].data;
+      expect(data).toEqual({ location: 'Lagos', hasOnboarded: true, updatedAt: expect.any(Date) });
+      expect(data).not.toHaveProperty('role');
+      expect(data).not.toHaveProperty('verified');
+      expect(data).not.toHaveProperty('adminSubRole');
+      expect(data).not.toHaveProperty('trustScore');
+      expect(data).not.toHaveProperty('preferredLanguage');
     });
 
     it('should set hasOnboarded to true even with empty data', async () => {

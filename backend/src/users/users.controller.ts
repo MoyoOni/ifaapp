@@ -21,6 +21,7 @@ import { EndorseUserDto } from './dto/endorse-user.dto';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../shared/guards/auth.guard';
 import { Public } from '../auth/decorators/public.decorator';
+import { CompleteOnboardingDto } from './dto/complete-onboarding.dto';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
@@ -192,18 +193,21 @@ export class UsersController {
     return this.usersService.update(id, dto, currentUser!);
   }
 
-  @Public()
+  // Deliberately NOT @Public(): JwtAuthGuard returns early for public routes
+  // without authenticating, so @CurrentUser() was always undefined here and the
+  // ownership check below rejected every non-admin with a 403 -- nobody could
+  // finish onboarding.
   @Patch(':id/onboarding')
   async completeOnboarding(
     @Param('id') id: string,
-    @Body() onboardingData: Partial<UpdateUserDto>,
-    @CurrentUser() currentUser?: CurrentUserPayload
+    @Body() onboardingData: CompleteOnboardingDto,
+    @CurrentUser() currentUser: CurrentUserPayload
   ) {
     // Only allow users to update their own onboarding unless they're an admin
-    if (currentUser?.sub !== id && currentUser?.role !== 'ADMIN') {
+    if (currentUser.sub !== id && currentUser.role !== 'ADMIN') {
       throw new ForbiddenException();
     }
-    return this.usersService.completeOnboarding(id, onboardingData, currentUser!);
+    return this.usersService.completeOnboarding(id, onboardingData, currentUser);
   }
 
   @Get()
