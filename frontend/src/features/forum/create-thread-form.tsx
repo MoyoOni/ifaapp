@@ -19,35 +19,6 @@ interface ForumCategory {
   icon?: string;
 }
 
-interface ForumThread {
-  id: string;
-  categoryId: string;
-  authorId: string;
-  title: string;
-  content: string;
-  status: string;
-  isPinned: boolean;
-  isLocked: boolean;
-  isApproved: boolean;
-  viewCount: number;
-  postCount: number;
-  createdAt: string;
-  author: {
-    id: string;
-    name: string;
-    yorubaName?: string;
-    avatar?: string;
-    verified: boolean;
-    culturalLevel?: string;
-  };
-  category: {
-    id: string;
-    name: string;
-    slug: string;
-    isTeachings?: boolean;
-  };
-}
-
 
 interface CreateThreadFormProps {
   categoryId?: string;
@@ -145,19 +116,14 @@ Why this circle is needed: [Explain why this circle would benefit the community]
     onError: () => {
       error('Failed to create thread. Please try again.');
     },
-    onSuccess: (createdThread) => {
-      const prependThread = (existing: ForumThread[] | undefined) => {
-        if (!createdThread) {
-          return existing || [];
-        }
-        const current = existing || [];
-        if (current.some((thread) => thread.id === createdThread.id)) {
-          return current;
-        }
-        return [createdThread as ForumThread, ...current];
-      };
-      queryClient.setQueryData(['forum-threads', selectedCategoryId || null], prependThread);
-      queryClient.setQueryData(['forum-threads', null], prependThread);
+    onSuccess: () => {
+      // Invalidate by prefix so EVERY cached thread list refetches. This used to
+      // write the new thread straight into ['forum-threads', category] and
+      // ['forum-threads', null], but the list's real key has a third part
+      // (['forum-threads', category, tag]), so those writes never reached it and
+      // a freshly posted thread stayed invisible until a manual refresh -- long
+      // enough for people to assume it failed and post again.
+      queryClient.invalidateQueries({ queryKey: ['forum-threads'] });
       queryClient.invalidateQueries({ queryKey: ['forum-categories'] });
       if (onSuccess) {
         onSuccess();
