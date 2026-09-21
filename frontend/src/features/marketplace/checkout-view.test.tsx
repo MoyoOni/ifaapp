@@ -108,9 +108,10 @@ describe('CheckoutView', () => {
     });
 
     it.each([
-      ['a 429 rate limit', { response: { status: 429, data: { message: 'Too many requests. Please slow down.' } } }, /Too many requests/],
-      ['a 500', { response: { status: 500, data: {} } }, /Failed to place order/],
-      ['a dropped connection', new Error('Network Error'), /Failed to place order/],
+      // shaped like the real backend envelope: { success: false, error: { message, userMessage } }
+      ['a 429 rate limit', { response: { status: 429, data: { success: false, error: { message: 'ThrottlerException', userMessage: 'Too many requests. Please slow down and try again.' } } } }, /Too many requests/],
+      ['a 500', { response: { status: 500, data: {} } }, /server error occurred/i],
+      ['a dropped connection', Object.assign(new Error('Network Error'), { request: {} }), /Unable to connect/],
     ])('shows the error and does NOT report success or clear the cart (%s)', async (_label, failure, message) => {
       (api.post as ReturnType<typeof vi.fn>).mockRejectedValue(failure);
 
@@ -129,7 +130,7 @@ describe('CheckoutView', () => {
       goToPay();
 
       await waitFor(() => expect(api.post).toHaveBeenCalledWith('/marketplace/orders', expect.objectContaining({ vendorId: 'v1' })));
-      expect(screen.queryByText(/Failed to place order/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Payment Issue/)).not.toBeInTheDocument();
       expect(onSuccess).not.toHaveBeenCalled(); // success only comes after the payment modal completes
     });
   });

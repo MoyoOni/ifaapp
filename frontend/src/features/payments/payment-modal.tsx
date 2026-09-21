@@ -3,6 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { X, Loader2, CreditCard, Globe, Info } from 'lucide-react';
 import api from '@/lib/api';
 import { Currency, PaymentPurpose } from '@common';
+import { parseApiError } from '@/shared/utils/api-error';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -101,7 +102,10 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       }
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || error.message || 'Payment initialization failed';
+      // The backend's error envelope is { success: false, error: { message, userMessage } },
+      // so response.data.message is always undefined and this used to fall through to
+      // axios's raw "Request failed with status code 500" -- shown to the customer.
+      const errorMessage = parseApiError(error).userMessage;
       setPaymentError(errorMessage);
       onError?.(errorMessage);
       setIsProcessing(false);

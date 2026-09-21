@@ -9,6 +9,7 @@ import { logger } from '@/shared/utils/logger';
 import { Currency, PaymentPurpose } from '@common';
 import PaymentModal from '@/features/payments/payment-modal';
 import { isDevModeActive } from '@/shared/utils/dev-mode';
+import { parseApiError } from '@/shared/utils/api-error';
 
 interface CheckoutViewProps {
     onBack: () => void;
@@ -212,7 +213,7 @@ const CheckoutView: React.FC<CheckoutViewProps> = ({ onBack, onSuccess }) => {
         },
         onError: (error: any) => {
             setLoading(false);
-            const message = error?.response?.data?.message || 'Failed to place order. Please try again.';
+            const message = parseApiError(error).userMessage;
             setPaymentError(message);
         }
     });
