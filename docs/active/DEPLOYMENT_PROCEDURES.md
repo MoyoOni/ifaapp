@@ -287,15 +287,16 @@ Tagging by git SHA (not just `:latest`) matters — it's what makes rollback (be
 
 ### 2. SSH into the box and pull the new image(s)
 
-If you have the `ile-ase-key` private key, SSH normally. If not, you can get in via **EC2 Instance Connect** without it (generates a short-lived keypair, pushes the public half via the API):
+Since October 27, 2026 port 22 is **not** open to the internet — the security group (`sg-04d721f9658dd2e29`) only allows SSH from AWS's EC2 Instance Connect range (`18.206.107.24/29`, for the console's "Connect" button). From a laptop, use the helper, which opens 22 to your current IP for the length of the session, pushes a throwaway key via EC2 Instance Connect, and removes the rule when you disconnect (even on Ctrl-C):
 
 ```bash
-ssh-keygen -t ed25519 -f ./eic_temp_key -N ""
-aws ec2-instance-connect send-ssh-public-key \
-  --instance-id i-0ac1e9e2c4984af72 --instance-os-user ubuntu \
-  --ssh-public-key file://./eic_temp_key.pub --availability-zone us-east-1a --region us-east-1
-ssh -i ./eic_temp_key ubuntu@32.192.127.137   # window is short (~60s) — connect immediately after
+scripts/ssh-prod.sh                                           # interactive shell
+scripts/ssh-prod.sh 'cd /home/ubuntu/app && sudo docker compose ps'   # one command
+# AWS CLI not on PATH? point the script at it:
+AWS_CLI=/path/to/aws scripts/ssh-prod.sh
 ```
+
+A plain `ssh ubuntu@32.192.127.137` (or the old manual `send-ssh-public-key` + `ssh` sequence) will now time out unless your IP has been allowed — that's expected. Alternatively, use **Connect → EC2 Instance Connect** in the AWS console.
 
 Then, on the box:
 
