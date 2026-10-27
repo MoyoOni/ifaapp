@@ -9,6 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
+import { UsersService } from '../users/users.service';
 
 /**
  * Events Service
@@ -18,7 +19,10 @@ import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 export class EventsService {
   private readonly logger = new Logger(EventsService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private usersService: UsersService
+  ) {}
 
   /**
    * Generate URL-friendly slug from title
@@ -596,8 +600,59 @@ export class EventsService {
         user: reg.user,
         status: reg.status,
         registeredAt: reg.registeredAt,
+        attendedAt: reg.attendedAt,
         paid: reg.paid,
       })),
     };
+  }
+
+  // V8-305: cultural-level XP for attending events (2x for Devoted members,
+  // applied inside UsersService.awardXP). Nothing could record attendance
+  // before this -- EventRegistration had ATTENDED/attendedAt but no code ever
+  // set them.
+  static readonly ATTENDANCE_XP = 50;
+
+  async markAttendance(eventId: string, userId: string, attended: boolean, currentUser: CurrentUserPayload) {
+    const event = await this.prisma.event.findUnique({ where: { id: eventId, deletedAt: null } });
+    if (!event) {
+      throw new NotFoundException('Event not found');
+    }
+    const isAdmin = currentUser.role === 'ADMIN';
+    if (event.creatorId !== currentUser.id && !isAdmin) {
+      throw new ForbiddenException('Only the event organizer can record attendance');
+    }
+    if (userId === currentUser.id && !isAdmin) {
+      throw new ForbiddenException('You cannot record your own attendance');
+    }
+    if (event.startDate > new Date()) {
+      throw new BadRequestException('Attendance can be recorded once the event has started');
+    }
+
+    const registration = await this.prisma.eventRegistration.findUnique({
+      where: { eventId_userId: { eventId, userId } },
+    });
+    if (!registration || registration.status === 'CANCELLED') {
+      throw new NotFoundException('This member is not registered for the event');
+    }
+
+    const updated = await this.prisma.eventRegistration.update({
+      where: { id: registration.id },
+      data: attended
+        ? { status: 'ATTENDED', attendedAt: registration.attendedAt ?? new Date() }
+        : { status: 'REGISTERED', attendedAt: null },
+    });
+
+    if (attended && !registration.attendanceXpAwarded) {
+      // Conditional claim so a double-click (or two admins) can't award twice.
+      const claimed = await this.prisma.eventRegistration.updateMany({
+        where: { id: registration.id, attendanceXpAwarded: false },
+        data: { attendanceXpAwarded: true },
+      });
+      if (claimed.count === 1) {
+        await this.usersService.awardXP(userId, EventsService.ATTENDANCE_XP);
+      }
+    }
+
+    return updated;
   }
 }

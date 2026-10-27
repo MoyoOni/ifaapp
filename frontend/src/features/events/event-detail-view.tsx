@@ -5,6 +5,7 @@ import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import AddToCalendar from '@/shared/components/add-to-calendar';
 import { useToast } from '@/shared/components/toast';
+import EventAttendeesPanel from './event-attendees-panel';
 
 interface EventDetail {
   id: string;
@@ -115,6 +116,7 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ eventSlug, onBack }) 
   });
 
   const isRegistered = event?.userRegistration?.status === 'REGISTERED' || event?.userRegistration?.status === 'ATTENDED';
+  const hasAttended = event?.userRegistration?.status === 'ATTENDED';
   const isCreator = event?.creator.id === user?.id;
   const canRegister = event && !isRegistered && event.status === 'UPCOMING' && event.published;
   const isPastDeadline = event?.registrationDeadline && new Date(event.registrationDeadline) < new Date();
@@ -307,12 +309,14 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ eventSlug, onBack }) 
           <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
             <div className="flex items-center gap-2 dark:text-green-400 text-green-600">
               <CheckCircle size={20} />
-              <span className="font-bold">You are registered for this event</span>
+              <span className="font-bold">
+                {hasAttended ? 'You attended this event' : 'You are registered for this event'}
+              </span>
             </div>
             <p className="text-sm text-muted-foreground mt-2">
               Registered on {new Date(event.userRegistration!.registeredAt).toLocaleDateString()}
             </p>
-            {event.status === 'UPCOMING' && (
+            {event.status === 'UPCOMING' && !hasAttended && (
               <button
                 onClick={() => cancelRegistrationMutation.mutate()}
                 disabled={cancelRegistrationMutation.isPending}
@@ -380,6 +384,11 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ eventSlug, onBack }) 
               Registration is closed for this event.
             </p>
           </div>
+        )}
+
+        {/* V8-305: organizer records who attended (awards cultural XP) */}
+        {(isCreator || user?.role === 'ADMIN') && (
+          <EventAttendeesPanel eventId={event.id} startDate={event.startDate} currentUserId={user?.id} />
         )}
       </div>
     </div>

@@ -2388,6 +2388,10 @@ model EventRegistration {
   registeredAt DateTime  @default(now())
   cancelledAt  DateTime?
   attendedAt   DateTime?
+  // V8-305: set (atomically) the first time the organizer marks this member
+  // as attended, so attendance XP is awarded at most once even if the mark
+  // is later removed and re-added.
+  attendanceXpAwarded Boolean @default(false)
   event        Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
   user         User      @relation("EventRegistrations", fields: [userId], references: [id], onDelete: Cascade)
 

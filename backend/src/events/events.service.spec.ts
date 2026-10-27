@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventsService } from './events.service';
+import { UsersService } from '../users/users.service';
 import { BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { User, Event, EventRegistration } from '@prisma/client';
 import { UserRole } from '@common/enums/user-role.enum';
@@ -480,7 +481,11 @@ describe('EventsService - soft delete (ProBacklog-v1.md item #12)', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     const moduleRef = await Test.createTestingModule({
-      providers: [EventsService, { provide: PrismaService, useValue: mockPrismaService }],
+      providers: [
+        EventsService,
+        { provide: PrismaService, useValue: mockPrismaService },
+        { provide: UsersService, useValue: { awardXP: jest.fn() } },
+      ],
     }).compile();
 
     service = moduleRef.get<EventsService>(EventsService);
@@ -526,5 +531,91 @@ describe('EventsService - soft delete (ProBacklog-v1.md item #12)', () => {
       await service.findOne('event-1');
       expect(mockPrismaService.event.findFirst.mock.calls[0][0].where.deletedAt).toBeNull();
     });
+  });
+});
+
+// V8-305: attendance XP. Nothing recorded attendance before this.
+describe('EventsService - markAttendance (V8-305)', () => {
+  let service: EventsService;
+  const awardXP = jest.fn();
+  const prisma = {
+    event: { findUnique: jest.fn() },
+    eventRegistration: { findUnique: jest.fn(), update: jest.fn(), updateMany: jest.fn() },
+  };
+  const organizer = { id: 'organizer-1', role: 'BABALAWO' } as any;
+  const started = { id: 'event-1', creatorId: 'organizer-1', startDate: new Date(Date.now() - 3_600_000) };
+  const registration = { id: 'reg-1', status: 'REGISTERED', attendedAt: null, attendanceXpAwarded: false };
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        EventsService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: UsersService, useValue: { awardXP } },
+      ],
+    }).compile();
+    service = moduleRef.get(EventsService);
+    prisma.event.findUnique.mockResolvedValue(started);
+    prisma.eventRegistration.findUnique.mockResolvedValue(registration);
+    prisma.eventRegistration.update.mockImplementation(async ({ data }: any) => ({ ...registration, ...data }));
+    prisma.eventRegistration.updateMany.mockResolvedValue({ count: 1 });
+  });
+
+  it('marks a member attended and awards attendance XP once', async () => {
+    const result = await service.markAttendance('event-1', 'member-1', true, organizer);
+
+    expect(result.status).toBe('ATTENDED');
+    expect(result.attendedAt).toBeInstanceOf(Date);
+    expect(prisma.eventRegistration.updateMany).toHaveBeenCalledWith({
+      where: { id: 'reg-1', attendanceXpAwarded: false },
+      data: { attendanceXpAwarded: true },
+    });
+    expect(awardXP).toHaveBeenCalledWith('member-1', EventsService.ATTENDANCE_XP);
+  });
+
+  it('does not award again when the XP was already awarded', async () => {
+    prisma.eventRegistration.findUnique.mockResolvedValue({ ...registration, attendanceXpAwarded: true });
+    await service.markAttendance('event-1', 'member-1', true, organizer);
+    expect(awardXP).not.toHaveBeenCalled();
+  });
+
+  it('does not award when a concurrent request already claimed it', async () => {
+    prisma.eventRegistration.updateMany.mockResolvedValue({ count: 0 });
+    await service.markAttendance('event-1', 'member-1', true, organizer);
+    expect(awardXP).not.toHaveBeenCalled();
+  });
+
+  it('unmarking clears attendance without touching XP', async () => {
+    prisma.eventRegistration.findUnique.mockResolvedValue({ ...registration, status: 'ATTENDED', attendedAt: new Date() });
+    const result = await service.markAttendance('event-1', 'member-1', false, organizer);
+    expect(result.status).toBe('REGISTERED');
+    expect(result.attendedAt).toBeNull();
+    expect(prisma.eventRegistration.updateMany).not.toHaveBeenCalled();
+    expect(awardXP).not.toHaveBeenCalled();
+  });
+
+  it('refuses anyone but the organizer or an admin', async () => {
+    await expect(service.markAttendance('event-1', 'member-1', true, { id: 'someone', role: 'CLIENT' } as any))
+      .rejects.toThrow(ForbiddenException);
+    await expect(service.markAttendance('event-1', 'member-1', true, { id: 'admin-1', role: 'ADMIN' } as any))
+      .resolves.toBeDefined();
+  });
+
+  it('refuses an organizer recording their own attendance', async () => {
+    await expect(service.markAttendance('event-1', 'organizer-1', true, organizer)).rejects.toThrow(ForbiddenException);
+  });
+
+  it('refuses before the event has started', async () => {
+    prisma.event.findUnique.mockResolvedValue({ ...started, startDate: new Date(Date.now() + 86_400_000) });
+    await expect(service.markAttendance('event-1', 'member-1', true, organizer)).rejects.toThrow(BadRequestException);
+    expect(awardXP).not.toHaveBeenCalled();
+  });
+
+  it('refuses a member who is not (or no longer) registered', async () => {
+    prisma.eventRegistration.findUnique.mockResolvedValue({ ...registration, status: 'CANCELLED' });
+    await expect(service.markAttendance('event-1', 'member-1', true, organizer)).rejects.toThrow(NotFoundException);
+    prisma.eventRegistration.findUnique.mockResolvedValue(null);
+    await expect(service.markAttendance('event-1', 'member-1', true, organizer)).rejects.toThrow(NotFoundException);
   });
 });

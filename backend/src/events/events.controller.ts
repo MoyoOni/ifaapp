@@ -14,6 +14,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
+import { MarkAttendanceDto } from './dto/mark-attendance.dto';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../shared/guards/auth.guard';
 import { Public } from '../auth/decorators/public.decorator';
@@ -142,6 +143,21 @@ export class EventsController {
       throw new ForbiddenException('You can only view your own event registrations');
     }
     return this.eventsService.getUserRegistrations(userId);
+  }
+
+  /**
+   * Record whether a registered member attended (organizer or admin only)
+   * PATCH /events/:id/attendees/:userId/attendance
+   */
+  @Patch(':id/attendees/:userId/attendance')
+  @UseGuards(AuthGuard('jwt'))
+  async markAttendance(
+    @Param('id') eventId: string,
+    @Param('userId') userId: string,
+    @Body() dto: MarkAttendanceDto,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.eventsService.markAttendance(eventId, userId, dto.attended, currentUser);
   }
 
   /**
