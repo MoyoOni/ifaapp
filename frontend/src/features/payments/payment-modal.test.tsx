@@ -40,3 +40,39 @@ describe('PaymentModal — when the gateway call fails', () => {
     expect(shown).not.toMatch(/status code/i); // this used to reach the customer verbatim
   });
 });
+
+describe('PaymentModal — the "Complete in demo mode" escape hatch', () => {
+  const failGateway = () =>
+    apiPost.mockRejectedValue(
+      Object.assign(new Error('Request failed with status code 500'), {
+        response: { status: 500, data: { success: false, error: { userMessage: 'Something went wrong. Please try again.' } } },
+      })
+    );
+
+  beforeEach(() => {
+    apiPost.mockReset();
+    apiGet.mockReset();
+    apiGet.mockResolvedValue({ data: null });
+    localStorage.removeItem('dev_mode_role');
+  });
+
+  // It used to render for real customers too: clicking it after a failed
+  // payment cleared the cart and showed a successful checkout for an unpaid order.
+  it('is not offered to real customers after a failed payment', async () => {
+    failGateway();
+    renderModal();
+    fireEvent.click(await screen.findByRole('button', { name: /Pay Now/i }));
+
+    expect(await screen.findByText('Something went wrong. Please try again.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Complete in demo mode/i })).not.toBeInTheDocument();
+  });
+
+  it('is still offered in dev/QA demo mode', async () => {
+    localStorage.setItem('dev_mode_role', 'client');
+    failGateway();
+    renderModal();
+    fireEvent.click(await screen.findByRole('button', { name: /Pay Now/i }));
+
+    expect(await screen.findByRole('button', { name: /Complete in demo mode/i })).toBeInTheDocument();
+  });
+});

@@ -4,6 +4,7 @@ import { X, Loader2, CreditCard, Globe, Info } from 'lucide-react';
 import api from '@/lib/api';
 import { Currency, PaymentPurpose } from '@common';
 import { parseApiError } from '@/shared/utils/api-error';
+import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -179,13 +180,18 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           {paymentError && (
             <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 space-y-2">
               <p className="text-sm text-red-300">{paymentError}</p>
-              <button
-                type="button"
-                onClick={handleDemoSuccess}
-                className="text-xs font-bold text-highlight hover:underline"
-              >
-                Complete in demo mode
-              </button>
+              {/* Dev/QA only. This used to render in production too, so after a
+                  failed payment a customer could click it and be shown a
+                  successful checkout (cart cleared) for an order never paid. */}
+              {isDevModeActive() && (
+                <button
+                  type="button"
+                  onClick={handleDemoSuccess}
+                  className="text-xs font-bold text-highlight hover:underline"
+                >
+                  Complete in demo mode
+                </button>
+              )}
             </div>
           )}
           <div className="bg-muted/50 rounded-lg p-4 space-y-3">
