@@ -4,6 +4,7 @@ import { CheckCircle, XCircle, Loader2, AlertCircle, Clock, Package, Square, Che
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { useToast } from '@/shared/components/toast';
+import { parseApiError } from '@/shared/utils/api-error';
 
 interface GuidancePlanItem {
   name: string;
@@ -60,13 +61,7 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [rejectionReason, setRejectionReason] = useState('');
-
-  const persistSessionPlan = (plan: GuidancePlan) => {
-    if (typeof sessionStorage === 'undefined') {
-      return;
-    }
-    sessionStorage.setItem(`demo-guidance-plan:${plan.id}`, JSON.stringify(plan));
-  };
+  const { error } = useToast();
 
   // Fetch guidance plan
   const { data: guidancePlan, isLoading } = useQuery<GuidancePlan | null>({
@@ -77,25 +72,19 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
     },
   });
 
+  // Approving moves money (escrow). This used to catch *every* failure and
+  // mark the plan APPROVED/CANCELLED in sessionStorage anyway, so the client
+  // was shown an approval that never reached the server. Errors now surface.
   const approveMutation = useMutation({
     mutationFn: async (approve: boolean) => {
-      try {
-        const response = await api.post(`/guidance-plans/${guidancePlanId}/approve/${user?.id}`, {
-          approve,
-          notes: approve ? undefined : rejectionReason,
-        });
-        return response.data;
-      } catch (error) {
-        if (!guidancePlan) {
-          throw error;
-        }
-        const updatedPlan: GuidancePlan = {
-          ...guidancePlan,
-          status: approve ? 'APPROVED' : 'CANCELLED',
-        };
-        persistSessionPlan(updatedPlan);
-        return updatedPlan;
-      }
+      const response = await api.post(`/guidance-plans/${guidancePlanId}/approve/${user?.id}`, {
+        approve,
+        notes: approve ? undefined : rejectionReason,
+      });
+      return response.data;
+    },
+    onError: (err) => {
+      error(parseApiError(err).userMessage);
     },
     onSuccess: (data, approve) => {
       if (data) {
@@ -116,29 +105,16 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
   // Item completion mutation
   const itemCompletionMutation = useMutation({
     mutationFn: async ({ itemIndex, completed }: { itemIndex: number; completed: boolean }) => {
-      try {
-        const response = await api.patch(`/guidance-plans/${guidancePlanId}/items/${itemIndex}`, {
-          completed,
-        });
-        return response.data;
-      } catch (error) {
-        const cachedPlan = queryClient.getQueryData<GuidancePlan | null>(['guidance-plan', guidancePlanId]);
-        if (!cachedPlan) {
-          throw error;
-        }
-        const updatedItems = cachedPlan.items.map((item, index) => (
-          index === itemIndex ? { ...item, completed } : item
-        ));
-        const updatedPlan: GuidancePlan = {
-          ...cachedPlan,
-          items: updatedItems,
-        };
-        persistSessionPlan(updatedPlan);
-        return updatedPlan;
-      }
+      const response = await api.patch(`/guidance-plans/${guidancePlanId}/items/${itemIndex}`, {
+        completed,
+      });
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['guidance-plan', guidancePlanId] });
+    },
+    onError: (err) => {
+      error(parseApiError(err).userMessage);
     },
   });
 
@@ -156,7 +132,6 @@ const GuidancePlanApprovalView: React.FC<GuidancePlanApprovalViewProps> = ({
     approveMutation.mutate(true);
   };
 
-  const { error } = useToast();
 
   const handleReject = () => {
     if (!rejectionReason.trim()) {
