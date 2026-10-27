@@ -180,6 +180,7 @@ model User {
   refundRequestsMade       RefundRequest[]         @relation("RefundRequester")
   refundRequestsProcessed  RefundRequest[]         @relation("RefundProcessor")
   oralHistoryEntries       OralHistoryEntry[]      @relation("OralHistoryCreator")
+  oralHistoryRevisions     OralHistoryRevision[]   @relation("OralHistoryRevisionEditor")
   sacredCalendarEvents     SacredCalendarEvent[]   @relation("SacredCalendarCreator")
 
   // EXP-020: Personal Awo relationship
@@ -2378,22 +2379,22 @@ model Event {
 }
 
 model EventRegistration {
-  id           String    @id @default(uuid())
-  eventId      String
-  userId       String
-  status       String    @default("REGISTERED")
-  paid         Boolean   @default(false)
-  paymentId    String?
-  notes        String?
-  registeredAt DateTime  @default(now())
-  cancelledAt  DateTime?
-  attendedAt   DateTime?
+  id                  String    @id @default(uuid())
+  eventId             String
+  userId              String
+  status              String    @default("REGISTERED")
+  paid                Boolean   @default(false)
+  paymentId           String?
+  notes               String?
+  registeredAt        DateTime  @default(now())
+  cancelledAt         DateTime?
+  attendedAt          DateTime?
   // V8-305: set (atomically) the first time the organizer marks this member
   // as attended, so attendance XP is awarded at most once even if the mark
   // is later removed and re-added.
-  attendanceXpAwarded Boolean @default(false)
-  event        Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  user         User      @relation("EventRegistrations", fields: [userId], references: [id], onDelete: Cascade)
+  attendanceXpAwarded Boolean   @default(false)
+  event               Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user                User      @relation("EventRegistrations", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([eventId, userId])
   @@index([eventId])
@@ -2860,12 +2861,39 @@ model OralHistoryEntry {
   updatedAt         DateTime  @updatedAt
   deletedAt         DateTime?
 
-  creator User @relation("OralHistoryCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  creator   User                  @relation("OralHistoryCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  revisions OralHistoryRevision[]
 
   @@index([category])
   @@index([createdAt])
   @@index([deletedAt])
   @@index([publishedAt])
+}
+
+// COMMUNITY_BACKLOG.md FOR-024: revision history. A snapshot of an entry's
+// previous content, written in the same transaction as each edit that changes
+// it -- edits used to overwrite a community member's elder-approved story in
+// place with no record of what it said before. Publish/unpublish alone does
+// not create a revision (the words didn't change).
+model OralHistoryRevision {
+  id            String    @id @default(uuid())
+  entryId       String
+  title         String
+  category      String
+  babalawoName  String?
+  recordingDate DateTime?
+  tags          String[]  @default([])
+  content       String
+  sourceUrl     String?
+  // Who made the edit that replaced this version (null if that admin was
+  // later deleted -- the history itself must survive them).
+  editedBy      String?
+  createdAt     DateTime  @default(now())
+
+  entry  OralHistoryEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  editor User?            @relation("OralHistoryRevisionEditor", fields: [editedBy], references: [id], onDelete: SetNull)
+
+  @@index([entryId, createdAt])
 }
 
 model SacredCalendarEvent {
@@ -2897,7 +2925,7 @@ model SacredCalendarEvent {
   // reflectionThreadId -- auto-created (SeasonalEventReminderService) when the
   // event is about to start, and surfaced on the forum home for its duration
   // via GET /forum/seasonal-highlights.
-  gatheringThreadId  String? @unique
+  gatheringThreadId String? @unique
 
   @@index([date])
   @@index([isActive])

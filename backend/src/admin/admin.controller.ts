@@ -1177,8 +1177,19 @@ export class AdminController {
 
   @Patch('cultural/oral-histories/:id')
   @Roles(UserRole.ADMIN)
-  async updateOralHistory(@Param('id') id: string, @Body() dto: UpdateOralHistoryDto) {
-    return this.culturalContentService.updateOralHistory(id, dto);
+  async updateOralHistory(
+    @Param('id') id: string,
+    @Body() dto: UpdateOralHistoryDto,
+    @CurrentUser() admin: CurrentUserPayload
+  ) {
+    return this.culturalContentService.updateOralHistory(id, dto, admin.id);
+  }
+
+  // COMMUNITY_BACKLOG.md FOR-024: previous versions of an entry
+  @Get('cultural/oral-histories/:id/revisions')
+  @Roles(UserRole.ADMIN)
+  async getOralHistoryRevisions(@Param('id') id: string) {
+    return this.culturalContentService.getOralHistoryRevisions(id);
   }
 
   @Delete('cultural/oral-histories/:id')

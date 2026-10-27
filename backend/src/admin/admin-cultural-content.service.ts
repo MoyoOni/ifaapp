@@ -162,7 +162,7 @@ export class AdminCulturalContentService {
     return this.prisma.oralHistoryEntry.create({ data });
   }
 
-  async updateOralHistory(id: string, dto: UpdateOralHistoryDto) {
+  async updateOralHistory(id: string, dto: UpdateOralHistoryDto, editorId?: string) {
     const existing = await this.prisma.oralHistoryEntry.findUnique({ where: { id, deletedAt: null } });
     if (!existing) throw new NotFoundException('Oral history entry not found');
 
@@ -180,7 +180,51 @@ export class AdminCulturalContentService {
     if (dto.publish === true) data.publishedAt = new Date();
     else if (dto.publish === false) data.publishedAt = null;
 
+    // FOR-024: snapshot the previous version whenever the story itself changes,
+    // atomically with the edit. A publish toggle alone isn't a revision.
+    if (this.changesStory(existing, data)) {
+      const [, updated] = await this.prisma.$transaction([
+        this.prisma.oralHistoryRevision.create({
+          data: {
+            entryId: id,
+            title: existing.title,
+            category: existing.category,
+            babalawoName: existing.babalawoName,
+            recordingDate: existing.recordingDate,
+            tags: existing.tags,
+            content: existing.content,
+            sourceUrl: existing.sourceUrl,
+            editedBy: editorId,
+          },
+        }),
+        this.prisma.oralHistoryEntry.update({ where: { id }, data }),
+      ]);
+      return updated;
+    }
+
     return this.prisma.oralHistoryEntry.update({ where: { id }, data });
+  }
+
+  private static readonly STORY_FIELDS = [
+    'title', 'category', 'babalawoName', 'recordingDate', 'tags', 'content', 'sourceUrl',
+  ] as const;
+
+  private changesStory(existing: Record<string, any>, data: Record<string, any>): boolean {
+    const norm = (v: unknown) => (v instanceof Date ? v.toISOString() : JSON.stringify(v ?? null));
+    return AdminCulturalContentService.STORY_FIELDS.some(
+      (field) => field in data && norm(data[field]) !== norm(existing[field])
+    );
+  }
+
+  // FOR-024: previous versions of an entry, newest first.
+  async getOralHistoryRevisions(id: string) {
+    const existing = await this.prisma.oralHistoryEntry.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Oral history entry not found');
+    return this.prisma.oralHistoryRevision.findMany({
+      where: { entryId: id },
+      orderBy: { createdAt: 'desc' },
+      include: { editor: { select: { id: true, name: true } } },
+    });
   }
 
   // ProBacklog-v1.md item #12 (soft-delete audit): community members submit

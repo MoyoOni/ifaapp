@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   BookOpen, Mic, Calendar, Plus, Trash2, Edit3, RefreshCw,
-  Loader2, CheckCircle, Eye, EyeOff, X, Save,
+  Loader2, CheckCircle, Eye, EyeOff, X, Save, History,
 } from 'lucide-react';
 import api from '@/lib/api';
 import { Button } from '@/shared/components/ui/button';
@@ -266,6 +266,54 @@ const DailyWordsSection: React.FC = () => {
 
 // ─── Oral History Section ─────────────────────────────────────────────────────
 
+// COMMUNITY_BACKLOG.md FOR-024: previous versions of an entry. Edits used to
+// overwrite a story in place with no record of what it said before.
+interface OralHistoryRevision {
+  id: string;
+  title: string;
+  category: string;
+  babalawoName?: string | null;
+  tags: string[];
+  content: string;
+  sourceUrl?: string | null;
+  createdAt: string;
+  editor?: { id: string; name: string } | null;
+}
+
+const OralHistoryRevisionsModal: React.FC<{ entry: OralHistory; onClose: () => void }> = ({ entry, onClose }) => {
+  const { data: revisions = [], isLoading, isError } = useQuery<OralHistoryRevision[]>({
+    queryKey: ['admin', 'cultural', 'oral-histories', entry.id, 'revisions'],
+    queryFn: () => api.get(`/admin/cultural/oral-histories/${entry.id}/revisions`).then(r => r.data),
+  });
+
+  return (
+    <Modal title={`History — ${entry.title}`} onClose={onClose}>
+      {isLoading ? (
+        <div className="flex justify-center py-6"><Loader2 size={20} className="animate-spin text-muted-foreground" /></div>
+      ) : isError ? (
+        <p className="text-sm text-destructive">Couldn't load the revision history.</p>
+      ) : revisions.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No earlier versions — this entry hasn't been edited since it was added.</p>
+      ) : (
+        <ol className="space-y-3">
+          {revisions.map(r => (
+            <li key={r.id} className="border border-border rounded-xl p-3 space-y-1">
+              <p className="text-xs text-muted-foreground">
+                Replaced {fmtDate(r.createdAt)}{r.editor ? ` by ${r.editor.name}` : ''}
+              </p>
+              <p className="text-sm font-semibold text-foreground">{r.title}</p>
+              <p className="text-xs text-muted-foreground">
+                {r.category}{r.babalawoName ? ` · By ${r.babalawoName}` : ''}{r.tags.length > 0 ? ` · ${r.tags.join(' · ')}` : ''}
+              </p>
+              <p className="text-sm text-foreground whitespace-pre-wrap">{r.content}</p>
+            </li>
+          ))}
+        </ol>
+      )}
+    </Modal>
+  );
+};
+
 const OralHistorySection: React.FC = () => {
   const qc = useQueryClient();
   const { success, error: toastError } = useToast();
@@ -310,6 +358,8 @@ const OralHistorySection: React.FC = () => {
     onSuccess: () => { success('Entry deleted'); qc.invalidateQueries({ queryKey: ['admin', 'cultural', 'oral-histories'] }); },
     onError: () => toastError('Delete failed'),
   });
+
+  const [historyEntry, setHistoryEntry] = useState<OralHistory | null>(null);
 
   const openEdit = (e: OralHistory) => {
     setForm({ title: e.title, category: e.category, babalawoName: e.babalawoName ?? '', recordingDate: e.recordingDate?.slice(0, 10) ?? '', tags: e.tags.join(', '), content: e.content, sourceUrl: e.sourceUrl ?? '', relatedProductIds: (e.relatedProductIds ?? []).join(', '), publish: !!e.publishedAt });
@@ -358,12 +408,15 @@ const OralHistorySection: React.FC = () => {
                   {e.publishedAt ? <EyeOff size={14} /> : <Eye size={14} />}
                 </Button>
                 <Button size="sm" variant="ghost" onClick={() => openEdit(e)}><Edit3 size={14} /></Button>
+                <Button size="sm" variant="ghost" title="Revision history" aria-label={`Revision history for ${e.title}`} onClick={() => setHistoryEntry(e)}><History size={14} /></Button>
                 <Button size="sm" variant="ghost" onClick={() => del(e.id)} className="text-destructive hover:text-destructive"><Trash2 size={14} /></Button>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      {historyEntry && <OralHistoryRevisionsModal entry={historyEntry} onClose={() => setHistoryEntry(null)} />}
 
       {showForm && (
         <Modal title={editId ? 'Edit Oral History Entry' : 'Add Oral History Entry'} onClose={() => setShowForm(false)}>
