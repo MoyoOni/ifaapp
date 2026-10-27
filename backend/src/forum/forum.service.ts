@@ -24,6 +24,7 @@ import {
 import { EmailService } from '../notifications/email.service';
 import { CrisisDetectionService } from '../shared/services/crisis-detection.service';
 import { UsersService } from '../users/users.service';
+import { inSeasonEventWhere } from '../marketplace/seasonal-event-reminder.service';
 
 @Injectable()
 export class ForumService {
@@ -1968,6 +1969,38 @@ Share your reflections, questions, and experiences below. All levels welcome.
       image: p.images[0] ?? null,
       category: p.category,
     }));
+  }
+
+  // ==================== COMMUNITY_BACKLOG.md FOR-007: Seasonal Highlights ====================
+
+  // Sacred-calendar events that are upcoming (within 3 days) or underway, each
+  // with the gathering thread SeasonalEventReminderService created for it.
+  // Events whose thread hasn't been created yet (or was deleted) are left
+  // out rather than shown with nowhere to go.
+  async getSeasonalHighlights() {
+    const events = await this.prisma.sacredCalendarEvent.findMany({
+      where: { ...inSeasonEventWhere(new Date()), gatheringThreadId: { not: null } },
+      orderBy: { date: 'asc' },
+      select: { id: true, title: true, yorubaName: true, date: true, endDate: true, gatheringThreadId: true },
+    });
+    if (events.length === 0) return [];
+
+    const threads = await this.prisma.forumThread.findMany({
+      where: {
+        id: { in: events.map((e) => e.gatheringThreadId as string) },
+        status: { not: 'DELETED' },
+        isApproved: true,
+      },
+      select: { id: true, title: true, postCount: true },
+    });
+    const byId = new Map(threads.map((t) => [t.id, t]));
+
+    return events
+      .filter((e) => byId.has(e.gatheringThreadId as string))
+      .map(({ gatheringThreadId, ...event }) => ({
+        ...event,
+        thread: byId.get(gatheringThreadId as string)!,
+      }));
   }
 
   // ==================== COMMUNITY_BACKLOG.md FOR-004: Learning Pathways ====================

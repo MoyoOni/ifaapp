@@ -2889,6 +2889,12 @@ model SacredCalendarEvent {
   // support/reflection threads. Reuses Forum, not a parallel comment system.
   reflectionThreadId String? @unique
 
+  // COMMUNITY_BACKLOG.md FOR-007: the "during" counterpart to
+  // reflectionThreadId -- auto-created (SeasonalEventReminderService) when the
+  // event is about to start, and surfaced on the forum home for its duration
+  // via GET /forum/seasonal-highlights.
+  gatheringThreadId  String? @unique
+
   @@index([date])
   @@index([isActive])
 }

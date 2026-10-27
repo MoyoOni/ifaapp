@@ -8,6 +8,7 @@ import CreateThreadForm from './create-thread-form';
 import ForumRoleBadge from './forum-role-badge';
 import AskAnElderBanner from './ask-an-elder-banner';
 import DailyYorubaWordBanner from './daily-yoruba-word-banner';
+import SeasonalHighlightsBanner from './seasonal-highlights-banner';
 import { useAuth } from '@/shared/hooks/use-auth';
 
 interface ForumCategory {
@@ -434,6 +435,9 @@ const ForumHomeView: React.FC<ForumHomeViewProps> = ({ onSelectThread, onCreateT
 
           {/* COMMUNITY_BACKLOG.md FOR-008: Daily Yoruba Word */}
           {selectedCategoryObj?.slug === 'yoruba-language-culture' && <DailyYorubaWordBanner />}
+
+          {/* COMMUNITY_BACKLOG.md FOR-007: significant days near or underway */}
+          <SeasonalHighlightsBanner onSelectThread={onSelectThread} />
 
           {/* 🔥 Hot Right Now — trending threads */}
           {trendingThreads.length > 0 && (

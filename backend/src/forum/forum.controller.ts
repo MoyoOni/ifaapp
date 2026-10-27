@@ -103,6 +103,13 @@ export class ForumController {
     return this.forumService.createCategory(dto, currentUser);
   }
 
+  // COMMUNITY_BACKLOG.md FOR-007: significant days that are near or underway
+  @Public()
+  @Get('seasonal-highlights')
+  async getSeasonalHighlights() {
+    return this.forumService.getSeasonalHighlights();
+  }
+
   // ==================== COMMUNITY_BACKLOG.md FOR-004: Learning Pathways ====================
 
   @Public()

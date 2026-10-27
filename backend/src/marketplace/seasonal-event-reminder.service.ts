@@ -1,11 +1,26 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   NotificationService,
   NotificationType,
   NotificationCategory,
 } from '../notifications/notification.service';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// COMMUNITY_BACKLOG.md FOR-007: an event is "in season" from 3 days before it
+// starts until it ends (or, with no endDate, for the day it falls on). Shared
+// by the gathering-thread cron below and ForumService.getSeasonalHighlights,
+// so what gets a thread and what gets highlighted can't drift apart.
+export function inSeasonEventWhere(now: Date): Prisma.SacredCalendarEventWhereInput {
+  return {
+    isActive: true,
+    date: { lte: new Date(now.getTime() + 3 * DAY_MS) },
+    OR: [{ endDate: { gte: now } }, { endDate: null, date: { gte: new Date(now.getTime() - DAY_MS) } }],
+  };
+}
 
 // SHOP_BACKLOG.md MSP-008: "Client reminders tied to calendar entries" and
 // "Post-ceremony/post-season community reflection tied to Forum". Same
@@ -27,6 +42,46 @@ export class SeasonalEventReminderService {
     this.logger.log(
       `Sent ${reminded} event reminder(s), created ${reflected} reflection thread(s)`
     );
+  }
+
+  // FOR-007: daily, so a gathering thread exists before a short event starts
+  // (the weekly run above could otherwise miss one entirely).
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async createGatheringThreads() {
+    const events = await this.prisma.sacredCalendarEvent.findMany({
+      where: { ...inSeasonEventWhere(new Date()), gatheringThreadId: null },
+    });
+    if (events.length === 0) return 0;
+
+    const category = await this.prisma.forumCategory.findUnique({
+      where: { slug: 'temple-connections-events' },
+    });
+    if (!category) return 0;
+
+    let created = 0;
+    for (const event of events) {
+      const name = event.yorubaName ? `${event.yorubaName} (${event.title})` : event.title;
+      const thread = await this.prisma.forumThread.create({
+        data: {
+          categoryId: category.id,
+          authorId: event.createdBy,
+          title: `${name} — Gathering`,
+          content: `${event.title} begins ${event.date.toLocaleDateString()}. Share how you are preparing, ask about the observance, and walk through it alongside others honouring it.`,
+          tags: ['gathering', 'sacred-calendar'],
+        },
+      });
+      await this.prisma.sacredCalendarEvent.update({
+        where: { id: event.id },
+        data: { gatheringThreadId: thread.id },
+      });
+      await this.prisma.forumCategory.update({
+        where: { id: category.id },
+        data: { threadCount: { increment: 1 } },
+      });
+      created++;
+    }
+    if (created > 0) this.logger.log(`Created ${created} seasonal gathering thread(s)`);
+    return created;
   }
 
   private async sendClientReminders() {
