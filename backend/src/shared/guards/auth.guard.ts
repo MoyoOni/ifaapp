@@ -31,7 +31,21 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       context.getClass(),
     ]);
 
+    // Public routes are optionally authenticated: a valid token attaches the
+    // user, a missing/expired/revoked one leaves the request anonymous, and
+    // neither ever rejects it. Returning early without trying (as this used to)
+    // meant @CurrentUser() was always undefined on public routes, so e.g.
+    // sacred forum threads were hidden from every signed-in member too.
     if (isPublic) {
+      const request = context.switchToHttp().getRequest<Request>();
+      if (request.headers.authorization?.startsWith('Bearer ')) {
+        try {
+          await super.canActivate(context);
+          this.attachImpersonationInfo(request);
+        } catch {
+          request.user = undefined;
+        }
+      }
       return true;
     }
 
@@ -40,7 +54,11 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       return false;
     }
 
-    const request = context.switchToHttp().getRequest<Request>();
+    this.attachImpersonationInfo(context.switchToHttp().getRequest<Request>());
+    return true;
+  }
+
+  private attachImpersonationInfo(request: Request) {
     const user: any = request.user;
 
     // Add impersonation info to user object if present
@@ -50,7 +68,5 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       (user as ExtendedUser).impersonatedBy = impersonationInfo.impersonatedBy;
       (user as ExtendedUser).impersonatedByEmail = impersonationInfo.impersonatedByEmail;
     }
-
-    return true;
   }
 }
