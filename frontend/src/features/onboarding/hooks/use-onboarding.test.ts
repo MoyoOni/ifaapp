@@ -15,8 +15,9 @@ vi.mock('@/shared/contexts/language-context', () => ({ useLanguage: () => ({ t: 
 vi.mock('@/lib/analytics', () => ({ analytics: { track: vi.fn() } }));
 
 const setUser = vi.fn();
+let authUser: { id: string; role: string } | null = { id: 'u1', role: 'VENDOR' };
 vi.mock('@/shared/hooks/use-auth', () => ({
-  useAuth: () => ({ user: { id: 'u1', role: 'VENDOR' }, setUser }),
+  useAuth: () => ({ user: authUser, setUser }),
 }));
 
 const PROGRESS_KEY = 'onboarding_progress_u1';
@@ -29,6 +30,23 @@ describe('useOnboarding.completeOnboarding', () => {
     setUser.mockReset();
     localStorage.clear();
     localStorage.setItem(PROGRESS_KEY, JSON.stringify({ step: 'avatar', location: 'Lagos' }));
+    authUser = { id: 'u1', role: 'VENDOR' };
+  });
+
+  // This used to "simulate completion": navigate to the dashboard as if
+  // onboarding had finished, with nothing saved.
+  it('sends the user to sign in, rather than pretending, when the session is gone', async () => {
+    authUser = null;
+    const { result } = renderHook(() => useOnboarding({ userRole: 'VENDOR' }));
+
+    await act(async () => {
+      await result.current.completeOnboarding();
+    });
+
+    expect(apiPatch).not.toHaveBeenCalled();
+    expect(showError).toHaveBeenCalledWith(expect.stringMatching(/sign in again/i));
+    expect(navigate).toHaveBeenCalledWith('/login', { replace: true });
+    expect(navigate).not.toHaveBeenCalledWith(expect.stringMatching(/dashboard/), expect.anything());
   });
 
   it('tells the user and keeps their saved progress when the server rejects the request', async () => {

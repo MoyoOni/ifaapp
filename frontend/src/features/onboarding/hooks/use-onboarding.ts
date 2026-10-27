@@ -280,12 +280,12 @@ export function useOnboarding({ userId: userIdProp, userRole: userRoleProp, onCo
     setIsSubmitting(true);
     try {
       if (!userId) {
-        logger.warn('User ID is missing, simulating completion');
-        setTimeout(() => {
-          if (onComplete) onComplete();
-          else if (userRole) navigate(getDashboardPathForRole(userRole as UserRole), { replace: true });
-          else navigate('/', { replace: true });
-        }, 1000);
+        // This used to pretend onboarding had completed and navigate to the
+        // dashboard without saving anything. The saved progress is only cleared
+        // after the server accepts it, so signing back in resumes from here.
+        logger.warn('Onboarding completion attempted without a signed-in user');
+        showError('Your session has ended. Please sign in again to finish setting up your account.');
+        navigate('/login', { replace: true });
         return;
       }
 
