@@ -118,10 +118,14 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ eventSlug, onBack }) 
   const isRegistered = event?.userRegistration?.status === 'REGISTERED' || event?.userRegistration?.status === 'ATTENDED';
   const hasAttended = event?.userRegistration?.status === 'ATTENDED';
   const isCreator = event?.creator.id === user?.id;
-  const canRegister = event && !isRegistered && event.status === 'UPCOMING' && event.published;
+  // Organizers don't register for their own event (they get the attendee panel).
+  const canRegister = event && !isRegistered && !isCreator && event.status === 'UPCOMING' && event.published;
+  // Event.status never leaves UPCOMING on its own, so the start time is what
+  // actually closes registration (the backend enforces the same rule).
+  const hasStarted = !!event && new Date(event.startDate) <= new Date();
   const isPastDeadline = event?.registrationDeadline && new Date(event.registrationDeadline) < new Date();
   const isAtCapacity = event?.capacity && (event._count?.registrations || 0) >= event.capacity;
-  const isRegistrationClosed = Boolean(isPastDeadline || isAtCapacity);
+  const isRegistrationClosed = Boolean(hasStarted || isPastDeadline || isAtCapacity);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -335,7 +339,12 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ eventSlug, onBack }) 
         {/* Registration Actions */}
         {!isRegistered && canRegister && (
           <div className="space-y-4">
-            {isPastDeadline && (
+            {hasStarted && (
+              <div className="bg-muted/50 border border-border rounded-lg p-4">
+                <p className="text-muted-foreground text-sm">This event has already started.</p>
+              </div>
+            )}
+            {!hasStarted && isPastDeadline && (
               <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
                 <p className="text-yellow-400 text-sm">
                   ⚠️ Registration deadline has passed

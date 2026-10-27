@@ -353,6 +353,16 @@ export class EventsService {
       throw new BadRequestException('Registration is only available for upcoming events');
     }
 
+    // Nothing ever moves `status` off UPCOMING, so that check alone left
+    // registration open indefinitely after an event had started or ended.
+    if (event.startDate <= new Date()) {
+      throw new BadRequestException('This event has already started');
+    }
+
+    if (event.creatorId === currentUser.id) {
+      throw new BadRequestException("You're organizing this event, so you don't need to register");
+    }
+
     // Check registration deadline
     if (event.registrationDeadline && new Date(event.registrationDeadline) < new Date()) {
       throw new BadRequestException('Registration deadline has passed');

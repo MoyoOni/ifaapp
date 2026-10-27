@@ -89,6 +89,33 @@ describe('Event registration visibility (GET /events/:identifier, /attendees)', 
     expect(res.body.eventId).toBe(draftId);
   });
 
+  // Nothing ever moves Event.status off UPCOMING, so registration used to stay
+  // open indefinitely after an event had started.
+  it('refuses registration once the event has started', async () => {
+    const started = await prisma.event.create({
+      data: {
+        creatorId: creator.id,
+        type: 'CEREMONY',
+        title: 'Started',
+        slug: `evt-vis-started-${Date.now()}-${Math.floor(Math.random() * 1e6)}`,
+        published: true,
+        startDate: new Date(Date.now() - 3_600_000),
+      },
+    });
+    const res = await request(app.getHttpServer())
+      .post(`/events/${started.id}/register`)
+      .set('Authorization', `Bearer ${member.token}`)
+      .expect(400);
+    expect(JSON.stringify(res.body)).toMatch(/already started/);
+  });
+
+  it("refuses an organizer registering for their own event", async () => {
+    await request(app.getHttpServer())
+      .post(`/events/${publishedId}/register`)
+      .set('Authorization', `Bearer ${creator.token}`)
+      .expect(400);
+  });
+
   it('still refuses that attendee list to anyone else', async () => {
     await request(app.getHttpServer()).get(`/events/${draftId}/attendees`).expect(403);
     await request(app.getHttpServer())

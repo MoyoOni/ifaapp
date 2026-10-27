@@ -75,4 +75,20 @@ describe('EventDetailView — registering', () => {
 
     expect(await screen.findByRole('button', { name: /Cancel Registration/i })).toBeInTheDocument();
   });
+
+  it('does not offer registration once the event has started', async () => {
+    apiGet.mockResolvedValue({ data: { ...baseEvent, startDate: new Date(Date.now() - 3_600_000).toISOString() } });
+    render(<EventDetailView eventSlug="odun-ifa-gathering" />);
+
+    expect(await screen.findByText('This event has already started.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Register for Event/i })).not.toBeInTheDocument();
+  });
+
+  it("does not offer the organizer registration for their own event", async () => {
+    apiGet.mockResolvedValue({ data: { ...baseEvent, creator: { id: 'member-1', name: 'Me' } } });
+    render(<EventDetailView eventSlug="odun-ifa-gathering" />);
+
+    await screen.findByText('Ọdún Ifá Gathering');
+    expect(screen.queryByRole('button', { name: /Register for Event/i })).not.toBeInTheDocument();
+  });
 });
