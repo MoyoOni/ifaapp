@@ -15,6 +15,8 @@ import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../shared/guards/auth.guard';
+import { Public } from '../auth/decorators/public.decorator';
 
 @Controller('events')
 export class EventsController {
@@ -59,7 +61,13 @@ export class EventsController {
    * Get event by ID or slug
    * GET /events/:identifier
    */
+  // Public, but optionally authenticated: with no guard at all (as this used
+  // to be) currentUser was always undefined, so the response never included
+  // the member's own registration -- which the frontend then papered over by
+  // fabricating one whenever registering failed.
   @Get(':identifier')
+  @UseGuards(JwtAuthGuard)
+  @Public()
   async findOne(
     @Param('identifier') identifier: string,
     @CurrentUser() currentUser?: CurrentUserPayload
@@ -150,7 +158,11 @@ export class EventsController {
    * Get event attendees
    * GET /events/:id/attendees
    */
+  // Same as findOne: without a guard the creator of an unpublished event
+  // was always treated as anonymous and refused their own attendee list.
   @Get(':id/attendees')
+  @UseGuards(JwtAuthGuard)
+  @Public()
   async getEventAttendees(
     @Param('id') eventId: string,
     @CurrentUser() currentUser?: CurrentUserPayload

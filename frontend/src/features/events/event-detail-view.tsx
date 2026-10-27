@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Calendar, MapPin, Video, Globe, Users, CheckCircle, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
-import { logger } from '@/shared/utils/logger';
 import AddToCalendar from '@/shared/components/add-to-calendar';
 import { useToast } from '@/shared/components/toast';
 
@@ -69,77 +68,23 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ eventSlug, onBack }) 
   const queryClient = useQueryClient();
   const { success, error: showError } = useToast();
 
-  const getSessionRegistration = (eventId: string) => {
-    if (typeof sessionStorage === 'undefined') {
-      return undefined;
-    }
-    const cached = sessionStorage.getItem(`demo-event-registration:${eventId}`);
-    if (!cached) {
-      return undefined;
-    }
-    try {
-      return JSON.parse(cached) as EventDetail['userRegistration'];
-    } catch (error) {
-      logger.warn('Failed to parse demo event registration', error);
-      return undefined;
-    }
-  };
-
-  const setSessionRegistration = (eventId: string, registration?: EventDetail['userRegistration']) => {
-    if (typeof sessionStorage === 'undefined') {
-      return;
-    }
-    if (!registration) {
-      sessionStorage.removeItem(`demo-event-registration:${eventId}`);
-      return;
-    }
-    sessionStorage.setItem(`demo-event-registration:${eventId}`, JSON.stringify(registration));
-  };
-
   // Fetch event details
   const { data: event, isLoading } = useQuery<EventDetail>({
     queryKey: ['event', eventSlug, user?.id],
-    queryFn: async () => {
-      const response = await api.get(`/events/${eventSlug}`);
-      const data = response.data as EventDetail;
-      // If the backend doesn't report a registration, fall back to the
-      // session-stored one from a previous registration-endpoint failure
-      // (see registerMutation below) -- otherwise it wouldn't survive a
-      // page reload.
-      if (!data.userRegistration) {
-        const sessionRegistration = getSessionRegistration(data.id);
-        if (sessionRegistration) {
-          return { ...data, userRegistration: sessionRegistration };
-        }
-      }
-      return data;
-    },
+    queryFn: async () => (await api.get(`/events/${eventSlug}`)).data,
   });
 
   // Register for event mutation
+  // Errors propagate to onError. This used to catch *every* failure (full
+  // event, passed deadline, expired session...) and fabricate a registration
+  // in sessionStorage instead, so the member was told they were registered
+  // when the organizer never saw them.
   const registerMutation = useMutation({
     mutationFn: async () => {
       if (!event) {
         return;
       }
-      try {
-        await api.post(`/events/${event.id}/register`);
-      } catch (error) {
-        const registration = {
-          id: `demo-reg-${Date.now()}`,
-          status: 'REGISTERED',
-          registeredAt: new Date().toISOString(),
-        };
-        setSessionRegistration(event.id, registration);
-        const updatedEvent: EventDetail = {
-          ...event,
-          userRegistration: registration,
-          _count: {
-            registrations: (event._count?.registrations || 0) + 1,
-          },
-        };
-        queryClient.setQueryData(['event', eventSlug, user?.id], updatedEvent);
-      }
+      await api.post(`/events/${event.id}/register`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['event', eventSlug] });
@@ -157,19 +102,7 @@ const EventDetailView: React.FC<EventDetailViewProps> = ({ eventSlug, onBack }) 
       if (!event) {
         return;
       }
-      try {
-        await api.post(`/events/${event.id}/cancel-registration`);
-      } catch (error) {
-        setSessionRegistration(event.id, undefined);
-        const updatedEvent: EventDetail = {
-          ...event,
-          userRegistration: undefined,
-          _count: {
-            registrations: Math.max((event._count?.registrations || 1) - 1, 0),
-          },
-        };
-        queryClient.setQueryData(['event', eventSlug, user?.id], updatedEvent);
-      }
+      await api.post(`/events/${event.id}/cancel-registration`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['event', eventSlug] });
