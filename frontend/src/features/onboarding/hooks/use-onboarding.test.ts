@@ -82,3 +82,55 @@ describe('useOnboarding.completeOnboarding', () => {
     expect(showError).not.toHaveBeenCalled();
   });
 });
+
+describe('useOnboarding.handleVendorRegister', () => {
+  const apiPost = vi.fn();
+  beforeEach(async () => {
+    const api = (await import('@/lib/api')).default as unknown as { post: typeof apiPost };
+    api.post = apiPost;
+    apiPost.mockReset();
+    showError.mockReset();
+    authUser = { id: 'u1', role: 'VENDOR' };
+  });
+
+  const submit = async (result: { current: ReturnType<typeof useOnboarding> }) => {
+    act(() => result.current.setVendorBusinessName('Ẹkùn Ifá Sacred Supplies'));
+    await act(async () => {
+      await result.current.handleVendorRegister({ preventDefault: () => {} } as React.FormEvent);
+    });
+  };
+
+  // This used to log the failure and carry on to the next step anyway,
+  // finishing onboarding with no shop and nowhere to create one.
+  it('keeps the vendor on the shop step and says why when creating the shop fails', async () => {
+    apiPost.mockRejectedValue({ response: { status: 500, data: { success: false, error: { userMessage: 'Something went wrong. Please try again.' } } } });
+    const { result } = renderHook(() => useOnboarding({ userId: 'u1', userRole: 'VENDOR' }));
+    const stepBefore = result.current.onboardingStep;
+
+    await submit(result);
+
+    expect(showError).toHaveBeenCalledWith(expect.stringMatching(/couldn't create your shop/i));
+    expect(result.current.onboardingStep).toBe(stepBefore);
+    expect(result.current.vendorSubmitting).toBe(false);
+  });
+
+  it('moves on when the shop is created', async () => {
+    apiPost.mockResolvedValue({ data: { id: 'vendor-1' } });
+    const { result } = renderHook(() => useOnboarding({ userId: 'u1', userRole: 'VENDOR' }));
+
+    await submit(result);
+
+    expect(showError).not.toHaveBeenCalled();
+    expect(result.current.onboardingStep).toBe('heritage');
+  });
+
+  it('moves on when the shop already exists (409)', async () => {
+    apiPost.mockRejectedValue({ response: { status: 409 } });
+    const { result } = renderHook(() => useOnboarding({ userId: 'u1', userRole: 'VENDOR' }));
+
+    await submit(result);
+
+    expect(showError).not.toHaveBeenCalled();
+    expect(result.current.onboardingStep).toBe('heritage');
+  });
+});

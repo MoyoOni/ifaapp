@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Plus, Edit2, Trash2, Package, Search, Filter } from 'lucide-react';
 import api from '@/lib/api';
-import { useAuth } from '@/shared/hooks/use-auth';
+import { useMyVendorProfile, VendorShopSetup } from './vendor-shop-setup';
 import { Product } from '@common';
 import VendorProductForm from './vendor-product-form';
 import { getCategoryBySlug } from './marketplace-categories';
@@ -25,7 +25,6 @@ const VendorProductListView: React.FC<VendorProductListViewProps> = ({
 }) => {
     const navigate = useNavigate();
     const { productId: productIdParam } = useParams<{ productId: string }>();
-    const { user } = useAuth();
     const queryClient = useQueryClient();
     const toast = useToast();
     const [showAddForm, setShowAddForm] = useState(false);
@@ -64,11 +63,7 @@ const VendorProductListView: React.FC<VendorProductListViewProps> = ({
     // for every real vendor. Also switched to the authenticated
     // "vendor's own products" endpoint so drafts/archived/coming-soon
     // listings show up here too, not just what's publicly visible.
-    const { data: vendorProfile } = useQuery<{ id: string }>({
-        queryKey: ['vendor-profile', user?.id],
-        queryFn: async () => (await api.get('/marketplace/vendors/me')).data,
-        enabled: !!user?.id && !isDevModeActive(),
-    });
+    const { data: vendorProfile, needsSetup } = useMyVendorProfile();
 
     const { data: products = [], isLoading } = useQuery<Product[]>({
         queryKey: ['vendor-products', vendorProfile?.id],
@@ -91,6 +86,8 @@ const VendorProductListView: React.FC<VendorProductListViewProps> = ({
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [mode, productIdParam, products]);
+
+    if (needsSetup) return <VendorShopSetup />;
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">

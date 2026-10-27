@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Filter, Search, ShoppingBag, Eye, Truck, CheckCircle, Clock, RotateCcw, Repeat } from 'lucide-react';
 
 import api from '@/lib/api';
-import { useAuth } from '@/shared/hooks/use-auth';
+import { useMyVendorProfile, VendorShopSetup } from './vendor-shop-setup';
 import VendorOrderDetailPanel from './vendor-order-detail-panel';
 import { isDevModeActive } from '@/shared/utils/dev-mode';
 
@@ -20,7 +20,6 @@ const VendorOrderListView: React.FC<VendorOrderListViewProps> = ({
     onBack,
 }) => {
     const navigate = useNavigate();
-    const { user } = useAuth();
     // /vendor/orders/:orderId deep-links straight into the detail panel
     // instead of just the plain list (the param used to be captured by the
     // route but never read here).
@@ -39,11 +38,7 @@ const VendorOrderListView: React.FC<VendorOrderListViewProps> = ({
 
     // VENDOR_BACKLOG.md VND-009: this needs the Vendor.id (not the User.id)
     // to call the new /marketplace/vendors/:vendorId/orders endpoint.
-    const { data: vendorData } = useQuery({
-        queryKey: ['vendor-profile', user?.id],
-        queryFn: async () => (await api.get('/marketplace/vendors/me')).data,
-        enabled: !!user?.id && !isDevModeActive(),
-    });
+    const { data: vendorData, needsSetup } = useMyVendorProfile();
 
     // VENDOR_BACKLOG.md VND-009: search and filter used to be purely
     // decorative -- the input and button rendered but nothing consumed
@@ -71,6 +66,8 @@ const VendorOrderListView: React.FC<VendorOrderListViewProps> = ({
             default: return <span className="px-2 py-1 bg-muted text-foreground rounded-full text-xs font-bold">{status}</span>;
         }
     };
+
+    if (needsSetup) return <VendorShopSetup />;
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">

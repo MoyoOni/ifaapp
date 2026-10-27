@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Package, ShoppingBag, TrendingUp, MessageCircle, Banknote, Sparkles, HeartHandshake, Calendar, Truck, Store, Star, Bell, RotateCcw, Receipt, Lightbulb, Tag, Share2, Award } from 'lucide-react';
-import api from '@/lib/api';
+import { useMyVendorProfile, VendorShopSetup } from './vendor-shop-setup';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/shared/components/ui/button';
@@ -25,17 +24,6 @@ import VendorPerformanceTierPanel from './vendor-dashboard/vendor-performance-ti
 import VendorCertificationTab from './vendor-dashboard/vendor-certification-tab';
 import NotificationSettings from './vendor-dashboard/notification-settings';
 import { useNewOrderNotifications } from '@/shared/hooks/use-new-order-notifications';
-import { isDevModeActive } from '@/shared/utils/dev-mode';
-
-interface Vendor {
-  id: string;
-  userId: string;
-  businessName: string;
-  status: string;
-  verifiedAt?: string;
-  // VENDOR_BACKLOG.md VND-021
-  slug?: string | null;
-}
 
 interface VendorDashboardViewProps {
   initialTab?: string;
@@ -46,19 +34,9 @@ const VendorDashboardView: React.FC<VendorDashboardViewProps> = ({ initialTab = 
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(initialTab);
   
-  const { data: vendorData, isLoading } = useQuery<Vendor>({
-    queryKey: ['vendor-profile', user?.id],
-    queryFn: async () => {
-      // Was pointed at /vendors/profile/:userId, which doesn't exist --
-      // that 404'd for every vendor and left this dashboard stuck on
-      // "Loading dashboard..." forever. Found while wiring up MSP-016/
-      // MSP-018/VND-019's new Community tab, which needs vendorData to load
-      // to be reachable at all.
-      const response = await api.get('/marketplace/vendors/me');
-      return response.data;
-    },
-    enabled: !!user?.id && !isDevModeActive(),
-  });
+  // Was pointed at /vendors/profile/:userId, which doesn't exist (404'd for
+  // every vendor). Shared with the other vendor pages via useMyVendorProfile.
+  const { data: vendorData, isLoading, needsSetup } = useMyVendorProfile();
 
   // Poll for new orders and show toast notifications
   useNewOrderNotifications(vendorData?.id);
@@ -72,6 +50,10 @@ const VendorDashboardView: React.FC<VendorDashboardViewProps> = ({ initialTab = 
         </div>
       </div>
     );
+  }
+
+  if (needsSetup) {
+    return <VendorShopSetup />;
   }
 
   if (!user) {

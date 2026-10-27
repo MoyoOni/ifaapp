@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { getDashboardPathForRole } from '@/shared/config/navigation';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { useToast } from '@/shared/components/toast';
+import { parseApiError } from '@/shared/utils/api-error';
 
 export interface UseOnboardingProps {
   userId?: string;
@@ -258,15 +259,19 @@ export function useOnboarding({ userId: userIdProp, userRole: userRoleProp, onCo
         noCounterfeitSpiritualItems: vendorNoCounterfeit,
       });
     } catch (err: any) {
-      // If vendor profile already exists (409), continue — otherwise log
+      // A 409 means the shop already exists -- carry on. Anything else used to
+      // be logged and then carried on regardless, finishing onboarding with no
+      // shop and nowhere to create one; now the vendor stays here to retry.
       if (err?.response?.status !== 409) {
         logger.error('Vendor registration failed:', err);
+        showError(`We couldn't create your shop: ${parseApiError(err).userMessage}`);
+        setVendorSubmitting(false);
+        return;
       }
-    } finally {
-      setVendorSubmitting(false);
-      setRoleSetupComplete(true);
-      setOnboardingStep('heritage');
     }
+    setVendorSubmitting(false);
+    setRoleSetupComplete(true);
+    setOnboardingStep('heritage');
   };
 
   const handleFormNext = (e: React.FormEvent) => {

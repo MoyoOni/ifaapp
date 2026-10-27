@@ -4,8 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Loader2, Wallet, Clock, CheckCircle2, Info } from 'lucide-react';
 import api from '@/lib/api';
-import { useAuth } from '@/shared/hooks/use-auth';
-import { isDevModeActive } from '@/shared/utils/dev-mode';
+import { useMyVendorProfile, VendorShopSetup } from './vendor-shop-setup';
 
 interface VendorEarnings {
   totalAllTime: number;
@@ -27,13 +26,8 @@ const fmt = (n: number) => `₦${Number(n ?? 0).toLocaleString()}`;
 // MVP_PIVOT_BACKLOG.md. Marketplace is not paused, so this is fully live.
 const VendorEarningsView: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
 
-  const { data: vendorData } = useQuery({
-    queryKey: ['vendor-profile', user?.id],
-    queryFn: async () => (await api.get('/marketplace/vendors/me')).data,
-    enabled: !!user?.id && !isDevModeActive(),
-  });
+  const { data: vendorData, needsSetup } = useMyVendorProfile();
 
   const { data: earnings, isLoading } = useQuery<VendorEarnings>({
     queryKey: ['vendor-earnings', vendorData?.id],
@@ -45,6 +39,8 @@ const VendorEarningsView: React.FC = () => {
     earnings && earnings.totalLastMonth > 0
       ? Math.round(((earnings.totalThisMonth - earnings.totalLastMonth) / earnings.totalLastMonth) * 100)
       : null;
+
+  if (needsSetup) return <VendorShopSetup />;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 max-w-5xl mx-auto">
