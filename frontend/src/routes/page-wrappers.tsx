@@ -9,7 +9,6 @@ import { usePushNotifications } from '@/shared/hooks/use-push-notifications';
 import LandingPage from '../pages/LandingPage';
 import CircleDetailView from '../features/circles/circle-detail-view';
 import { NotificationProvider } from '../contexts/notification-context';
-import { SearchProvider } from '../contexts/search-context';
 import { PreferencesProvider } from '../contexts/preferences-context';
 import { CacheDebugger } from '@/components/CacheDebugger';
 import { useQuery } from '@tanstack/react-query';
@@ -49,11 +48,9 @@ export const LayoutWrapper: React.FC = () => {
 export const AppWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <NotificationProvider>
-      <SearchProvider>
-        <PreferencesProvider>
-          {children}
-        </PreferencesProvider>
-      </SearchProvider>
+      <PreferencesProvider>
+        {children}
+      </PreferencesProvider>
     </NotificationProvider>
   );
 };
