@@ -3,9 +3,10 @@ import {
   UnauthorizedException,
   ConflictException,
   NotFoundException,
+  BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { randomUUID } from 'crypto';
+import { randomUUID, randomBytes, createHash } from 'crypto';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
@@ -17,7 +18,7 @@ import { MessagingService } from '../messaging/messaging.service';
 import { LoginDto } from './dto/login.dto';
 import { Request } from 'express';
 import { RegisterDto } from './dto/register.dto';
-import { JwtPayload } from './strategies/jwt.strategy';
+import { JwtPayload, issuedBeforePasswordChange } from './strategies/jwt.strategy';
 import { UserRole } from '@common/enums/user-role.enum';
 import { UserService } from '../modules/user/user.service';
 import { ImpersonationService } from '../shared/services/impersonation.service';
@@ -466,6 +467,10 @@ Aboru Aboye.`;
         throw new UnauthorizedException('User not found');
       }
 
+      if (issuedBeforePasswordChange(payload.iat, user.passwordChangedAt)) {
+        throw new UnauthorizedException('Session ended because the password was changed');
+      }
+
       const tokens = await this.generateTokens({
         sub: user.id,
         email: user.email,
@@ -629,8 +634,263 @@ Aboru Aboye.`;
       select: { id: true, passwordHash: true },
     });
     if (!user) throw new Error('User not found');
+    // Only for Google-only accounts (passwordHash ''). This used to overwrite
+    // an existing password too -- anyone holding a member's access token could
+    // replace their password without knowing it. Changing one goes through
+    // changePassword, which requires the current password.
+    if (user.passwordHash) {
+      throw new BadRequestException('This account already has a password. Use change password instead.');
+    }
     const passwordHash = await bcrypt.hash(newPassword, 10);
     await this.prisma.user.update({ where: { id: userId }, data: { passwordHash } });
     return { ok: true };
+  }
+
+  // ==================== Forgot / reset / change password ====================
+  // There was no way to do any of these: the login page's "Forgot password?"
+  // button had no handler and Settings' "Change Password" just opened the
+  // profile page, so a member who forgot their password was locked out.
+
+  static readonly RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
+
+  private static hashResetToken(token: string): string {
+    return createHash('sha256').update(token).digest('hex');
+  }
+
+  /**
+   * Always returns the same response, whether or not the email has an
+   * account, so this can't be used to find out who is registered.
+   */
+  async requestPasswordReset(email: string): Promise<{ message: string }> {
+    const message = 'If an account exists for that email, a password reset link is on its way.';
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) return { message };
+
+    const token = randomBytes(32).toString('hex');
+    const now = new Date();
+    await this.prisma.$transaction([
+      // A new link supersedes any earlier ones.
+      this.prisma.passwordResetToken.updateMany({
+        where: { userId: user.id, usedAt: null },
+        data: { usedAt: now },
+      }),
+      this.prisma.passwordResetToken.create({
+        data: {
+          userId: user.id,
+          tokenHash: AuthService.hashResetToken(token),
+          expiresAt: new Date(now.getTime() + AuthService.RESET_TOKEN_TTL_MS),
+        },
+      }),
+    ]);
+
+    try {
+      await this.sendPasswordResetEmail(user.email, user.yorubaName || user.name, token);
+    } catch (error) {
+      // Still the same response to the caller; the failure is ours to see.
+      this.logger.error(`Failed to send password reset email for user ${user.id}`, error as Error);
+    }
+    return { message };
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
+    const invalid = new BadRequestException('This reset link is invalid or has expired. Please request a new one.');
+    const record = await this.prisma.passwordResetToken.findUnique({
+      where: { tokenHash: AuthService.hashResetToken(token) },
+    });
+    if (!record || record.usedAt || record.expiresAt <= new Date()) throw invalid;
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await this.prisma.$transaction(async (tx) => {
+      // Conditional claim so the same link can't be used twice concurrently.
+      const claimed = await tx.passwordResetToken.updateMany({
+        where: { id: record.id, usedAt: null },
+        data: { usedAt: new Date() },
+      });
+      if (claimed.count !== 1) throw invalid;
+      await tx.user.update({
+        where: { id: record.userId },
+        data: { passwordHash, passwordChangedAt: new Date() },
+      });
+    });
+
+    this.logger.log(`Password reset for user ${record.userId}`);
+    return { message: 'Your password has been reset. You can now sign in.' };
+  }
+
+  /**
+   * Requires the current password. Ends every other session (via
+   * passwordChangedAt) and returns a fresh token pair so this one stays
+   * signed in.
+   */
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    if (!user.passwordHash) {
+      throw new BadRequestException('This account has no password yet. Use set password instead.');
+    }
+    // 400, not 401: a 401 would make the client treat the session as expired.
+    if (!(await bcrypt.compare(currentPassword, user.passwordHash))) {
+      throw new BadRequestException('Your current password is incorrect.');
+    }
+    if (currentPassword === newPassword) {
+      throw new BadRequestException('Choose a new password that is different from your current one.');
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash: await bcrypt.hash(newPassword, 10), passwordChangedAt: new Date() },
+    });
+
+    this.logger.log(`Password changed for user ${userId}`);
+    return this.generateTokens({
+      sub: user.id,
+      email: user.email,
+      role: user.role as any,
+      verified: user.verified,
+    });
+  }
+
+  // ==================== Change email ====================
+  // Settings' "Update Email" used to just open the profile page; there was no
+  // way to change an account's email at all.
+
+  static readonly EMAIL_CHANGE_TTL_MS = 24 * 60 * 60 * 1000;
+
+  /**
+   * Requires the current password, then emails a confirmation link to the NEW
+   * address. Nothing changes until that link is used, so a typo or someone
+   * else's address can't take the account somewhere it can't come back from.
+   */
+  async requestEmailChange(userId: string, newEmailRaw: string, currentPassword: string): Promise<{ message: string }> {
+    const newEmail = newEmailRaw.trim();
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    if (!user.passwordHash) {
+      throw new BadRequestException('Set a password for your account first, then you can change your email.');
+    }
+    // 400, not 401: a 401 would make the client treat the session as expired.
+    if (!(await bcrypt.compare(currentPassword, user.passwordHash))) {
+      throw new BadRequestException('Your current password is incorrect.');
+    }
+    if (newEmail === user.email) {
+      throw new BadRequestException('That is already your email address.');
+    }
+    if (await this.prisma.user.findUnique({ where: { email: newEmail } })) {
+      throw new ConflictException('That email address is already in use by another account.');
+    }
+
+    const token = randomBytes(32).toString('hex');
+    const now = new Date();
+    await this.prisma.$transaction([
+      this.prisma.emailChangeToken.updateMany({ where: { userId, usedAt: null }, data: { usedAt: now } }),
+      this.prisma.emailChangeToken.create({
+        data: {
+          userId,
+          newEmail,
+          tokenHash: AuthService.hashResetToken(token),
+          expiresAt: new Date(now.getTime() + AuthService.EMAIL_CHANGE_TTL_MS),
+        },
+      }),
+    ]);
+
+    await this.sendEmailChangeConfirmation(newEmail, user.yorubaName || user.name, token);
+    return { message: `We sent a confirmation link to ${newEmail}. Your email will change once you open it.` };
+  }
+
+  async confirmEmailChange(token: string): Promise<{ message: string; email: string }> {
+    const invalid = new BadRequestException('This confirmation link is invalid or has expired. Please request the change again.');
+    const record = await this.prisma.emailChangeToken.findUnique({
+      where: { tokenHash: AuthService.hashResetToken(token) },
+      include: { user: true },
+    });
+    if (!record || record.usedAt || record.expiresAt <= new Date()) throw invalid;
+
+    // Re-check: the address may have been registered since the request.
+    if (await this.prisma.user.findUnique({ where: { email: record.newEmail } })) {
+      throw new ConflictException('That email address is already in use by another account.');
+    }
+
+    const oldEmail = record.user.email;
+    await this.prisma.$transaction(async (tx) => {
+      const claimed = await tx.emailChangeToken.updateMany({
+        where: { id: record.id, usedAt: null },
+        data: { usedAt: new Date() },
+      });
+      if (claimed.count !== 1) throw invalid;
+      // The link proved control of the new address, so it's verified.
+      await tx.user.update({
+        where: { id: record.userId },
+        data: { email: record.newEmail, emailVerifiedAt: new Date() },
+      });
+    });
+
+    this.logger.log(`Email changed for user ${record.userId}`);
+    try {
+      await this.sendEmailChangedNotice(oldEmail, record.user.yorubaName || record.user.name, record.newEmail);
+    } catch (error) {
+      this.logger.error(`Failed to notify old address of email change for user ${record.userId}`, error as Error);
+    }
+    return { message: 'Your email address has been updated.', email: record.newEmail };
+  }
+
+  private async sendEmailChangeConfirmation(email: string, name: string, token: string): Promise<void> {
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173';
+    const confirmUrl = `${frontendUrl}/confirm-email-change?token=${token}`;
+    const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+  <div style="background:linear-gradient(135deg,#B45309 0%,#92400E 100%);padding:30px;text-align:center;border-radius:10px 10px 0 0;">
+    <h1 style="color:#FDFCF0;margin:0;font-size:28px;">Ilé Àṣẹ</h1>
+  </div>
+  <div style="background:#FDFCF0;padding:30px;border-radius:0 0 10px 10px;border:1px solid #E5E7EB;">
+    <p>Àṣẹ ${name},</p>
+    <p>Confirm that you'd like to use this address for your Ilé Àṣẹ account.</p>
+    <div style="text-align:center;margin:30px 0;">
+      <a href="${confirmUrl}" style="display:inline-block;background:#B45309;color:#FFFFFF;padding:14px 30px;text-decoration:none;border-radius:6px;font-weight:bold;">
+        Confirm New Email
+      </a>
+    </div>
+    <p style="font-size:14px;color:#6B7280;">This link expires in 24 hours. If you didn't ask for this, you can ignore this email — nothing will change.</p>
+    <p style="font-size:12px;color:#9CA3AF;">Or copy this link: ${confirmUrl}</p>
+  </div>
+</body></html>`;
+    await this.sesEmailService.sendEmail(email, 'Confirm your new email — Ilé Àṣẹ', html);
+  }
+
+  private async sendEmailChangedNotice(oldEmail: string, name: string, newEmail: string): Promise<void> {
+    const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+  <div style="background:linear-gradient(135deg,#B45309 0%,#92400E 100%);padding:30px;text-align:center;border-radius:10px 10px 0 0;">
+    <h1 style="color:#FDFCF0;margin:0;font-size:28px;">Ilé Àṣẹ</h1>
+  </div>
+  <div style="background:#FDFCF0;padding:30px;border-radius:0 0 10px 10px;border:1px solid #E5E7EB;">
+    <p>Àṣẹ ${name},</p>
+    <p>The email address on your Ilé Àṣẹ account was just changed to <strong>${newEmail}</strong>. You'll sign in with that address from now on.</p>
+    <p style="font-size:14px;color:#6B7280;">If you didn't make this change, please contact support right away.</p>
+  </div>
+</body></html>`;
+    await this.sesEmailService.sendEmail(oldEmail, 'Your email address was changed — Ilé Àṣẹ', html);
+  }
+
+  private async sendPasswordResetEmail(email: string, name: string, token: string): Promise<void> {
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173';
+    const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
+
+    const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+  <div style="background:linear-gradient(135deg,#B45309 0%,#92400E 100%);padding:30px;text-align:center;border-radius:10px 10px 0 0;">
+    <h1 style="color:#FDFCF0;margin:0;font-size:28px;">Ilé Àṣẹ</h1>
+  </div>
+  <div style="background:#FDFCF0;padding:30px;border-radius:0 0 10px 10px;border:1px solid #E5E7EB;">
+    <p>Àṣẹ ${name},</p>
+    <p>We received a request to reset your password. Choose a new one using the button below.</p>
+    <div style="text-align:center;margin:30px 0;">
+      <a href="${resetUrl}" style="display:inline-block;background:#B45309;color:#FFFFFF;padding:14px 30px;text-decoration:none;border-radius:6px;font-weight:bold;">
+        Reset Password
+      </a>
+    </div>
+    <p style="font-size:14px;color:#6B7280;">This link expires in 1 hour and can only be used once. If you didn't ask for this, you can ignore this email — your password won't change.</p>
+    <p style="font-size:12px;color:#9CA3AF;">Or copy this link: ${resetUrl}</p>
+  </div>
+</body></html>`;
+
+    await this.sesEmailService.sendEmail(email, 'Reset your password — Ilé Àṣẹ', html);
+    this.logger.log(`Password reset email sent to user ${email}`);
   }
 }

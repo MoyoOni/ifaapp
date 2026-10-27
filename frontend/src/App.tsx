@@ -20,6 +20,9 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import QuickAccessPage from './pages/QuickAccessPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import ConfirmEmailChangePage from './pages/ConfirmEmailChangePage';
 import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
 import DonatePage from './pages/DonatePage';
@@ -152,6 +155,9 @@ function App() {
                         <VerifyEmailPage />
                       </React.Suspense>
                     } />
+                    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                    <Route path="/reset-password" element={<ResetPasswordPage />} />
+                    <Route path="/confirm-email-change" element={<ConfirmEmailChangePage />} />
                     <Route path="/terms" element={
                       <React.Suspense fallback={<LoadingSpinner />}>
                         <TermsPage />

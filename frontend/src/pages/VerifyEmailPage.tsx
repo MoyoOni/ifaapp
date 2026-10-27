@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
@@ -12,12 +12,18 @@ const VerifyEmailPage: React.FC = () => {
   const [message, setMessage] = useState('');
 
   const token = searchParams.get('token');
+  // Single-use token: verify exactly once. React StrictMode runs effects twice
+  // in development, and the second call reported the (already successful)
+  // link as "invalid or already used".
+  const verified = useRef(false);
 
   useEffect(() => {
     if (!token) {
       setStatus('missing-token');
       return;
     }
+    if (verified.current) return;
+    verified.current = true;
 
     api
       .get(`/auth/verify-email?token=${encodeURIComponent(token)}`)

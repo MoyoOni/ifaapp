@@ -16,6 +16,18 @@ export interface JwtPayload {
   impersonatorId?: string;
   jti?: string; // unique per token pair, used for logout/revocation
   exp?: number; // standard JWT claim, populated by passport-jwt at verify time
+  iat?: number; // standard JWT claim (seconds), set automatically when signing
+}
+
+/**
+ * True for a token issued before the account's last password change/reset --
+ * that ends every other session. Compared at whole-second precision (JWT `iat`
+ * is in seconds), so the fresh token issued in the same second as the change
+ * stays valid.
+ */
+export function issuedBeforePasswordChange(iat: number | undefined, passwordChangedAt: Date | null | undefined): boolean {
+  if (!iat || !passwordChangedAt) return false;
+  return iat < Math.floor(passwordChangedAt.getTime() / 1000);
 }
 
 @Injectable()
@@ -49,6 +61,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     if (!user) {
       throw new UnauthorizedException('User not found');
+    }
+
+    if (issuedBeforePasswordChange(payload.iat, user.passwordChangedAt)) {
+      throw new UnauthorizedException('Session ended because the password was changed');
     }
 
     return {

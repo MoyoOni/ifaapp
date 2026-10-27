@@ -19,6 +19,13 @@ import { IsString } from 'class-validator';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { SetPasswordDto } from './dto/set-password.dto';
+import {
+  ForgotPasswordDto,
+  ResetPasswordDto,
+  ChangePasswordDto,
+  ChangeEmailDto,
+  ConfirmEmailChangeDto,
+} from './dto/password-reset.dto';
 import { JwtAuthGuard } from '@/shared/guards/auth.guard';
 import { RolesGuard, AdminRoles } from '@/auth/guards/roles.guard';
 import { Roles } from '@/shared/decorators/roles.decorator';
@@ -215,5 +222,46 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async setPassword(@CurrentUser() currentUser: { id: string }, @Body() body: SetPasswordDto) {
     return this.authService.setPassword(currentUser.id, body.password);
+  }
+
+  // Forgot / reset / change password. Rate-limited like login by the
+  // module-level 'auth' throttler (every AuthController route is).
+
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Email a single-use password reset link (same response whether or not the account exists)' })
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.requestPasswordReset(dto.email);
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Set a new password using a reset link token' })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto.token, dto.password);
+  }
+
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Change password (requires the current one); ends other sessions and returns fresh tokens' })
+  async changePassword(@CurrentUser() currentUser: { id: string }, @Body() dto: ChangePasswordDto) {
+    return this.authService.changePassword(currentUser.id, dto.currentPassword, dto.newPassword);
+  }
+
+  @Post('change-email')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Request an email change (requires the current password); confirmed from the new address' })
+  async changeEmail(@CurrentUser() currentUser: { id: string }, @Body() dto: ChangeEmailDto) {
+    return this.authService.requestEmailChange(currentUser.id, dto.newEmail, dto.currentPassword);
+  }
+
+  // Public: the link may be opened on a device where the member isn't signed in.
+  @Post('confirm-email-change')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Confirm an email change from the link sent to the new address' })
+  async confirmEmailChange(@Body() dto: ConfirmEmailChangeDto) {
+    return this.authService.confirmEmailChange(dto.token);
   }
 }

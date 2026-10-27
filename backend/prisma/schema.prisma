@@ -37,6 +37,10 @@ model User {
   intentTags                String[]                 @default([])
   verified                  Boolean                  @default(false)
   emailVerificationToken    String?                  @unique
+  // Set whenever the password is reset or changed. JwtStrategy and token
+  // refresh reject any token issued before it, which signs the account out
+  // of every other session (JWTs are otherwise only revocable one by one).
+  passwordChangedAt         DateTime?
   emailVerifiedAt           DateTime?
   hasOnboarded              Boolean                  @default(false)
   slug                      String?                  @unique
@@ -202,13 +206,15 @@ model User {
   onboardingEmails OnboardingEmail[] @relation("OnboardingEmailUser")
 
   // Additional relations for other models
-  userBadges       UserBadge[]       @relation("UserBadges")
-  badgeAwarder     UserBadge[]       @relation("BadgeAwarder")
-  flagRuleCreator  ContentFlagRule[] @relation("FlagRuleCreator")
-  campaignCreator  EmailCampaign[]   @relation("CampaignCreator")
-  promoCodeCreator PromoCode[]       @relation("PromoCodeCreator")
-  promoRedemptions PromoRedemption[] @relation("PromoRedemptions")
-  userSessions     UserSession[]     @relation("UserSessions")
+  userBadges          UserBadge[]          @relation("UserBadges")
+  badgeAwarder        UserBadge[]          @relation("BadgeAwarder")
+  flagRuleCreator     ContentFlagRule[]    @relation("FlagRuleCreator")
+  campaignCreator     EmailCampaign[]      @relation("CampaignCreator")
+  promoCodeCreator    PromoCode[]          @relation("PromoCodeCreator")
+  promoRedemptions    PromoRedemption[]    @relation("PromoRedemptions")
+  userSessions        UserSession[]        @relation("UserSessions")
+  passwordResetTokens PasswordResetToken[]
+  emailChangeTokens   EmailChangeToken[]
 
   // COMMUNITY_BACKLOG.md FOR-Q2: Community Member Directory -- opt-in only,
   // default false (privacy-first). Deliberately a new dedicated flag rather
@@ -3225,4 +3231,37 @@ model ServiceOffering {
 
   @@index([babalawoId])
   @@index([deletedAt])
+}
+
+// Forgot-password links. Only a SHA-256 hash of the emailed token is stored,
+// so a database leak can't be turned into password resets. Single-use and
+// short-lived; requesting a new link invalidates any outstanding ones.
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Pending email changes. The new address only replaces the old one after its
+// owner clicks the link sent to it; only a SHA-256 hash of that token is
+// stored. Single-use, 24h; a new request supersedes older ones.
+model EmailChangeToken {
+  id        String    @id @default(uuid())
+  userId    String
+  newEmail  String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

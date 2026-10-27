@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Mail, Lock, Loader2 } from 'lucide-react';
 import { useAuth } from '@/shared/hooks/use-auth';
 import appLogo from '@/assets/logo.png';
@@ -93,9 +94,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) 
             <label htmlFor="password" className="text-xs font-bold uppercase text-stone-400 tracking-widest">
               Password
             </label>
-            <button type="button" className="text-xs font-semibold text-highlight hover:text-yellow-600 dark:text-yellow-400 transition-colors">
+            {/* Used to be a button with no handler -- it did nothing. */}
+            <Link to="/forgot-password" className="text-xs font-semibold text-highlight hover:text-yellow-600 dark:text-yellow-400 transition-colors">
               Forgot password?
-            </button>
+            </Link>
           </div>
           <div className="relative group">
             <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-stone-400 group-focus-within:text-highlight transition-colors" size={20} />

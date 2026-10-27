@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings, User, Bell, Shield, Palette, Mail, Lock, CreditCard, Trash2, LogOut, AtSign, Check, X, Loader2, MessageCircle, Sun, Moon, Sparkles, Crown, ArrowRight, AlertCircle } from 'lucide-react';
+import { Settings, User, Bell, Shield, Palette, Lock, CreditCard, Trash2, LogOut, AtSign, Check, X, Loader2, MessageCircle, Sun, Moon, Sparkles, Crown, ArrowRight, AlertCircle } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { useToast } from '@/shared/components/toast';
 import api from '@/lib/api';
+import ChangePasswordForm from '@/features/auth/change-password-form';
+import ChangeEmailForm from '@/features/auth/change-email-form';
 import { useSubscription } from '@/features/subscription/use-subscription';
 import ReferralPanel from '@/features/devoted/referral-panel';
 import ProfileViewsPanel from '@/features/devoted/profile-views-panel';
@@ -363,14 +365,7 @@ const SettingsPage: React.FC = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <button
-                        type="button"
-                        onClick={() => navigate('/profile')}
-                        className="flex items-center gap-2 px-4 py-3 bg-muted/60 hover:bg-muted rounded-xl transition-colors"
-                      >
-                        <Mail size={18} className="text-stone-600" />
-                        <span className="font-medium text-stone-700 dark:text-stone-300">Update Email</span>
-                      </button>
+                      <ChangeEmailForm hasPassword={userProfile?.hasPassword !== false} />
                       {userProfile?.hasPassword === false ? (
                         <div className="col-span-full">
                           {!showSetPassword ? (
@@ -413,14 +408,7 @@ const SettingsPage: React.FC = () => {
                           )}
                         </div>
                       ) : (
-                        <button
-                          type="button"
-                          onClick={() => navigate('/profile')}
-                          className="flex items-center gap-2 px-4 py-3 bg-muted/60 hover:bg-muted rounded-xl transition-colors"
-                        >
-                          <Lock size={18} className="text-stone-600" />
-                          <span className="font-medium text-stone-700 dark:text-stone-300">Change Password</span>
-                        </button>
+                        <ChangePasswordForm />
                       )}
                       <button
                         type="button"
