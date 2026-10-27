@@ -8,15 +8,16 @@ import {
   DollarSign,
   TrendingUp,
   CheckCircle,
+  X,
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { logger } from '@/shared/utils/logger';
 import { SkeletonTable } from '@/shared/components/skeleton';
-import { useToast } from '@/shared/components/toast';
 import { TransactionType, TransactionStatus, Currency, PaymentPurpose } from '@common';
 import PaymentModal from '../payments/payment-modal';
 import MultiCurrencyBalance from './multi-currency-balance';
+import WithdrawalPanel from './withdrawal-panel';
 import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 interface WalletBalance {
@@ -81,7 +82,6 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
   const [depositAmount, setDepositAmount] = useState('');
   const [releasingEscrowId, setReleasingEscrowId] = useState<string | null>(null);
 
-  const { info } = useToast();
 
   // Fetch wallet balance
   const { data: walletBalance } = useQuery<WalletBalance>({
@@ -135,10 +135,6 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
     setShowPaymentModal(false);
     setDepositAmount('');
     queryClient.invalidateQueries({ queryKey: ['wallet-balance'] });
-  };
-
-  const handleWithdrawal = () => {
-    info('Withdrawal request submitted for processing. (Simulated)');
   };
 
   return (
@@ -458,61 +454,31 @@ const WalletDashboardView: React.FC<WalletDashboardViewProps> = ({
         )
       }
 
-      {/* Withdraw Modal */}
-      {
-        showWithdrawModal && (
-          <div className="fixed inset-0 bg-stone-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-card rounded-[2rem] p-8 max-w-md w-full shadow-2xl space-y-6 animate-in zoom-in-95">
-              <h3 className="text-2xl font-bold text-stone-800 dark:text-stone-200 brand-font text-center">Withdraw Funds</h3>
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                handleWithdrawal();
-                setShowWithdrawModal(false);
-              }} className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase text-stone-400 tracking-widest text-center block">Amount to Withdraw</label>
-                  <div className="relative">
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 font-bold text-xl">
-                      {walletBalance?.currency === Currency.NGN ? '₦' : '$'}
-                    </div>
-                    <input
-                      type="number"
-                      placeholder="0.00"
-                      className="w-full pl-10 pr-4 py-4 bg-muted/40 border border-border rounded-xl text-3xl font-bold text-center text-stone-800 dark:text-stone-200 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-4 pt-2 border-t border-border/50">
-                  <h4 className="font-bold text-sm text-center">Destination Account</h4>
-                  <select className="w-full px-4 py-3 bg-muted/40 border border-border rounded-xl text-sm font-medium" aria-label="Select destination bank account">
-                    <option>GTBank - *9920</option>
-                    <option>Access Bank - *2210</option>
-                    <option>Add New Bank Account...</option>
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowWithdrawModal(false)}
-                    className="px-6 py-4 bg-muted/60 text-stone-600 rounded-xl font-bold hover:bg-muted transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-6 py-4 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition-colors shadow-lg"
-                  >
-                    Withdraw
-                  </button>
-                </div>
-              </form>
+      {/* Withdraw Modal -- the real flow shared with the vendor dashboard.
+          This used to list hardcoded fake bank accounts and submit nothing. */}
+      {showWithdrawModal && (
+        <div
+          className="fixed inset-0 bg-background/70 backdrop-blur-sm flex items-start sm:items-center justify-center z-50 p-4 overflow-y-auto"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="withdraw-dialog-title"
+        >
+          <div className="bg-background rounded-[2rem] p-6 max-w-xl w-full shadow-2xl space-y-4 my-8">
+            <div className="flex items-center justify-between">
+              <h3 id="withdraw-dialog-title" className="text-2xl font-bold text-foreground brand-font">Withdraw Funds</h3>
+              <button
+                type="button"
+                onClick={() => setShowWithdrawModal(false)}
+                className="p-2 rounded-full hover:bg-muted text-muted-foreground"
+                aria-label="Close withdraw dialog"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
+            <WithdrawalPanel />
           </div>
-        )
-      }
+        </div>
+      )}
 
       {/* Payment Modal */}
       {
