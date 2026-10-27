@@ -617,9 +617,10 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
           <div className="p-5 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Name *</label>
+                <label htmlFor="edit-name" className="block text-xs font-medium text-muted-foreground mb-1">Name *</label>
                 <input
                   type="text"
+                  id="edit-name"
                   value={editForm.name}
                   onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
                   className="w-full px-3 py-2 border border-border rounded-lg text-sm text-foreground bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
@@ -627,9 +628,10 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Yoruba Name (Orúkọ)</label>
+                <label htmlFor="edit-yoruba-name" className="block text-xs font-medium text-muted-foreground mb-1">Yoruba Name (Orúkọ)</label>
                 <input
                   type="text"
+                  id="edit-yoruba-name"
                   value={editForm.yorubaName}
                   onChange={e => setEditForm(f => ({ ...f, yorubaName: e.target.value }))}
                   className="w-full px-3 py-2 border border-border rounded-lg text-sm text-foreground bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
@@ -637,9 +639,10 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Location</label>
+                <label htmlFor="edit-location" className="block text-xs font-medium text-muted-foreground mb-1">Location</label>
                 <input
                   type="text"
+                  id="edit-location"
                   value={editForm.location}
                   onChange={e => setEditForm(f => ({ ...f, location: e.target.value }))}
                   className="w-full px-3 py-2 border border-border rounded-lg text-sm text-foreground bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
@@ -662,9 +665,10 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
               </div>
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Bio (short tagline)</label>
+              <label htmlFor="edit-bio" className="block text-xs font-medium text-muted-foreground mb-1">Bio (short tagline)</label>
               <input
                 type="text"
+                id="edit-bio"
                 value={editForm.bio}
                 onChange={e => setEditForm(f => ({ ...f, bio: e.target.value }))}
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
@@ -673,8 +677,9 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">About Me</label>
+              <label htmlFor="edit-about-me" className="block text-xs font-medium text-muted-foreground mb-1">About Me</label>
               <textarea
+                id="edit-about-me"
                 value={editForm.aboutMe}
                 onChange={e => setEditForm(f => ({ ...f, aboutMe: e.target.value }))}
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm text-foreground bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-y"
@@ -684,11 +689,12 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
+              <label htmlFor="edit-interests" className="block text-xs font-medium text-muted-foreground mb-1">
                 {isBabalawo ? 'Areas of Practice' : 'Interests'} (comma-separated)
               </label>
               <input
                 type="text"
+                id="edit-interests"
                 value={editForm.interests}
                 onChange={e => setEditForm(f => ({ ...f, interests: e.target.value }))}
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm text-foreground bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
@@ -699,11 +705,12 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
             {isBabalawo && (
               <>
                 <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  <label htmlFor="edit-specialization" className="block text-xs font-medium text-muted-foreground mb-1">
                     Specializations (comma-separated, shown on your booking profile)
                   </label>
                   <input
                     type="text"
+                    id="edit-specialization"
                     value={editForm.specialization}
                     onChange={e => setEditForm(f => ({ ...f, specialization: e.target.value }))}
                     className="w-full px-3 py-2 border border-border rounded-lg text-sm text-foreground bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
@@ -711,9 +718,10 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">Availability</label>
+                  <label htmlFor="edit-availability" className="block text-xs font-medium text-muted-foreground mb-1">Availability</label>
                   <input
                     type="text"
+                    id="edit-availability"
                     value={editForm.availabilityNote}
                     onChange={e => setEditForm(f => ({ ...f, availabilityNote: e.target.value }))}
                     className="w-full px-3 py-2 border border-border rounded-lg text-sm text-foreground bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
