@@ -97,3 +97,31 @@ describe('LessonPlayerView Devoted gating (V8-203)', () => {
     expect(screen.queryByText(/Devoted-only course/)).not.toBeInTheDocument();
   });
 });
+
+// The sidebar showed `order + 1`, so seeded courses (1-based orders) were
+// numbered 2..8 while the course page said Lesson 1..7.
+describe('LessonPlayerView lesson numbering', () => {
+  it('numbers the sidebar by position, matching the course page', async () => {
+    mockUseSubscription.mockReturnValue({ isDevoted: true });
+    const course = {
+      ...devotedCourse,
+      isDevoted: false,
+      lessons: [
+        { id: 'lesson-1', courseId: 'course-1', title: 'Orí Inú', order: 1, type: 'TEXT', resources: [], status: 'PUBLISHED' },
+        { id: 'lesson-2', courseId: 'course-1', title: 'Àyànmọ́', order: 2, type: 'TEXT', resources: [], status: 'PUBLISHED' },
+      ],
+    };
+    mockApiGet.mockImplementation((url: string) => {
+      if (url === '/academy/enrollments/enr-1') return Promise.resolve({ data: enrollment });
+      if (url === '/academy/courses/course-1') return Promise.resolve({ data: course });
+      if (url === '/academy/lessons/lesson-1') return Promise.resolve({ data: { ...course.lessons[0], content: 'Body' } });
+      return Promise.resolve({ data: [] });
+    });
+
+    renderPlayer();
+
+    await waitFor(() => expect(screen.getByText('1.')).toBeInTheDocument());
+    expect(screen.getByText('2.')).toBeInTheDocument();
+    expect(screen.queryByText('3.')).not.toBeInTheDocument();
+  });
+});

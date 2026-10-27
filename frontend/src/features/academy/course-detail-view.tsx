@@ -100,13 +100,18 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({ courseId, onBack })
   const { isDevoted } = useSubscription();
 
   // Fetch course
-  const { data: course, isLoading, isError, refetch } = useQuery<Course>({
+  const { data: course, isLoading, isError, error: courseError, refetch } = useQuery<Course>({
     queryKey: ['course', courseId],
     queryFn: async () => {
       const response = await api.get(`/academy/courses/${courseId}`);
       return response.data;
     },
+    // A missing course won't appear on retry.
+    retry: (failureCount, err: any) => err?.response?.status !== 404 && failureCount < 3,
   });
+  // A 404 is "this course doesn't exist", not a connection problem -- it used
+  // to show "problem connecting to the server, check your connection".
+  const isNotFound = (courseError as any)?.response?.status === 404;
 
   // Check whether the current user is already enrolled, so the CTA reflects
   // reality instead of always offering "Enroll Now" (which 409s harmlessly
@@ -163,7 +168,7 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({ courseId, onBack })
     );
   }
 
-  if (isError) {
+  if (isError && !isNotFound) {
     return (
       <div className="max-w-4xl mx-auto p-6">
         <div className="mb-8">
@@ -304,7 +309,7 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({ courseId, onBack })
           <div className="mb-8">
             <h2 className="text-xl font-bold text-foreground mb-4">Lessons</h2>
             <div className="space-y-4">
-              {(course.lessons || []).map((lesson) => (
+              {(course.lessons || []).map((lesson, index) => (
                 <div key={lesson.id} className="flex items-center justify-between p-4 bg-muted rounded-xl">
                   <div className="flex items-center gap-3">
                     <div className={`${getOrishaIconBackgroundClass(course.category)} p-2 rounded-full`}>
@@ -316,7 +321,9 @@ const CourseDetailView: React.FC<CourseDetailViewProps> = ({ courseId, onBack })
                     </div>
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    Lesson {lesson.order}
+                    {/* Position, not the raw stored order: seeded courses store 1-based
+                        orders but app-created lessons started at 0 ("Lesson 0"). */}
+                    Lesson {index + 1}
                   </div>
                 </div>
               ))}

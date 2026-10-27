@@ -265,7 +265,8 @@ export class AcademyService {
       orderBy: { order: 'desc' },
     });
 
-    const order = dto.order || (maxOrderLesson ? maxOrderLesson.order + 1 : 0);
+    // 1-based like the seeded courses (this used to start a new course at 0).
+    const order = dto.order || (maxOrderLesson ? maxOrderLesson.order + 1 : 1);
 
     const lesson = await this.prisma.lesson.create({
       data: {

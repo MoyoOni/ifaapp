@@ -391,7 +391,7 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
               {sidebarTab === 'lessons' ? (
                 <>
                   <div className="space-y-2 max-h-[calc(100vh-250px)] overflow-y-auto custom-scrollbar">
-                    {course.lessons.map((lesson) => {
+                    {course.lessons.map((lesson, index) => {
                       const isCompleted = completedLessonIds.includes(lesson.id);
                       const isCurrent = lesson.id === currentLessonId;
 
@@ -405,7 +405,9 @@ const LessonPlayerView: React.FC<LessonPlayerViewProps> = ({ enrollmentId, lesso
                             }`}
                         >
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs font-bold">{lesson.order + 1}.</span>
+                            {/* Position, not `order + 1`: stored orders are 1-based for seeded
+                                courses, so this numbered them 2..8 against the course page's 1..7. */}
+                            <span className="text-xs font-bold">{index + 1}.</span>
                             <span className="text-sm font-bold line-clamp-1">{lesson.title}</span>
                             {isCompleted && (
                               <CheckCircle size={14} className="text-highlight flex-shrink-0" />

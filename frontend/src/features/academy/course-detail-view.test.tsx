@@ -92,3 +92,41 @@ describe('CourseDetailView Devoted gating (V8-203)', () => {
     expect(screen.queryByText('Devoted-only')).not.toBeInTheDocument();
   });
 });
+
+// Seeded courses store 1-based lesson orders, app-created ones started at 0;
+// the page showed the raw value ("Lesson 0" for app-created courses).
+describe('CourseDetailView lesson numbering', () => {
+  it('numbers lessons by position whatever their stored order', async () => {
+    mockUseSubscription.mockReturnValue({ isDevoted: true });
+    const lesson = (id: string, title: string, order: number) => ({ id, title, order, duration: 20 });
+    mockApiGet.mockImplementation((url: string) =>
+      Promise.resolve({
+        data: url === '/academy/courses/course-1'
+          ? { ...devotedCourse, isDevoted: false, lessons: [lesson('a', 'Orí Inú', 0), lesson('b', 'Àyànmọ́', 1)] }
+          : [],
+      })
+    );
+
+    renderCourseDetail();
+
+    await waitFor(() => expect(screen.getByText('Lesson 1')).toBeInTheDocument());
+    expect(screen.getByText('Lesson 2')).toBeInTheDocument();
+    expect(screen.queryByText('Lesson 0')).not.toBeInTheDocument();
+  });
+});
+
+describe('CourseDetailView missing course', () => {
+  it('says the course was not found instead of blaming the connection', async () => {
+    mockUseSubscription.mockReturnValue({ isDevoted: false });
+    mockApiGet.mockImplementation((url: string) =>
+      url === '/academy/courses/course-1'
+        ? Promise.reject({ response: { status: 404, data: { message: 'Course not found' } } })
+        : Promise.resolve({ data: [] })
+    );
+
+    renderCourseDetail();
+
+    expect(await screen.findByText('Course Not Found')).toBeInTheDocument();
+    expect(screen.queryByText(/problem connecting/i)).not.toBeInTheDocument();
+  });
+});
