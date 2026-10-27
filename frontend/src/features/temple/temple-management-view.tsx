@@ -6,7 +6,6 @@ import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { useConfirm } from '@/hooks/use-confirm';
-// import { DEMO_TEMPLES } from '@/demo';
 
 interface TempleManagementViewProps {
   templeId: string;

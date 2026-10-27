@@ -8,7 +8,6 @@ import BabalawoProfileCard from '../babalawo/profile/babalawo-profile-card';
 import BabalawoProfileModal from '@/shared/components/babalawo-profile-modal';
 import { seededRandomInt } from '@/shared/utils/seeded-random';
 import { isDevModeActive } from '@/shared/utils/dev-mode';
-// import { DEMO_TEMPLES, getDemoUsersByRole } from '@/demo';
 
 interface TempleDetailViewProps {
   templeSlug: string;

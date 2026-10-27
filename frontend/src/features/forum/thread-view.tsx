@@ -160,7 +160,7 @@ const ThreadView: React.FC<ThreadViewProps> = ({ threadId, onBack }) => {
   const [orientationGateOpen, setOrientationGateOpen] = useState(false);
   const [pendingReply, setPendingReply] = useState<string | null>(null);
 
-  // Fetch thread with demo fallback
+  // Fetch thread
   const { data: thread, isLoading: threadLoading } = useQuery<ForumThread>({
     queryKey: ['forum-thread', threadId],
     queryFn: async () => {
@@ -181,7 +181,7 @@ const ThreadView: React.FC<ThreadViewProps> = ({ threadId, onBack }) => {
     staleTime: 5 * 60_000,
   });
 
-  // Fetch posts with demo fallback
+  // Fetch posts
   const { data: posts = [], isLoading: postsLoading } = useQuery<ForumPost[]>({
     queryKey: ['forum-posts', threadId],
     queryFn: async () => {
