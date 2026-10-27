@@ -558,7 +558,12 @@ describe('NotificationService', () => {
 
       expect(result).toBe(3);
       expect(prisma.notification.count).toHaveBeenCalledWith({
-        where: { userId, read: false },
+        where: {
+          userId,
+          read: false,
+          // not yet visible in the list, so not counted either
+          OR: [{ scheduledAt: null }, { scheduledAt: { lte: expect.any(Date) } }],
+        },
       });
     });
 

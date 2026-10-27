@@ -220,12 +220,15 @@ export class NotificationService {
    * Get notification counts grouped by type
    */
   async getCountByType(userId: string) {
+    // Same visibility rule as getUserNotifications: a notification scheduled
+    // for later isn't listed yet, so it mustn't be counted yet either.
+    const visible = { userId, OR: [{ scheduledAt: null }, { scheduledAt: { lte: new Date() } }] };
     const [unread, messages, appointments, orders, community] = await Promise.all([
-      this.prisma.notification.count({ where: { userId, read: false } }),
-      this.prisma.notification.count({ where: { userId, type: 'MESSAGE' } }),
-      this.prisma.notification.count({ where: { userId, type: 'APPOINTMENT' } }),
-      this.prisma.notification.count({ where: { userId, type: 'ORDER' } }),
-      this.prisma.notification.count({ where: { userId, type: { in: ['TEMPLE', 'SYSTEM'] } } }),
+      this.prisma.notification.count({ where: { ...visible, read: false } }),
+      this.prisma.notification.count({ where: { ...visible, type: 'MESSAGE' } }),
+      this.prisma.notification.count({ where: { ...visible, type: 'APPOINTMENT' } }),
+      this.prisma.notification.count({ where: { ...visible, type: 'ORDER' } }),
+      this.prisma.notification.count({ where: { ...visible, type: { in: ['TEMPLE', 'SYSTEM'] } } }),
     ]);
     return { unread, messages, appointments, orders, community };
   }
@@ -276,10 +279,13 @@ export class NotificationService {
    */
   async getUnreadCount(userId: string) {
     try {
+      // Same visibility rule as getUserNotifications: don't count what the
+      // list doesn't show yet (scheduled for later).
       return await this.prisma.notification.count({
         where: {
           userId,
           read: false,
+          OR: [{ scheduledAt: null }, { scheduledAt: { lte: new Date() } }],
         },
       });
     } catch {

@@ -48,9 +48,23 @@ export class NotificationsController {
    * Get unread notification count
    * GET /notifications/unread-count
    */
+  // Both callers (the sidebar bell and the notification center) read
+  // `response.count`; this used to return a bare number, so `.count` was
+  // always undefined and the unread badge never showed.
   @Get('unread-count')
   async getUnreadCount(@CurrentUser() currentUser: CurrentUserPayload) {
-    return this.notificationService.getUnreadCount(currentUser.id);
+    return { count: await this.notificationService.getUnreadCount(currentUser.id) };
+  }
+
+  /**
+   * Notification counts per filter tab (unread/messages/appointments/orders/community)
+   * GET /notifications/count-by-type
+   * The notification center has always called this for its tab badges, but the
+   * route was never registered -- every visit 404'd and the badges never showed.
+   */
+  @Get('count-by-type')
+  async getCountByType(@CurrentUser() currentUser: CurrentUserPayload) {
+    return this.notificationService.getCountByType(currentUser.id);
   }
 
   /**

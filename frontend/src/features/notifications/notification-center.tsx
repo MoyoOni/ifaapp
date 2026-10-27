@@ -219,7 +219,7 @@ const NotificationCenter: React.FC = () => {
           }`}
         >
           Unread
-          {notificationCounts.unread && notificationCounts.unread > 0 && (
+          {notificationCounts.unread > 0 && (
             <span className="ml-1 px-1.5 py-0.5 bg-red-500 text-white rounded-full text-xs">
               {notificationCounts.unread}
             </span>
@@ -234,7 +234,7 @@ const NotificationCenter: React.FC = () => {
           }`}
         >
           Messages
-          {notificationCounts.messages && notificationCounts.messages > 0 && (
+          {notificationCounts.messages > 0 && (
             <span className="ml-1 px-1.5 py-0.5 bg-blue-500 text-white rounded-full text-xs">
               {notificationCounts.messages}
             </span>
@@ -249,7 +249,7 @@ const NotificationCenter: React.FC = () => {
           }`}
         >
           Appointments
-          {notificationCounts.appointments && notificationCounts.appointments > 0 && (
+          {notificationCounts.appointments > 0 && (
             <span className="ml-1 px-1.5 py-0.5 bg-purple-500 text-white rounded-full text-xs">
               {notificationCounts.appointments}
             </span>
@@ -264,7 +264,7 @@ const NotificationCenter: React.FC = () => {
           }`}
         >
           Orders
-          {notificationCounts.orders && notificationCounts.orders > 0 && (
+          {notificationCounts.orders > 0 && (
             <span className="ml-1 px-1.5 py-0.5 bg-green-500 text-white rounded-full text-xs">
               {notificationCounts.orders}
             </span>
@@ -279,7 +279,7 @@ const NotificationCenter: React.FC = () => {
           }`}
         >
           Community
-          {notificationCounts.community && notificationCounts.community > 0 && (
+          {notificationCounts.community > 0 && (
             <span className="ml-1 px-1.5 py-0.5 bg-orange-500 text-white rounded-full text-xs">
               {notificationCounts.community}
             </span>
