@@ -203,63 +203,11 @@ jobs:
         run: npm audit --workspaces --audit-level=high
         continue-on-error: true
 
-  # --- Deploy to EC2 staging only ---
-  # STATUS, checked September 20, 2026: this job's target, the staging box
-  # at 100.52.200.113:4040, is unreachable (direct curl times out) and has
-  # been failing on every run as a result -- see ILUASE_V1_BACKLOG.md's
-  # Needs a Human section. `continue-on-error: true` below keeps this job
-  # from failing the whole pipeline over a known, already-documented infra
-  # gap that isn't a code problem, while leaving it running (not disabled)
-  # so it self-heals the moment someone brings the box back, and so it stays
-  # visible as a reminder rather than silently disappearing. Remove
-  # continue-on-error once the box is confirmed back up.
-  #
-  # The script below is also stale and would need fixing before it'd work
-  # even with the box reachable: it assumes a PM2-managed process at
-  # /home/ubuntu/ifa_app running ./scripts/deploy.sh + ./scripts/backup-db.sh
-  # (neither exists at that path) -- real production (a *different* box,
-  # iluase-prod-single) runs Docker Compose at /home/ubuntu/app and is
-  # deployed via ECR image pulls, per DEPLOYMENT_PROCEDURES.md's "Real
-  # Production Deployment" section. This job was never updated after that
-  # architecture changed and was pointed at a separate, older staging box
-  # that predates it.
-  deploy-staging:
-    needs: [test-backend, test-frontend]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/july-2026-hardening-pass' && github.event_name == 'push'
-    environment: staging
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Deploy to EC2 staging via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          # Secrets configured in GitHub repository settings
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          envs: DEPLOY_BRANCH
-          script: |
-            cd /home/ubuntu/ifa_app
-
-            # Create pre-deploy backup
-            ./scripts/backup-db.sh
-
-            # Pull and deploy the exact branch that just passed CI above --
-            # deploy.sh previously always pulled a hardcoded `v4/quality`
-            # regardless of what triggered this job.
-            ./scripts/deploy.sh
-
-            # Verify health
-            sleep 5
-            curl -sf http://localhost:3000/api/health || echo "WARNING: Health check failed"
-        env:
-          DEPLOY_BRANCH: ${{ github.ref_name }}
-
-      - name: Verify deployment
-        if: success()
-        run: |
-          echo "Deployment to staging complete"
-          echo "Commit: ${{ github.sha }}"
-          echo "Branch: ${{ github.ref_name }}"
+  # --- Staging deploy: removed 2026-10-27 ---
+  # The `deploy-staging` job SSH-deployed to a staging box at 100.52.200.113
+  # that no longer exists: checked 2026-10-27, account 091653536932 has no
+  # EC2 instance in any region other than iluase-prod-single, and nothing owns
+  # that address. Its script was also stale (PM2 at /home/ubuntu/ifa_app,
+  # pre-Docker). Production is deployed manually from ECR images per
+  # docs/active/DEPLOYMENT_PROCEDURES.md; for a staging environment use the
+  # local Docker stack (docker-compose.staging.yml) until a new box exists.

@@ -66,11 +66,44 @@ if ! aws s3 cp "$BACKUP_FILE" "s3://${BUCKET}/$(basename "$BACKUP_FILE")" --only
 fi
 log_success "Uploaded to S3"
 
-# Local retention: keep only the most recent N dumps on-disk
+in_s3() { aws s3api head-object --bucket "$BUCKET" --key "$1" >/dev/null 2>&1; }
+
 cd "$BACKUP_DIR"
-ls -1t iluase_production_*.sql.gz 2>/dev/null | tail -n +$((LOCAL_RETENTION + 1)) | while read -r old; do
-  log_info "Removing old local backup: ${old}"
-  rm -f "${old}"
+
+# Catch-up: upload any earlier dump whose upload failed. From 2026-10-20 to
+# 10-26 the box's instance-role credentials were unavailable, every upload
+# failed, and those dumps never reached S3.
+for f in iluase_production_*.sql.gz; do
+  [ -e "$f" ] || continue
+  if ! in_s3 "$f"; then
+    if aws s3 cp "$f" "s3://${BUCKET}/${f}" --only-show-errors; then
+      log_success "Caught up earlier dump: ${f}"
+    else
+      log_error "Catch-up upload failed for ${f} (kept locally)"
+    fi
+  fi
 done
+
+# Local retention: keep the most recent N dumps on-disk, and never delete one
+# that isn't confirmed in S3. This used to delete by age alone -- on 10-27 it
+# removed every 10-19..10-26 dump, none of which had ever been uploaded.
+ls -1t iluase_production_*.sql.gz 2>/dev/null | tail -n +$((LOCAL_RETENTION + 1)) | while read -r old; do
+  if in_s3 "$old"; then
+    log_info "Removing old local backup: ${old}"
+    rm -f "${old}"
+  else
+    log_error "Keeping ${old}: not confirmed in S3"
+  fi
+done
+
+# Heartbeat for alerting: a CloudWatch alarm on this metric going missing is
+# what catches a silent week of failures (nothing alerted on 10-20..10-26).
+# Best-effort -- needs cloudwatch:PutMetricData on the instance role.
+if aws cloudwatch put-metric-data --region us-east-1 --namespace Iluase/Backups \
+     --metric-name BackupSucceeded --value 1 --unit Count 2>/dev/null; then
+  log_info "Heartbeat metric sent"
+else
+  log_error "Could not send heartbeat metric (check instance role permissions)"
+fi
 
 log_success "Backup cycle complete"
