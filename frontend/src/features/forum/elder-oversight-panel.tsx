@@ -41,11 +41,11 @@ const ElderOversightPanel: React.FC = () => {
 
   const isBabalawo = user?.role === 'BABALAWO';
 
+  // Was GET /forum/elder-flags (the admin-only moderation queue) filtered
+  // client-side, which 403'd for every babalawo -- "My Flags" never loaded.
   const { data: flags = [], isLoading: flagsLoading } = useQuery({
     queryKey: ['elder-flags', 'my'],
-    queryFn: () => api.get('/forum/elder-flags').then(r =>
-      (r.data as any[]).filter((f: any) => f.flaggedBy === user?.id)
-    ),
+    queryFn: () => api.get('/forum/elder-flags/mine').then(r => r.data as any[]),
     enabled: !!user && isBabalawo,
   });
 

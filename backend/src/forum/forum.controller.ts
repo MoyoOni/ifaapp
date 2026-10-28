@@ -476,6 +476,12 @@ export class ForumController {
     return this.forumService.getMyElderReactions(currentUser);
   }
 
+  // Before elder-flags/:id style routes; the caller's own flags (any role).
+  @Get('elder-flags/mine')
+  async getMyElderFlags(@CurrentUser() currentUser: CurrentUserPayload) {
+    return this.forumService.getMyElderFlags(currentUser);
+  }
+
   @Get('elder-flags')
   async getElderFlags(
     @Query('status') status: string,

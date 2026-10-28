@@ -2669,6 +2669,25 @@ Share your reflections, questions, and experiences below. All levels welcome.
     });
   }
 
+  // The Elder Oversight panel's "My Flags" tab used to call getElderFlags
+  // below -- the admin moderation queue -- and filter client-side, which 403'd
+  // for every babalawo, so the tab never loaded. This returns only the
+  // caller's own flags, in every status, so they can follow each one through.
+  async getMyElderFlags(currentUser: CurrentUserPayload) {
+    return this.prisma.elderFlag.findMany({
+      where: { flaggedBy: currentUser.id },
+      include: {
+        post: {
+          include: {
+            author: { select: { id: true, name: true, yorubaName: true } },
+            thread: { select: { id: true, title: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async getElderFlags(currentUser: CurrentUserPayload, status = 'PENDING') {
     if (currentUser.role !== 'ADMIN') throw new ForbiddenException('Admins only');
 
