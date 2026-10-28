@@ -309,9 +309,9 @@ const ProductDigitalFileEditor: React.FC<{ productId: string }> = ({ productId }
       {product?.digitalFileUrl && <p className="text-xs text-muted-foreground truncate">Currently linked to: {product.digitalFileUrl}</p>}
 
       <div className="space-y-1.5">
-        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Upload a file (PDF, MP3, MP4, ZIP — up to 500MB)</label>
+        <label htmlFor="vp-upload-a-file-pdf-mp3-mp4-zip-up-to-500m" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Upload a file (PDF, MP3, MP4, ZIP — up to 500MB)</label>
         <div className="flex gap-2">
-          <input
+          <input id="vp-upload-a-file-pdf-mp3-mp4-zip-up-to-500m"
             type="file"
             accept=".pdf,.mp3,.mp4,.zip,application/pdf,audio/mpeg,video/mp4,application/zip"
             onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
@@ -329,9 +329,9 @@ const ProductDigitalFileEditor: React.FC<{ productId: string }> = ({ productId }
       </div>
 
       <div className="space-y-1.5 pt-2 border-t border-border">
-        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Or link to an externally hosted file (Google Drive, Dropbox)</label>
+        <label htmlFor="vp-or-link-to-an-externally-hosted-file-goo" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Or link to an externally hosted file (Google Drive, Dropbox)</label>
         <div className="flex gap-2">
-          <input
+          <input id="vp-or-link-to-an-externally-hosted-file-goo"
             type="url"
             placeholder="https://drive.google.com/..."
             value={externalUrl}
@@ -556,8 +556,8 @@ const VendorProductForm: React.FC<VendorProductFormProps> = ({ onClose, onSucces
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Product Name */}
           <div className="space-y-1.5">
-            <label className="text-sm font-bold text-foreground uppercase tracking-wide">Product Name *</label>
-            <input
+            <label htmlFor="vp-product-name" className="text-sm font-bold text-foreground uppercase tracking-wide">Product Name *</label>
+            <input id="vp-product-name"
               type="text"
               required
               value={form.name}
@@ -618,8 +618,8 @@ const VendorProductForm: React.FC<VendorProductFormProps> = ({ onClose, onSucces
           {/* Subcategory (shown when category selected) */}
           {activeCategory && (
             <div className="space-y-1.5">
-              <label className="text-sm font-bold text-foreground uppercase tracking-wide">Subcategory</label>
-              <select
+              <label htmlFor="vp-subcategory" className="text-sm font-bold text-foreground uppercase tracking-wide">Subcategory</label>
+              <select id="vp-subcategory"
                 value={form.subcategory}
                 onChange={e => setForm(f => ({ ...f, subcategory: e.target.value }))}
                 className="w-full px-4 py-3 bg-background border border-border rounded-xl text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
@@ -637,8 +637,8 @@ const VendorProductForm: React.FC<VendorProductFormProps> = ({ onClose, onSucces
 
           {/* Description */}
           <div className="space-y-1.5">
-            <label className="text-sm font-bold text-foreground uppercase tracking-wide">Description *</label>
-            <textarea
+            <label htmlFor="vp-description" className="text-sm font-bold text-foreground uppercase tracking-wide">Description *</label>
+            <textarea id="vp-description"
               required
               rows={3}
               value={form.description}
@@ -651,9 +651,9 @@ const VendorProductForm: React.FC<VendorProductFormProps> = ({ onClose, onSucces
           {/* Price + Currency + Stock */}
           <div className={form.type === 'DIGITAL' ? 'grid grid-cols-1 gap-4' : 'grid grid-cols-3 gap-4'}>
             <div className={form.type === 'DIGITAL' ? 'space-y-1.5' : 'col-span-2 space-y-1.5'}>
-              <label className="text-sm font-bold text-foreground uppercase tracking-wide">Price *</label>
+              <label htmlFor="vp-price" className="text-sm font-bold text-foreground uppercase tracking-wide">Price *</label>
               <div className="flex gap-2">
-                <select
+                <select aria-label="Currency"
                   value={form.currency}
                   onChange={e => setForm(f => ({ ...f, currency: e.target.value }))}
                   className="px-3 py-3 bg-background border border-border rounded-xl text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
@@ -662,7 +662,7 @@ const VendorProductForm: React.FC<VendorProductFormProps> = ({ onClose, onSucces
                   <option value="USD">$ USD</option>
                   <option value="GBP">£ GBP</option>
                 </select>
-                <input
+                <input id="vp-price"
                   type="number"
                   required
                   min="0"
@@ -677,8 +677,8 @@ const VendorProductForm: React.FC<VendorProductFormProps> = ({ onClose, onSucces
             {/* VENDOR_BACKLOG.md VND-024: a digital good has no physical stock */}
             {form.type === 'PHYSICAL' && (
               <div className="space-y-1.5">
-                <label className="text-sm font-bold text-foreground uppercase tracking-wide">Stock</label>
-                <input
+                <label htmlFor="vp-stock" className="text-sm font-bold text-foreground uppercase tracking-wide">Stock</label>
+                <input id="vp-stock"
                   type="number"
                   min="0"
                   value={form.stock}
@@ -696,10 +696,10 @@ const VendorProductForm: React.FC<VendorProductFormProps> = ({ onClose, onSucces
             <div className="space-y-4 pt-4 border-t border-border">
               <p className="text-sm font-bold text-foreground uppercase tracking-wide">Inventory</p>
               <div className="space-y-1.5">
-                <label className="text-sm font-bold text-foreground uppercase tracking-wide">
+                <label htmlFor="vp-low-stock-alert-threshold" className="text-sm font-bold text-foreground uppercase tracking-wide">
                   Low Stock Alert Threshold
                 </label>
-                <input
+                <input id="vp-low-stock-alert-threshold"
                   type="number"
                   min="0"
                   value={form.lowStockThreshold}
@@ -723,8 +723,8 @@ const VendorProductForm: React.FC<VendorProductFormProps> = ({ onClose, onSucces
               </label>
               {form.isMadeToOrder && (
                 <div className="pl-7 space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Processing Time</label>
-                  <input
+                  <label htmlFor="vp-processing-time" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Processing Time</label>
+                  <input id="vp-processing-time"
                     type="text"
                     value={form.madeToOrderProcessingTime}
                     onChange={e => setForm(f => ({ ...f, madeToOrderProcessingTime: e.target.value }))}
@@ -761,8 +761,8 @@ const VendorProductForm: React.FC<VendorProductFormProps> = ({ onClose, onSucces
             {form.wholesaleEnabled && (
               <div className="grid grid-cols-2 gap-4 pl-7">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Minimum Quantity</label>
-                  <input
+                  <label htmlFor="vp-minimum-quantity" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Minimum Quantity</label>
+                  <input id="vp-minimum-quantity"
                     type="number"
                     min={2}
                     value={form.wholesaleMinQuantity}
@@ -771,8 +771,8 @@ const VendorProductForm: React.FC<VendorProductFormProps> = ({ onClose, onSucces
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Wholesale Price (per unit)</label>
-                  <input
+                  <label htmlFor="vp-wholesale-price-per-unit" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Wholesale Price (per unit)</label>
+                  <input id="vp-wholesale-price-per-unit"
                     type="number"
                     min={0}
                     step="0.01"
@@ -788,10 +788,10 @@ const VendorProductForm: React.FC<VendorProductFormProps> = ({ onClose, onSucces
 
           {/* Provenance */}
           <div className="space-y-1.5">
-            <label className="text-sm font-bold text-foreground uppercase tracking-wide">
+            <label htmlFor="vp-provenance-optional" className="text-sm font-bold text-foreground uppercase tracking-wide">
               Provenance <span className="text-muted-foreground font-normal normal-case">(Optional)</span>
             </label>
-            <input
+            <input id="vp-provenance-optional"
               type="text"
               value={form.provenance}
               onChange={e => setForm(f => ({ ...f, provenance: e.target.value }))}
@@ -802,10 +802,10 @@ const VendorProductForm: React.FC<VendorProductFormProps> = ({ onClose, onSucces
 
           {/* Usage Protocol */}
           <div className="space-y-1.5">
-            <label className="text-sm font-bold text-foreground uppercase tracking-wide">
+            <label htmlFor="vp-usage-protocol-optional" className="text-sm font-bold text-foreground uppercase tracking-wide">
               Usage Protocol <span className="text-muted-foreground font-normal normal-case">(Optional)</span>
             </label>
-            <textarea
+            <textarea id="vp-usage-protocol-optional"
               rows={2}
               value={form.usageProtocol}
               onChange={e => setForm(f => ({ ...f, usageProtocol: e.target.value }))}
@@ -821,8 +821,8 @@ const VendorProductForm: React.FC<VendorProductFormProps> = ({ onClose, onSucces
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Yoruba Name</label>
-                <input
+                <label htmlFor="vp-yoruba-name" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Yoruba Name</label>
+                <input id="vp-yoruba-name"
                   type="text"
                   value={form.yorubaName}
                   onChange={e => setForm(f => ({ ...f, yorubaName: e.target.value }))}
@@ -831,8 +831,8 @@ const VendorProductForm: React.FC<VendorProductFormProps> = ({ onClose, onSucces
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Pronunciation Guide</label>
-                <input
+                <label htmlFor="vp-pronunciation-guide" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Pronunciation Guide</label>
+                <input id="vp-pronunciation-guide"
                   type="text"
                   value={form.pronunciationGuide}
                   onChange={e => setForm(f => ({ ...f, pronunciationGuide: e.target.value }))}
@@ -842,8 +842,8 @@ const VendorProductForm: React.FC<VendorProductFormProps> = ({ onClose, onSucces
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Yoruba Description</label>
-              <textarea
+              <label htmlFor="vp-yoruba-description" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Yoruba Description</label>
+              <textarea id="vp-yoruba-description"
                 rows={2}
                 value={form.yorubaDescription}
                 onChange={e => setForm(f => ({ ...f, yorubaDescription: e.target.value }))}
@@ -852,8 +852,8 @@ const VendorProductForm: React.FC<VendorProductFormProps> = ({ onClose, onSucces
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Traditional Use Context</label>
-              <textarea
+              <label htmlFor="vp-traditional-use-context" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Traditional Use Context</label>
+              <textarea id="vp-traditional-use-context"
                 rows={2}
                 value={form.traditionalUseContext}
                 onChange={e => setForm(f => ({ ...f, traditionalUseContext: e.target.value }))}
@@ -862,8 +862,8 @@ const VendorProductForm: React.FC<VendorProductFormProps> = ({ onClose, onSucces
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Region of Origin</label>
-              <input
+              <label htmlFor="vp-region-of-origin" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Region of Origin</label>
+              <input id="vp-region-of-origin"
                 type="text"
                 value={form.regionOfOrigin}
                 onChange={e => setForm(f => ({ ...f, regionOfOrigin: e.target.value }))}
@@ -879,11 +879,11 @@ const VendorProductForm: React.FC<VendorProductFormProps> = ({ onClose, onSucces
               SEO & Discovery <span className="text-muted-foreground font-normal normal-case">(Optional)</span>
             </p>
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+              <label htmlFor="vp-tags-10" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
                 Tags <span className="normal-case font-normal">({form.tags.length}/10)</span>
               </label>
               <div className="flex gap-2">
-                <input
+                <input id="vp-tags-10"
                   type="text"
                   value={tagInput}
                   onChange={e => setTagInput(e.target.value)}
@@ -915,8 +915,8 @@ const VendorProductForm: React.FC<VendorProductFormProps> = ({ onClose, onSucces
               )}
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">SEO Title</label>
-              <input
+              <label htmlFor="vp-seo-title" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">SEO Title</label>
+              <input id="vp-seo-title"
                 type="text"
                 value={form.seoTitle}
                 onChange={e => setForm(f => ({ ...f, seoTitle: e.target.value }))}
@@ -925,8 +925,8 @@ const VendorProductForm: React.FC<VendorProductFormProps> = ({ onClose, onSucces
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">SEO Description</label>
-              <textarea
+              <label htmlFor="vp-seo-description" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">SEO Description</label>
+              <textarea id="vp-seo-description"
                 rows={2}
                 value={form.seoDescription}
                 onChange={e => setForm(f => ({ ...f, seoDescription: e.target.value }))}
@@ -958,10 +958,10 @@ const VendorProductForm: React.FC<VendorProductFormProps> = ({ onClose, onSucces
             {form.saveAsDraft && (
               <div className="pl-7 space-y-3">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+                  <label htmlFor="vp-goes-live-on-optional-auto-publishes-at" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
                     Goes Live On <span className="normal-case font-normal">(optional — auto-publishes at this date/time)</span>
                   </label>
-                  <input
+                  <input id="vp-goes-live-on-optional-auto-publishes-at"
                     type="date"
                     value={form.scheduledAt}
                     onChange={e => setForm(f => ({ ...f, scheduledAt: e.target.value }))}
@@ -999,8 +999,8 @@ const VendorProductForm: React.FC<VendorProductFormProps> = ({ onClose, onSucces
             </label>
             {form.isPreOrder && (
               <div className="pl-7 space-y-1.5">
-                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Expected Delivery Date</label>
-                <input
+                <label htmlFor="vp-expected-delivery-date" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Expected Delivery Date</label>
+                <input id="vp-expected-delivery-date"
                   type="date"
                   value={form.expectedDeliveryDate}
                   onChange={e => setForm(f => ({ ...f, expectedDeliveryDate: e.target.value }))}
@@ -1029,9 +1029,9 @@ const VendorProductForm: React.FC<VendorProductFormProps> = ({ onClose, onSucces
 
           {/* Images */}
           <div className="space-y-2">
-            <label className="text-sm font-bold text-foreground uppercase tracking-wide">Product Images</label>
+            <label htmlFor="vp-product-images" className="text-sm font-bold text-foreground uppercase tracking-wide">Product Images</label>
             <div className="flex gap-2">
-              <input
+              <input id="vp-product-images"
                 type="url"
                 value={imageUrl}
                 onChange={e => setImageUrl(e.target.value)}

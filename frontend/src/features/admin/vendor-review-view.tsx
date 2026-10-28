@@ -169,7 +169,10 @@ const VendorReviewView: React.FC = () => {
             </thead>
             <tbody className="bg-card divide-y divide-stone-200">
               {vendors.map((vendor) => (
-                <tr key={vendor.id} className="hover:bg-muted/40">
+                // The whole row opens the review: the only action button sits in the
+                // last column, which is off-screen at common desktop widths (the
+                // table scrolls horizontally beside the sidebar).
+                <tr key={vendor.id} className="hover:bg-muted/40 cursor-pointer" onClick={() => setSelectedVendor(vendor)}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-10 w-10">
@@ -193,9 +196,11 @@ const VendorReviewView: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex justify-end gap-2">
                       <button
-                        onClick={() => setSelectedVendor(vendor)}
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setSelectedVendor(vendor); }}
                         className="p-2 text-stone-500 hover:text-stone-700 dark:text-stone-300 rounded-lg hover:bg-muted/60 transition-colors"
                         title="Review Application"
+                        aria-label={`Review application from ${vendor.businessName}`}
                       >
                         <FileText size={16} />
                       </button>
