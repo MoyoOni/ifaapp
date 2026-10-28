@@ -5,6 +5,7 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
+import { VoteStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { CirclesService } from '../circles/circles.service';
@@ -193,9 +194,18 @@ export class AdminCommunityService {
       throw new ForbiddenException('Only admins can view advisory votes');
     }
 
+    // The voting view asks for several statuses at once ("ACTIVE,PENDING",
+    // "CLOSED,APPROVED,REJECTED"). This used to pass that whole string as one
+    // enum value, which Prisma rejected -- a 400 on every visit, leaving the
+    // Advisory Board page stuck loading.
     const where: any = {};
     if (status) {
-      where.status = status;
+      const statuses = status.split(',').map((s) => s.trim().toUpperCase()).filter(Boolean);
+      const unknown = statuses.filter((s) => !(Object.values(VoteStatus) as string[]).includes(s));
+      if (unknown.length > 0) {
+        throw new BadRequestException(`Unknown vote status: ${unknown.join(', ')}`);
+      }
+      where.status = { in: statuses as VoteStatus[] };
     }
 
     return this.prisma.advisoryVote.findMany({
