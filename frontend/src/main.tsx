@@ -69,11 +69,13 @@ initSentry();
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
+      staleTime: 2 * 60 * 1000, // 2 minutes (was set on App.tsx's duplicate client)
       refetchOnWindowFocus: false,
-      // Don't retry auth errors (401/403) — they won't resolve without user action
+      // A 4xx won't change on retry (missing item, no permission, bad input) --
+      // except 408/429, which can. Other failures get one retry.
       retry: (failureCount, error: any) => {
         const status = error?.response?.status;
-        if (status === 401 || status === 403 || status === 404) return false;
+        if (status >= 400 && status < 500 && status !== 408 && status !== 429) return false;
         return failureCount < 1;
       },
       // Don't throw errors to ErrorBoundary — let components handle them

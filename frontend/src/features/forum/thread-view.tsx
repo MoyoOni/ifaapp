@@ -465,12 +465,14 @@ const ThreadView: React.FC<ThreadViewProps> = ({ threadId, onBack }) => {
           <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-highlight/10 flex items-center justify-center">
             <BookOpen size={40} className="text-highlight" />
           </div>
+          {/* Shown when the thread doesn't exist or was removed. It used to say
+              "not yet ready for viewing", implying it would appear later. */}
           <h2 className="text-2xl font-bold brand-font text-foreground mb-3">
-            This Wisdom is Being Prepared
+            This Thread Could Not Be Found
           </h2>
           <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-            The thread you seek is not yet ready for viewing. Like all sacred knowledge,
-            it must be gathered with care and intention.
+            It may have been removed, or the link may be wrong. The conversations
+            of the community are still gathered in the forum.
           </p>
           {onBack && (
             <button

@@ -1,4 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
+import { setServerUnreachable, isUnreachableError } from '@/shared/utils/server-reachability';
 import { parseApiError, reportApiError } from '@/shared/utils/api-error';
 import { setLogContext } from '@/shared/utils/logger';
 
@@ -71,6 +72,7 @@ function refreshAccessToken(): Promise<string> {
 // Response interceptor: capture trace ID for logging, then token refresh / error handling
 api.interceptors.response.use(
   (response) => {
+    setServerUnreachable(false);
     const requestId = response.headers[REQUEST_ID_HEADER];
     if (requestId && typeof requestId === 'string') {
       setLogContext({ traceId: requestId });
@@ -79,6 +81,8 @@ api.interceptors.response.use(
   },
   async (error) => {
     const originalRequest = error.config;
+    // Any answer from the API (even a 4xx) means it's reachable.
+    setServerUnreachable(isUnreachableError(error));
 
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
       originalRequest._retry = true;

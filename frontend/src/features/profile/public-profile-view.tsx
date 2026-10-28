@@ -340,7 +340,7 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
   onBack,
   currentUserId,
 }) => {
-  const { data: user, isLoading, isError } = useProfileQuery(userId);
+  const { data: user, isLoading, isError, error: profileError } = useProfileQuery(userId);
   const toastCtx = useToast();
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
@@ -440,8 +440,24 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
     return (
       <div className="max-w-4xl mx-auto py-20 text-center">
         <User size={48} className="mx-auto text-muted-foreground mb-4" />
-        <h2 className="text-xl font-bold text-muted-foreground mb-2">This user hasn't set up their profile yet</h2>
-        <p className="text-muted-foreground mb-6">The user has not added any profile information.</p>
+        {/* Every failure used to say "hasn't set up their profile yet" -- including
+            an account that doesn't exist, which implied it did. */}
+        {isError && (profileError as any)?.response?.status === 404 ? (
+          <>
+            <h2 className="text-xl font-bold text-muted-foreground mb-2">This profile doesn't exist</h2>
+            <p className="text-muted-foreground mb-6">The account may have been removed, or the link may be wrong.</p>
+          </>
+        ) : isError ? (
+          <>
+            <h2 className="text-xl font-bold text-muted-foreground mb-2">Couldn't load this profile</h2>
+            <p className="text-muted-foreground mb-6">Please check your connection and try again.</p>
+          </>
+        ) : (
+          <>
+            <h2 className="text-xl font-bold text-muted-foreground mb-2">This user hasn't set up their profile yet</h2>
+            <p className="text-muted-foreground mb-6">The user has not added any profile information.</p>
+          </>
+        )}
         <button
           onClick={onBack}
           className="px-5 py-2.5 bg-primary text-white rounded-xl font-medium hover:opacity-90 transition-opacity"

@@ -255,7 +255,7 @@ const ForumHomeView: React.FC<ForumHomeViewProps> = ({ onSelectThread, onCreateT
   });
 
   // Fetch threads
-  const { data: threads = [], isLoading: threadsLoading } = useQuery<ForumThread[]>({
+  const { data: threads = [], isLoading: threadsLoading, isError: threadsError, refetch: refetchThreads } = useQuery<ForumThread[]>({
     queryKey: ['forum-threads', selectedCategory, selectedTag],
     queryFn: async () => {
       const params: Record<string, string> = {};
@@ -578,6 +578,16 @@ const ForumHomeView: React.FC<ForumHomeViewProps> = ({ onSelectThread, onCreateT
               {[1, 2, 3].map((i) => (
                 <div key={i} className="h-32 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl animate-pulse" />
               ))}
+            </div>
+          ) : !isSearching && threadsError ? (
+            // A failed load used to show "Quiet in the square. Be the first to
+            // speak." -- an outage looked like an empty community.
+            <div role="alert" className="text-center py-16 bg-muted/30 rounded-3xl border border-border">
+              <h3 className="text-xl font-bold text-foreground">Couldn't load the conversations</h3>
+              <p className="text-muted-foreground mt-1 mb-6">Something went wrong reaching the square. Please try again.</p>
+              <button type="button" onClick={() => refetchThreads()} className="px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-semibold hover:bg-primary/90">
+                Try again
+              </button>
             </div>
           ) : !isSearching && filteredThreads.length === 0 ? (
             <div className="text-center py-20 bg-emerald-50 dark:bg-emerald-900/10 rounded-3xl border border-emerald-100">

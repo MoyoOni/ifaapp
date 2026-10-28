@@ -4,6 +4,35 @@ import { useAuth } from '../hooks/use-auth';
 import { UserRole, AdminSubRole } from '@common';
 import { LoadingSpinner } from './loading-spinner';
 import { logger } from '@/shared/utils/logger';
+import { useQueryClient } from '@tanstack/react-query';
+import { CloudOff } from 'lucide-react';
+import { useServerUnreachable } from '@/shared/utils/server-reachability';
+
+/**
+ * A signed-in member whose profile couldn't be loaded because the server is
+ * unreachable. Both route guards used to treat that as "not signed in" and
+ * redirect to /login during any outage -- to a login page that couldn't work
+ * either. The session is still there; show that, with a way to retry.
+ */
+const ConnectionLostNotice: React.FC = () => {
+  const queryClient = useQueryClient();
+  return (
+    <div className="min-h-[60vh] flex items-center justify-center p-6">
+      <div className="max-w-md text-center space-y-4">
+        <CloudOff size={44} className="mx-auto text-muted-foreground" />
+        <h2 className="text-xl font-bold text-foreground">We can't reach Ìlú Àṣẹ right now</h2>
+        <p className="text-muted-foreground">You're still signed in. This page will load once the connection is back.</p>
+        <button
+          type="button"
+          onClick={() => queryClient.refetchQueries({ type: 'active' })}
+          className="px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-semibold hover:bg-primary/90"
+        >
+          Try again
+        </button>
+      </div>
+    </div>
+  );
+};
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -22,8 +51,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   allowedAdminRoles,
   redirectTo = '/'
 }) => {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, isAuthenticated } = useAuth();
   const location = useLocation();
+  const unreachable = useServerUnreachable();
 
   // Show loading state while checking auth
   if (isLoading) {
@@ -33,6 +63,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         <LoadingSpinner />
       </div>
     );
+  }
+
+  if (!user && isAuthenticated && unreachable) {
+    return <ConnectionLostNotice />;
   }
 
   // Redirect to login if not authenticated
@@ -107,8 +141,9 @@ export const VendorRoute: React.FC<{ children: React.ReactNode }> = ({ children 
  * intended location in router state like ProtectedRoute does.
  */
 export const RequireAuth: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, isAuthenticated } = useAuth();
   const location = useLocation();
+  const unreachable = useServerUnreachable();
 
   if (isLoading) {
     return (
@@ -116,6 +151,10 @@ export const RequireAuth: React.FC<{ children: React.ReactNode }> = ({ children 
         <LoadingSpinner />
       </div>
     );
+  }
+
+  if (!user && isAuthenticated && unreachable) {
+    return <ConnectionLostNotice />;
   }
 
   if (!user) {

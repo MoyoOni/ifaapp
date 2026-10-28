@@ -162,7 +162,7 @@ const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onSelectProduct }) =>
   };
 
   // Fetch products — server-side search when query ≥ 3 chars, client-side otherwise
-  const { data: products = [], isLoading: productsLoading } = useQuery<Product[]>({
+  const { data: products = [], isLoading: productsLoading, isError: productsError, refetch: refetchProducts } = useQuery<Product[]>({
     queryKey: ['marketplace-products', selectedCategory, selectedSubcategory, selectedTier, debouncedSearch, elderEndorsedOnly],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -566,7 +566,7 @@ const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onSelectProduct }) =>
       {/* Results Count + Cart */}
       <div className="flex justify-between items-center mb-6">
         <p className="text-sm text-muted-foreground font-medium">
-          {filteredProducts.length} {filteredProducts.length === 1 ? 'item' : 'items'} found
+          {productsError ? '' : `${filteredProducts.length} ${filteredProducts.length === 1 ? 'item' : 'items'} found`}
           {activeCategory && <span className="ml-1">in <strong>{activeCategory.label}</strong></span>}
         </p>
         <div className="flex items-center gap-2">
@@ -592,7 +592,18 @@ const MarketplaceView: React.FC<MarketplaceViewProps> = ({ onSelectProduct }) =>
       </div>
 
       {/* Products Grid */}
-      {filteredProducts.length > 0 ? (
+      {/* A failed load used to fall through to "No Items Found" -- an outage
+          looked like an empty marketplace. */}
+      {productsError ? (
+        <div role="alert" className="text-center py-16 bg-muted/30 rounded-2xl border border-border">
+          <Package size={64} className="mx-auto text-muted-foreground/40 mb-4" />
+          <h3 className="text-xl font-bold text-foreground mb-2">Couldn't load the marketplace</h3>
+          <p className="text-muted-foreground max-w-md mx-auto mb-6">Something went wrong reaching Ọjà Ìlú Àṣẹ. Please try again.</p>
+          <button type="button" onClick={() => refetchProducts()} className="px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-semibold hover:bg-primary/90">
+            Try again
+          </button>
+        </div>
+      ) : filteredProducts.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredProducts.map((product) => (
             <div

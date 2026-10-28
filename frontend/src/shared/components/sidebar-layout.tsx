@@ -102,7 +102,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
     children
 }) => {
     logger.info('[SidebarLayout] Render');
-    const { user, logout } = useAuth();
+    const { user, logout, isAuthenticated } = useAuth();
     const { isDevoted } = useSubscription();
     const navigate = useNavigate();
     const location = useLocation();
@@ -374,8 +374,10 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                     </div>
                 )}
 
-                {/* Logged-out visitors get a sign-in card instead of a fake identity */}
-                {showExpanded && !user && (
+                {/* Logged-out visitors get a sign-in card instead of a fake identity.
+                    Not when a session exists but the profile couldn't load (server
+                    unreachable) -- that used to tell signed-in members to sign in. */}
+                {showExpanded && !user && !isAuthenticated && (
                     <div className="p-4 border-t border-border/50 bg-card/50">
                         <VisitorAuthCard />
                     </div>

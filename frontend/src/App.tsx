@@ -1,12 +1,12 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ErrorBoundary from './components/common/error-boundary';
 import FallbackErrorComponent from './components/common/fallback-error-component';
 import NotFound from './pages/not-found';
 import { ProtectedRoute, AdminRoute, RequireAuth } from './shared/components/protected-route';
 import { UserRole } from '@common';
 import OfflineIndicator from './shared/components/offline-indicator';
+import ServerUnreachableBanner from './shared/components/server-unreachable-banner';
 import SpiritualJourneyView from './features/client-hub/spiritual-journey-view';
 import CircleDirectory from './features/circles/circle-directory'; // Import CircleDirectory
 import MemberDirectoryView from './features/community/member-directory-view'; // COMMUNITY_BACKLOG.md FOR-Q2
@@ -94,16 +94,6 @@ import {
   OnboardingView,
 } from './routes/lazy-views';
 
-// Initialize React Query client with cache strategy
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 2 * 60 * 1000, // 2 minutes default
-      refetchOnWindowFocus: false,
-    },
-  },
-});
-
 import {
   LayoutWrapper,
   AppWrapper,
@@ -130,13 +120,18 @@ import { GuidancePlanTrackingView } from './routes/lazy-views';
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
+    // The QueryClient lives in main.tsx. This file used to create a second one
+    // here, which shadowed it for every page: its "don't retry 401/403/404"
+    // policy never applied (a missing item spun through 3 retries before showing
+    // "not found"), and auth/language providers used a different cache.
+    <>
       <Router basename={import.meta.env.BASE_URL}>
         <SubdomainRedirect />
         <ErrorBoundary fallback={FallbackErrorComponent}>
           <AppWrapper>
             <div className="App bg-background text-foreground" role="main"> {/* Apply theme variables globally */}
               <OfflineIndicator />
+              <ServerUnreachableBanner />
               <React.Suspense fallback={<LoadingSpinner />}>
                 <div id="main-content" tabIndex={-1} className="outline-none">
                   <Routes>
@@ -1031,7 +1026,7 @@ function App() {
           </AppWrapper>
         </ErrorBoundary>
       </Router>
-    </QueryClientProvider>
+    </>
   );
 }
 
