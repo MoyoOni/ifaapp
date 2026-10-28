@@ -215,6 +215,14 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
   private async dispatch(eventType: string, payload: Record<string, unknown>): Promise<void> {
     switch (eventType) {
       case 'PAYMENT_RECEIVED':
+        // The recipient may have been deleted since the event was queued
+        // (account deletion; test accounts). That's permanent, not transient:
+        // it used to fail on Notification_userId_fkey, retry, and dead-letter
+        // into Sentry every time. Skip it -- the event is marked PROCESSED.
+        if (!(await this.prisma.user.findUnique({ where: { id: payload.userId as string }, select: { id: true } }))) {
+          this.logger.warn(`Skipping PAYMENT_RECEIVED for deleted user ${payload.userId as string}`);
+          return;
+        }
         await this.notificationService.notifyPaymentReceived(
           payload.userId as string,
           payload.amount as number,

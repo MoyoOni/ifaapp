@@ -40,6 +40,9 @@ describe('OutboxService (P1-01)', () => {
       updateMany: jest.fn(),
       create: jest.fn(),
     },
+    user: {
+      findUnique: jest.fn(),
+    },
   };
 
   const mockNotificationService = {
@@ -52,6 +55,8 @@ describe('OutboxService (P1-01)', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    // recipients exist unless a test says otherwise
+    mockPrismaService.user.findUnique.mockResolvedValue({ id: 'user-1' });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -176,6 +181,28 @@ describe('OutboxService (P1-01)', () => {
         'NGN',
         'ref-1'
       );
+      expect(mockPrismaService.outboxEvent.update).toHaveBeenCalledWith({
+        where: { id: 'evt-1' },
+        data: { status: 'PROCESSED', processedAt: expect.any(Date) },
+      });
+    });
+
+    // The recipient was deleted after the event was queued. This used to hit
+    // Notification_userId_fkey, retry and dead-letter into Sentry every time.
+    it('skips PAYMENT_RECEIVED for a deleted user and marks it PROCESSED, without retrying', async () => {
+      mockPrismaService.outboxEvent.findUnique.mockResolvedValue({
+        id: 'evt-1',
+        eventType: 'PAYMENT_RECEIVED',
+        status: 'PROCESSING',
+        retries: 0,
+        payload: { userId: 'deleted-user', amount: 5000, currency: 'NGN', reference: 'ref-1' },
+      });
+      mockPrismaService.user.findUnique.mockResolvedValue(null);
+
+      const callback = getWorkerCallback();
+      await callback({ data: { eventId: 'evt-1' } });
+
+      expect(mockNotificationService.notifyPaymentReceived).not.toHaveBeenCalled();
       expect(mockPrismaService.outboxEvent.update).toHaveBeenCalledWith({
         where: { id: 'evt-1' },
         data: { status: 'PROCESSED', processedAt: expect.any(Date) },
