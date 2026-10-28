@@ -5,6 +5,15 @@ import { PrismaService } from '../prisma/prisma.service';
 export class PractitionerAnalyticsService {
   constructor(private prisma: PrismaService) {}
 
+  // Raw-query notes. This endpoint 500'd for every babalawo, so the
+  // practitioner analytics page never loaded:
+  //  - Appointment.date is a 'YYYY-MM-DD' String (time is 'HH:mm'), so it's
+  //    cast (date::date, time::TIME) wherever it's used as a date -- EXTRACT
+  //    and >= on the raw text fail in Postgres.
+  //  - There is no Appointment.service column; the consultation subject is
+  //    `topic`, returned under the existing `service` key.
+  //  - EXTRACT/COUNT results are cast ::int: otherwise Prisma returns Decimal
+  //    objects / BigInts (days[Decimal] is undefined; BigInt can't be JSON'd).
   async getAnalytics(babalawoId: string) {
     // Get basic stats
     const [
@@ -110,8 +119,8 @@ export class PractitionerAnalyticsService {
 
     const rows = await this.prisma.$queryRaw<Array<{ month: number; year: number; avg: number }>>`
       SELECT
-        EXTRACT(MONTH FROM "createdAt") AS month,
-        EXTRACT(YEAR FROM "createdAt") AS year,
+        EXTRACT(MONTH FROM "createdAt")::int AS month,
+        EXTRACT(YEAR FROM "createdAt")::int AS year,
         AVG(rating)::float AS avg
       FROM "BabalawoReview"
       WHERE "babalawoId" = ${babalawoId}
@@ -128,7 +137,7 @@ export class PractitionerAnalyticsService {
 
   private async calculateRepeatClientRate(babalawoId: string): Promise<number> {
     const clientsWithSessionCounts = await this.prisma.$queryRaw<any[]>`
-      SELECT "clientId", COUNT(*) as "sessionCount"
+      SELECT "clientId", COUNT(*)::int AS "sessionCount"
       FROM "Appointment"
       WHERE "babalawoId" = ${babalawoId} AND status = 'COMPLETED'
       GROUP BY "clientId"
@@ -142,10 +151,10 @@ export class PractitionerAnalyticsService {
 
   private async getMostPopularService(babalawoId: string): Promise<string> {
     const serviceCounts = await this.prisma.$queryRaw<any[]>`
-      SELECT service, COUNT(*) as count
+      SELECT topic AS service, COUNT(*)::int AS count
       FROM "Appointment"
-      WHERE "babalawoId" = ${babalawoId} AND status = 'COMPLETED'
-      GROUP BY service
+      WHERE "babalawoId" = ${babalawoId} AND status = 'COMPLETED' AND topic IS NOT NULL
+      GROUP BY topic
       ORDER BY count DESC
       LIMIT 1
     `;
@@ -155,10 +164,10 @@ export class PractitionerAnalyticsService {
 
   private async getBusiestDayOfWeek(babalawoId: string): Promise<string> {
     const dayCounts = await this.prisma.$queryRaw<any[]>`
-      SELECT EXTRACT(DOW FROM date) as "dayOfWeek", COUNT(*) as count
+      SELECT EXTRACT(DOW FROM date::date)::int AS "dayOfWeek", COUNT(*)::int AS count
       FROM "Appointment"
       WHERE "babalawoId" = ${babalawoId} AND status = 'COMPLETED'
-      GROUP BY EXTRACT(DOW FROM date)
+      GROUP BY EXTRACT(DOW FROM date::date)
       ORDER BY count DESC
       LIMIT 1
     `;
@@ -171,7 +180,7 @@ export class PractitionerAnalyticsService {
 
   private async getBusiestTimeOfDay(babalawoId: string): Promise<string> {
     const hourCounts = await this.prisma.$queryRaw<any[]>`
-      SELECT EXTRACT(HOUR FROM time::TIME) as hour, COUNT(*) as count
+      SELECT EXTRACT(HOUR FROM time::TIME)::int AS hour, COUNT(*)::int AS count
       FROM "Appointment"
       WHERE "babalawoId" = ${babalawoId} AND status = 'COMPLETED'
       GROUP BY EXTRACT(HOUR FROM time::TIME)
@@ -195,14 +204,14 @@ export class PractitionerAnalyticsService {
 
     const monthlyData = await this.prisma.$queryRaw<any[]>`
       SELECT 
-        EXTRACT(MONTH FROM date) as month,
-        EXTRACT(YEAR FROM date) as year,
-        COUNT(*) as count
+        EXTRACT(MONTH FROM date::date)::int AS month,
+        EXTRACT(YEAR FROM date::date)::int AS year,
+        COUNT(*)::int AS count
       FROM "Appointment"
       WHERE "babalawoId" = ${babalawoId} 
         AND status = 'COMPLETED' 
-        AND date >= ${sixMonthsAgo}::date
-      GROUP BY EXTRACT(MONTH FROM date), EXTRACT(YEAR FROM date)
+        AND date::date >= ${sixMonthsAgo}::date
+      GROUP BY EXTRACT(MONTH FROM date::date), EXTRACT(YEAR FROM date::date)
       ORDER BY year, month
     `;
 
@@ -215,10 +224,10 @@ export class PractitionerAnalyticsService {
 
   private async getServiceOfferingsStats(babalawoId: string) {
     const serviceCounts = await this.prisma.$queryRaw<any[]>`
-      SELECT service, COUNT(*) as count
+      SELECT topic AS service, COUNT(*)::int AS count
       FROM "Appointment"
-      WHERE "babalawoId" = ${babalawoId} AND status = 'COMPLETED'
-      GROUP BY service
+      WHERE "babalawoId" = ${babalawoId} AND status = 'COMPLETED' AND topic IS NOT NULL
+      GROUP BY topic
       ORDER BY count DESC
     `;
 
@@ -245,15 +254,15 @@ export class PractitionerAnalyticsService {
 
     const rows = await this.prisma.$queryRaw<Array<{ month: number; year: number; total: number }>>`
       SELECT
-        EXTRACT(MONTH FROM date) AS month,
-        EXTRACT(YEAR FROM date) AS year,
+        EXTRACT(MONTH FROM date::date)::int AS month,
+        EXTRACT(YEAR FROM date::date)::int AS year,
         COALESCE(SUM(price), 0)::float AS total
       FROM "Appointment"
       WHERE "babalawoId" = ${babalawoId}
         AND status = 'COMPLETED'
-        AND date >= ${sixMonthsAgo}::date
+        AND date::date >= ${sixMonthsAgo}::date
         AND price IS NOT NULL
-      GROUP BY EXTRACT(YEAR FROM date), EXTRACT(MONTH FROM date)
+      GROUP BY EXTRACT(YEAR FROM date::date), EXTRACT(MONTH FROM date::date)
       ORDER BY year, month
     `;
 
