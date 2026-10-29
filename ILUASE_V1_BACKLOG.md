@@ -41,6 +41,12 @@
 
 - **Uptime alarms alerted nobody — 🔵 found and FIXED October 27, 2026.** `iluase-prod-uptime` and `iluase-prod-health-check` existed but had no alarm actions and there was no SNS topic, so a site outage changed alarm state and told no one. Both now notify `iluase-prod-alerts` (alarm and recovery), descriptions preserved.
 
+- **🔴 Production sends no email at all — 🔵 found October 29, 2026** (sending one real password reset after the deploy). Password resets, email verification and email-change confirmations all fail on iluase.com; the user just sees "a link is on its way". Three separate blockers, all AWS-side, no code change needed:
+  1. **The box's role can't send.** `iluase-ec2-ecr` has only `AmazonEC2ContainerRegistryReadOnly` + the backup policies; SES returns `AccessDenied ... ses:SendEmail`. Needs a policy allowing `ses:SendEmail`/`ses:SendRawEmail` (condition `ses:FromAddress` = `noreply@iluase.com`).
+  2. **The `iluase.com` SES identity is `FAILED`** (DKIM). The three DKIM CNAMEs *are* in Route 53 and resolve correctly — most likely SES gave up during the September account suspension. Verification needs re-triggering.
+  3. **SES is still in the sandbox** (200/day, verified recipients only). Production access needs a request to AWS with a use-case description — owner action.
+  Until all three are done, no member can recover a password or verify an email.
+
 ### Resolved since the doc was first written (moved from here to ✅ below, listed so you don't go looking)
 
 The following 🔴 items from the original pass are now **✅ done** — see the ✅ section for evidence: the 14 "missing" admin endpoints, the 3 "partially real" admin features, the ban/unban endpoint, the `trustScore` schema-drift risk, **ADM-004** (forum thread admin actions, fully wired July 28, 2026), and **ADM-030** (platform settings panel, resolved July 28, 2026 — see 🟡 Admin Operations below for what was actually built vs. deliberately not built).
@@ -176,6 +182,8 @@ Full detail in `V8_MONETISATION_BACKLOG.md` (superseded for planning, kept as de
 ---
 
 ## ⚪ NEEDS A HUMAN (not code work)
+
+- **AWS leftovers from the March ECS/RDS retirement still billing — 🔵 found October 29, 2026.** October's bill is ~$28 forecast (EC2 $14, tax $4.37, public IPv4 $3.38, Route 53 $1.86 — all needed). Not needed: RDS manual snapshot `iluase-prod-final-snapshot-20260325` (20GB) and Secrets Manager secrets `iluase/prod/app-secrets` + `iluase/prod/connection-strings` (last read March 25; production reads `/home/ubuntu/app/.env`). Deleting both saves ~$1–2.70/month; owner's call, since the snapshot is the last pre-migration copy of the old RDS database (the S3 backups and a tested restore cover current data). A 1-year no-upfront Savings Plan on the t3.small would cut EC2 by roughly a third — a commitment, also owner's call.
 
 📄 *(HUMAN_BACKLOG.md)*, re-verified 🔵 July 28, 2026 where code-checkable.
 
