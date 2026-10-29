@@ -184,6 +184,8 @@ Full detail in `V8_MONETISATION_BACKLOG.md` (superseded for planning, kept as de
 
 ## ⚪ NEEDS A HUMAN (not code work)
 
+- **Production's only admin had no sub-role — 🔵 set to SUPER, October 29, 2026** (owner's request: `ifamoyooni@outlook.com` is the main/root admin). An admin with a null `adminSubRole` gets full access on the backend (`roles.guard.ts`: "bootstrap/legacy admins get full access"), but `AdminSubRolesGuard` denies them and the frontend sidebar hides every admin nav item that lists `requiredAdminSubRoles` — so the owner was missing parts of the admin panel. 🟡 Still open in code: make null-sub-role handling consistent (or require a sub-role on every ADMIN) so the next admin doesn't hit this.
+
 - **AWS leftovers from the March ECS/RDS retirement still billing — 🔵 found October 29, 2026.** October's bill is ~$28 forecast (EC2 $14, tax $4.37, public IPv4 $3.38, Route 53 $1.86 — all needed). Not needed: RDS manual snapshot `iluase-prod-final-snapshot-20260325` (20GB) and Secrets Manager secrets `iluase/prod/app-secrets` + `iluase/prod/connection-strings` (last read March 25; production reads `/home/ubuntu/app/.env`). Deleting both saves ~$1–2.70/month; owner's call, since the snapshot is the last pre-migration copy of the old RDS database (the S3 backups and a tested restore cover current data). A 1-year no-upfront Savings Plan on the t3.small would cut EC2 by roughly a third — a commitment, also owner's call.
 
 📄 *(HUMAN_BACKLOG.md)*, re-verified 🔵 July 28, 2026 where code-checkable.
