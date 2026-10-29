@@ -46,6 +46,7 @@
   2. **The `iluase.com` SES identity is `FAILED`** (DKIM). The three DKIM CNAMEs *are* in Route 53 and resolve correctly — most likely SES gave up during the September account suspension. Verification needs re-triggering.
   3. **SES is still in the sandbox** (200/day, verified recipients only). Production access needs a request to AWS with a use-case description — owner action.
   Until all three are done, no member can recover a password or verify an email.
+  - **Progress, October 29, 2026:** (1) ✅ inline policy `prod-ses-send-noreply` added to `iluase-ec2-ecr` (send only as `noreply@iluase.com`). (2) ✅ DKIM re-verification restarted (`put-email-identity-dkim-signing-attributes` with `NextSigningKeyLength=RSA_2048_BIT`; tokens unchanged, CNAMEs confirmed) — `SUCCESS`, identity verified for sending, within a minute. (3) ❌ production-access request (`put-account-details`) was **denied instantly**, case `179329385400452` — submitted while the domain was still unverified. Next: reply on that case in AWS Support now that the domain is verified. Until approved, production can only send to SES-verified addresses.
 
 ### Resolved since the doc was first written (moved from here to ✅ below, listed so you don't go looking)
 
