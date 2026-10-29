@@ -50,6 +50,7 @@ After completing any task:
 - **Staging** — there is no staging server: the old box (100.52.200.113) no longer exists in the AWS account (verified October 27, 2026), and CI's `deploy-staging` job was removed. Use the local Docker staging stack (`docker-compose.staging.yml`).
 - **CloudFront CDN** — iluase.com + www.iluase.com → CloudFront, `/api/*` uncached, statics CachingOptimized
 - **Monitoring & alerts** — Route53 health checks + CloudWatch alarms `iluase-prod-uptime`, `iluase-prod-health-check` and `iluase-prod-db-backup-missing` (no successful backup in 12h), all notifying SNS topic `iluase-prod-alerts` (email). Until October 27, 2026 the uptime alarms had no actions and alerted nobody.
+- **Email** — AWS SES (us-east-1), sending only as `noreply@iluase.com` (inline policy `prod-ses-send-noreply` on role `iluase-ec2-ecr`); `iluase.com` is DKIM-verified. Until October 29, 2026 production could send no email at all (no SES permission, DKIM `FAILED`). **The SES account is still in the sandbox** (verified recipients only, 200/day) pending AWS case `179329385400452` — check `aws sesv2 get-account --query Details` before assuming members receive email.
 - **Shareable profile URLs** — `slug` field on User, `GET /public/resolve/:slug` (no auth), `/:slug` route
 
 ---
