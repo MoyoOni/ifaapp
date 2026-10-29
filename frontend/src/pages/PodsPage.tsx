@@ -2,13 +2,15 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Users, Heart, ArrowRight, Shield, Sparkles, Clock } from 'lucide-react';
 
+// Planned cities only -- no Pod exists yet. These used to carry (blurred)
+// made-up member counts and named "Stewards" who had not been appointed.
 const PLACEHOLDER_PODS = [
-  { city: 'London', country: 'UK', flag: '🇬🇧', region: 'UK', members: 47, steward: 'Elder Adewale', desc: 'Monthly gatherings in East London. Study groups, naming ceremonies, seasonal festivals.' },
-  { city: 'Lagos', country: 'Nigeria', flag: '🇳🇬', region: 'Nigeria', members: 83, steward: 'Baba Ifáṣewun', desc: 'The heartland Pod. Weekly study circles, Odù interpretation, community divination days.' },
-  { city: 'Atlanta', country: 'USA', flag: '🇺🇸', region: 'Diaspora', members: 31, steward: 'Ìyánifá Àìná', desc: 'Southeast USA diaspora Pod. Bi-monthly ceremonies, ancestral veneration, youth mentorship.' },
-  { city: 'Toronto', country: 'Canada', flag: '🇨🇦', region: 'Diaspora', members: 24, steward: 'TBA', desc: 'Growing Canadian community. Cultural orientation for new initiates in the diaspora.' },
-  { city: 'Abuja', country: 'Nigeria', flag: '🇳🇬', region: 'Nigeria', members: 38, steward: 'TBA', desc: 'Federal Capital Territory Pod. Government workers, professionals, and culture-keepers.' },
-  { city: 'Brixton', country: 'UK', flag: '🇬🇧', region: 'UK', members: 19, steward: 'TBA', desc: 'South London community — the Caribbean–Yorùbá Ifá crossroads. Unique syncretic heritage.' },
+  { city: 'London', country: 'UK', flag: '🇬🇧', region: 'UK', desc: 'Planned for East London: study groups, naming ceremonies, seasonal festivals.' },
+  { city: 'Lagos', country: 'Nigeria', flag: '🇳🇬', region: 'Nigeria', desc: 'The heartland Pod, planned with study circles, Odù interpretation and community divination days.' },
+  { city: 'Atlanta', country: 'USA', flag: '🇺🇸', region: 'Diaspora', desc: 'Planned for the Southeast USA diaspora: ceremonies, ancestral veneration, youth mentorship.' },
+  { city: 'Toronto', country: 'Canada', flag: '🇨🇦', region: 'Diaspora', desc: 'Planned for Canada: cultural orientation for new initiates in the diaspora.' },
+  { city: 'Abuja', country: 'Nigeria', flag: '🇳🇬', region: 'Nigeria', desc: 'Planned for the Federal Capital Territory: professionals and culture-keepers.' },
+  { city: 'Brixton', country: 'UK', flag: '🇬🇧', region: 'UK', desc: 'Planned for South London, the Caribbean–Yorùbá Ifá crossroads.' },
 ];
 
 const EXPLAINER = [
@@ -62,7 +64,7 @@ export default function PodsPage() {
           <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
             {/* Coming Soon badge */}
             <div className="inline-flex items-center gap-2 bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full mb-6">
-              <Clock size={12} /> Coming 2026
+              <Clock size={12} /> Coming Soon
             </div>
             <div className="text-5xl mb-4">🌍</div>
             <h1 className="brand-font text-4xl md:text-6xl font-bold text-foreground mb-6">
@@ -140,7 +142,7 @@ export default function PodsPage() {
                 <div key={pod.city} className="bg-card border border-amber-200 dark:border-amber-800/50 rounded-2xl overflow-hidden relative">
                   {/* Coming Soon ribbon */}
                   <div className="absolute top-3 right-3 z-10 bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full flex items-center gap-1">
-                    <Clock size={9} /> Launching 2026
+                    <Clock size={9} /> Planned
                   </div>
                   <div className="p-6">
                     <div className="flex items-start gap-3 mb-4">
@@ -153,12 +155,7 @@ export default function PodsPage() {
                       </div>
                     </div>
                     <p className="text-sm text-muted-foreground leading-relaxed mb-4">{pod.desc}</p>
-                    <div className="flex items-center justify-between">
-                      {/* Blurred member count */}
-                      <div className="flex items-center gap-1.5 text-sm text-foreground font-semibold">
-                        <Users size={14} className="text-primary" />
-                        <span className="blur-sm select-none">{pod.members} members</span>
-                      </div>
+                    <div className="flex items-center justify-end">
                       <a
                         href={`mailto:hello@iluase.com?subject=Pod Waitlist - ${pod.city}&body=City: ${pod.city}\n\nI'd like to be notified when the ${pod.city} Pod launches.`}
                         className="text-xs font-bold text-amber-700 dark:text-amber-400 hover:underline flex items-center gap-1"
@@ -166,12 +163,6 @@ export default function PodsPage() {
                         Notify Me <ArrowRight size={11} />
                       </a>
                     </div>
-                    {pod.steward !== 'TBA' && (
-                      <div className="mt-3 pt-3 border-t border-border flex items-center gap-2 text-xs text-muted-foreground">
-                        <Shield size={11} className="text-amber-600" />
-                        <span>Steward: <span className="text-foreground font-semibold">{pod.steward}</span></span>
-                      </div>
-                    )}
                   </div>
                 </div>
               ))}

@@ -1,10 +1,16 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Building2, Users, BookOpen, ShoppingBag, MessageSquare,
+  Building2, Users, BookOpen, ShoppingBag,
   ArrowRight, CheckCircle2, Flame, Globe2, Heart,
-  Shield, Sparkles, ChevronRight, MapPin, Clock
+  Shield, Sparkles, ChevronRight, MapPin, Clock, CalendarDays
 } from 'lucide-react';
+
+// Copy here must describe what members can do today. Consultations, 1:1
+// messaging and guidance plans are paused (MVP_PIVOT_BACKLOG.md); this page
+// used to advertise all three, plus "end-to-end encrypted" messaging (it is
+// encrypted on the server, not end to end) and "100% verified" practitioners
+// (unverified practitioners are listed too, with verified ones marked).
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 
@@ -13,13 +19,13 @@ const features = [
     icon: Flame,
     colour: 'from-amber-500 to-orange-600',
     title: 'Connect with Your Babalawo',
-    body: 'Find verified Ifá priests from your tradition. Book consultations, receive guidance plans, and build a lasting spiritual relationship — all in one sacred space.',
+    body: 'Find Ifá priests from your tradition, see at a glance who has been verified, and learn from them in the community. One-to-one consultations are returning soon.',
   },
   {
     icon: Building2,
     colour: 'from-emerald-500 to-teal-600',
     title: 'Discover Temples Near You',
-    body: 'A growing directory of Ilé Ìjúbà and Ilé Ifá congregations. Filter by tradition, worship day, or location and find your spiritual home.',
+    body: 'A growing directory of Ilé Ìjúbà and Ilé Ifá congregations. Filter by tradition, lineage, or location and find your spiritual home.',
   },
   {
     icon: BookOpen,
@@ -31,7 +37,7 @@ const features = [
     icon: ShoppingBag,
     colour: 'from-rose-500 to-pink-600',
     title: 'Sacred Items Marketplace',
-    body: 'Sourced from verified vendors across Nigeria and the diaspora. Bead sets, divination tools, ritual herbs, and àṣọ-ọkẹ fabrics — delivered to your door.',
+    body: 'Sourced from verified vendors across Nigeria and the diaspora. Bead sets, divination tools, ritual herbs, and aṣọ òkè fabrics — delivered to your door.',
   },
   {
     icon: Users,
@@ -40,10 +46,10 @@ const features = [
     body: 'Join circles aligned with your path. Discuss traditions, ask questions, share experiences in a respectful community guided by elders.',
   },
   {
-    icon: MessageSquare,
+    icon: CalendarDays,
     colour: 'from-yellow-500 to-amber-600',
-    title: 'Private Spiritual Guidance',
-    body: 'Secure end-to-end encrypted messaging with your practitioner. Guidance plans, prescriptions, and follow-ups — in one organised thread.',
+    title: 'Sacred Calendar & Gatherings',
+    body: 'Festivals and community events in one calendar. Register for gatherings near you or online, then reflect on them together in the forum.',
   },
 ];
 
@@ -54,7 +60,7 @@ const roles = [
     colour: 'border-primary/30 bg-primary/5',
     badge: 'For Clients',
     badgeColour: 'bg-primary/20 text-primary',
-    items: ['Find and book a Babalawo', 'Receive personalised guidance plans', 'Access curated academy courses', 'Join local temple communities', 'Shop sacred items securely'],
+    items: ['Find a Babalawo from your tradition', 'Access curated academy courses', 'Join local temple communities', 'Take part in circles and the forum', 'Shop sacred items securely'],
   },
   {
     title: 'Babalawos & Ìyánifá',
@@ -62,7 +68,7 @@ const roles = [
     colour: 'border-highlight/30 bg-highlight/5',
     badge: 'For Practitioners',
     badgeColour: 'bg-highlight/20 text-highlight',
-    items: ['Manage your availability and consultations', 'Issue guidance plans and prescriptions', 'Build a verified public profile', 'Receive payments in ₦ or $', 'Connect with your temple network'],
+    items: ['Build a verified public profile', 'Teach courses in the academy', 'Host gatherings and events', 'Connect with your temple network', 'Consultations and guidance plans — returning soon'],
   },
   {
     title: 'Vendors & Artisans',
@@ -76,13 +82,13 @@ const roles = [
 
 const steps = [
   { n: '01', title: 'Create Your Account', body: 'Join free. Tell us your role — seeker, practitioner, or vendor — and we personalise everything for you.' },
-  { n: '02', title: 'Complete Your Profile', body: 'Add your traditions, interests, and location. Our matching system connects you with the right guides, temples, and community.' },
-  { n: '03', title: 'Begin Your Journey', body: 'Book your first consultation, join a circle, browse the academy, or explore the marketplace. Your path is waiting.' },
+  { n: '02', title: 'Complete Your Profile', body: 'Add your traditions, interests, and location. Then find the temples, circles, and teachers that match your path.' },
+  { n: '03', title: 'Begin Your Journey', body: 'Join a circle, register for a gathering, browse the academy, or explore the marketplace. Your path is waiting.' },
 ];
 
 const stats = [
   { value: 'Free', label: 'To Join — Always' },
-  { value: '100%', label: 'Verified Practitioners' },
+  { value: 'Verified', label: 'Practitioners Clearly Marked' },
   { value: '6+', label: 'Integrated Features' },
   { value: 'Global', label: 'Diaspora & Homeland' },
 ];
@@ -127,7 +133,9 @@ const LandingPage: React.FC = () => {
             <Link to="/pricing" className="hover:text-foreground transition-colors">Pricing</Link>
           </div>
           <div className="flex items-center gap-3">
-            <Link to="/login" className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors hidden sm:block">
+            {/* Shown on phones too: it was hidden below 640px, leaving returning
+                members only "Get Started" (sign-up). */}
+            <Link to="/login" className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">
               Sign In
             </Link>
             <Link to="/signup" className="btn-primary text-sm py-2 px-5 rounded-xl">
@@ -193,7 +201,7 @@ const LandingPage: React.FC = () => {
               Built for Every Part of Your Path
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              From first consultation to deep initiation, Ìlú Àṣẹ supports every stage of your spiritual journey.
+              From your first steps to deep study, Ìlú Àṣẹ supports every stage of your spiritual journey.
             </p>
           </div>
 
@@ -306,7 +314,7 @@ const LandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
             <div className="inline-flex items-center gap-2 bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full mb-4">
-              <Clock size={11} /> Coming 2026
+              <Clock size={11} /> Coming Soon
             </div>
             <h2 className="brand-font text-4xl md:text-5xl font-bold text-foreground mb-3">Pod Network</h2>
             <p className="text-muted-foreground text-lg max-w-xl mx-auto">
@@ -316,14 +324,15 @@ const LandingPage: React.FC = () => {
 
           {/* Placeholder pod cards — blurred coming soon */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
+            {/* Planned cities. These used to show (blurred) made-up member counts. */}
             {[
-              { city: 'London', country: 'UK', flag: '🇬🇧', members: 47 },
-              { city: 'Lagos', country: 'Nigeria', flag: '🇳🇬', members: 83 },
-              { city: 'Atlanta', country: 'USA', flag: '🇺🇸', members: 31 },
+              { city: 'London', country: 'UK', flag: '🇬🇧' },
+              { city: 'Lagos', country: 'Nigeria', flag: '🇳🇬' },
+              { city: 'Atlanta', country: 'USA', flag: '🇺🇸' },
             ].map(pod => (
               <div key={pod.city} className="bg-card border border-amber-200 dark:border-amber-800/50 rounded-2xl p-6 relative overflow-hidden">
                 <div className="absolute top-3 right-3 bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full">
-                  2026
+                  Planned
                 </div>
                 <div className="flex items-center gap-3 mb-3">
                   <span className="text-2xl">{pod.flag}</span>
@@ -333,10 +342,6 @@ const LandingPage: React.FC = () => {
                       <MapPin size={10} /> {pod.city}, {pod.country}
                     </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-1.5 text-sm text-foreground font-semibold mb-4">
-                  <Users size={13} className="text-primary" />
-                  <span className="blur-sm select-none">{pod.members} members</span>
                 </div>
                 <Link
                   to="/pods"
@@ -397,7 +402,7 @@ const LandingPage: React.FC = () => {
               </p>
               <div className="flex items-center gap-2 mt-6">
                 <Shield size={14} className="text-primary" />
-                <span className="text-xs text-muted-foreground">All practitioners are verified</span>
+                <span className="text-xs text-muted-foreground">Verified practitioners are clearly marked</span>
               </div>
             </div>
 
@@ -406,7 +411,7 @@ const LandingPage: React.FC = () => {
               <h4 className="font-bold text-foreground text-sm uppercase tracking-wider mb-4">Platform</h4>
               <ul className="space-y-3 text-sm text-muted-foreground">
                 <li><Link to="/babalawo" className="hover:text-foreground transition-colors">Find a Babalawo</Link></li>
-                <li><Link to="/client/temples" className="hover:text-foreground transition-colors">Temples</Link></li>
+                <li><Link to="/temples" className="hover:text-foreground transition-colors">Temples</Link></li>
                 <li><Link to="/academy" className="hover:text-foreground transition-colors">Academy</Link></li>
                 <li><Link to="/marketplace" className="hover:text-foreground transition-colors">Marketplace</Link></li>
                 <li><Link to="/circles" className="hover:text-foreground transition-colors">Community Circles</Link></li>
