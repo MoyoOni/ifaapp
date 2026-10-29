@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@/test/test-utils';
 import { SidebarLayout } from './sidebar-layout';
 import { LanguageProvider } from '@/shared/contexts/language-context';
@@ -58,5 +58,33 @@ describe('SidebarLayout for a logged-in user', () => {
     expect(screen.getAllByText('Ada Test').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Wallet').length).toBeGreaterThan(0);
     expect(screen.getAllByRole('button', { name: 'Notifications' }).length).toBeGreaterThan(0);
+  });
+});
+
+// The profile can't load while the server is unreachable; the member still has
+// a session and used to be shown the visitor's sidebar with "Sign In".
+describe('SidebarLayout for a signed-in member whose profile has not loaded', () => {
+  const token = (payload: object) => `h.${btoa(JSON.stringify(payload)).replace(/=+$/, '')}.s`;
+
+  beforeEach(() => {
+    useAuthMock.mockReset();
+    useAuthMock.mockReturnValue({ user: null, isAuthenticated: true, logout: vi.fn() });
+  });
+  afterEach(() => localStorage.clear());
+
+  it('keeps their role navigation from the session token and does not ask them to sign in', () => {
+    localStorage.setItem('accessToken', token({ sub: 'u1', role: 'CLIENT' }));
+    renderLayout();
+
+    expect(screen.getAllByText('Wallet').length).toBeGreaterThan(0);
+    expect(screen.queryByText('Sign In')).not.toBeInTheDocument();
+    expect(screen.queryByText('Get Started')).not.toBeInTheDocument();
+  });
+
+  it('still does not ask them to sign in when the token is unreadable', () => {
+    localStorage.setItem('accessToken', 'garbage');
+    renderLayout();
+
+    expect(screen.queryByText('Sign In')).not.toBeInTheDocument();
   });
 });

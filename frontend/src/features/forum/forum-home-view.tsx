@@ -155,7 +155,7 @@ const TOUR_STEPS = [
 ];
 
 const ForumHomeView: React.FC<ForumHomeViewProps> = ({ onSelectThread, onCreateThread }) => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
@@ -316,7 +316,9 @@ const ForumHomeView: React.FC<ForumHomeViewProps> = ({ onSelectThread, onCreateT
               <Plus size={20} />
               Dialogue ✦
             </button>
-          ) : (
+          ) : !isAuthenticated && (
+            // Not while a session exists but the profile couldn't load (server
+            // unreachable) -- that told signed-in members to sign in.
             <button
               type="button"
               onClick={() => window.location.href = '/login'}

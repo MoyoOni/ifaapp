@@ -38,6 +38,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { ProfileMenuDropdown } from './profile-menu-dropdown';
 import { User as UserType } from '@common';
 import { isDevModeActive } from '@/shared/utils/dev-mode';
+import { decodeJwtPayload } from '@/shared/utils/jwt';
 import { AnnouncementBanner } from './announcement-banner';
 import { VisitorAuthCard } from './visitor-auth-card';
 
@@ -166,8 +167,15 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, []);
 
+    // While the profile can't load (server unreachable) a signed-in member
+    // still has a session; take the role from its token so they keep their
+    // own navigation instead of the visitor's.
+    const navRole = user?.role ?? (isAuthenticated
+        ? decodeJwtPayload<{ role?: string }>(localStorage.getItem('accessToken') ?? '')?.role
+        : undefined);
+
     // Get role-based navigation items
-    const allNavItems = getNavItemsForRole(user?.role);
+    const allNavItems = getNavItemsForRole(navRole);
     const navItems = allNavItems.filter(item => {
         if (user?.role !== 'ADMIN' || !item.requiredAdminSubRoles) return true;
         if (user?.adminSubRole === 'SUPER') return true;
@@ -449,7 +457,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                     </div>
                 )}
 
-                {!showExpanded && !user && (
+                {!showExpanded && !user && !isAuthenticated && (
                     <div className="p-3 border-t border-border/50">
                         <VisitorAuthCard compact />
                     </div>
@@ -529,11 +537,11 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                             </div>
 
                             {/* Mobile Footer */}
-                            {!user ? (
+                            {!user ? (!isAuthenticated && (
                                 <div className="p-3 border-t border-border bg-card/50 flex-shrink-0">
                                     <VisitorAuthCard />
                                 </div>
-                            ) : (
+                            )) : (
                             <div className="p-3 border-t border-border bg-card/50 flex-shrink-0">
                                 {/* User chip */}
                                 <div className="flex items-center gap-2 px-2 py-2 mb-2">
@@ -694,7 +702,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
 
             {/* Mobile Bottom Tab Bar */}
             {(() => {
-                const bottomTabs = getMobileBottomTabs(user?.role);
+                const bottomTabs = getMobileBottomTabs(navRole);
                 return (
                     <nav className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-card/95 backdrop-blur-md border-t border-border shadow-elevation-3">
                         <div className="flex items-stretch">
