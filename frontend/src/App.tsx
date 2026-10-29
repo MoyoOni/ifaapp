@@ -7,40 +7,6 @@ import { ProtectedRoute, AdminRoute, RequireAuth } from './shared/components/pro
 import { UserRole } from '@common';
 import OfflineIndicator from './shared/components/offline-indicator';
 import ServerUnreachableBanner from './shared/components/server-unreachable-banner';
-import SpiritualJourneyView from './features/client-hub/spiritual-journey-view';
-import CircleDirectory from './features/circles/circle-directory'; // Import CircleDirectory
-import MemberDirectoryView from './features/community/member-directory-view'; // COMMUNITY_BACKLOG.md FOR-Q2
-import RemembranceWallView from './features/community/remembrance-wall-view'; // COMMUNITY_BACKLOG.md FOR-015
-import WellbeingView from './features/community/wellbeing-view'; // COMMUNITY_BACKLOG.md FOR-017
-import DreamJournalView from './features/community/dream-journal-view'; // COMMUNITY_BACKLOG.md FOR-021
-import HealingView from './features/community/healing-view'; // COMMUNITY_BACKLOG.md FOR-018
-import TechHelpView from './features/community/tech-help-view'; // COMMUNITY_BACKLOG.md FOR-009
-import ProfilePage from './pages/ProfilePage';
-import LoginPage from './pages/LoginPage';
-import SignupPage from './pages/SignupPage';
-import QuickAccessPage from './pages/QuickAccessPage';
-import VerifyEmailPage from './pages/VerifyEmailPage';
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
-import ConfirmEmailChangePage from './pages/ConfirmEmailChangePage';
-import TermsPage from './pages/TermsPage';
-import PrivacyPage from './pages/PrivacyPage';
-import DonatePage from './pages/DonatePage';
-import AboutPage from './pages/AboutPage';
-import PodsPage from './pages/PodsPage';
-import PricingPage from './pages/PricingPage';
-import SubscriptionConfirmPage from './pages/SubscriptionConfirmPage';
-import SubscriptionManagePage from './pages/SubscriptionManagePage';
-import SentryTestPage from './pages/SentryTestPage';
-import SettingsPage from './pages/SettingsPage';
-import HelpPage from './pages/HelpPage';
-import VendorDirectoryPage from './pages/VendorDirectoryPage';
-import NotificationsPage from './pages/NotificationsPage';
-import BabalawoLandingPage from './pages/BabalawoLandingPage';
-import SessionHistoryWithReceipts from './features/appointments/session-history-with-receipts';
-import ClientSessionNotesPage from './pages/ClientSessionNotesPage';
-import ConsultationsPausedPage from './pages/ConsultationsPausedPage';
-import MessagesPausedPage from './pages/MessagesPausedPage';
 
 // ============================================
 // PAUSED FEATURES (2026 scope pivot — see MVP_PIVOT_BACKLOG.md):
@@ -117,6 +83,43 @@ import {
   PersonalAwoDashboardPage,
 } from './routes/page-wrappers';
 import { GuidancePlanTrackingView } from './routes/lazy-views';
+
+// Loaded on demand: these were all in the main bundle that every visitor,
+// on every page, downloads first.
+const SpiritualJourneyView = React.lazy(() => import('./features/client-hub/spiritual-journey-view'));
+const CircleDirectory = React.lazy(() => import('./features/circles/circle-directory')); // Import CircleDirectory
+const MemberDirectoryView = React.lazy(() => import('./features/community/member-directory-view')); // COMMUNITY_BACKLOG.md FOR-Q2
+const RemembranceWallView = React.lazy(() => import('./features/community/remembrance-wall-view')); // COMMUNITY_BACKLOG.md FOR-015
+const WellbeingView = React.lazy(() => import('./features/community/wellbeing-view')); // COMMUNITY_BACKLOG.md FOR-017
+const DreamJournalView = React.lazy(() => import('./features/community/dream-journal-view')); // COMMUNITY_BACKLOG.md FOR-021
+const HealingView = React.lazy(() => import('./features/community/healing-view')); // COMMUNITY_BACKLOG.md FOR-018
+const TechHelpView = React.lazy(() => import('./features/community/tech-help-view')); // COMMUNITY_BACKLOG.md FOR-009
+const ProfilePage = React.lazy(() => import('./pages/ProfilePage'));
+const LoginPage = React.lazy(() => import('./pages/LoginPage'));
+const SignupPage = React.lazy(() => import('./pages/SignupPage'));
+const QuickAccessPage = React.lazy(() => import('./pages/QuickAccessPage'));
+const VerifyEmailPage = React.lazy(() => import('./pages/VerifyEmailPage'));
+const ForgotPasswordPage = React.lazy(() => import('./pages/ForgotPasswordPage'));
+const ResetPasswordPage = React.lazy(() => import('./pages/ResetPasswordPage'));
+const ConfirmEmailChangePage = React.lazy(() => import('./pages/ConfirmEmailChangePage'));
+const TermsPage = React.lazy(() => import('./pages/TermsPage'));
+const PrivacyPage = React.lazy(() => import('./pages/PrivacyPage'));
+const DonatePage = React.lazy(() => import('./pages/DonatePage'));
+const AboutPage = React.lazy(() => import('./pages/AboutPage'));
+const PodsPage = React.lazy(() => import('./pages/PodsPage'));
+const PricingPage = React.lazy(() => import('./pages/PricingPage'));
+const SubscriptionConfirmPage = React.lazy(() => import('./pages/SubscriptionConfirmPage'));
+const SubscriptionManagePage = React.lazy(() => import('./pages/SubscriptionManagePage'));
+const SentryTestPage = React.lazy(() => import('./pages/SentryTestPage'));
+const SettingsPage = React.lazy(() => import('./pages/SettingsPage'));
+const HelpPage = React.lazy(() => import('./pages/HelpPage'));
+const VendorDirectoryPage = React.lazy(() => import('./pages/VendorDirectoryPage'));
+const NotificationsPage = React.lazy(() => import('./pages/NotificationsPage'));
+const BabalawoLandingPage = React.lazy(() => import('./pages/BabalawoLandingPage'));
+const SessionHistoryWithReceipts = React.lazy(() => import('./features/appointments/session-history-with-receipts'));
+const ClientSessionNotesPage = React.lazy(() => import('./pages/ClientSessionNotesPage'));
+const ConsultationsPausedPage = React.lazy(() => import('./pages/ConsultationsPausedPage'));
+const MessagesPausedPage = React.lazy(() => import('./pages/MessagesPausedPage'));
 
 function App() {
   return (

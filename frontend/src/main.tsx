@@ -1,6 +1,5 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { GoogleOAuthProvider } from '@react-oauth/google';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './shared/hooks/use-auth';
 import { CartProvider } from './shared/contexts/cart-context';
@@ -14,7 +13,6 @@ import { logger } from './shared/utils/logger';
 import App from './App';
 import './index.css';
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
 // ── Production environment guard ─────────────────────────────────────────────
 // Fail fast if VITE_API_URL is missing or still pointing at localhost in a
@@ -86,23 +84,21 @@ const queryClient = new QueryClient({
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <LanguageProvider>
-            <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-              <CartProvider>
-                <ToastProvider>
-                  <ModalProvider>
-                    <App />
-                    <DevRoleSwitcher />
-                  </ModalProvider>
-                </ToastProvider>
-              </CartProvider>
-            </ThemeProvider>
-          </LanguageProvider>
-        </AuthProvider>
-      </QueryClientProvider>
-    </GoogleOAuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <LanguageProvider>
+          <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+            <CartProvider>
+              <ToastProvider>
+                <ModalProvider>
+                  <App />
+                  <DevRoleSwitcher />
+                </ModalProvider>
+              </ToastProvider>
+            </CartProvider>
+          </ThemeProvider>
+        </LanguageProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   </React.StrictMode>
 );

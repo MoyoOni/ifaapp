@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
+import { GoogleLogin, GoogleOAuthProvider, type CredentialResponse } from '@react-oauth/google';
 import { Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
@@ -95,7 +95,14 @@ const GoogleLoginButton: React.FC<GoogleAuthButtonProps> = ({ onSuccess, onError
  */
 const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = (props) => {
   if (!GOOGLE_CLIENT_ID) return null;
-  return <GoogleLoginButton {...props} />;
+  // The provider loads Google's ~100KB (gzipped) sign-in script. It wrapped
+  // the whole app in main.tsx, so every page -- the landing page included --
+  // downloaded it; now only pages showing this button do.
+  return (
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <GoogleLoginButton {...props} />
+    </GoogleOAuthProvider>
+  );
 };
 
 export default GoogleAuthButton;
