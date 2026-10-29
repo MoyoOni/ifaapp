@@ -3,13 +3,16 @@ import {
   Get,
   Post,
   Patch,
+  Put,
   Delete,
   Param,
   Body,
   UseGuards,
   Query,
   ForbiddenException,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { RecordQuizAttemptDto } from './dto/record-quiz-attempt.dto';
@@ -22,6 +25,7 @@ import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user
 import { JwtAuthGuard } from '../shared/guards/auth.guard';
 import { Public } from '../auth/decorators/public.decorator';
 import { CompleteOnboardingDto } from './dto/complete-onboarding.dto';
+import { SetAvatarDto } from './dto/set-avatar.dto';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
@@ -191,6 +195,29 @@ export class UsersController {
       throw new ForbiddenException();
     }
     return this.usersService.update(id, dto, currentUser!);
+  }
+
+  // Profile photo. Onboarding's "Add Your Photo" used to PATCH the image data
+  // into User.avatar, which only accepts a URL -- every photo was rejected and
+  // onboarding carried on as if it had been saved.
+  @Put(':id/avatar')
+  async setAvatar(
+    @Param('id') id: string,
+    @Body() dto: SetAvatarDto,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.usersService.setAvatar(id, dto.image, currentUser);
+  }
+
+  @Public()
+  @Get(':id/avatar')
+  async getAvatar(@Param('id') id: string, @Res() res: Response) {
+    const avatar = await this.usersService.getAvatar(id);
+    res.setHeader('Content-Type', avatar.mimeType);
+    // Each upload gets a new ?v= URL, so a cached copy is never stale.
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.send(Buffer.from(avatar.data));
   }
 
   // Deliberately NOT @Public(): JwtAuthGuard returns early for public routes

@@ -10,6 +10,7 @@ import { getDashboardPathForRole } from '@/shared/config/navigation';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { useToast } from '@/shared/components/toast';
 import { parseApiError } from '@/shared/utils/api-error';
+import { resizeImageToDataUrl } from '@/shared/utils/resize-image';
 
 export interface UseOnboardingProps {
   userId?: string;
@@ -169,36 +170,23 @@ export function useOnboarding({ userId: userIdProp, userRole: userRoleProp, onCo
   const [avatarUploading, setAvatarUploading] = useState(false);
   const avatarInputRef = React.useRef<HTMLInputElement>(null);
 
-  const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      showError('Image must be under 5MB');
+    if (file.size > 20 * 1024 * 1024) {
+      showError('Image must be under 20MB');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setAvatarPreview(ev.target?.result as string);
-    };
-    reader.readAsDataURL(file);
+    try {
+      setAvatarPreview(await resizeImageToDataUrl(file));
+    } catch {
+      showError("We couldn't read that image. Please choose a JPEG, PNG or WebP photo.");
+    }
   };
 
+  // handleSubmit uploads the photo; this used to upload it first as well.
   const handleAvatarUpload = async () => {
-    if (!avatarPreview || !userId) {
-      // Skip — go straight to completion
-      await handleSubmit(new Event('submit') as any);
-      return;
-    }
-    setAvatarUploading(true);
-    try {
-      await api.patch(`/users/${userId}`, { avatar: avatarPreview });
-      if (authUser) setUser({ ...authUser, avatar: avatarPreview });
-    } catch (err) {
-      logger.error('Avatar upload failed:', err);
-    } finally {
-      setAvatarUploading(false);
-      await handleSubmit(new Event('submit') as any);
-    }
+    await handleSubmit(new Event('submit') as any);
   };
 
   const checkSlug = useCallback(async (value: string) => {
@@ -217,7 +205,8 @@ export function useOnboarding({ userId: userIdProp, userRole: userRoleProp, onCo
   // Define slides inside to access props
   const slides = [
     {
-      title: `${t('welcome')}, ${userRole || t('seeker')}`,
+      // Was the raw role ("Welcome, CLIENT").
+      title: `${t('welcome')}, ${authUser?.name?.split(' ')[0] || t('seeker')}`,
       subtitle: "You have found your way to Ìlú Àṣẹ.",
       desc: "A sanctuary where technology serves tradition, not the other way around.",
       icon: React.createElement(Fingerprint, { size: 48, className: 'text-highlight' }),
@@ -291,6 +280,7 @@ export function useOnboarding({ userId: userIdProp, userRole: userRoleProp, onCo
         logger.warn('Onboarding completion attempted without a signed-in user');
         showError('Your session has ended. Please sign in again to finish setting up your account.');
         navigate('/login', { replace: true });
+        setIsSubmitting(false);
         return;
       }
 
@@ -336,21 +326,25 @@ export function useOnboarding({ userId: userIdProp, userRole: userRoleProp, onCo
       logger.error('Onboarding failed:', error);
       // This used to fail silently -- "Skip for now" just appeared to do nothing.
       showError("We couldn't finish setting up your account. Please try again.");
-    } finally {
       setIsSubmitting(false);
     }
+    // Left true on success: the view's already-onboarded redirect waits on it,
+    // or it would beat the navigate() above to the dashboard.
   };
 
   // Called from avatar step — upload avatar then complete
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (avatarPreview && userId) {
+    // Only a newly chosen photo (a data URL) is uploaded, not a Google avatar
+    // that was pre-filled. It used to PATCH the image data into User.avatar,
+    // which only accepts a URL, so every photo was rejected without a word.
+    if (avatarPreview?.startsWith('data:image/') && userId) {
       setAvatarUploading(true);
       try {
-        await api.patch(`/users/${userId}`, { avatar: avatarPreview });
-        if (authUser) setUser({ ...authUser, avatar: avatarPreview });
+        await api.put(`/users/${userId}/avatar`, { image: avatarPreview });
       } catch (err) {
         logger.error('Avatar upload failed:', err);
+        showError("Your photo couldn't be saved, so we've finished setting up your account without it.");
       } finally {
         setAvatarUploading(false);
       }

@@ -18,7 +18,6 @@ import {
   NotificationType,
   NotificationCategory,
 } from '../notifications/notification.service';
-import { ImageOptimizationService, OptimizedImage } from '../images/image-optimization.service'; // Import the service and types
 
 interface FindAllFilters {
   role?: string;
@@ -35,6 +34,16 @@ interface OnboardingData {
   hasOnboarded?: boolean;
 }
 
+// Resized in the browser to 256px, which comes out at a few tens of KB.
+const MAX_AVATAR_BYTES = 64 * 1024;
+
+function sniffImageType(data: Buffer): string | null {
+  if (data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff) return 'image/jpeg';
+  if (data.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'image/png';
+  if (data.toString('ascii', 0, 4) === 'RIFF' && data.toString('ascii', 8, 12) === 'WEBP') return 'image/webp';
+  return null;
+}
+
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
@@ -44,7 +53,6 @@ export class UsersService {
     private cacheManager: CacheManagerService,
     private searchService: SearchService,
     private onboardingEmailService: OnboardingEmailService,
-    private imageOptimizationService: ImageOptimizationService, // Add this dependency
     private notificationService: NotificationService
   ) {}
 
@@ -734,23 +742,6 @@ export class UsersService {
       dto.yorubaName = normalizeYorubaText(dto.yorubaName);
     }
 
-    // If avatar is being updated, optimize it first
-    if (dto.avatar && typeof dto.avatar === 'string' && dto.avatar.startsWith('data:image')) {
-      // Extract image data from base64 string
-      const matches = dto.avatar.match(/^data:image\/([A-Za-z-+/]+);base64,(.+)$/);
-      if (matches && matches.length === 3) {
-        const imageData = Buffer.from(matches[2], 'base64');
-        const imageOptResult = await this.imageOptimizationService.optimizeImage(
-          imageData,
-          `avatar_${id}.jpg`,
-          { maxWidth: 512, maxHeight: 512, quality: 80, format: 'webp' }
-        );
-
-        // Store the optimized image
-        dto.avatar = await this.storeOptimizedAvatar(imageOptResult, id);
-      }
-    }
-
     // Prepare update data, handling special fields
     const updateData: any = { ...dto, updatedAt: new Date() };
 
@@ -775,27 +766,44 @@ export class UsersService {
   }
 
   /**
-   * Store optimized avatar and return public URL
+   * Saves an uploaded profile photo and points User.avatar at it. The browser
+   * already resized it to a small JPEG (there is no image processing on the
+   * server), so this only checks it really is a small JPEG/PNG/WebP.
    */
-  private async storeOptimizedAvatar(optResult: OptimizedImage, userId: string): Promise<string> {
-    // In a production environment, you would upload to S3 or another storage service
-    // For now, we'll simulate by storing in a public folder or returning a CDN URL
-
-    // Generate a unique filename
-    const filename = `avatars/${userId}_${Date.now()}.${optResult.format}`;
-
-    // In a real implementation, you'd upload the optResult.buffer to your storage
-    // For now, we'll return a placeholder URL
-
-    // If CDN is enabled, return CDN URL
-    const cdnUrl = this.imageOptimizationService.generateCdnUrl(filename);
-    if (cdnUrl) {
-      return cdnUrl;
+  async setAvatar(id: string, image: string, currentUser: CurrentUserPayload) {
+    if (currentUser.sub !== id && currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('You can only change your own photo');
+    }
+    const match = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(image ?? '');
+    if (!match) {
+      throw new BadRequestException('The photo must be a JPEG, PNG or WebP image');
+    }
+    const data = Buffer.from(match[2], 'base64');
+    if (data.length === 0 || data.length > MAX_AVATAR_BYTES) {
+      throw new BadRequestException('The photo is too large');
+    }
+    if (sniffImageType(data) !== match[1]) {
+      throw new BadRequestException('The photo must be a JPEG, PNG or WebP image');
     }
 
-    // Otherwise, return a local URL (would need to implement actual file saving)
-    return `/uploads/${filename}`;
+    await this.prisma.userAvatar.upsert({
+      where: { userId: id },
+      create: { userId: id, mimeType: match[1], data },
+      update: { mimeType: match[1], data },
+    });
+    // The version query makes caches fetch the new photo after a change.
+    const avatar = `/api/users/${id}/avatar?v=${Date.now()}`;
+    await this.prisma.user.update({ where: { id }, data: { avatar } });
+    await this.cacheManager.invalidateUserCache(id);
+    return { avatar };
   }
+
+  async getAvatar(id: string) {
+    const row = await this.prisma.userAvatar.findUnique({ where: { userId: id } });
+    if (!row) throw new NotFoundException('No photo');
+    return row;
+  }
+
 
   /**
    * Award XP to a user. Devoted members earn 2× the base amount.

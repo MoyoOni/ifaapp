@@ -5,7 +5,6 @@ import {
   IsArray,
   MinLength,
   IsNumber,
-  IsUrl,
   IsBoolean,
   Matches,
   ValidateIf,
@@ -22,7 +21,11 @@ export class UpdateUserDto {
   @IsOptional()
   yorubaName?: string;
 
-  @IsUrl()
+  // A web URL, or this platform's own uploaded-photo path (PUT /users/:id/avatar
+  // sets it), which profile forms send back unchanged.
+  @Matches(/^(https?:\/\/\S+|\/api\/users\/[0-9a-f-]+\/avatar(\?v=\d+)?)$/, {
+    message: 'avatar must be a URL address',
+  })
   @IsOptional()
   avatar?: string;
 

@@ -3,7 +3,8 @@ import { renderHook, act } from '@testing-library/react';
 import { useOnboarding } from './use-onboarding';
 
 const apiPatch = vi.fn();
-vi.mock('@/lib/api', () => ({ default: { patch: (...a: unknown[]) => apiPatch(...a), get: vi.fn(), post: vi.fn() } }));
+const apiPut = vi.fn();
+vi.mock('@/lib/api', () => ({ default: { patch: (...a: unknown[]) => apiPatch(...a), put: (...a: unknown[]) => apiPut(...a), get: vi.fn(), post: vi.fn() } }));
 
 const navigate = vi.fn();
 vi.mock('react-router-dom', () => ({ useNavigate: () => navigate }));
@@ -15,7 +16,7 @@ vi.mock('@/shared/contexts/language-context', () => ({ useLanguage: () => ({ t: 
 vi.mock('@/lib/analytics', () => ({ analytics: { track: vi.fn() } }));
 
 const setUser = vi.fn();
-let authUser: { id: string; role: string } | null = { id: 'u1', role: 'VENDOR' };
+let authUser: { id: string; role: string; avatar?: string } | null = { id: 'u1', role: 'VENDOR' };
 vi.mock('@/shared/hooks/use-auth', () => ({
   useAuth: () => ({ user: authUser, setUser }),
 }));
@@ -132,5 +133,51 @@ describe('useOnboarding.handleVendorRegister', () => {
 
     expect(showError).not.toHaveBeenCalled();
     expect(result.current.onboardingStep).toBe('heritage');
+  });
+});
+
+// "Add Your Photo" PATCHed the image data into User.avatar, which only accepts
+// a URL, so every photo was rejected -- and it was sent twice.
+describe('useOnboarding photo step', () => {
+  const PHOTO = 'data:image/jpeg;base64,/9j/4AAQ';
+
+  beforeEach(() => {
+    apiPatch.mockReset().mockResolvedValue({ data: { id: 'u1', role: 'CLIENT', hasOnboarded: true } });
+    apiPut.mockReset().mockResolvedValue({ data: { avatar: '/api/users/u1/avatar?v=1' } });
+    showError.mockReset();
+    navigate.mockReset();
+    localStorage.clear();
+    authUser = { id: 'u1', role: 'CLIENT' };
+  });
+
+  it('uploads a chosen photo once, to the photo endpoint, then finishes', async () => {
+    const { result } = renderHook(() => useOnboarding({}));
+    act(() => result.current.setAvatarPreview(PHOTO));
+    await act(async () => { await result.current.handleAvatarUpload(); });
+
+    expect(apiPut).toHaveBeenCalledTimes(1);
+    expect(apiPut).toHaveBeenCalledWith('/users/u1/avatar', { image: PHOTO });
+    expect(apiPatch).not.toHaveBeenCalledWith('/users/u1', expect.anything());
+    expect(apiPatch).toHaveBeenCalledWith('/users/u1/onboarding', expect.objectContaining({ hasOnboarded: true }));
+  });
+
+  it('says so when the photo fails, and still finishes setting up', async () => {
+    apiPut.mockRejectedValue(new Error('500'));
+    const { result } = renderHook(() => useOnboarding({}));
+    act(() => result.current.setAvatarPreview(PHOTO));
+    await act(async () => { await result.current.handleAvatarUpload(); });
+
+    expect(showError).toHaveBeenCalledWith(expect.stringMatching(/photo couldn't be saved/i));
+    expect(apiPatch).toHaveBeenCalledWith('/users/u1/onboarding', expect.anything());
+    expect(navigate).toHaveBeenCalledWith('/client/dashboard', { replace: true });
+  });
+
+  it('does not re-upload a pre-filled Google avatar', async () => {
+    authUser = { id: 'u1', role: 'CLIENT', avatar: 'https://lh3.googleusercontent.com/a/x' };
+    const { result } = renderHook(() => useOnboarding({}));
+    await act(async () => { await result.current.handleAvatarUpload(); });
+
+    expect(apiPut).not.toHaveBeenCalled();
+    expect(apiPatch).toHaveBeenCalledWith('/users/u1/onboarding', expect.anything());
   });
 });

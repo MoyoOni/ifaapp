@@ -1,4 +1,7 @@
 import React from 'react';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '@/shared/hooks/use-auth';
+import { getDashboardPathForRole } from '@/shared/config/navigation';
 import { ChevronRight, ArrowRight, LogOut, Link, Building2, X, User, MapPin } from 'lucide-react';
 import CulturalOnboardingPath from './cultural-onboarding-path';
 import YorubaInputHelper from '@/shared/components/yoruba-input-helper';
@@ -73,7 +76,19 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
     clearProgress,
   } = useOnboarding({ userId: userIdProp, userRole: userRoleProp, onComplete });
 
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const progress = getOnboardingProgress(userRole as UserRole | undefined, onboardingStep);
+
+  // Routed directly to /onboarding (no onComplete): a visitor used to go all
+  // the way through and only be sent to sign in at the end, losing everything,
+  // and a member who had already onboarded could redo it and overwrite their
+  // profile. isSubmitting covers the moment completion marks them onboarded.
+  if (!onComplete && !authLoading) {
+    if (!isAuthenticated) return <Navigate to="/login" replace />;
+    if (authUser?.hasOnboarded && !isSubmitting) {
+      return <Navigate to={getDashboardPathForRole(authUser.role)} replace />;
+    }
+  }
 
   return (
     <div className="min-h-screen bg-muted/40 flex flex-col items-center justify-center p-6 relative">
@@ -121,7 +136,8 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
               type="button"
               onClick={() => {
                 if (window.confirm('Are you sure you want to exit onboarding? You can always come back later.')) {
-                  navigate('/');
+                  // Not '/': that sends anyone not yet onboarded straight back here.
+                  navigate(getDashboardPathForRole(authUser?.role));
                 }
               }}
               className="absolute top-4 right-4 text-stone-400 hover:text-stone-600 transition-colors"
@@ -227,7 +243,11 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
               </button>
               <button
                 type="button"
-                onClick={() => setOnboardingStep('role-setup')}
+                // role-setup only renders for babalawos and vendors; sending a
+                // client there left a blank page with no way forward.
+                onClick={() => setOnboardingStep(
+                  userRole === UserRole.BABALAWO || userRole === UserRole.VENDOR ? 'role-setup' : 'heritage'
+                )}
                 className="flex-1 py-4 bg-muted/60 text-stone-600 rounded-xl font-bold text-lg hover:bg-muted transition-all"
               >
                 Skip for now
@@ -627,7 +647,6 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
             {/* Header for Heritage Step */}
             <div className="text-center space-y-2 mb-6">
               <h2 className="text-3xl font-bold brand-font text-stone-800 dark:text-stone-200">E kaabo, Initiate.</h2>
-              <p className="text-stone-400 text-sm font-bold uppercase tracking-widest">Setup Step 1 of 2</p>
             </div>
 
             <div className="text-center space-y-4">
@@ -740,11 +759,14 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
             <div className="flex flex-col gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => { navigate('/client/temples'); if (onComplete) onComplete(); }}
+                // Used to leave for /client/temples before the name/location
+                // steps, so the account was never marked onboarded. Now it
+                // finishes setup first and lands on temples afterwards.
+                onClick={() => { sessionStorage.setItem('postOnboardingRedirect', '/client/temples'); setOnboardingStep('form'); }}
                 className="w-full py-4 bg-amber-500 text-white rounded-xl font-bold text-lg hover:bg-amber-600 transition-all shadow-lg flex items-center justify-center gap-2"
               >
                 <Building2 size={20} />
-                Explore All Temples
+                Finish Setup, Then Explore Temples
               </button>
               <button
                 type="button"
@@ -776,7 +798,6 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({
             </button>
             <div className="text-center space-y-2 mb-2">
               <h2 className="text-3xl font-bold brand-font text-stone-800 dark:text-stone-200">Final Steps</h2>
-              <p className="text-stone-400 text-sm font-bold uppercase tracking-widest">Setup Step 2 of 2</p>
             </div>
 
             <form onSubmit={handleFormNext} className="space-y-6">
