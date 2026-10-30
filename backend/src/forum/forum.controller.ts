@@ -13,6 +13,10 @@ import {
 } from '@nestjs/common';
 import { ResolveCrisisSignalDto } from './dto/crisis-follow-up.dto';
 import { ForumService } from './forum.service';
+import { ForumCrisisService } from './forum-crisis.service';
+import { ForumElderService } from './forum-elder.service';
+import { ForumDiscoveryService } from './forum-discovery.service';
+import { ForumAdminService } from './forum-admin.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { CreateThreadDto } from './dto/create-thread.dto';
 import { CreatePostDto } from './dto/create-post.dto';
@@ -44,7 +48,12 @@ import { AdminSubRole } from '@common/enums/admin-sub-role.enum';
 @Controller('forum')
 @UseGuards(JwtAuthGuard)
 export class ForumController {
-  constructor(private readonly forumService: ForumService) {}
+  constructor(private readonly forumService: ForumService,
+    private readonly forumAdminService: ForumAdminService,
+    private readonly forumDiscoveryService: ForumDiscoveryService,
+    private readonly forumElderService: ForumElderService,
+    private readonly forumCrisisService: ForumCrisisService
+  ) {}
 
   // ==================== Trending ====================
 
@@ -58,7 +67,7 @@ export class ForumController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
   async getForumStats() {
-    return this.forumService.getForumStats();
+    return this.forumAdminService.getForumStats();
   }
 
   // F9-903: Detailed Forum Health Metrics
@@ -66,13 +75,13 @@ export class ForumController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
   async getDetailedMetrics(@Query('period') period?: '7d' | '30d' | '90d') {
-    return this.forumService.getDetailedMetrics(period || '7d');
+    return this.forumAdminService.getDetailedMetrics(period || '7d');
   }
 
   @Public()
   @Get('search')
   async searchForum(@Query('q') q: string, @CurrentUser() currentUser?: CurrentUserPayload) {
-    return this.forumService.searchForum(q ?? '', currentUser ?? null);
+    return this.forumDiscoveryService.searchForum(q ?? '', currentUser ?? null);
   }
 
   // ==================== Categories ====================
@@ -108,7 +117,7 @@ export class ForumController {
   @Public()
   @Get('seasonal-highlights')
   async getSeasonalHighlights() {
-    return this.forumService.getSeasonalHighlights();
+    return this.forumDiscoveryService.getSeasonalHighlights();
   }
 
   // ==================== COMMUNITY_BACKLOG.md FOR-004: Learning Pathways ====================
@@ -116,7 +125,7 @@ export class ForumController {
   @Public()
   @Get('series')
   async getThreadSeries() {
-    return this.forumService.getThreadSeries();
+    return this.forumDiscoveryService.getThreadSeries();
   }
 
   @Public()
@@ -125,7 +134,7 @@ export class ForumController {
     @Param('seriesName') seriesName: string,
     @CurrentUser() currentUser?: CurrentUserPayload
   ) {
-    return this.forumService.getThreadsInSeries(seriesName, currentUser ?? null);
+    return this.forumDiscoveryService.getThreadsInSeries(seriesName, currentUser ?? null);
   }
 
   // ==================== Threads ====================
@@ -301,14 +310,14 @@ export class ForumController {
 
   @Post('threads/:id/share')
   async trackShare(@Param('id') id: string) {
-    return this.forumService.trackThreadShare(id);
+    return this.forumDiscoveryService.trackThreadShare(id);
   }
 
   // ==================== F9-702: Digest Email ====================
 
   @Post('admin/digest')
   async sendForumDigest(@CurrentUser() currentUser: CurrentUserPayload) {
-    return this.forumService.sendForumDigest(currentUser);
+    return this.forumDiscoveryService.sendForumDigest(currentUser);
   }
 
   // ==================== F9-704: Related Products ====================
@@ -316,7 +325,7 @@ export class ForumController {
   @Public()
   @Get('threads/:id/related-products')
   async getRelatedProducts(@Param('id') id: string) {
-    return this.forumService.getRelatedProducts(id);
+    return this.forumDiscoveryService.getRelatedProducts(id);
   }
 
   // ==================== F9-705: Micro-Tip ====================
@@ -344,7 +353,7 @@ export class ForumController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
   async getAllForumCategories() {
-    return this.forumService.getAllForumCategories();
+    return this.forumAdminService.getAllForumCategories();
   }
 
   @Post('admin/categories')
@@ -352,7 +361,7 @@ export class ForumController {
     @Body() dto: CreateForumCategoryDto,
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
-    return this.forumService.createForumCategory(dto, currentUser);
+    return this.forumAdminService.createForumCategory(dto, currentUser);
   }
 
   @Patch('admin/categories/:id')
@@ -361,7 +370,7 @@ export class ForumController {
     @Body() dto: UpdateForumCategoryDto,
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
-    return this.forumService.updateForumCategory(id, dto, currentUser);
+    return this.forumAdminService.updateForumCategory(id, dto, currentUser);
   }
 
   @Delete('admin/categories/:id')
@@ -369,7 +378,7 @@ export class ForumController {
     @Param('id') id: string,
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
-    return this.forumService.deleteForumCategory(id, currentUser);
+    return this.forumAdminService.deleteForumCategory(id, currentUser);
   }
 
   @Patch('admin/categories/:id/reorder')
@@ -378,7 +387,7 @@ export class ForumController {
     @Body() dto: ReorderForumCategoryDto,
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
-    return this.forumService.reorderForumCategory(id, dto.newPosition, currentUser);
+    return this.forumAdminService.reorderForumCategory(id, dto.newPosition, currentUser);
   }
 
   @Patch('admin/threads/:id/move')
@@ -387,7 +396,7 @@ export class ForumController {
     @Body() dto: MoveThreadToCategoryDto,
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
-    return this.forumService.moveThreadToCategory(id, dto.targetCategoryId, currentUser);
+    return this.forumAdminService.moveThreadToCategory(id, dto.targetCategoryId, currentUser);
   }
 
   @Patch('admin/threads/:id/feature')
@@ -396,12 +405,12 @@ export class ForumController {
     @Body() dto: FeatureThreadDto,
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
-    return this.forumService.featureThread(id, dto.isFeatured, currentUser);
+    return this.forumAdminService.featureThread(id, dto.isFeatured, currentUser);
   }
 
   @Post('admin/threads/merge')
   async mergeThreads(@Body() dto: MergeThreadsDto, @CurrentUser() currentUser: CurrentUserPayload) {
-    return this.forumService.mergeThreads(dto.primaryThreadId, dto.secondaryThreadId, currentUser);
+    return this.forumAdminService.mergeThreads(dto.primaryThreadId, dto.secondaryThreadId, currentUser);
   }
 
   @Delete('admin/threads/:id')
@@ -410,14 +419,14 @@ export class ForumController {
     @Body() dto: DeleteThreadAdminDto,
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
-    return this.forumService.deleteThreadForAdmin(id, currentUser, dto.reason);
+    return this.forumAdminService.deleteThreadForAdmin(id, currentUser, dto.reason);
   }
 
   @Get('admin/management-stats')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
   async getForumManagementStats() {
-    return this.forumService.getForumManagementStats();
+    return this.forumAdminService.getForumManagementStats();
   }
 
   // ==================== Moderation ====================
@@ -442,12 +451,12 @@ export class ForumController {
     @Body() dto: CreateElderFlagDto,
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
-    return this.forumService.createElderFlag(postId, dto.reason, currentUser);
+    return this.forumElderService.createElderFlag(postId, dto.reason, currentUser);
   }
 
   @Get('posts/:postId/elder-reactions')
   async getPostElderReactions(@Param('postId') postId: string) {
-    return this.forumService.getPostElderReactions(postId);
+    return this.forumElderService.getPostElderReactions(postId);
   }
 
   @Post('posts/:postId/elder-reactions')
@@ -456,7 +465,7 @@ export class ForumController {
     @Body() dto: ReactToPostDto,
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
-    return this.forumService.reactToPost(postId, dto.emoji, currentUser);
+    return this.forumElderService.reactToPost(postId, dto.emoji, currentUser);
   }
 
   @Delete('posts/:postId/elder-reactions')
@@ -464,7 +473,7 @@ export class ForumController {
     @Param('postId') postId: string,
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
-    return this.forumService.removeElderReaction(postId, currentUser);
+    return this.forumElderService.removeElderReaction(postId, currentUser);
   }
 
   @Get('me/contribution-streak')
@@ -474,13 +483,13 @@ export class ForumController {
 
   @Get('elder-reactions/mine')
   async getMyElderReactions(@CurrentUser() currentUser: CurrentUserPayload) {
-    return this.forumService.getMyElderReactions(currentUser);
+    return this.forumElderService.getMyElderReactions(currentUser);
   }
 
   // Before elder-flags/:id style routes; the caller's own flags (any role).
   @Get('elder-flags/mine')
   async getMyElderFlags(@CurrentUser() currentUser: CurrentUserPayload) {
-    return this.forumService.getMyElderFlags(currentUser);
+    return this.forumElderService.getMyElderFlags(currentUser);
   }
 
   @Get('elder-flags')
@@ -488,7 +497,7 @@ export class ForumController {
     @Query('status') status: string,
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
-    return this.forumService.getElderFlags(currentUser, status);
+    return this.forumElderService.getElderFlags(currentUser, status);
   }
 
   @Patch('elder-flags/:id')
@@ -497,13 +506,13 @@ export class ForumController {
     @Body() dto: ReviewElderFlagDto,
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
-    return this.forumService.reviewElderFlag(id, dto.action, currentUser);
+    return this.forumElderService.reviewElderFlag(id, dto.action, currentUser);
   }
 
   @Public()
   @Get('live-sessions')
   async listLiveSessions(@Query('status') status?: string) {
-    return this.forumService.listLiveSessions(status);
+    return this.forumElderService.listLiveSessions(status);
   }
 
   // ==================== D3: Crisis Signal Admin ====================
@@ -512,7 +521,7 @@ export class ForumController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
   async getCrisisSignalPosts(@Query('page') page?: string, @Query('limit') limit?: string) {
-    return this.forumService.getCrisisSignalPosts(
+    return this.forumCrisisService.getCrisisSignalPosts(
       page ? parseInt(page, 10) : 1,
       limit ? parseInt(limit, 10) : 20
     );
@@ -526,7 +535,7 @@ export class ForumController {
     @Query('source') source: 'forum' | 'circle' | undefined,
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
-    return this.forumService.clearCrisisSignal(postId, source || 'forum', currentUser);
+    return this.forumCrisisService.clearCrisisSignal(postId, source || 'forum', currentUser);
   }
 
   // Z1-803: claim / resolve-with-outcome / history for the crisis queue.
@@ -534,7 +543,7 @@ export class ForumController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
   async getCrisisFollowUpHistory(@Query('page') page?: string, @Query('limit') limit?: string) {
-    return this.forumService.getCrisisFollowUpHistory(
+    return this.forumCrisisService.getCrisisFollowUpHistory(
       page ? parseInt(page, 10) : 1,
       limit ? parseInt(limit, 10) : 20
     );
@@ -548,7 +557,7 @@ export class ForumController {
     @Query('source') source: 'forum' | 'circle' | undefined,
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
-    return this.forumService.claimCrisisSignal(postId, source === 'circle' ? 'circle' : 'forum', currentUser);
+    return this.forumCrisisService.claimCrisisSignal(postId, source === 'circle' ? 'circle' : 'forum', currentUser);
   }
 
   @Patch('admin/crisis-signals/:postId/resolve')
@@ -560,7 +569,7 @@ export class ForumController {
     @Body() dto: ResolveCrisisSignalDto,
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
-    return this.forumService.resolveCrisisSignal(
+    return this.forumCrisisService.resolveCrisisSignal(
       postId,
       source === 'circle' ? 'circle' : 'forum',
       dto,
@@ -573,7 +582,7 @@ export class ForumController {
     @Body() dto: CreateLiveSessionDto,
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
-    return this.forumService.createLiveSession({ ...dto, hostIds: dto.hostIds ?? [] }, currentUser);
+    return this.forumElderService.createLiveSession({ ...dto, hostIds: dto.hostIds ?? [] }, currentUser);
   }
 
   @Patch('live-sessions/:id/status')
@@ -582,6 +591,6 @@ export class ForumController {
     @Body() dto: UpdateLiveSessionStatusDto,
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
-    return this.forumService.updateLiveSessionStatus(id, dto.status, currentUser);
+    return this.forumElderService.updateLiveSessionStatus(id, dto.status, currentUser);
   }
 }

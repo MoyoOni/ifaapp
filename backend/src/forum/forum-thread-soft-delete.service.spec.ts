@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { ThreadStatus } from '@ile-ase/common';
 import { ForumService } from './forum.service';
+import { ForumAdminService } from './forum-admin.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { MessagingGateway } from '../messaging/messaging.gateway';
 import { NotificationService } from '../notifications/notification.service';
@@ -19,6 +20,7 @@ import { UsersService } from '../users/users.service';
 
 describe('ForumService — thread soft delete (P0-03)', () => {
   let service: ForumService;
+  let adminService: ForumAdminService;
 
   const mockAdmin = { id: 'admin-1', role: 'ADMIN', email: 'a@example.com', verified: true } as any;
   const mockNonAdmin = {
@@ -48,6 +50,7 @@ describe('ForumService — thread soft delete (P0-03)', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ForumService,
+        ForumAdminService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: MessagingGateway, useValue: {} },
         { provide: NotificationService, useValue: { createNotification: jest.fn() } },
@@ -59,6 +62,8 @@ describe('ForumService — thread soft delete (P0-03)', () => {
     }).compile();
 
     service = module.get<ForumService>(ForumService);
+
+    adminService = module.get<ForumAdminService>(ForumAdminService);
   });
 
   describe('deleteThreadForAdmin', () => {
@@ -72,7 +77,7 @@ describe('ForumService — thread soft delete (P0-03)', () => {
         status: ThreadStatus.DELETED,
       });
 
-      const result = await service.deleteThreadForAdmin('thread-1', mockAdmin, 'spam');
+      const result = await adminService.deleteThreadForAdmin('thread-1', mockAdmin, 'spam');
 
       expect(result.status).toBe(ThreadStatus.DELETED);
       expect(mockPrismaService.forumThread.update).toHaveBeenCalledWith({
@@ -83,7 +88,7 @@ describe('ForumService — thread soft delete (P0-03)', () => {
     });
 
     it('rejects a non-admin caller', async () => {
-      await expect(service.deleteThreadForAdmin('thread-1', mockNonAdmin)).rejects.toThrow(
+      await expect(adminService.deleteThreadForAdmin('thread-1', mockNonAdmin)).rejects.toThrow(
         ForbiddenException
       );
       expect(mockPrismaService.forumThread.update).not.toHaveBeenCalled();
@@ -92,7 +97,7 @@ describe('ForumService — thread soft delete (P0-03)', () => {
     it('throws NotFoundException for a missing thread', async () => {
       mockPrismaService.forumThread.findUnique.mockResolvedValue(null);
 
-      await expect(service.deleteThreadForAdmin('missing-thread', mockAdmin)).rejects.toThrow(
+      await expect(adminService.deleteThreadForAdmin('missing-thread', mockAdmin)).rejects.toThrow(
         NotFoundException
       );
     });
@@ -109,7 +114,7 @@ describe('ForumService — thread soft delete (P0-03)', () => {
         status: ThreadStatus.DELETED,
       });
 
-      const result = await service.adminDeleteThread('thread-2', mockAdmin, 'off-topic');
+      const result = await adminService.adminDeleteThread('thread-2', mockAdmin, 'off-topic');
 
       expect(result.status).toBe(ThreadStatus.DELETED);
       expect(mockPrismaService.forumThread.delete).not.toHaveBeenCalled();
@@ -130,7 +135,7 @@ describe('ForumService — thread soft delete (P0-03)', () => {
       mockPrismaService.forumPost.count.mockResolvedValue(3);
       mockPrismaService.forumThread.update.mockResolvedValue({});
 
-      await service.mergeThreads('primary-thread', 'secondary-thread', mockAdmin);
+      await adminService.mergeThreads('primary-thread', 'secondary-thread', mockAdmin);
 
       expect(mockPrismaService.forumThread.update).toHaveBeenCalledWith(
         expect.objectContaining({

@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ForumService } from './forum.service';
+import { ForumDiscoveryService } from './forum-discovery.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { MessagingGateway } from '../messaging/messaging.gateway';
 import { NotificationService } from '../notifications/notification.service';
@@ -16,6 +17,7 @@ import { UsersService } from '../users/users.service';
 
 describe('ForumService — learning pathways (COMMUNITY_BACKLOG.md FOR-004)', () => {
   let service: ForumService;
+  let discoveryService: ForumDiscoveryService;
 
   const mockPrismaService = {
     forumThread: {
@@ -35,6 +37,7 @@ describe('ForumService — learning pathways (COMMUNITY_BACKLOG.md FOR-004)', ()
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ForumService,
+        ForumDiscoveryService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: MessagingGateway, useValue: {} },
         { provide: NotificationService, useValue: { createNotification: jest.fn() } },
@@ -46,6 +49,8 @@ describe('ForumService — learning pathways (COMMUNITY_BACKLOG.md FOR-004)', ()
     }).compile();
 
     service = module.get<ForumService>(ForumService);
+
+    discoveryService = module.get<ForumDiscoveryService>(ForumDiscoveryService);
   });
 
   describe('getThreadSeries', () => {
@@ -68,7 +73,7 @@ describe('ForumService — learning pathways (COMMUNITY_BACKLOG.md FOR-004)', ()
         },
       ]);
 
-      const result = await service.getThreadSeries();
+      const result = await discoveryService.getThreadSeries();
 
       expect(result).toEqual([
         expect.objectContaining({ seriesName: 'Ifá Fundamentals', threadCount: 2 }),
@@ -79,7 +84,7 @@ describe('ForumService — learning pathways (COMMUNITY_BACKLOG.md FOR-004)', ()
     it('returns an empty list when no teaching series exist', async () => {
       mockPrismaService.forumThread.findMany.mockResolvedValue([]);
 
-      const result = await service.getThreadSeries();
+      const result = await discoveryService.getThreadSeries();
 
       expect(result).toEqual([]);
     });
@@ -97,7 +102,7 @@ describe('ForumService — learning pathways (COMMUNITY_BACKLOG.md FOR-004)', ()
     });
 
     it('returns myProgress as null when no current user is given', async () => {
-      const result = await service.getThreadsInSeries('Ifá Fundamentals');
+      const result = await discoveryService.getThreadsInSeries('Ifá Fundamentals');
 
       expect(result.myProgress).toBeNull();
       expect(mockPrismaService.forumPost.findMany).not.toHaveBeenCalled();
@@ -106,7 +111,7 @@ describe('ForumService — learning pathways (COMMUNITY_BACKLOG.md FOR-004)', ()
     it('computes myProgress from how many series threads the current user posted in', async () => {
       mockPrismaService.forumPost.findMany.mockResolvedValue([{ threadId: 'thread-1' }]);
 
-      const result = await service.getThreadsInSeries('Ifá Fundamentals', { id: 'user-1' } as any);
+      const result = await discoveryService.getThreadsInSeries('Ifá Fundamentals', { id: 'user-1' } as any);
 
       expect(result.myProgress).toEqual({ postedInThreads: 1, totalThreads: 2 });
     });
@@ -125,7 +130,7 @@ describe('ForumService — learning pathways (COMMUNITY_BACKLOG.md FOR-004)', ()
         },
       ]);
 
-      const result = await service.getThreadsInSeries('Ifá Fundamentals');
+      const result = await discoveryService.getThreadsInSeries('Ifá Fundamentals');
 
       expect(result.recommendedCourses).toHaveLength(1);
       expect(mockPrismaService.course.findMany).toHaveBeenCalledWith(
@@ -136,7 +141,7 @@ describe('ForumService — learning pathways (COMMUNITY_BACKLOG.md FOR-004)', ()
     it('returns no recommended courses when the series has no threads', async () => {
       mockPrismaService.forumThread.findMany.mockResolvedValue([]);
 
-      const result = await service.getThreadsInSeries('Empty Series');
+      const result = await discoveryService.getThreadsInSeries('Empty Series');
 
       expect(result.recommendedCourses).toEqual([]);
       expect(mockPrismaService.course.findMany).not.toHaveBeenCalled();

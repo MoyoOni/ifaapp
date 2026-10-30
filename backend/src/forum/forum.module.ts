@@ -1,5 +1,9 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { ForumService } from './forum.service';
+import { ForumAdminService } from './forum-admin.service';
+import { ForumDiscoveryService } from './forum-discovery.service';
+import { ForumElderService } from './forum-elder.service';
+import { ForumCrisisService } from './forum-crisis.service';
 import { ForumController } from './forum.controller';
 import { MessagingModule } from '../messaging/messaging.module';
 import { NotificationsModule } from '../notifications/notifications.module';
@@ -17,7 +21,7 @@ import { UsersModule } from '../users/users.module';
 @Module({
   imports: [forwardRef(() => MessagingModule), NotificationsModule, UsersModule],
   controllers: [ForumController],
-  providers: [ForumService, NotificationService, NotificationPreferencesService, EmailService],
-  exports: [ForumService],
+  providers: [ForumService, ForumAdminService, ForumDiscoveryService, ForumElderService, ForumCrisisService, NotificationService, NotificationPreferencesService, EmailService],
+  exports: [ForumService, ForumAdminService, ForumDiscoveryService, ForumElderService, ForumCrisisService],
 })
 export class ForumModule {}

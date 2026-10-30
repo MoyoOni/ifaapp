@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ForumService } from './forum.service';
+import { ForumCrisisService } from './forum-crisis.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { MessagingGateway } from '../messaging/messaging.gateway';
 import { NotificationService } from '../notifications/notification.service';
@@ -18,6 +19,7 @@ import { UsersService } from '../users/users.service';
 // existing forum-thread-soft-delete.service.spec.ts.
 describe('ForumService — crisis-signal review restriction (FOR-002)', () => {
   let service: ForumService;
+  let crisisService: ForumCrisisService;
 
   const mockAdmin = { id: 'admin-1', role: 'ADMIN', email: 'a@example.com', verified: true } as any;
   const mockAuthor = { id: 'author-1', role: 'CLIENT', email: 'author@example.com', verified: true } as any;
@@ -40,6 +42,7 @@ describe('ForumService — crisis-signal review restriction (FOR-002)', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ForumService,
+        ForumCrisisService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: MessagingGateway, useValue: {} },
         { provide: NotificationService, useValue: { createNotification: jest.fn() } },
@@ -51,6 +54,8 @@ describe('ForumService — crisis-signal review restriction (FOR-002)', () => {
     }).compile();
 
     service = module.get<ForumService>(ForumService);
+
+    crisisService = module.get<ForumCrisisService>(ForumCrisisService);
   });
 
   describe('findAllPosts', () => {
@@ -91,7 +96,7 @@ describe('ForumService — crisis-signal review restriction (FOR-002)', () => {
     it('clears hasCrisisSignal and heldForReview, and records who reviewed it', async () => {
       mockPrismaService.forumPost.update.mockResolvedValue({});
 
-      await service.clearCrisisSignal('post-1', 'forum', mockAdmin);
+      await crisisService.clearCrisisSignal('post-1', 'forum', mockAdmin);
 
       expect(mockPrismaService.forumPost.update).toHaveBeenCalledWith({
         where: { id: 'post-1' },
