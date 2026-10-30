@@ -31,6 +31,7 @@ jest.mock('pdfkit', () => {
         handlers[event] = cb;
         return doc;
       },
+      font: () => doc,
       fontSize: () => doc,
       text: () => doc,
       moveDown: () => doc,

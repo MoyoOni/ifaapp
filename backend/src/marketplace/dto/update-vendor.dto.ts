@@ -54,4 +54,11 @@ export class UpdateVendorDto {
   @IsString()
   @IsOptional()
   vatNumber?: string;
+
+  // SHOP_BACKLOG.md MSP-009: orders to any other country are international.
+  @IsString()
+  @IsOptional()
+  @MinLength(2)
+  @MaxLength(100)
+  shipsFromCountry?: string;
 }

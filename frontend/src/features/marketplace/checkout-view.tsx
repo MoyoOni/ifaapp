@@ -383,6 +383,13 @@ const CheckoutView: React.FC<CheckoutViewProps> = ({ onBack, onSuccess }) => {
                                     </div>
                                 </div>
 
+                                {/* SHOP_BACKLOG.md MSP-009: duties are paid on arrival, not here */}
+                                {!['', 'nigeria', 'ng', 'nga', 'naija'].includes(shippingDetails.country.trim().toLowerCase()) && (
+                                    <p className="text-xs text-muted-foreground bg-muted/50 rounded-xl px-3 py-2">
+                                        Shipping outside Nigeria: the parcel travels with a customs declaration, and your country may charge import duties or taxes on delivery. Those are not included in this total.
+                                    </p>
+                                )}
+
                                 {/* SHOP_BACKLOG.md MSP-024: gifting */}
                                 <div className="pt-4 border-t border-border space-y-3">
                                     <label className="flex items-center gap-2 cursor-pointer">

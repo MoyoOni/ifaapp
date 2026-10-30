@@ -22,7 +22,7 @@ import { EscrowType, EscrowStatus } from '@ile-ase/common';
 import { AvailabilitySlot } from './types';
 import { WhatsAppService } from '../whatsapp';
 import { combineDateTimeInZone } from '../utils/scheduling.util';
-import PDFDocument from 'pdfkit';
+import { createPdfDocument } from '../common/pdf/create-pdf';
 
 const DEFAULT_TIMEZONE = 'Africa/Lagos';
 
@@ -981,7 +981,7 @@ export class AppointmentsService {
     }
 
     // Create a new PDF document
-    const doc = new PDFDocument();
+    const doc = createPdfDocument();
     const chunks: Uint8Array[] = [];
 
     // Stream events to capture the PDF data

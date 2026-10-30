@@ -57,6 +57,59 @@ const ZONE_PRESETS: Array<{ label: string; name: string; countries: string[]; is
   { label: 'Rest of World', name: 'International', countries: ['Rest of World'], isDefault: true },
 ];
 
+// SHOP_BACKLOG.md MSP-009: orders to any other country are international and
+// get a printable customs declaration.
+const ShipsFromCard: React.FC<{ vendorId: string }> = ({ vendorId }) => {
+  const qc = useQueryClient();
+  const { success, error: toastError } = useToast();
+  const [draft, setDraft] = useState<string | null>(null);
+  const { data: vendor } = useQuery<{ shipsFromCountry?: string }>({
+    queryKey: ['vendor-ships-from', vendorId],
+    queryFn: async () => (await api.get(`/marketplace/vendors/${vendorId}`)).data,
+    enabled: !!vendorId,
+  });
+  const current = vendor?.shipsFromCountry ?? 'Nigeria';
+  const value = draft ?? current;
+  const save = useMutation({
+    mutationFn: async () => api.patch(`/marketplace/vendors/${vendorId}`, { shipsFromCountry: value.trim() }),
+    onSuccess: () => {
+      success('Saved');
+      setDraft(null);
+      qc.invalidateQueries({ queryKey: ['vendor-ships-from', vendorId] });
+    },
+    onError: (err: any) => toastError(err?.response?.data?.message ?? 'Could not save'),
+  });
+
+  return (
+    <Card>
+      <CardContent className="pt-6 space-y-2">
+        <label htmlFor="ships-from-country" className="text-sm font-semibold text-foreground">Ships from</label>
+        <p className="text-xs text-muted-foreground">
+          Orders to any other country are international: you can print a customs declaration for them from the order.
+        </p>
+        <div className="flex gap-2">
+          <input
+            id="ships-from-country"
+            type="text"
+            maxLength={100}
+            value={value}
+            onChange={(e) => setDraft(e.target.value)}
+            className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-foreground text-sm"
+          />
+          <button
+            type="button"
+            onClick={() => save.mutate()}
+            disabled={save.isPending || value.trim().length < 2 || value.trim() === current}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold text-sm disabled:opacity-50"
+          >
+            Save
+          </button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
 const ShippingManagement: React.FC<ShippingManagementProps> = ({ vendorId, activeTab }) => {
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -128,6 +181,8 @@ const ShippingManagement: React.FC<ShippingManagementProps> = ({ vendorId, activ
           <Plus size={16} /> New Zone
         </button>
       </div>
+
+      <ShipsFromCard vendorId={vendorId} />
 
       {!zones.some((z) => z.isDefault) && zones.length > 0 && (
         <div className="flex items-center gap-2 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-700 dark:text-amber-400 text-sm">

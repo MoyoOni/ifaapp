@@ -5,7 +5,7 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import PDFDocument from 'pdfkit';
+import { createPdfDocument, pdfText } from '../common/pdf/create-pdf';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateVendorDto } from './dto/create-vendor.dto';
 import { UpdateVendorDto } from './dto/update-vendor.dto';
@@ -20,6 +20,7 @@ import { CreatePartnershipDto } from './dto/vendor-partnership.dto';
 import { RequestEventFeatureDto } from './dto/event-product-feature.dto';
 import { UpdateBundleGuideDto } from './dto/update-bundle-guide.dto';
 import { CreateShippingZoneDto, UpdateShippingZoneDto } from './dto/shipping-zone.dto';
+import { isInternationalShipment } from './country.util';
 import { ApplyVendorCertificationDto } from './dto/apply-vendor-certification.dto';
 import { BulkUpdateProductsDto, PriceAdjustmentMode, StockAdjustmentMode } from './dto/bulk-update-products.dto';
 import { CreateProductVariantDto, UpdateProductVariantDto } from './dto/product-variant.dto';
@@ -297,6 +298,9 @@ export class MarketplaceService {
     if (dto.vatNumber !== undefined) {
       updateData.vatNumber = dto.vatNumber;
     }
+    if (dto.shipsFromCountry !== undefined) {
+      updateData.shipsFromCountry = dto.shipsFromCountry.trim();
+    }
 
     try {
       return await this.prisma.vendor.update({
@@ -432,6 +436,10 @@ export class MarketplaceService {
         pronunciationGuide: dto.pronunciationGuide,
         traditionalUseContext: dto.traditionalUseContext,
         regionOfOrigin: dto.regionOfOrigin,
+        // SHOP_BACKLOG.md MSP-009
+        customsDescription: dto.customsDescription,
+        hsCode: dto.hsCode,
+        originCountry: dto.originCountry,
         // VENDOR_BACKLOG.md VND-023
         seoTitle: dto.seoTitle,
         seoDescription: dto.seoDescription,
@@ -2381,7 +2389,19 @@ export class MarketplaceService {
 
     // Check stock and calculate total
     let totalAmount = 0;
-    const orderItems: Array<{ productId: string; quantity: number; price: number; variantId?: string }> = [];
+    // SHOP_BACKLOG.md MSP-009: an order leaving the vendor's country carries
+    // a customs declaration, so each line snapshots its customs details.
+    const isInternational = isInternationalShipment(dto.shippingCountry, vendor.shipsFromCountry);
+    const orderItems: Array<{
+      productId: string;
+      quantity: number;
+      price: number;
+      variantId?: string;
+      customsDescription?: string;
+      hsCode?: string | null;
+      originCountry?: string;
+      weightKg?: number | null;
+    }> = [];
 
     for (const item of dto.items) {
       const product = products.find((p: any) => p.id === item.productId);
@@ -2439,6 +2459,14 @@ export class MarketplaceService {
         quantity: item.quantity,
         price: unitPrice,
         variantId: variant?.id,
+        ...(isInternational
+          ? {
+              customsDescription: product.customsDescription || product.name,
+              hsCode: product.hsCode,
+              originCountry: product.originCountry || vendor.shipsFromCountry,
+              weightKg: product.weight,
+            }
+          : {}),
       });
     }
 
@@ -2588,6 +2616,7 @@ export class MarketplaceService {
           shippingCost: effectiveShippingCost,
           shippingAddress: dto.shippingAddress,
           shippingCountry: dto.shippingCountry,
+          isInternational,
           devotedFreeDelivery,
           notes: dto.notes,
           isGift: dto.isGift ?? false,
@@ -3109,7 +3138,7 @@ export class MarketplaceService {
       throw new NotFoundException('No matching orders found for this vendor');
     }
 
-    const doc = new PDFDocument({ margin: 50 });
+    const doc = createPdfDocument({ margin: 50 });
     const chunks: Uint8Array[] = [];
     doc.on('data', (chunk: Uint8Array) => chunks.push(chunk));
 
@@ -4126,7 +4155,7 @@ export class MarketplaceService {
     const netEarnings = grossSales - refundsIssued - commissionRetained;
     const statementRef = `STMT-${vendorId.slice(0, 8).toUpperCase()}-${year}${String(month).padStart(2, '0')}`;
 
-    const doc = new PDFDocument({ margin: 50 });
+    const doc = createPdfDocument({ margin: 50 });
     const chunks: Uint8Array[] = [];
     doc.on('data', (chunk: Uint8Array) => chunks.push(chunk));
 
@@ -4186,7 +4215,7 @@ export class MarketplaceService {
       throw new ForbiddenException('You do not have access to this order');
     }
 
-    const doc = new PDFDocument({ margin: 50 });
+    const doc = createPdfDocument({ margin: 50 });
     const chunks: Uint8Array[] = [];
     doc.on('data', (chunk: Uint8Array) => chunks.push(chunk));
 
@@ -4209,6 +4238,100 @@ export class MarketplaceService {
     });
     doc.moveDown();
     doc.fontSize(12).text(`Total: ₦${Number(order.totalAmount).toLocaleString()} ${order.currency}`);
+
+    doc.end();
+    return new Promise<Buffer>((resolve, reject) => {
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+    });
+  }
+
+  /**
+   * SHOP_BACKLOG.md MSP-009: a printable customs declaration for an order
+   * leaving the vendor's country -- the content of a CN22/CN23 form (sender,
+   * recipient, each item's description, quantity, weight, value, HS code
+   * and origin), for the vendor to print and attach to the parcel. Uses the
+   * per-item details snapshotted when the order was placed.
+   */
+  async generateCustomsDeclaration(orderId: string, currentUser: CurrentUserPayload): Promise<Buffer> {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        items: { include: { product: { select: { name: true } } } },
+        vendor: true,
+        customer: { select: { name: true } },
+      },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+
+    const vendorOwner = await this.prisma.vendor.findUnique({ where: { userId: currentUser.id } });
+    const isOwnerOrAdmin = currentUser.role === 'ADMIN' || (!!vendorOwner && order.vendorId === vendorOwner.id);
+    if (!isOwnerOrAdmin) {
+      throw new ForbiddenException('Only the vendor can print a customs declaration');
+    }
+    if (!order.isInternational) {
+      throw new BadRequestException('This order ships within the vendor\'s country; no customs declaration is needed');
+    }
+
+    const money = (n: number) => `${n.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${order.currency}`;
+    const lines = order.items.map((item) => ({
+      description: pdfText(item.customsDescription || item.product.name),
+      quantity: item.quantity,
+      weightKg: item.weightKg != null ? item.weightKg * item.quantity : null,
+      value: Number(item.price) * item.quantity,
+      hsCode: item.hsCode,
+      origin: pdfText(item.originCountry || order.vendor.shipsFromCountry),
+    }));
+    const totalValue = lines.reduce((sum, l) => sum + l.value, 0);
+    const knownWeights = lines.filter((l) => l.weightKg != null);
+    const totalWeight = knownWeights.reduce((sum, l) => sum + (l.weightKg as number), 0);
+
+    const doc = createPdfDocument({ margin: 50 });
+    const chunks: Uint8Array[] = [];
+    doc.on('data', (chunk: Uint8Array) => chunks.push(chunk));
+
+    doc.fontSize(18).text('Customs Declaration', { align: 'center' });
+    doc.fontSize(9).text('Contents of CN22 / CN23', { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(10);
+    doc.text(`Order #${order.id.slice(0, 8).toUpperCase()}   ·   ${new Date(order.createdAt).toLocaleDateString('en-GB')}`);
+    doc.moveDown(0.5);
+    doc.fontSize(11).text('From (sender)');
+    doc.fontSize(10).text(pdfText(order.vendor.businessName));
+    doc.text(pdfText(order.vendor.shipsFromCountry));
+    doc.moveDown(0.5);
+    doc.fontSize(11).text('To (recipient)');
+    doc.fontSize(10).text(pdfText(order.customer.name) || 'Customer');
+    if (order.shippingAddress) doc.text(pdfText(order.shippingAddress));
+    doc.text(pdfText(order.shippingCountry));
+    doc.moveDown(0.5);
+    doc.text(`Category of item: ${order.isGift ? 'Gift' : 'Sale of goods'}`);
+    doc.moveDown();
+
+    doc.fontSize(11).text('Contents');
+    doc.fontSize(10);
+    lines.forEach((l, i) => {
+      doc.text(`${i + 1}. ${l.description}`);
+      doc.text(
+        `    Qty ${l.quantity}   ·   Weight ${l.weightKg != null ? `${l.weightKg.toFixed(2)} kg` : 'not set'}   ·   ` +
+          `Value ${money(l.value)}   ·   HS code ${l.hsCode || 'not provided'}   ·   Origin ${l.origin}`
+      );
+    });
+    doc.moveDown();
+    doc.text(`Total declared value: ${money(totalValue)}`);
+    doc.text(
+      `Total weight: ${knownWeights.length ? `${totalWeight.toFixed(2)} kg` : 'not set'}` +
+        (knownWeights.length && knownWeights.length < lines.length ? ' (some items have no weight set)' : '')
+    );
+    if (lines.some((l) => !l.hsCode)) {
+      doc.moveDown(0.5);
+      doc.fontSize(9).text('Some items have no HS code. Many customs offices ask for one; add it to the product before the next international order.');
+      doc.fontSize(10);
+    }
+    doc.moveDown(2);
+    doc.text('I certify that the particulars given in this declaration are correct and that this item does not contain any dangerous article prohibited by legislation or by postal or customs regulations.');
+    doc.moveDown(1.5);
+    doc.text('Date and sender\'s signature: ________________________________');
 
     doc.end();
     return new Promise<Buffer>((resolve, reject) => {

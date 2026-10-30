@@ -78,6 +78,8 @@ RUN apk add --no-cache \
 COPY --from=builder --chown=nestjs:nestjs /app/node_modules ./node_modules
 COPY --from=builder --chown=nestjs:nestjs /app/backend/dist ./dist
 COPY --from=builder --chown=nestjs:nestjs /app/backend/prisma ./prisma
+# PDF font (Yoruba letters and the naira sign); see src/common/pdf/create-pdf.ts
+COPY --chown=nestjs:nestjs backend/assets ./assets
 COPY --from=builder --chown=nestjs:nestjs /app/common/package.json ./node_modules/@ile-ase/common/package.json
 COPY --from=builder --chown=nestjs:nestjs /app/common/dist ./node_modules/@ile-ase/common/dist
 

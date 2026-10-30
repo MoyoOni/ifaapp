@@ -959,6 +959,9 @@ model Vendor {
   id                        String          @id @default(uuid())
   userId                    String          @unique
   businessName              String
+  // SHOP_BACKLOG.md MSP-009: where this vendor ships from. An order to any
+  // other country is international and gets a customs declaration.
+  shipsFromCountry          String          @default("Nigeria")
   businessLicense           String?
   taxId                     String?
   // VENDOR_BACKLOG.md VND-003: self-reported by the vendor, not
@@ -1286,6 +1289,12 @@ model Product {
   // hosted file" allowance -- no upload pipeline needed for that path).
   digitalFileKey            String?
   digitalFileUrl            String?
+  // SHOP_BACKLOG.md MSP-009: customs declaration details for international
+  // orders. All optional; originCountry falls back to the vendor's
+  // shipsFromCountry.
+  customsDescription        String?
+  hsCode                    String?
+  originCountry             String?
   digitalFileName           String?
   digitalFileSizeBytes      Int?
   digitalDownloads          DigitalProductDownload[]
@@ -1507,6 +1516,8 @@ model Order {
   // ShippingZone.countries at checkout. shippingAddress is free text, not
   // structured, so this is captured as its own field rather than parsed out.
   shippingCountry     String?
+  // MSP-009: destination differs from the vendor's shipsFromCountry.
+  isInternational     Boolean     @default(false)
   // V8-304: persisted so order history/receipts can honestly show the
   // Devoted free-delivery benefit actually applied, instead of only being
   // visible transiently in the checkout response (shippingCost alone can't
@@ -1582,6 +1593,13 @@ model OrderItem {
   // later variant cleanup, even if it loses the variant detail.
   variantId String?
   variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  // MSP-009: customs details copied from the product when an international
+  // order is placed, so a later product edit can't change a declaration.
+  customsDescription String?
+  hsCode             String?
+  originCountry      String?
+  weightKg           Float?
 
   @@index([orderId])
   @@index([productId])

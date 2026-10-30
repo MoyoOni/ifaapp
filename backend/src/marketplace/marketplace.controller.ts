@@ -179,6 +179,15 @@ export class MarketplaceController {
     response.status(HttpStatus.OK).send(pdf);
   }
 
+  @ApiOperation({ summary: 'Download the customs declaration for an international order (vendor/admin)' })
+  @Get('orders/:id/customs-declaration')
+  async getCustomsDeclaration(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload, @Res() response: Response) {
+    const pdf = await this.marketplaceService.generateCustomsDeclaration(id, user);
+    response.setHeader('Content-Type', 'application/pdf');
+    response.setHeader('Content-Disposition', `attachment; filename="customs-${id.slice(0, 8)}.pdf"`);
+    response.status(HttpStatus.OK).send(pdf);
+  }
+
   @ApiOperation({ summary: 'Get an annual tax summary (gross sales, refunds, net revenue, VAT status)' })
   @Get('vendors/:id/tax-summary/:year')
   @UseGuards(RolesGuard)

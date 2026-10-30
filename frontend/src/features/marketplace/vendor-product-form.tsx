@@ -26,6 +26,10 @@ interface ProductFormData {
   pronunciationGuide: string;
   traditionalUseContext: string;
   regionOfOrigin: string;
+  // SHOP_BACKLOG.md MSP-009: customs declaration for international orders
+  customsDescription: string;
+  hsCode: string;
+  originCountry: string;
   // VENDOR_BACKLOG.md VND-023
   seoTitle: string;
   seoDescription: string;
@@ -67,6 +71,9 @@ interface InitialProductData {
   pronunciationGuide?: string;
   traditionalUseContext?: string;
   regionOfOrigin?: string;
+  customsDescription?: string | null;
+  hsCode?: string | null;
+  originCountry?: string | null;
   seoTitle?: string;
   seoDescription?: string;
   tags?: string[];
@@ -109,6 +116,9 @@ const INITIAL_FORM: ProductFormData = {
   pronunciationGuide: '',
   traditionalUseContext: '',
   regionOfOrigin: '',
+  customsDescription: '',
+  hsCode: '',
+  originCountry: '',
   seoTitle: '',
   seoDescription: '',
   tags: [],
@@ -375,6 +385,9 @@ const VendorProductForm: React.FC<VendorProductFormProps> = ({ onClose, onSucces
           pronunciationGuide: initialData.pronunciationGuide ?? '',
           traditionalUseContext: initialData.traditionalUseContext ?? '',
           regionOfOrigin: initialData.regionOfOrigin ?? '',
+          customsDescription: initialData.customsDescription ?? '',
+          hsCode: initialData.hsCode ?? '',
+          originCountry: initialData.originCountry ?? '',
           seoTitle: initialData.seoTitle ?? '',
           seoDescription: initialData.seoDescription ?? '',
           tags: initialData.tags ?? [],
@@ -458,6 +471,9 @@ const VendorProductForm: React.FC<VendorProductFormProps> = ({ onClose, onSucces
     if (data.pronunciationGuide) payload.pronunciationGuide = data.pronunciationGuide;
     if (data.traditionalUseContext) payload.traditionalUseContext = data.traditionalUseContext;
     if (data.regionOfOrigin) payload.regionOfOrigin = data.regionOfOrigin;
+    if (data.customsDescription) payload.customsDescription = data.customsDescription;
+    if (data.hsCode) payload.hsCode = data.hsCode.trim();
+    if (data.originCountry) payload.originCountry = data.originCountry;
     if (data.seoTitle) payload.seoTitle = data.seoTitle;
     if (data.seoDescription) payload.seoDescription = data.seoDescription;
     if (data.tags.length > 0) payload.tags = data.tags;
@@ -870,6 +886,55 @@ const VendorProductForm: React.FC<VendorProductFormProps> = ({ onClose, onSucces
                 placeholder="e.g. Ọṣun State, Ogun State, Eko, Diaspora-made"
                 className="w-full px-4 py-3 bg-background border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
               />
+            </div>
+          </div>
+
+          {/* SHOP_BACKLOG.md MSP-009: customs declaration */}
+          <div className="space-y-4 pt-4 border-t border-border">
+            <div>
+              <p className="text-sm font-bold text-foreground uppercase tracking-wide">
+                International Shipping <span className="text-muted-foreground font-normal normal-case">(Optional)</span>
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Printed on the customs declaration when this item ships abroad. Customs officers read these in plain English.
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="vp-customs-description" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Customs Description</label>
+              <input id="vp-customs-description"
+                type="text"
+                maxLength={200}
+                value={form.customsDescription}
+                onChange={e => setForm(f => ({ ...f, customsDescription: e.target.value }))}
+                placeholder="e.g. Brass and seed bead divination chain"
+                className="w-full px-4 py-3 bg-background border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label htmlFor="vp-hs-code" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">HS Code</label>
+                <input id="vp-hs-code"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]{4}([.\s]?[0-9]{2}){0,3}"
+                  title="4 to 10 digits, e.g. 7117.19"
+                  value={form.hsCode}
+                  onChange={e => setForm(f => ({ ...f, hsCode: e.target.value }))}
+                  placeholder="e.g. 7117.19"
+                  className="w-full px-4 py-3 bg-background border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="vp-origin-country" className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Country of Origin</label>
+                <input id="vp-origin-country"
+                  type="text"
+                  maxLength={100}
+                  value={form.originCountry}
+                  onChange={e => setForm(f => ({ ...f, originCountry: e.target.value }))}
+                  placeholder="Defaults to where you ship from"
+                  className="w-full px-4 py-3 bg-background border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                />
+              </div>
             </div>
           </div>
 

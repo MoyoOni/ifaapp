@@ -11,6 +11,8 @@ import {
   Min,
   ArrayMinSize,
   ArrayMaxSize,
+  MaxLength,
+  Matches,
 } from 'class-validator';
 import { ProductType, ProductStatus, VerifiedTier } from '@ile-ase/common';
 
@@ -107,6 +109,22 @@ export class CreateProductDto {
   @IsString()
   @IsOptional()
   declare regionOfOrigin?: string;
+
+  // SHOP_BACKLOG.md MSP-009: customs declaration details for international
+  // orders. HS code: 4 to 10 digits, optionally grouped ("6117.80.10").
+  @IsString()
+  @IsOptional()
+  @MaxLength(200)
+  declare customsDescription?: string;
+
+  @IsOptional()
+  @Matches(/^[0-9]{4}([.\s]?[0-9]{2}){0,3}$/, { message: 'hsCode must be a 4-10 digit HS code, e.g. 6117.80' })
+  declare hsCode?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  declare originCountry?: string;
 
   // VENDOR_BACKLOG.md VND-023
   @IsString()

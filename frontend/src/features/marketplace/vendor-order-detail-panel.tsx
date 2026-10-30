@@ -148,6 +148,24 @@ const VendorOrderDetailPanel: React.FC<VendorOrderDetailPanelProps> = ({ orderId
     onError: (err: any) => toast.error(err?.response?.data?.message || 'Failed to generate invoice'),
   });
 
+  // SHOP_BACKLOG.md MSP-009: customs declaration for an order leaving the
+  // vendor's country, to print and attach to the parcel.
+  const customsMutation = useMutation({
+    mutationFn: async () =>
+      (await api.get(`/marketplace/orders/${orderId}/customs-declaration`, { responseType: 'blob' })).data as Blob,
+    onSuccess: (blob) => {
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `customs-${orderId.slice(0, 8)}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    },
+    onError: () => toast.error('Failed to generate the customs declaration'),
+  });
+
   // VENDOR_BACKLOG.md VND-009: one-click packing-slip PDF for this single order
   const packingSlipMutation = useMutation({
     mutationFn: async () => {
@@ -303,6 +321,17 @@ const VendorOrderDetailPanel: React.FC<VendorOrderDetailPanelProps> = ({ orderId
                 >
                   {packingSlipMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <FileDown size={14} />}
                   Packing Slip
+                </button>
+              )}
+              {isAdminOrVendor && order.isInternational && (
+                <button
+                  type="button"
+                  onClick={() => customsMutation.mutate()}
+                  disabled={customsMutation.isPending}
+                  className="col-span-2 py-2.5 border border-border text-foreground rounded-xl text-sm font-bold hover:bg-muted transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {customsMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <FileDown size={14} />}
+                  Customs Declaration
                 </button>
               )}
             </div>
