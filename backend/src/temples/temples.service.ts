@@ -236,7 +236,6 @@ export class TemplesService {
             id: true,
             name: true,
             yorubaName: true,
-            email: true,
             verified: true,
           },
         },

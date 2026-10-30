@@ -14,9 +14,45 @@ import { map } from 'rxjs/operators';
  * response, so a new endpoint that forgets the manual destructure is still
  * protected instead of silently leaking a password hash.
  */
-const SENSITIVE_FIELDS = ['passwordHash', 'emailVerificationToken'];
+const SENSITIVE_FIELDS = [
+  'passwordHash',
+  'emailVerificationToken',
+  'tokenHash', // PasswordResetToken / EmailChangeToken
+  'fcmTokens', // push-notification device tokens
+  'paystackEmailToken', // lets the holder cancel the subscription in Paystack
+  'digitalFileKey', // S3 key of a paid file; downloads go through a signed URL
+];
 
-function stripSensitiveFields(value: unknown, seen: WeakSet<object>): unknown {
+/**
+ * Fields only their owner (or an admin) may see. A crawl of every GET route
+ * on October 30, 2026 found these going to anonymous visitors through
+ * product and vendor listings -- `digitalFileUrl` is a paid digital
+ * product's download link. Owned means the object's `userId` is the
+ * requester's, or (for a product) its `vendor.userId` is. Everyone else gets
+ * the object without them, whichever endpoint returned it.
+ */
+const OWNER_ONLY_FIELDS = [
+  'digitalFileUrl',
+  'taxId',
+  'businessLicense',
+  'artisanHeritageProof',
+  'yorubaProficiencyProof',
+  'accountNumber',
+];
+
+interface Viewer {
+  id?: string;
+  isAdmin: boolean;
+}
+
+function isOwnedBy(obj: Record<string, unknown>, viewer: Viewer): boolean {
+  if (!viewer.id) return false;
+  if (obj.userId === viewer.id) return true;
+  const vendor = obj.vendor as Record<string, unknown> | null | undefined;
+  return !!vendor && typeof vendor === 'object' && vendor.userId === viewer.id;
+}
+
+function stripSensitiveFields(value: unknown, viewer: Viewer, seen: WeakSet<object>): unknown {
   if (value === null || typeof value !== 'object') {
     return value;
   }
@@ -29,17 +65,27 @@ function stripSensitiveFields(value: unknown, seen: WeakSet<object>): unknown {
   seen.add(value as object);
 
   if (Array.isArray(value)) {
-    return value.map((item) => stripSensitiveFields(item, seen));
+    return value.map((item) => stripSensitiveFields(item, viewer, seen));
   }
 
   const result: Record<string, unknown> = { ...(value as Record<string, unknown>) };
   for (const field of SENSITIVE_FIELDS) {
     delete result[field];
   }
+  if (!viewer.isAdmin && !isOwnedBy(result, viewer)) {
+    for (const field of OWNER_ONLY_FIELDS) {
+      delete result[field];
+    }
+  }
   for (const key of Object.keys(result)) {
-    result[key] = stripSensitiveFields(result[key], seen);
+    result[key] = stripSensitiveFields(result[key], viewer, seen);
   }
   return result;
+}
+
+function viewerOf(context: ExecutionContext): Viewer {
+  const user = context.switchToHttp?.()?.getRequest?.()?.user;
+  return { id: user?.id ?? user?.sub, isAdmin: user?.role === 'ADMIN' };
 }
 
 @Injectable()
@@ -51,9 +97,10 @@ export class SensitiveFieldStripInterceptor implements NestInterceptor {
   // Observable type get resolved against different physical rxjs packages
   // and TypeScript flags a spurious structural mismatch. Casting through
   // `any` is the established way this codebase already routes around it.
-  intercept(_context: ExecutionContext, next: CallHandler) {
+  intercept(context: ExecutionContext, next: CallHandler) {
+    const viewer = viewerOf(context);
     return (next.handle() as any).pipe(
-      map((data: unknown) => stripSensitiveFields(data, new WeakSet()))
+      map((data: unknown) => stripSensitiveFields(data, viewer, new WeakSet()))
     ) as any;
   }
 }

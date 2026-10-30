@@ -134,7 +134,6 @@ export class MarketplaceService {
         select: {
           id: true,
           name: true,
-          email: true,
           verified: true,
           // VENDOR_BACKLOG.md VND-016: "connect their Babalawo profile to
           // their shop" -- there's no separate BabalawoProfile model,

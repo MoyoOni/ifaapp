@@ -103,4 +103,71 @@ describe('SensitiveFieldStripInterceptor (P0-04)', () => {
 
     expect(result).toEqual(clean);
   });
+
+  describe('owner-only fields (October 30, 2026 crawl)', () => {
+    const ctxFor = (user?: { id: string; role: string }) =>
+      ({ switchToHttp: () => ({ getRequest: () => ({ user }) }) }) as unknown as ExecutionContext;
+
+    function runAs(user: { id: string; role: string } | undefined, data: unknown): Promise<any> {
+      const handler: CallHandler = { handle: () => of(data) };
+      return new Promise((resolve) => {
+        interceptor.intercept(ctxFor(user), handler).subscribe((result) => resolve(result));
+      });
+    }
+
+    const product = () => ({
+      id: 'p1',
+      name: 'Odu reading guide',
+      digitalFileUrl: 'https://drive.example/paid-file',
+      digitalFileKey: 'uploads/p1.pdf',
+      vendor: { id: 'v1', userId: 'vendor-user', businessName: 'Shop', taxId: 'TAX-1', businessLicense: 'LIC-1' },
+    });
+
+    it('hides a paid download link and vendor tax details from anonymous visitors', async () => {
+      const result = await runAs(undefined, [product()]);
+      expect(result[0].digitalFileUrl).toBeUndefined();
+      expect(result[0].vendor.taxId).toBeUndefined();
+      expect(result[0].vendor.businessLicense).toBeUndefined();
+      expect(result[0].vendor.businessName).toBe('Shop');
+      expect(result[0].name).toBe('Odu reading guide');
+    });
+
+    it('hides them from another signed-in member', async () => {
+      const result = await runAs({ id: 'someone-else', role: 'CLIENT' }, product());
+      expect(result.digitalFileUrl).toBeUndefined();
+      expect(result.vendor.taxId).toBeUndefined();
+    });
+
+    it('keeps them for the vendor who owns the product', async () => {
+      const result = await runAs({ id: 'vendor-user', role: 'VENDOR' }, product());
+      expect(result.digitalFileUrl).toBe('https://drive.example/paid-file');
+      expect(result.vendor.taxId).toBe('TAX-1');
+    });
+
+    it('keeps them for an admin', async () => {
+      const result = await runAs({ id: 'admin-1', role: 'ADMIN' }, product());
+      expect(result.digitalFileUrl).toBe('https://drive.example/paid-file');
+      expect(result.vendor.businessLicense).toBe('LIC-1');
+    });
+
+    it('keeps a bank account number only for its owner', async () => {
+      const account = { id: 'b1', userId: 'u1', bankName: 'GTBank', accountNumber: '0123456789' };
+      expect((await runAs({ id: 'u1', role: 'CLIENT' }, account)).accountNumber).toBe('0123456789');
+      expect((await runAs({ id: 'u2', role: 'CLIENT' }, account)).accountNumber).toBeUndefined();
+    });
+
+    it('never returns secrets, even to the owner or an admin', async () => {
+      const result = await runAs({ id: 'vendor-user', role: 'ADMIN' }, {
+        ...product(),
+        userId: 'vendor-user',
+        tokenHash: 'h',
+        fcmTokens: ['t'],
+        paystackEmailToken: 'pk',
+      });
+      expect(result.digitalFileKey).toBeUndefined();
+      expect(result.tokenHash).toBeUndefined();
+      expect(result.fcmTokens).toBeUndefined();
+      expect(result.paystackEmailToken).toBeUndefined();
+    });
+  });
 });
