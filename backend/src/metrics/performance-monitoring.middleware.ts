@@ -9,7 +9,9 @@ export class PerformanceMonitoringMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
     const startTime = Date.now();
     const method = req.method;
-    const url = req.url;
+    // req.url is relative to the middleware's mount path, which for a
+    // catch-all mount is the whole path -- every request was labelled "/".
+    const url = (req.originalUrl || req.url).split('?')[0];
 
     // Record the start of the request
     this.metricsService.recordRequestStart(method, url);

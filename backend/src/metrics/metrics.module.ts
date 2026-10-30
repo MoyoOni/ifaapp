@@ -17,6 +17,6 @@ export class MetricsModule implements NestModule {
         { path: 'health', method: RequestMethod.ALL },
         { path: 'api-docs', method: RequestMethod.ALL }
       )
-      .forRoutes('*');
+      .forRoutes('{*splat}');
   }
 }

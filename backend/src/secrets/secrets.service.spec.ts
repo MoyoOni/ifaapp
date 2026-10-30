@@ -82,8 +82,20 @@ describe('SecretsService', () => {
       jest.spyOn(configService, 'get').mockImplementation((key: string) => {
         if (key === 'NODE_ENV') return 'production';
         if (key === 'AWS_REGION') return 'us-east-1';
+        if (key === 'SECRETS_MANAGER_ENABLED') return 'true';
         return undefined;
       });
+    });
+
+    it('does not use Secrets Manager in production unless SECRETS_MANAGER_ENABLED=true', async () => {
+      jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+        if (key === 'NODE_ENV') return 'production';
+        if (key === 'SENTRY_DSN') return 'from-env';
+        return undefined;
+      });
+      const envOnly = new SecretsService(configService);
+      expect((envOnly as any).secretsManagerClient).toBeNull();
+      await expect(envOnly.getSecret('iluase/prod/sentry-dsn')).resolves.toBe('from-env');
     });
 
     it('should initialize AWS Secrets Manager client in production', () => {

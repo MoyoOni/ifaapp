@@ -38,6 +38,7 @@ const envSchema = z.object({
 
   // Optional services (no validation, just pass through)
   AWS_REGION: z.string().optional(),
+  SECRETS_MANAGER_ENABLED: z.enum(['true', 'false']).optional(),
   AWS_S3_BUCKET_NAME: z.string().optional(),
   AWS_ACCESS_KEY_ID: z.string().optional(),
   AWS_SECRET_ACCESS_KEY: z.string().optional(),

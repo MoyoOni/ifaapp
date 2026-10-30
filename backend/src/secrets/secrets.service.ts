@@ -8,9 +8,12 @@ export class SecretsService {
   private secretsManagerClient: SecretsManagerClient | null = null;
 
   constructor(private configService: ConfigService) {
-    // Initialize AWS Secrets Manager client for production/staging environments
+    // Opt-in. Production runs on one EC2 box whose secrets come from its
+    // environment; its role has no Secrets Manager access, so asking first only
+    // produced an AccessDenied warning on every boot before falling back.
     const nodeEnv = this.configService.get<string>('NODE_ENV');
-    if (nodeEnv === 'production' || nodeEnv === 'staging') {
+    const enabled = this.configService.get<string>('SECRETS_MANAGER_ENABLED') === 'true';
+    if (enabled && (nodeEnv === 'production' || nodeEnv === 'staging')) {
       try {
         this.secretsManagerClient = new SecretsManagerClient({
           region: this.configService.get<string>('AWS_REGION') || 'us-east-1',
@@ -22,7 +25,7 @@ export class SecretsService {
       }
     } else {
       this.logger.log(
-        'Skipping AWS Secrets Manager client initialization (not in production/staging)'
+        'AWS Secrets Manager not used (set SECRETS_MANAGER_ENABLED=true in production/staging to enable); reading secrets from the environment'
       );
     }
   }

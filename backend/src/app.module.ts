@@ -136,6 +136,6 @@ import { MaintenanceModeMiddleware } from './middleware/maintenance-mode.middlew
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(RequestIdMiddleware, MaintenanceModeMiddleware).forRoutes('*'); // Removed SentryMiddleware
+    consumer.apply(RequestIdMiddleware, MaintenanceModeMiddleware).forRoutes('{*splat}'); // Removed SentryMiddleware
   }
 }
