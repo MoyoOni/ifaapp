@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -28,7 +28,7 @@ export class ProfileCompletenessService {
     });
 
     if (!user) {
-      throw new Error('User not found');
+      throw new NotFoundException('User not found');
     }
 
     // Define profile elements and their weights

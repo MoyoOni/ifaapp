@@ -633,7 +633,7 @@ Aboru Aboye.`;
       where: { id: userId },
       select: { id: true, passwordHash: true },
     });
-    if (!user) throw new Error('User not found');
+    if (!user) throw new NotFoundException('User not found');
     // Only for Google-only accounts (passwordHash ''). This used to overwrite
     // an existing password too -- anyone holding a member's access token could
     // replace their password without knowing it. Changing one goes through

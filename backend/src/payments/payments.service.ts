@@ -8,6 +8,7 @@ import {
   Logger,
   Inject,
   forwardRef,
+  NotFoundException,
 } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
@@ -325,6 +326,14 @@ export class PaymentsService {
         return await this.verifyFlutterwavePayment(reference);
       }
     } catch (error) {
+      if (error instanceof HttpException) throw error;
+      // Paystack answers 400/404 for a reference it has never seen. That is
+      // the caller's mistake, not ours; anything else (401 = our key, 5xx,
+      // network) is a real server-side failure.
+      const providerStatus = (error as { response?: { status?: number } })?.response?.status;
+      if (providerStatus === 400 || providerStatus === 404) {
+        throw new NotFoundException('Payment reference not found');
+      }
       this.logger.error(
         `Payment verification failed: ${(error as Error).message}`,
         (error as Error).stack

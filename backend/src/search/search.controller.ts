@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Query, Body, UseGuards, BadRequestException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { SearchService } from './search.service';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
@@ -20,6 +20,9 @@ export class SearchController {
     @Query('verified') verified?: string,
     @Query('limit') limit?: string
   ) {
+    if (!query?.trim()) {
+      throw new BadRequestException('A search term (q) is required');
+    }
     return this.searchService.search(query, {
       types: types ? types.split(',') : undefined,
       location,

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards, BadRequestException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ReviewsService } from './reviews.service';
 import { CreateProductReviewDto } from './dto/create-product-review.dto';
@@ -247,7 +247,7 @@ export class ReviewsController {
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
     if (!['product', 'babalawo', 'course'].includes(type)) {
-      throw new Error('Invalid review type');
+      throw new BadRequestException('Invalid review type');
     }
     return this.reviewsService.flagReview(
       type as 'product' | 'babalawo' | 'course',

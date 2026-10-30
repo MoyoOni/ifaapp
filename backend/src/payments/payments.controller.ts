@@ -10,6 +10,8 @@ import {
   HttpCode,
   HttpStatus,
   Req,
+  NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AuthGuard } from '@nestjs/passport';
@@ -61,7 +63,7 @@ export class PaymentsController {
     });
 
     if (!user) {
-      throw new Error('User not found');
+      throw new NotFoundException('User not found');
     }
 
     // Get IP address for geolocation
@@ -194,7 +196,7 @@ export class PaymentsController {
     @CurrentUser() currentUser?: CurrentUserPayload
   ) {
     if (currentUser?.role !== 'ADMIN') {
-      throw new Error('Admin access required');
+      throw new ForbiddenException('Admin access required');
     }
 
     return this.paymentsService.getUnverifiedPayments(hours || 24);

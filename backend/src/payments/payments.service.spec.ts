@@ -1,5 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { UnauthorizedException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  UnauthorizedException,
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import * as crypto from 'crypto';
 import { PaymentsService, PaymentProvider } from './payments.service';
 import { PaystackApiService } from './paystack-api.service';
@@ -231,6 +237,24 @@ describe('PaymentsService', () => {
       expect(result.success).toBe(true);
       expect(result.amount).toBe(1000); // Converted from kobo
       expect(result.provider).toBe(PaymentProvider.PAYSTACK);
+    });
+
+    // Every failure used to become a 500, so an unknown reference read as a
+    // server bug (and now pages Sentry).
+    it('answers 404 when Paystack has never seen the reference', async () => {
+      mockPaystackApi.verifyTransaction.mockRejectedValue(
+        Object.assign(new Error('Request failed with status code 400'), { response: { status: 400 } })
+      );
+      await expect(service.verifyPayment('nope', PaymentProvider.PAYSTACK)).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('still answers 500 when Paystack rejects our own key', async () => {
+      mockPaystackApi.verifyTransaction.mockRejectedValue(
+        Object.assign(new Error('Request failed with status code 401'), { response: { status: 401 } })
+      );
+      await expect(service.verifyPayment('ref-1', PaymentProvider.PAYSTACK)).rejects.toBeInstanceOf(
+        InternalServerErrorException
+      );
     });
   });
 

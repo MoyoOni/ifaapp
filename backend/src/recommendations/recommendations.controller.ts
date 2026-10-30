@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards, ForbiddenException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { RecommendationsService } from './recommendations.service';
 import { YorubaWordService } from './yoruba-word.service';
@@ -65,7 +65,7 @@ export class RecommendationsController {
   ) {
     // Users can only view their own history
     if (currentUser.id !== userId && currentUser.role !== 'ADMIN') {
-      throw new Error('Unauthorized');
+      throw new ForbiddenException('You can only view your own word history');
     }
     return this.yorubaWordService.getUserWordHistory(userId, limit ? parseInt(limit, 10) : 30);
   }

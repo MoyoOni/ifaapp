@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, HttpException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { S3Service } from '../documents/s3.service';
@@ -64,7 +64,7 @@ export class CertificateService {
       });
 
       if (!enrollment) {
-        throw new Error('Enrollment not found');
+        throw new NotFoundException('Enrollment not found');
       }
 
       if (enrollment.status !== 'COMPLETED') {
@@ -128,6 +128,7 @@ export class CertificateService {
         // filename, // Field doesn't exist in schema
       };
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(`Failed to generate certificate for enrollment ${enrollmentId}:`, error);
       throw new Error(`Certificate generation failed: ${error}`);
     }
@@ -249,7 +250,7 @@ export class CertificateService {
     });
 
     if (!certificate) {
-      throw new Error('Certificate not found');
+      throw new NotFoundException('Certificate not found');
     }
 
     await this.prisma.courseCertificate.update({
