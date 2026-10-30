@@ -46,14 +46,13 @@ const mockPaystackApi = {
 
 jest.mock('flutterwave-node-v3', () => {
   return jest.fn().mockImplementation(() => ({
-    Payment: {
-      initialize: jest.fn(),
-    },
+    // The real SDK's shape (1.4.1): no Payment or Refund objects. The old
+    // mock had both, which hid that the service called methods that don't
+    // exist.
     Transaction: {
       verify: jest.fn(),
-    },
-    Refund: {
-      create: jest.fn(),
+      verify_by_tx: jest.fn(),
+      refund: jest.fn(),
     },
   }));
 });
@@ -184,6 +183,20 @@ describe('PaymentsService', () => {
       // that path's idempotency/outbox wiring lives entirely in
       // WalletService.depositFunds, untouched by this fix.
       expect(mockPrismaService.payment.create).not.toHaveBeenCalled();
+    });
+
+    // The SDK has no checkout call; this used to throw a TypeError (500).
+    it('tells the payer plainly that non-naira payments are not available yet', async () => {
+      await expect(
+        service.initializePayment(
+          'user-id',
+          { amount: 50, currency: Currency.USD, purpose: PaymentPurpose.WALLET_TOPUP } as any,
+          'test@example.com',
+          'Test User',
+          undefined,
+          PaymentProvider.FLUTTERWAVE
+        )
+      ).rejects.toThrow(/not available yet/);
     });
 
     it('charges what the orders cost, not the amount the client sent', async () => {
@@ -886,7 +899,8 @@ describe('PaymentsService', () => {
       });
 
       const flutterwaveClient = (service as any).flutterwaveClient;
-      flutterwaveClient.Refund.create.mockResolvedValue({
+      flutterwaveClient.Transaction.verify_by_tx.mockResolvedValue({ status: 'success', data: { id: 4242 } });
+      flutterwaveClient.Transaction.refund.mockResolvedValue({
         status: 'success',
         data: {
           tx_ref: 'ILEASE_123',
@@ -1000,7 +1014,8 @@ describe('PaymentsService', () => {
       });
 
       const flutterwaveClient = (service as any).flutterwaveClient;
-      flutterwaveClient.Refund.create.mockResolvedValue({
+      flutterwaveClient.Transaction.verify_by_tx.mockResolvedValue({ status: 'success', data: { id: 4242 } });
+      flutterwaveClient.Transaction.refund.mockResolvedValue({
         status: 'success',
         data: {
           tx_ref: 'ILEASE_AUTO',
@@ -1019,7 +1034,7 @@ describe('PaymentsService', () => {
       );
 
       expect(result.provider).toBe(PaymentProvider.FLUTTERWAVE);
-      expect(flutterwaveClient.Refund.create).toHaveBeenCalled();
+      expect(flutterwaveClient.Transaction.refund).toHaveBeenCalledWith(expect.objectContaining({ id: 4242 }));
     });
 
     it('should handle refund for transaction with different currency', async () => {
@@ -1071,7 +1086,8 @@ describe('PaymentsService', () => {
       });
 
       const flutterwaveClient = (service as any).flutterwaveClient;
-      flutterwaveClient.Refund.create.mockResolvedValue({
+      flutterwaveClient.Transaction.verify_by_tx.mockResolvedValue({ status: 'success', data: { id: 4242 } });
+      flutterwaveClient.Transaction.refund.mockResolvedValue({
         status: 'success',
         data: {
           tx_ref: 'ILEASE_456',

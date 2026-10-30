@@ -19,11 +19,13 @@ declare module 'flutterwave-node-v3' {
     };
 
     // Transaction methods
+    // Checked against the installed SDK (1.4.1) on October 30, 2026: it has
+    // no `Payment` or `Refund` objects; verification and refunds live here.
     Transaction: {
-      verify(transaction_id: string): Promise<any>;
-      getAll(): Promise<any>;
-      get(transaction_id: string): Promise<any>;
-      resendHook(transaction_id: string): Promise<any>;
+      verify(payload: { id: string | number }): Promise<any>;
+      verify_by_tx(payload: { tx_ref: string }): Promise<any>;
+      refund(payload: { id: string | number; amount?: number }): Promise<any>;
+      fetch(payload?: Record<string, unknown>): Promise<any>;
     };
 
     // Transfer methods

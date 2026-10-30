@@ -26,6 +26,9 @@ import { Payment } from '../shared/types/prisma-models';
 // here deliberately.
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const Flutterwave = require('flutterwave-node-v3');
+// Type only (erased at compile time), so the require() above stays the
+// runtime import.
+import type FlutterwaveClient from 'flutterwave-node-v3';
 import { NotificationService, NotificationType, NotificationCategory } from '../notifications/notification.service';
 import { PaystackApiService } from './paystack-api.service';
 import { captureException } from '../sentry';
@@ -49,10 +52,22 @@ export enum PaymentProvider {
  * Abstraction layer for Paystack and Flutterwave payment gateways
  * NOTE: Paystack for Nigeria, Flutterwave for African diaspora
  */
+
+/** What initializePayment stores in Payment.metadata. */
+interface PaymentMetadata {
+  userId?: string;
+  purpose?: string;
+  // The order id(s) (comma-separated), booking, enrollment or appointment paid for.
+  relatedId?: string;
+}
+
+const relatedIdOf = (payment: { metadata: unknown }): string | undefined =>
+  (payment.metadata as PaymentMetadata | null)?.relatedId;
+
 @Injectable()
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
-  private flutterwaveClient: any;
+  private flutterwaveClient: FlutterwaveClient | null = null;
 
   constructor(
     private configService: ConfigService,
@@ -262,6 +277,9 @@ export class PaymentsService {
 
       return paymentResult;
     } catch (error) {
+      // A 4xx (e.g. "not available in this currency") is the payer's answer,
+      // not a server failure.
+      if (error instanceof HttpException && error.getStatus() < 500) throw error;
       this.logger.error(
         `Payment initialization failed: ${(error as Error).message}`,
         (error as Error).stack
@@ -278,7 +296,7 @@ export class PaymentsService {
     currency: Currency,
     email: string,
     name: string,
-    metadata: any,
+    metadata: Record<string, unknown>,
     callbackUrl?: string
   ) {
     if (!this.paystackApi.isConfigured()) {
@@ -316,9 +334,9 @@ export class PaymentsService {
     currency: Currency,
     email: string,
     name: string,
-    metadata: any,
+    metadata: Record<string, unknown>,
     callbackUrl?: string
-  ) {
+  ): Promise<never> {
     if (!this.flutterwaveClient) {
       throw new BadRequestException('Flutterwave is not configured');
     }
@@ -338,17 +356,15 @@ export class PaymentsService {
       meta: metadata,
     };
 
-    const response = await this.flutterwaveClient.Payment.initialize(payload);
-
-    if (response.status !== 'success') {
-      throw new BadRequestException(response.message || 'Failed to initialize payment');
-    }
-
-    return {
-      provider: PaymentProvider.FLUTTERWAVE,
-      authorizationUrl: response.data.link,
-      reference: payload.tx_ref,
-    };
+    // flutterwave-node-v3 has no checkout call: `Payment.initialize` never
+    // existed, so this used to throw a TypeError (hidden by an `any`) and
+    // every non-naira payment failed. Flutterwave Standard checkout is a REST
+    // call (POST /v3/payments) still to be built and tested with real keys;
+    // until then say so plainly.
+    this.logger.warn(`Flutterwave checkout requested (${payload.currency} ${payload.amount}) but is not implemented`);
+    throw new BadRequestException(
+      `Payments in ${currency} are not available yet. Please pay in Nigerian Naira (NGN).`
+    );
   }
 
   /**
@@ -439,13 +455,15 @@ export class PaymentsService {
       throw new BadRequestException('Flutterwave is not configured');
     }
 
-    const response = await this.flutterwaveClient.Transaction.verify({ tx_ref: reference });
+    // verify_by_tx looks a payment up by our reference and returns one
+    // transaction (verify() takes Flutterwave's numeric id instead).
+    const response = await this.flutterwaveClient.Transaction.verify_by_tx({ tx_ref: reference });
 
     if (response.status !== 'success') {
       throw new BadRequestException(response.message || 'Payment verification failed');
     }
 
-    const transaction = response.data[0];
+    const transaction = response.data;
 
     return {
       provider: PaymentProvider.FLUTTERWAVE,
@@ -899,7 +917,7 @@ export class PaymentsService {
       if (error instanceof HttpException) {
         throw error;
       }
-      this.logger.error(`Refund failed: ${(error as any).message}`, (error as any).stack);
+      this.logger.error(`Refund failed: ${(error as Error).message}`, (error as Error).stack);
       throw new InternalServerErrorException('Refund processing failed');
     }
   }
@@ -970,12 +988,17 @@ export class PaymentsService {
       throw new BadRequestException('Flutterwave is not configured');
     }
 
-    const payload: any = { tx_ref: reference };
+    // Refunds are by Flutterwave's transaction id, looked up from our reference.
+    const found = await this.flutterwaveClient.Transaction.verify_by_tx({ tx_ref: reference });
+    if (found.status !== 'success' || !found.data?.id) {
+      throw new BadRequestException(found.message || 'Payment not found at Flutterwave');
+    }
+    const payload: { id: string | number; amount?: number } = { id: found.data.id };
     if (amount) {
       payload.amount = amount;
     }
 
-    const response = await this.flutterwaveClient.Refund.create(payload);
+    const response = await this.flutterwaveClient.Transaction.refund(payload);
 
     if (response.status !== 'success') {
       throw new BadRequestException(response.message || 'Refund failed');
@@ -992,7 +1015,7 @@ export class PaymentsService {
   /**
    * Get currency conversion rates
    */
-  async getCurrencyRates(baseCurrency?: Currency): Promise<any> {
+  async getCurrencyRates(baseCurrency?: Currency): Promise<Currency[]> {
     return this.currencyService.getSupportedCurrencies(baseCurrency || Currency.NGN);
   }
 
@@ -1004,7 +1027,7 @@ export class PaymentsService {
     from: Currency,
     to: Currency,
     includeFees: boolean = false
-  ): Promise<any> {
+  ): Promise<{ convertedAmount: number; rate: number; fees?: number }> {
     return this.currencyService.convertAmount(amount, from, to, includeFees);
   }
 
@@ -1097,7 +1120,7 @@ export class PaymentsService {
         break;
 
       case PaymentPurpose.BOOKING:
-        const appointmentId = (payment.metadata as any)?.relatedId;
+        const appointmentId = relatedIdOf(payment);
         if (appointmentId) {
           const appointment = await this.prisma.appointment.findUnique({
             where: { id: appointmentId },
@@ -1132,7 +1155,7 @@ export class PaymentsService {
         break;
 
       case PaymentPurpose.COURSE_ENROLLMENT:
-        const enrollmentId = (payment.metadata as any)?.relatedId;
+        const enrollmentId = relatedIdOf(payment);
         if (enrollmentId) {
           await this.prisma.enrollment.update({
             where: { id: enrollmentId },
@@ -1146,7 +1169,7 @@ export class PaymentsService {
         break;
 
       case PaymentPurpose.MENTORSHIP_SESSION: {
-        const bookingId = (payment.metadata as any)?.relatedId;
+        const bookingId = relatedIdOf(payment);
         if (bookingId) {
           await this.mentorshipService.markPaid(bookingId, {
             userId: payment.userId,
@@ -1171,7 +1194,7 @@ export class PaymentsService {
    */
   private async processMarketplaceOrderPayment(payment: Payment) {
     // relatedId is stored in metadata for multi-vendor orders
-    const metadata = payment.metadata as any;
+    const metadata = payment.metadata as PaymentMetadata | null;
     const orderIds = metadata?.relatedId?.split(',').filter(Boolean) || [];
 
     if (orderIds.length === 0) {
@@ -1319,7 +1342,7 @@ export class PaymentsService {
           currency: order.currency,
         });
       } catch (error) {
-        this.logger.error(`Failed to process order ${orderId}: ${(error as any).message}`);
+        this.logger.error(`Failed to process order ${orderId}: ${(error as Error).message}`);
         // Continue processing other orders even if one fails
       }
     }
