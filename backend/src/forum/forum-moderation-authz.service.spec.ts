@@ -6,6 +6,7 @@ import { MessagingGateway } from '../messaging/messaging.gateway';
 import { NotificationService } from '../notifications/notification.service';
 import { EmailService } from '../notifications/email.service';
 import { CrisisDetectionService } from '../shared/services/crisis-detection.service';
+import { ContentFlagMatcherService } from '../shared/services/content-flag-matcher.service';
 import { UsersService } from '../users/users.service';
 
 // Covers only the moderator sub-role authorization change made alongside
@@ -41,6 +42,7 @@ describe('ForumService moderation authorization', () => {
         { provide: NotificationService, useValue: { createNotification: jest.fn() } },
         { provide: EmailService, useValue: {} },
         { provide: CrisisDetectionService, useValue: { detect: jest.fn().mockReturnValue(false) } },
+        { provide: ContentFlagMatcherService, useValue: { match: jest.fn().mockResolvedValue(null) } },
         { provide: UsersService, useValue: { awardXP: jest.fn() } },
       ],
     }).compile();

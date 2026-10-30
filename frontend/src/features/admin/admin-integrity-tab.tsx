@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { ShieldAlert, CheckCircle, XCircle, Plus, Trash2, ToggleLeft, ToggleRight, Tag, Settings } from 'lucide-react';
+import { ShieldAlert, CheckCircle, XCircle, Plus, Trash2, ToggleLeft, ToggleRight, Tag, Settings, EyeOff } from 'lucide-react';
 
 const fmt = new Intl.DateTimeFormat('en-NG', { dateStyle: 'medium', timeStyle: 'short' });
 
-type View = 'queue' | 'rules';
+type View = 'queue' | 'flagged' | 'rules';
 
 interface HeldPost {
   id: string;
@@ -21,6 +21,23 @@ interface QueueResponse {
   total: number;
   page: number;
   pages: number;
+}
+
+// FOR-001: live posts that matched a flag rule. They stay published until an
+// admin hides them (owner's decision, October 30, 2026).
+interface FlaggedPost {
+  source: 'forum' | 'circle';
+  id: string;
+  content: string;
+  flagMatch: string;
+  createdAt: string;
+  author: { id: string; name: string; avatar?: string };
+  where: { id: string; title: string };
+}
+
+interface FlaggedResponse {
+  items: FlaggedPost[];
+  total: number;
 }
 
 interface FlagRule {
@@ -130,6 +147,18 @@ export function AdminIntegrityTab() {
     enabled: view === 'queue',
   });
 
+  // Always fetched, so the count shows on its tab.
+  const { data: flagged, isLoading: flaggedLoading } = useQuery<FlaggedResponse>({
+    queryKey: ['admin', 'integrity', 'flagged'],
+    queryFn: () => api.get('/admin/integrity/flagged').then((r) => r.data),
+  });
+
+  const resolveFlaggedMutation = useMutation({
+    mutationFn: ({ post, action }: { post: FlaggedPost; action: 'clear' | 'hide' }) =>
+      api.post(`/admin/integrity/flagged/${post.source}/${post.id}/${action}`).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'integrity', 'flagged'] }),
+  });
+
   const { data: rules, isLoading: rulesLoading } = useQuery<FlagRule[]>({
     queryKey: ['admin', 'integrity', 'rules'],
     queryFn: () => api.get('/admin/integrity/rules').then((r) => r.data),
@@ -191,7 +220,7 @@ export function AdminIntegrityTab() {
         <div>
           <h2 className="text-xl font-semibold flex items-center gap-2"><ShieldAlert className="w-5 h-5" /> Cultural Integrity</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Review held posts and manage auto-flagging rules.
+            Review held posts, posts that matched a flag rule, and the rules themselves.
             {queue && view === 'queue' && queue.total > 0 && (
               <span className="ml-2 bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded-full">{queue.total} awaiting review</span>
             )}
@@ -201,10 +230,13 @@ export function AdminIntegrityTab() {
 
       {/* Tabs */}
       <div className="flex gap-2 border-b border-border">
-        {([['queue', 'Review Queue'], ['rules', 'Flag Rules']] as [View, string][]).map(([v, label]) => (
+        {([['queue', 'Review Queue'], ['flagged', 'Matched a Rule'], ['rules', 'Flag Rules']] as [View, string][]).map(([v, label]) => (
           <button key={v} type="button" onClick={() => setView(v)}
             className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${view === v ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
             {label}
+            {v === 'flagged' && !!flagged?.total && (
+              <span className="ml-2 bg-warning/15 text-foreground text-xs font-medium px-1.5 py-0.5 rounded-full">{flagged.total}</span>
+            )}
           </button>
         ))}
       </div>
@@ -273,6 +305,57 @@ export function AdminIntegrityTab() {
                 </div>
               )}
             </>
+          )}
+        </div>
+      )}
+
+      {/* Matched a rule */}
+      {view === 'flagged' && (
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            These posts are live. Each matched one of your flag rules; clear the flag if it is fine, or hide the post.
+          </p>
+          {flaggedLoading ? (
+            <p className="text-center text-sm text-muted-foreground py-12">Loading…</p>
+          ) : !flagged?.items.length ? (
+            <div className="border border-border rounded-lg px-4 py-12 text-center">
+              <CheckCircle className="w-8 h-8 text-success mx-auto mb-2" />
+              <p className="font-medium">Nothing to review</p>
+              <p className="text-sm text-muted-foreground">No live posts have matched a flag rule.</p>
+            </div>
+          ) : (
+            flagged.items.map((post) => (
+              <div key={`${post.source}-${post.id}`} className="border border-border rounded-lg p-4 space-y-3">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                  <span className="font-medium text-foreground">{post.author.name}</span>
+                  <span>·</span>
+                  <span>{post.source === 'forum' ? 'Forum' : 'Circle'}</span>
+                  <span>·</span>
+                  <span>{fmt.format(new Date(post.createdAt))}</span>
+                </div>
+                <p className="text-sm font-medium text-muted-foreground">in: {post.where.title}</p>
+                <p className="text-sm text-foreground line-clamp-4 whitespace-pre-wrap">{post.content}</p>
+                <p className="text-xs text-foreground bg-warning/10 rounded px-2 py-1">Matched: {post.flagMatch}</p>
+                <div className="flex gap-2 justify-end">
+                  <button
+                    type="button"
+                    onClick={() => resolveFlaggedMutation.mutate({ post, action: 'hide' })}
+                    disabled={resolveFlaggedMutation.isPending}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-destructive/40 text-destructive rounded hover:bg-destructive/10 disabled:opacity-50"
+                  >
+                    <EyeOff className="w-3.5 h-3.5" /> Hide Post
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => resolveFlaggedMutation.mutate({ post, action: 'clear' })}
+                    disabled={resolveFlaggedMutation.isPending}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-foreground text-background rounded hover:opacity-90 disabled:opacity-50"
+                  >
+                    <CheckCircle className="w-3.5 h-3.5" /> Looks Fine
+                  </button>
+                </div>
+              </div>
+            ))
           )}
         </div>
       )}

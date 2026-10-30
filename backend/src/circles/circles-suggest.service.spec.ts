@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CirclesService } from './circles.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CrisisDetectionService } from '../shared/services/crisis-detection.service';
+import { ContentFlagMatcherService } from '../shared/services/content-flag-matcher.service';
 import { NotificationService } from '../notifications/notification.service';
 
 // Focused spec for suggestCircle() (whole-app audit Phase 3d) -- the main
@@ -25,6 +26,7 @@ describe('CirclesService.suggestCircle', () => {
         CirclesService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: CrisisDetectionService, useValue: {} },
+        { provide: ContentFlagMatcherService, useValue: { match: jest.fn().mockResolvedValue(null) } },
         { provide: NotificationService, useValue: {} },
       ],
     }).compile();

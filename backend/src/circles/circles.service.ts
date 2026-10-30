@@ -10,6 +10,7 @@ import { CreateCircleDto } from './dto/create-circle.dto';
 import { UpdateCircleDto } from './dto/update-circle.dto';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { CrisisDetectionService } from '../shared/services/crisis-detection.service';
+import { ContentFlagMatcherService } from '../shared/services/content-flag-matcher.service';
 import {
   NotificationService,
   NotificationType,
@@ -27,7 +28,8 @@ export class CirclesService {
   constructor(
     private prisma: PrismaService,
     private readonly crisisDetection: CrisisDetectionService,
-    private readonly notificationService: NotificationService
+    private readonly notificationService: NotificationService,
+    private readonly flagMatcher: ContentFlagMatcherService
   ) {}
 
   // COMMUNITY_BACKLOG.md FOR-015: mirrors ForumService's private notifyAdmins
@@ -849,6 +851,8 @@ export class CirclesService {
         content,
         patronOnly,
         hasCrisisSignal: crisisDetected,
+        // FOR-001: stays visible; a match only queues it in the Integrity tab.
+        flagMatch: await this.flagMatcher.match(content),
       },
       include: {
         author: { select: { id: true, name: true, avatar: true, role: true } },

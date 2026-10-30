@@ -3,6 +3,7 @@ import { NotFoundException } from '@nestjs/common';
 import { AdminIntegrityService } from './admin-integrity.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from './audit.service';
+import { ContentFlagMatcherService } from '../shared/services/content-flag-matcher.service';
 
 // P0-03: deleteRule() had zero test coverage and never logged its
 // deletions anywhere queryable before this fix.
@@ -29,6 +30,7 @@ describe('AdminIntegrityService', () => {
         AdminIntegrityService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: AuditService, useValue: mockAuditService },
+        { provide: ContentFlagMatcherService, useValue: { invalidate: jest.fn() } },
       ],
     }).compile();
 

@@ -12,6 +12,7 @@ import {
   Logger,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard, AdminRoles } from '../auth/guards/roles.guard';
@@ -1291,6 +1292,27 @@ export class AdminController {
     @CurrentUser() admin: CurrentUserPayload
   ) {
     return this.integrityService.rejectPost(postId, admin, dto);
+  }
+
+  // FOR-001: live posts that matched a flag rule.
+  @Get('integrity/flagged')
+  @Roles(UserRole.ADMIN)
+  async getFlaggedPosts() {
+    return this.integrityService.getFlagged();
+  }
+
+  @Post('integrity/flagged/:source/:postId/:action')
+  @Roles(UserRole.ADMIN)
+  async resolveFlaggedPost(
+    @Param('source') source: string,
+    @Param('postId') postId: string,
+    @Param('action') action: string,
+    @CurrentUser() admin: CurrentUserPayload
+  ) {
+    if (action !== 'clear' && action !== 'hide') {
+      throw new BadRequestException('action must be clear or hide');
+    }
+    return this.integrityService.resolveFlagged(source, postId, action, admin);
   }
 
   @Get('integrity/rules')

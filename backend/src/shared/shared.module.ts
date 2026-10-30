@@ -11,6 +11,7 @@ import { PiiMaskingUtil } from './utils/pii-masking.util';
 import { AuditInterceptor } from './interceptors/audit.interceptor';
 import { JwtAuthGuard } from './guards/auth.guard';
 import { CrisisDetectionService } from './services/crisis-detection.service';
+import { ContentFlagMatcherService } from './services/content-flag-matcher.service';
 
 @Global()
 @Module({
@@ -35,6 +36,7 @@ import { CrisisDetectionService } from './services/crisis-detection.service';
     JwtAuthGuard,
     SesEmailService,
     CrisisDetectionService,
+    ContentFlagMatcherService,
   ],
   exports: [
     Reflector,
@@ -46,6 +48,7 @@ import { CrisisDetectionService } from './services/crisis-detection.service';
     JwtAuthGuard,
     SesEmailService,
     CrisisDetectionService,
+    ContentFlagMatcherService,
   ],
 })
 export class SharedModule {}

@@ -47,7 +47,9 @@ export class AdminMorningBriefService {
       this.financeService.getPendingPayoutsTotal(),
       (async () => {
         const result = await this.integrityService.getQueue(1, 1);
-        return typeof result.total === 'number' ? result.total : 0;
+        const held = typeof result.total === 'number' ? result.total : 0;
+        // FOR-001: live posts that matched a flag rule wait in the same tab.
+        return held + (await this.integrityService.countFlagged());
       })(),
       (async () => {
         const result = await this.complaintsService.getComplaints(admin, 'PENDING', 1, 1000);

@@ -189,8 +189,8 @@ export class ForumController {
   }
 
   @Get('posts/:id')
-  async findPostById(@Param('id') id: string) {
-    return this.forumService.findPostById(id);
+  async findPostById(@Param('id') id: string, @CurrentUser() currentUser?: CurrentUserPayload) {
+    return this.forumService.findPostById(id, currentUser);
   }
 
   @Post('posts')

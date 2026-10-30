@@ -5,6 +5,7 @@ import { MessagingGateway } from '../messaging/messaging.gateway';
 import { NotificationService } from '../notifications/notification.service';
 import { EmailService } from '../notifications/email.service';
 import { CrisisDetectionService } from '../shared/services/crisis-detection.service';
+import { ContentFlagMatcherService } from '../shared/services/content-flag-matcher.service';
 import { UsersService } from '../users/users.service';
 
 // COMMUNITY_BACKLOG.md FOR-004: "Structured thread series for core concepts"
@@ -39,6 +40,7 @@ describe('ForumService — learning pathways (COMMUNITY_BACKLOG.md FOR-004)', ()
         { provide: NotificationService, useValue: { createNotification: jest.fn() } },
         { provide: EmailService, useValue: {} },
         { provide: CrisisDetectionService, useValue: { detect: jest.fn().mockReturnValue(false) } },
+        { provide: ContentFlagMatcherService, useValue: { match: jest.fn().mockResolvedValue(null) } },
         { provide: UsersService, useValue: { awardXP: jest.fn() } },
       ],
     }).compile();

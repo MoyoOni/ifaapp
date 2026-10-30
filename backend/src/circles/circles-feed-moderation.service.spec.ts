@@ -3,6 +3,7 @@ import { ForbiddenException, NotFoundException, BadRequestException } from '@nes
 import { CirclesService } from './circles.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CrisisDetectionService } from '../shared/services/crisis-detection.service';
+import { ContentFlagMatcherService } from '../shared/services/content-flag-matcher.service';
 import { NotificationService } from '../notifications/notification.service';
 
 // COMMUNITY_BACKLOG.md FOR-005 (platform owner decision, July 29, 2026):
@@ -41,6 +42,7 @@ describe('CirclesService feed moderation', () => {
         CirclesService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: CrisisDetectionService, useValue: { detect: jest.fn().mockReturnValue(false) } },
+        { provide: ContentFlagMatcherService, useValue: { match: jest.fn().mockResolvedValue(null) } },
         { provide: NotificationService, useValue: mockNotificationService },
       ],
     }).compile();

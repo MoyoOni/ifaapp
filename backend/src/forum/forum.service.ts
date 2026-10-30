@@ -25,6 +25,7 @@ import {
 } from '../notifications/notification.service';
 import { EmailService } from '../notifications/email.service';
 import { CrisisDetectionService } from '../shared/services/crisis-detection.service';
+import { ContentFlagMatcherService } from '../shared/services/content-flag-matcher.service';
 import { UsersService } from '../users/users.service';
 import { inSeasonEventWhere } from '../marketplace/seasonal-event-reminder.service';
 
@@ -35,6 +36,9 @@ export class ForumService {
   // COMMUNITY_BACKLOG.md FOR-002: shared between the thread- and reply-
   // creation crisis-flagging blocks below so the reason text on
   // heldForReview posts is always identical, not two copies that could drift.
+  // Statuses a moderator uses to take a post down; never shown to members.
+  private static readonly REMOVED_STATUSES = [PostStatus.DELETED, PostStatus.HIDDEN, 'REJECTED'];
+
   private static readonly CRISIS_REVIEW_REASON =
     'Automatic crisis-keyword detection -- pending welfare review';
 
@@ -45,7 +49,8 @@ export class ForumService {
     private readonly notificationService: NotificationService,
     private readonly emailService: EmailService,
     private readonly crisisDetection: CrisisDetectionService,
-    private readonly usersService: UsersService
+    private readonly usersService: UsersService,
+    private readonly flagMatcher: ContentFlagMatcherService
   ) {}
 
   // ==================== Categories ====================
@@ -544,6 +549,10 @@ Share your reflections, questions, and experiences below. All levels welcome.
         authorId: currentUser.id,
         content: dto.content,
         status: PostStatus.ACTIVE,
+        // FOR-001: published as normal; a match only queues it for review.
+        flagMatch: await this.flagMatcher.match(`${dto.title}\n${dto.content}`, {
+          categoryId: dto.categoryId,
+        }),
       },
     });
 
@@ -845,7 +854,10 @@ Share your reflections, questions, and experiences below. All levels welcome.
     const posts = await this.prisma.forumPost.findMany({
       where: {
         threadId,
-        status: { not: PostStatus.DELETED },
+        // Moderators hide a post with status HIDDEN (reports, elder flags) or
+        // REJECTED (integrity queue). Until October 30, 2026 only DELETED was
+        // filtered here, so hidden and rejected posts stayed visible to all.
+        status: isAdmin ? { not: PostStatus.DELETED } : { notIn: ForumService.REMOVED_STATUSES },
         ...(isAdmin
           ? {}
           : {
@@ -911,7 +923,7 @@ Share your reflections, questions, and experiences below. All levels welcome.
     });
   }
 
-  async findPostById(id: string) {
+  async findPostById(id: string, currentUser?: CurrentUserPayload) {
     const post = await this.prisma.forumPost.findUnique({
       where: { id },
       include: {
@@ -957,6 +969,11 @@ Share your reflections, questions, and experiences below. All levels welcome.
 
     if (!post || post.status === PostStatus.DELETED) {
       throw new NotFoundException('Post not found');
+    }
+    if (currentUser?.role !== 'ADMIN') {
+      const removed = ForumService.REMOVED_STATUSES.includes(post.status);
+      const heldFromViewer = post.heldForReview && post.authorId !== currentUser?.id;
+      if (removed || heldFromViewer) throw new NotFoundException('Post not found');
     }
 
     return post;
@@ -1030,6 +1047,7 @@ Share your reflections, questions, and experiences below. All levels welcome.
         postTag: dto.postTag,
         isFirstResponder,
         status: PostStatus.ACTIVE,
+        flagMatch: await this.flagMatcher.match(dto.content, { categoryId: thread.categoryId }),
       },
       include: {
         author: {
@@ -1235,6 +1253,15 @@ Share your reflections, questions, and experiences below. All levels welcome.
     if (post.authorId !== currentUser.id && currentUser.role !== 'ADMIN') {
       throw new ForbiddenException('You can only update your own posts');
     }
+    // Editing used to set status EDITED unconditionally, which put a post a
+    // moderator had hidden or rejected straight back on the page.
+    if (ForumService.REMOVED_STATUSES.includes(post.status)) {
+      throw new NotFoundException('Post not found');
+    }
+
+    // FOR-001: an edit can turn a clean post into one that matches a rule.
+    const flagMatch = dto.content ? await this.flagMatcher.match(dto.content) : null;
+    const newlyFlagged = !!flagMatch && flagMatch !== post.flagMatch;
 
     // Update post
     return this.prisma.forumPost.update({
@@ -1244,6 +1271,7 @@ Share your reflections, questions, and experiences below. All levels welcome.
         isEdited: true,
         editedAt: new Date(),
         status: PostStatus.EDITED,
+        ...(newlyFlagged ? { flagMatch, flagReviewedAt: null, flagReviewedBy: null } : {}),
       },
       include: {
         author: {

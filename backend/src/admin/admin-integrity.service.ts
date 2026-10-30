@@ -5,12 +5,14 @@ import { RejectPostDto } from './dto/reject-post.dto';
 import { CreateFlagRuleDto } from './dto/create-flag-rule.dto';
 import { UpdateFlagRuleDto } from './dto/update-flag-rule.dto';
 import { AuditService } from './audit.service';
+import { ContentFlagMatcherService } from '../shared/services/content-flag-matcher.service';
 
 @Injectable()
 export class AdminIntegrityService {
   constructor(
     private prisma: PrismaService,
-    private auditService: AuditService
+    private auditService: AuditService,
+    private flagMatcher: ContentFlagMatcherService
   ) {}
 
   // ===== Review Queue =====
@@ -88,6 +90,96 @@ export class AdminIntegrityService {
     });
   }
 
+  // ===== Rule matches (FOR-001) =====
+
+  // Posts that matched a ContentFlagRule. Unlike the held queue above these
+  // are live on the site (owner's "publish and flag" decision); an admin
+  // either clears the flag or hides the post.
+  private static readonly FORUM_FLAGGED_WHERE = {
+    flagMatch: { not: null },
+    flagReviewedAt: null,
+    status: { notIn: ['DELETED', 'HIDDEN', 'REJECTED'] },
+  };
+  private static readonly CIRCLE_FLAGGED_WHERE = {
+    flagMatch: { not: null },
+    flagReviewedAt: null,
+    status: 'VISIBLE',
+  };
+
+  async countFlagged(): Promise<number> {
+    const [forum, circle] = await Promise.all([
+      this.prisma.forumPost.count({ where: AdminIntegrityService.FORUM_FLAGGED_WHERE }),
+      this.prisma.circleFeedPost.count({ where: AdminIntegrityService.CIRCLE_FLAGGED_WHERE }),
+    ]);
+    return forum + circle;
+  }
+
+  async getFlagged(limit = 100) {
+    const author = { select: { id: true, name: true, avatar: true } };
+    const [forum, circle, total] = await Promise.all([
+      this.prisma.forumPost.findMany({
+        where: AdminIntegrityService.FORUM_FLAGGED_WHERE,
+        include: { author, thread: { select: { id: true, title: true } } },
+        orderBy: { createdAt: 'asc' },
+        take: limit,
+      }),
+      this.prisma.circleFeedPost.findMany({
+        where: AdminIntegrityService.CIRCLE_FLAGGED_WHERE,
+        include: { author, circle: { select: { id: true, name: true } } },
+        orderBy: { createdAt: 'asc' },
+        take: limit,
+      }),
+      this.countFlagged(),
+    ]);
+    const items = [
+      ...forum.map((p) => ({
+        source: 'forum' as const,
+        id: p.id,
+        content: p.content,
+        flagMatch: p.flagMatch,
+        createdAt: p.createdAt,
+        author: p.author,
+        where: { id: p.thread.id, title: p.thread.title },
+      })),
+      ...circle.map((p) => ({
+        source: 'circle' as const,
+        id: p.id,
+        content: p.content,
+        flagMatch: p.flagMatch,
+        createdAt: p.createdAt,
+        author: p.author,
+        where: { id: p.circle.id, title: p.circle.name },
+      })),
+    ].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+    return { items, total };
+  }
+
+  async resolveFlagged(
+    source: string,
+    postId: string,
+    action: 'clear' | 'hide',
+    admin: CurrentUserPayload
+  ) {
+    const reviewed = { flagReviewedAt: new Date(), flagReviewedBy: admin.id };
+    if (source === 'forum') {
+      const post = await this.prisma.forumPost.findUnique({ where: { id: postId } });
+      if (!post || !post.flagMatch) throw new NotFoundException('Flagged post not found');
+      return this.prisma.forumPost.update({
+        where: { id: postId },
+        data: { ...reviewed, ...(action === 'hide' ? { status: 'HIDDEN' } : {}) },
+      });
+    }
+    if (source === 'circle') {
+      const post = await this.prisma.circleFeedPost.findUnique({ where: { id: postId } });
+      if (!post || !post.flagMatch) throw new NotFoundException('Flagged post not found');
+      return this.prisma.circleFeedPost.update({
+        where: { id: postId },
+        data: { ...reviewed, ...(action === 'hide' ? { status: 'HIDDEN' } : {}) },
+      });
+    }
+    throw new BadRequestException('source must be forum or circle');
+  }
+
   // ===== Flag Rules =====
 
   async getRules() {
@@ -100,6 +192,7 @@ export class AdminIntegrityService {
   }
 
   async createRule(dto: CreateFlagRuleDto, admin: CurrentUserPayload) {
+    this.flagMatcher.invalidate();
     return this.prisma.contentFlagRule.create({
       data: {
         type: dto.type,
@@ -114,6 +207,7 @@ export class AdminIntegrityService {
     const rule = await this.prisma.contentFlagRule.findUnique({ where: { id } });
     if (!rule) throw new NotFoundException('Flag rule not found');
 
+    this.flagMatcher.invalidate();
     return this.prisma.contentFlagRule.update({
       where: { id },
       data: { isActive: dto.isActive },
@@ -124,6 +218,7 @@ export class AdminIntegrityService {
     const rule = await this.prisma.contentFlagRule.findUnique({ where: { id } });
     if (!rule) throw new NotFoundException('Flag rule not found');
     const deleted = await this.prisma.contentFlagRule.delete({ where: { id } });
+    this.flagMatcher.invalidate();
 
     // P0-03: real queryable audit trail for hard deletes, not just a log line.
     await this.auditService.logAction({

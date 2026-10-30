@@ -3,6 +3,7 @@ import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { CirclesService } from './circles.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CrisisDetectionService } from '../shared/services/crisis-detection.service';
+import { ContentFlagMatcherService } from '../shared/services/content-flag-matcher.service';
 import { NotificationService } from '../notifications/notification.service';
 
 // Focused spec for the circle feed like/comment methods (whole-app audit
@@ -41,6 +42,7 @@ describe('CirclesService feed reactions', () => {
         CirclesService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: CrisisDetectionService, useValue: { detect: jest.fn().mockReturnValue(false) } },
+        { provide: ContentFlagMatcherService, useValue: { match: jest.fn().mockResolvedValue(null) } },
         { provide: NotificationService, useValue: {} },
       ],
     }).compile();

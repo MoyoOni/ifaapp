@@ -821,6 +821,12 @@ model ForumPost {
   isFirstResponder Boolean              @default(false)
   postTag          String?
   heldForReview    Boolean              @default(false)
+  // FOR-001: the active ContentFlagRule this post matched when posted or
+  // edited. The post stays visible (owner's decision, October 30, 2026);
+  // it waits in the Integrity tab until an admin clears or hides it.
+  flagMatch        String?
+  flagReviewedBy   String?
+  flagReviewedAt   DateTime?
   reviewReason     String?
   reviewedBy       String?
   reviewedAt       DateTime?
@@ -2245,6 +2251,11 @@ model CircleFeedPost {
   // suspend/archive existed, no way to act on a single post.
   status  String             @default("VISIBLE") // VISIBLE | HIDDEN
   reports CircleFeedReport[]
+
+  // FOR-001: same as ForumPost.flagMatch.
+  flagMatch      String?
+  flagReviewedBy String?
+  flagReviewedAt DateTime?
 
   @@index([circleId])
   @@index([authorId])
