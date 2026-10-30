@@ -11,6 +11,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { ResolveCrisisSignalDto } from './dto/crisis-follow-up.dto';
 import { ForumService } from './forum.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { CreateThreadDto } from './dto/create-thread.dto';
@@ -526,6 +527,45 @@ export class ForumController {
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
     return this.forumService.clearCrisisSignal(postId, source || 'forum', currentUser);
+  }
+
+  // Z1-803: claim / resolve-with-outcome / history for the crisis queue.
+  @Get('admin/crisis-signals/history')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async getCrisisFollowUpHistory(@Query('page') page?: string, @Query('limit') limit?: string) {
+    return this.forumService.getCrisisFollowUpHistory(
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 20
+    );
+  }
+
+  @Patch('admin/crisis-signals/:postId/claim')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async claimCrisisSignal(
+    @Param('postId') postId: string,
+    @Query('source') source: 'forum' | 'circle' | undefined,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.forumService.claimCrisisSignal(postId, source === 'circle' ? 'circle' : 'forum', currentUser);
+  }
+
+  @Patch('admin/crisis-signals/:postId/resolve')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async resolveCrisisSignal(
+    @Param('postId') postId: string,
+    @Query('source') source: 'forum' | 'circle' | undefined,
+    @Body() dto: ResolveCrisisSignalDto,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.forumService.resolveCrisisSignal(
+      postId,
+      source === 'circle' ? 'circle' : 'forum',
+      dto,
+      currentUser
+    );
   }
 
   @Post('live-sessions')

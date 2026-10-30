@@ -23,6 +23,7 @@ interface MorningBrief {
     withdrawals: number;
     reports: number;
     disputes: number;
+    crisisSignals: number;
     total: number;
   };
   revenue: {
@@ -265,6 +266,13 @@ const AdminMorningBriefTab: React.FC<AdminMorningBriefTabProps> = ({ onNavigate 
             Action Required
           </h3>
           <div className="space-y-2">
+            <ActionCard
+              label="Crisis Flags"
+              count={pendingActions.crisisSignals}
+              icon={AlertTriangle}
+              urgency={pendingActions.crisisSignals > 0 ? 'high' : 'low'}
+              onNavigate={pendingActions.crisisSignals > 0 ? () => onNavigate?.('crisis-alerts') : undefined}
+            />
             <ActionCard
               label="Verification Applications"
               count={pendingActions.verifications}

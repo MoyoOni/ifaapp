@@ -206,16 +206,19 @@ model User {
   onboardingEmails OnboardingEmail[] @relation("OnboardingEmailUser")
 
   // Additional relations for other models
-  userBadges          UserBadge[]          @relation("UserBadges")
-  badgeAwarder        UserBadge[]          @relation("BadgeAwarder")
-  flagRuleCreator     ContentFlagRule[]    @relation("FlagRuleCreator")
-  campaignCreator     EmailCampaign[]      @relation("CampaignCreator")
-  promoCodeCreator    PromoCode[]          @relation("PromoCodeCreator")
-  promoRedemptions    PromoRedemption[]    @relation("PromoRedemptions")
-  userSessions        UserSession[]        @relation("UserSessions")
-  passwordResetTokens PasswordResetToken[]
-  emailChangeTokens   EmailChangeToken[]
-  avatarImage         UserAvatar?
+  userBadges              UserBadge[]          @relation("UserBadges")
+  badgeAwarder            UserBadge[]          @relation("BadgeAwarder")
+  flagRuleCreator         ContentFlagRule[]    @relation("FlagRuleCreator")
+  campaignCreator         EmailCampaign[]      @relation("CampaignCreator")
+  promoCodeCreator        PromoCode[]          @relation("PromoCodeCreator")
+  promoRedemptions        PromoRedemption[]    @relation("PromoRedemptions")
+  userSessions            UserSession[]        @relation("UserSessions")
+  passwordResetTokens     PasswordResetToken[]
+  emailChangeTokens       EmailChangeToken[]
+  avatarImage             UserAvatar?
+  crisisFollowUpsAbout    CrisisFollowUp[]     @relation("CrisisFollowUpAuthor")
+  crisisFollowUpsClaimed  CrisisFollowUp[]     @relation("CrisisFollowUpClaimedBy")
+  crisisFollowUpsResolved CrisisFollowUp[]     @relation("CrisisFollowUpResolvedBy")
 
   // COMMUNITY_BACKLOG.md FOR-Q2: Community Member Directory -- opt-in only,
   // default false (privacy-first). Deliberately a new dedicated flag rather
@@ -3277,4 +3280,31 @@ model UserAvatar {
   updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Z1-803: an admin's follow-up on a crisis-flagged forum or circle post.
+// Admin-only by design: wellbeing check-ins (FOR-017) stay consent-based, so a
+// keyword flag never puts a member in front of community carers. Created when
+// an admin claims the flag (or resolves it unclaimed); one per post.
+model CrisisFollowUp {
+  id           String    @id @default(uuid())
+  source       String // forum | circle
+  postId       String
+  authorId     String
+  status       String    @default("CLAIMED") // CLAIMED | RESOLVED
+  claimedById  String?
+  claimedAt    DateTime?
+  outcome      String? // REACHED_OUT | REFERRED | NO_RESPONSE | FALSE_ALARM
+  note         String?
+  resolvedById String?
+  resolvedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  author     User  @relation("CrisisFollowUpAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  claimedBy  User? @relation("CrisisFollowUpClaimedBy", fields: [claimedById], references: [id], onDelete: SetNull)
+  resolvedBy User? @relation("CrisisFollowUpResolvedBy", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  @@unique([source, postId])
+  @@index([status])
 }

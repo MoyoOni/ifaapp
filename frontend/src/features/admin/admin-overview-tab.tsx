@@ -51,7 +51,16 @@ const MorningBriefing: React.FC<{
         staleTime: 120000,
     });
 
+    // Z1-803: open crisis flags. This said "All clear" while one waited.
+    const { data: crisisCount } = useQuery<number>({
+        queryKey: ['admin-crisis-signals-count'],
+        queryFn: async () => (await api.get('/forum/admin/crisis-signals?limit=1')).data?.total ?? 0,
+        enabled: !isDevModeActive(),
+        staleTime: 120000,
+    });
+
     const urgentItems = [
+        (crisisCount ?? 0) > 0 && { label: 'Crisis flags', count: crisisCount!, color: 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20' },
         pendingVerifications > 0 && { label: 'Pending verifications', count: pendingVerifications, color: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20' },
         (openDisputes ?? 0) > 0 && { label: 'Open disputes', count: openDisputes!, color: 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20' },
         (reportedCount ?? 0) > 0 && { label: 'Reported content', count: reportedCount!, color: 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20' },

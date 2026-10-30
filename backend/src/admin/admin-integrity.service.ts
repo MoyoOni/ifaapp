@@ -15,11 +15,17 @@ export class AdminIntegrityService {
 
   // ===== Review Queue =====
 
+  // Crisis-flagged posts are held too, but they're handled in the crisis
+  // queue (forum.service.ts resolveCrisisSignal, which also lifts the hold).
+  // Listing them here as well double-counted them in the morning brief and let
+  // a moderator reject a distress post with no welfare follow-up.
+  private static readonly QUEUE_WHERE = { heldForReview: true, hasCrisisSignal: false };
+
   async getQueue(page: number = 1, limit: number = 20) {
     const skip = (page - 1) * limit;
     const [items, total] = await Promise.all([
       this.prisma.forumPost.findMany({
-        where: { heldForReview: true },
+        where: AdminIntegrityService.QUEUE_WHERE,
         include: {
           author: {
             select: { id: true, name: true, email: true, avatar: true, culturalLevel: true },
@@ -32,7 +38,7 @@ export class AdminIntegrityService {
         skip,
         take: limit,
       }),
-      this.prisma.forumPost.count({ where: { heldForReview: true } }),
+      this.prisma.forumPost.count({ where: AdminIntegrityService.QUEUE_WHERE }),
     ]);
 
     return {
@@ -47,6 +53,9 @@ export class AdminIntegrityService {
     const post = await this.prisma.forumPost.findUnique({ where: { id: postId } });
     if (!post) throw new NotFoundException('Post not found');
     if (!post.heldForReview) throw new BadRequestException('Post is not held for review');
+    if (post.hasCrisisSignal) {
+      throw new BadRequestException('This post is a crisis flag. Handle it in Crisis Alerts.');
+    }
 
     return this.prisma.forumPost.update({
       where: { id: postId },
@@ -62,6 +71,9 @@ export class AdminIntegrityService {
     const post = await this.prisma.forumPost.findUnique({ where: { id: postId } });
     if (!post) throw new NotFoundException('Post not found');
     if (!post.heldForReview) throw new BadRequestException('Post is not held for review');
+    if (post.hasCrisisSignal) {
+      throw new BadRequestException('This post is a crisis flag. Handle it in Crisis Alerts.');
+    }
 
     // Set heldForReview: false and mark status as REJECTED
     // The reason is not stored in the post, but could be sent via notification later.

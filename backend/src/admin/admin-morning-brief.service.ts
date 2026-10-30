@@ -38,7 +38,7 @@ export class AdminMorningBriefService {
 
     // ---- Pending Actions ----
     // Reuse existing methods
-    const [verifications, withdrawals, reports, disputes] = await Promise.all([
+    const [verifications, withdrawals, reports, disputes, crisisSignals] = await Promise.all([
       // Same "pending" definition admin.service.ts's getPlatformStats already uses:
       // any stage short of the final ETHICS_AGREEMENT stage.
       this.prisma.verificationApplication.count({
@@ -53,6 +53,12 @@ export class AdminMorningBriefService {
         const result = await this.complaintsService.getComplaints(admin, 'PENDING', 1, 1000);
         return Array.isArray(result) ? result.length : 0;
       })(),
+      // Z1-803: open crisis flags. The brief used to say "All clear" while a
+      // member's distress post sat unanswered.
+      Promise.all([
+        this.prisma.forumPost.count({ where: { hasCrisisSignal: true } }),
+        this.prisma.circleFeedPost.count({ where: { hasCrisisSignal: true } }),
+      ]).then(([forum, circle]) => forum + circle),
     ]);
 
     // ---- Revenue ----
@@ -96,7 +102,8 @@ export class AdminMorningBriefService {
         withdrawals,
         reports,
         disputes,
-        total: verifications + withdrawals + reports + disputes,
+        crisisSignals,
+        total: verifications + withdrawals + reports + disputes + crisisSignals,
       },
       revenue: {
         today: todayRevenue,
