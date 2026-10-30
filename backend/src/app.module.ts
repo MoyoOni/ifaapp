@@ -52,9 +52,7 @@ import { WhatsAppModule } from './whatsapp/whatsapp.module';
 import { AdminModule } from './admin/admin.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { SecretsModule } from './secrets/secrets.module';
-import { SentryModule } from './sentry/sentry.module';
 import { PractitionerAnalyticsModule } from './practitioners/practitioner-analytics.module';
-import { SentryInitializerService } from './sentry/sentry-initializer.service';
 import { OralHistorySeedService } from './seeding/oral-history.seed.service';
 import { RequestIdMiddleware } from './middleware/request-id.middleware';
 import { MaintenanceModeMiddleware } from './middleware/maintenance-mode.middleware';
@@ -123,7 +121,6 @@ import { MaintenanceModeMiddleware } from './middleware/maintenance-mode.middlew
     AdminModule,
     AnalyticsModule,
     SecretsModule,
-    SentryModule,
     PractitionerAnalyticsModule,
   ],
   providers: [
@@ -134,7 +131,6 @@ import { MaintenanceModeMiddleware } from './middleware/maintenance-mode.middlew
       provide: APP_GUARD,
       useClass: ThrottlerBehindProxyFix,
     },
-    SentryInitializerService, // Ensure Sentry initializer service is registered
     OralHistorySeedService, // Register the oral history seed service
   ],
 })

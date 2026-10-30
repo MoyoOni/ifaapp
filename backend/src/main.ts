@@ -12,11 +12,12 @@ import { SensitiveFieldStripInterceptor } from './interceptors/sensitive-field-s
 import { DecimalToNumberInterceptor } from './interceptors/decimal-to-number.interceptor';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { PrismaService } from './prisma/prisma.service';
+import { initSentry } from './sentry';
 
 const logger = new Logger('Bootstrap');
 
-// Note: Sentry initialization is now handled by SentryInitializerService in the app module
-// This ensures it's properly managed by the NestJS lifecycle
+// Before the app is created, so errors during startup are reported too.
+initSentry();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { rawBody: true });

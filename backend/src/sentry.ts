@@ -1,78 +1,66 @@
 /**
  * Sentry initialization for backend error tracking.
- * Only initializes when SENTRY_DSN is set (e.g. in production).
- * Uses dynamic require to avoid crashing when @opentelemetry peer deps are missing.
+ * Only initializes when SENTRY_DSN is set (e.g. in production). Called once,
+ * at the top of main.ts, before the Nest app is created.
+ *
+ * Until October 30, 2026 @sentry/node was never installed: the old code
+ * required it inside a try/catch, got nothing, and silently reported no
+ * backend error ever.
  */
+import { Logger } from '@nestjs/common';
+import * as SentrySdk from '@sentry/node';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let SentryModule: any = null;
+const logger = new Logger('Sentry');
+let enabled = false;
 
-function getSentry() {
-  if (SentryModule) return SentryModule;
-  try {
-    // Check required peer deps before loading @sentry/node to avoid crash at init time
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    require.resolve('@opentelemetry/core');
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    SentryModule = require('@sentry/node');
-  } catch {
-    // @opentelemetry peer deps missing — Sentry unavailable
-  }
-  return SentryModule;
-}
-
-export function initSentry(): void {
-  const dsn = process.env.SENTRY_DSN;
-  if (!dsn || dsn.trim() === '') return;
-
-  const sentry = getSentry();
-  if (!sentry) return;
-
+export function initSentry(): boolean {
+  const dsn = process.env.SENTRY_DSN?.trim();
   const env = process.env.NODE_ENV || 'development';
-  const isProd = env === 'production';
+  if (!dsn || env === 'development' || env === 'test') {
+    logger.log('Sentry disabled (no SENTRY_DSN, or development/test)');
+    return false;
+  }
 
   try {
-    sentry.init({
+    SentrySdk.init({
       dsn,
-      environment: env,
-      tracesSampleRate: isProd ? 0.1 : 1,
+      environment: process.env.SENTRY_ENVIRONMENT || env,
+      tracesSampleRate: env === 'production' ? 0.1 : 1,
+      sendDefaultPii: false,
       ignoreErrors: ['ValidationError'],
     });
-  } catch {
-    // @opentelemetry peer deps missing — Sentry init failed, continuing without it
+    enabled = true;
+    logger.log(`Sentry initialized for environment: ${env}`);
+  } catch (error) {
+    logger.error(`Failed to initialize Sentry: ${(error as Error).message}`);
   }
+  return enabled;
+}
+
+export function isSentryEnabled(): boolean {
+  return enabled;
 }
 
 export function captureException(error: unknown, context?: Record<string, unknown>): void {
-  if (!process.env.SENTRY_DSN?.trim()) return;
-  const sentry = getSentry();
-  if (!sentry) return;
-  sentry.captureException(error, context ? { extra: context } : undefined);
+  if (!enabled) return;
+  SentrySdk.captureException(error, context ? { extra: context } : undefined);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const Sentry: any = new Proxy({} as Record<string, unknown>, {
-  get(_target, prop) {
-    return getSentry()?.[prop as string];
-  },
-});
-
-export function captureMessage(message: string, level = 'info'): void {
-  if (!process.env.SENTRY_DSN?.trim()) return;
-  getSentry()?.captureMessage?.(message, level);
+export function captureMessage(message: string, level: SentrySdk.SeverityLevel = 'info'): void {
+  if (!enabled) return;
+  SentrySdk.captureMessage(message, level);
 }
 
-export function setUser(user: Record<string, unknown> | null): void {
-  if (!process.env.SENTRY_DSN?.trim()) return;
-  getSentry()?.setUser?.(user);
+export function setUser(user: { id: string; role?: string } | null): void {
+  if (!enabled) return;
+  SentrySdk.setUser(user);
 }
 
-export function addBreadcrumb(breadcrumb: Record<string, unknown>): void {
-  if (!process.env.SENTRY_DSN?.trim()) return;
-  getSentry()?.addBreadcrumb?.(breadcrumb);
+export function addBreadcrumb(breadcrumb: SentrySdk.Breadcrumb): void {
+  if (!enabled) return;
+  SentrySdk.addBreadcrumb(breadcrumb);
 }
 
-export function withScope(callback: (scope: unknown) => void): void {
-  if (!process.env.SENTRY_DSN?.trim()) return;
-  getSentry()?.withScope?.(callback);
+export function flushSentry(timeoutMs = 2000): Promise<boolean> {
+  return enabled ? SentrySdk.flush(timeoutMs) : Promise.resolve(true);
 }
