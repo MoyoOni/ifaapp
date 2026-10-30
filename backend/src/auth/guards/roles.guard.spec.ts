@@ -72,11 +72,18 @@ describe('RolesGuard', () => {
     expect(guard.canActivate(ctx)).toBe(true);
   });
 
-  it('allows a legacy/bootstrap ADMIN with no adminSubRole set at all', () => {
+  // A null sub-role used to mean full access here, while the services' SUPER
+  // checks and the admin sidebar treated it as restricted.
+  it('rejects an ADMIN with no adminSubRole from a sub-role-restricted route', () => {
     const ctx = makeContext(
       { roles: [UserRole.ADMIN], adminSubRoles: [AdminSubRole.COMPLIANCE] },
       { role: UserRole.ADMIN }
     );
+    expect(guard.canActivate(ctx)).toBe(false);
+  });
+
+  it('still lets an ADMIN with no adminSubRole use admin routes with no sub-role restriction', () => {
+    const ctx = makeContext({ roles: [UserRole.ADMIN] }, { role: UserRole.ADMIN });
     expect(guard.canActivate(ctx)).toBe(true);
   });
 

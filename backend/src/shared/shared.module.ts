@@ -10,7 +10,6 @@ import { SesEmailService } from './services/ses-email.service';
 import { PiiMaskingUtil } from './utils/pii-masking.util';
 import { AuditInterceptor } from './interceptors/audit.interceptor';
 import { JwtAuthGuard } from './guards/auth.guard';
-import { AdminSubRolesGuard } from './guards/admin-sub-roles.guard';
 import { CrisisDetectionService } from './services/crisis-detection.service';
 
 @Global()
@@ -34,7 +33,6 @@ import { CrisisDetectionService } from './services/crisis-detection.service';
     PiiMaskingUtil,
     AuditInterceptor,
     JwtAuthGuard,
-    AdminSubRolesGuard,
     SesEmailService,
     CrisisDetectionService,
   ],
@@ -46,7 +44,6 @@ import { CrisisDetectionService } from './services/crisis-detection.service';
     AuditInterceptor,
     JwtModule,
     JwtAuthGuard,
-    AdminSubRolesGuard,
     SesEmailService,
     CrisisDetectionService,
   ],

@@ -81,6 +81,7 @@ async function bootstrap() {
       name: 'Platform Administrator',
       passwordHash,
       role: 'ADMIN',
+      adminSubRole: 'SUPER',
       culturalLevel: 'Awo',
       hasOnboarded: true,
       verified: true,

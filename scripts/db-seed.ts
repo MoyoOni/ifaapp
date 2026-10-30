@@ -27,6 +27,7 @@ async function main() {
     update: {
       passwordHash: adminPasswordHash,
       role: 'ADMIN',
+      adminSubRole: 'SUPER',
       verified: true,
       hasOnboarded: true,
     },
@@ -35,6 +36,7 @@ async function main() {
       name: 'Admin User',
       passwordHash: adminPasswordHash,
       role: 'ADMIN',
+      adminSubRole: 'SUPER',
       verified: true,
       hasOnboarded: true,
       culturalLevel: 'Omo Awo',

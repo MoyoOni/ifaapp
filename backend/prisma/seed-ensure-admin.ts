@@ -29,6 +29,7 @@ async function main() {
       name: 'Ìlú Àṣẹ Admin',
       passwordHash,
       role: 'ADMIN',
+      adminSubRole: 'SUPER',
       verified: true,
     },
   });
