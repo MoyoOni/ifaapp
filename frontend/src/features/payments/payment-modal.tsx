@@ -200,7 +200,10 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
               <span className="font-medium">{getPurposeLabel(purpose)}</span>
             </div>
 
-            {/* Currency Selection */}
+            {/* Currency Selection. Marketplace orders are charged in their own
+                currency (the server prices them, and only Paystack payments
+                settle an order), so there is nothing to choose. */}
+            {purpose !== PaymentPurpose.MARKETPLACE_ORDER && (
             <div className="space-y-2">
               <label className="block text-sm font-medium text-muted-foreground">
                 Payment Currency
@@ -219,6 +222,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                 <option value={Currency.EUR}>€ EUR (Euro)</option>
               </select>
             </div>
+            )}
 
             {/* Amount Display */}
             <div className="space-y-2 pt-2 border-t border-border">

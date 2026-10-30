@@ -76,3 +76,20 @@ describe('PaymentModal — the "Complete in demo mode" escape hatch', () => {
     expect(await screen.findByRole('button', { name: /Complete in demo mode/i })).toBeInTheDocument();
   });
 });
+
+// October 30, 2026: the server now prices a marketplace order itself, in the
+// order's currency, so offering a currency switch would show the buyer an
+// amount they would not actually be charged.
+describe('PaymentModal — marketplace orders', () => {
+  it('offers no currency choice for an order', () => {
+    renderModal();
+    expect(screen.queryByLabelText('Select payment currency')).not.toBeInTheDocument();
+  });
+
+  it('still offers it for other payments', () => {
+    render(
+      <PaymentModal isOpen onClose={vi.fn()} amount={5000} currency={'NGN' as any} purpose={'WALLET_TOPUP' as any} />
+    );
+    expect(screen.getByLabelText('Select payment currency')).toBeInTheDocument();
+  });
+});
