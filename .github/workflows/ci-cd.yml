@@ -108,6 +108,11 @@ jobs:
       - name: Build backend
         run: cd backend && npm run build
 
+      # Lint never ran in CI, so explicit `any`s piled up and hid real bugs.
+      # Fails if the count rises above scripts/any-baseline.json.
+      - name: Explicit any ratchet
+        run: node scripts/any-ratchet.mjs backend
+
       - name: Run unit tests (with coverage gate — P1-03)
         run: cd backend && npm test -- --passWithNoTests --coverage
         env:
@@ -167,6 +172,9 @@ jobs:
 
       - name: TypeScript type check
         run: cd frontend && npx tsc --noEmit
+
+      - name: Explicit any ratchet
+        run: node scripts/any-ratchet.mjs frontend
 
       - name: Build frontend
         run: cd frontend && npm run build

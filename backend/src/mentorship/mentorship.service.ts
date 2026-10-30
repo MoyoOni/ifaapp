@@ -146,7 +146,7 @@ export class MentorshipService {
       type: EscrowType.MENTORSHIP_SESSION,
       relatedId: booking.id,
       notes: `Mentorship: ${booking.offering.name}`,
-    } as any);
+    });
 
     await this.prisma.mentorshipBooking.update({
       where: { id: booking.id },
@@ -203,7 +203,7 @@ export class MentorshipService {
     const done = confirmed >= booking.sessionsTotal;
 
     if (done && booking.escrowId) {
-      await this.walletService.releaseEscrow(currentUser.id, { escrowId: booking.escrowId } as any, currentUser);
+      await this.walletService.releaseEscrow(currentUser.id, { escrowId: booking.escrowId }, currentUser);
     }
     const updated = await this.prisma.mentorshipBooking.update({
       where: { id: booking.id },
