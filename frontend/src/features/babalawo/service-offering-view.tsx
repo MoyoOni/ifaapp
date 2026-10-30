@@ -16,6 +16,9 @@ interface ServiceOffering {
   isActive: boolean;
   category: string;
   maxSessionsPerDay?: number | null;
+  // SHOP_BACKLOG.md MSP-023: paid mentorship, booked by Devoted members
+  isMentorship?: boolean;
+  sessionCount?: number;
 }
 
 type ServiceOfferingDraft = Omit<ServiceOffering, 'id' | 'priceCurrency'>;
@@ -27,7 +30,52 @@ const EMPTY_DRAFT: ServiceOfferingDraft = {
   priceAmount: 5000,
   isActive: true,
   category: '',
+  isMentorship: false,
+  sessionCount: 1,
 };
+
+// SHOP_BACKLOG.md MSP-023: Devoted members book and pay here; the session is
+// held wherever you share a link to (WhatsApp, Zoom, phone). You keep 100%.
+const MentorshipFields: React.FC<{
+  draft: ServiceOfferingDraft;
+  onChange: (draft: ServiceOfferingDraft) => void;
+  idPrefix: string;
+}> = ({ draft, onChange, idPrefix }) => (
+  <div className="md:col-span-2 space-y-2 border-t border-border pt-3">
+    <div className="flex items-center">
+      <input
+        type="checkbox"
+        id={`${idPrefix}-mentorship`}
+        checked={!!draft.isMentorship}
+        onChange={(e) => onChange({ ...draft, isMentorship: e.target.checked })}
+        className="h-4 w-4 text-highlight focus:ring-highlight border-border rounded"
+      />
+      <label htmlFor={`${idPrefix}-mentorship`} className="ml-2 block text-sm text-foreground">
+        Offer as a paid mentorship session
+      </label>
+    </div>
+    {draft.isMentorship && (
+      <div className="pl-6 space-y-2">
+        <p className="text-xs text-muted-foreground">
+          Devoted members book and pay on Ìlú Àṣẹ. You share where you will meet (WhatsApp, Zoom or phone), and are
+          paid in full once the member confirms each session.
+        </p>
+        <label htmlFor={`${idPrefix}-sessions`} className="block text-sm font-medium text-foreground">
+          Sessions in this booking
+        </label>
+        <input
+          id={`${idPrefix}-sessions`}
+          type="number"
+          min={1}
+          max={12}
+          value={draft.sessionCount ?? 1}
+          onChange={(e) => onChange({ ...draft, sessionCount: Math.min(12, Math.max(1, parseInt(e.target.value) || 1)) })}
+          className="w-24 px-3 py-2 bg-background border border-border rounded-lg text-foreground"
+        />
+      </div>
+    )}
+  </div>
+);
 
 const ServiceOfferingView: React.FC = () => {
   const { user } = useAuth();
@@ -86,6 +134,8 @@ const ServiceOfferingView: React.FC = () => {
       isActive: service.isActive,
       category: service.category,
       maxSessionsPerDay: service.maxSessionsPerDay,
+      isMentorship: service.isMentorship ?? false,
+      sessionCount: service.sessionCount ?? 1,
     });
   };
 
@@ -219,6 +269,8 @@ const ServiceOfferingView: React.FC = () => {
                 Active Service
               </label>
             </div>
+
+            <MentorshipFields draft={newService} onChange={setNewService} idPrefix="new" />
           </div>
 
           <div className="flex justify-end gap-2">
@@ -330,6 +382,8 @@ const ServiceOfferingView: React.FC = () => {
                       Active Service
                     </label>
                   </div>
+
+                  <MentorshipFields draft={editDraft} onChange={setEditDraft} idPrefix={`edit-${service.id}`} />
                 </div>
 
                 <div className="flex justify-end gap-2">
@@ -361,6 +415,11 @@ const ServiceOfferingView: React.FC = () => {
                       }`}>
                         {service.isActive ? 'Active' : 'Inactive'}
                       </span>
+                      {service.isMentorship && (
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-muted text-foreground">
+                          Paid mentorship{(service.sessionCount ?? 1) > 1 ? ` · ${service.sessionCount} sessions` : ''}
+                        </span>
+                      )}
                     </div>
                     <p className="text-muted-foreground mt-1">{service.category}</p>
                   </div>

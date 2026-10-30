@@ -29,6 +29,7 @@ const Flutterwave = require('flutterwave-node-v3');
 import { NotificationService, NotificationType, NotificationCategory } from '../notifications/notification.service';
 import { PaystackApiService } from './paystack-api.service';
 import { captureException } from '../sentry';
+import { MentorshipService } from '../mentorship/mentorship.service';
 import {
   PaymentWebhookPayload,
   PaystackWebhookPayload,
@@ -61,7 +62,9 @@ export class PaymentsService {
     private walletService: WalletService,
     private locationService: LocationService,
     private currencyService: CurrencyService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    @Inject(forwardRef(() => MentorshipService))
+    private mentorshipService: MentorshipService
   ) {
     // Initialize Flutterwave
     const flutterwavePublicKey = this.configService.get<string>('FLUTTERWAVE_PUBLIC_KEY');
@@ -144,6 +147,10 @@ export class PaymentsService {
     // so a ₦1 payment could settle a ₦16,125 order.
     let baseAmount = dto.amount;
     let baseCurrency = dto.currency;
+    // SHOP_BACKLOG.md MSP-023: same rule for a paid mentorship booking.
+    if (dto.purpose === PaymentPurpose.MENTORSHIP_SESSION) {
+      ({ amount: baseAmount, currency: baseCurrency } = await this.mentorshipService.amountOwed(dto.relatedId, userId));
+    }
     if (dto.purpose === PaymentPurpose.MARKETPLACE_ORDER) {
       ({ amount: baseAmount, currency: baseCurrency } = await this.amountOwedForOrders(userId, dto.relatedId));
       if (Math.abs(baseAmount - dto.amount) > 0.01) {
@@ -230,7 +237,7 @@ export class PaymentsService {
       // actually marked PAID, it just silently credited the buyer's wallet
       // instead) rather than also touching BOOKING/COURSE_ENROLLMENT, which
       // haven't been verified broken and aren't part of what was reported.
-      if (dto.purpose === PaymentPurpose.MARKETPLACE_ORDER) {
+      if (dto.purpose === PaymentPurpose.MARKETPLACE_ORDER || dto.purpose === PaymentPurpose.MENTORSHIP_SESSION) {
         await this.prisma.payment.create({
           data: {
             userId,
@@ -564,7 +571,9 @@ export class PaymentsService {
       // initialize time (see `initializePayment`) so this reuses the
       // already-written, purpose-aware `processSuccessfulPayment` dispatch
       // instead of duplicating order-completion logic here.
-      if (metadata?.purpose === PaymentPurpose.MARKETPLACE_ORDER && reference) {
+      const routedPurpose =
+        metadata?.purpose === PaymentPurpose.MARKETPLACE_ORDER || metadata?.purpose === PaymentPurpose.MENTORSHIP_SESSION;
+      if (routedPurpose && reference) {
         const payment = await this.prisma.payment.findUnique({ where: { transactionId: reference } });
         if (payment) {
           // Second line of defence: what Paystack actually charged must cover
@@ -577,7 +586,7 @@ export class PaymentsService {
               where: { id: payment.id },
               data: { status: 'amount_mismatch' },
             });
-            const message = `Paystack charged ${charged} ${data.currency} for ${reference}, expected ${expected} ${payment.currency}; orders NOT marked paid`;
+            const message = `Paystack charged ${charged} ${data.currency} for ${reference}, expected ${expected} ${payment.currency}; NOT marked paid`;
             this.logger.error(message);
             captureException(new Error(message), { reference, charged, expected });
             return { success: false, reference, message: 'Amount mismatch' };
@@ -1135,6 +1144,18 @@ export class PaymentsService {
       case PaymentPurpose.GUIDANCE_PLAN:
         // Guidance plans are already handled via prescription approval flow
         break;
+
+      case PaymentPurpose.MENTORSHIP_SESSION: {
+        const bookingId = (payment.metadata as any)?.relatedId;
+        if (bookingId) {
+          await this.mentorshipService.markPaid(bookingId, {
+            userId: payment.userId,
+            amount: paymentAmount,
+            transactionId: payment.transactionId,
+          });
+        }
+        break;
+      }
 
       default:
         break;

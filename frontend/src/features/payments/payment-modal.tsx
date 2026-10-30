@@ -150,6 +150,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         return 'Course Enrollment';
       case PaymentPurpose.GUIDANCE_PLAN:
         return 'Guidance Plan Payment';
+      case PaymentPurpose.MENTORSHIP_SESSION:
+        return 'Mentorship Session';
       default:
         return 'Payment';
     }
@@ -203,7 +205,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             {/* Currency Selection. Marketplace orders are charged in their own
                 currency (the server prices them, and only Paystack payments
                 settle an order), so there is nothing to choose. */}
-            {purpose !== PaymentPurpose.MARKETPLACE_ORDER && (
+            {purpose !== PaymentPurpose.MARKETPLACE_ORDER && purpose !== PaymentPurpose.MENTORSHIP_SESSION && (
             <div className="space-y-2">
               <label className="block text-sm font-medium text-muted-foreground">
                 Payment Currency

@@ -11,6 +11,7 @@ import { AcademyModule } from './academy/academy.module';
 import { AppointmentsModule } from './appointments/appointments.module';
 import { BabalawoClientModule } from './babalawo-client/babalawo-client.module';
 import { ServiceOfferingsModule } from './service-offerings/service-offerings.module';
+import { MentorshipModule } from './mentorship/mentorship.module';
 import { CacheModule } from './cache/cache.module';
 import { CertificateModule } from './certificates/certificate.module';
 import { CirclesModule } from './circles/circles.module';
@@ -80,6 +81,7 @@ import { MaintenanceModeMiddleware } from './middleware/maintenance-mode.middlew
     AppointmentsModule,
     BabalawoClientModule,
     ServiceOfferingsModule,
+    MentorshipModule,
     CacheModule,
     CertificateModule,
     CirclesModule,

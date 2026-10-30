@@ -15,6 +15,7 @@ import { WalletService } from '../wallet/wallet.service';
 import { LocationService } from './location.service';
 import { CurrencyService } from './currency.service';
 import { NotificationService } from '../notifications/notification.service';
+import { MentorshipService } from '../mentorship/mentorship.service';
 import { Currency, PaymentPurpose } from '@ile-ase/common';
 
 const PAYSTACK_TEST_SECRET = 'paystack-secret';
@@ -56,6 +57,8 @@ jest.mock('flutterwave-node-v3', () => {
     },
   }));
 });
+
+const mockMentorshipService = { amountOwed: jest.fn(), markPaid: jest.fn() };
 
 describe('PaymentsService', () => {
   let service: PaymentsService;
@@ -147,6 +150,7 @@ describe('PaymentsService', () => {
         { provide: LocationService, useValue: mockLocationService },
         { provide: CurrencyService, useValue: mockCurrencyService },
         { provide: NotificationService, useValue: mockNotificationService },
+        { provide: MentorshipService, useValue: mockMentorshipService },
       ],
     }).compile();
 

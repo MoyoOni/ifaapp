@@ -26,6 +26,7 @@ export enum EscrowType {
   ORDER = 'ORDER', // Marketplace order
   TUTOR_SESSION = 'TUTOR_SESSION', // Tutor booking
   GUIDANCE_PLAN = 'GUIDANCE_PLAN', // Akose/Ebo guidance plan (formerly Prescription)
+  MENTORSHIP_SESSION = 'MENTORSHIP_SESSION', // SHOP_BACKLOG.md MSP-023 paid session
 }
 
 export enum EscrowStatus {

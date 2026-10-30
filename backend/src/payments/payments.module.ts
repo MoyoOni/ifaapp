@@ -1,3 +1,4 @@
+import { MentorshipModule } from '../mentorship/mentorship.module';
 import { Module, forwardRef } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { PaymentsController } from './payments.controller';
@@ -19,7 +20,7 @@ import { NotificationPreferencesService } from '../notifications/notification-pr
 // this module or NotificationsModule (which only provides
 // PushNotificationService, despite the similar name).
 @Module({
-  imports: [PrismaModule, forwardRef(() => WalletModule), NotificationsModule, CacheModule],
+  imports: [PrismaModule, forwardRef(() => WalletModule), NotificationsModule, CacheModule, forwardRef(() => MentorshipModule)],
   providers: [
     PaymentsService,
     PaystackApiService,

@@ -26,6 +26,7 @@ export enum PaymentPurpose {
     MARKETPLACE_ORDER = 'MARKETPLACE_ORDER',
     COURSE_ENROLLMENT = 'COURSE_ENROLLMENT',
     GUIDANCE_PLAN = 'GUIDANCE_PLAN',
+    MENTORSHIP_SESSION = 'MENTORSHIP_SESSION',
 }
 
 export enum EscrowType {
@@ -33,6 +34,7 @@ export enum EscrowType {
     ORDER = 'ORDER',
     TUTOR_SESSION = 'TUTOR_SESSION',
     GUIDANCE_PLAN = 'GUIDANCE_PLAN',
+    MENTORSHIP_SESSION = 'MENTORSHIP_SESSION',
 }
 
 export enum TransactionType {

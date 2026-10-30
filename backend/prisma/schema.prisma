@@ -206,19 +206,22 @@ model User {
   onboardingEmails OnboardingEmail[] @relation("OnboardingEmailUser")
 
   // Additional relations for other models
-  userBadges              UserBadge[]          @relation("UserBadges")
-  badgeAwarder            UserBadge[]          @relation("BadgeAwarder")
-  flagRuleCreator         ContentFlagRule[]    @relation("FlagRuleCreator")
-  campaignCreator         EmailCampaign[]      @relation("CampaignCreator")
-  promoCodeCreator        PromoCode[]          @relation("PromoCodeCreator")
-  promoRedemptions        PromoRedemption[]    @relation("PromoRedemptions")
-  userSessions            UserSession[]        @relation("UserSessions")
-  passwordResetTokens     PasswordResetToken[]
-  emailChangeTokens       EmailChangeToken[]
-  avatarImage             UserAvatar?
-  crisisFollowUpsAbout    CrisisFollowUp[]     @relation("CrisisFollowUpAuthor")
-  crisisFollowUpsClaimed  CrisisFollowUp[]     @relation("CrisisFollowUpClaimedBy")
-  crisisFollowUpsResolved CrisisFollowUp[]     @relation("CrisisFollowUpResolvedBy")
+  userBadges          UserBadge[]          @relation("UserBadges")
+  badgeAwarder        UserBadge[]          @relation("BadgeAwarder")
+  flagRuleCreator     ContentFlagRule[]    @relation("FlagRuleCreator")
+  campaignCreator     EmailCampaign[]      @relation("CampaignCreator")
+  promoCodeCreator    PromoCode[]          @relation("PromoCodeCreator")
+  promoRedemptions    PromoRedemption[]    @relation("PromoRedemptions")
+  userSessions        UserSession[]        @relation("UserSessions")
+  passwordResetTokens PasswordResetToken[]
+  emailChangeTokens   EmailChangeToken[]
+  avatarImage         UserAvatar?
+
+  mentorshipBookingsAsBabalawo MentorshipBooking[] @relation("MentorshipBookingBabalawo")
+  mentorshipBookingsAsClient   MentorshipBooking[] @relation("MentorshipBookingClient")
+  crisisFollowUpsAbout         CrisisFollowUp[]    @relation("CrisisFollowUpAuthor")
+  crisisFollowUpsClaimed       CrisisFollowUp[]    @relation("CrisisFollowUpClaimedBy")
+  crisisFollowUpsResolved      CrisisFollowUp[]    @relation("CrisisFollowUpResolvedBy")
 
   // COMMUNITY_BACKLOG.md FOR-Q2: Community Member Directory -- opt-in only,
   // default false (privacy-first). Deliberately a new dedicated flag rather
@@ -3256,14 +3259,58 @@ model ServiceOffering {
   priceCurrency     String    @default("NGN")
   isActive          Boolean   @default(true)
   maxSessionsPerDay Int?
+  // SHOP_BACKLOG.md MSP-023: offered as a paid mentorship session that a
+  // Devoted member books and pays for here, held elsewhere (WhatsApp, Zoom,
+  // phone). sessionCount > 1 sells a bundle, e.g. 4 sessions.
+  isMentorship      Boolean   @default(false)
+  sessionCount      Int       @default(1)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   deletedAt         DateTime?
 
-  babalawo User @relation("ServiceOfferingBabalawo", fields: [babalawoId], references: [id], onDelete: Cascade)
+  babalawo           User                @relation("ServiceOfferingBabalawo", fields: [babalawoId], references: [id], onDelete: Cascade)
+  mentorshipBookings MentorshipBooking[]
 
   @@index([babalawoId])
   @@index([deletedAt])
+}
+
+// SHOP_BACKLOG.md MSP-023 (owner's decisions, October 30, 2026): a Devoted
+// member books and pays for a verified babalawo's mentorship offering here;
+// the session itself happens elsewhere (meetingLink). Paid money is held in
+// a MENTORSHIP_SESSION escrow and released to the babalawo, at 0% platform
+// commission, once the client confirms every session took place (or by the
+// escrow's own auto-release if they never do).
+model MentorshipBooking {
+  id                String    @id @default(uuid())
+  offeringId        String
+  babalawoId        String
+  clientId          String
+  // PENDING_PAYMENT | PAID | COMPLETED | CANCELLED
+  status            String    @default("PENDING_PAYMENT")
+  amount            Decimal   @db.Decimal(14, 2)
+  currency          String    @default("NGN")
+  sessionsTotal     Int       @default(1)
+  sessionsHeld      Int       @default(0) // marked held by the babalawo
+  sessionsConfirmed Int       @default(0) // confirmed by the client
+  clientNote        String?
+  meetingLink       String?
+  meetingDetails    String?
+  escrowId          String?
+  paymentReference  String?
+  paidAt            DateTime?
+  completedAt       DateTime?
+  cancelledAt       DateTime?
+  cancelledById     String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  offering ServiceOffering @relation(fields: [offeringId], references: [id], onDelete: Restrict)
+  babalawo User            @relation("MentorshipBookingBabalawo", fields: [babalawoId], references: [id], onDelete: Cascade)
+  client   User            @relation("MentorshipBookingClient", fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([babalawoId, status])
+  @@index([clientId, status])
 }
 
 // Forgot-password links. Only a SHA-256 hash of the emailed token is stored,

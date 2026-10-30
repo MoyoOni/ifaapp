@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsBoolean, IsInt, IsNumber, Min, MaxLength } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsInt, IsNumber, Min, Max, MaxLength } from 'class-validator';
 
 export class CreateServiceOfferingDto {
   @IsString()
@@ -33,6 +33,17 @@ export class CreateServiceOfferingDto {
   @IsOptional()
   @Min(1)
   declare maxSessionsPerDay?: number;
+
+  // SHOP_BACKLOG.md MSP-023: sold as a paid mentorship session (or bundle)
+  @IsBoolean()
+  @IsOptional()
+  declare isMentorship?: boolean;
+
+  @IsInt()
+  @IsOptional()
+  @Min(1)
+  @Max(12)
+  declare sessionCount?: number;
 }
 
 export class UpdateServiceOfferingDto {
@@ -73,4 +84,15 @@ export class UpdateServiceOfferingDto {
   @IsOptional()
   @Min(1)
   declare maxSessionsPerDay?: number;
+
+  // SHOP_BACKLOG.md MSP-023: sold as a paid mentorship session (or bundle)
+  @IsBoolean()
+  @IsOptional()
+  declare isMentorship?: boolean;
+
+  @IsInt()
+  @IsOptional()
+  @Min(1)
+  @Max(12)
+  declare sessionCount?: number;
 }

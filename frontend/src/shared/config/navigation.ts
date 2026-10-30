@@ -19,7 +19,8 @@ import {
   UserPlus,
   ClipboardList,
   LifeBuoy,
-  type LucideIcon
+  type LucideIcon,
+  CalendarCheck,
 } from 'lucide-react';
 import { UserRole, AdminSubRole } from '@common';
 
@@ -41,6 +42,8 @@ export interface NavSection {
 const CLIENT_NAV_ITEMS: NavItem[] = [
   { id: 'home', label: 'Home', icon: User, path: '/client/dashboard' },
   { id: 'find-guide', label: 'Find My Guide', icon: Search, path: '/babalawo' },
+  // SHOP_BACKLOG.md MSP-023: paid sessions, booked by Devoted members
+  { id: 'mentorship', label: 'Mentorship', icon: CalendarCheck, path: '/mentorship' },
   { id: 'temples', label: 'Temples', icon: Building2, path: '/client/temples' },
   { id: 'learning-path', label: 'Academy', icon: GraduationCap, path: '/academy' },
   { id: 'community-circles', label: 'Community Circles', icon: Users, path: '/circles' },
@@ -69,6 +72,7 @@ const BABALAWO_NAV_ITEMS: NavItem[] = [
   { id: 'practice-center', label: 'Practice Center', icon: LayoutDashboard, path: '/practitioner/dashboard' },
   { id: 'my-seekers', label: 'My Seekers', icon: Users, path: '/practitioner/my-seekers' },
   { id: 'service-offerings', label: 'Service Offerings', icon: BookOpen, path: '/practitioner/service-offering' },
+  { id: 'mentorship', label: 'Mentorship Bookings', icon: CalendarCheck, path: '/mentorship' },
   { id: 'temple-connection', label: 'Temple Connection', icon: Building2, path: '/practitioner/temple-connection' },
   { id: 'wallet', label: 'Wallet', icon: Wallet, path: '/wallet' },
   { id: 'forum', label: 'Forum', icon: MessagesSquare, path: '/forum' },
