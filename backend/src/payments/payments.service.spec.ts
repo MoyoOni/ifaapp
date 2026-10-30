@@ -90,6 +90,7 @@ describe('PaymentsService', () => {
     },
     order: {
       findUnique: jest.fn(),
+      findMany: jest.fn(),
       update: jest.fn(),
     },
     // VENDOR_BACKLOG.md VND-024
@@ -181,7 +182,50 @@ describe('PaymentsService', () => {
       expect(mockPrismaService.payment.create).not.toHaveBeenCalled();
     });
 
+    it('charges what the orders cost, not the amount the client sent', async () => {
+      mockPrismaService.order.findMany.mockResolvedValue([
+        { id: 'order-1', customerId: 'user-id', status: 'PENDING', totalAmount: 16125, currency: 'NGN' },
+      ]);
+      mockPaystackApi.initializeTransaction.mockResolvedValue({
+        status: true,
+        data: { authorization_url: 'https://paystack.com/checkout/1', access_code: '1', reference: 'ref-1' },
+      });
+
+      await service.initializePayment(
+        'user-id',
+        { amount: 1, currency: Currency.NGN, purpose: PaymentPurpose.MARKETPLACE_ORDER, relatedId: 'order-1' } as any,
+        'test@example.com',
+        'Test User'
+      );
+
+      expect(mockPaystackApi.initializeTransaction).toHaveBeenCalledWith(
+        expect.objectContaining({ amount: 1612500 })
+      );
+      expect(mockPrismaService.payment.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ amount: 16125 }) })
+      );
+    });
+
+    it.each([
+      ["someone else's order", { customerId: 'other-user', status: 'PENDING' }],
+      ['an order already paid', { customerId: 'user-id', status: 'PAID' }],
+    ])('refuses to start a payment for %s', async (_label, order) => {
+      mockPrismaService.order.findMany.mockResolvedValue([{ id: 'order-1', totalAmount: 5000, currency: 'NGN', ...order }]);
+      await expect(
+        service.initializePayment(
+          'user-id',
+          { amount: 5000, currency: Currency.NGN, purpose: PaymentPurpose.MARKETPLACE_ORDER, relatedId: 'order-1' } as any,
+          'test@example.com',
+          'Test User'
+        )
+      ).rejects.toThrow(BadRequestException);
+    });
+
     it('creates a Payment row for MARKETPLACE_ORDER so the webhook can later route it correctly (payment-confirmation audit fix)', async () => {
+      mockPrismaService.order.findMany.mockResolvedValue([
+        { id: 'order-1', customerId: 'user-id', status: 'PENDING', totalAmount: 2000, currency: 'NGN' },
+        { id: 'order-2', customerId: 'user-id', status: 'PENDING', totalAmount: 3000, currency: 'NGN' },
+      ]);
       mockPaystackApi.initializeTransaction.mockResolvedValue({
         status: true,
         data: {
@@ -315,6 +359,8 @@ describe('PaymentsService', () => {
         id: 'payment-1',
         status: 'PENDING',
         userId: 'user-id',
+        amount: 5000,
+        currency: 'NGN',
         transactionId: 'order-ref-1',
         purpose: PaymentPurpose.MARKETPLACE_ORDER,
         metadata: { relatedId: 'order-1' },
@@ -323,6 +369,7 @@ describe('PaymentsService', () => {
         id: 'order-1',
         customerId: 'user-id',
         vendorId: 'vendor-1',
+        status: 'PENDING',
         totalAmount: 5000,
         currency: 'NGN',
         vendor: { userId: 'vendor-user-1', businessName: 'Ide Beads Shop' },
@@ -330,6 +377,39 @@ describe('PaymentsService', () => {
         // VENDOR_BACKLOG.md VND-024
         items: [{ productId: 'product-1', product: { type: 'PHYSICAL', digitalFileKey: null, digitalFileUrl: null } }],
       };
+
+      beforeEach(() => {
+        mockPrismaService.order.findMany.mockResolvedValue([mockOrder]);
+      });
+
+      // October 30, 2026: a ₦1 charge used to mark a ₦16,125 order PAID and
+      // escrow the full total for the vendor.
+      it('refuses to mark an order paid when Paystack charged less than the payment was for', async () => {
+        const underpaid = { ...orderPayload, data: { ...orderPayload.data, amount: 100 } };
+        mockPrismaService.payment.findUnique.mockResolvedValueOnce(mockPaymentRow);
+
+        const result = await callPaystackWebhook(service, underpaid, signPaystackPayload(underpaid));
+
+        expect(result).toMatchObject({ success: false, message: 'Amount mismatch' });
+        expect(mockPrismaService.payment.update).toHaveBeenCalledWith(
+          expect.objectContaining({ data: { status: 'amount_mismatch' } })
+        );
+        expect(mockPrismaService.order.update).not.toHaveBeenCalled();
+        expect(mockWalletService.createExternallyFundedEscrow).not.toHaveBeenCalled();
+      });
+
+      it('does not settle orders a payment does not cover, even via manual verification', async () => {
+        mockPrismaService.payment.findUnique
+          .mockResolvedValueOnce(mockPaymentRow)
+          .mockResolvedValueOnce({ ...mockPaymentRow, status: 'success' });
+        mockPrismaService.payment.update.mockResolvedValue({ ...mockPaymentRow, status: 'success' });
+        mockPrismaService.order.findMany.mockResolvedValue([{ ...mockOrder, totalAmount: 50000 }]);
+
+        await callPaystackWebhook(service, orderPayload, signPaystackPayload(orderPayload));
+
+        expect(mockPrismaService.order.update).not.toHaveBeenCalled();
+        expect(mockWalletService.createExternallyFundedEscrow).not.toHaveBeenCalled();
+      });
 
       it('marks the order PAID and creates the vendor escrow instead of crediting the buyer wallet', async () => {
         // First lookup (by transactionId, in handlePaystackWebhook) sees the

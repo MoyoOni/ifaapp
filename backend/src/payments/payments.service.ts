@@ -28,6 +28,7 @@ import { Payment } from '../shared/types/prisma-models';
 const Flutterwave = require('flutterwave-node-v3');
 import { NotificationService, NotificationType, NotificationCategory } from '../notifications/notification.service';
 import { PaystackApiService } from './paystack-api.service';
+import { captureException } from '../sentry';
 import {
   PaymentWebhookPayload,
   PaystackWebhookPayload,
@@ -96,6 +97,37 @@ export class PaymentsService {
   /**
    * Initialize payment
    */
+  /**
+   * What the payer owes for the orders named in a MARKETPLACE_ORDER
+   * payment's relatedId (comma-separated): each must exist, be theirs and
+   * still be awaiting payment.
+   */
+  private async amountOwedForOrders(
+    userId: string,
+    relatedId?: string
+  ): Promise<{ amount: number; currency: Currency }> {
+    const orderIds = [...new Set((relatedId ?? '').split(',').map((id) => id.trim()).filter(Boolean))];
+    if (orderIds.length === 0) {
+      throw new BadRequestException('relatedId must name the order(s) being paid for');
+    }
+    const orders = await this.prisma.order.findMany({
+      where: { id: { in: orderIds } },
+      select: { id: true, customerId: true, status: true, totalAmount: true, currency: true },
+    });
+    if (orders.length !== orderIds.length || orders.some((o) => o.customerId !== userId)) {
+      throw new BadRequestException('One or more orders were not found');
+    }
+    if (orders.some((o) => o.status !== 'PENDING')) {
+      throw new BadRequestException('One or more orders are not awaiting payment');
+    }
+    const currencies = new Set(orders.map((o) => o.currency));
+    if (currencies.size !== 1) {
+      throw new BadRequestException('Orders in different currencies must be paid separately');
+    }
+    const amount = Math.round(orders.reduce((sum, o) => sum + Number(o.totalAmount), 0) * 100) / 100;
+    return { amount, currency: orders[0].currency as Currency };
+  }
+
   async initializePayment(
     userId: string,
     dto: InitializePaymentDto,
@@ -105,15 +137,31 @@ export class PaymentsService {
     preferredProvider?: PaymentProvider,
     convertToCurrency?: Currency
   ) {
-    let paymentAmount = dto.amount;
-    let paymentCurrency = dto.currency;
+    // The amount a marketplace order costs is decided here, from the orders
+    // themselves -- never taken from the client. Until October 30, 2026 the
+    // client's `amount` was charged as-is and the webhook then marked every
+    // order in `relatedId` PAID and escrowed its full total for the vendor,
+    // so a ₦1 payment could settle a ₦16,125 order.
+    let baseAmount = dto.amount;
+    let baseCurrency = dto.currency;
+    if (dto.purpose === PaymentPurpose.MARKETPLACE_ORDER) {
+      ({ amount: baseAmount, currency: baseCurrency } = await this.amountOwedForOrders(userId, dto.relatedId));
+      if (Math.abs(baseAmount - dto.amount) > 0.01) {
+        this.logger.warn(
+          `Marketplace payment amount from client (${dto.amount}) differs from orders total (${baseAmount}); charging the orders total`
+        );
+      }
+    }
+
+    let paymentAmount = baseAmount;
+    let paymentCurrency = baseCurrency;
     let conversionInfo = null;
 
     // Handle currency conversion if requested
-    if (convertToCurrency && convertToCurrency !== dto.currency) {
+    if (convertToCurrency && convertToCurrency !== baseCurrency) {
       const conversion = await this.currencyService.convertAmount(
-        dto.amount,
-        dto.currency,
+        baseAmount,
+        baseCurrency,
         convertToCurrency,
         true // Include fees
       );
@@ -121,8 +169,8 @@ export class PaymentsService {
       paymentAmount = conversion.convertedAmount;
       paymentCurrency = convertToCurrency;
       conversionInfo = {
-        originalAmount: dto.amount,
-        originalCurrency: dto.currency,
+        originalAmount: baseAmount,
+        originalCurrency: baseCurrency,
         convertedAmount: conversion.convertedAmount,
         convertedCurrency: convertToCurrency,
         rate: conversion.rate,
@@ -519,6 +567,21 @@ export class PaymentsService {
       if (metadata?.purpose === PaymentPurpose.MARKETPLACE_ORDER && reference) {
         const payment = await this.prisma.payment.findUnique({ where: { transactionId: reference } });
         if (payment) {
+          // Second line of defence: what Paystack actually charged must cover
+          // what this payment was created for.
+          const charged = Number(data.amount) / 100;
+          const expected = Number(payment.amount);
+          const currencyOk = !data.currency || data.currency === payment.currency;
+          if (payment.status !== 'success' && (charged + 0.005 < expected || !currencyOk)) {
+            await this.prisma.payment.update({
+              where: { id: payment.id },
+              data: { status: 'amount_mismatch' },
+            });
+            const message = `Paystack charged ${charged} ${data.currency} for ${reference}, expected ${expected} ${payment.currency}; orders NOT marked paid`;
+            this.logger.error(message);
+            captureException(new Error(message), { reference, charged, expected });
+            return { success: false, reference, message: 'Amount mismatch' };
+          }
           if (payment.status !== 'success') {
             await this.prisma.payment.update({
               where: { id: payment.id },
@@ -1095,7 +1158,28 @@ export class PaymentsService {
       return;
     }
 
+    // Also reachable from admin manual verification, so re-check here: the
+    // payment must cover these orders, and only the payer's unpaid orders
+    // are settled (no second escrow for an order that is already PAID).
+    const owed = await this.prisma.order.findMany({
+      where: { id: { in: orderIds.map((id: string) => id.trim()) } },
+      select: { id: true, customerId: true, status: true, totalAmount: true, currency: true },
+    });
+    const payable = owed.filter((o) => o.customerId === payment.userId && o.status === 'PENDING');
+    const owedTotal = payable.reduce((sum, o) => sum + Number(o.totalAmount), 0);
+    if (payable.some((o) => o.currency === payment.currency) && owedTotal > Number(payment.amount) + 0.01) {
+      const message = `Payment ${payment.id} (${payment.amount} ${payment.currency}) does not cover orders totalling ${owedTotal}; not marking paid`;
+      this.logger.error(message);
+      captureException(new Error(message), { paymentId: payment.id });
+      return;
+    }
+    const payableIds = new Set(payable.map((o) => o.id));
+
     for (const orderId of orderIds) {
+      if (!payableIds.has(orderId.trim())) {
+        this.logger.warn(`Skipping order ${orderId} for payment ${payment.id}: not the payer's, or not awaiting payment`);
+        continue;
+      }
       try {
         // Find the order
         const order = await this.prisma.order.findUnique({
