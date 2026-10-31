@@ -312,7 +312,13 @@ sudo docker compose up -d --no-deps backend
 # (container_name: iluase-frontend, but the service key is nginx)
 sudo docker compose pull nginx
 sudo docker compose up -d --no-deps nginx
+
+# ALWAYS after recreating backend: the proxy's nginx resolved "backend" to an
+# IP once at startup and keeps sending /api/* to the old container's address.
+sudo docker compose exec -T proxy nginx -s reload
 ```
+
+**October 31, 2026:** skipping that reload took the whole API down (every `/api/*` request 502, "connect() failed (111: Connection refused) ... upstream: http://172.18.0.4:8080") for ~2.5 minutes until it was run: the recreated backend container got a new address on the Docker network. Earlier deploys happened to get the same address back, so this went unnoticed. After a deploy, check `curl -s -o /dev/null -w '%{http_code}' https://iluase.com/api/health` returns 200, not just the container's own healthcheck.
 
 `docker-entrypoint.sh` runs `prisma migrate deploy` automatically on every backend container start — no separate migration step needed for routine deploys.
 
