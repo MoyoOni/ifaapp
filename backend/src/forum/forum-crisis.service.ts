@@ -8,6 +8,16 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ResolveCrisisSignalDto } from './dto/crisis-follow-up.dto';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 
+// Where flagged content can come from. Circle comments and the remembrance
+// wall were added November 2, 2026; before that they were never checked.
+export const CRISIS_SOURCES = ['forum', 'circle', 'circle-comment', 'memorial'] as const;
+export type CrisisSource = (typeof CRISIS_SOURCES)[number];
+
+/** Query-string `source` to a known source; anything else means the forum (the original default). */
+export function parseCrisisSource(value: string | undefined): CrisisSource {
+  return (CRISIS_SOURCES as readonly string[]).includes(value ?? '') ? (value as CrisisSource) : 'forum';
+}
+
 // Split out of ForumService (October 30, 2026), methods moved verbatim.
 // Crisis signals: the admin crisis queue, claiming, resolving and the follow-up history (Z1-803).
 @Injectable()
@@ -23,7 +33,7 @@ export class ForumCrisisService {
   // so both sources are fetched in full and merged/paginated in memory
   // instead of fighting cross-table SQL pagination.
   async getCrisisSignalPosts(page = 1, limit = 20) {
-    const [forumPosts, circlePosts] = await Promise.all([
+    const [forumPosts, circlePosts, circleComments, memorials] = await Promise.all([
       this.prisma.forumPost.findMany({
         where: { hasCrisisSignal: true },
         orderBy: { createdAt: 'desc' },
@@ -42,11 +52,28 @@ export class ForumCrisisService {
           circle: { select: { id: true, name: true, slug: true } },
         },
       }),
+      this.prisma.circleFeedComment.findMany({
+        where: { hasCrisisSignal: true },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+        include: {
+          author: { select: { id: true, name: true, email: true, role: true } },
+          post: { select: { circle: { select: { id: true, name: true, slug: true } } } },
+        },
+      }),
+      this.prisma.memorialEntry.findMany({
+        where: { hasCrisisSignal: true, deletedAt: null },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+        include: { author: { select: { id: true, name: true, email: true, role: true } } },
+      }),
     ]);
 
     const combined = [
       ...forumPosts.map((p: any) => ({ ...p, source: 'forum' as const })),
       ...circlePosts.map((p: any) => ({ ...p, source: 'circle' as const })),
+      ...circleComments.map(({ post, ...c }) => ({ ...c, circle: post.circle, source: 'circle-comment' as const })),
+      ...memorials.map(({ message, ...m }) => ({ ...m, content: message, source: 'memorial' as const })),
     ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     const total = combined.length;
@@ -71,24 +98,23 @@ export class ForumCrisisService {
   // admins could both reach out (or neither), and "Mark as Reviewed" recorded
   // nothing about what was done.
 
-  private async findFlaggedPost(postId: string, source: 'forum' | 'circle') {
+  private async findFlaggedPost(postId: string, source: CrisisSource) {
+    const select = { id: true, authorId: true, hasCrisisSignal: true } as const;
     const post =
       source === 'circle'
-        ? await (this.prisma as any).circleFeedPost.findUnique({
-            where: { id: postId },
-            select: { id: true, authorId: true, hasCrisisSignal: true },
-          })
-        : await this.prisma.forumPost.findUnique({
-            where: { id: postId },
-            select: { id: true, authorId: true, hasCrisisSignal: true },
-          });
+        ? await this.prisma.circleFeedPost.findUnique({ where: { id: postId }, select })
+        : source === 'circle-comment'
+          ? await this.prisma.circleFeedComment.findUnique({ where: { id: postId }, select })
+          : source === 'memorial'
+            ? await this.prisma.memorialEntry.findUnique({ where: { id: postId }, select })
+            : await this.prisma.forumPost.findUnique({ where: { id: postId }, select });
     if (!post) throw new NotFoundException('Post not found');
-    return post as { id: string; authorId: string; hasCrisisSignal: boolean };
+    return post;
   }
 
   async claimCrisisSignal(
     postId: string,
-    source: 'forum' | 'circle',
+    source: CrisisSource,
     currentUser: CurrentUserPayload
   ) {
     const post = await this.findFlaggedPost(postId, source);
@@ -127,7 +153,7 @@ export class ForumCrisisService {
 
   async resolveCrisisSignal(
     postId: string,
-    source: 'forum' | 'circle',
+    source: CrisisSource,
     dto: ResolveCrisisSignalDto,
     currentUser: CurrentUserPayload
   ) {
@@ -173,17 +199,11 @@ export class ForumCrisisService {
     return { items, total, page, limit };
   }
 
-  async clearCrisisSignal(
-    postId: string,
-    source: 'forum' | 'circle' = 'forum',
-    currentUser?: CurrentUserPayload
-  ) {
-    if (source === 'circle') {
-      return (this.prisma as any).circleFeedPost.update({
-        where: { id: postId },
-        data: { hasCrisisSignal: false },
-      });
-    }
+  async clearCrisisSignal(postId: string, source: CrisisSource = 'forum', currentUser?: CurrentUserPayload) {
+    const data = { hasCrisisSignal: false };
+    if (source === 'circle') return this.prisma.circleFeedPost.update({ where: { id: postId }, data });
+    if (source === 'circle-comment') return this.prisma.circleFeedComment.update({ where: { id: postId }, data });
+    if (source === 'memorial') return this.prisma.memorialEntry.update({ where: { id: postId }, data });
     // FOR-002: clearing the signal also lifts the heldForReview restriction
     // this fix added -- reviewed content becomes publicly visible again.
     return this.prisma.forumPost.update({

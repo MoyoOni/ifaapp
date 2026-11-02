@@ -128,7 +128,7 @@ describe('CirclesService feed reactions', () => {
       const result = await service.addFeedPostComment('post-1', 'user-1', 'hi');
 
       expect(mockPrismaService.circleFeedComment.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: { postId: 'post-1', authorId: 'user-1', content: 'hi' } })
+        expect.objectContaining({ data: { postId: 'post-1', authorId: 'user-1', content: 'hi', hasCrisisSignal: false } })
       );
       expect(mockPrismaService.circleFeedPost.update).toHaveBeenCalledWith({
         where: { id: 'post-1' },

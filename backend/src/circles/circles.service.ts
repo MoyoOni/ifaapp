@@ -806,13 +806,22 @@ export class CirclesService {
       throw new ForbiddenException('You must be a member to comment in this circle');
     }
 
+    const crisisDetected = this.crisisDetection.detect(content);
     const [comment] = await this.prisma.$transaction([
       this.prisma.circleFeedComment.create({
-        data: { postId, authorId, content },
+        data: { postId, authorId, content, hasCrisisSignal: crisisDetected },
         include: { author: { select: { id: true, name: true, avatar: true } } },
       }),
       this.prisma.circleFeedPost.update({ where: { id: postId }, data: { commentCount: { increment: 1 } } }),
     ]);
+
+    if (crisisDetected) {
+      this.notifyAdminsOfCrisis(
+        'Circle comment flagged for welfare review',
+        'A new comment in a circle may contain a distress signal.',
+        { circleId: post.circleId, postId, commentId: comment.id }
+      );
+    }
 
     return {
       id: comment.id,

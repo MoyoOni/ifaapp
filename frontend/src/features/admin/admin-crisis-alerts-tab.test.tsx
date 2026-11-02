@@ -51,4 +51,15 @@ describe('AdminCrisisAlertsTab', () => {
       expect(apiPatch).toHaveBeenCalledWith('/forum/admin/crisis-signals/p1/resolve?source=forum', { outcome: 'REFERRED', note: 'Shared hotline details' })
     );
   });
+
+  it('shows a remembrance wall entry with its source and link, and claims it by that source', async () => {
+    apiGet.mockResolvedValue({
+      data: { posts: [{ ...post(null), id: 'm1', source: 'memorial', thread: undefined, content: 'Since you left I want to die too' }], total: 1 },
+    });
+    renderTab();
+    expect(await screen.findByText('Remembrance wall', { selector: 'span' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Remembrance wall' })).toHaveAttribute('href', '/remembrance-wall');
+    fireEvent.click(screen.getByRole('button', { name: "I'll Follow Up" }));
+    await waitFor(() => expect(apiPatch).toHaveBeenCalledWith('/forum/admin/crisis-signals/m1/claim?source=memorial'));
+  });
 });

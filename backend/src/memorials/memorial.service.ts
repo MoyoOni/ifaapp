@@ -1,6 +1,9 @@
-import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMemorialDto } from './dto/memorial.dto';
+import { CrisisDetectionService } from '../shared/services/crisis-detection.service';
+import { NotificationService } from '../notifications/notification.service';
+import { notifyForumAdmins } from '../forum/notify-forum-admins';
 
 // COMMUNITY_BACKLOG.md FOR-015: Ancestral Remembrance Wall. No admin review
 // queue by design -- grief content should post immediately, same as any
@@ -8,21 +11,42 @@ import { CreateMemorialDto } from './dto/memorial.dto';
 // the fact rather than gating every entry behind approval first.
 @Injectable()
 export class MemorialService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(MemorialService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private readonly crisisDetection: CrisisDetectionService,
+    private readonly notificationService: NotificationService
+  ) {}
 
   async create(dto: CreateMemorialDto, authorId: string) {
-    return this.prisma.memorialEntry.create({
+    // Z1-803: still posts immediately (see above), but distress written here
+    // reaches the admin crisis queue like a forum or circle post would.
+    const crisisDetected = this.crisisDetection.detect(dto.message);
+    const entry = await this.prisma.memorialEntry.create({
       data: {
         name: dto.name,
         relationship: dto.relationship,
         message: dto.message,
         isPublic: dto.isPublic ?? true,
         authorId,
+        hasCrisisSignal: crisisDetected,
       },
       include: {
         author: { select: { id: true, name: true, yorubaName: true } },
       },
     });
+    if (crisisDetected) {
+      await notifyForumAdmins(
+        this.prisma,
+        this.notificationService,
+        this.logger,
+        'Remembrance wall entry flagged for welfare review',
+        'A new remembrance wall entry may contain a distress signal.',
+        { memorialId: entry.id }
+      );
+    }
+    return entry;
   }
 
   async findPublic(page = 1, limit = 20) {

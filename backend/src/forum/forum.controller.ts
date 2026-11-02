@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { ResolveCrisisSignalDto } from './dto/crisis-follow-up.dto';
 import { ForumService } from './forum.service';
-import { ForumCrisisService } from './forum-crisis.service';
+import { ForumCrisisService, parseCrisisSource } from './forum-crisis.service';
 import { ForumElderService } from './forum-elder.service';
 import { ForumDiscoveryService } from './forum-discovery.service';
 import { ForumAdminService } from './forum-admin.service';
@@ -532,10 +532,10 @@ export class ForumController {
   @Roles(UserRole.ADMIN)
   async clearCrisisSignal(
     @Param('postId') postId: string,
-    @Query('source') source: 'forum' | 'circle' | undefined,
+    @Query('source') source: string | undefined,
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
-    return this.forumCrisisService.clearCrisisSignal(postId, source || 'forum', currentUser);
+    return this.forumCrisisService.clearCrisisSignal(postId, parseCrisisSource(source), currentUser);
   }
 
   // Z1-803: claim / resolve-with-outcome / history for the crisis queue.
@@ -554,10 +554,10 @@ export class ForumController {
   @Roles(UserRole.ADMIN)
   async claimCrisisSignal(
     @Param('postId') postId: string,
-    @Query('source') source: 'forum' | 'circle' | undefined,
+    @Query('source') source: string | undefined,
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
-    return this.forumCrisisService.claimCrisisSignal(postId, source === 'circle' ? 'circle' : 'forum', currentUser);
+    return this.forumCrisisService.claimCrisisSignal(postId, parseCrisisSource(source), currentUser);
   }
 
   @Patch('admin/crisis-signals/:postId/resolve')
@@ -565,13 +565,13 @@ export class ForumController {
   @Roles(UserRole.ADMIN)
   async resolveCrisisSignal(
     @Param('postId') postId: string,
-    @Query('source') source: 'forum' | 'circle' | undefined,
+    @Query('source') source: string | undefined,
     @Body() dto: ResolveCrisisSignalDto,
     @CurrentUser() currentUser: CurrentUserPayload
   ) {
     return this.forumCrisisService.resolveCrisisSignal(
       postId,
-      source === 'circle' ? 'circle' : 'forum',
+      parseCrisisSource(source),
       dto,
       currentUser
     );

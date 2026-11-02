@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { MemorialService } from './memorial.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { CrisisDetectionService } from '../shared/services/crisis-detection.service';
+import { NotificationService } from '../notifications/notification.service';
 
 // COMMUNITY_BACKLOG.md FOR-015 / ProBacklog-v1.md item #3: soft-deleted --
 // grief/remembrance content someone wrote about a lost loved one shouldn't
@@ -17,19 +19,47 @@ describe('MemorialService', () => {
       update: jest.fn(),
       count: jest.fn(),
     },
+    user: { findMany: jest.fn().mockResolvedValue([{ id: 'admin-1' }]) },
   };
+  const mockNotifications = { createNotification: jest.fn().mockResolvedValue({}) };
 
   beforeEach(async () => {
     jest.clearAllMocks();
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [MemorialService, { provide: PrismaService, useValue: mockPrismaService }],
+      providers: [
+        MemorialService,
+        { provide: PrismaService, useValue: mockPrismaService },
+        CrisisDetectionService,
+        { provide: NotificationService, useValue: mockNotifications },
+      ],
     }).compile();
 
     service = module.get<MemorialService>(MemorialService);
   });
 
   describe('create', () => {
+    // Z1-803: the grief wall now reaches the admin crisis queue.
+    it('flags an entry with crisis language and notifies admins, but still posts it', async () => {
+      mockPrismaService.memorialEntry.create.mockResolvedValue({ id: 'entry-2' });
+      await service.create({ name: 'Bàbá', message: 'Since you left I want to die too', isPublic: true }, 'author-1');
+      expect(mockPrismaService.memorialEntry.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ hasCrisisSignal: true, isPublic: true }) })
+      );
+      expect(mockNotifications.createNotification).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: 'admin-1', data: { memorialId: 'entry-2' } })
+      );
+    });
+
+    it('does not flag ordinary grief', async () => {
+      mockPrismaService.memorialEntry.create.mockResolvedValue({ id: 'entry-3' });
+      await service.create({ name: 'Ìyá', message: 'Rest well, mother. We miss you every day.', isPublic: true }, 'author-1');
+      expect(mockPrismaService.memorialEntry.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ hasCrisisSignal: false }) })
+      );
+      expect(mockNotifications.createNotification).not.toHaveBeenCalled();
+    });
+
     it('creates a memorial entry for the given author', async () => {
       mockPrismaService.memorialEntry.create.mockResolvedValue({ id: 'entry-1' });
 

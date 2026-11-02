@@ -6,14 +6,23 @@ import { useToast } from '@/shared/components/toast';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { parseApiError } from '@/shared/utils/api-error';
 
-// COMMUNITY_BACKLOG.md FOR-015: this queue now merges Forum posts and Circle
-// feed posts (see forum.service.ts's getCrisisSignalPosts) -- `source`
-// discriminates which, `thread`/`circle` are mutually exclusive depending on it.
+// COMMUNITY_BACKLOG.md FOR-015: this queue merges Forum posts, Circle feed
+// posts and (since November 2, 2026) Circle comments and remembrance wall
+// entries (see forum-crisis.service.ts) -- `source` discriminates which;
+// `thread` is set for forum posts, `circle` for circle posts and comments.
+type CrisisSource = 'forum' | 'circle' | 'circle-comment' | 'memorial';
+const SOURCE_LABELS: Record<CrisisSource, string> = {
+  forum: 'Forum',
+  circle: 'Circle post',
+  'circle-comment': 'Circle comment',
+  memorial: 'Remembrance wall',
+};
+
 interface CrisisPost {
   id: string;
   content: string;
   createdAt: string;
-  source: 'forum' | 'circle';
+  source: CrisisSource;
   author: { id: string; name: string; email: string; role: string };
   thread?: { id: string; title: string; categoryId: string };
   circle?: { id: string; name: string; slug: string };
@@ -33,7 +42,7 @@ const outcomeLabel = (v: string) => OUTCOMES.find((o) => o.value === v)?.label ?
 
 interface HistoryItem {
   id: string;
-  source: 'forum' | 'circle';
+  source: CrisisSource;
   outcome: Outcome;
   note?: string | null;
   resolvedAt: string;
@@ -112,7 +121,7 @@ const FollowUpHistory: React.FC = () => {
           <p className="text-foreground">{outcomeLabel(i.outcome)}</p>
           {i.note && <p className="text-muted-foreground whitespace-pre-wrap break-words">"{i.note}"</p>}
           <p className="text-xs text-muted-foreground">
-            {i.claimedBy ? `Followed up by ${i.claimedBy.name} · ` : ''}Closed by {i.resolvedBy?.name ?? 'a former admin'} · {i.source}
+            {i.claimedBy ? `Followed up by ${i.claimedBy.name} · ` : ''}Closed by {i.resolvedBy?.name ?? 'a former admin'} · {SOURCE_LABELS[i.source] ?? i.source}
           </p>
         </div>
       ))}
@@ -141,7 +150,7 @@ const AdminCrisisAlertsTab: React.FC = () => {
   });
 
   const claimMutation = useMutation({
-    mutationFn: ({ postId, source }: { postId: string; source: 'forum' | 'circle' }) =>
+    mutationFn: ({ postId, source }: { postId: string; source: CrisisSource }) =>
       api.patch(`/forum/admin/crisis-signals/${postId}/claim?source=${source}`),
     onSuccess: () => toastSuccess("You're following this up — other admins can see that"),
     // 409 when someone else got there first: refresh so their name shows.
@@ -214,7 +223,7 @@ const AdminCrisisAlertsTab: React.FC = () => {
                     <span className="text-muted-foreground">{post.author.email}</span>
                     <span className="text-xs bg-muted/60 px-2 py-0.5 rounded-full text-muted-foreground">{post.author.role}</span>
                     <span className="text-xs bg-muted/60 px-2 py-0.5 rounded-full text-muted-foreground uppercase">
-                      {post.source}
+                      {SOURCE_LABELS[post.source] ?? post.source}
                     </span>
                   </div>
                   <span className="text-xs text-muted-foreground whitespace-nowrap">
@@ -231,6 +240,10 @@ const AdminCrisisAlertsTab: React.FC = () => {
                   ) : post.circle ? (
                     <a href={`/circles/${post.circle.slug}`} target="_blank" rel="noreferrer" className="hover:text-highlight underline">
                       {post.circle.name}
+                    </a>
+                  ) : post.source === 'memorial' ? (
+                    <a href="/remembrance-wall" target="_blank" rel="noreferrer" className="hover:text-highlight underline">
+                      Remembrance wall
                     </a>
                   ) : null}
                 </div>

@@ -393,18 +393,21 @@ model WellbeingCheckIn {
 // deliberately its own small model rather than a CircleFeedPost variant, so
 // it works platform-wide and isn't tied to any one circle's lifecycle.
 model MemorialEntry {
-  id           String    @id @default(uuid())
-  authorId     String
-  name         String
-  relationship String?
-  message      String
-  isPublic     Boolean   @default(true)
-  createdAt    DateTime  @default(now())
+  id              String    @id @default(uuid())
+  authorId        String
+  name            String
+  relationship    String?
+  message         String
+  isPublic        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
   // ProBacklog-v1.md item #3: grief/remembrance content someone wrote about
   // a lost loved one is exactly the kind of user-generated content a hard
   // delete has no business permanently destroying with no recovery path.
-  deletedAt    DateTime?
-  author       User      @relation("MemorialAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  deletedAt       DateTime?
+  // Z1-803 (November 2, 2026): the grief wall is where distress is most
+  // likely to be written; it now reaches the admin crisis queue too.
+  hasCrisisSignal Boolean   @default(false)
+  author          User      @relation("MemorialAuthor", fields: [authorId], references: [id], onDelete: Cascade)
 
   @@index([authorId])
   @@index([isPublic])
@@ -2322,15 +2325,19 @@ model CircleFeedLike {
 }
 
 model CircleFeedComment {
-  id        String         @id @default(uuid())
-  postId    String
-  authorId  String
-  content   String
-  createdAt DateTime       @default(now())
-  post      CircleFeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-  author    User           @relation("CircleFeedCommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  id              String         @id @default(uuid())
+  postId          String
+  authorId        String
+  content         String
+  createdAt       DateTime       @default(now())
+  // Z1-803 (November 2, 2026): crisis language in a comment reaches the
+  // same admin crisis queue as posts. Comments used to go unchecked.
+  hasCrisisSignal Boolean        @default(false)
+  post            CircleFeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author          User           @relation("CircleFeedCommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
 
   @@index([postId])
+  @@index([hasCrisisSignal])
 }
 
 model CircleSuggestion {
@@ -3364,7 +3371,7 @@ model UserAvatar {
 // an admin claims the flag (or resolves it unclaimed); one per post.
 model CrisisFollowUp {
   id           String    @id @default(uuid())
-  source       String // forum | circle
+  source       String // forum | circle | circle-comment | memorial
   postId       String
   authorId     String
   status       String    @default("CLAIMED") // CLAIMED | RESOLVED
