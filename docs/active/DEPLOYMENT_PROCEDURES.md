@@ -313,8 +313,10 @@ sudo docker compose up -d --no-deps backend
 sudo docker compose pull nginx
 sudo docker compose up -d --no-deps nginx
 
-# ALWAYS after recreating backend: the proxy's nginx resolved "backend" to an
-# IP once at startup and keeps sending /api/* to the old container's address.
+# After recreating backend: until docker/proxy.production.conf is installed
+# (scripts/install-prod-proxy-config.sh), the proxy's nginx resolved "backend"
+# to an IP once at startup and keeps sending /api/* to the old container's
+# address. Once installed it re-resolves within 5s; the reload is harmless either way.
 sudo docker compose exec -T proxy nginx -s reload
 ```
 
