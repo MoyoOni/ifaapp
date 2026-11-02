@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  ConflictException,
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -160,11 +161,68 @@ export class ForumElderService {
 
   // ==================== F9-806: Live Sessions ====================
 
-  async listLiveSessions(status?: string) {
+  async listLiveSessions(status?: string, kind?: string) {
     return this.prisma.liveSession.findMany({
-      where: status ? { status } : {},
+      where: { ...(status ? { status } : {}), ...(kind ? { kind } : {}) },
       orderBy: [{ scheduledAt: 'asc' }, { createdAt: 'desc' }],
+      include: { _count: { select: { rsvps: true } } },
     });
+  }
+
+  // FOR-019: members say they're coming; toggles.
+  async toggleLiveSessionRsvp(sessionId: string, currentUser: CurrentUserPayload) {
+    const session = await this.prisma.liveSession.findUnique({ where: { id: sessionId }, select: { status: true } });
+    if (!session) throw new NotFoundException('Live session not found');
+    if (session.status !== 'SCHEDULED' && session.status !== 'LIVE') {
+      throw new BadRequestException('This session has ended');
+    }
+    const key = { sessionId_userId: { sessionId, userId: currentUser.id } };
+    const existing = await this.prisma.liveSessionRsvp.findUnique({ where: key });
+    if (existing) {
+      await this.prisma.liveSessionRsvp.delete({ where: key });
+    } else {
+      await this.prisma.liveSessionRsvp.create({ data: { sessionId, userId: currentUser.id } });
+    }
+    const count = await this.prisma.liveSessionRsvp.count({ where: { sessionId } });
+    return { attending: !existing, count };
+  }
+
+  async myLiveSessionRsvps(currentUser: CurrentUserPayload) {
+    const rows = await this.prisma.liveSessionRsvp.findMany({ where: { userId: currentUser.id }, select: { sessionId: true } });
+    return rows.map((r) => r.sessionId);
+  }
+
+  // FOR-019: after a storytelling event, an admin saves the story into the
+  // Oral History archive as an unpublished draft; it goes live through the
+  // archive's usual review and publish step, like any community submission.
+  async saveSessionStory(
+    sessionId: string,
+    data: { title: string; content: string; category?: string; storyteller?: string },
+    currentUser: CurrentUserPayload
+  ) {
+    if (currentUser.role !== 'ADMIN') {
+      throw new ForbiddenException('Admins only');
+    }
+    const session = await this.prisma.liveSession.findUnique({ where: { id: sessionId } });
+    if (!session) throw new NotFoundException('Live session not found');
+    if (session.kind !== 'STORYTELLING') throw new BadRequestException('Only storytelling events can be saved to the archive');
+    if (session.oralHistoryId) throw new ConflictException('This story is already in the archive');
+
+    const entry = await this.prisma.oralHistoryEntry.create({
+      data: {
+        title: data.title.trim(),
+        content: data.content.trim(),
+        category: data.category?.trim() || 'storytelling-events',
+        babalawoName: data.storyteller?.trim() || null,
+        recordingDate: session.scheduledAt,
+        sourceUrl: session.recordingUrl,
+        tags: ['storytelling'],
+        createdBy: currentUser.id,
+        publishedAt: null,
+      },
+    });
+    await this.prisma.liveSession.update({ where: { id: sessionId }, data: { oralHistoryId: entry.id } });
+    return entry;
   }
 
   async createLiveSession(
@@ -175,6 +233,8 @@ export class ForumElderService {
       platform: string;
       externalUrl: string;
       preThreadId?: string;
+      kind?: string;
+      description?: string;
     },
     currentUser: CurrentUserPayload
   ) {
@@ -211,6 +271,8 @@ export class ForumElderService {
         platform: data.platform.trim(),
         externalUrl: data.externalUrl.trim(),
         preThreadId: data.preThreadId,
+        kind: data.kind ?? 'DISCUSSION',
+        description: data.description?.trim() || null,
       },
     });
   }

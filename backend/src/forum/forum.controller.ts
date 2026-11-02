@@ -36,7 +36,7 @@ import {
   DeleteThreadAdminDto,
 } from './dto/forum-category-admin.dto';
 import { CreateElderFlagDto, ReactToPostDto, ReviewElderFlagDto } from './dto/elder-actions.dto';
-import { CreateLiveSessionDto, UpdateLiveSessionStatusDto } from './dto/live-session.dto';
+import { CreateLiveSessionDto, SaveSessionStoryDto, UpdateLiveSessionStatusDto } from './dto/live-session.dto';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { JwtAuthGuard } from '../shared/guards/auth.guard';
@@ -511,8 +511,27 @@ export class ForumController {
 
   @Public()
   @Get('live-sessions')
-  async listLiveSessions(@Query('status') status?: string) {
-    return this.forumElderService.listLiveSessions(status);
+  async listLiveSessions(@Query('status') status?: string, @Query('kind') kind?: string) {
+    return this.forumElderService.listLiveSessions(status, kind);
+  }
+
+  @Get('live-sessions/my-rsvps')
+  async myLiveSessionRsvps(@CurrentUser() currentUser: CurrentUserPayload) {
+    return this.forumElderService.myLiveSessionRsvps(currentUser);
+  }
+
+  @Post('live-sessions/:id/rsvp')
+  async toggleLiveSessionRsvp(@Param('id') id: string, @CurrentUser() currentUser: CurrentUserPayload) {
+    return this.forumElderService.toggleLiveSessionRsvp(id, currentUser);
+  }
+
+  @Post('live-sessions/:id/story')
+  async saveSessionStory(
+    @Param('id') id: string,
+    @Body() dto: SaveSessionStoryDto,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.forumElderService.saveSessionStory(id, dto, currentUser);
   }
 
   // ==================== D3: Crisis Signal Admin ====================

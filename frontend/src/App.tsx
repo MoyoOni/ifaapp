@@ -91,6 +91,7 @@ const CircleDirectory = React.lazy(() => import('./features/circles/circle-direc
 const MemberDirectoryView = React.lazy(() => import('./features/community/member-directory-view')); // COMMUNITY_BACKLOG.md FOR-Q2
 const MentorshipView = React.lazy(() => import('./features/mentorship/mentorship-view')); // SHOP_BACKLOG.md MSP-023
 const RemembranceWallView = React.lazy(() => import('./features/community/remembrance-wall-view')); // COMMUNITY_BACKLOG.md FOR-015
+const StorytellingView = React.lazy(() => import('./features/community/storytelling-view')); // COMMUNITY_BACKLOG.md FOR-019
 const WellbeingView = React.lazy(() => import('./features/community/wellbeing-view')); // COMMUNITY_BACKLOG.md FOR-017
 const DreamJournalView = React.lazy(() => import('./features/community/dream-journal-view')); // COMMUNITY_BACKLOG.md FOR-021
 const HealingView = React.lazy(() => import('./features/community/healing-view')); // COMMUNITY_BACKLOG.md FOR-018
@@ -447,6 +448,13 @@ function App() {
                             </ErrorBoundary>
                           </React.Suspense>
                         </RequireAuth>
+                      } />
+                      <Route path="/storytelling" element={
+                        <React.Suspense fallback={<LoadingSpinner />}>
+                          <ErrorBoundary>
+                            <StorytellingView />
+                          </ErrorBoundary>
+                        </React.Suspense>
                       } />
                       <Route path="/remembrance-wall" element={
                         <React.Suspense fallback={<LoadingSpinner />}>

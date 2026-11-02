@@ -2875,19 +2875,38 @@ model UserReport {
 
 // F9-806: Àṣẹ Live audio space
 model LiveSession {
-  id           String   @id @default(uuid())
-  title        String
-  hostIds      String[]
-  scheduledAt  DateTime
-  platform     String
-  externalUrl  String
-  preThreadId  String?
-  recordingUrl String?
-  status       String   @default("SCHEDULED")
-  createdAt    DateTime @default(now())
+  id            String            @id @default(uuid())
+  title         String
+  hostIds       String[]
+  scheduledAt   DateTime
+  platform      String
+  externalUrl   String
+  preThreadId   String?
+  recordingUrl  String?
+  status        String            @default("SCHEDULED")
+  createdAt     DateTime          @default(now())
+  // COMMUNITY_BACKLOG.md FOR-019 (owner decision November 2, 2026):
+  // storytelling events are live sessions of kind STORYTELLING; afterwards
+  // the story told can be saved into the Oral History archive.
+  kind          String            @default("DISCUSSION") // DISCUSSION | STORYTELLING
+  description   String?
+  oralHistoryId String?
+  rsvps         LiveSessionRsvp[]
 
   @@index([status])
   @@index([scheduledAt])
+  @@index([kind])
+}
+
+model LiveSessionRsvp {
+  id        String      @id @default(uuid())
+  sessionId String
+  userId    String
+  createdAt DateTime    @default(now())
+  session   LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId])
+  @@index([userId])
 }
 
 model OralHistoryEntry {

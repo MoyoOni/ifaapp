@@ -7,6 +7,7 @@ import { useAuth } from '@/shared/hooks/use-auth';
 import { useToast } from '@/shared/components/toast';
 import { isDevModeActive } from '@/shared/utils/dev-mode';
 import { SupportDirectory } from './support-directory';
+import { Link } from 'react-router-dom';
 
 // COMMUNITY_BACKLOG.md FOR-017: consent-based wellbeing check-ins
 interface CheckIn {
@@ -91,6 +92,18 @@ const WellbeingView: React.FC = () => {
       </div>
 
       <SupportDirectory />
+
+      {/* Community Care in the menu lands here; the other care spaces had no way in. */}
+      <nav aria-label="Other care spaces" className="grid gap-3 sm:grid-cols-2">
+        <Link to="/remembrance-wall" className="bg-card border border-border rounded-2xl p-4 hover:bg-muted/50 transition-colors">
+          <span className="font-semibold text-foreground">Ancestral Remembrance Wall</span>
+          <span className="block text-sm text-muted-foreground">Light a candle, share a name, offer a memory.</span>
+        </Link>
+        <Link to="/healing" className="bg-card border border-border rounded-2xl p-4 hover:bg-muted/50 transition-colors">
+          <span className="font-semibold text-foreground">Healing &amp; Reconciliation</span>
+          <span className="block text-sm text-muted-foreground">Bring a conflict to our elders for restorative mediation.</span>
+        </Link>
+      </nav>
 
       <div>
         <h2 className="text-lg font-bold text-foreground mb-3">Request a Check-In</h2>

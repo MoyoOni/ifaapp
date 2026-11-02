@@ -14,6 +14,7 @@ import {
   Wallet,
   User,
   BookOpen,
+  HeartHandshake,
   Activity,
   MessagesSquare,
   UserPlus,
@@ -49,6 +50,8 @@ const CLIENT_NAV_ITEMS: NavItem[] = [
   { id: 'community-circles', label: 'Community Circles', icon: Users, path: '/circles' },
   { id: 'directory', label: 'Member Directory', icon: UserPlus, path: '/directory' },
   { id: 'forum', label: 'Forum', icon: MessagesSquare, path: '/forum' },
+  { id: 'storytelling', label: 'Storytelling', icon: BookOpen, path: '/storytelling' },
+  { id: 'community-care', label: 'Community Care', icon: HeartHandshake, path: '/wellbeing' },
   { id: 'marketplace', label: 'Marketplace', icon: ShoppingBag, path: '/marketplace' },
   { id: 'wallet', label: 'Wallet', icon: Wallet, path: '/wallet' },
   { id: 'profile', label: 'My Profile', icon: User, path: '/profile' },
@@ -64,6 +67,8 @@ const VISITOR_NAV_ITEMS: NavItem[] = [
   { id: 'learning-path', label: 'Academy', icon: GraduationCap, path: '/academy' },
   { id: 'community-circles', label: 'Community Circles', icon: Users, path: '/circles' },
   { id: 'forum', label: 'Forum', icon: MessagesSquare, path: '/forum' },
+  { id: 'storytelling', label: 'Storytelling', icon: BookOpen, path: '/storytelling' },
+  { id: 'community-care', label: 'Community Care', icon: HeartHandshake, path: '/wellbeing' },
   { id: 'marketplace', label: 'Marketplace', icon: ShoppingBag, path: '/marketplace' },
 ];
 
@@ -76,6 +81,8 @@ const BABALAWO_NAV_ITEMS: NavItem[] = [
   { id: 'temple-connection', label: 'Temple Connection', icon: Building2, path: '/practitioner/temple-connection' },
   { id: 'wallet', label: 'Wallet', icon: Wallet, path: '/wallet' },
   { id: 'forum', label: 'Forum', icon: MessagesSquare, path: '/forum' },
+  { id: 'storytelling', label: 'Storytelling', icon: BookOpen, path: '/storytelling' },
+  { id: 'community-care', label: 'Community Care', icon: HeartHandshake, path: '/wellbeing' },
   { id: 'professional-growth', label: 'Academy', icon: TrendingUp, path: '/academy' },
   // COMMUNITY_BACKLOG.md FOR-009: low-friction platform-usage help board,
   // distinct from spiritual Q&A -- elders ask, any community member answers.
@@ -96,6 +103,7 @@ const VENDOR_NAV_ITEMS: NavItem[] = [
   { id: 'sales-insights', label: 'Revenue/Analytics', icon: BarChart3, path: '/vendor/insights' },
   { id: 'wallet', label: 'Wallet', icon: Wallet, path: '/wallet' },
   { id: 'forum', label: 'Forum', icon: MessagesSquare, path: '/forum' },
+  { id: 'community-care', label: 'Community Care', icon: HeartHandshake, path: '/wellbeing' },
   { id: 'academy', label: 'Academy', icon: TrendingUp, path: '/academy' },
   { id: 'profile', label: 'My Profile', icon: User, path: '/profile' },
 ];
