@@ -2947,6 +2947,30 @@ export class MarketplaceService {
       throw new ForbiddenException('You cannot update this order');
     }
 
+    // Who may move an order where (escrow policy, October 31, 2026). Before
+    // this, the customer or the vendor could set any status: a customer
+    // could mark their own unpaid order PAID, and a vendor could mark it
+    // DELIVERED and so release the whole escrow to themselves.
+    const isAdmin = currentUser.role === 'ADMIN';
+    const isOrderVendor = !!vendor && order.vendorId === vendor.id;
+    const isOrderCustomer = order.customerId === currentUser.id;
+    if (dto.status && dto.status !== order.status && !isAdmin) {
+      const allowed =
+        (dto.status === OrderStatus.SHIPPED && isOrderVendor && order.status === OrderStatus.PAID) ||
+        (dto.status === OrderStatus.DELIVERED && isOrderCustomer && order.status === OrderStatus.SHIPPED) ||
+        (dto.status === OrderStatus.CANCELLED && (isOrderVendor || isOrderCustomer) && order.status === OrderStatus.PENDING);
+      if (!allowed) {
+        throw new ForbiddenException(
+          dto.status === OrderStatus.DELIVERED
+            ? 'Only the customer can confirm an order was delivered'
+            : `You cannot move this order from ${order.status} to ${dto.status}`
+        );
+      }
+    }
+    if ((dto.trackingNumber || dto.carrier || dto.trackingUrl) && !isAdmin && !isOrderVendor) {
+      throw new ForbiddenException('Only the vendor can set shipping details');
+    }
+
     const updateData: any = {};
 
     if (dto.status) {
@@ -3075,11 +3099,19 @@ export class MarketplaceService {
       return;
     }
 
+    // Shipping releases tier 1 on the vendor's say-so (EMG-07, by design)
+    // and gives the customer AUTO_RELEASE_DAYS to confirm delivery before
+    // the rest is released anyway. Delivery is confirmed by the customer
+    // or an admin, who may release in their own right.
     await this.walletService.releaseEscrow(
       escrow.userId,
       { escrowId: escrow.id, tier },
-      currentUser
+      currentUser,
+      { system: tier === ReleaseTier.TIER_1 }
     );
+    if (tier === ReleaseTier.TIER_1) {
+      await this.walletService.armAutoRelease(escrow.id);
+    }
   }
 
   /**

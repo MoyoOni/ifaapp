@@ -109,6 +109,19 @@ export class GuidancePlansController {
   }
 
   /**
+   * Client confirms a completed plan, releasing the final payment
+   * POST /guidance-plans/:id/confirm-complete/:clientId
+   */
+  @Post(':id/confirm-complete/:clientId')
+  async confirmGuidancePlanComplete(
+    @Param('id') guidancePlanId: string,
+    @Param('clientId') clientId: string,
+    @CurrentUser() currentUser: CurrentUserPayload
+  ) {
+    return this.guidancePlansService.confirmGuidancePlanComplete(guidancePlanId, clientId, currentUser);
+  }
+
+  /**
    * Update item completion status
    * PATCH /guidance-plans/:id/items/:itemIndex
    */

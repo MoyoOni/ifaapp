@@ -7,6 +7,7 @@ import { CurrencyService } from '../payments/currency.service';
 import { NotificationService } from '../notifications/notification.service';
 import { OutboxService } from '../outbox/outbox.service';
 import { Prisma } from '@prisma/client';
+import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 
 describe('WalletService', () => {
   let service: WalletService;
@@ -716,11 +717,13 @@ describe('WalletService', () => {
     // used to pay the vendor the full releaseAmount with zero commission
     // deducted anywhere in the codebase. This is the fix.
     describe('commission deduction on EscrowType.ORDER (VND-026 / ILUASE_V1_BACKLOG.md fix)', () => {
-      const vendorUser = {
-        id: 'vendor-user-1',
-        sub: 'vendor-user-1',
-        email: 'vendor@example.com',
-        role: 'VENDOR',
+      // The buyer releases (the vendor no longer can); commission still
+      // follows the escrow's recipient.
+      const payerUser = {
+        id: 'customer-1',
+        sub: 'customer-1',
+        email: 'customer@example.com',
+        role: 'CLIENT',
         verified: true,
       };
       const mockOrderEscrow = {
@@ -751,7 +754,7 @@ describe('WalletService', () => {
         (txClient.wallet.update as jest.Mock).mockResolvedValue({});
         (txClient.transaction.create as jest.Mock).mockResolvedValue({});
 
-        await service.releaseEscrow('vendor-user-1', { escrowId: 'escrow-order-1' }, vendorUser);
+        await service.releaseEscrow('vendor-user-1', { escrowId: 'escrow-order-1' }, payerUser);
 
         // 10% of 1000 = 100 commission, vendor gets the net 900.
         expect(txClient.wallet.update).toHaveBeenCalledWith({
@@ -785,7 +788,7 @@ describe('WalletService', () => {
         (txClient.wallet.update as jest.Mock).mockResolvedValue({});
         (txClient.transaction.create as jest.Mock).mockResolvedValue({});
 
-        await service.releaseEscrow('vendor-user-1', { escrowId: 'escrow-order-1' }, vendorUser);
+        await service.releaseEscrow('vendor-user-1', { escrowId: 'escrow-order-1' }, payerUser);
 
         expect(txClient.wallet.update).toHaveBeenCalledWith({
           where: { id: 'wallet-2' },
@@ -807,7 +810,7 @@ describe('WalletService', () => {
         (txClient.wallet.update as jest.Mock).mockResolvedValue({});
         (txClient.transaction.create as jest.Mock).mockResolvedValue({});
 
-        await service.releaseEscrow('vendor-user-1', { escrowId: 'escrow-order-1' }, vendorUser);
+        await service.releaseEscrow('vendor-user-1', { escrowId: 'escrow-order-1' }, payerUser);
 
         // Full 1000 passthrough, no PlatformSettings lookup, no COMMISSION transaction.
         expect(prisma.platformSettings.findUnique).not.toHaveBeenCalled();
@@ -825,11 +828,13 @@ describe('WalletService', () => {
     // owner July 28, 2026 -- 0/10/20/30% off the base commission by
     // NEW_VENDOR/ESTABLISHED/TRUSTED_VENDOR/SACRED_ARTISAN.
     describe('VND-026 tier-based commission discount', () => {
-      const vendorUser = {
-        id: 'vendor-user-1',
-        sub: 'vendor-user-1',
-        email: 'vendor@example.com',
-        role: 'VENDOR',
+      // The buyer releases (the vendor no longer can); commission still
+      // follows the escrow's recipient.
+      const payerUser = {
+        id: 'customer-1',
+        sub: 'customer-1',
+        email: 'customer@example.com',
+        role: 'CLIENT',
         verified: true,
       };
       const mockOrderEscrow = {
@@ -873,7 +878,7 @@ describe('WalletService', () => {
       ])('%s: vendor nets the discounted amount', async (_label, tier, expectedNet) => {
         setup(tier);
 
-        await service.releaseEscrow('vendor-user-1', { escrowId: 'escrow-order-1' }, vendorUser);
+        await service.releaseEscrow('vendor-user-1', { escrowId: 'escrow-order-1' }, payerUser);
 
         expect(txClient.wallet.update).toHaveBeenCalledWith({
           where: { id: 'wallet-2' },
@@ -884,7 +889,7 @@ describe('WalletService', () => {
       it('records tierDiscountPct on both the ESCROW_RELEASE and COMMISSION transaction metadata', async () => {
         setup('SACRED_ARTISAN');
 
-        await service.releaseEscrow('vendor-user-1', { escrowId: 'escrow-order-1' }, vendorUser);
+        await service.releaseEscrow('vendor-user-1', { escrowId: 'escrow-order-1' }, payerUser);
 
         expect(txClient.transaction.create).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -908,7 +913,7 @@ describe('WalletService', () => {
       it("looks up the vendor by the escrow's recipientId (the vendor's userId), not the escrow depositor", async () => {
         setup('TRUSTED_VENDOR');
 
-        await service.releaseEscrow('vendor-user-1', { escrowId: 'escrow-order-1' }, vendorUser);
+        await service.releaseEscrow('vendor-user-1', { escrowId: 'escrow-order-1' }, payerUser);
 
         expect(prisma.vendor.findUnique).toHaveBeenCalledWith({
           where: { userId: 'vendor-user-1' }, // recipientId, not escrow.userId ('customer-1')
@@ -972,6 +977,41 @@ describe('WalletService', () => {
     });
   });
 
+  describe('who may release an escrow (escrow policy, October 31, 2026)', () => {
+    const escrow = {
+      id: 'escrow-9',
+      walletId: 'wallet-1',
+      userId: 'payer-1',
+      recipientId: 'recipient-1',
+      amount: 1000,
+      type: 'BOOKING',
+      status: 'HOLD',
+      currency: 'NGN',
+      releaseTiers: null,
+      wallet: {},
+    };
+    const recipient = { id: 'recipient-1', role: 'BABALAWO' } as CurrentUserPayload;
+
+    it('refuses the recipient, who could otherwise pay themselves before delivering', async () => {
+      (prisma.escrow.findUnique as jest.Mock).mockResolvedValue(escrow);
+      await expect(service.releaseEscrow('payer-1', { escrowId: 'escrow-9' }, recipient)).rejects.toThrow(
+        ForbiddenException
+      );
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('allows a release the platform makes on their behalf', async () => {
+      (prisma.escrow.findUnique as jest.Mock).mockResolvedValue(escrow);
+      (prisma.wallet.findUnique as jest.Mock).mockResolvedValue({ id: 'wallet-2', userId: 'recipient-1', balance: 0, currency: 'NGN', locked: false });
+      (txClient.escrow.update as jest.Mock).mockResolvedValue({ ...escrow, status: 'RELEASED' });
+      (txClient.wallet.update as jest.Mock).mockResolvedValue({});
+      (txClient.transaction.create as jest.Mock).mockResolvedValue({});
+      await expect(
+        service.releaseEscrow('payer-1', { escrowId: 'escrow-9' }, recipient, { system: true })
+      ).resolves.toBeDefined();
+    });
+  });
+
   describe('cancelEscrow', () => {
     it('should cancel escrow and refund atomically', async () => {
       const mockEscrow = {
@@ -1004,6 +1044,32 @@ describe('WalletService', () => {
       expect(txClient.escrow.update).toHaveBeenCalledWith({
         where: { id: 'escrow-1' },
         data: expect.objectContaining({ status: 'CANCELLED' }),
+      });
+    });
+
+    it('refunds only what is still held once a tier has been paid out (it used to refund the full amount again)', async () => {
+      const mockEscrow = {
+        id: 'escrow-1',
+        walletId: 'wallet-1',
+        userId: 'user-1',
+        amount: 5000,
+        type: 'ORDER',
+        status: 'PARTIALLY_RELEASED',
+        currency: 'NGN',
+        releaseTiers: { tier1: 0.5, tier2: 0.5, releasedTier1: true, releasedTier2: false },
+        wallet: {},
+      };
+      (prisma.escrow.findUnique as jest.Mock).mockResolvedValue(mockEscrow);
+      (txClient.wallet.update as jest.Mock).mockResolvedValue({});
+      (txClient.transaction.create as jest.Mock).mockResolvedValue({});
+      (txClient.escrow.update as jest.Mock).mockResolvedValue({ ...mockEscrow, status: 'CANCELLED' });
+
+      const result = await service.cancelEscrow('user-1', 'escrow-1', mockUser as unknown as CurrentUserPayload);
+
+      expect(result).toEqual({ success: true, refundedAmount: 2500 });
+      expect(txClient.wallet.update).toHaveBeenCalledWith({
+        where: { id: 'wallet-1' },
+        data: { balance: { increment: 2500 } },
       });
     });
 

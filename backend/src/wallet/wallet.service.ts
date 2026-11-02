@@ -11,7 +11,7 @@ import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { CreateDepositDto } from './dto/create-deposit.dto';
 import { CreateWithdrawalRequestDto } from './dto/create-withdrawal-request.dto';
 import { CreateEscrowDto } from './dto/create-escrow.dto';
-import { ReleaseEscrowDto } from './dto/release-escrow.dto';
+import { ReleaseEscrowDto, ReleaseTier } from './dto/release-escrow.dto';
 import { CurrencyService } from '../payments/currency.service';
 import {
   NotificationService,
@@ -388,13 +388,11 @@ export class WalletService {
     // the balance negative. The real check is now the atomic conditional
     // `updateMany` inside the transaction — see below.
 
-    // Calculate auto-release date (14 days from now)
-    const autoReleaseAt = new Date();
-    autoReleaseAt.setDate(autoReleaseAt.getDate() + 14);
-
-    // Calculate expiry date (14 days from now) for auto-refund
-    const expiryDate = new Date();
-    expiryDate.setDate(expiryDate.getDate() + 14);
+    // Escrow policy (October 31, 2026): auto-release to the recipient is
+    // armed only once they say they've delivered (armAutoRelease); until
+    // then an escrow refunds the payer if nothing happens by expiryDate.
+    const autoReleaseAt = null;
+    const expiryDate = WalletService.daysFromNow(WalletService.REFUND_IF_UNDELIVERED_DAYS);
 
     // Prepare releaseTiers if provided
     const releaseTiers = dto.releaseTiers
@@ -482,13 +480,19 @@ export class WalletService {
    * and Order.paidAt already carry the audit trail for where the money
    * actually came from.
    */
-  async createExternallyFundedEscrow(userId: string, dto: CreateEscrowDto) {
+  async createExternallyFundedEscrow(
+    userId: string,
+    dto: CreateEscrowDto,
+    opts: { refundIfUndelivered?: boolean } = {}
+  ) {
     const wallet = await this.getOrCreateWallet(userId, dto.currency || Currency.NGN);
 
-    const autoReleaseAt = new Date();
-    autoReleaseAt.setDate(autoReleaseAt.getDate() + 14);
-    const expiryDate = new Date();
-    expiryDate.setDate(expiryDate.getDate() + 14);
+    // Same policy as createEscrow. Mentorship passes refundIfUndelivered:
+    // false -- its sessions can run past 14 days, and cancelling is the
+    // client's refund path there.
+    const autoReleaseAt = null;
+    const expiryDate =
+      opts.refundIfUndelivered === false ? null : WalletService.daysFromNow(WalletService.REFUND_IF_UNDELIVERED_DAYS);
     const releaseTiers = dto.releaseTiers
       ? {
           tier1: dto.releaseTiers.tier1 || 0.5,
@@ -573,7 +577,12 @@ export class WalletService {
   /**
    * Release escrow funds (supports multi-tier release)
    */
-  async releaseEscrow(userId: string, dto: ReleaseEscrowDto, currentUser: CurrentUserPayload) {
+  async releaseEscrow(
+    userId: string,
+    dto: ReleaseEscrowDto,
+    currentUser: CurrentUserPayload,
+    opts: { system?: boolean } = {}
+  ) {
     const escrow = await this.prisma.escrow.findUnique({
       where: { id: dto.escrowId },
       include: { wallet: true },
@@ -590,11 +599,11 @@ export class WalletService {
       );
     }
 
-    // Only the user who created the escrow, recipient, or admin can release
-    const canRelease =
-      escrow.userId === currentUser.id ||
-      escrow.recipientId === currentUser.id ||
-      currentUser.role === 'ADMIN';
+    // Only the payer or an admin can release. The recipient never can --
+    // they could otherwise pay themselves before delivering (found October
+    // 30, 2026). Releases the platform makes on the recipient's behalf
+    // (an order shipped, the 14-day auto-release) pass opts.system.
+    const canRelease = escrow.userId === currentUser.id || currentUser.role === 'ADMIN' || opts.system === true;
 
     if (!canRelease) {
       throw new ForbiddenException('You do not have permission to release this escrow');
@@ -824,7 +833,9 @@ export class WalletService {
     // All cancellation steps must be atomic. Escrow.amount is now Decimal
     // (ProBacklog-v1.md item #15) -- normalized since remainingAmount is
     // compared with `>` below and returned to the caller.
-    const remainingAmount = Number(escrow.amount);
+    // Only what is still held: a released tier has already been paid out,
+    // and refunding the full amount again would pay twice.
+    const remainingAmount = WalletService.remainingInEscrow(escrow);
 
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       if (remainingAmount > 0) {
@@ -928,6 +939,105 @@ export class WalletService {
    * Auto-expire escrows and refund to sender
    * This should be called by a scheduled job (cron)
    */
+  static readonly REFUND_IF_UNDELIVERED_DAYS = 14;
+  static readonly AUTO_RELEASE_DAYS = 14;
+
+  private static daysFromNow(days: number): Date {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    return d;
+  }
+
+  /** What an escrow still holds, after any released tiers. */
+  static remainingInEscrow(escrow: { amount: Prisma.Decimal | number; releaseTiers: Prisma.JsonValue }): number {
+    const amount = Number(escrow.amount);
+    const tiers = escrow.releaseTiers as unknown as EscrowReleaseTiers | null;
+    if (!tiers) return amount;
+    const released =
+      (tiers.releasedTier1 ? amount * (tiers.tier1 || 0.5) : 0) + (tiers.releasedTier2 ? amount * (tiers.tier2 || 0.5) : 0);
+    return Math.round((amount - released) * 100) / 100;
+  }
+
+  /**
+   * The recipient says they've delivered (order shipped, every mentorship
+   * session held, guidance plan completed). The payer now has
+   * AUTO_RELEASE_DAYS to confirm or dispute; after that the rest is
+   * released to the recipient by autoReleaseEscrows(). It no longer
+   * refunds on expiry.
+   */
+  async armAutoRelease(escrowId: string): Promise<void> {
+    await this.prisma.escrow.updateMany({
+      where: { id: escrowId, status: { in: [EscrowStatus.HOLD, EscrowStatus.PARTIALLY_RELEASED] } },
+      data: { autoReleaseAt: WalletService.daysFromNow(WalletService.AUTO_RELEASE_DAYS), expiryDate: null },
+    });
+  }
+
+  /**
+   * Release every armed escrow whose payer neither confirmed nor disputed
+   * in time (a disputed escrow is DISPUTED, so it is skipped). Also closes
+   * the order or booking it paid for.
+   */
+  async autoReleaseEscrows() {
+    const due = await this.prisma.escrow.findMany({
+      where: {
+        status: { in: [EscrowStatus.HOLD, EscrowStatus.PARTIALLY_RELEASED] },
+        autoReleaseAt: { lte: new Date() },
+      },
+    });
+
+    const results: Array<{ escrowId: string; status: 'released' | 'skipped' | 'error'; error?: string }> = [];
+    for (const escrow of due) {
+      try {
+        if (!escrow.releaseTiers && escrow.status === EscrowStatus.PARTIALLY_RELEASED) {
+          // A custom-amount partial release (disputes): the default release
+          // would pay the full amount again. Leave it to an admin.
+          results.push({ escrowId: escrow.id, status: 'skipped' });
+          continue;
+        }
+        if (escrow.type === EscrowType.ORDER && escrow.relatedId) {
+          // A return in progress isn't silence: hold until it is settled.
+          const openReturn = await this.prisma.returnRequest.findFirst({
+            where: { orderId: escrow.relatedId, status: { in: ['REQUESTED', 'ACCEPTED', 'PARTIAL_REFUND_OFFERED', 'ESCALATED'] } },
+          });
+          if (openReturn) {
+            results.push({ escrowId: escrow.id, status: 'skipped' });
+            continue;
+          }
+        }
+        await this.releaseEscrow(
+          escrow.userId,
+          {
+            escrowId: escrow.id,
+            ...(escrow.releaseTiers ? { tier: ReleaseTier.FULL } : {}),
+            notes: `Released automatically: not confirmed or disputed within ${WalletService.AUTO_RELEASE_DAYS} days`,
+          },
+          { id: escrow.userId, role: 'CLIENT' } as CurrentUserPayload,
+          { system: true }
+        );
+        if (escrow.type === EscrowType.ORDER && escrow.relatedId) {
+          await this.prisma.order.updateMany({
+            where: { id: escrow.relatedId, status: 'SHIPPED' },
+            data: { status: 'DELIVERED', deliveredAt: new Date() },
+          });
+        } else if (escrow.type === EscrowType.MENTORSHIP_SESSION) {
+          const booking = await this.prisma.mentorshipBooking.findFirst({ where: { escrowId: escrow.id } });
+          if (booking && booking.status === 'PAID') {
+            await this.prisma.mentorshipBooking.update({
+              where: { id: booking.id },
+              data: { status: 'COMPLETED', sessionsConfirmed: booking.sessionsHeld, completedAt: new Date() },
+            });
+          }
+        }
+        results.push({ escrowId: escrow.id, status: 'released' });
+      } catch (error) {
+        const err = error instanceof Error ? error : new Error(String(error));
+        this.logger.error(`Auto-release failed for escrow ${escrow.id}: ${err.message}`);
+        results.push({ escrowId: escrow.id, status: 'error', error: err.message });
+      }
+    }
+    return { processed: due.length, results };
+  }
+
   async expireEscrows() {
     const now = new Date();
     const expiredEscrows = await this.prisma.escrow.findMany({

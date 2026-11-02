@@ -495,7 +495,8 @@ describe('PaymentsService', () => {
         expect(mockWalletService.releaseEscrow).toHaveBeenCalledWith(
           'vendor-user-1',
           expect.objectContaining({ escrowId: 'escrow-1', tier: 'FULL' }),
-          expect.objectContaining({ id: 'vendor-user-1' })
+          expect.objectContaining({ id: 'vendor-user-1' }),
+          { system: true } // instant delivery: the platform releases, not the vendor
         );
       });
 

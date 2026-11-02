@@ -12,7 +12,8 @@ import { Currency, PaymentPurpose } from '@common';
 // SHOP_BACKLOG.md MSP-023 (owner's decisions, October 30, 2026): verified
 // babalawos offer paid mentorship sessions; Devoted members book and pay
 // here; the session is held wherever the babalawo shares a link to; the
-// babalawo is paid in full once the member confirms every session.
+// babalawo is paid in full once the member confirms every session, or
+// automatically 14 days after the last one is marked held.
 
 interface Person {
   id: string;
@@ -253,6 +254,13 @@ const BookingCard: React.FC<{ booking: Booking; asBabalawo: boolean; onPay: (b: 
         )}
         {!asBabalawo && b.status === 'PAID' && awaitingConfirm > 0 && (
           <button type="button" onClick={() => act.mutate('confirm')} className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold">Confirm Session Took Place</button>
+        )}
+        {b.status === 'PAID' && b.sessionsHeld >= b.sessionsTotal && (
+          <p className="w-full text-xs text-muted-foreground">
+            {asBabalawo
+              ? 'Every session is marked held. You are paid when the member confirms, or automatically 14 days after the last one.'
+              : 'Every session is marked held. If you do not confirm or raise a problem, the babalawo is paid automatically 14 days after the last one.'}
+          </p>
         )}
         {canCancel && (
           <button type="button" onClick={() => act.mutate('cancel')} className="px-3 py-1.5 rounded-lg border border-destructive/40 text-destructive text-sm">Cancel</button>

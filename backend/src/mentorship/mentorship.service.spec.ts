@@ -36,6 +36,7 @@ describe('MentorshipService', () => {
       createExternallyFundedEscrow: jest.fn().mockResolvedValue({ id: 'esc-1' }),
       releaseEscrow: jest.fn().mockResolvedValue({}),
       cancelEscrow: jest.fn().mockResolvedValue({}),
+      armAutoRelease: jest.fn().mockResolvedValue(undefined),
     };
     notifications = { createNotification: jest.fn().mockResolvedValue({}) };
     service = new MentorshipService(prisma, wallet, notifications);
@@ -82,7 +83,9 @@ describe('MentorshipService', () => {
       await service.markPaid('bk-1', { userId: 'client-1', amount: 40000, transactionId: 'ref-1' });
       expect(wallet.createExternallyFundedEscrow).toHaveBeenCalledWith(
         'client-1',
-        expect.objectContaining({ recipientId: 'baba-1', amount: 40000, type: EscrowType.MENTORSHIP_SESSION, relatedId: 'bk-1' })
+        expect.objectContaining({ recipientId: 'baba-1', amount: 40000, type: EscrowType.MENTORSHIP_SESSION, relatedId: 'bk-1' }),
+        // Sessions can run past 14 days: no refund-on-timeout.
+        { refundIfUndelivered: false }
       );
       expect(prisma.mentorshipBooking.update).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ status: 'PAID', escrowId: 'esc-1' }) })
@@ -118,6 +121,20 @@ describe('MentorshipService', () => {
       prisma.mentorshipBooking.findUnique.mockResolvedValue(booking({ sessionsHeld: 4, sessionsConfirmed: 3 }));
       await expect(service.confirmSession('bk-1', babalawo)).rejects.toBeInstanceOf(NotFoundException);
       expect(wallet.releaseEscrow).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('auto-release', () => {
+    it('starts the 14-day auto-release once the last session is marked held, not before', async () => {
+      prisma.mentorshipBooking.findUnique.mockResolvedValue(booking({ sessionsHeld: 2 }));
+      prisma.mentorshipBooking.update.mockResolvedValueOnce({ ...booking(), sessionsHeld: 3 });
+      await service.markSessionHeld('bk-1', babalawo);
+      expect(wallet.armAutoRelease).not.toHaveBeenCalled();
+
+      prisma.mentorshipBooking.findUnique.mockResolvedValue(booking({ sessionsHeld: 3 }));
+      prisma.mentorshipBooking.update.mockResolvedValueOnce({ ...booking(), sessionsHeld: 4 });
+      await service.markSessionHeld('bk-1', babalawo);
+      expect(wallet.armAutoRelease).toHaveBeenCalledWith('esc-1');
     });
   });
 

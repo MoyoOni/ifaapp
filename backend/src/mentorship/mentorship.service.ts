@@ -146,7 +146,7 @@ export class MentorshipService {
       type: EscrowType.MENTORSHIP_SESSION,
       relatedId: booking.id,
       notes: `Mentorship: ${booking.offering.name}`,
-    });
+    }, { refundIfUndelivered: false });
 
     await this.prisma.mentorshipBooking.update({
       where: { id: booking.id },
@@ -180,10 +180,18 @@ export class MentorshipService {
       where: { id: booking.id },
       data: { sessionsHeld: { increment: 1 } },
     });
+    // Every session held: the client has WalletService.AUTO_RELEASE_DAYS
+    // to confirm or raise a problem, then the babalawo is paid anyway.
+    const allHeld = updated.sessionsHeld >= updated.sessionsTotal;
+    if (allHeld && booking.escrowId) {
+      await this.walletService.armAutoRelease(booking.escrowId);
+    }
     await this.notify(
       booking.clientId,
       'Please confirm your session',
-      'Your babalawo has marked a session as held. Confirm it so they are paid.',
+      allHeld
+        ? `Your babalawo has marked every session as held. Confirm them so they are paid; if you do nothing, payment is released automatically in ${WalletService.AUTO_RELEASE_DAYS} days.`
+        : 'Your babalawo has marked a session as held. Confirm it so they are paid.',
       booking.id
     );
     return updated;

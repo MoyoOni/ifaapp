@@ -6,6 +6,8 @@ import { SearchService } from '../search/search.service';
 import { WhatsAppService } from '../whatsapp/whatsapp.service';
 import { WalletService } from '../wallet/wallet.service';
 import { ReleaseTier } from '../wallet/dto/release-escrow.dto';
+import { UpdateOrderDto } from './dto/update-order.dto';
+import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { NotificationService } from '../notifications/notification.service';
 import { DisputesService } from '../disputes/disputes.service';
 import { S3Service } from '../documents/s3.service';
@@ -300,6 +302,7 @@ describe('MarketplaceService', () => {
 
   const mockWalletService = {
     releaseEscrow: jest.fn().mockResolvedValue({}),
+    armAutoRelease: jest.fn().mockResolvedValue(undefined),
     refundMarketplaceOrder: jest.fn().mockResolvedValue({ wallet: {}, escrowCancelled: false }),
     getOrCreateWallet: jest.fn().mockResolvedValue({ id: 'wallet-1', balance: 0, currency: 'NGN' }),
   };
@@ -3065,11 +3068,15 @@ describe('MarketplaceService', () => {
       await service.updateOrder(orderId, dto as any, mockCurrentUser);
       await new Promise((resolve) => setImmediate(resolve)); // flush the fire-and-forget release call
 
+      // Released on the vendor's behalf, and the customer's 14 days to
+      // confirm delivery start now.
       expect(mockWalletService.releaseEscrow).toHaveBeenCalledWith(
         'customer-1',
         { escrowId: 'escrow-1', tier: ReleaseTier.TIER_1 },
-        mockCurrentUser
+        mockCurrentUser,
+        { system: true }
       );
+      expect(mockWalletService.armAutoRelease).toHaveBeenCalledWith('escrow-1');
     });
 
     it('releases the tier-2 escrow when an order transitions to DELIVERED (EMG-07)', async () => {
@@ -3091,19 +3098,66 @@ describe('MarketplaceService', () => {
         releaseTiers: { tier1: 0.5, tier2: 0.5, releasedTier1: true, releasedTier2: false },
       };
 
+      const customer = { ...mockCurrentUser, id: 'customer-1', sub: 'customer-1', role: 'CLIENT' } as CurrentUserPayload;
       mockPrismaService.order.findUnique.mockResolvedValue(mockOrder);
-      mockPrismaService.vendor.findUnique.mockResolvedValue(mockVendor);
+      mockPrismaService.vendor.findUnique.mockResolvedValue(null);
       mockPrismaService.order.update.mockResolvedValue(mockUpdatedOrder);
       mockPrismaService.escrow.findFirst.mockResolvedValue(mockEscrow);
 
-      await service.updateOrder(orderId, dto as any, mockCurrentUser);
+      await service.updateOrder(orderId, dto as any, customer);
       await new Promise((resolve) => setImmediate(resolve));
 
       expect(mockWalletService.releaseEscrow).toHaveBeenCalledWith(
         'customer-1',
         { escrowId: 'escrow-1', tier: ReleaseTier.TIER_2 },
-        mockCurrentUser
+        customer,
+        { system: false }
       );
+    });
+
+    describe('who may set which status (escrow policy, October 31, 2026)', () => {
+      const vendor = { id: 'vendor-1', userId: mockCurrentUser.id };
+      const customer = { ...mockCurrentUser, id: 'customer-1', sub: 'customer-1', role: 'CLIENT' } as CurrentUserPayload;
+      const order = (status: string) => ({ id: 'order-1', customerId: 'customer-1', vendorId: 'vendor-1', status });
+
+      it('does not let the vendor mark an order delivered (that would release the rest of the escrow to them)', async () => {
+        mockPrismaService.order.findUnique.mockResolvedValue(order('SHIPPED'));
+        mockPrismaService.vendor.findUnique.mockResolvedValue(vendor);
+        await expect(service.updateOrder('order-1', { status: 'DELIVERED' } as UpdateOrderDto, mockCurrentUser)).rejects.toThrow(
+          'Only the customer can confirm an order was delivered'
+        );
+        expect(mockPrismaService.order.update).not.toHaveBeenCalled();
+      });
+
+      it('does not let the customer mark their own order paid', async () => {
+        mockPrismaService.order.findUnique.mockResolvedValue(order('PENDING'));
+        mockPrismaService.vendor.findUnique.mockResolvedValue(null);
+        await expect(service.updateOrder('order-1', { status: 'PAID' } as UpdateOrderDto, customer)).rejects.toThrow(
+          'You cannot move this order from PENDING to PAID'
+        );
+      });
+
+      it('does not let the customer mark an order shipped or set tracking', async () => {
+        mockPrismaService.order.findUnique.mockResolvedValue(order('PAID'));
+        mockPrismaService.vendor.findUnique.mockResolvedValue(null);
+        await expect(service.updateOrder('order-1', { status: 'SHIPPED' } as UpdateOrderDto, customer)).rejects.toThrow();
+        await expect(service.updateOrder('order-1', { trackingNumber: 'X1' } as UpdateOrderDto, customer)).rejects.toThrow(
+          'Only the vendor can set shipping details'
+        );
+      });
+
+      it('does not let anyone but an admin cancel an order that is already paid', async () => {
+        mockPrismaService.order.findUnique.mockResolvedValue(order('PAID'));
+        mockPrismaService.vendor.findUnique.mockResolvedValue(null);
+        await expect(service.updateOrder('order-1', { status: 'CANCELLED' } as UpdateOrderDto, customer)).rejects.toThrow();
+      });
+
+      it('lets the customer cancel an unpaid order', async () => {
+        mockPrismaService.order.findUnique.mockResolvedValue(order('PENDING'));
+        mockPrismaService.vendor.findUnique.mockResolvedValue(null);
+        mockPrismaService.order.update.mockResolvedValue({ ...order('CANCELLED') });
+        await expect(service.updateOrder('order-1', { status: 'CANCELLED' } as UpdateOrderDto, customer)).resolves.toBeDefined();
+      });
     });
 
     it('does not re-release a tier that is already released, or re-trigger on a no-op status re-save (EMG-07)', async () => {
@@ -3139,15 +3193,15 @@ describe('MarketplaceService', () => {
         vendorId: 'vendor-1',
         status: 'SHIPPED',
       };
-      const mockVendor = { id: 'vendor-1', userId: mockCurrentUser.id };
+      const customer = { ...mockCurrentUser, id: 'customer-1', sub: 'customer-1', role: 'CLIENT' } as CurrentUserPayload;
       const mockUpdatedOrder = { ...mockOrder, status: 'DELIVERED' };
 
       mockPrismaService.order.findUnique.mockResolvedValue(mockOrder);
-      mockPrismaService.vendor.findUnique.mockResolvedValue(mockVendor);
+      mockPrismaService.vendor.findUnique.mockResolvedValue(null);
       mockPrismaService.order.update.mockResolvedValue(mockUpdatedOrder);
       mockPrismaService.escrow.findFirst.mockResolvedValue(null);
 
-      await service.updateOrder(orderId, dto as any, mockCurrentUser);
+      await service.updateOrder(orderId, dto as any, customer);
       await new Promise((resolve) => setImmediate(resolve));
 
       expect(mockWalletService.releaseEscrow).not.toHaveBeenCalled();

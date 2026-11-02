@@ -14,6 +14,7 @@ import * as request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { GlobalExceptionFilter } from '../src/common/filters/global-exception.filter';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { WalletService } from '../src/wallet/wallet.service';
 import { UserRole } from '@ile-ase/common';
 
 describe('Mentorship sessions', () => {
@@ -134,5 +135,25 @@ describe('Mentorship sessions', () => {
 
     expect((await prisma.mentorshipBooking.findUniqueOrThrow({ where: { id: booked.body.id } })).status).toBe('CANCELLED');
     expect(await balance(devoted.id)).toBe(before + 20000);
+  });
+
+  it('pays the babalawo automatically if the client never confirms, once every session is held', async () => {
+    const booked = await http().post('/mentorship/bookings').set(as(devoted)).send({ offeringId }).expect(201);
+    await pay(booked.body.id, 2_000_000);
+    const escrowId = (await prisma.mentorshipBooking.findUniqueOrThrow({ where: { id: booked.body.id } })).escrowId as string;
+    // Sessions can run past 14 days: no refund-on-timeout for mentorship.
+    expect((await prisma.escrow.findUniqueOrThrow({ where: { id: escrowId } })).expiryDate).toBeNull();
+
+    await http().post(`/mentorship/bookings/${booked.body.id}/sessions/held`).set(as(babalawo)).expect(201);
+    expect((await prisma.escrow.findUniqueOrThrow({ where: { id: escrowId } })).autoReleaseAt).toBeNull();
+    await http().post(`/mentorship/bookings/${booked.body.id}/sessions/held`).set(as(babalawo)).expect(201);
+    expect((await prisma.escrow.findUniqueOrThrow({ where: { id: escrowId } })).autoReleaseAt).not.toBeNull();
+
+    const before = await balance(babalawo.id);
+    await prisma.escrow.update({ where: { id: escrowId }, data: { autoReleaseAt: new Date(Date.now() - 1000) } });
+    await app.get(WalletService).autoReleaseEscrows();
+
+    expect(await balance(babalawo.id)).toBe(before + 20000);
+    expect((await prisma.mentorshipBooking.findUniqueOrThrow({ where: { id: booked.body.id } })).status).toBe('COMPLETED');
   });
 });

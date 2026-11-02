@@ -6,6 +6,7 @@ import { NotificationService } from '../notifications/notification.service';
 import { WalletService } from '../wallet/wallet.service';
 import { UserRole } from '@ile-ase/common';
 import { Prisma } from '@prisma/client';
+import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 
 describe('GuidancePlansService', () => {
   let service: GuidancePlansService;
@@ -38,6 +39,7 @@ describe('GuidancePlansService', () => {
   const mockWalletService = {
     createEscrow: jest.fn(),
     releaseEscrow: jest.fn(),
+    armAutoRelease: jest.fn(),
   };
 
   const mockNotificationService = {
@@ -331,6 +333,40 @@ describe('GuidancePlansService', () => {
 
         await expect(service.deleteTemplate('template-1', admin)).resolves.toBeDefined();
       });
+    });
+  });
+
+  // Escrow policy (October 31, 2026): the babalawo no longer pays themselves
+  // the final 50% by marking the plan complete.
+  describe('completing and confirming a paid plan', () => {
+    const babalawo = { id: 'bab-1', role: 'BABALAWO' } as CurrentUserPayload;
+    const client = { id: 'client-1', role: 'CLIENT' } as CurrentUserPayload;
+    const escrow = { id: 'esc-1', status: 'PARTIALLY_RELEASED', releaseTiers: { releasedTier1: true, releasedTier2: false } };
+
+    it('completing starts the auto-release countdown instead of releasing', async () => {
+      mockPrismaService.guidancePlan.findUnique.mockResolvedValue({ ...mockPlan, status: 'IN_PROGRESS' });
+      mockPrismaService.guidancePlan.update.mockResolvedValue({ ...mockPlan, status: 'COMPLETED', escrow });
+      await service.completeGuidancePlan('plan-1', 'bab-1', babalawo).catch(() => undefined);
+      expect(mockWalletService.armAutoRelease).toHaveBeenCalledWith('esc-1');
+      expect(mockWalletService.releaseEscrow).not.toHaveBeenCalled();
+    });
+
+    it('the client confirming releases the final tier', async () => {
+      mockPrismaService.guidancePlan.findUnique.mockResolvedValue({ ...mockPlan, status: 'COMPLETED', escrow });
+      await expect(service.confirmGuidancePlanComplete('plan-1', 'client-1', client)).resolves.toEqual({
+        confirmed: true,
+        alreadyReleased: false,
+      });
+      expect(mockWalletService.releaseEscrow).toHaveBeenCalledWith(
+        'client-1',
+        expect.objectContaining({ escrowId: 'esc-1', tier: 'TIER_2' }),
+        client
+      );
+    });
+
+    it('only the client can confirm', async () => {
+      await expect(service.confirmGuidancePlanComplete('plan-1', 'client-1', babalawo)).rejects.toThrow(ForbiddenException);
+      expect(mockWalletService.releaseEscrow).not.toHaveBeenCalled();
     });
   });
 });

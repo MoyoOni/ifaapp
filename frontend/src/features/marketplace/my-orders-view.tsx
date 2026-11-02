@@ -114,6 +114,18 @@ const MyOrdersView: React.FC = () => {
     onError: (err: any) => toast.error(err?.response?.data?.message || 'Failed to generate invoice'),
   });
 
+  // Escrow policy (October 31, 2026): only the customer confirms delivery,
+  // which releases the rest of the payment to the vendor.
+  const confirmDeliveryMutation = useMutation({
+    mutationFn: async (orderId: string) => api.patch(`/marketplace/orders/${orderId}`, { status: 'DELIVERED' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-orders'] });
+      toast.success('Thank you -- the vendor has been paid');
+    },
+    onError: (err: { response?: { data?: { message?: string } } }) =>
+      toast.error(err?.response?.data?.message || 'Failed to confirm delivery'),
+  });
+
   const confirmReturnMutation = useMutation({
     mutationFn: async (returnRequestId: string) => api.post(`/marketplace/returns/${returnRequestId}/confirm`),
     onSuccess: () => {
@@ -197,7 +209,24 @@ const MyOrdersView: React.FC = () => {
                   </div>
                 )}
 
-                <div className="flex gap-2">
+                {order.status === 'SHIPPED' && (
+                  <p className="text-xs text-muted-foreground">
+                    Received it? Confirm so the vendor is paid. If something is wrong, request a return instead. If you
+                    do neither, the vendor is paid automatically 14 days after shipping.
+                  </p>
+                )}
+
+                <div className="flex gap-2 flex-wrap">
+                  {order.status === 'SHIPPED' && (
+                    <button
+                      type="button"
+                      onClick={() => confirmDeliveryMutation.mutate(order.id)}
+                      disabled={confirmDeliveryMutation.isPending}
+                      className="px-3 py-1.5 bg-highlight text-foreground rounded-lg text-xs font-bold hover:bg-secondary transition-colors disabled:opacity-50"
+                    >
+                      Confirm Received
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => invoiceMutation.mutate(order.id)}

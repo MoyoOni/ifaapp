@@ -203,7 +203,11 @@ const VendorOrderDetailPanel: React.FC<VendorOrderDetailPanelProps> = ({ orderId
     },
   });
 
-  const nextAction = order ? STATUS_FLOW[order.status] : null;
+  // Only the customer (or an admin) can confirm delivery -- it releases the
+  // rest of the escrow to the vendor (escrow policy, October 31, 2026).
+  const flowAction = order ? STATUS_FLOW[order.status] : null;
+  const nextAction = flowAction?.next === 'DELIVERED' && user?.role !== 'ADMIN' ? null : flowAction;
+  const awaitingBuyerConfirmation = order?.status === 'SHIPPED' && user?.role !== 'ADMIN';
   const canRefund = order && ['PAID', 'SHIPPED', 'DELIVERED'].includes(order.status);
   const isAdminOrVendor = user?.role === 'ADMIN' || user?.role === 'VENDOR';
 
@@ -466,6 +470,13 @@ const VendorOrderDetailPanel: React.FC<VendorOrderDetailPanelProps> = ({ orderId
                 {updateMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : nextAction.icon}
                 {nextAction.label}
               </button>
+            )}
+
+            {awaitingBuyerConfirmation && !showRefundForm && (
+              <p className="text-sm text-muted-foreground bg-muted/50 rounded-xl p-3">
+                Waiting for the customer to confirm delivery. The rest of the payment is released when they do, or
+                automatically 14 days after shipping.
+              </p>
             )}
 
             {/* Refund Form */}

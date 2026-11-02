@@ -39,6 +39,7 @@ interface GuidancePlanTracking {
   items: GuidancePlanItem[];
   createdAt: string;
   completedAt?: string;
+  escrow?: { id: string; status: string } | null;
 }
 
 const GuidancePlanTrackingView: React.FC = () => {
@@ -56,6 +57,18 @@ const GuidancePlanTrackingView: React.FC = () => {
     enabled: !!guidancePlanId,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
+
+  // Escrow policy (October 31, 2026): the babalawo marking the plan complete
+  // no longer pays them the final half; the client confirms, or it is
+  // released automatically 14 days later.
+  const confirmCompleteMutation = useMutation({
+    mutationFn: async () => (await api.post(`/guidance-plans/${guidancePlanId}/confirm-complete/${user?.id}`)).data,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['detailed-guidance-plan', guidancePlanId] });
+    },
+  });
+  const awaitingClientConfirmation =
+    plan?.status === 'COMPLETED' && !!plan.escrow && plan.escrow.status !== 'RELEASED' && user?.role === 'CLIENT';
 
   const toggleItemMutation = useMutation({
     mutationFn: async ({ itemIndex, completed }: { itemIndex: number; completed: boolean }) => {
@@ -281,6 +294,18 @@ const GuidancePlanTrackingView: React.FC = () => {
               Mark today's item complete
             </button>
             
+            {awaitingClientConfirmation && (
+              <button
+                onClick={() => confirmCompleteMutation.mutate()}
+                disabled={confirmCompleteMutation.isPending}
+                title="Releases the final payment to your babalawo. If you do nothing, it is released automatically 14 days after they marked the plan complete."
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-colors disabled:opacity-50"
+              >
+                <CheckCircle className="w-5 h-5" />
+                Confirm Plan Complete
+              </button>
+            )}
+
             <button
               onClick={() => window.open(`mailto:${plan.babalawo.id}?subject=Guidance Plan Question&body=Hi, I have a question about my guidance plan.`)}
               className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"

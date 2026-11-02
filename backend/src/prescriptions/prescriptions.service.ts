@@ -12,6 +12,7 @@ import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { CreateGuidancePlanDto } from './dto/create-prescription.dto';
 import { ApproveGuidancePlanDto } from './dto/approve-prescription.dto';
 import { EscrowType, Currency } from '@ile-ase/common';
+import { ReleaseTier } from '../wallet/dto/release-escrow.dto';
 
 /**
  * Guidance Plan Service (formerly Prescription)
@@ -445,17 +446,12 @@ export class GuidancePlansService {
       },
     });
 
-    // Release tier 2 (remaining 50%) of escrow
+    // Escrow policy (October 31, 2026): the babalawo completing the plan no
+    // longer pays themselves the final 50%. The client confirms
+    // (confirmGuidancePlanComplete), or it is released automatically after
+    // WalletService.AUTO_RELEASE_DAYS.
     if (updated.escrow) {
-      await this.walletService.releaseEscrow(
-        guidancePlan.clientId,
-        {
-          escrowId: updated.escrow.id,
-          tier: 'TIER_2' as any,
-          notes: 'Guidance plan completed - final tier release',
-        },
-        currentUser
-      );
+      await this.walletService.armAutoRelease(updated.escrow.id);
     }
 
     this.logger.log(`Guidance plan completed: ${guidancePlanId}`);
@@ -482,6 +478,36 @@ export class GuidancePlansService {
     }
 
     return updated;
+  }
+
+  /**
+   * The client confirms a completed guidance plan, releasing the final 50%
+   * to the babalawo now rather than when the auto-release comes due.
+   */
+  async confirmGuidancePlanComplete(guidancePlanId: string, clientId: string, currentUser: CurrentUserPayload) {
+    if (currentUser.id !== clientId) {
+      throw new ForbiddenException('Only the client can confirm this guidance plan');
+    }
+    const plan = await this.prisma.guidancePlan.findUnique({
+      where: { id: guidancePlanId },
+      include: { escrow: true },
+    });
+    if (!plan || plan.clientId !== clientId) {
+      throw new NotFoundException('Guidance plan not found');
+    }
+    if (plan.status !== 'COMPLETED') {
+      throw new BadRequestException('The babalawo has not marked this guidance plan complete yet');
+    }
+    const releaseTiers = plan.escrow?.releaseTiers as { releasedTier2?: boolean } | null | undefined;
+    if (!plan.escrow || plan.escrow.status === 'RELEASED' || releaseTiers?.releasedTier2) {
+      return { confirmed: true, alreadyReleased: true };
+    }
+    await this.walletService.releaseEscrow(
+      clientId,
+      { escrowId: plan.escrow.id, tier: ReleaseTier.TIER_2, notes: 'Guidance plan confirmed complete by the client' },
+      currentUser
+    );
+    return { confirmed: true, alreadyReleased: false };
   }
 
   /**
@@ -533,7 +559,8 @@ export class GuidancePlansService {
           tier: 'TIER_1' as any,
           notes: 'Guidance plan work started - first tier release',
         },
-        currentUser
+        currentUser,
+        { system: true } // tier 1 on starting work, by design, like an order shipping
       );
     }
 

@@ -1322,7 +1322,8 @@ export class PaymentsService {
           await this.walletService.releaseEscrow(
             order.vendor.userId,
             { escrowId: escrow.id, tier: ReleaseTier.FULL },
-            { id: order.vendor.userId, role: 'VENDOR' } as CurrentUserPayload
+            { id: order.vendor.userId, role: 'VENDOR' } as CurrentUserPayload,
+            { system: true }
           );
           this.logger.log(`Marketplace order ${orderId} is all-digital -- marked DELIVERED and escrow released immediately`);
         }

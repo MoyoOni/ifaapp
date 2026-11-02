@@ -30,6 +30,23 @@ export class EscrowExpiryService {
   }
 
   /**
+   * Escrow policy (October 31, 2026): pay the recipient once the payer has
+   * had AUTO_RELEASE_DAYS after delivery to confirm or dispute.
+   */
+  @Cron(CronExpression.EVERY_HOUR)
+  async handleAutoRelease() {
+    try {
+      const result = await this.walletService.autoReleaseEscrows();
+      if (result.processed > 0) {
+        this.logger.log(`Escrow auto-release: ${JSON.stringify(result.results)}`);
+      }
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error(`Escrow auto-release job failed: ${err.message}`, err.stack);
+    }
+  }
+
+  /**
    * Manual trigger for testing
    */
   async triggerExpiry() {

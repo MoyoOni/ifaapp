@@ -314,7 +314,11 @@ export class AppointmentsService {
           },
         });
 
-        if (escrow) {
+        // The babalawo marking their own appointment complete starts the
+        // auto-release countdown; the client or an admin releases directly.
+        if (escrow && escrow.recipientId === currentUser.id) {
+          await this.walletService.armAutoRelease(escrow.id);
+        } else if (escrow) {
           await this.walletService.releaseEscrow(
             appointment.clientId,
             { escrowId: escrow.id },
