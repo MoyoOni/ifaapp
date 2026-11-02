@@ -75,7 +75,7 @@ describe('SubscriptionsService', () => {
       const fetchSpy = jest.spyOn(global, 'fetch');
 
       await expect(service.initiateSubscription('user-1', 'QUARTERLY')).rejects.toThrow(
-        'Devoted subscriptions are not yet available'
+        'Devoted subscriptions are not available yet'
       );
       expect(fetchSpy).not.toHaveBeenCalled();
     });

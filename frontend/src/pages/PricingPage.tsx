@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { logger } from '@/shared/utils/logger';
+import { parseApiError } from '@/shared/utils/api-error';
 
 const seekerFeatures = [
   'Browse the Babalawo directory',
@@ -60,7 +61,7 @@ const faqs = [
   { q: 'What does the Devoted plan include?', a: 'Devoted members get priority access when Consultations and Guidance Plans return, selected premium Academy courses, and free local delivery on marketplace orders above ₦100,000. Consultation booking is temporarily paused platform-wide while we upgrade our tools.' },
   { q: 'Why is the Practitioner plan free?', a: 'We believe practitioners should earn from their gift, not pay to offer it. Babalawos and Ìyánifá join and list for free — once Consultations resume, they earn directly from consultation and guidance plan fees.' },
   { q: 'What is the commission rate for practitioners?', a: 'Once Consultations resume, practitioners keep 90% of every consultation fee. The 10% platform fee covers payment processing, security infrastructure, and ongoing platform development.' },
-  { q: 'What currency are prices shown in?', a: 'Prices are shown in Nigerian Naira (₦). International payments are also accepted in USD via Flutterwave. All transactions are fully secured.' },
+  { q: 'What currency are prices shown in?', a: 'Prices are shown and paid in Nigerian Naira (₦), through Paystack. Paying in other currencies is not available yet.' },
   { q: 'How does practitioner verification work?', a: 'Practitioners submit credentials, references from elders, and undergo a review by our cultural advisory team. Verification typically takes 3–7 working days.' },
   { q: 'Can I cancel my Devoted plan?', a: 'Yes. Plans can be cancelled from your settings at any time. No lock-in, no cancellation fees.' },
 ];
@@ -68,6 +69,7 @@ const faqs = [
 const PricingPage: React.FC = () => {
   const [devotedPeriod, setDevotedPeriod] = useState<'quarterly' | 'annual'>('quarterly');
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -84,6 +86,7 @@ const PricingPage: React.FC = () => {
     }
     try {
       setIsCheckingOut(true);
+      setCheckoutError(null);
       const { data } = await api.post('/subscriptions/initiate', {
         plan: devotedPeriod === 'quarterly' ? 'QUARTERLY' : 'ANNUAL',
       });
@@ -91,7 +94,9 @@ const PricingPage: React.FC = () => {
         window.location.href = data.checkoutUrl;
       }
     } catch (err) {
+      // Used to fail silently: the button stopped spinning and nothing else.
       logger.error('Checkout failed', err);
+      setCheckoutError(parseApiError(err).userMessage);
       setIsCheckingOut(false);
     }
   };
@@ -242,6 +247,11 @@ const PricingPage: React.FC = () => {
                   <>Start Your Journey <ArrowRight size={14} /></>
                 )}
               </button>
+              {checkoutError && (
+                <p role="alert" className="mt-3 text-sm text-destructive text-center">
+                  {checkoutError}
+                </p>
+              )}
             </div>
 
             {/* ── Practitioner (Free) ── */}

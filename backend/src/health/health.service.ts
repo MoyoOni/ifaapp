@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { paystackTestKeyInProduction } from '../payments/live-payments';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { HeadBucketCommand, S3Client } from '@aws-sdk/client-s3';
@@ -104,6 +105,10 @@ export class HealthService {
     const key = this.config.get<string>('PAYSTACK_SECRET_KEY');
     if (!key?.trim()) {
       return { status: 'disabled' };
+    }
+    if (paystackTestKeyInProduction()) {
+      // Payments are refused (live-payments.ts); say so rather than "up".
+      return { status: 'disabled', message: 'test key in production: payments are switched off' };
     }
     const start = Date.now();
     try {

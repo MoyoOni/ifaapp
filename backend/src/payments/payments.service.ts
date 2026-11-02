@@ -10,6 +10,7 @@ import {
   forwardRef,
   NotFoundException,
 } from '@nestjs/common';
+import { assertLivePayments } from './live-payments';
 import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
@@ -155,6 +156,7 @@ export class PaymentsService {
     preferredProvider?: PaymentProvider,
     convertToCurrency?: Currency
   ) {
+    assertLivePayments();
     // The amount a marketplace order costs is decided here, from the orders
     // themselves -- never taken from the client. Until October 30, 2026 the
     // client's `amount` was charged as-is and the webhook then marked every

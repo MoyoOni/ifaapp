@@ -1,4 +1,5 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
+import { assertLivePayments } from '../payments/live-payments';
 import { PrismaService } from '../prisma/prisma.service';
 import { SesEmailService } from '../shared/services/ses-email.service';
 import {
@@ -57,6 +58,7 @@ export class SubscriptionsService {
   // ─── Initiate Subscription (returns Paystack checkout URL) ───────────────
 
   async initiateSubscription(userId: string, plan: 'QUARTERLY' | 'ANNUAL') {
+    assertLivePayments();
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
@@ -77,7 +79,8 @@ export class SubscriptionsService {
       this.logger.error(
         `Cannot initiate ${plan} checkout: ${plan === 'QUARTERLY' ? 'PAYSTACK_DEVOTED_QUARTERLY_PLAN' : 'PAYSTACK_DEVOTED_ANNUAL_PLAN'} is not configured`
       );
-      throw new Error('Devoted subscriptions are not yet available — payment plan is not configured.');
+      const message = 'Devoted subscriptions are not available yet. Please check back soon.';
+      throw new ServiceUnavailableException({ message, userMessage: message });
     }
 
     const amount = plan === 'QUARTERLY' ? 2_500_000 : 10_000_000; // kobo
