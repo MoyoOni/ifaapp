@@ -18,6 +18,7 @@ import {
   NotificationType,
   NotificationCategory,
 } from '../notifications/notification.service';
+import { DEVOTED_FIELDS, isDevoted } from '../subscriptions/devoted';
 
 interface FindAllFilters {
   role?: string;
@@ -369,6 +370,7 @@ export class UsersService {
         specialization: true,
         createdAt: true,
         subscriptionStatus: true,
+        subscriptionEnd: true,
         appointmentsAsBabalawo: {
           where: { status: { in: ['COMPLETED', 'CONFIRMED'] } },
           select: { id: true },
@@ -406,7 +408,7 @@ export class UsersService {
         // user's own profile and forum posts -- the babalawo directory card
         // was the one place `subscriptionStatus` was never even selected,
         // so the discovery/marketplace-adjacent card couldn't show it.
-        isDevoted: p.subscriptionStatus === 'DEVOTED',
+        isDevoted: isDevoted(p),
         trustScore,
         trustTier: this.getTrustScoreTier(trustScore),
         specialties,
@@ -812,11 +814,11 @@ export class UsersService {
   async awardXP(userId: string, baseAmount: number): Promise<void> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { subscriptionStatus: true, rankXP: true },
+      select: { ...DEVOTED_FIELDS, rankXP: true },
     });
     if (!user) return;
 
-    const multiplier = user.subscriptionStatus === 'DEVOTED' ? 2 : 1;
+    const multiplier = isDevoted(user) ? 2 : 1;
     const earned = baseAmount * multiplier;
     const newXP = (user.rankXP ?? 0) + earned;
 
@@ -1079,6 +1081,7 @@ export class UsersService {
             role: true,
             verified: true,
             subscriptionStatus: true,
+            subscriptionEnd: true,
             isCommunityBuilder: true,
             longestStreak: true,
             trustScore: true,
@@ -1133,7 +1136,7 @@ export class UsersService {
         description: 'Brought 3 or more members into the community via referral',
       });
     }
-    if (user.subscriptionStatus === 'DEVOTED') {
+    if (isDevoted(user)) {
       badges.push({
         key: 'devoted-member',
         emoji: '👑',

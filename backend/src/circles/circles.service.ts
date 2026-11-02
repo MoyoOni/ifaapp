@@ -16,6 +16,7 @@ import {
   NotificationType,
   NotificationCategory,
 } from '../notifications/notification.service';
+import { DEVOTED_FIELDS, isDevoted } from '../subscriptions/devoted';
 
 /**
  * Circles Service
@@ -85,9 +86,9 @@ export class CirclesService {
     if (currentUser.role !== 'ADMIN') {
       const user = await this.prisma.user.findUnique({
         where: { id: currentUser.id },
-        select: { subscriptionStatus: true },
+        select: DEVOTED_FIELDS,
       });
-      if (user?.subscriptionStatus !== 'DEVOTED') {
+      if (!isDevoted(user)) {
         throw new ForbiddenException(
           'Creating circles is a Devoted member benefit. Join and participate in any existing circle for free.'
         );
@@ -511,9 +512,9 @@ export class CirclesService {
     if (circle.isDevoted) {
       const user = await this.prisma.user.findUnique({
         where: { id: currentUser.id },
-        select: { subscriptionStatus: true },
+        select: DEVOTED_FIELDS,
       });
-      if (user?.subscriptionStatus !== 'DEVOTED') {
+      if (!isDevoted(user)) {
         throw new ForbiddenException(
           'This circle is exclusive to Devoted members. Upgrade at /pricing.'
         );
@@ -602,10 +603,10 @@ export class CirclesService {
     // Verify Devoted subscription
     const user = await this.prisma.user.findUnique({
       where: { id: currentUser.id },
-      select: { subscriptionStatus: true },
+      select: DEVOTED_FIELDS,
     });
 
-    if (user?.subscriptionStatus !== 'DEVOTED') {
+    if (!isDevoted(user)) {
       throw new ForbiddenException('Patron status requires a Devoted subscription');
     }
 

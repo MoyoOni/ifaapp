@@ -19,6 +19,7 @@ import {
 } from '../notifications/notification.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { TransactionStatus, WithdrawalStatus } from '@ile-ase/common';
+import { devotedWhere } from '../subscriptions/devoted';
 
 @Injectable()
 export class AdminFinanceService {
@@ -571,7 +572,7 @@ export class AdminFinanceService {
       cancelledThisMonth,
       recentSubscribers,
     ] = await Promise.all([
-      this.prisma.user.count({ where: { subscriptionStatus: 'DEVOTED' } }),
+      this.prisma.user.count({ where: devotedWhere() }),
       this.prisma.subscription.count({ where: { status: 'ACTIVE', plan: 'QUARTERLY' } }),
       this.prisma.subscription.count({ where: { status: 'ACTIVE', plan: 'ANNUAL' } }),
       this.prisma.subscription.count({ where: { createdAt: { gte: startOfMonth } } }),

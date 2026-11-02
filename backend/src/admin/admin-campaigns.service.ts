@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { SesEmailService } from '../shared/services/ses-email.service';
 import { AuditService } from './audit.service';
+import { devotedWhere } from '../subscriptions/devoted';
 
 @Injectable()
 export class AdminCampaignsService {
@@ -123,10 +124,10 @@ export class AdminCampaignsService {
         where = { role: 'BABALAWO' };
         break;
       case 'DEVOTED':
-        where = { subscriptionStatus: 'DEVOTED' };
+        where = devotedWhere();
         break;
       case 'FREE_TIER':
-        where = { subscriptionStatus: 'FREE' };
+        where = { NOT: devotedWhere() };
         break;
       case 'NEW_30D':
         where = { createdAt: { gte: thirtyDaysAgo } };

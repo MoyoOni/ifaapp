@@ -2,6 +2,7 @@ import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/commo
 import { PrismaService } from '../prisma/prisma.service';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { CreateAnnouncementDto, AnnouncementTarget } from './dto/create-announcement.dto';
+import { DEVOTED_FIELDS, isDevoted as isDevotedMember } from '../subscriptions/devoted';
 
 const TARGET_FOR_ROLE: Record<string, AnnouncementTarget> = {
   CLIENT: AnnouncementTarget.CLIENT,
@@ -120,9 +121,9 @@ export class AdminAnnouncementsService {
     if (needsDevotedCheck) {
       const user = await this.prisma.user.findUnique({
         where: { id: currentUser.id },
-        select: { subscriptionStatus: true },
+        select: DEVOTED_FIELDS,
       });
-      isDevoted = user?.subscriptionStatus === 'DEVOTED';
+      isDevoted = isDevotedMember(user);
     }
 
     const visible = candidates.filter((row) => {

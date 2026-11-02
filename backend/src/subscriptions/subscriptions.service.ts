@@ -9,6 +9,7 @@ import {
 } from '../notifications/notification.service';
 import { PaystackApiService } from '../payments/paystack-api.service';
 import { addMonths, addDays, differenceInDays, startOfDay, endOfDay, subDays } from 'date-fns';
+import { DEVOTED_FIELDS, devotedWhere, isDevoted } from './devoted';
 
 @Injectable()
 export class SubscriptionsService {
@@ -115,7 +116,7 @@ export class SubscriptionsService {
 
   async getPublicStats() {
     const [devotedCount, totalUsers] = await Promise.all([
-      this.prisma.user.count({ where: { subscriptionStatus: 'DEVOTED' } }),
+      this.prisma.user.count({ where: devotedWhere() }),
       this.prisma.user.count(),
     ]);
     return { devotedCount, totalUsers };
@@ -130,12 +131,15 @@ export class SubscriptionsService {
     });
     if (!user) throw new NotFoundException('User not found');
 
+    // The member's current subscription (ACTIVE, or PAST_DUE while a
+    // failed renewal is retried); whether they are Devoted at all is the
+    // shared rule in devoted.ts, the same one every benefit checks.
     const activeSub = await this.prisma.subscription.findFirst({
-      where: { userId, status: 'ACTIVE' },
+      where: { userId, status: { in: ['ACTIVE', 'PAST_DUE'] } },
       orderBy: { endDate: 'desc' },
     });
 
-    if (!activeSub || user.subscriptionStatus === 'FREE') {
+    if (!activeSub || !isDevoted(user)) {
       return { status: 'FREE', plan: null, endDate: null, daysRemaining: null, autoRenew: null, canPause: false };
     }
 
@@ -524,14 +528,12 @@ export class SubscriptionsService {
     const referrer = await this.prisma.user.findUnique({ where: { id: referral.referrerId } });
     if (!referrer) return;
 
-    const baseDate =
-      referrer.subscriptionStatus === 'DEVOTED' && referrer.subscriptionEnd
-        ? referrer.subscriptionEnd
-        : new Date();
+    const referrerDevoted = isDevoted(referrer);
+    const baseDate = referrerDevoted && referrer.subscriptionEnd ? referrer.subscriptionEnd : new Date();
 
     const newEnd = addDays(baseDate, 30);
 
-    if (referrer.subscriptionStatus !== 'DEVOTED') {
+    if (!referrerDevoted) {
       // Grant a 30-day Devoted
       await this.prisma.subscription.create({
         data: {
@@ -708,9 +710,9 @@ export class SubscriptionsService {
   async sendWinBackEmail(userId: string): Promise<void> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { email: true, name: true, subscriptionStatus: true },
+      select: { email: true, name: true, ...DEVOTED_FIELDS },
     });
-    if (!user || user.subscriptionStatus === 'DEVOTED') return;
+    if (!user || isDevoted(user)) return;
 
     const frontendUrl = process.env.FRONTEND_URL ?? 'https://iluase.com';
 
@@ -750,9 +752,20 @@ export class SubscriptionsService {
   // endDate — a cron will expire it") promised this cron and it never
   // existed. Needed as a prerequisite for the win-back sweep below, which
   // keys off Subscription.status === 'EXPIRED'.
+  static readonly RENEWAL_GRACE_DAYS = 3;
+
   async runExpirySweep(): Promise<number> {
     const lapsed = await this.prisma.subscription.findMany({
-      where: { status: { in: ['ACTIVE', 'PAST_DUE'] }, autoRenew: false, endDate: { lt: new Date() } },
+      where: {
+        status: { in: ['ACTIVE', 'PAST_DUE'] },
+        OR: [
+          { autoRenew: false, endDate: { lt: new Date() } },
+          // A renewal Paystack never collected: after a grace period the
+          // member is no longer Devoted. Previously these stayed DEVOTED
+          // forever, since only non-renewing subscriptions were swept.
+          { autoRenew: true, endDate: { lt: subDays(new Date(), SubscriptionsService.RENEWAL_GRACE_DAYS) } },
+        ],
+      },
       select: { id: true, userId: true },
     });
 

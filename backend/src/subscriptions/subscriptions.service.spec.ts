@@ -224,8 +224,11 @@ describe('SubscriptionsService', () => {
         expect.objectContaining({
           where: expect.objectContaining({
             status: { in: ['ACTIVE', 'PAST_DUE'] },
-            autoRenew: false,
-            endDate: { lt: expect.any(Date) },
+            OR: [
+              { autoRenew: false, endDate: { lt: expect.any(Date) } },
+              // a renewal that was never collected, after the grace period
+              { autoRenew: true, endDate: { lt: expect.any(Date) } },
+            ],
           }),
         })
       );

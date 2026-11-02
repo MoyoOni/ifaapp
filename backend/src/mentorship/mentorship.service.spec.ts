@@ -23,7 +23,7 @@ describe('MentorshipService', () => {
 
   beforeEach(() => {
     prisma = {
-      user: { findUnique: jest.fn().mockResolvedValue({ subscriptionStatus: 'DEVOTED' }) },
+      user: { findUnique: jest.fn().mockResolvedValue({ subscriptionStatus: 'DEVOTED', subscriptionEnd: new Date(Date.now() + 30 * 86400000) }) },
       subscription: { findFirst: jest.fn().mockResolvedValue({ id: 'sub-1' }) },
       serviceOffering: { findFirst: jest.fn().mockResolvedValue(offering), findMany: jest.fn() },
       mentorshipBooking: {
@@ -53,8 +53,8 @@ describe('MentorshipService', () => {
       await expect(service.createBooking({ offeringId: 'off-1' }, client)).rejects.toBeInstanceOf(ForbiddenException);
     });
 
-    it('needs an active subscription, not just the Devoted flag (same rule as /subscriptions/me)', async () => {
-      prisma.subscription.findFirst.mockResolvedValue(null);
+    it('needs a current Devoted membership, not just the flag (the shared rule in subscriptions/devoted.ts)', async () => {
+      prisma.user.findUnique.mockResolvedValue({ subscriptionStatus: 'DEVOTED', subscriptionEnd: new Date(Date.now() - 86400000) });
       await expect(service.createBooking({ offeringId: 'off-1' }, client)).rejects.toBeInstanceOf(ForbiddenException);
     });
 
@@ -64,7 +64,7 @@ describe('MentorshipService', () => {
     });
 
     it('cannot be made with yourself', async () => {
-      prisma.user.findUnique.mockResolvedValue({ subscriptionStatus: 'DEVOTED' });
+      prisma.user.findUnique.mockResolvedValue({ subscriptionStatus: 'DEVOTED', subscriptionEnd: new Date(Date.now() + 30 * 86400000) });
       await expect(service.createBooking({ offeringId: 'off-1' }, babalawo)).rejects.toBeInstanceOf(BadRequestException);
     });
   });

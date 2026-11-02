@@ -63,7 +63,7 @@ describe('Mentorship sessions', () => {
     prisma = app.get(PrismaService);
 
     babalawo = await newUser(UserRole.BABALAWO, { verified: true });
-    devoted = await newUser(UserRole.CLIENT, { subscriptionStatus: 'DEVOTED' });
+    devoted = await newUser(UserRole.CLIENT, { subscriptionStatus: 'DEVOTED', subscriptionEnd: new Date(Date.now() + 90 * 86400000) });
     await prisma.subscription.create({
       data: { userId: devoted.id, plan: 'QUARTERLY', status: 'ACTIVE', startDate: new Date(), endDate: new Date(Date.now() + 90 * 86400000), amountPaid: 2500000 },
     });

@@ -17,6 +17,7 @@ import { CourseStatus, LessonType, EnrollmentStatus, CourseLevel } from '@ile-as
 import { CertificateService } from '../certificates/certificate.service';
 import { UsersService } from '../users/users.service';
 import { verifyEligibilityCheckConflictAndCreate } from '../utils/eligibility-scaffold.util';
+import { DEVOTED_FIELDS, isDevoted } from '../subscriptions/devoted';
 
 /**
  * Academy Service
@@ -312,9 +313,9 @@ export class AcademyService {
 
     const requester = await this.prisma.user.findUnique({
       where: { id: currentUser.id },
-      select: { subscriptionStatus: true },
+      select: DEVOTED_FIELDS,
     });
-    if (requester?.subscriptionStatus !== 'DEVOTED') {
+    if (!isDevoted(requester)) {
       throw new ForbiddenException('This course is available to Devoted subscribers only');
     }
   }
@@ -432,9 +433,9 @@ export class AcademyService {
       if (course?.isDevoted && currentUser.id !== course.instructorId) {
         const requester = await this.prisma.user.findUnique({
           where: { id: currentUser.id },
-          select: { subscriptionStatus: true },
+          select: DEVOTED_FIELDS,
         });
-        if (requester?.subscriptionStatus !== 'DEVOTED') {
+        if (!isDevoted(requester)) {
           throw new ForbiddenException('This course is available to Devoted subscribers only');
         }
       }

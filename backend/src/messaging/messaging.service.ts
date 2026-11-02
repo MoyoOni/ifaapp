@@ -4,6 +4,7 @@ import { CreateMessageDto } from './dto/create-message.dto';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { PrivacyLevel } from '@ile-ase/common';
 import * as crypto from 'crypto';
+import { DEVOTED_FIELDS, isDevoted, isDevoted as isDevotedMember } from '../subscriptions/devoted';
 
 @Injectable()
 export class MessagingService {
@@ -76,10 +77,10 @@ export class MessagingService {
     // Messaging limit: free users can only message 10 unique people per month
     const sender = await this.prisma.user.findUnique({
       where: { id: senderId },
-      select: { subscriptionStatus: true },
+      select: DEVOTED_FIELDS,
     });
 
-    if (sender?.subscriptionStatus !== 'DEVOTED') {
+    if (!isDevoted(sender)) {
       const startOfMonth = new Date();
       startOfMonth.setDate(1);
       startOfMonth.setHours(0, 0, 0, 0);
@@ -256,10 +257,10 @@ export class MessagingService {
   async getMessageLimitStatus(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { subscriptionStatus: true },
+      select: DEVOTED_FIELDS,
     });
 
-    const isDevoted = user?.subscriptionStatus === 'DEVOTED';
+    const isDevoted = isDevotedMember(user);
     if (isDevoted) {
       return { isDevoted: true, count: 0, limit: null, remaining: null };
     }

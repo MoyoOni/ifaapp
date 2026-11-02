@@ -764,6 +764,7 @@ describe('UsersService', () => {
         mockPrismaService.user.findUnique.mockResolvedValue({
           ...baseUser,
           subscriptionStatus: 'DEVOTED',
+          subscriptionEnd: new Date(Date.now() + 30 * 86400000),
         });
         mockPrismaService.forumThread.findMany.mockResolvedValue([]);
       });
@@ -922,7 +923,7 @@ describe('UsersService', () => {
     });
 
     it('doubles the amount for a DEVOTED user (V8-305: the multiplier forum XP previously skipped entirely)', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue({ subscriptionStatus: 'DEVOTED', rankXP: 40 });
+      mockPrismaService.user.findUnique.mockResolvedValue({ subscriptionStatus: 'DEVOTED', subscriptionEnd: new Date(Date.now() + 30 * 86400000), rankXP: 40 });
       mockPrismaService.user.update.mockResolvedValue({});
 
       await service.awardXP('user-1', 10);
@@ -965,7 +966,7 @@ describe('UsersService', () => {
 
     it('V8-205: maps subscriptionStatus to isDevoted for the directory card badge', async () => {
       mockPrismaService.user.findMany.mockResolvedValue([
-        { ...baseBabalawo, id: 'baba-1', subscriptionStatus: 'DEVOTED' },
+        { ...baseBabalawo, id: 'baba-1', subscriptionStatus: 'DEVOTED', subscriptionEnd: new Date(Date.now() + 30 * 86400000) },
         { ...baseBabalawo, id: 'baba-2', subscriptionStatus: 'FREE' },
       ]);
 

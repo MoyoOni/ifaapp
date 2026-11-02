@@ -166,13 +166,13 @@ describe('AdminAnnouncementsService', () => {
       mockPrismaService.announcement.findMany.mockResolvedValue([
         { ...baseRow, target: AnnouncementTarget.DEVOTED },
       ]);
-      mockPrismaService.user.findUnique.mockResolvedValue({ subscriptionStatus: 'DEVOTED' });
+      mockPrismaService.user.findUnique.mockResolvedValue({ subscriptionStatus: 'DEVOTED', subscriptionEnd: new Date(Date.now() + 30 * 86400000) });
 
       const result = await service.findActiveForUser(mockClientUser);
 
       expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith({
         where: { id: mockClientUser.id },
-        select: { subscriptionStatus: true },
+        select: { subscriptionStatus: true, subscriptionEnd: true },
       });
       expect(result).toHaveLength(1);
     });

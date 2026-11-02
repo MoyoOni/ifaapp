@@ -17,6 +17,7 @@ import {
 } from '../notifications/notification.service';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { CreateMentorshipBookingDto, SetMeetingDto } from './dto/mentorship.dto';
+import { DEVOTED_FIELDS, isDevoted } from '../subscriptions/devoted';
 
 /**
  * SHOP_BACKLOG.md MSP-023 -- paid mentorship sessions (owner's decisions,
@@ -59,13 +60,8 @@ export class MentorshipService {
   }
 
   async createBooking(dto: CreateMentorshipBookingDto, currentUser: CurrentUserPayload) {
-    // Same definition of Devoted as GET /subscriptions/me (what the page
-    // shows): the user flag *and* an active subscription.
-    const [client, activeSub] = await Promise.all([
-      this.prisma.user.findUnique({ where: { id: currentUser.id }, select: { subscriptionStatus: true } }),
-      this.prisma.subscription.findFirst({ where: { userId: currentUser.id, status: 'ACTIVE' }, select: { id: true } }),
-    ]);
-    if (client?.subscriptionStatus !== 'DEVOTED' || !activeSub) {
+    const client = await this.prisma.user.findUnique({ where: { id: currentUser.id }, select: DEVOTED_FIELDS });
+    if (!isDevoted(client)) {
       throw new ForbiddenException('Paid mentorship sessions are part of the Devoted membership');
     }
     const offering = await this.prisma.serviceOffering.findFirst({

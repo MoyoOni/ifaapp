@@ -2860,7 +2860,7 @@ describe('MarketplaceService', () => {
       });
 
       it('waives shipping and persists devotedFreeDelivery for a Devoted buyer on a >=100k local order', async () => {
-        mockPrismaService.user.findUnique.mockResolvedValue({ subscriptionStatus: 'DEVOTED' });
+        mockPrismaService.user.findUnique.mockResolvedValue({ subscriptionStatus: 'DEVOTED', subscriptionEnd: new Date(Date.now() + 30 * 86400000) });
         const dto = {
           vendorId: 'vendor-1',
           items: [{ productId: 'product-1', quantity: 1 }],
@@ -2877,7 +2877,7 @@ describe('MarketplaceService', () => {
       });
 
       it('still charges shipping for a Devoted buyer on an international order (local delivery only)', async () => {
-        mockPrismaService.user.findUnique.mockResolvedValue({ subscriptionStatus: 'DEVOTED' });
+        mockPrismaService.user.findUnique.mockResolvedValue({ subscriptionStatus: 'DEVOTED', subscriptionEnd: new Date(Date.now() + 30 * 86400000) });
         const dto = {
           vendorId: 'vendor-1',
           items: [{ productId: 'product-1', quantity: 1 }],

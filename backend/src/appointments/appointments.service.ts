@@ -23,6 +23,7 @@ import { AvailabilitySlot } from './types';
 import { WhatsAppService } from '../whatsapp';
 import { combineDateTimeInZone } from '../utils/scheduling.util';
 import { createPdfDocument } from '../common/pdf/create-pdf';
+import { DEVOTED_FIELDS, isDevoted } from '../subscriptions/devoted';
 
 const DEFAULT_TIMEZONE = 'Africa/Lagos';
 
@@ -170,9 +171,9 @@ export class AppointmentsService {
     // Check if client is Devoted — priority booking
     const clientUser = await this.prisma.user.findUnique({
       where: { id: clientId },
-      select: { subscriptionStatus: true },
+      select: DEVOTED_FIELDS,
     });
-    const isPriority = clientUser?.subscriptionStatus === 'DEVOTED';
+    const isPriority = isDevoted(clientUser);
 
     // EMG-06: the availability check and the appointment creation used to be
     // two separate, unsynchronized calls — two concurrent booking requests

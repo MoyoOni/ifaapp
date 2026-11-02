@@ -228,7 +228,7 @@ describe('AcademyService', () => {
         instructorId: 'instructor-1',
         status: 'APPROVED',
       });
-      mockPrismaService.user.findUnique.mockResolvedValue({ subscriptionStatus: 'DEVOTED' });
+      mockPrismaService.user.findUnique.mockResolvedValue({ subscriptionStatus: 'DEVOTED', subscriptionEnd: new Date(Date.now() + 30 * 86400000) });
       mockPrismaService.enrollment.findUnique.mockResolvedValue(null);
       mockPrismaService.enrollment.create.mockResolvedValue(mockEnrollment);
       mockPrismaService.enrollment.count.mockResolvedValue(1);
@@ -314,7 +314,7 @@ describe('AcademyService', () => {
         course: { id: 'course-1', title: 'Course', instructorId: 'instructor-1', isDevoted: true },
       };
       mockPrismaService.lesson.findUnique.mockResolvedValue(lesson);
-      mockPrismaService.user.findUnique.mockResolvedValue({ subscriptionStatus: 'DEVOTED' });
+      mockPrismaService.user.findUnique.mockResolvedValue({ subscriptionStatus: 'DEVOTED', subscriptionEnd: new Date(Date.now() + 30 * 86400000) });
 
       const result = await service.findLessonById('lesson-1', freeClient);
 

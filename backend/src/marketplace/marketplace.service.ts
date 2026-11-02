@@ -65,6 +65,7 @@ import {
   EscalateReturnRequestDto,
   ReturnDecision,
 } from './dto/return-request.dto';
+import { DEVOTED_FIELDS, isDevoted } from '../subscriptions/devoted';
 
 /**
  * Marketplace Service
@@ -2507,9 +2508,9 @@ export class MarketplaceService {
     if (effectiveShippingCost > 0 && itemsTotal >= 100_000 && isLocalDelivery) {
       const buyer = await this.prisma.user.findUnique({
         where: { id: currentUser.id },
-        select: { subscriptionStatus: true },
+        select: DEVOTED_FIELDS,
       });
-      if (buyer?.subscriptionStatus === 'DEVOTED') {
+      if (isDevoted(buyer)) {
         effectiveShippingCost = 0;
         devotedFreeDelivery = true;
       }
