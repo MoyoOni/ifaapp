@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, CheckCircle, ExternalLink, HandHeart, History, Loader2, User } from 'lucide-react';
+import { AlertTriangle, CheckCircle, ExternalLink, HandHeart, History, LifeBuoy, Loader2, User } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/shared/components/toast';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { parseApiError } from '@/shared/utils/api-error';
+import SupportDirectoryManager from './support-directory-manager';
 
 // COMMUNITY_BACKLOG.md FOR-015: this queue merges Forum posts, Circle feed
 // posts and (since November 2, 2026) Circle comments and remembrance wall
@@ -138,7 +139,7 @@ const FollowUpHistory: React.FC = () => {
 
 const AdminCrisisAlertsTab: React.FC = () => {
   const [page, setPage] = useState(1);
-  const [view, setView] = useState<'open' | 'history'>('open');
+  const [view, setView] = useState<'open' | 'history' | 'support'>('open');
   const [resolving, setResolving] = useState<string | null>(null);
   const { success: toastSuccess, error: toastError } = useToast();
   const queryClient = useQueryClient();
@@ -175,12 +176,12 @@ const AdminCrisisAlertsTab: React.FC = () => {
           <AlertTriangle size={22} className="text-red-500" /> Crisis Signal Alerts
         </h2>
         <p className="text-muted-foreground text-sm mt-1">
-          Forum and Circle posts flagged by the automated welfare detection system. Claim one before reaching out, so no one is contacted twice, then record what happened.
+          Forum posts, Circle posts and comments, and remembrance wall entries flagged by the automated welfare detection system. Claim one before reaching out, so no one is contacted twice, then record what happened.
         </p>
       </div>
 
       <div className="flex gap-2" role="tablist">
-        {([['open', 'Open flags', AlertTriangle], ['history', 'Follow-up history', History]] as const).map(([id, label, Icon]) => (
+        {([['open', 'Open flags', AlertTriangle], ['history', 'Follow-up history', History], ['support', 'Support directory', LifeBuoy]] as const).map(([id, label, Icon]) => (
           <button
             key={id}
             role="tab"
@@ -197,7 +198,9 @@ const AdminCrisisAlertsTab: React.FC = () => {
         <strong>Reminder:</strong> Always follow your platform's welfare protocol before clearing a flag. If a user appears to be in crisis, contact them directly or refer to relevant support services.
       </div>
 
-      {view === 'history' ? (
+      {view === 'support' ? (
+        <SupportDirectoryManager />
+      ) : view === 'history' ? (
         <FollowUpHistory />
       ) : isLoading ? (
         <div className="flex justify-center py-12">

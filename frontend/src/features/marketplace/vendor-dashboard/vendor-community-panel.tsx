@@ -6,6 +6,7 @@ import api from '@/lib/api';
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
 import { useToast } from '@/shared/components/toast';
+import { SupportDirectoryLink } from '@/features/community/support-directory';
 
 interface VendorCommunityPanelProps {
   activeTab: string;
@@ -319,7 +320,8 @@ const VendorCommunityPanel: React.FC<VendorCommunityPanelProps> = ({ activeTab }
         </div>
         <p className="text-xs text-muted-foreground mt-3">
           If you're in crisis or immediate danger, please contact your local emergency services or a crisis
-          hotline. For non-emergency support, reach out to <strong>hello@iluase.com</strong>.
+          hotline. For non-emergency support, reach out to <strong>hello@iluase.com</strong>.{' '}
+          <SupportDirectoryLink />.
         </p>
       </div>
     </div>

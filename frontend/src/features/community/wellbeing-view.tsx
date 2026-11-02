@@ -6,6 +6,7 @@ import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { useToast } from '@/shared/components/toast';
 import { isDevModeActive } from '@/shared/utils/dev-mode';
+import { SupportDirectory } from './support-directory';
 
 // COMMUNITY_BACKLOG.md FOR-017: consent-based wellbeing check-ins
 interface CheckIn {
@@ -85,9 +86,11 @@ const WellbeingView: React.FC = () => {
       />
 
       <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 text-sm text-amber-800 dark:text-amber-300">
-        <strong>If you're in crisis or immediate danger</strong>, please contact your local emergency services or a
-        crisis hotline. For non-emergency support, reach out to <strong>hello@iluase.com</strong>.
+        <strong>If you're in crisis or immediate danger</strong>, please contact your local emergency services, or one
+        of the organisations listed below. For non-emergency support, reach out to <strong>hello@iluase.com</strong>.
       </div>
+
+      <SupportDirectory />
 
       <div>
         <h2 className="text-lg font-bold text-foreground mb-3">Request a Check-In</h2>

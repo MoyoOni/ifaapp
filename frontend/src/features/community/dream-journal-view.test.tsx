@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { vi, describe, it, expect } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import DreamJournalView from './dream-journal-view';
@@ -33,7 +34,9 @@ function renderView() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
-      <DreamJournalView />
+      <MemoryRouter>
+        <DreamJournalView />
+      </MemoryRouter>
     </QueryClientProvider>
   );
 }

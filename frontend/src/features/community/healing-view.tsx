@@ -6,6 +6,7 @@ import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { useToast } from '@/shared/components/toast';
 import { isDevModeActive } from '@/shared/utils/dev-mode';
+import { SupportDirectoryLink } from './support-directory';
 
 // COMMUNITY_BACKLOG.md FOR-018: Community Healing & Reconciliation
 const CATEGORIES = [
@@ -116,7 +117,8 @@ const HealingView: React.FC = () => {
 
       <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 text-sm text-amber-800 dark:text-amber-300">
         This space is private — visible only to you, anyone you name, and the elder who takes your case. For urgent
-        safety concerns, contact <strong>hello@iluase.com</strong> or your local emergency services.
+        safety concerns, contact <strong>hello@iluase.com</strong> or your local emergency services.{' '}
+        <SupportDirectoryLink />.
       </div>
 
       <div>

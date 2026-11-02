@@ -6,6 +6,7 @@ import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { useToast } from '@/shared/components/toast';
 import { isDevModeActive } from '@/shared/utils/dev-mode';
+import { SupportDirectory } from './support-directory';
 
 // COMMUNITY_BACKLOG.md FOR-015: Ancestral Remembrance Wall
 interface MemorialEntry {
@@ -147,6 +148,11 @@ const RemembranceWallView: React.FC = () => {
           ))}
         </div>
       )}
+
+      {/* FOR-015: grief can be heavy to carry alone. */}
+      <div className="mt-8">
+        <SupportDirectory title="If grief feels too heavy" />
+      </div>
     </div>
   );
 };

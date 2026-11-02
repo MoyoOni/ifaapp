@@ -6,6 +6,7 @@ import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
 import { useToast } from '@/shared/components/toast';
 import { isDevModeActive } from '@/shared/utils/dev-mode';
+import { SupportDirectoryLink } from './support-directory';
 
 // COMMUNITY_BACKLOG.md FOR-021: Dream Sharing & Interpretation
 interface DreamEntry {
@@ -140,7 +141,7 @@ const DreamJournalView: React.FC = () => {
                       medical, psychological, or legal advice, and it is never a basis for a Babalawo to
                       direct your personal, financial, or relationship decisions. If you're in crisis or
                       feel unsafe, please contact <strong>hello@iluase.com</strong> or your local emergency
-                      services first.
+                      services first. <SupportDirectoryLink />.
                     </p>
                     <label className="flex items-start gap-2 text-xs font-medium text-amber-900 dark:text-amber-200">
                       <input

@@ -3391,3 +3391,24 @@ model CrisisFollowUp {
   @@unique([source, postId])
   @@index([status])
 }
+
+// COMMUNITY_BACKLOG.md FOR-015/FOR-017 (owner decision November 2, 2026):
+// where members in distress or grief are pointed for help, beyond
+// hello@iluase.com. Admin-managed so no helpline details are guessed in
+// code; shown on the wellbeing page, the remembrance wall and in crisis
+// follow-up.
+model SupportResource {
+  id          String   @id @default(uuid())
+  name        String
+  country     String // a country name, or "International"
+  phone       String?
+  url         String?
+  helpsWith   String // e.g. "Crisis and suicide prevention", "Grief support"
+  description String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+}
