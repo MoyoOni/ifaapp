@@ -21,6 +21,7 @@ describe('CommunityMentorshipService', () => {
       count: jest.fn(),
       groupBy: jest.fn(),
     },
+    userBadge: { findMany: jest.fn() },
   };
 
   const mockNotificationService = {
@@ -211,6 +212,40 @@ describe('CommunityMentorshipService', () => {
       expect(mockNotificationService.createNotification).toHaveBeenCalledWith(
         expect.objectContaining({ userId: 'newcomer-1' })
       );
+    });
+  });
+
+  // FOR-023 (owner decision November 2, 2026)
+  describe('getMilestoneSuggestions', () => {
+    const mentor = (id: string, active: number) => ({ id, name: id, _count: { communityMentorshipsAsMentor: 0 }, active });
+
+    it('suggests up to three available mentors who already reached the milestone, least busy first', async () => {
+      mockPrismaService.communityMentorship.findFirst.mockResolvedValue(null);
+      mockPrismaService.userBadge.findMany.mockResolvedValue([{ userId: 'm1' }, { userId: 'm2' }, { userId: 'm3' }, { userId: 'm4' }]);
+      mockPrismaService.user.findMany.mockResolvedValue(['m1', 'm2', 'm3', 'm4', 'not-there-yet'].map((id) => mentor(id, 0)));
+      mockPrismaService.communityMentorship.groupBy.mockResolvedValue([
+        { mentorId: 'm1', _count: { id: 2 } },
+        { mentorId: 'm2', _count: { id: 3 } }, // full
+        { mentorId: 'm3', _count: { id: 1 } },
+      ]);
+
+      const result = await service.getMilestoneSuggestions('member-1', 'cultural-scholar');
+
+      expect(result.mentors.map((m) => m.id)).toEqual(['m4', 'm3', 'm1']);
+      expect(mockPrismaService.userBadge.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { badgeKey: 'cultural-scholar', userId: { not: 'member-1' } } })
+      );
+    });
+
+    it('suggests no one to a member who already has a mentor', async () => {
+      mockPrismaService.communityMentorship.findFirst.mockResolvedValue({ id: 'cm-1' });
+      const result = await service.getMilestoneSuggestions('member-1', 'rooted');
+      expect(result).toMatchObject({ hasMentor: true, mentors: [] });
+      expect(mockPrismaService.userBadge.findMany).not.toHaveBeenCalled();
+    });
+
+    it('rejects a badge that is not a growth milestone', async () => {
+      await expect(service.getMilestoneSuggestions('member-1', 'voice')).rejects.toThrow('Unknown milestone');
     });
   });
 });

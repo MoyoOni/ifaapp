@@ -783,6 +783,22 @@ describe('UsersService', () => {
         expect(mockPrismaService.userBadge.findMany).not.toHaveBeenCalled();
       });
 
+      // FOR-023: a growth milestone's notification opens mentor suggestions.
+      it('points a growth milestone notification at mentor suggestions', async () => {
+        mockPrismaService.user.findUnique.mockResolvedValue({ ...baseUser, passedCulturalOrientation: true });
+        mockPrismaService.userBadge.findMany.mockResolvedValue([]);
+        mockPrismaService.userBadge.create.mockResolvedValue({});
+
+        await service.getUserBadges('user-1', 'user-1');
+        await new Promise((r) => setImmediate(r));
+
+        expect(mockNotificationService.createNotification).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: { badgeKey: 'cultural-scholar', action: 'mentor_suggestions', milestone: 'cultural-scholar' },
+          })
+        );
+      });
+
       it('records and notifies once for a badge earned for the first time, on self-view', async () => {
         mockPrismaService.userBadge.findMany.mockResolvedValue([]);
         mockPrismaService.userBadge.create.mockResolvedValue({});

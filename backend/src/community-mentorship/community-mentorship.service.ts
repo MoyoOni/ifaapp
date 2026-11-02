@@ -15,6 +15,18 @@ import { RequestCommunityMentorshipDto } from './dto/community-mentorship.dto';
 const MENTORSHIP_PERIOD_DAYS = 30;
 const MAX_ACTIVE_MENTEES_PER_MENTOR = 3;
 
+// COMMUNITY_BACKLOG.md FOR-023 (owner decision November 2, 2026): reaching
+// one of these growth milestones prompts mentor suggestions. Consultation-
+// based badges are left out while Consultations are paused.
+export const MENTOR_MILESTONES: Record<string, string> = {
+  'cultural-scholar': 'finishing the cultural orientation',
+  rooted: 'joining a temple',
+  'pathway-graduate': 'completing an Academy pathway',
+  'certified-graduate': 'earning an Academy certificate',
+  'trusted-voice': 'becoming a trusted voice in the community',
+};
+const SUGGESTIONS_PER_MILESTONE = 3;
+
 // COMMUNITY_BACKLOG.md FOR-004: "Mentorship matching for new members" for
 // the Cultural Learning Pathways item. Deliberately the same shape as
 // VendorCommunityService's mentorship methods (VENDOR_BACKLOG.md VND-019) --
@@ -66,6 +78,31 @@ export class CommunityMentorshipService {
         activeMenteeCount: activeCountByMentor.get(c.id) ?? 0,
       }))
       .filter((c) => c.activeMenteeCount < MAX_ACTIVE_MENTEES_PER_MENTOR);
+  }
+
+  /**
+   * FOR-023: up to three available mentors who have already reached the
+   * milestone the member just crossed, least busy first. Suggestions only:
+   * the member chooses and requests through the usual flow.
+   */
+  async getMilestoneSuggestions(userId: string, milestone: string) {
+    if (!MENTOR_MILESTONES[milestone]) throw new BadRequestException('Unknown milestone');
+    const hasMentor = await this.prisma.communityMentorship.findFirst({
+      where: { menteeId: userId, status: 'ACTIVE' },
+      select: { id: true },
+    });
+    if (hasMentor) return { milestone, reason: MENTOR_MILESTONES[milestone], hasMentor: true, mentors: [] };
+
+    const reached = await this.prisma.userBadge.findMany({
+      where: { badgeKey: milestone, userId: { not: userId } },
+      select: { userId: true },
+    });
+    const reachedIds = new Set(reached.map((r) => r.userId));
+    const mentors = (await this.getAvailableMentors(userId))
+      .filter((m) => reachedIds.has(m.id))
+      .sort((a, b) => a.activeMenteeCount - b.activeMenteeCount)
+      .slice(0, SUGGESTIONS_PER_MILESTONE);
+    return { milestone, reason: MENTOR_MILESTONES[milestone], hasMentor: false, mentors };
   }
 
   async requestMentorship(userId: string, dto: RequestCommunityMentorshipDto) {

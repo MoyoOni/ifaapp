@@ -1,4 +1,5 @@
 import React from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Users, HandHeart } from 'lucide-react';
 import { FeatureHeader } from '@/shared/components/feature-header';
@@ -28,6 +29,14 @@ interface MentorshipSummary {
   mentee?: { id: string; name: string; yorubaName?: string; avatar?: string };
 }
 
+// FOR-023: suggestions for the milestone a member just reached.
+interface MilestoneSuggestions {
+  milestone: string;
+  reason: string;
+  hasMentor: boolean;
+  mentors: AvailableMentor[];
+}
+
 interface MyMentorship {
   asMentee: MentorshipSummary | null;
   asMentor: MentorshipSummary[];
@@ -47,6 +56,15 @@ const CommunityMentorshipView: React.FC = () => {
     queryKey: ['community-mentorship-available'],
     queryFn: async () => (await api.get('/community-mentorship/mentors/available')).data,
     enabled: !mine?.asMentee && !isDevModeActive(),
+  });
+
+  const [searchParams] = useSearchParams();
+  const milestone = searchParams.get('milestone');
+  const { data: suggestions } = useQuery<MilestoneSuggestions>({
+    queryKey: ['community-mentorship-suggestions', milestone],
+    queryFn: async () =>
+      (await api.get(`/community-mentorship/suggestions?milestone=${encodeURIComponent(milestone ?? '')}`)).data,
+    enabled: !!milestone && !mine?.asMentee && !isDevModeActive(),
   });
 
   const requestMentorship = useMutation({
@@ -81,6 +99,20 @@ const CommunityMentorshipView: React.FC = () => {
         </div>
       )}
 
+      {!mine?.asMentee && suggestions && suggestions.mentors.length > 0 && (
+        <section aria-labelledby="milestone-suggestions" className="mb-8 p-5 rounded-2xl border border-primary/30 bg-primary/5">
+          <h2 id="milestone-suggestions" className="font-bold text-foreground">Suggested for your next step</h2>
+          <p className="text-sm text-muted-foreground mt-1 mb-4">
+            Congratulations on {suggestions.reason}. These members reached the same point before you and have time to guide you.
+          </p>
+          <div className="space-y-3">
+            {suggestions.mentors.map((m) => (
+              <MentorRow key={m.id} mentor={m} onRequest={() => requestMentorship.mutate(m.id)} disabled={requestMentorship.isPending} />
+            ))}
+          </div>
+        </section>
+      )}
+
       {!mine?.asMentee && (
         isLoading ? (
           <div className="animate-pulse space-y-3">
@@ -94,26 +126,7 @@ const CommunityMentorshipView: React.FC = () => {
         ) : (
           <div className="space-y-3">
             {mentors.map((m) => (
-              <div key={m.id} className="flex items-center justify-between p-5 bg-card rounded-xl border border-border/50">
-                <div>
-                  <p className="font-bold text-foreground">
-                    {m.name}{m.yorubaName ? ` (${m.yorubaName})` : ''}
-                  </p>
-                  {m.specialization.length > 0 && (
-                    <p className="text-sm text-muted-foreground mt-1">{m.specialization.join(', ')}</p>
-                  )}
-                  {m.availabilityNote && (
-                    <p className="text-xs text-muted-foreground mt-1">{m.availabilityNote}</p>
-                  )}
-                </div>
-                <button
-                  onClick={() => requestMentorship.mutate(m.id)}
-                  disabled={requestMentorship.isPending}
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold text-sm hover:bg-primary/90 transition-colors disabled:opacity-50 shrink-0"
-                >
-                  Request Mentorship
-                </button>
-              </div>
+              <MentorRow key={m.id} mentor={m} onRequest={() => requestMentorship.mutate(m.id)} disabled={requestMentorship.isPending} />
             ))}
           </div>
         )
@@ -136,5 +149,28 @@ const CommunityMentorshipView: React.FC = () => {
     </div>
   );
 };
+
+const MentorRow: React.FC<{ mentor: AvailableMentor; onRequest: () => void; disabled: boolean }> = ({ mentor: m, onRequest, disabled }) => (
+  <div className="flex items-center justify-between p-5 bg-card rounded-xl border border-border/50">
+    <div>
+      <p className="font-bold text-foreground">
+        {m.name}{m.yorubaName ? ` (${m.yorubaName})` : ''}
+      </p>
+      {m.specialization.length > 0 && (
+        <p className="text-sm text-muted-foreground mt-1">{m.specialization.join(', ')}</p>
+      )}
+      {m.availabilityNote && (
+        <p className="text-xs text-muted-foreground mt-1">{m.availabilityNote}</p>
+      )}
+    </div>
+    <button
+      onClick={onRequest}
+      disabled={disabled}
+      className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold text-sm hover:bg-primary/90 transition-colors disabled:opacity-50 shrink-0"
+    >
+      Request Mentorship
+    </button>
+  </div>
+);
 
 export default CommunityMentorshipView;

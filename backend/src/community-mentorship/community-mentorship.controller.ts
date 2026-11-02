@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../shared/guards/auth.guard';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { CommunityMentorshipService } from './community-mentorship.service';
@@ -12,6 +12,12 @@ export class CommunityMentorshipController {
   @Get('mentors/available')
   async getAvailableMentors(@CurrentUser() user: CurrentUserPayload) {
     return this.communityMentorshipService.getAvailableMentors(user.id);
+  }
+
+  // FOR-023: mentors suggested when a member reaches a milestone.
+  @Get('suggestions')
+  async getMilestoneSuggestions(@Query('milestone') milestone: string, @CurrentUser() user: CurrentUserPayload) {
+    return this.communityMentorshipService.getMilestoneSuggestions(user.id, milestone);
   }
 
   @Post('request')

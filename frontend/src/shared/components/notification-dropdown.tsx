@@ -13,7 +13,7 @@ interface Notification {
   message: string;
   read: boolean;
   createdAt: string;
-  data?: { action?: string; appointmentId?: string; clientName?: string; babalawoId?: string; babalawoName?: string; babalawoAvatar?: string };
+  data?: { action?: string; appointmentId?: string; clientName?: string; babalawoId?: string; babalawoName?: string; babalawoAvatar?: string; milestone?: string };
 }
 
 interface NotificationDropdownProps {
@@ -89,6 +89,10 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ onClose }) 
     } else if (notification.data?.action === 'rebooking_nudge' && notification.data.babalawoId) {
       onClose();
       navigate(`/booking/${notification.data.babalawoId}`);
+    } else if (notification.data?.action === 'mentor_suggestions' && notification.data.milestone) {
+      // FOR-023: a growth milestone opens mentors who are further along.
+      onClose();
+      navigate(`/community/mentorship?milestone=${encodeURIComponent(notification.data.milestone)}`);
     }
   };
 

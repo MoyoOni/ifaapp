@@ -19,6 +19,7 @@ import {
   NotificationCategory,
 } from '../notifications/notification.service';
 import { DEVOTED_FIELDS, isDevoted } from '../subscriptions/devoted';
+import { MENTOR_MILESTONES } from '../community-mentorship/community-mentorship.service';
 
 interface FindAllFilters {
   role?: string;
@@ -1287,13 +1288,18 @@ export class UsersService {
       await this.prisma.userBadge.create({
         data: { userId, badgeKey: badge.key, reason: 'Automatically earned' },
       });
+      // FOR-023: a growth milestone also points to mentors who are further
+      // along; tapping the notification opens their suggestions.
+      const milestone = MENTOR_MILESTONES[badge.key];
       await this.notificationService.createNotification({
         userId,
         type: NotificationType.SYSTEM,
         category: NotificationCategory.SUCCESS,
         title: `${badge.emoji} You earned a new badge: ${badge.label}`,
-        message: badge.description,
-        data: { badgeKey: badge.key },
+        message: milestone
+          ? `${badge.description}. Members who have walked this path can guide your next steps — tap to see who.`
+          : badge.description,
+        data: milestone ? { badgeKey: badge.key, action: 'mentor_suggestions', milestone: badge.key } : { badgeKey: badge.key },
       });
     }
   }
