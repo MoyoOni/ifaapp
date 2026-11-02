@@ -52,7 +52,7 @@ After completing any task:
 - **CloudFront CDN** — iluase.com + www.iluase.com → CloudFront, `/api/*` uncached, statics CachingOptimized
 - **Monitoring & alerts** — Route53 health checks + CloudWatch alarms `iluase-prod-uptime`, `iluase-prod-health-check` and `iluase-prod-db-backup-missing` (no successful backup in 12h), all notifying SNS topic `iluase-prod-alerts` (email). Until October 27, 2026 the uptime alarms had no actions and alerted nobody. **Sentry error tracking** runs on both frontend and backend (EU region); the backend's was never installed until October 30, 2026, so earlier backend errors exist only in container logs. The on-box backup script is `/home/ubuntu/app/backup-prod-db.sh`, not under `scripts/`.
 - **Email** — AWS SES (us-east-1), sending only as `noreply@iluase.com` (inline policy `prod-ses-send-noreply` on role `iluase-ec2-ecr`); `iluase.com` is DKIM-verified. Until October 29, 2026 production could send no email at all (no SES permission, DKIM `FAILED`). **The SES account is still in the sandbox** (verified recipients only, 200/day) pending AWS case `179329385400452` — check `aws sesv2 get-account --query Details` before assuming members receive email.
-- **Shareable profile URLs** — `slug` field on User, `GET /public/resolve/:slug` (no auth), `/:slug` route
+- **Shareable profile URLs** — `slug` field on User, `GET /public/resolve/:slug` (no auth), `/:slug` route. The resolver was never registered until November 2, 2026 (every share link 404'd); it respects `profileVisibility`.
 
 ---
 
