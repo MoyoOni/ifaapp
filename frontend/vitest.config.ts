@@ -12,17 +12,13 @@ export default defineConfig({
     exclude: ['node_modules', 'dist'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      lines: 80,
-      statements: 80,
-      include: [
-        'src/pages/**/*.{ts,tsx}',
-        'src/features/consultations/**/*.{ts,tsx}',
-        'src/features/marketplace/cart-view.tsx',
-        'src/features/marketplace/checkout-view.tsx',
-        'src/features/client-hub/client-dashboard-view.tsx',
-        'src/lib/**/*.ts',
-      ],
+      reporter: ['text', 'json', 'json-summary', 'html'],
+      // A floor at the real whole-app coverage (November 2, 2026), enforced
+      // in CI, so it can only go up. Before this, `lines: 80` sat outside
+      // `thresholds` (Vitest ignores it there), only six paths were
+      // measured, and CI never ran coverage at all.
+      thresholds: { statements: 20, branches: 15, functions: 12, lines: 21 },
+      include: ['src/**/*.{ts,tsx}'],
       exclude: [
         'node_modules/',
         'src/test/',

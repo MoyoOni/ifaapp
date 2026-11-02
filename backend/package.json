@@ -146,10 +146,10 @@
     "coverageDirectory": "../coverage",
     "coverageThreshold": {
       "global": {
-        "statements": 37,
-        "branches": 30,
-        "functions": 30,
-        "lines": 37
+        "statements": 39,
+        "branches": 32,
+        "functions": 32,
+        "lines": 39
       }
     },
     "testEnvironment": "node",

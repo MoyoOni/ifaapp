@@ -183,7 +183,7 @@ jobs:
           VITE_DEMO_MODE: 'true'
 
       - name: Run tests
-        run: cd frontend && npm run test:run -- --passWithNoTests
+        run: cd frontend && npm run test:run -- --passWithNoTests --coverage
         continue-on-error: true
 
   # --- Security: npm audit ---
