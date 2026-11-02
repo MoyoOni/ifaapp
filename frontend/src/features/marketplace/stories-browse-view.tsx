@@ -5,6 +5,7 @@ import { BookOpen, ArrowRight, Tag, X, Package } from 'lucide-react';
 import { FeatureHeader } from '@/shared/components/feature-header';
 import api from '@/lib/api';
 import { useAuth } from '@/shared/hooks/use-auth';
+import { MySharedStories } from './my-shared-stories';
 
 interface RelatedProduct {
   id: string;
@@ -71,6 +72,8 @@ const StoriesBrowseView: React.FC = () => {
         subtitle="Elder-reviewed stories connecting sacred items to their history, meaning, and the hands that shaped them."
         icon={BookOpen}
       />
+
+      {isAuthenticated && <MySharedStories />}
 
       {myItemStories.length > 0 && (
         <div className="mb-6 bg-highlight/10 border border-highlight/30 rounded-2xl p-5">

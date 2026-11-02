@@ -15,6 +15,16 @@ import {
 } from '../notifications/notification.service';
 import { AuditService } from './audit.service';
 
+// FOR-024 (owner decision November 2, 2026). Bump `version` if the wording
+// changes; each submission records the version its author agreed to.
+export const ORAL_HISTORY_LICENCE = {
+  version: '2026-11-02',
+  text:
+    'You keep the rights to your story. By submitting it you give Ìlú Àṣẹ a non-exclusive, ' +
+    'non-commercial licence to show it on the platform, with credit as you give it. ' +
+    'Ìlú Àṣẹ will not sell it or use it commercially, and you can withdraw it at any time.',
+};
+
 @Injectable()
 export class AdminCulturalContentService {
   constructor(
@@ -147,19 +157,49 @@ export class AdminCulturalContentService {
   // createOralHistory above -- the only difference is publishedAt is never
   // set here, so a submission never goes live until an admin/elder does it.
   async submitCommunityOralHistory(dto: SubmitOralHistoryDto, userId: string) {
-    const data: any = {
-      title: dto.title,
-      category: dto.category,
-      babalawoName: dto.babalawoName,
-      content: dto.content,
-      sourceUrl: dto.sourceUrl,
-      tags: dto.tags || [],
-      relatedProductIds: dto.relatedProductIds || [],
-      createdBy: userId,
-    };
-    if (dto.recordingDate) data.recordingDate = new Date(dto.recordingDate);
+    return this.prisma.oralHistoryEntry.create({
+      data: {
+        title: dto.title,
+        category: dto.category,
+        babalawoName: dto.babalawoName,
+        content: dto.content,
+        sourceUrl: dto.sourceUrl,
+        tags: dto.tags || [],
+        relatedProductIds: dto.relatedProductIds || [],
+        createdBy: userId,
+        recordingDate: dto.recordingDate ? new Date(dto.recordingDate) : undefined,
+        // FOR-024: record which licence the member agreed to, and when.
+        licenceVersion: ORAL_HISTORY_LICENCE.version,
+        licenceAcceptedAt: new Date(),
+      },
+    });
+  }
 
-    return this.prisma.oralHistoryEntry.create({ data });
+  /** FOR-024: the stories a member has submitted, in any state. */
+  async getMySubmittedOralHistories(userId: string) {
+    return this.prisma.oralHistoryEntry.findMany({
+      where: { createdBy: userId, deletedAt: null },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, title: true, category: true, publishedAt: true, createdAt: true, licenceVersion: true },
+    });
+  }
+
+  /**
+   * FOR-024: the member withdraws their licence. The story leaves the
+   * platform at once (published or not); kept soft-deleted for the audit
+   * trail, never shown again.
+   */
+  async withdrawOralHistory(id: string, userId: string) {
+    const entry = await this.prisma.oralHistoryEntry.findUnique({ where: { id } });
+    if (!entry || entry.deletedAt || entry.createdBy !== userId) {
+      throw new NotFoundException('Story not found');
+    }
+    const now = new Date();
+    await this.prisma.oralHistoryEntry.update({
+      where: { id },
+      data: { withdrawnAt: now, deletedAt: now, publishedAt: null },
+    });
+    return { withdrawn: true };
   }
 
   async updateOralHistory(id: string, dto: UpdateOralHistoryDto, editorId?: string) {

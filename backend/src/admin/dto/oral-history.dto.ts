@@ -6,6 +6,7 @@ import {
   IsBoolean,
   IsNotEmpty,
   MinLength,
+  Equals,
 } from 'class-validator';
 
 export class CreateOralHistoryDto {
@@ -87,6 +88,13 @@ export class SubmitOralHistoryDto {
   @IsArray()
   @IsOptional()
   declare relatedProductIds?: string[];
+
+  /**
+   * FOR-024: the member agrees to ORAL_HISTORY_LICENCE -- they keep the
+   * rights and grant a non-exclusive, non-commercial, withdrawable licence.
+   */
+  @Equals(true, { message: 'Please agree to the story licence to submit' })
+  declare acceptLicence: boolean;
 }
 
 export class UpdateOralHistoryDto {

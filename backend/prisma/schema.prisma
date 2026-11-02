@@ -2924,6 +2924,12 @@ model OralHistoryEntry {
   // need relational integrity enforcement beyond "does this product exist".
   relatedProductIds String[]  @default([])
   publishedAt       DateTime?
+  // FOR-024 (owner decision November 2, 2026): a member submitting a story
+  // keeps the rights to it and grants Ìlú Àṣẹ a non-exclusive,
+  // non-commercial licence to show it here, which they can withdraw.
+  licenceVersion    String?
+  licenceAcceptedAt DateTime?
+  withdrawnAt       DateTime?
   createdBy         String
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt

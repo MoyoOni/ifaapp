@@ -12,6 +12,7 @@ import { isDevModeActive } from '@/shared/utils/dev-mode';
 import { usePageMeta } from '@/shared/hooks/use-page-meta';
 import { analytics } from '@/lib/analytics';
 import SocialShareButton from './social-share-button';
+import { StoryLicenceConsent } from './story-licence-consent';
 
 // COMMUNITY_BACKLOG.md FOR-024/FOR-026: same categories the admin oral-history
 // form uses (admin-cultural-content-tab.tsx) -- one shared taxonomy, not a
@@ -137,6 +138,7 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ productId, onBack
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [addedToCart, setAddedToCart] = useState(false);
+  const [storyLicenceAccepted, setStoryLicenceAccepted] = useState(false);
   // VENDOR_BACKLOG.md VND-007
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
 
@@ -261,12 +263,14 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ productId, onBack
         category: storyCategory,
         content: storyContent,
         relatedProductIds: [productId],
+        acceptLicence: storyLicenceAccepted,
       });
     },
     onSuccess: () => {
       setStorySubmitted(true);
       setStoryTitle('');
       setStoryContent('');
+      setStoryLicenceAccepted(false);
       setShowStoryForm(false);
     },
   });
@@ -774,6 +778,7 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ productId, onBack
                       rows={4}
                       className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm resize-none"
                     />
+                    <StoryLicenceConsent checked={storyLicenceAccepted} onChange={setStoryLicenceAccepted} />
                     <div className="flex gap-2">
                       <button
                         type="submit"

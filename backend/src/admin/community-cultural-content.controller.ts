@@ -2,7 +2,7 @@ import { Controller, Post, Get, Delete, Param, Body, Query, UseGuards } from '@n
 import { JwtAuthGuard } from '../shared/guards/auth.guard';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
-import { AdminCulturalContentService } from './admin-cultural-content.service';
+import { AdminCulturalContentService, ORAL_HISTORY_LICENCE } from './admin-cultural-content.service';
 import { SubmitOralHistoryDto } from './dto/oral-history.dto';
 import { RsvpRitualDto } from './dto/rsvp-ritual.dto';
 
@@ -33,6 +33,23 @@ export class CommunityCulturalContentController {
   @Get('oral-histories/my-purchases')
   async getStoriesForUserPurchases(@CurrentUser() user: CurrentUserPayload) {
     return this.culturalContentService.getStoriesForUserPurchases(user.id);
+  }
+
+  // FOR-024: the licence text shown beside the consent checkbox.
+  @Public()
+  @Get('oral-histories/licence')
+  getOralHistoryLicence() {
+    return ORAL_HISTORY_LICENCE;
+  }
+
+  @Get('oral-histories/mine')
+  async getMySubmittedOralHistories(@CurrentUser() user: CurrentUserPayload) {
+    return this.culturalContentService.getMySubmittedOralHistories(user.id);
+  }
+
+  @Post('oral-histories/:id/withdraw')
+  async withdrawOralHistory(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
+    return this.culturalContentService.withdrawOralHistory(id, user.id);
   }
 
   @Post('oral-histories/submit')
