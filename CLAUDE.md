@@ -29,13 +29,15 @@ After completing any task:
 
 ---
 
-## Current Status (Last Updated: September 21, 2026)
+## Current Status (Last Updated: November 2, 2026)
 
 **Production is LIVE at https://iluase.com.**
 
 **Browser testing is available** (Playwright is in the repo's `node_modules`; Chromium + WebKit are installed). Driving the real UI against production found bugs that months of unit and API tests did not — new users could not finish onboarding, sessions ended after ~30 minutes, logout never revoked anything, and checkout could report success for an order that failed. For anything that touches auth, onboarding, checkout or the marketplace, don't stop at unit tests. Do NOT push real money or public content through production: run the backend and Vite against a throwaway local Postgres/Redis instead, and delete any test accounts you create on production afterwards.
 
 **Whole-app UX/UI wiring audit — 🟢 VERIFIED FULLY DONE (July 28, 2026).** A prior session found ~30 wiring issues across CLIENT/BABALAWO/VENDOR/ADMIN (403s from calling role-gated endpoints, dead links to unregistered routes, dead buttons, duplicate routes/components, fake data) and planned a 5-phase fix. Every item was independently re-verified against the actual current code on July 28 and all 30 were already fixed. That audit was done by reading code, not by clicking through the app, and it was **not** exhaustive: a September 21, 2026 browser pass found further wiring bugs it missed (every marketplace product link 404'd, `PATCH /users/:id/onboarding` always 403'd so no one could finish onboarding, checkout fabricated a "successful" demo order on any failure). Treat "verified done" claims here as "verified by inspection" and prefer a real browser run for anything user-facing.
+
+**Payments, email and notifications (November 2, 2026):** production's Paystack key is a *test* key, so `backend/src/payments/live-payments.ts` refuses every payment and Devoted checkout (503) until a live key is set; Devoted plan codes are unset. SES is still in the sandbox. WhatsApp has no credentials on production (nothing is sent; the UI hides it). Marketing email is opt-in (`NotificationPreferences.emailMarketing`, default false) and admin campaigns honour it. Check these before assuming members receive anything.
 
 **Paused / Deprioritized Platform Dependencies — Single Source of Truth:**
 - **Consultations & 1:1 Messaging** — paused platform-wide per `MVP_PIVOT_BACKLOG.md` (frontend-only, reversible; all 14 PIV-XXX stories verified done July 28, 2026). Blocks several items listed in `ILUASE_V1_BACKLOG.md` — see that doc's "📌 Paused Platform Features" section for the full current list rather than restating it here every time something new depends on it.
