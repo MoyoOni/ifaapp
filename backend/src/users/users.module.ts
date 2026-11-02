@@ -10,6 +10,7 @@ import { ProfileCompletenessService } from './profile-completeness.service'; // 
 import { ProfileCompletenessController } from './profile-completeness.controller'; // Add this import
 import { ImageModule } from '../images/image.module'; // Add this import
 import { NotificationsModule } from '../notifications/notifications.module';
+import { PublicProfileController } from './public-profile.controller';
 
 @Module({
   // CacheModule is imported (rather than providing CacheManagerService
@@ -17,7 +18,9 @@ import { NotificationsModule } from '../notifications/notifications.module';
   // RedisCacheService — providing it standalone here left that dependency
   // unresolved, which only surfaced once the full AppModule graph compiled.
   imports: [ImageModule, CacheModule, NotificationsModule],
-  controllers: [UsersController, ProfileCompletenessController], // Add the new controller
+  // PublicProfileController (GET /public/resolve/:slug, no sign-in) was never
+  // registered: share links and username checks always 404'd (November 2, 2026).
+  controllers: [UsersController, ProfileCompletenessController, PublicProfileController],
   providers: [
     UsersService,
     PrismaService,

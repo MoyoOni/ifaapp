@@ -20,6 +20,7 @@ import {
 } from '../notifications/notification.service';
 import { DEVOTED_FIELDS, isDevoted } from '../subscriptions/devoted';
 import { MENTOR_MILESTONES } from '../community-mentorship/community-mentorship.service';
+import { toPublicProfile } from './public-profile';
 
 interface FindAllFilters {
   role?: string;
@@ -129,7 +130,9 @@ export class UsersService {
     // gets cached first serve every subsequent viewer for the next hour --
     // including the full self view leaking to a stranger, bypassing the PII
     // strip below entirely.
-    const cacheKey = isOwnProfile ? `${id}:self` : `${id}:public`;
+    // `public-v2`: the allowlisted shape (November 2, 2026). A new key so
+    // copies of the old, leakier shape cached before the deploy are never served.
+    const cacheKey = isOwnProfile ? `${id}:self` : `${id}:public-v2`;
     const cachedUser = await this.cacheManager.getUserProfile(cacheKey);
     if (cachedUser) {
       return cachedUser;
@@ -235,17 +238,9 @@ export class UsersService {
         };
       }
     } else {
-      // Viewing someone else's profile -- strip PII that has no reason to be
-      // visible to a third party (previously returned in full; only dormant
-      // because the controller blocked all non-self/admin access outright).
-      /* eslint-disable @typescript-eslint/no-unused-vars */
-      const {
-        email: _email,
-        phone: _phone,
-        ...publicSafeUser
-      } = safeUser as Record<string, unknown>;
-      /* eslint-enable @typescript-eslint/no-unused-vars */
-      safeUserWithMeta = { ...publicSafeUser, hasPassword: !!(user as any).passwordHash };
+      // Viewing someone else's profile: an explicit allowlist (public-profile.ts),
+      // not "everything minus email/phone" as before November 2, 2026.
+      safeUserWithMeta = { ...toPublicProfile(user) };
     }
 
     // Cache the user profile for 1 hour

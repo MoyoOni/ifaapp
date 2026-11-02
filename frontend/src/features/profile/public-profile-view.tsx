@@ -539,6 +539,10 @@ const PublicProfileView: React.FC<PublicProfileViewProps> = ({
                 </p>
               )}
 
+              {user.isPrivate && (
+                <p className="text-muted-foreground text-sm mt-2">This member keeps their profile private.</p>
+              )}
+
               {/* Rating for Babalawo */}
               {isBabalawo && rating > 0 && (
                 <div className="flex items-center gap-2 mt-2 justify-center sm:justify-start">

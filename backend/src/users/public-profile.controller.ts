@@ -21,8 +21,25 @@ export class PublicProfileController {
         verified: true,
         location: true,
         culturalLevel: true,
+        profileVisibility: true,
       },
     });
+
+    // This route needs no sign-in, so only a "public" profile shows its
+    // bio, location and level here; "community" and "private" show the
+    // basics a share link needs to resolve (November 2, 2026).
+    if (user && user.profileVisibility !== 'public') {
+      return {
+        type: user.role === 'BABALAWO' ? 'babalawo' : 'client',
+        id: user.id,
+        name: user.name,
+        yorubaName: user.yorubaName,
+        slug: user.slug,
+        avatar: user.avatar,
+        verified: user.verified,
+        role: user.role,
+      };
+    }
 
     if (user) {
       return {

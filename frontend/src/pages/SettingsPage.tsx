@@ -90,6 +90,9 @@ const SettingsPage: React.FC = () => {
         appearance: { ...prev.appearance, ...userProfile.settings.appearance },
       }));
     }
+    if (userProfile?.profileVisibility) {
+      setSettings(prev => ({ ...prev, privacy: { ...prev.privacy, profileVisibility: userProfile.profileVisibility } }));
+    }
     if (userProfile) {
       setWhatsappNumber(userProfile.whatsappNumber || '');
       setWhatsappEnabled(userProfile.whatsappEnabled ?? true);
@@ -108,9 +111,14 @@ const SettingsPage: React.FC = () => {
     onError: () => toast.error('Failed to save WhatsApp settings'),
   });
 
+  // Only profile visibility has somewhere to be stored (User.profileVisibility).
+  // Until November 2, 2026 this sent `{ settings }`, which the API silently
+  // drops -- nothing on this page was ever saved.
   const saveSettingsMutation = useMutation({
     mutationFn: (updated: SettingsState) =>
-      api.patch(`/users/${user!.id}`, { settings: updated }),
+      api.patch(`/users/${user!.id}`, { profileVisibility: updated.privacy.profileVisibility }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['user-settings', user?.id] }),
+    onError: () => toast.error('Could not save your privacy setting. Please try again.'),
   });
 
   const saveSlugMutation = useMutation({
@@ -709,8 +717,8 @@ const SettingsPage: React.FC = () => {
                       <div className="space-y-3">
                         {[
                           { value: 'public', label: 'Public - Visible to everyone' },
-                          { value: 'community', label: 'Community - Visible to verified members only' },
-                          { value: 'private', label: 'Private - Only visible to you' },
+                          { value: 'community', label: 'Community - Visible to signed-in members' },
+                          { value: 'private', label: 'Private - Others see only your name and photo' },
                         ].map(({ value, label }) => (
                           <label key={value} className="flex items-center gap-3 p-4 bg-muted/40 rounded-xl cursor-pointer">
                             <input

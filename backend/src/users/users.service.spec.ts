@@ -258,12 +258,14 @@ describe('UsersService', () => {
 
       mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
 
-      // No viewerId -> not the owner's own profile -> findOne strips email/phone
-      // (a real PII leak otherwise: see users.controller.ts's findOne route).
+      // No viewerId -> not the owner's own profile -> the public allowlist
+      // (public-profile.ts), not the record minus email as before.
       const result = await service.findOne('user-1');
-      const { email: _email, ...mockUserWithoutEmail } = mockUser;
 
-      expect(result).toEqual({ ...mockUserWithoutEmail, hasPassword: false });
+      expect(result).toMatchObject({ id: 'user-1', name: 'Test User', role: 'CLIENT', verified: true, isPrivate: false });
+      for (const field of ['email', 'ordersPlaced', 'eventRegistrations', 'postsAuthored', 'verificationApp', 'babalawoReviews', 'hasPassword']) {
+        expect(result).not.toHaveProperty(field);
+      }
       expect(prisma.user.findUnique).toHaveBeenCalledWith({
         where: { id: 'user-1' },
         include: expect.objectContaining({

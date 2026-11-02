@@ -174,7 +174,7 @@ export class CacheManagerService {
       // keys (they return different fields) -- both must be cleared, not
       // just the old bare `user:profile:${userId}` key from before that split.
       `user:profile:${userId}:self`,
-      `user:profile:${userId}:public`,
+      `user:profile:${userId}:public-v2`,
       `user:stats:${userId}`,
       `dashboard:${userId}`,
     ];
