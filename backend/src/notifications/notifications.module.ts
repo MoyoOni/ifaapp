@@ -3,6 +3,8 @@ import { NotificationsController } from './notifications.controller';
 import { NotificationService } from './notification.service';
 import { NotificationPreferencesService } from './notification-preferences.service';
 import { PushNotificationService } from './push/push-notification.service';
+import { NotificationPreferencesController } from './notification-preferences.controller';
+import { WhatsAppModule } from '../whatsapp/whatsapp.module';
 
 // NotificationsController (register-device-token, the route the frontend's
 // firebase-messaging.ts actually calls) was never registered by any module —
@@ -13,7 +15,8 @@ import { PushNotificationService } from './push/push-notification.service';
 // NotificationsModule itself is what's missing them, not a design this
 // module should diverge from.
 @Module({
-  controllers: [NotificationsController],
+  imports: [WhatsAppModule],
+  controllers: [NotificationsController, NotificationPreferencesController],
   providers: [NotificationService, NotificationPreferencesService, PushNotificationService],
   exports: [NotificationService, PushNotificationService],
 })

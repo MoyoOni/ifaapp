@@ -11,46 +11,11 @@ import { useSubscription } from '@/features/subscription/use-subscription';
 import ReferralPanel from '@/features/devoted/referral-panel';
 import ProfileViewsPanel from '@/features/devoted/profile-views-panel';
 import { GdprSettingsPanel } from '@/features/gdpr/GdprSettingsPanel';
+import { useTheme } from '@/shared/contexts/theme-provider';
+import { useLanguage } from '@/shared/contexts/language-context';
+import { NotificationSettingsSection, useWhatsAppAvailable } from '@/features/settings/notification-settings-section';
 
-type SettingsState = {
-  notifications: {
-    email: boolean;
-    push: boolean;
-    sms: boolean;
-    consultationReminders: boolean;
-    communityUpdates: boolean;
-    marketing: boolean;
-  };
-  privacy: {
-    profileVisibility: string;
-    showOnlineStatus: boolean;
-    allowMessaging: boolean;
-  };
-  appearance: {
-    theme: string;
-    language: string;
-  };
-};
-
-const DEFAULT_SETTINGS: SettingsState = {
-  notifications: {
-    email: true,
-    push: true,
-    sms: false,
-    consultationReminders: true,
-    communityUpdates: true,
-    marketing: false,
-  },
-  privacy: {
-    profileVisibility: 'public',
-    showOnlineStatus: true,
-    allowMessaging: true,
-  },
-  appearance: {
-    theme: 'light',
-    language: 'english',
-  },
-};
+type ProfileVisibility = 'public' | 'community' | 'private';
 
 const slugRegex = /^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/;
 
@@ -60,7 +25,13 @@ const SettingsPage: React.FC = () => {
   const queryClient = useQueryClient();
   const toast = useToast();
   const [activeSection, setActiveSection] = useState('account');
-  const [settings, setSettings] = useState<SettingsState>(DEFAULT_SETTINGS);
+  // Only what has somewhere to be saved (November 2, 2026): profile
+  // visibility (User.profileVisibility); notification choices live in
+  // NotificationSettingsSection; theme and language in their own providers.
+  const [profileVisibility, setProfileVisibility] = useState<ProfileVisibility>('community');
+  const { theme, setTheme } = useTheme();
+  const { language, setLanguage } = useLanguage();
+  const whatsAppAvailable = useWhatsAppAvailable();
   const [slugInput, setSlugInput] = useState('');
   const [slugEditing, setSlugEditing] = useState(false);
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
@@ -83,15 +54,8 @@ const SettingsPage: React.FC = () => {
   });
 
   useEffect(() => {
-    if (userProfile?.settings) {
-      setSettings(prev => ({
-        notifications: { ...prev.notifications, ...userProfile.settings.notifications },
-        privacy: { ...prev.privacy, ...userProfile.settings.privacy },
-        appearance: { ...prev.appearance, ...userProfile.settings.appearance },
-      }));
-    }
     if (userProfile?.profileVisibility) {
-      setSettings(prev => ({ ...prev, privacy: { ...prev.privacy, profileVisibility: userProfile.profileVisibility } }));
+      setProfileVisibility(userProfile.profileVisibility);
     }
     if (userProfile) {
       setWhatsappNumber(userProfile.whatsappNumber || '');
@@ -111,13 +75,14 @@ const SettingsPage: React.FC = () => {
     onError: () => toast.error('Failed to save WhatsApp settings'),
   });
 
-  // Only profile visibility has somewhere to be stored (User.profileVisibility).
-  // Until November 2, 2026 this sent `{ settings }`, which the API silently
-  // drops -- nothing on this page was ever saved.
-  const saveSettingsMutation = useMutation({
-    mutationFn: (updated: SettingsState) =>
-      api.patch(`/users/${user!.id}`, { profileVisibility: updated.privacy.profileVisibility }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['user-settings', user?.id] }),
+  // Until November 2, 2026 the page sent `{ settings }`, which the API
+  // silently drops -- none of its choices were ever saved.
+  const saveVisibilityMutation = useMutation({
+    mutationFn: (value: ProfileVisibility) => api.patch(`/users/${user!.id}`, { profileVisibility: value }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-settings', user?.id] });
+      toast.success('Profile visibility saved');
+    },
     onError: () => toast.error('Could not save your privacy setting. Please try again.'),
   });
 
@@ -186,9 +151,9 @@ const SettingsPage: React.FC = () => {
     }
   };
 
-  const updateSettings = (updated: SettingsState) => {
-    setSettings(updated);
-    saveSettingsMutation.mutate(updated);
+  const updateVisibility = (value: ProfileVisibility) => {
+    setProfileVisibility(value);
+    saveVisibilityMutation.mutate(value);
   };
 
   const { isDevoted, plan, endDate, daysRemaining, status, autoRenew } = useSubscription();
@@ -586,34 +551,11 @@ const SettingsPage: React.FC = () => {
                   <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200 mb-6">Notification Preferences</h2>
 
                   <div className="space-y-6">
-                    <div>
-                      <h3 className="font-bold text-stone-800 dark:text-stone-200 mb-4">Communication Channels</h3>
-                      <div className="space-y-3">
-                        {[
-                          { key: 'email', label: 'Email Notifications' },
-                          { key: 'push', label: 'Push Notifications' },
-                          { key: 'sms', label: 'SMS Notifications' },
-                        ].map(({ key, label }) => (
-                          <label key={key} className="flex items-center justify-between p-4 bg-muted/40 rounded-xl">
-                            <span className="font-medium text-stone-700 dark:text-stone-300">{label}</span>
-                            <input
-                              type="checkbox"
-                              checked={settings.notifications[key as keyof typeof settings.notifications] as boolean}
-                              onChange={(e) => {
-                                const updated = {
-                                  ...settings,
-                                  notifications: { ...settings.notifications, [key]: e.target.checked },
-                                };
-                                updateSettings(updated);
-                              }}
-                              className="w-5 h-5 text-highlight rounded focus:ring-highlight"
-                            />
-                          </label>
-                        ))}
-                      </div>
-                    </div>
+                    <NotificationSettingsSection forumDigestOptIn={!!userProfile?.forumDigestOptIn} userId={user?.id} />
 
-                    {/* WhatsApp Notifications */}
+                    {/* WhatsApp alerts: only where they are actually sent (a vendor's new
+                        orders, a babalawo's bookings), and only once WhatsApp is set up. */}
+                    {whatsAppAvailable && (user?.role === 'VENDOR' || user?.role === 'BABALAWO') && (
                     <div className="bg-green-50 dark:bg-green-900/20 rounded-2xl border border-green-200 dark:border-green-800 p-5">
                       <div className="flex items-center gap-3 mb-4">
                         <div className="w-9 h-9 rounded-xl bg-green-500 flex items-center justify-center flex-shrink-0">
@@ -621,7 +563,7 @@ const SettingsPage: React.FC = () => {
                         </div>
                         <div>
                           <h3 className="font-bold text-stone-800 dark:text-stone-200">WhatsApp Notifications</h3>
-                          <p className="text-xs text-muted-foreground">Get instant alerts for bookings, orders & messages</p>
+                          <p className="text-xs text-muted-foreground">{user?.role === 'VENDOR' ? 'Get an instant alert for each new order' : 'Get an instant alert for each new booking'}</p>
                         </div>
                         <label className="ml-auto flex items-center cursor-pointer">
                           <div className="relative">
@@ -668,7 +610,7 @@ const SettingsPage: React.FC = () => {
 
                       {whatsappEnabled && whatsappNumber && (
                         <div className="mt-3 flex flex-wrap gap-2">
-                          {['Orders', 'Payments'].map((item) => (
+                          {[user?.role === 'VENDOR' ? 'New orders' : 'New bookings'].map((item) => (
                             <span key={item} className="inline-flex items-center gap-1 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 text-xs font-semibold px-2.5 py-1 rounded-full">
                               <Check size={10} /> {item}
                             </span>
@@ -676,33 +618,7 @@ const SettingsPage: React.FC = () => {
                         </div>
                       )}
                     </div>
-
-                    <div>
-                      <h3 className="font-bold text-stone-800 dark:text-stone-200 mb-4">Notification Types</h3>
-                      <div className="space-y-3">
-                        {[
-                          { key: 'consultationReminders', label: 'Consultation Reminders (existing bookings only)' },
-                          { key: 'communityUpdates', label: 'Community Updates' },
-                          { key: 'marketing', label: 'Marketing & Promotions' },
-                        ].map(({ key, label }) => (
-                          <label key={key} className="flex items-center justify-between p-4 bg-muted/40 rounded-xl">
-                            <span className="font-medium text-stone-700 dark:text-stone-300">{label}</span>
-                            <input
-                              type="checkbox"
-                              checked={settings.notifications[key as keyof typeof settings.notifications] as boolean}
-                              onChange={(e) => {
-                                const updated = {
-                                  ...settings,
-                                  notifications: { ...settings.notifications, [key]: e.target.checked },
-                                };
-                                updateSettings(updated);
-                              }}
-                              className="w-5 h-5 text-highlight rounded focus:ring-highlight"
-                            />
-                          </label>
-                        ))}
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -725,14 +641,8 @@ const SettingsPage: React.FC = () => {
                               type="radio"
                               name="profileVisibility"
                               value={value}
-                              checked={settings.privacy.profileVisibility === value}
-                              onChange={(e) => {
-                                const updated = {
-                                  ...settings,
-                                  privacy: { ...settings.privacy, profileVisibility: e.target.value },
-                                };
-                                updateSettings(updated);
-                              }}
+                              checked={profileVisibility === value}
+                              onChange={() => updateVisibility(value as ProfileVisibility)}
                               className="w-4 h-4 text-highlight focus:ring-highlight"
                             />
                             <span className="font-medium text-stone-700 dark:text-stone-300">{label}</span>
@@ -744,38 +654,6 @@ const SettingsPage: React.FC = () => {
                     <div>
                       <h3 className="font-bold text-stone-800 dark:text-stone-200 mb-4">Activity Settings</h3>
                       <div className="space-y-3">
-                        <label className="flex items-center justify-between p-4 bg-muted/40 rounded-xl">
-                          <span className="font-medium text-stone-700 dark:text-stone-300">Show online status</span>
-                          <input
-                            type="checkbox"
-                            checked={settings.privacy.showOnlineStatus}
-                            onChange={(e) => {
-                              const updated = {
-                                ...settings,
-                                privacy: { ...settings.privacy, showOnlineStatus: e.target.checked },
-                              };
-                              updateSettings(updated);
-                            }}
-                            className="w-5 h-5 text-highlight rounded focus:ring-highlight"
-                          />
-                        </label>
-
-                        <label className="flex items-center justify-between p-4 bg-muted/40 rounded-xl">
-                          <span className="font-medium text-stone-700 dark:text-stone-300">Allow direct messaging</span>
-                          <input
-                            type="checkbox"
-                            checked={settings.privacy.allowMessaging}
-                            onChange={(e) => {
-                              const updated = {
-                                ...settings,
-                                privacy: { ...settings.privacy, allowMessaging: e.target.checked },
-                              };
-                              updateSettings(updated);
-                            }}
-                            className="w-5 h-5 text-highlight rounded focus:ring-highlight"
-                          />
-                        </label>
-
                         <label className="flex items-center justify-between p-4 bg-muted/40 rounded-xl">
                           <div>
                             <span className="font-medium text-stone-700 dark:text-stone-300">Show me in the Community Directory</span>
@@ -821,13 +699,14 @@ const SettingsPage: React.FC = () => {
 
                   <div className="space-y-6">
                     <div>
-                      <h3 className="font-bold text-stone-800 dark:text-stone-200 mb-4">Theme</h3>
+                      <h3 className="font-bold text-stone-800 dark:text-stone-200 mb-1">Theme</h3>
+                      <p className="text-xs text-muted-foreground mb-4">Saved on this device.</p>
                       <div className="grid grid-cols-2 gap-4">
                         <button
                           type="button"
-                          onClick={() => updateSettings({ ...settings, appearance: { ...settings.appearance, theme: 'light' } })}
+                          onClick={() => setTheme('light')}
                           className={`p-4 rounded-xl border-2 transition-colors ${
-                            settings.appearance.theme === 'light'
+                            theme === 'light'
                               ? 'border-highlight bg-highlight/5'
                               : 'border-border hover:border-stone-300'
                           }`}
@@ -841,9 +720,9 @@ const SettingsPage: React.FC = () => {
 
                         <button
                           type="button"
-                          onClick={() => updateSettings({ ...settings, appearance: { ...settings.appearance, theme: 'dark' } })}
+                          onClick={() => setTheme('dark')}
                           className={`p-4 rounded-xl border-2 transition-colors ${
-                            settings.appearance.theme === 'dark'
+                            theme === 'dark'
                               ? 'border-highlight bg-highlight/5'
                               : 'border-border hover:border-stone-300'
                           }`}
@@ -861,12 +740,12 @@ const SettingsPage: React.FC = () => {
                       <h3 className="font-bold text-stone-800 dark:text-stone-200 mb-4">Language</h3>
                       <select
                         aria-label="Language preference"
-                        value={settings.appearance.language}
-                        onChange={(e) => updateSettings({ ...settings, appearance: { ...settings.appearance, language: e.target.value } })}
+                        value={language}
+                        onChange={(e) => setLanguage(e.target.value as 'en' | 'yo')}
                         className="w-full px-4 py-3 bg-muted/40 border border-border rounded-xl focus:ring-2 focus:ring-highlight focus:border-transparent"
                       >
-                        <option value="english">English</option>
-                        <option value="yoruba">Yoruba</option>
+                        <option value="en">English</option>
+                        <option value="yo">Yorùbá</option>
                       </select>
                     </div>
                   </div>

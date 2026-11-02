@@ -27,6 +27,11 @@ export class WhatsAppService {
   private readonly apiUrl: string;
   private readonly enabled: boolean;
 
+  /** Whether WhatsApp credentials are configured, so messages can actually be sent. */
+  get isEnabled(): boolean {
+    return this.enabled;
+  }
+
   constructor(
     private config: ConfigService,
     @Inject(forwardRef(() => OutboxService))

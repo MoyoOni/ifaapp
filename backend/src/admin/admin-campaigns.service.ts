@@ -6,6 +6,9 @@ import { SesEmailService } from '../shared/services/ses-email.service';
 import { AuditService } from './audit.service';
 import { devotedWhere } from '../subscriptions/devoted';
 
+// Every campaign says why it was sent and how to stop it.
+const MARKETING_FOOTER = `<p style="font-size:12px;color:#9CA3AF;margin-top:24px;">You are receiving this because you chose to hear news and announcements from Ìlú Àṣẹ. To stop, turn off "News and announcements" in <a href="${process.env.FRONTEND_URL || 'https://iluase.com'}/settings">Settings → Notifications</a>.</p>`;
+
 @Injectable()
 export class AdminCampaignsService {
   private readonly logger = new Logger(AdminCampaignsService.name);
@@ -80,9 +83,10 @@ export class AdminCampaignsService {
 
     let sent = 0;
     for (const recipient of recipients) {
-      const personalizedBody = campaign.body
-        .replace(/\{\{name\}\}/g, recipient.name)
-        .replace(/\{\{yorubaName\}\}/g, recipient.yorubaName || recipient.name);
+      const personalizedBody =
+        campaign.body
+          .replace(/\{\{name\}\}/g, recipient.name)
+          .replace(/\{\{yorubaName\}\}/g, recipient.yorubaName || recipient.name) + MARKETING_FOOTER;
       try {
         await this.sesEmailService.sendEmail(recipient.email, campaign.subject, personalizedBody);
         sent++;
@@ -165,6 +169,17 @@ export class AdminCampaignsService {
         break;
     }
 
-    return this.prisma.user.findMany({ where, select });
+    // Campaigns are marketing: only members who opted in to news and
+    // announcements (NotificationPreferences.emailMarketing, off by default)
+    // receive them. They previously went to everyone in the segment, opted
+    // in or not (November 2, 2026).
+    const optedIn = await this.prisma.notificationPreferences.findMany({
+      where: { emailMarketing: true },
+      select: { userId: true },
+    });
+    return this.prisma.user.findMany({
+      where: { AND: [where, { id: { in: optedIn.map((p) => p.userId) } }] },
+      select,
+    });
   }
 }

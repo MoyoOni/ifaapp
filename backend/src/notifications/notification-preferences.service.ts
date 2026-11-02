@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import type { UpdateNotificationPreferencesDto } from './notification-preferences.controller';
 
 @Injectable()
 export class NotificationPreferencesService {
@@ -20,7 +21,10 @@ export class NotificationPreferencesService {
           emailDigest: true,
           emailPlan: true,
           emailMessages: true,
-          emailMarketing: true,
+          // Marketing is opt-in only. This was `true`, so merely opening
+          // Settings (or receiving any notification) opted a member in
+          // (November 2, 2026).
+          emailMarketing: false,
           pushReminder: true,
           pushMessages: true,
           pushFollowup: true,
@@ -40,7 +44,7 @@ export class NotificationPreferencesService {
     return preferences;
   }
 
-  async updatePreferences(userId: string, data: any) {
+  async updatePreferences(userId: string, data: UpdateNotificationPreferencesDto) {
     const existing = await this.prisma.notificationPreferences.findUnique({
       where: { userId },
     });
@@ -52,10 +56,7 @@ export class NotificationPreferencesService {
       });
     } else {
       return await this.prisma.notificationPreferences.create({
-        data: {
-          userId,
-          ...data,
-        },
+        data: { ...data, userId },
       });
     }
   }
