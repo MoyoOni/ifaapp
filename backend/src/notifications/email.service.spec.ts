@@ -70,7 +70,7 @@ describe('EmailService', () => {
       });
       expect(sesEmailService.sendEmail).toHaveBeenCalledWith(
         mockUser.email,
-        'Appointment Update - Ilé Àṣẹ',
+        'Appointment Update - Ìlú Àṣẹ',
         expect.any(String)
       );
     });
@@ -102,7 +102,7 @@ describe('EmailService', () => {
 
       expect(sesEmailService.sendEmail).toHaveBeenCalledWith(
         mockUser.email,
-        'Notification - Ilé Àṣẹ',
+        'Notification - Ìlú Àṣẹ',
         expect.any(String)
       );
     });
@@ -128,7 +128,7 @@ describe('EmailService', () => {
 
       expect(sesEmailService.sendEmail).toHaveBeenCalledWith(
         mockEmail,
-        'Password Reset Request - Ilé Àṣẹ',
+        'Password Reset Request - Ìlú Àṣẹ',
         expect.any(String)
       );
     });

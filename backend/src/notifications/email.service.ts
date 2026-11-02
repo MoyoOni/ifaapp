@@ -40,7 +40,7 @@ export class EmailService {
     const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
     const html = this.renderPasswordResetTemplate(userName, resetUrl);
 
-    await this.sesEmailService.sendEmail(email, 'Password Reset Request - Ilé Àṣẹ', html);
+    await this.sesEmailService.sendEmail(email, 'Password Reset Request - Ìlú Àṣẹ', html);
     this.logger.log(`Password reset email sent to ${email}`);
   }
 
@@ -52,39 +52,39 @@ export class EmailService {
   private getEmailTemplate(notification: any): { subject: string; body: string; greeting: string } {
     const templates: Record<string, { subject: string; body: string; greeting: string }> = {
       APPOINTMENT: {
-        subject: 'Appointment Update - Ilé Àṣẹ',
+        subject: 'Appointment Update - Ìlú Àṣẹ',
         body: notification.message,
         greeting: 'Àṣẹ',
       },
-      MESSAGE: { subject: 'New Message - Ilé Àṣẹ', body: notification.message, greeting: 'Àṣẹ' },
-      ORDER: { subject: 'Order Update - Ilé Àṣẹ', body: notification.message, greeting: 'Àṣẹ' },
+      MESSAGE: { subject: 'New Message - Ìlú Àṣẹ', body: notification.message, greeting: 'Àṣẹ' },
+      ORDER: { subject: 'Order Update - Ìlú Àṣẹ', body: notification.message, greeting: 'Àṣẹ' },
       PAYMENT: {
-        subject: 'Payment Confirmation - Ilé Àṣẹ',
+        subject: 'Payment Confirmation - Ìlú Àṣẹ',
         body: notification.message,
         greeting: 'Àṣẹ',
       },
       GUIDANCE_PLAN: {
-        subject: 'Guidance Plan Update - Ilé Àṣẹ',
+        subject: 'Guidance Plan Update - Ìlú Àṣẹ',
         body: notification.message,
         greeting: 'Àṣẹ',
       },
       VERIFICATION: {
-        subject: 'Verification Status Update - Ilé Àṣẹ',
+        subject: 'Verification Status Update - Ìlú Àṣẹ',
         body: notification.message,
         greeting: 'Àṣẹ',
       },
-      DISPUTE: { subject: 'Dispute Update - Ilé Àṣẹ', body: notification.message, greeting: 'Àṣẹ' },
+      DISPUTE: { subject: 'Dispute Update - Ìlú Àṣẹ', body: notification.message, greeting: 'Àṣẹ' },
       SYSTEM: {
-        subject: 'System Notification - Ilé Àṣẹ',
+        subject: 'System Notification - Ìlú Àṣẹ',
         body: notification.message,
         greeting: 'Àṣẹ',
       },
-      TEMPLE: { subject: 'Temple Update - Ilé Àṣẹ', body: notification.message, greeting: 'Àṣẹ' },
+      TEMPLE: { subject: 'Temple Update - Ìlú Àṣẹ', body: notification.message, greeting: 'Àṣẹ' },
     };
 
     return (
       templates[notification.type] || {
-        subject: 'Notification - Ilé Àṣẹ',
+        subject: 'Notification - Ìlú Àṣẹ',
         body: notification.message,
         greeting: 'Àṣẹ',
       }
@@ -101,8 +101,8 @@ export class EmailService {
 <head><meta charset="utf-8"><title>${template.subject}</title></head>
 <body style="font-family:Arial,sans-serif;line-height:1.6;color:#333;max-width:600px;margin:0 auto;padding:20px;">
   <div style="background:linear-gradient(135deg,#B45309 0%,#92400E 100%);padding:30px;text-align:center;border-radius:10px 10px 0 0;">
-    <h1 style="color:#FDFCF0;margin:0;font-size:28px;">Ilé Àṣẹ</h1>
-    <p style="color:#FDFCF0;margin:5px 0 0 0;font-size:14px;">Digital Nexus for Isese/Ifá</p>
+    <h1 style="color:#FDFCF0;margin:0;font-size:28px;">Ìlú Àṣẹ</h1>
+    <p style="color:#FDFCF0;margin:5px 0 0 0;font-size:14px;">Digital Sanctuary for Ifá/Isese</p>
   </div>
   <div style="background:#FDFCF0;padding:30px;border-radius:0 0 10px 10px;border:1px solid #E5E7EB;">
     <p>${template.greeting} ${displayName},</p>
@@ -110,7 +110,7 @@ export class EmailService {
       <h2 style="color:#292524;margin-top:0;">${notification.title || template.subject}</h2>
       <p style="color:#4B5563;margin-bottom:0;">${template.body}</p>
     </div>
-    <p style="font-size:12px;color:#9CA3AF;margin-top:30px;">© ${new Date().getFullYear()} Ilé Àṣẹ. All rights reserved.</p>
+    <p style="font-size:12px;color:#9CA3AF;margin-top:30px;">© ${new Date().getFullYear()} Ìlú Àṣẹ. All rights reserved.</p>
   </div>
 </body></html>`;
   }
@@ -118,10 +118,10 @@ export class EmailService {
   private renderPasswordResetTemplate(userName: string, resetUrl: string): string {
     return `<!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><title>Password Reset - Ilé Àṣẹ</title></head>
+<head><meta charset="utf-8"><title>Password Reset - Ìlú Àṣẹ</title></head>
 <body style="font-family:Arial,sans-serif;line-height:1.6;color:#333;max-width:600px;margin:0 auto;padding:20px;">
   <div style="background:linear-gradient(135deg,#B45309 0%,#92400E 100%);padding:30px;text-align:center;border-radius:10px 10px 0 0;">
-    <h1 style="color:#FDFCF0;margin:0;font-size:28px;">Ilé Àṣẹ</h1>
+    <h1 style="color:#FDFCF0;margin:0;font-size:28px;">Ìlú Àṣẹ</h1>
   </div>
   <div style="background:#FDFCF0;padding:30px;border-radius:0 0 10px 10px;border:1px solid #E5E7EB;">
     <p>Àṣẹ ${userName},</p>

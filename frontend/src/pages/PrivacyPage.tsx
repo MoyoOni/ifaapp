@@ -31,7 +31,7 @@ const PrivacyPage: React.FC = () => {
         </div>
 
         <p className="text-stone-600 text-sm leading-relaxed">
-          Ilé Àṣẹ ("we", "us", "our") respects your privacy. This policy explains what data we
+          Ìlú Àṣẹ ("we", "us", "our") respects your privacy. This policy explains what data we
           collect, how we use it, and your rights. We comply with the Nigeria Data Protection
           Regulation (NDPR) and, where applicable, the EU General Data Protection Regulation (GDPR).
         </p>
@@ -179,7 +179,7 @@ const PrivacyPage: React.FC = () => {
         </Section>
 
         <div className="pt-4 border-t border-border/50 text-xs text-stone-400 text-center">
-          © {new Date().getFullYear()} Ilé Àṣẹ · Digital Sanctuary for Ifá/Isese ·{' '}
+          © {new Date().getFullYear()} Ìlú Àṣẹ · Digital Sanctuary for Ifá/Isese ·{' '}
           <a href="/terms" className="hover:text-highlight transition-colors">
             Terms of Service
           </a>

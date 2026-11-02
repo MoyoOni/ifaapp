@@ -55,13 +55,13 @@ export class OrderNotificationService {
     await Promise.all([
       this.sesEmail.sendEmail(
         order.customer.email,
-        `Order Confirmation – Ilé Àṣẹ #${order.id.slice(0, 8).toUpperCase()}`,
+        `Order Confirmation – Ìlú Àṣẹ #${order.id.slice(0, 8).toUpperCase()}`,
         `<p>Dear ${order.customer.name},</p>
          <p>Your order has been received and is being processed.</p>
          <p><strong>Items:</strong> ${itemList}</p>
          <p><strong>Total:</strong> ${order.currency} ${order.totalAmount}</p>
          <p>We will notify you when your order ships.</p>
-         <p>— The Ilé Àṣẹ Team</p>`
+         <p>— The Ìlú Àṣẹ Team</p>`
       ),
       this.sesEmail.sendEmail(
         order.vendor.user.email,
@@ -71,7 +71,7 @@ export class OrderNotificationService {
          <p><strong>Items:</strong> ${itemList}</p>
          <p><strong>Total:</strong> ${order.currency} ${order.totalAmount}</p>
          <p>Please prepare the order for shipping.</p>
-         <p>— The Ilé Àṣẹ Team</p>`
+         <p>— The Ìlú Àṣẹ Team</p>`
       ),
     ]);
 
@@ -110,12 +110,12 @@ export class OrderNotificationService {
       this.sesEmail.sendEmail(
         order.customer.email,
         `Order Update – #${order.id.slice(0, 8).toUpperCase()}`,
-        `<p>Dear ${order.customer.name},</p><p>${message.customer}</p><p>— The Ilé Àṣẹ Team</p>`
+        `<p>Dear ${order.customer.name},</p><p>${message.customer}</p><p>— The Ìlú Àṣẹ Team</p>`
       ),
       this.sesEmail.sendEmail(
         order.vendor.user.email,
         `Order Update – #${order.id.slice(0, 8).toUpperCase()}`,
-        `<p>Dear ${order.vendor.user.name},</p><p>${message.vendor}</p><p>— The Ilé Àṣẹ Team</p>`
+        `<p>Dear ${order.vendor.user.name},</p><p>${message.vendor}</p><p>— The Ìlú Àṣẹ Team</p>`
       ),
     ]);
 
@@ -138,7 +138,7 @@ export class OrderNotificationService {
       `<p>Dear ${order.customer.name},</p>
        <p>Your order is on its way!</p>
        ${trackingLine}
-       <p>— The Ilé Àṣẹ Team</p>`
+       <p>— The Ìlú Àṣẹ Team</p>`
     );
 
     this.logger.log(`Tracking notification sent for order ${order.id}`);
@@ -153,7 +153,7 @@ export class OrderNotificationService {
       `Your Order Is Almost There – #${order.id.slice(0, 8).toUpperCase()}`,
       `<p>Dear ${order.customer.name},</p>
        <p>Your order is expected to arrive soon. Please ensure someone is available to receive it.</p>
-       <p>— The Ilé Àṣẹ Team</p>`
+       <p>— The Ìlú Àṣẹ Team</p>`
     );
 
     this.logger.log(`Delivery upcoming notification sent for order ${order.id}`);

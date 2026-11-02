@@ -597,7 +597,7 @@ export class SubscriptionsService {
         type: NotificationType.SYSTEM,
         category: NotificationCategory.SUCCESS,
         title: 'Devoted access granted',
-        message: `Your Devoted ${plan === 'ANNUAL' ? 'Annual' : 'Quarterly'} plan has been activated by the Ilé Àṣẹ team.${reason ? ` Note: ${reason}` : ''} Access until ${endDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}.`,
+        message: `Your Devoted ${plan === 'ANNUAL' ? 'Annual' : 'Quarterly'} plan has been activated by the Ìlú Àṣẹ team.${reason ? ` Note: ${reason}` : ''} Access until ${endDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}.`,
       })
       .catch((err) =>
         this.logger.error(`Failed to send admin-grant notification to user ${userId}`, err)
@@ -633,12 +633,12 @@ export class SubscriptionsService {
 
     const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
   <div style="background:linear-gradient(135deg,#B45309 0%,#92400E 100%);padding:30px;text-align:center;border-radius:10px 10px 0 0;">
-    <h1 style="color:#FDFCF0;margin:0;font-size:28px;">Ilé Àṣẹ</h1>
+    <h1 style="color:#FDFCF0;margin:0;font-size:28px;">Ìlú Àṣẹ</h1>
     <p style="color:#FCD34D;margin:8px 0 0;font-size:14px;">You are now Devoted</p>
   </div>
   <div style="background:#FDFCF0;padding:30px;border-radius:0 0 10px 10px;border:1px solid #E5E7EB;">
     <p>Àṣẹ ${name},</p>
-    <p>Thank you for becoming a <strong>Devoted</strong> member of Ilé Àṣẹ. Your payment was successful.</p>
+    <p>Thank you for becoming a <strong>Devoted</strong> member of Ìlú Àṣẹ. Your payment was successful.</p>
     <div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:8px;padding:20px;margin:20px 0;">
       <p style="margin:0 0 8px;font-weight:bold;color:#92400E;">Receipt</p>
       <p style="margin:4px 0;color:#78350F;">Plan: <strong>${planLabel}</strong></p>
@@ -655,7 +655,7 @@ export class SubscriptionsService {
   </div>
 </body></html>`;
 
-    await this.sesEmailService.sendEmail(email, 'Welcome to Devoted — Ilé Àṣẹ', html);
+    await this.sesEmailService.sendEmail(email, 'Welcome to Devoted — Ìlú Àṣẹ', html);
     this.logger.log(`Billing confirmation sent to ${email}`);
   }
 
@@ -677,7 +677,7 @@ export class SubscriptionsService {
 
     const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
   <div style="background:linear-gradient(135deg,#B45309 0%,#92400E 100%);padding:30px;text-align:center;border-radius:10px 10px 0 0;">
-    <h1 style="color:#FDFCF0;margin:0;font-size:28px;">Ilé Àṣẹ</h1>
+    <h1 style="color:#FDFCF0;margin:0;font-size:28px;">Ìlú Àṣẹ</h1>
   </div>
   <div style="background:#FDFCF0;padding:30px;border-radius:0 0 10px 10px;border:1px solid #E5E7EB;">
     <p>Àṣẹ ${name},</p>
@@ -694,7 +694,7 @@ export class SubscriptionsService {
 
     await this.sesEmailService.sendEmail(
       email,
-      `Your Devoted membership renews in ${daysRemaining} ${dayWord} — Ilé Àṣẹ`,
+      `Your Devoted membership renews in ${daysRemaining} ${dayWord} — Ìlú Àṣẹ`,
       html
     );
     this.logger.log(`Renewal reminder sent to ${email} (${daysRemaining} days remaining)`);
@@ -713,7 +713,7 @@ export class SubscriptionsService {
 
     const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
   <div style="background:linear-gradient(135deg,#B45309 0%,#92400E 100%);padding:30px;text-align:center;border-radius:10px 10px 0 0;">
-    <h1 style="color:#FDFCF0;margin:0;font-size:28px;">Ilé Àṣẹ</h1>
+    <h1 style="color:#FDFCF0;margin:0;font-size:28px;">Ìlú Àṣẹ</h1>
     <p style="color:#FCD34D;margin:8px 0 0;font-size:14px;">We miss you</p>
   </div>
   <div style="background:#FDFCF0;padding:30px;border-radius:0 0 10px 10px;border:1px solid #E5E7EB;">
@@ -729,7 +729,7 @@ export class SubscriptionsService {
   </div>
 </body></html>`;
 
-    await this.sesEmailService.sendEmail(user.email, 'Your Devoted journey awaits — Ilé Àṣẹ', html);
+    await this.sesEmailService.sendEmail(user.email, 'Your Devoted journey awaits — Ìlú Àṣẹ', html);
     this.logger.log(`Win-back email sent to ${user.email}`);
   }
 

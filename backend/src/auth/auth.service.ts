@@ -194,7 +194,7 @@ export class AuthService {
     }
 
     if (admin) {
-      const welcomeText = `E kàábọ̀ (Welcome) to Ilé Àṣẹ.
+      const welcomeText = `E kàábọ̀ (Welcome) to Ìlú Àṣẹ.
 
 I am Chief Adeyemi, and I am honored to welcome you to our digital village. Here, technology serves tradition, not the other way around.
 
@@ -533,11 +533,11 @@ Aboru Aboye.`;
 
     const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
   <div style="background:linear-gradient(135deg,#B45309 0%,#92400E 100%);padding:30px;text-align:center;border-radius:10px 10px 0 0;">
-    <h1 style="color:#FDFCF0;margin:0;font-size:28px;">Ilé Àṣẹ</h1>
+    <h1 style="color:#FDFCF0;margin:0;font-size:28px;">Ìlú Àṣẹ</h1>
   </div>
   <div style="background:#FDFCF0;padding:30px;border-radius:0 0 10px 10px;border:1px solid #E5E7EB;">
     <p>Àṣẹ ${name},</p>
-    <p>Thank you for joining Ilé Àṣẹ. Please verify your email address to complete your registration.</p>
+    <p>Thank you for joining Ìlú Àṣẹ. Please verify your email address to complete your registration.</p>
     <div style="text-align:center;margin:30px 0;">
       <a href="${verifyUrl}" style="display:inline-block;background:#B45309;color:#FFFFFF;padding:14px 30px;text-decoration:none;border-radius:6px;font-weight:bold;">
         Verify Email Address
@@ -548,7 +548,7 @@ Aboru Aboye.`;
   </div>
 </body></html>`;
 
-    await this.sesEmailService.sendEmail(email, 'Verify your email — Ilé Àṣẹ', html);
+    await this.sesEmailService.sendEmail(email, 'Verify your email — Ìlú Àṣẹ', html);
     this.logger.log(`Verification email sent to ${email}`);
   }
 
@@ -838,11 +838,11 @@ Aboru Aboye.`;
     const confirmUrl = `${frontendUrl}/confirm-email-change?token=${token}`;
     const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
   <div style="background:linear-gradient(135deg,#B45309 0%,#92400E 100%);padding:30px;text-align:center;border-radius:10px 10px 0 0;">
-    <h1 style="color:#FDFCF0;margin:0;font-size:28px;">Ilé Àṣẹ</h1>
+    <h1 style="color:#FDFCF0;margin:0;font-size:28px;">Ìlú Àṣẹ</h1>
   </div>
   <div style="background:#FDFCF0;padding:30px;border-radius:0 0 10px 10px;border:1px solid #E5E7EB;">
     <p>Àṣẹ ${name},</p>
-    <p>Confirm that you'd like to use this address for your Ilé Àṣẹ account.</p>
+    <p>Confirm that you'd like to use this address for your Ìlú Àṣẹ account.</p>
     <div style="text-align:center;margin:30px 0;">
       <a href="${confirmUrl}" style="display:inline-block;background:#B45309;color:#FFFFFF;padding:14px 30px;text-decoration:none;border-radius:6px;font-weight:bold;">
         Confirm New Email
@@ -852,21 +852,21 @@ Aboru Aboye.`;
     <p style="font-size:12px;color:#9CA3AF;">Or copy this link: ${confirmUrl}</p>
   </div>
 </body></html>`;
-    await this.sesEmailService.sendEmail(email, 'Confirm your new email — Ilé Àṣẹ', html);
+    await this.sesEmailService.sendEmail(email, 'Confirm your new email — Ìlú Àṣẹ', html);
   }
 
   private async sendEmailChangedNotice(oldEmail: string, name: string, newEmail: string): Promise<void> {
     const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
   <div style="background:linear-gradient(135deg,#B45309 0%,#92400E 100%);padding:30px;text-align:center;border-radius:10px 10px 0 0;">
-    <h1 style="color:#FDFCF0;margin:0;font-size:28px;">Ilé Àṣẹ</h1>
+    <h1 style="color:#FDFCF0;margin:0;font-size:28px;">Ìlú Àṣẹ</h1>
   </div>
   <div style="background:#FDFCF0;padding:30px;border-radius:0 0 10px 10px;border:1px solid #E5E7EB;">
     <p>Àṣẹ ${name},</p>
-    <p>The email address on your Ilé Àṣẹ account was just changed to <strong>${newEmail}</strong>. You'll sign in with that address from now on.</p>
+    <p>The email address on your Ìlú Àṣẹ account was just changed to <strong>${newEmail}</strong>. You'll sign in with that address from now on.</p>
     <p style="font-size:14px;color:#6B7280;">If you didn't make this change, please contact support right away.</p>
   </div>
 </body></html>`;
-    await this.sesEmailService.sendEmail(oldEmail, 'Your email address was changed — Ilé Àṣẹ', html);
+    await this.sesEmailService.sendEmail(oldEmail, 'Your email address was changed — Ìlú Àṣẹ', html);
   }
 
   private async sendPasswordResetEmail(email: string, name: string, token: string): Promise<void> {
@@ -875,7 +875,7 @@ Aboru Aboye.`;
 
     const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
   <div style="background:linear-gradient(135deg,#B45309 0%,#92400E 100%);padding:30px;text-align:center;border-radius:10px 10px 0 0;">
-    <h1 style="color:#FDFCF0;margin:0;font-size:28px;">Ilé Àṣẹ</h1>
+    <h1 style="color:#FDFCF0;margin:0;font-size:28px;">Ìlú Àṣẹ</h1>
   </div>
   <div style="background:#FDFCF0;padding:30px;border-radius:0 0 10px 10px;border:1px solid #E5E7EB;">
     <p>Àṣẹ ${name},</p>
@@ -890,7 +890,7 @@ Aboru Aboye.`;
   </div>
 </body></html>`;
 
-    await this.sesEmailService.sendEmail(email, 'Reset your password — Ilé Àṣẹ', html);
+    await this.sesEmailService.sendEmail(email, 'Reset your password — Ìlú Àṣẹ', html);
     this.logger.log(`Password reset email sent to user ${email}`);
   }
 }

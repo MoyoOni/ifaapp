@@ -28,7 +28,7 @@ export class SesEmailService {
     }
 
     const command = new SendEmailCommand({
-      Source: `Ilé Àṣẹ <${this.fromEmail}>`,
+      Source: `Ìlú Àṣẹ <${this.fromEmail}>`,
       Destination: { ToAddresses: [to] },
       Message: {
         Subject: { Data: subject, Charset: 'UTF-8' },

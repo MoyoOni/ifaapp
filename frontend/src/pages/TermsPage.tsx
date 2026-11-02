@@ -31,14 +31,14 @@ const TermsPage: React.FC = () => {
         </div>
 
         <p className="text-stone-600 text-sm leading-relaxed">
-          Welcome to <strong>Ilé Àṣẹ</strong> ("the Platform", "we", "us", or "our"). By creating an
+          Welcome to <strong>Ìlú Àṣẹ</strong> ("the Platform", "we", "us", or "our"). By creating an
           account or using our services you agree to these Terms of Service. Please read them carefully.
           If you do not agree, do not use the Platform.
         </p>
 
         <Section title="1. Acceptance of Terms">
           <p>
-            By accessing or using Ilé Àṣẹ you confirm that you are at least 18 years old and have the
+            By accessing or using Ìlú Àṣẹ you confirm that you are at least 18 years old and have the
             legal capacity to enter into this agreement. If you use the Platform on behalf of an
             organisation, you represent that you have authority to bind that organisation.
           </p>
@@ -46,7 +46,7 @@ const TermsPage: React.FC = () => {
 
         <Section title="2. Description of Services">
           <p>
-            Ilé Àṣẹ is a digital platform connecting seekers with verified Ifá/Isese practitioners
+            Ìlú Àṣẹ is a digital platform connecting seekers with verified Ifá/Isese practitioners
             (Babalawos), vendors of sacred items, and a broader community of practitioners. Services
             include consultation booking, spiritual guidance plans, a marketplace, community circles,
             forums, and an academy.
@@ -95,7 +95,7 @@ const TermsPage: React.FC = () => {
 
         <Section title="6. Intellectual Property">
           <p>
-            All Platform content (excluding user-submitted content) is owned by or licensed to Ilé Àṣẹ.
+            All Platform content (excluding user-submitted content) is owned by or licensed to Ìlú Àṣẹ.
             You may not reproduce, distribute, or create derivative works without our written permission.
             You retain ownership of content you submit but grant us a licence to display it on the
             Platform.
@@ -104,7 +104,7 @@ const TermsPage: React.FC = () => {
 
         <Section title="7. Limitation of Liability">
           <p>
-            To the maximum extent permitted by applicable law, Ilé Àṣẹ shall not be liable for
+            To the maximum extent permitted by applicable law, Ìlú Àṣẹ shall not be liable for
             indirect, incidental, or consequential damages arising from your use of the Platform or
             from practitioner consultations. Our total liability to you shall not exceed the amounts
             paid by you to the Platform in the preceding three months.
@@ -145,7 +145,7 @@ const TermsPage: React.FC = () => {
         </Section>
 
         <div className="pt-4 border-t border-border/50 text-xs text-stone-400 text-center">
-          © {new Date().getFullYear()} Ilé Àṣẹ · Digital Sanctuary for Ifá/Isese ·{' '}
+          © {new Date().getFullYear()} Ìlú Àṣẹ · Digital Sanctuary for Ifá/Isese ·{' '}
           <a href="/privacy" className="hover:text-highlight transition-colors">
             Privacy Policy
           </a>
