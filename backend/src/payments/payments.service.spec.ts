@@ -9,6 +9,7 @@ import {
 import * as crypto from 'crypto';
 import { PaymentsService, PaymentProvider } from './payments.service';
 import { PaystackApiService } from './paystack-api.service';
+import { FlutterwaveApiService } from './flutterwave-api.service';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletService } from '../wallet/wallet.service';
@@ -44,18 +45,14 @@ const mockPaystackApi = {
   createRefund: jest.fn(),
 };
 
-jest.mock('flutterwave-node-v3', () => {
-  return jest.fn().mockImplementation(() => ({
-    // The real SDK's shape (1.4.1): no Payment or Refund objects. The old
-    // mock had both, which hid that the service called methods that don't
-    // exist.
-    Transaction: {
-      verify: jest.fn(),
-      verify_by_tx: jest.fn(),
-      refund: jest.fn(),
-    },
-  }));
-});
+// Flutterwave over REST (FlutterwaveApiService) since November 3, 2026.
+const mockFlutterwaveApi = {
+  isConfigured: jest.fn().mockReturnValue(true),
+  createPaymentLink: jest.fn(),
+  verifyById: jest.fn(),
+  verifyByReference: jest.fn(),
+  refund: jest.fn(),
+};
 
 const mockMentorshipService = { amountOwed: jest.fn(), markPaid: jest.fn() };
 
@@ -145,6 +142,7 @@ describe('PaymentsService', () => {
         { provide: ConfigService, useValue: mockConfigService },
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: PaystackApiService, useValue: mockPaystackApi },
+        { provide: FlutterwaveApiService, useValue: mockFlutterwaveApi },
         { provide: WalletService, useValue: mockWalletService },
         { provide: LocationService, useValue: mockLocationService },
         { provide: CurrencyService, useValue: mockCurrencyService },
@@ -186,17 +184,26 @@ describe('PaymentsService', () => {
     });
 
     // The SDK has no checkout call; this used to throw a TypeError (500).
-    it('tells the payer plainly that non-naira payments are not available yet', async () => {
-      await expect(
-        service.initializePayment(
-          'user-id',
-          { amount: 50, currency: Currency.USD, purpose: PaymentPurpose.WALLET_TOPUP } as any,
-          'test@example.com',
-          'Test User',
-          undefined,
-          PaymentProvider.FLUTTERWAVE
-        )
-      ).rejects.toThrow(/not available yet/);
+    it('starts a Flutterwave checkout and records the payment, so the webhook never trusts its own body', async () => {
+      mockFlutterwaveApi.createPaymentLink.mockResolvedValue({ status: 'success', data: { link: 'https://checkout.flutterwave.com/pay/abc' } });
+
+      const result = await service.initializePayment(
+        'user-id',
+        { amount: 50, currency: Currency.USD, purpose: PaymentPurpose.WALLET_TOPUP } as any,
+        'test@example.com',
+        'Test User',
+        undefined,
+        PaymentProvider.FLUTTERWAVE
+      );
+
+      expect(result).toMatchObject({ provider: PaymentProvider.FLUTTERWAVE, authorizationUrl: 'https://checkout.flutterwave.com/pay/abc' });
+      expect(result.reference).toMatch(/^ILEASE_/);
+      expect(mockFlutterwaveApi.createPaymentLink).toHaveBeenCalledWith(
+        expect.objectContaining({ tx_ref: result.reference, amount: 50, currency: Currency.USD })
+      );
+      expect(mockPrismaService.payment.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ transactionId: result.reference, provider: 'FLUTTERWAVE', amount: 50 }) })
+      );
     });
 
     it('charges what the orders cost, not the amount the client sent', async () => {
@@ -655,59 +662,78 @@ describe('PaymentsService', () => {
       expect(mockWalletService.refundWithdrawalAmount).not.toHaveBeenCalled();
     });
 
-    it('processes a Flutterwave success webhook when the verif-hash header matches', async () => {
+    describe('Flutterwave (verified with Flutterwave, never trusting the webhook body)', () => {
       const fwPayload = {
         event: 'charge.completed',
         data: {
+          id: 987,
           status: 'successful',
-          tx_ref: 'ref-456',
+          tx_ref: 'ILEASE_ref-456',
           amount: 5000,
           currency: 'NGN',
-          meta: { userId: 'user-id' },
+          meta: { userId: 'someone-else' },
         },
       };
-      mockWalletService.depositFunds.mockResolvedValue({ transaction: { id: 'tx-2' } });
+      const verifiedTx = { id: 987, status: 'successful', tx_ref: 'ILEASE_ref-456', amount: 5000, currency: 'NGN' };
+      const topUp = { id: 'pay-fw', userId: 'user-id', transactionId: 'ILEASE_ref-456', amount: 5000, currency: 'NGN', purpose: 'WALLET_TOPUP', status: 'PENDING' };
 
-      const result = await service.handleWebhook(
-        fwPayload,
-        PaymentProvider.FLUTTERWAVE,
-        FLUTTERWAVE_TEST_HASH
-      );
+      it('credits the payer on the Payment record, not whoever the webhook body names', async () => {
+        mockFlutterwaveApi.verifyById.mockResolvedValue({ status: 'success', data: verifiedTx });
+        mockPrismaService.payment.findUnique.mockResolvedValue(topUp);
+        mockWalletService.depositFunds.mockResolvedValue({ transaction: { id: 'tx-2' } });
 
-      expect(result.success).toBe(true);
-      expect(mockWalletService.depositFunds).toHaveBeenCalledWith(
-        'user-id',
-        expect.objectContaining({ amount: 5000, currency: Currency.NGN }),
-        undefined,
-        'flutterwave:ref-456',
-        expect.objectContaining({ eventType: 'PAYMENT_RECEIVED' })
-      );
-    });
+        const result = await service.handleWebhook(fwPayload, PaymentProvider.FLUTTERWAVE, FLUTTERWAVE_TEST_HASH);
 
-    it('does not re-notify a replayed Flutterwave webhook that was already processed (EMG-03)', async () => {
-      const fwPayload = {
-        event: 'charge.completed',
-        data: {
-          status: 'successful',
-          tx_ref: 'ref-456',
-          amount: 5000,
-          currency: 'NGN',
-          meta: { userId: 'user-id' },
-        },
-      };
-      mockWalletService.depositFunds.mockResolvedValue({
-        transaction: { id: 'tx-2', webhookReceived: true },
+        expect(result.success).toBe(true);
+        expect(mockFlutterwaveApi.verifyById).toHaveBeenCalledWith(987);
+        expect(mockWalletService.depositFunds).toHaveBeenCalledWith(
+          'user-id',
+          expect.objectContaining({ amount: 5000, currency: Currency.NGN }),
+          undefined,
+          'flutterwave:ILEASE_ref-456',
+          expect.objectContaining({ eventType: 'PAYMENT_RECEIVED' })
+        );
       });
 
-      const result = await service.handleWebhook(
-        fwPayload,
-        PaymentProvider.FLUTTERWAVE,
-        FLUTTERWAVE_TEST_HASH
-      );
+      it('credits nothing when Flutterwave does not confirm the payment', async () => {
+        mockFlutterwaveApi.verifyById.mockResolvedValue({ status: 'success', data: { ...verifiedTx, status: 'failed' } });
+        const result = await service.handleWebhook(fwPayload, PaymentProvider.FLUTTERWAVE, FLUTTERWAVE_TEST_HASH);
+        expect(result.success).toBe(false);
+        expect(mockWalletService.depositFunds).not.toHaveBeenCalled();
+      });
 
-      expect(result.success).toBe(true);
-      expect(mockPrismaService.transaction.update).not.toHaveBeenCalled();
-      expect(mockNotificationService.notifyPaymentReceived).not.toHaveBeenCalled();
+      it('treats a transaction Flutterwave does not recognise as unconfirmed, not a server error', async () => {
+        mockFlutterwaveApi.verifyById.mockRejectedValue(Object.assign(new Error('Request failed with status code 400'), { response: { status: 400 } }));
+        const result = await service.handleWebhook(fwPayload, PaymentProvider.FLUTTERWAVE, FLUTTERWAVE_TEST_HASH);
+        expect(result).toEqual({ success: false, message: 'Payment not confirmed' });
+        expect(mockWalletService.depositFunds).not.toHaveBeenCalled();
+      });
+
+      it('marks an underpayment as a mismatch instead of paying out', async () => {
+        mockFlutterwaveApi.verifyById.mockResolvedValue({ status: 'success', data: { ...verifiedTx, amount: 100 } });
+        mockPrismaService.payment.findUnique.mockResolvedValue(topUp);
+        const result = await service.handleWebhook(fwPayload, PaymentProvider.FLUTTERWAVE, FLUTTERWAVE_TEST_HASH);
+        expect(result.success).toBe(false);
+        expect(mockPrismaService.payment.update).toHaveBeenCalledWith({ where: { id: 'pay-fw' }, data: { status: 'amount_mismatch' } });
+        expect(mockWalletService.depositFunds).not.toHaveBeenCalled();
+      });
+
+      it('settles a marketplace order through the same path as Paystack', async () => {
+        mockFlutterwaveApi.verifyById.mockResolvedValue({ status: 'success', data: verifiedTx });
+        mockPrismaService.payment.findUnique.mockResolvedValue({ ...topUp, purpose: 'MARKETPLACE_ORDER' });
+        const settle = jest.spyOn(service as any, 'processSuccessfulPayment').mockResolvedValue(undefined);
+        await service.handleWebhook(fwPayload, PaymentProvider.FLUTTERWAVE, FLUTTERWAVE_TEST_HASH);
+        expect(settle).toHaveBeenCalledWith('pay-fw');
+        expect(mockWalletService.depositFunds).not.toHaveBeenCalled();
+      });
+
+      it('does nothing on a replayed webhook for a payment already processed (EMG-03)', async () => {
+        mockFlutterwaveApi.verifyById.mockResolvedValue({ status: 'success', data: verifiedTx });
+        mockPrismaService.payment.findUnique.mockResolvedValue({ ...topUp, status: 'success' });
+        const result = await service.handleWebhook(fwPayload, PaymentProvider.FLUTTERWAVE, FLUTTERWAVE_TEST_HASH);
+        expect(result.success).toBe(true);
+        expect(mockWalletService.depositFunds).not.toHaveBeenCalled();
+      });
     });
 
     it('rejects a Flutterwave webhook with no verif-hash header instead of skipping verification (EMG-02)', async () => {
@@ -899,15 +925,8 @@ describe('PaymentsService', () => {
         reference: 'ILEASE_123',
       });
 
-      const flutterwaveClient = (service as any).flutterwaveClient;
-      flutterwaveClient.Transaction.verify_by_tx.mockResolvedValue({ status: 'success', data: { id: 4242 } });
-      flutterwaveClient.Transaction.refund.mockResolvedValue({
-        status: 'success',
-        data: {
-          tx_ref: 'ILEASE_123',
-          amount: 10000,
-        },
-      });
+      mockFlutterwaveApi.verifyByReference.mockResolvedValue({ status: 'success', data: { id: 4242, amount: 10000 } });
+      mockFlutterwaveApi.refund.mockResolvedValue({ status: 'success', data: { id: 1, amount_refunded: 10000 } });
 
       mockWalletService.recordRefundFromGateway.mockResolvedValue({ id: 'refund-tx-7' });
 
@@ -1014,15 +1033,8 @@ describe('PaymentsService', () => {
         reference: 'ILEASE_AUTO',
       });
 
-      const flutterwaveClient = (service as any).flutterwaveClient;
-      flutterwaveClient.Transaction.verify_by_tx.mockResolvedValue({ status: 'success', data: { id: 4242 } });
-      flutterwaveClient.Transaction.refund.mockResolvedValue({
-        status: 'success',
-        data: {
-          tx_ref: 'ILEASE_AUTO',
-          amount: 10000,
-        },
-      });
+      mockFlutterwaveApi.verifyByReference.mockResolvedValue({ status: 'success', data: { id: 4242, amount: 10000 } });
+      mockFlutterwaveApi.refund.mockResolvedValue({ status: 'success', data: { id: 1, amount_refunded: 10000 } });
 
       mockWalletService.recordRefundFromGateway.mockResolvedValue({ id: 'refund-tx-8' });
 
@@ -1035,7 +1047,7 @@ describe('PaymentsService', () => {
       );
 
       expect(result.provider).toBe(PaymentProvider.FLUTTERWAVE);
-      expect(flutterwaveClient.Transaction.refund).toHaveBeenCalledWith(expect.objectContaining({ id: 4242 }));
+      expect(mockFlutterwaveApi.refund).toHaveBeenCalledWith(4242, 10000);
     });
 
     it('should handle refund for transaction with different currency', async () => {
@@ -1086,15 +1098,8 @@ describe('PaymentsService', () => {
         amount: 100, // $1.00
       });
 
-      const flutterwaveClient = (service as any).flutterwaveClient;
-      flutterwaveClient.Transaction.verify_by_tx.mockResolvedValue({ status: 'success', data: { id: 4242 } });
-      flutterwaveClient.Transaction.refund.mockResolvedValue({
-        status: 'success',
-        data: {
-          tx_ref: 'ILEASE_456',
-          amount: 100, // $1.00
-        },
-      });
+      mockFlutterwaveApi.verifyByReference.mockResolvedValue({ status: 'success', data: { id: 4242, amount: 100 } });
+      mockFlutterwaveApi.refund.mockResolvedValue({ status: 'success', data: { id: 1, amount_refunded: 100 } });
 
       mockWalletService.recordRefundFromGateway.mockResolvedValue({ id: 'refund-tx-10' });
 

@@ -16,4 +16,10 @@ describe('live payments guard', () => {
   it('allows test keys in production only when explicitly allowed (local staging stack)', () => {
     expect(paystackTestKeyInProduction(env({ PAYSTACK_TEST_MODE_ALLOWED: 'true' }))).toBe(false);
   });
+
+  it('refuses a Flutterwave test key in production too', () => {
+    const flw = env({ PAYSTACK_SECRET_KEY: 'sk_live_abc', FLUTTERWAVE_SECRET_KEY: 'FLWSECK_TEST-abc-X' });
+    expect(() => assertLivePayments(flw, 'FLUTTERWAVE')).toThrow(ServiceUnavailableException);
+    expect(() => assertLivePayments(flw, 'PAYSTACK')).not.toThrow();
+  });
 });

@@ -15,8 +15,18 @@ export function paystackTestKeyInProduction(env: NodeJS.ProcessEnv = process.env
   );
 }
 
-export function assertLivePayments(env: NodeJS.ProcessEnv = process.env): void {
-  if (paystackTestKeyInProduction(env)) {
+/** Same rule for Flutterwave (test keys start FLWSECK_TEST-); same override. */
+export function flutterwaveTestKeyInProduction(env: NodeJS.ProcessEnv = process.env): boolean {
+  return (
+    env.NODE_ENV === 'production' &&
+    (env.FLUTTERWAVE_SECRET_KEY ?? '').startsWith('FLWSECK_TEST') &&
+    env.PAYSTACK_TEST_MODE_ALLOWED !== 'true'
+  );
+}
+
+export function assertLivePayments(env: NodeJS.ProcessEnv = process.env, provider: 'PAYSTACK' | 'FLUTTERWAVE' = 'PAYSTACK'): void {
+  const testKey = provider === 'FLUTTERWAVE' ? flutterwaveTestKeyInProduction(env) : paystackTestKeyInProduction(env);
+  if (testKey) {
     const message = 'Payments are not switched on yet. Please check back soon.';
     // userMessage too, or the error filter replaces it with a generic 503 line.
     throw new ServiceUnavailableException({ message, userMessage: message });

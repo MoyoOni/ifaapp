@@ -6,6 +6,7 @@ import { LocationService } from './location.service';
 import { CurrencyService } from './currency.service';
 import { WebhookMonitorService } from './webhook-monitor.service';
 import { PaystackApiService } from './paystack-api.service';
+import { FlutterwaveApiService } from './flutterwave-api.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { WalletModule } from '../wallet/wallet.module';
 import { NotificationsModule } from '../notifications/notifications.module';
@@ -24,6 +25,7 @@ import { NotificationPreferencesService } from '../notifications/notification-pr
   providers: [
     PaymentsService,
     PaystackApiService,
+    FlutterwaveApiService,
     LocationService,
     CurrencyService,
     WebhookMonitorService,

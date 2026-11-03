@@ -22,16 +22,9 @@ import { InitializePaymentDto } from './dto/initialize-payment.dto';
 import { Currency, PaymentPurpose, EscrowType, TransactionStatus, WithdrawalStatus } from '@ile-ase/common';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { Payment } from '../shared/types/prisma-models';
-// flutterwave-node-v3 is CJS-only without esModuleInterop configured; `import Flutterwave
-// from` would risk a runtime interop mismatch for a payment SDK client, so require() stays
-// here deliberately.
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const Flutterwave = require('flutterwave-node-v3');
-// Type only (erased at compile time), so the require() above stays the
-// runtime import.
-import type FlutterwaveClient from 'flutterwave-node-v3';
 import { NotificationService, NotificationType, NotificationCategory } from '../notifications/notification.service';
 import { PaystackApiService } from './paystack-api.service';
+import { FlutterwaveApiService } from './flutterwave-api.service';
 import { captureException } from '../sentry';
 import { MentorshipService } from '../mentorship/mentorship.service';
 import {
@@ -68,12 +61,12 @@ const relatedIdOf = (payment: { metadata: unknown }): string | undefined =>
 @Injectable()
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
-  private flutterwaveClient: FlutterwaveClient | null = null;
 
   constructor(
     private configService: ConfigService,
     private prisma: PrismaService,
     private paystackApi: PaystackApiService,
+    private flutterwaveApi: FlutterwaveApiService,
     @Inject(forwardRef(() => WalletService))
     private walletService: WalletService,
     private locationService: LocationService,
@@ -81,14 +74,7 @@ export class PaymentsService {
     private notificationService: NotificationService,
     @Inject(forwardRef(() => MentorshipService))
     private mentorshipService: MentorshipService
-  ) {
-    // Initialize Flutterwave
-    const flutterwavePublicKey = this.configService.get<string>('FLUTTERWAVE_PUBLIC_KEY');
-    const flutterwaveSecretKey = this.configService.get<string>('FLUTTERWAVE_SECRET_KEY');
-    if (flutterwavePublicKey && flutterwaveSecretKey) {
-      this.flutterwaveClient = new Flutterwave(flutterwavePublicKey, flutterwaveSecretKey);
-    }
-  }
+  ) {}
 
   /**
    * Determine payment provider based on currency, user location, and preference
@@ -208,6 +194,7 @@ export class PaymentsService {
       preferredProvider,
       ipAddress
     );
+    if (provider === PaymentProvider.FLUTTERWAVE) assertLivePayments(process.env, 'FLUTTERWAVE');
 
     // Convert amount to kobo (Paystack) or smallest unit
     const amountInSmallestUnit =
@@ -254,7 +241,14 @@ export class PaymentsService {
       // actually marked PAID, it just silently credited the buyer's wallet
       // instead) rather than also touching BOOKING/COURSE_ENROLLMENT, which
       // haven't been verified broken and aren't part of what was reported.
-      if (dto.purpose === PaymentPurpose.MARKETPLACE_ORDER || dto.purpose === PaymentPurpose.MENTORSHIP_SESSION) {
+      // Flutterwave records every payment here, whatever its purpose, so its
+      // webhook takes who paid and what was owed from this row, never from
+      // the webhook body (November 3, 2026).
+      if (
+        dto.purpose === PaymentPurpose.MARKETPLACE_ORDER ||
+        dto.purpose === PaymentPurpose.MENTORSHIP_SESSION ||
+        provider === PaymentProvider.FLUTTERWAVE
+      ) {
         await this.prisma.payment.create({
           data: {
             userId,
@@ -338,35 +332,35 @@ export class PaymentsService {
     name: string,
     metadata: Record<string, unknown>,
     callbackUrl?: string
-  ): Promise<never> {
-    if (!this.flutterwaveClient) {
+  ) {
+    if (!this.flutterwaveApi.isConfigured()) {
       throw new BadRequestException('Flutterwave is not configured');
     }
 
     const baseUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173';
-    const callback = callbackUrl || `${baseUrl}/payment/callback`;
+    // `ILEASE_` marks a Flutterwave reference (refundPayment relies on it).
+    const reference = `ILEASE_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
-    const payload = {
-      tx_ref: `ILEASE_${Date.now()}_${Math.random().toString(36).substring(7)}`,
-      amount: amount / 100, // Flutterwave expects amount in main currency unit
-      currency: currency,
-      redirect_url: callback,
-      customer: {
-        email,
-        name,
-      },
+    // Standard checkout over REST (November 3, 2026): until now this threw,
+    // so every payer routed to Flutterwave (anyone outside Nigeria) was told
+    // payments were unavailable.
+    const response = await this.flutterwaveApi.createPaymentLink({
+      tx_ref: reference,
+      amount: amount / 100, // Flutterwave takes the main currency unit
+      currency,
+      redirect_url: callbackUrl || `${baseUrl}/payment/callback`,
+      customer: { email, name },
       meta: metadata,
-    };
+    });
+    if (response.status !== 'success' || !response.data?.link) {
+      throw new BadRequestException(response.message || 'Failed to initialize payment');
+    }
 
-    // flutterwave-node-v3 has no checkout call: `Payment.initialize` never
-    // existed, so this used to throw a TypeError (hidden by an `any`) and
-    // every non-naira payment failed. Flutterwave Standard checkout is a REST
-    // call (POST /v3/payments) still to be built and tested with real keys;
-    // until then say so plainly.
-    this.logger.warn(`Flutterwave checkout requested (${payload.currency} ${payload.amount}) but is not implemented`);
-    throw new BadRequestException(
-      `Payments in ${currency} are not available yet. Please pay in Nigerian Naira (NGN).`
-    );
+    return {
+      provider: PaymentProvider.FLUTTERWAVE,
+      authorizationUrl: response.data.link,
+      reference,
+    };
   }
 
   /**
@@ -453,13 +447,11 @@ export class PaymentsService {
    * Verify Flutterwave payment
    */
   private async verifyFlutterwavePayment(reference: string) {
-    if (!this.flutterwaveClient) {
+    if (!this.flutterwaveApi.isConfigured()) {
       throw new BadRequestException('Flutterwave is not configured');
     }
 
-    // verify_by_tx looks a payment up by our reference and returns one
-    // transaction (verify() takes Flutterwave's numeric id instead).
-    const response = await this.flutterwaveClient.Transaction.verify_by_tx({ tx_ref: reference });
+    const response = await this.flutterwaveApi.verifyByReference(reference);
 
     if (response.status !== 'success') {
       throw new BadRequestException(response.message || 'Payment verification failed');
@@ -773,64 +765,83 @@ export class PaymentsService {
       throw new UnauthorizedException('Invalid webhook signature');
     }
 
-    const event = payload.event;
     const data = payload.data;
-
-    if (event === 'charge.completed' && data.status === 'successful') {
-      // Process successful payment
-      const metadata = data.meta;
-      const userId = metadata?.userId;
-
-      if (userId) {
-        const amount = data.amount;
-        const currency = data.currency as Currency;
-        const reference = data.tx_ref;
-
-        // Credit wallet (no currentUser for webhook calls). Keyed by an
-        // idempotency key derived from the gateway reference (EMG-03) — see
-        // the matching comment in handlePaystackWebhook. The "payment
-        // received" notification is written as an outbox event in the same
-        // transaction as the balance credit (P1-01) rather than sent here as
-        // a separate, unprotected call — see the matching comment there too.
-        const result = await this.walletService.depositFunds(
-          userId,
-          {
-            amount,
-            currency,
-            reference,
-          },
-          undefined,
-          reference ? `flutterwave:${reference}` : undefined,
-          {
-            eventType: 'PAYMENT_RECEIVED',
-            payload: { userId, amount, currency, reference },
-          }
-        );
-
-        if (result.transaction && !result.transaction.webhookReceived) {
-          await this.prisma.transaction.update({
-            where: { id: result.transaction.id },
-            data: {
-              webhookReceived: true,
-              webhookReceivedAt: new Date(),
-            },
-          });
-        } else if (result.transaction) {
-          this.logger.log(
-            `Flutterwave webhook replay for reference ${reference} — deposit already processed, skipping`
-          );
-        }
-      }
-
-      return {
-        success: true,
-        reference: data.tx_ref,
-        amount: data.amount,
-        currency: data.currency,
-      };
+    if (payload.event !== 'charge.completed' || data?.status !== 'successful' || !data.id || !data.tx_ref) {
+      return { success: false, message: 'Event not processed' };
     }
 
-    return { success: false, message: 'Event not processed' };
+    // The webhook body is only a prompt (November 3, 2026): it used to be
+    // trusted for who paid and how much, behind nothing but the shared
+    // verif-hash header. Ask Flutterwave what really happened, and take who
+    // paid and what was owed from the Payment row made at checkout.
+    let verified: Awaited<ReturnType<FlutterwaveApiService['verifyById']>>;
+    try {
+      verified = await this.flutterwaveApi.verifyById(data.id);
+    } catch (err) {
+      // Flutterwave answers an id it doesn't know with a 4xx: that is "not
+      // confirmed", not our failure (a 500 would make them retry forever).
+      const status = (err as { response?: { status?: number } }).response?.status;
+      if (status && status >= 400 && status < 500) {
+        this.logger.warn(`Flutterwave does not recognise transaction ${data.id} (${data.tx_ref}); ignored`);
+        return { success: false, message: 'Payment not confirmed' };
+      }
+      throw err;
+    }
+    const tx = verified.data;
+    if (verified.status !== 'success' || tx?.status !== 'successful' || tx.tx_ref !== data.tx_ref) {
+      this.logger.warn(`Flutterwave webhook for ${data.tx_ref} not confirmed by Flutterwave; ignored`);
+      return { success: false, message: 'Payment not confirmed' };
+    }
+    const reference = tx.tx_ref;
+    const payment = await this.prisma.payment.findUnique({ where: { transactionId: reference } });
+    if (!payment) {
+      this.logger.error(`Flutterwave payment ${reference} has no Payment record; not credited`);
+      return { success: false, message: 'Unknown payment' };
+    }
+    if (payment.status === 'success') {
+      this.logger.log(`Flutterwave webhook replay for reference ${reference} — already processed, skipping`);
+      return { success: true, reference, amount: tx.amount, currency: tx.currency };
+    }
+
+    const expected = Number(payment.amount);
+    if (tx.amount + 0.005 < expected || tx.currency !== payment.currency) {
+      await this.prisma.payment.update({ where: { id: payment.id }, data: { status: 'amount_mismatch' } });
+      const message = `Flutterwave charged ${tx.amount} ${tx.currency} for ${reference}, expected ${expected} ${payment.currency}; NOT marked paid`;
+      this.logger.error(message);
+      captureException(new Error(message), { reference, charged: tx.amount, expected });
+      return { success: false, reference, message: 'Amount mismatch' };
+    }
+
+    await this.prisma.payment.update({
+      where: { id: payment.id },
+      data: { status: 'success', verified: true, verifiedAt: new Date() },
+    });
+
+    if (payment.purpose === PaymentPurpose.MARKETPLACE_ORDER || payment.purpose === PaymentPurpose.MENTORSHIP_SESSION) {
+      await this.processSuccessfulPayment(payment.id);
+    } else {
+      // Anything else tops up the payer's wallet by what they were asked to
+      // pay. Keyed by the reference (EMG-03) so a retried webhook can't
+      // credit twice; the notification is an outbox event in the same
+      // transaction (P1-01).
+      const amount = expected;
+      const currency = payment.currency as Currency;
+      const result = await this.walletService.depositFunds(
+        payment.userId,
+        { amount, currency, reference },
+        undefined,
+        `flutterwave:${reference}`,
+        { eventType: 'PAYMENT_RECEIVED', payload: { userId: payment.userId, amount, currency, reference } }
+      );
+      if (result.transaction && !result.transaction.webhookReceived) {
+        await this.prisma.transaction.update({
+          where: { id: result.transaction.id },
+          data: { webhookReceived: true, webhookReceivedAt: new Date() },
+        });
+      }
+    }
+
+    return { success: true, reference, amount: tx.amount, currency: tx.currency };
   }
 
   /**
@@ -986,22 +997,17 @@ export class PaymentsService {
    * Refund Flutterwave payment
    */
   private async refundFlutterwavePayment(reference: string, amount?: number) {
-    if (!this.flutterwaveClient) {
+    if (!this.flutterwaveApi.isConfigured()) {
       throw new BadRequestException('Flutterwave is not configured');
     }
 
     // Refunds are by Flutterwave's transaction id, looked up from our reference.
-    const found = await this.flutterwaveClient.Transaction.verify_by_tx({ tx_ref: reference });
+    const found = await this.flutterwaveApi.verifyByReference(reference);
     if (found.status !== 'success' || !found.data?.id) {
       throw new BadRequestException(found.message || 'Payment not found at Flutterwave');
     }
-    const payload: { id: string | number; amount?: number } = { id: found.data.id };
-    if (amount) {
-      payload.amount = amount;
-    }
 
-    const response = await this.flutterwaveClient.Transaction.refund(payload);
-
+    const response = await this.flutterwaveApi.refund(found.data.id, amount || undefined);
     if (response.status !== 'success') {
       throw new BadRequestException(response.message || 'Refund failed');
     }
@@ -1009,8 +1015,8 @@ export class PaymentsService {
     return {
       provider: PaymentProvider.FLUTTERWAVE,
       success: true,
-      reference: response.data.tx_ref,
-      amount: response.data.amount,
+      reference,
+      amount: response.data?.amount_refunded ?? amount ?? found.data.amount,
     };
   }
 

@@ -70,7 +70,6 @@
     "express": "^5.2.1",
     "express-rate-limit": "^7.4.1",
     "firebase-admin": "^13.6.1",
-    "flutterwave-node-v3": "^1.4.1",
     "google-auth-library": "^10.6.1",
     "helmet": "^7.1.0",
     "ioredis": "^5.9.3",

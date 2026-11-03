@@ -23,6 +23,8 @@ export interface PaystackWebhookPayload {
 export interface FlutterwaveWebhookPayload {
   event: string;
   data: {
+    /** Flutterwave's transaction id, used to verify the payment with their API. */
+    id: number;
     status: string;
     amount: number;
     currency: string;
