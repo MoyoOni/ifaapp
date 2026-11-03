@@ -8,10 +8,10 @@ A policy must not promise protections the platform cannot deliver. Each requirem
 
 | ID | Requirement | Priority | Status today | Evidence / what's missing |
 |---|---|---|---|---|
-| SAFE-01 | Raise a concern from every practitioner profile | P0 | **Partial** | Works for Babalawos (`complaints.service.ts`); categories are controlling behaviour, fear-based manipulation, financial exploitation, inappropriate conduct, no-show, fraud, other. **Missing:** sexual misconduct / unwanted contact, harassment / intimidation and breach-of-confidentiality categories; reports about elders, vendors, members or staff (only `role === BABALAWO` can be reported). |
+| SAFE-01 | Raise a concern from every profile | P0 | **Exists** (3 Nov 2026) | A Babalawo's profile files a concern (`complaints`); every other profile files a report (`user-reports`) — so anyone can be reported. Both forms now carry sexual misconduct / unwanted contact, harassment or intimidation, controlling behaviour, fear-based manipulation, financial exploitation and breach of confidentiality. *(Corrects the first version of this table, which said only Babalawos could be reported.)* |
 | SAFE-02 | Secure safeguarding case register | P0 | **Partial** | Complaints have status, resolution notes, resolver and keyword flags; crisis flags have claim/resolve history. **Missing:** one register across complaints, crisis flags and email reports; priority level; assigned handler; interim measures and communications log per case. |
-| SAFE-03 | Restricted access to safeguarding reports | P0 | **Missing** | Every ADMIN can read every complaint and crisis flag. Needs a safeguarding role (an admin sub-role already exists as a mechanism) limited to the Safeguarding Lead and named deputies. |
-| SAFE-04 | Escalate urgent reports | P0 | **Partial** | Keyword-matched complaints are sorted first and every admin is notified; crisis language notifies admins. **Missing:** a manual "Priority 1" escalation that alerts the Safeguarding Lead directly (e.g. email/SMS), not only in-app. |
+| SAFE-03 | Restricted access to safeguarding reports | P0 | **Exists** (3 Nov 2026) | New **Safeguarding** admin sub-role. Practitioner concerns, the crisis queue and safeguarding-category user reports are readable and actionable only by Safeguarding and Super admins (guards + service filter; `test/safeguarding-access.integration.spec.ts`); moderators keep spam/impersonation reports; notifications go only to those who may read them. **Owner to do:** give the Safeguarding Lead this sub-role (admin → Users). |
+| SAFE-04 | Escalate urgent reports | P0 | **Partial** | Sexual-misconduct reports and keyword matches are marked **Urgent**, sorted first and send an urgent in-app alert to Safeguarding/Super admins; crisis language notifies admins. **Missing:** an out-of-app alert (email/SMS) to the Safeguarding Lead — email depends on SES leaving the sandbox. |
 | SAFE-05 | Temporarily restrict practitioner accounts | P0 | **Partial** | Whole-account suspension exists (admin Users, and "Suspend bookings" when resolving a complaint). **Missing:** narrower measures — stop new bookings / hide profile only; block contact between two named people. |
 | SAFE-06 | Evidence preservation and case history | P0 | **Partial** | Complaint evidence links, bookings, payments, escrow, audit log and soft-deletion of most member content. **Missing:** a "legal hold" so nothing linked to an open case can be erased (GDPR erasure currently could). |
 | SAFE-07 | Secure communication with reporting members | P0 | **Partial** | Members see their complaint status in their account and get a notification on resolution. **Missing:** a two-way, private case conversation (messaging is paused platform-wide). Until then: email from the safeguarding address. |
@@ -34,7 +34,7 @@ Already in place and relied on by Part A: held payments (escrow, released on con
 2. Who decides when a report concerns the Platform Owner or the Safeguarding Lead?
 3. Which elders are authorised to give cultural advice on cases?
 4. Who may access confidential safeguarding records?
-5. Confirm the profile concern categories (SAFE-01) — recommended: add sexual misconduct / unwanted contact, harassment or intimidation, breach of confidentiality.
+5. ~~Concern categories (SAFE-01)~~ — added as recommended, 3 November 2026; change them if the elders prefer other wording.
 6. Is account suspension acceptable as the only interim restriction until SAFE-05 is built?
 7. Payment protection as described in Part A §3 matches the platform (escrow) — but payments are switched off until a live Paystack key is in place; confirm wording at publication.
 8. The approved emergency escalation route (SAFE-04): who is called, how, out of hours?
@@ -60,9 +60,10 @@ If a feature is not yet available, change the Part A wording to describe what ex
 
 ## Recommended build order
 
-1. **SAFE-01 + SAFE-12** — add the missing categories and widen reports to elders, vendors and members; add practitioner acceptance of the standards to onboarding.
-2. **SAFE-03 + SAFE-02** — a Safeguarding sub-role, and a single case view across complaints, crisis flags and email-logged reports, with priority, handler, measures and communications.
-3. **SAFE-04 + SAFE-06** — Priority-1 escalation to the Safeguarding Lead; a legal hold that blocks erasure while a case is open.
-4. **SAFE-05** — booking-only / profile-hidden restrictions.
-5. **SAFE-13** — retention schedule (after decision 11).
-6. P1 items: SAFE-10, SAFE-08, SAFE-11, SAFE-14, SAFE-09.
+1. ~~SAFE-01~~ and ~~SAFE-03~~ — done 3 November 2026.
+2. **SAFE-12** — practitioner acceptance of the standards at onboarding (needs Part A approved, so the accepted text is final).
+3. **SAFE-02** — a single case view across complaints, user reports, crisis flags and email-logged reports, with priority, handler, measures and communications.
+4. **SAFE-04 + SAFE-06** — Priority-1 escalation to the Safeguarding Lead; a legal hold that blocks erasure while a case is open.
+5. **SAFE-05** — booking-only / profile-hidden restrictions.
+6. **SAFE-13** — retention schedule (after decision 11).
+7. P1 items: SAFE-10, SAFE-08, SAFE-11, SAFE-14, SAFE-09.

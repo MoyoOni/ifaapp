@@ -99,14 +99,14 @@ These are examples, not a complete list.
 
 If something makes you uncomfortable, please tell us — even if you are unsure how to describe it. You can report your own experience, something you saw, or behaviour you believe puts someone else at risk.
 
-**About a Babalawo or Ìyánifá:** use **Raise a concern** on their profile and choose the category closest to what happened: [controlling behaviour, fear-based manipulation, financial exploitation, sexual misconduct or unwanted contact, harassment or intimidation, breach of confidentiality, fraud, or another concern]. You can follow the status of your concern from your account.
+**From anyone's profile:** use **Report** (on a Babalawo's or Ìyánifá's profile it is called **Raise a concern**) and choose the category closest to what happened — sexual misconduct or unwanted contact, harassment or intimidation, controlling behaviour, fear-based manipulation, financial exploitation, breach of confidentiality, fraud, or another concern. Concerns of this kind are seen only by our safeguarding team. You can follow the status of a concern about a practitioner from your account.
 
-**About anyone else** (an elder, vendor, member, moderator or someone representing Ìlú Àṣẹ), **or if you would rather not use the form:** write to [safeguarding@iluase.com] — or [hello@iluase.com] — or ask for a **wellbeing check-in** from Community Care.
+**If you would rather not use the form**, or cannot find the person's profile: write to [safeguarding@iluase.com] — or [hello@iluase.com] — or ask for a **wellbeing check-in** from Community Care.
 
 Share what you are comfortable sharing. You do not need to give more personal detail than is needed to understand the concern.
 
 ### What happens next
-A designated safeguarding lead looks at every concern. Depending on what it involves, they may:
+A designated safeguarding lead looks at every concern; reports of sexual misconduct are always treated as urgent. Depending on what it involves, they may:
 
 - contact you to understand what happened;
 - check whether anyone is in immediate danger;

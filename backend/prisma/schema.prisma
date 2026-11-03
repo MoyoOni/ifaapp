@@ -44,7 +44,7 @@ model User {
   emailVerifiedAt           DateTime?
   hasOnboarded              Boolean                  @default(false)
   slug                      String?                  @unique
-  adminSubRole              String? // FINANCE, MODERATOR, COMPLIANCE, SUPPORT, SUPER
+  adminSubRole              String? // FINANCE, MODERATOR, COMPLIANCE, SUPPORT, SAFEGUARDING, SUPER
   templeId                  String?
   averageRating             Float?                   @default(0.0)
   createdAt                 DateTime                 @default(now())
@@ -2816,7 +2816,7 @@ model PractitionerComplaint {
   id                   String    @id @default(uuid())
   clientId             String
   practitionerId       String
-  reason               String // NO_SHOW | INAPPROPRIATE | FRAUD | OTHER
+  reason               String // see COMPLAINT_REASONS in complaints/dto/file-complaint.dto.ts
   description          String
   evidence             String[]  @default([])
   status               String    @default("OPEN") // OPEN | UNDER_REVIEW | RESOLVED | DISMISSED
@@ -2831,6 +2831,9 @@ model PractitionerComplaint {
   // -- see complaints.service.ts). Used to sort flagged complaints first in
   // the admin queue, not to auto-act on them.
   flaggedByKeywordRule Boolean   @default(false)
+  // Safeguarding Priority 1 (docs/safeguarding Part B §13): set for an
+  // always-urgent reason or a keyword match; sorts first in the queue.
+  urgent               Boolean   @default(false)
   matchedKeywords      String[]  @default([])
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
@@ -2853,13 +2856,16 @@ model UserReport {
   id                   String    @id @default(uuid())
   reporterId           String
   reportedUserId       String
-  reason               String // HARASSMENT | SPAM | IMPERSONATION | INAPPROPRIATE | FRAUD | OTHER
+  reason               String // see USER_REPORT_REASONS in user-reports/dto/file-user-report.dto.ts
   description          String
   status               String    @default("OPEN") // OPEN | UNDER_REVIEW | RESOLVED | DISMISSED
   resolvedById         String?
   resolvedAt           DateTime?
   resolutionNotes      String?
   flaggedByKeywordRule Boolean   @default(false)
+  // Safeguarding Priority 1 (docs/safeguarding Part B §13): set for an
+  // always-urgent reason or a keyword match; sorts first in the queue.
+  urgent               Boolean   @default(false)
   matchedKeywords      String[]  @default([])
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt

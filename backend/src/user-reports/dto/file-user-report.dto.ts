@@ -6,6 +6,14 @@ export const USER_REPORT_REASONS = [
   'IMPERSONATION',
   'INAPPROPRIATE',
   'FRAUD',
+  // Safeguarding policy (docs/safeguarding, SAFE-01, November 3, 2026):
+  // anyone -- an elder, a vendor, a member -- can exploit someone, not only
+  // a Babalawo (whose profile uses the complaint form instead).
+  'SEXUAL_MISCONDUCT',
+  'CONFIDENTIALITY_BREACH',
+  'CONTROLLING_BEHAVIOR',
+  'FEAR_BASED_MANIPULATION',
+  'FINANCIAL_EXPLOITATION',
   'OTHER',
 ] as const;
 

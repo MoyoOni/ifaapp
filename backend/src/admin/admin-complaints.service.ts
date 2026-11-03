@@ -51,7 +51,7 @@ export class AdminComplaintsService {
       },
       // COMMUNITY_BACKLOG.md FOR-016: keyword-flagged complaints surface
       // first -- "into the existing review queue", not a separate one.
-      orderBy: [{ flaggedByKeywordRule: 'desc' }, { createdAt: 'desc' }],
+      orderBy: [{ urgent: 'desc' }, { flaggedByKeywordRule: 'desc' }, { createdAt: 'desc' }],
       skip,
       take: limit,
     });

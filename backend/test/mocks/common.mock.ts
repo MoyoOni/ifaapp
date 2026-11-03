@@ -104,6 +104,7 @@ export enum AdminSubRole {
     MODERATOR = 'MODERATOR',
     COMPLIANCE = 'COMPLIANCE',
     SUPPORT = 'SUPPORT',
+    SAFEGUARDING = 'SAFEGUARDING',
     SUPER = 'SUPER',
 }
 

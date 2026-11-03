@@ -6,6 +6,7 @@ import {
   NotificationCategory,
 } from '../notifications/notification.service';
 import { FileUserReportDto } from './dto/file-user-report.dto';
+import { isSafeguardingReason, isUrgentReason, safeguardingAdminsWhere } from '../safeguarding/safeguarding';
 
 // Whole-app audit loose end: generic version of complaints.service.ts's
 // PractitionerComplaint flow, for reporting any user (not just a babalawo).
@@ -32,6 +33,8 @@ export class UserReportsService {
     }
 
     const matchedKeywords = await this.matchKeywordFlagRules(dto.description);
+    const urgent = matchedKeywords.length > 0 || isUrgentReason(dto.reason);
+    const safeguarding = isSafeguardingReason(dto.reason);
 
     const report = await this.prisma.userReport.create({
       data: {
@@ -41,11 +44,16 @@ export class UserReportsService {
         description: dto.description,
         flaggedByKeywordRule: matchedKeywords.length > 0,
         matchedKeywords,
+        urgent,
       },
     });
 
+    // A safeguarding report goes only to the admins who may read it
+    // (SAFE-03); spam, impersonation and the like stay with moderators.
     const admins = await this.prisma.user.findMany({
-      where: { role: 'ADMIN' },
+      where: safeguarding
+        ? safeguardingAdminsWhere
+        : { role: 'ADMIN', adminSubRole: { in: ['MODERATOR', 'SUPER'] } },
       select: { id: true },
       take: 10,
     });
@@ -54,16 +62,15 @@ export class UserReportsService {
         .createNotification({
           userId: id,
           type: NotificationType.SYSTEM,
-          category:
-            matchedKeywords.length > 0 ? NotificationCategory.URGENT : NotificationCategory.WARNING,
-          title:
-            matchedKeywords.length > 0
-              ? 'A user report was flagged for urgent review'
+          category: urgent ? NotificationCategory.URGENT : NotificationCategory.WARNING,
+          title: urgent
+            ? 'An urgent safeguarding concern needs review'
+            : safeguarding
+              ? 'A safeguarding concern awaits review'
               : 'A user report awaits review',
-          message:
-            matchedKeywords.length > 0
-              ? `A community member's report matched flagged terms (${matchedKeywords.join(', ')}). Open the User Reports tab to review.`
-              : 'A community member has reported another user. Open the User Reports tab to review.',
+          message: urgent
+            ? 'A report about a member was marked urgent. Open the User Reports tab now.'
+            : 'A community member has reported another user. Open the User Reports tab to review.',
           data: { reportId: report.id },
         })
         .catch(() => undefined);

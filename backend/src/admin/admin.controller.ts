@@ -1467,6 +1467,7 @@ export class AdminController {
 
   @Get('complaints')
   @Roles(UserRole.ADMIN)
+  @AdminRoles(AdminSubRole.SAFEGUARDING, AdminSubRole.SUPER) // SAFE-03
   async getComplaints(
     @CurrentUser() currentUser: CurrentUserPayload,
     @Query('status') status?: string,
@@ -1478,6 +1479,7 @@ export class AdminController {
 
   @Post('complaints/:id/resolve')
   @Roles(UserRole.ADMIN)
+  @AdminRoles(AdminSubRole.SAFEGUARDING, AdminSubRole.SUPER) // SAFE-03
   async resolveComplaint(
     @Param('id') id: string,
     @Body() dto: ResolveComplaintDto,
@@ -1490,7 +1492,8 @@ export class AdminController {
   // above, for reports filed against any user (not just practitioners).
   @Get('user-reports')
   @Roles(UserRole.ADMIN)
-  @AdminRoles(AdminSubRole.MODERATOR, AdminSubRole.SUPER)
+  // Safeguarding reasons are filtered to Safeguarding/Super in the service (SAFE-03).
+  @AdminRoles(AdminSubRole.MODERATOR, AdminSubRole.SAFEGUARDING, AdminSubRole.SUPER)
   async getUserReports(
     @CurrentUser() currentUser: CurrentUserPayload,
     @Query('status') status?: string,
@@ -1502,7 +1505,8 @@ export class AdminController {
 
   @Post('user-reports/:id/resolve')
   @Roles(UserRole.ADMIN)
-  @AdminRoles(AdminSubRole.MODERATOR, AdminSubRole.SUPER)
+  // Safeguarding reasons are filtered to Safeguarding/Super in the service (SAFE-03).
+  @AdminRoles(AdminSubRole.MODERATOR, AdminSubRole.SAFEGUARDING, AdminSubRole.SUPER)
   async resolveUserReport(
     @Param('id') id: string,
     @Body() dto: ResolveUserReportDto,

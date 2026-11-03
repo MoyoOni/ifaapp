@@ -82,7 +82,8 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     items: [
       { id: 'practitioners', label: 'Practitioner Performance', icon: Activity },
       { id: 'featured', label: 'Featured Practitioners', icon: Crown },
-      { id: 'complaints', label: 'Practitioner Complaints', icon: AlertTriangle },
+      // Safeguarding concerns: Safeguarding and Super admins only (SAFE-03).
+      { id: 'complaints', label: 'Practitioner Complaints', icon: AlertTriangle, requiredAdminSubRoles: [AdminSubRole.SAFEGUARDING, AdminSubRole.SUPER] },
       { id: 'inactive-practitioners', label: 'Inactive Practitioners', icon: Activity },
     ],
   },
@@ -97,7 +98,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
       { id: 'forum-intelligence', label: 'Forum Intelligence', icon: BarChart3 },
       { id: 'community', label: 'Community Recognition', icon: Award },
       { id: 'integrity', label: 'Cultural Integrity', icon: ShieldAlert },
-      { id: 'crisis-alerts', label: 'Crisis Alerts', icon: AlertTriangle },
+      { id: 'crisis-alerts', label: 'Crisis Alerts', icon: AlertTriangle, requiredAdminSubRoles: [AdminSubRole.SAFEGUARDING, AdminSubRole.SUPER] },
     ],
   },
   {
@@ -156,7 +157,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
       { id: 'disputes', label: 'Dispute Center', icon: AlertTriangle },
       { id: 'fraud', label: 'Fraud Alerts', icon: AlertTriangle, requiredAdminSubRoles: [AdminSubRole.COMPLIANCE, AdminSubRole.SUPER] },
       { id: 'quality', label: 'Quality Assurance', icon: BarChart3, requiredAdminSubRoles: [AdminSubRole.MODERATOR, AdminSubRole.SUPER] },
-      { id: 'user-reports', label: 'User Reports', icon: Flag, requiredAdminSubRoles: [AdminSubRole.MODERATOR, AdminSubRole.SUPER] },
+      { id: 'user-reports', label: 'User Reports', icon: Flag, requiredAdminSubRoles: [AdminSubRole.MODERATOR, AdminSubRole.SAFEGUARDING, AdminSubRole.SUPER] },
       { id: 'audit-log', label: 'Audit Log', icon: ScrollText, requiredAdminSubRoles: [AdminSubRole.SUPER] },
     ],
   },

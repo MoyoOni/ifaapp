@@ -6,6 +6,7 @@ import {
   NotificationCategory,
 } from '../notifications/notification.service';
 import { FileComplaintDto } from './dto/file-complaint.dto';
+import { isUrgentReason, safeguardingAdminsWhere } from '../safeguarding/safeguarding';
 
 // COMMUNITY_BACKLOG.md FOR-016: client-facing side of PractitionerComplaint.
 // Found while implementing FOR-016 that admin-complaints.service.ts could
@@ -34,6 +35,7 @@ export class ComplaintsService {
     }
 
     const matchedKeywords = await this.matchKeywordFlagRules(dto.description);
+    const urgent = matchedKeywords.length > 0 || isUrgentReason(dto.reason);
 
     const complaint = await this.prisma.practitionerComplaint.create({
       data: {
@@ -44,11 +46,14 @@ export class ComplaintsService {
         evidence: dto.evidence ?? [],
         flaggedByKeywordRule: matchedKeywords.length > 0,
         matchedKeywords,
+        urgent,
       },
     });
 
+    // Concerns about practitioners are safeguarding matters: only the
+    // admins who may read them are told (SAFE-03).
     const admins = await this.prisma.user.findMany({
-      where: { role: 'ADMIN' },
+      where: safeguardingAdminsWhere,
       select: { id: true },
       take: 10,
     });
@@ -61,16 +66,11 @@ export class ComplaintsService {
         .createNotification({
           userId: id,
           type: NotificationType.SYSTEM,
-          category:
-            matchedKeywords.length > 0 ? NotificationCategory.URGENT : NotificationCategory.WARNING,
-          title:
-            matchedKeywords.length > 0
-              ? 'A practitioner complaint was flagged for urgent review'
-              : 'A practitioner complaint awaits review',
-          message:
-            matchedKeywords.length > 0
-              ? `A community member's complaint matched flagged terms (${matchedKeywords.join(', ')}). Open the Complaints tab to review.`
-              : 'A community member has filed a concern about a practitioner. Open the Complaints tab to review.',
+          category: urgent ? NotificationCategory.URGENT : NotificationCategory.WARNING,
+          title: urgent ? 'An urgent safeguarding concern needs review' : 'A practitioner complaint awaits review',
+          message: urgent
+            ? 'A concern about a practitioner was marked urgent. Open the Practitioner Complaints tab now.'
+            : 'A community member has filed a concern about a practitioner. Open the Practitioner Complaints tab to review.',
           data: { complaintId: complaint.id },
         })
         .catch(() => undefined);

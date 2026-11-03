@@ -83,7 +83,7 @@ describe('AdminComplaintsService', () => {
 
       expect(mockPrismaService.practitionerComplaint.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          orderBy: [{ flaggedByKeywordRule: 'desc' }, { createdAt: 'desc' }],
+          orderBy: [{ urgent: 'desc' }, { flaggedByKeywordRule: 'desc' }, { createdAt: 'desc' }],
         })
       );
     });

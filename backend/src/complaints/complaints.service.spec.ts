@@ -76,13 +76,31 @@ describe('ComplaintsService', () => {
           evidence: [],
           flaggedByKeywordRule: false,
           matchedKeywords: [],
+          urgent: false,
         },
       });
+      // Only Safeguarding/Super admins are told about safeguarding concerns (SAFE-03).
+      expect(mockPrismaService.user.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { role: 'ADMIN', adminSubRole: { in: ['SUPER', 'SAFEGUARDING'] } } })
+      );
       expect(mockNotificationService.createNotification).toHaveBeenCalledTimes(2);
       expect(mockNotificationService.createNotification).toHaveBeenCalledWith(
         expect.objectContaining({ category: 'WARNING' })
       );
       expect(result).toEqual({ id: 'complaint-1' });
+    });
+
+    it('always treats a sexual misconduct concern as urgent (SAFE-01, Priority 1)', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({ id: 'practitioner-1', role: 'BABALAWO' });
+      mockPrismaService.practitionerComplaint.create.mockResolvedValue({ id: 'complaint-2' });
+      mockPrismaService.user.findMany.mockResolvedValue([{ id: 'admin-1' }]);
+
+      await service.file({ ...dto, reason: 'SEXUAL_MISCONDUCT' }, 'client-1');
+
+      expect(mockPrismaService.practitionerComplaint.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ reason: 'SEXUAL_MISCONDUCT', urgent: true }) })
+      );
+      expect(mockNotificationService.createNotification).toHaveBeenCalledWith(expect.objectContaining({ category: 'URGENT' }));
     });
 
     it('COMMUNITY_BACKLOG.md FOR-016: flags the complaint and sends an urgent notification when its description matches an active keyword rule', async () => {

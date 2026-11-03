@@ -4,6 +4,7 @@ import { AdminUserReportsService } from './admin-user-reports.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from '../notifications/notification.service';
 import { AdminUsersService } from './admin-users.service';
+import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 
 describe('AdminUserReportsService', () => {
   let service: AdminUserReportsService;
@@ -12,6 +13,7 @@ describe('AdminUserReportsService', () => {
     userReport: {
       findMany: jest.fn(),
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
       update: jest.fn(),
     },
   };
@@ -36,7 +38,7 @@ describe('AdminUserReportsService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    mockPrismaService.userReport.findUnique.mockResolvedValue(report);
+    mockPrismaService.userReport.findFirst.mockResolvedValue(report);
     mockPrismaService.userReport.update.mockImplementation(({ data }: any) => ({
       ...report,
       ...data,
@@ -76,14 +78,14 @@ describe('AdminUserReportsService', () => {
 
   describe('resolveReport', () => {
     it('throws NotFoundException for a missing report', async () => {
-      mockPrismaService.userReport.findUnique.mockResolvedValue(null);
+      mockPrismaService.userReport.findFirst.mockResolvedValue(null);
       await expect(
         service.resolveReport('missing', { action: 'DISMISS', resolutionNotes: 'n/a' }, admin)
       ).rejects.toThrow(NotFoundException);
     });
 
     it('throws BadRequestException when already resolved', async () => {
-      mockPrismaService.userReport.findUnique.mockResolvedValue({ ...report, status: 'RESOLVED' });
+      mockPrismaService.userReport.findFirst.mockResolvedValue({ ...report, status: 'RESOLVED' });
       await expect(
         service.resolveReport('report-1', { action: 'DISMISS', resolutionNotes: 'n/a' }, admin)
       ).rejects.toThrow(BadRequestException);
@@ -137,6 +139,27 @@ describe('AdminUserReportsService', () => {
       expect(mockNotificationService.createNotification).toHaveBeenCalledWith(
         expect.objectContaining({ userId: 'reporter-1' })
       );
+    });
+  });
+
+  // SAFE-03: who sees which reports.
+  describe('getReports visibility', () => {
+    const list = () => mockPrismaService.userReport.findMany.mock.calls.at(-1)[0].where;
+    beforeEach(() => mockPrismaService.userReport.findMany.mockResolvedValue([]));
+
+    it('shows a moderator everything except safeguarding reports', async () => {
+      await service.getReports({ id: 'm', role: 'ADMIN', adminSubRole: 'MODERATOR' } as CurrentUserPayload);
+      expect(list().reason.notIn).toEqual(expect.arrayContaining(['SEXUAL_MISCONDUCT', 'HARASSMENT']));
+    });
+
+    it('shows the safeguarding team only safeguarding reports', async () => {
+      await service.getReports({ id: 's', role: 'ADMIN', adminSubRole: 'SAFEGUARDING' } as CurrentUserPayload);
+      expect(list().reason.in).toEqual(expect.arrayContaining(['SEXUAL_MISCONDUCT', 'FINANCIAL_EXPLOITATION']));
+    });
+
+    it('shows a super admin everything', async () => {
+      await service.getReports({ id: 'x', role: 'ADMIN', adminSubRole: 'SUPER' } as CurrentUserPayload);
+      expect(list().reason).toBeUndefined();
     });
   });
 });

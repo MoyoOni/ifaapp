@@ -539,6 +539,7 @@ export class ForumController {
   @Get('admin/crisis-signals')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
+  @AdminRoles(AdminSubRole.SAFEGUARDING, AdminSubRole.SUPER) // SAFE-03
   async getCrisisSignalPosts(@Query('page') page?: string, @Query('limit') limit?: string) {
     return this.forumCrisisService.getCrisisSignalPosts(
       page ? parseInt(page, 10) : 1,
@@ -549,6 +550,7 @@ export class ForumController {
   @Patch('admin/crisis-signals/:postId/clear')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
+  @AdminRoles(AdminSubRole.SAFEGUARDING, AdminSubRole.SUPER) // SAFE-03
   async clearCrisisSignal(
     @Param('postId') postId: string,
     @Query('source') source: string | undefined,
@@ -561,6 +563,7 @@ export class ForumController {
   @Get('admin/crisis-signals/history')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
+  @AdminRoles(AdminSubRole.SAFEGUARDING, AdminSubRole.SUPER) // SAFE-03
   async getCrisisFollowUpHistory(@Query('page') page?: string, @Query('limit') limit?: string) {
     return this.forumCrisisService.getCrisisFollowUpHistory(
       page ? parseInt(page, 10) : 1,
@@ -571,6 +574,7 @@ export class ForumController {
   @Patch('admin/crisis-signals/:postId/claim')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
+  @AdminRoles(AdminSubRole.SAFEGUARDING, AdminSubRole.SUPER) // SAFE-03
   async claimCrisisSignal(
     @Param('postId') postId: string,
     @Query('source') source: string | undefined,
@@ -582,6 +586,7 @@ export class ForumController {
   @Patch('admin/crisis-signals/:postId/resolve')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
+  @AdminRoles(AdminSubRole.SAFEGUARDING, AdminSubRole.SUPER) // SAFE-03
   async resolveCrisisSignal(
     @Param('postId') postId: string,
     @Query('source') source: string | undefined,

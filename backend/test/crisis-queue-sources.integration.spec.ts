@@ -41,7 +41,7 @@ describe('Crisis queue sources', () => {
     prisma = app.get(PrismaService);
 
     const a = await newUser(UserRole.CLIENT);
-    await prisma.user.update({ where: { id: a.id }, data: { role: 'ADMIN' } });
+    await prisma.user.update({ where: { id: a.id }, data: { role: 'ADMIN', adminSubRole: 'SAFEGUARDING' } });
     const login = await http().post('/auth/login').send({ email: a.email, password: 'SecurePassword123!' }).expect(200);
     admin = { id: a.id, token: login.body.accessToken };
     member = await newUser(UserRole.CLIENT);

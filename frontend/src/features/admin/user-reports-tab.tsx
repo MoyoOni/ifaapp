@@ -25,6 +25,7 @@ import { Textarea } from '@/shared/components/ui/textarea';
 import { Label } from '@/shared/components/ui/label';
 import { Skeleton } from '@/shared/components/ui/skeleton';
 import api from '@/lib/api';
+import { reasonLabel } from './report-reasons';
 
 interface UserReport {
   id: string;
@@ -35,6 +36,7 @@ interface UserReport {
   reason: string;
   description: string;
   flaggedByKeywordRule?: boolean;
+  urgent?: boolean;
   matchedKeywords?: string[];
   status: 'PENDING' | 'RESOLVED' | 'DISMISSED';
   resolutionNotes?: string;
@@ -255,8 +257,11 @@ const UserReportsTab: React.FC = () => {
                       <TableCell>
                         <div className="flex flex-col gap-1 items-start">
                           <Badge className={getReasonColor(report.reason)}>
-                            {report.reason}
+                            {reasonLabel(report.reason)}
                           </Badge>
+                          {report.urgent && (
+                            <Badge className="bg-red-600 text-white">Urgent</Badge>
+                          )}
                           {report.flaggedByKeywordRule && (
                             <span title={report.matchedKeywords?.join(', ')}>
                               <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
@@ -316,7 +321,7 @@ const UserReportsTab: React.FC = () => {
                                 <div className="text-sm p-3 bg-muted rounded">
                                   <div className="flex items-center gap-2 mb-2">
                                     <Badge className={getReasonColor(report.reason)}>
-                                      {report.reason}
+                                      {reasonLabel(report.reason)}
                                     </Badge>
                                     <Badge className={getStatusColor(report.status)}>
                                       {report.status}

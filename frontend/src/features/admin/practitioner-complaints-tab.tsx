@@ -26,6 +26,7 @@ import { Textarea } from '@/shared/components/ui/textarea';
 import { Label } from '@/shared/components/ui/label';
 import { Skeleton } from '@/shared/components/ui/skeleton';
 import api from '@/lib/api';
+import { reasonLabel } from './report-reasons';
 
 interface PractitionerComplaint {
   id: string;
@@ -46,6 +47,7 @@ interface PractitionerComplaint {
   description: string;
   // COMMUNITY_BACKLOG.md FOR-016: keyword-rule match at filing time
   flaggedByKeywordRule?: boolean;
+  urgent?: boolean;
   matchedKeywords?: string[];
   status: 'PENDING' | 'RESOLVED' | 'DISMISSED';
   resolutionNotes?: string;
@@ -300,8 +302,11 @@ const PractitionerComplaintsTab: React.FC = () => {
                       <TableCell>
                         <div className="flex flex-col gap-1 items-start">
                           <Badge className={getReasonColor(complaint.reason)}>
-                            {complaint.reason}
+                            {reasonLabel(complaint.reason)}
                           </Badge>
+                          {complaint.urgent && (
+                            <Badge className="bg-red-600 text-white">Urgent</Badge>
+                          )}
                           {complaint.flaggedByKeywordRule && (
                             <span title={complaint.matchedKeywords?.join(', ')}>
                               <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
@@ -365,7 +370,7 @@ const PractitionerComplaintsTab: React.FC = () => {
                                 <div className="text-sm p-3 bg-muted rounded">
                                   <div className="flex items-center gap-2 mb-2">
                                     <Badge className={getReasonColor(complaint.reason)}>
-                                      {complaint.reason}
+                                      {reasonLabel(complaint.reason)}
                                     </Badge>
                                     <Badge className={getStatusColor(complaint.status)}>
                                       {complaint.status}

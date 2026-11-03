@@ -33,6 +33,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Textarea } from '@/shared/components/ui/textarea';
 import { Label } from '@/shared/components/ui/label';
 import { Button } from '@/shared/components/ui/button';
+import { COMPLAINT_REASON_OPTIONS, USER_REPORT_REASON_OPTIONS } from '@/features/admin/report-reasons';
 
 interface MilestoneBadge {
   key: string;
@@ -133,14 +134,8 @@ const ElderEndorseButton: React.FC<{ userId: string; viewerRole?: string }> = ({
   );
 };
 
-const USER_REPORT_REASONS: Array<{ value: string; label: string }> = [
-  { value: 'HARASSMENT', label: 'Harassment' },
-  { value: 'SPAM', label: 'Spam' },
-  { value: 'IMPERSONATION', label: 'Impersonation' },
-  { value: 'INAPPROPRIATE', label: 'Inappropriate conduct' },
-  { value: 'FRAUD', label: 'Fraud' },
-  { value: 'OTHER', label: 'Other concern' },
-];
+// Safeguarding categories added November 3, 2026 (docs/safeguarding SAFE-01).
+const USER_REPORT_REASONS = USER_REPORT_REASON_OPTIONS;
 
 // Whole-app audit loose end: the "Report" ActionButton for non-babalawo
 // profiles used to call onNavigate('report-user', ...), a view no route
@@ -226,15 +221,7 @@ const ReportUserButton: React.FC<{ reportedUserId: string }> = ({ reportedUserId
   );
 };
 
-const COMPLAINT_REASONS: Array<{ value: string; label: string }> = [
-  { value: 'CONTROLLING_BEHAVIOR', label: 'Controlling behavior' },
-  { value: 'FEAR_BASED_MANIPULATION', label: 'Fear-based manipulation' },
-  { value: 'FINANCIAL_EXPLOITATION', label: 'Financial exploitation' },
-  { value: 'INAPPROPRIATE', label: 'Inappropriate conduct' },
-  { value: 'NO_SHOW', label: 'No-show / unreliable' },
-  { value: 'FRAUD', label: 'Fraud' },
-  { value: 'OTHER', label: 'Other concern' },
-];
+const COMPLAINT_REASONS = COMPLAINT_REASON_OPTIONS;
 
 // COMMUNITY_BACKLOG.md FOR-016: the "Report" ActionButton below this
 // component used to call onNavigate('report-user', ...), a view no route

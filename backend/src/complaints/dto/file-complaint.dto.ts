@@ -14,6 +14,10 @@ export const COMPLAINT_REASONS = [
   'CONTROLLING_BEHAVIOR',
   'FEAR_BASED_MANIPULATION',
   'FINANCIAL_EXPLOITATION',
+  // Safeguarding policy (docs/safeguarding, SAFE-01, November 3, 2026).
+  'SEXUAL_MISCONDUCT',
+  'HARASSMENT',
+  'CONFIDENTIALITY_BREACH',
   'OTHER',
 ] as const;
 

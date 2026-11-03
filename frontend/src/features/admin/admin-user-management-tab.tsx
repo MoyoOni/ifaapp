@@ -16,7 +16,7 @@ interface AdminUserManagementTabProps {
 }
 
 const ROLES = ['CLIENT', 'BABALAWO', 'VENDOR', 'ADMIN'];
-const ADMIN_SUB_ROLES = ['SUPER', 'FINANCE', 'COMPLIANCE', 'SUPPORT', 'MODERATOR'];
+const ADMIN_SUB_ROLES = ['SUPER', 'FINANCE', 'COMPLIANCE', 'SUPPORT', 'MODERATOR', 'SAFEGUARDING'];
 
 const roleBadgeClass: Record<string, string> = {
     CLIENT: 'bg-primary/10 text-primary',

@@ -8,6 +8,9 @@ import {
   NotificationCategory,
 } from '../notifications/notification.service';
 import { AdminUsersService } from './admin-users.service';
+import { Prisma } from '@prisma/client';
+import { AdminSubRole } from '@ile-ase/common';
+import { SAFEGUARDING_REASONS } from '../safeguarding/safeguarding';
 
 @Injectable()
 export class AdminUserReportsService {
@@ -17,13 +20,24 @@ export class AdminUserReportsService {
     private adminUsersService: AdminUsersService
   ) {}
 
+  /**
+   * SAFE-03: safeguarding reports (abuse, exploitation, harassment) are
+   * seen only by Safeguarding and Super admins; moderators keep the rest
+   * (spam, impersonation and the like).
+   */
+  private visibleTo(admin: CurrentUserPayload): Prisma.UserReportWhereInput {
+    if (admin.adminSubRole === AdminSubRole.SUPER) return {};
+    if (admin.adminSubRole === AdminSubRole.SAFEGUARDING) return { reason: { in: [...SAFEGUARDING_REASONS] } };
+    return { reason: { notIn: [...SAFEGUARDING_REASONS] } };
+  }
+
   async getReports(currentUser: CurrentUserPayload, status?: string, page = 1, limit = 20) {
     if (currentUser.role !== 'ADMIN') {
       throw new ForbiddenException('Only admins can view user reports');
     }
 
     const skip = (page - 1) * limit;
-    const where: any = {};
+    const where: Prisma.UserReportWhereInput = { ...this.visibleTo(currentUser) };
     if (status) where.status = status.toUpperCase();
 
     const reports = await this.prisma.userReport.findMany({
@@ -33,7 +47,7 @@ export class AdminUserReportsService {
         reportedUser: { select: { id: true, name: true, email: true, role: true } },
         resolvedBy: { select: { id: true, name: true } },
       },
-      orderBy: [{ flaggedByKeywordRule: 'desc' }, { createdAt: 'desc' }],
+      orderBy: [{ urgent: 'desc' }, { flaggedByKeywordRule: 'desc' }, { createdAt: 'desc' }],
       skip,
       take: limit,
     });
@@ -42,7 +56,7 @@ export class AdminUserReportsService {
   }
 
   async resolveReport(id: string, dto: ResolveUserReportDto, admin: CurrentUserPayload) {
-    const report = await this.prisma.userReport.findUnique({ where: { id } });
+    const report = await this.prisma.userReport.findFirst({ where: { id, ...this.visibleTo(admin) } });
     if (!report) throw new NotFoundException('Report not found');
     if (report.status === 'RESOLVED' || report.status === 'DISMISSED') {
       throw new BadRequestException('This report has already been resolved');

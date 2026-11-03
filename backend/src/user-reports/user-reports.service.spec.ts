@@ -72,13 +72,30 @@ describe('UserReportsService', () => {
           description: dto.description,
           flaggedByKeywordRule: false,
           matchedKeywords: [],
+          urgent: false,
         },
       });
+      // Harassment is a safeguarding reason: Safeguarding/Super admins only (SAFE-03).
+      expect(mockPrismaService.user.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { role: 'ADMIN', adminSubRole: { in: ['SUPER', 'SAFEGUARDING'] } } })
+      );
       expect(mockNotificationService.createNotification).toHaveBeenCalledTimes(2);
       expect(mockNotificationService.createNotification).toHaveBeenCalledWith(
         expect.objectContaining({ category: 'WARNING' })
       );
       expect(result).toEqual({ id: 'report-1' });
+    });
+
+    it('sends spam and impersonation reports to moderators, not the safeguarding team', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({ id: 'user-1' });
+      mockPrismaService.userReport.create.mockResolvedValue({ id: 'report-3' });
+      mockPrismaService.user.findMany.mockResolvedValue([{ id: 'mod-1' }]);
+
+      await service.file({ ...dto, reason: 'SPAM' }, 'reporter-1');
+
+      expect(mockPrismaService.user.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { role: 'ADMIN', adminSubRole: { in: ['MODERATOR', 'SUPER'] } } })
+      );
     });
 
     it('flags the report and sends an urgent notification when the description matches an active keyword rule', async () => {
