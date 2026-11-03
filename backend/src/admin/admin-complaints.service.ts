@@ -15,6 +15,7 @@ import {
 import { AdminUsersService } from './admin-users.service';
 import { DisputesService } from '../disputes/disputes.service';
 import { UsersService } from '../users/users.service';
+import { SafeguardingCasesService } from '../safeguarding/cases.service';
 
 @Injectable()
 export class AdminComplaintsService {
@@ -23,7 +24,8 @@ export class AdminComplaintsService {
     private notificationService: NotificationService,
     private adminUsersService: AdminUsersService,
     private disputesService: DisputesService,
-    private usersService: UsersService
+    private usersService: UsersService,
+    private cases: SafeguardingCasesService
   ) {}
 
   async getComplaints(
@@ -141,6 +143,7 @@ export class AdminComplaintsService {
         resolutionNotes: dto.resolutionNotes,
       },
     });
+    await this.cases.recordSourceOutcome('COMPLAINT', id, `${dto.action}: ${dto.resolutionNotes}`, admin.id, true);
 
     // Recompute immediately so an upheld complaint's -15 trust score signal
     // (users.service.ts's recomputeTrustScore) is reflected right away

@@ -66,6 +66,8 @@ import {
   ReturnDecision,
 } from './dto/return-request.dto';
 import { DEVOTED_FIELDS, isDevoted } from '../subscriptions/devoted';
+import { RestrictionsService } from '../safeguarding/restrictions.service';
+import { StandardsService } from '../safeguarding/standards.service';
 
 /**
  * Marketplace Service
@@ -86,7 +88,9 @@ export class MarketplaceService {
     private disputesService: DisputesService,
     private s3Service: S3Service,
     private virusScanService: VirusScanService,
-    private fileUploadSecurityService: FileUploadSecurityService
+    private fileUploadSecurityService: FileUploadSecurityService,
+    private restrictions: RestrictionsService,
+    private standards: StandardsService
   ) {}
 
   // ==================== Vendors ====================
@@ -341,6 +345,7 @@ export class MarketplaceService {
     if (vendor.status !== VendorStatus.APPROVED) {
       throw new ForbiddenException('Your vendor account must be approved to create products');
     }
+    await this.standards.assertAccepted(currentUser.id); // SAFE-12
 
     // CULTURAL INTEGRITY: Prevent selling Akose/Ebo as products
     // Akose/Ebo are sacred prescriptions - they can only be provided via prescription module
@@ -563,6 +568,12 @@ export class MarketplaceService {
     // lives on Vendor, not Product.
     if (elderEndorsedOnly) {
       where.vendor = { culturalCertificationTier: 'ELDER_ENDORSED' };
+    }
+    // SAFE-05: a shop whose selling is paused, or whose owner is hidden,
+    // doesn't appear.
+    const pausedSellers = [...(await this.restrictions.userIdsUnder('PAUSE_SELLING')), ...(await this.restrictions.userIdsUnder('HIDE_PROFILE'))];
+    if (pausedSellers.length > 0) {
+      where.vendor = { ...(where.vendor ?? {}), userId: { notIn: pausedSellers } };
     }
 
     // SHOP_BACKLOG.md MSP-001: keyword search across name/description, plus
@@ -2366,6 +2377,8 @@ export class MarketplaceService {
     if (!vendor || vendor.status !== VendorStatus.APPROVED) {
       throw new BadRequestException('Invalid vendor');
     }
+    await this.restrictions.assertNot(vendor.userId, 'PAUSE_SELLING'); // SAFE-05
+    await this.restrictions.assertContactAllowed(currentUser.id, vendor.userId);
 
     // Fetch products and calculate totals
     const productIds = dto.items.map((item) => item.productId);

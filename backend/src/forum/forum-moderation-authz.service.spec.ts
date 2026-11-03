@@ -8,6 +8,7 @@ import { EmailService } from '../notifications/email.service';
 import { CrisisDetectionService } from '../shared/services/crisis-detection.service';
 import { ContentFlagMatcherService } from '../shared/services/content-flag-matcher.service';
 import { UsersService } from '../users/users.service';
+import { safeguardingMockProviders } from '../../test/mocks/safeguarding.mock';
 
 // Covers only the moderator sub-role authorization change made alongside
 // gating moderateThread's controller route with @AdminRoles(MODERATOR, SUPER)
@@ -36,6 +37,7 @@ describe('ForumService moderation authorization', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
+        ...safeguardingMockProviders(),
         ForumService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: MessagingGateway, useValue: {} },

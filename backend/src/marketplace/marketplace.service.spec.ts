@@ -15,6 +15,7 @@ import { VirusScanService } from '../security/virus-scan.service';
 import { FileUploadSecurityService } from '../security/file-upload-security.service';
 import { ForbiddenException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { safeguardingMockProviders } from '../../test/mocks/safeguarding.mock';
 
 // VENDOR_BACKLOG.md VND-009: pdfkit's CJS export shape doesn't interop
 // cleanly through ts-jest's isolated-modules transform (`import PDFDocument
@@ -341,6 +342,7 @@ describe('MarketplaceService', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
+        ...safeguardingMockProviders(),
         MarketplaceService,
         {
           provide: PrismaService,

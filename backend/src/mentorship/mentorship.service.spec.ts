@@ -1,6 +1,8 @@
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { EscrowType } from '@ile-ase/common';
 import { MentorshipService } from './mentorship.service';
+import { mockRestrictions } from '../../test/mocks/safeguarding.mock';
+import { PRACTITIONER_STANDARDS } from '../safeguarding/standards';
 
 // SHOP_BACKLOG.md MSP-023 -- owner's rules: Devoted clients only, verified
 // babalawos only, paid here and held elsewhere, 0% platform commission.
@@ -9,7 +11,7 @@ describe('MentorshipService', () => {
   const babalawo = { id: 'baba-1', role: 'BABALAWO' } as any;
   const offering = {
     id: 'off-1', babalawoId: 'baba-1', name: '4 readings', priceAmount: 40000, priceCurrency: 'NGN', sessionCount: 4,
-    babalawo: { id: 'baba-1', name: 'Awo Fálànà', role: 'BABALAWO', verified: true },
+    babalawo: { id: 'baba-1', name: 'Awo Fálànà', role: 'BABALAWO', verified: true, standardsVersionAccepted: PRACTITIONER_STANDARDS.version },
   };
   const booking = (over: Record<string, unknown> = {}) => ({
     id: 'bk-1', offeringId: 'off-1', babalawoId: 'baba-1', clientId: 'client-1', status: 'PAID', amount: 40000, currency: 'NGN',
@@ -19,6 +21,7 @@ describe('MentorshipService', () => {
   let prisma: any;
   let wallet: any;
   let notifications: any;
+  let restrictions: ReturnType<typeof mockRestrictions>;
   let service: MentorshipService;
 
   beforeEach(() => {
@@ -39,7 +42,8 @@ describe('MentorshipService', () => {
       armAutoRelease: jest.fn().mockResolvedValue(undefined),
     };
     notifications = { createNotification: jest.fn().mockResolvedValue({}) };
-    service = new MentorshipService(prisma, wallet, notifications);
+    restrictions = mockRestrictions();
+    service = new MentorshipService(prisma, wallet, notifications, restrictions as never);
   });
 
   describe('booking', () => {
@@ -61,6 +65,19 @@ describe('MentorshipService', () => {
     it('is only offered by verified babalawos', async () => {
       prisma.serviceOffering.findFirst.mockResolvedValue({ ...offering, babalawo: { ...offering.babalawo, verified: false } });
       await expect(service.createBooking({ offeringId: 'off-1' }, client)).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('is not offered by a practitioner who has not accepted the current standards (SAFE-12)', async () => {
+      prisma.serviceOffering.findFirst.mockResolvedValue({ ...offering, babalawo: { ...offering.babalawo, standardsVersionAccepted: 'older' } });
+      await expect(service.createBooking({ offeringId: 'off-1' }, client)).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('is refused while the practitioner has bookings paused, or a no-contact restriction applies (SAFE-05)', async () => {
+      restrictions.assertNot.mockRejectedValueOnce(new ForbiddenException('paused'));
+      await expect(service.createBooking({ offeringId: 'off-1' }, client)).rejects.toBeInstanceOf(ForbiddenException);
+      restrictions.assertContactAllowed.mockRejectedValueOnce(new ForbiddenException('not available'));
+      await expect(service.createBooking({ offeringId: 'off-1' }, client)).rejects.toBeInstanceOf(ForbiddenException);
+      expect(prisma.mentorshipBooking.create).not.toHaveBeenCalled();
     });
 
     it('cannot be made with yourself', async () => {

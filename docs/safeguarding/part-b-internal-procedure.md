@@ -44,7 +44,7 @@ They must recognise and escalate safeguarding concerns, preserve evidence, and p
 - **wellbeing check-in requests**, handled by Community Care carers; and
 - email to [safeguarding@iluase.com / hello@iluase.com].
 
-Each report gets a case reference (today the complaint's id; for email reports, create a complaint record or log entry the same day). The case record holds: reference; date received; category; who or what role was reported; a brief description; initial risk assessment; immediate measures; assigned handler; status; decisions and reasons; communications and follow-up; and closure date.
+Every report becomes a case in admin → **Safeguarding Cases**, with a reference (SG-0001…): concerns about practitioners and safeguarding reports open one automatically; log a concern that arrived by email there the same day. The case record holds: reference; date received; category; who or what role was reported; a brief description; initial risk assessment; immediate measures; assigned handler; status; decisions and reasons; communications and follow-up; and closure date.
 
 Case records are seen only by authorised people. Never discuss a case in community spaces, general moderation channels or unrestricted admin notes. *Gap: today every admin can see every complaint (Part C, SAFE-03).*
 
@@ -83,7 +83,9 @@ While a concern is assessed or investigated, the Safeguarding Lead may, proporti
 - hide or restrict community participation via moderation tools; and
 - pause money that is still held: a disputed escrow is frozen and is not auto-released (the 14-day auto-release skips disputed escrows and orders with an open return).
 
-*Gaps (SAFE-05): there is no narrower "stop new bookings / hide profile only" restriction and no "block contact between these two people"; account suspension is the available measure. Direct messaging is paused platform-wide, so private platform contact is not currently possible anyway.*
+- from the case: **pause new bookings**, **pause selling**, **hide profile**, **pause posting**, or **no contact with the reporter** (each with a reason and optional end date, logged on the case).
+
+Direct messaging is paused platform-wide, so private platform contact is not currently possible anyway.
 
 Interim measures are precautions, not findings. Record each one with its reason, review it regularly, and tell the restricted person of the restriction and the general reason unless that would create a safety risk or compromise evidence.
 

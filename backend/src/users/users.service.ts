@@ -21,6 +21,7 @@ import {
 import { DEVOTED_FIELDS, isDevoted } from '../subscriptions/devoted';
 import { MENTOR_MILESTONES } from '../community-mentorship/community-mentorship.service';
 import { toPublicProfile } from './public-profile';
+import { RestrictionsService } from '../safeguarding/restrictions.service';
 
 interface FindAllFilters {
   role?: string;
@@ -56,7 +57,8 @@ export class UsersService {
     private cacheManager: CacheManagerService,
     private searchService: SearchService,
     private onboardingEmailService: OnboardingEmailService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private restrictions: RestrictionsService
   ) {}
 
   async findAll(filters: FindAllFilters = {}) {
@@ -123,6 +125,20 @@ export class UsersService {
 
     // Determine if we're fetching the current user's profile (which should include personalAwo info)
     const isOwnProfile = viewerId === id;
+
+    // SAFE-05: a hidden profile, or one across a no-contact restriction,
+    // shows only what a private profile does -- without saying why.
+    if (
+      !isOwnProfile &&
+      ((await this.restrictions.has(id, 'HIDE_PROFILE')) || (viewerId && (await this.restrictions.noContactBetween(viewerId, id))))
+    ) {
+      const basics = await this.prisma.user.findUnique({
+        where: { id },
+        select: { id: true, name: true, yorubaName: true, avatar: true, role: true, slug: true, verified: true },
+      });
+      if (!basics) throw new NotFoundException('User not found');
+      return { ...basics, isPrivate: true };
+    }
 
     // The cache key must vary by isOwnProfile: the self view includes PII
     // (email/phone) and personalAwo that the public view deliberately strips.
@@ -291,7 +307,8 @@ export class UsersService {
     viewerId?: string
   ) {
     const where: any = { showInDirectory: true };
-    if (viewerId) where.id = { not: viewerId };
+    const hidden = await this.restrictions.userIdsUnder('HIDE_PROFILE'); // SAFE-05
+    where.id = { notIn: viewerId ? [...hidden, viewerId] : hidden };
     if (filters.role) where.role = filters.role;
     if (filters.interest) where.interests = { has: filters.interest };
     if (filters.search) {
@@ -338,6 +355,7 @@ export class UsersService {
       isDeactivated: false,
       suspendedUntil: null,
       bannedAt: null,
+      id: { notIn: await this.restrictions.userIdsUnder('HIDE_PROFILE') }, // SAFE-05
     };
     if (filters.verifiedOnly) where.verified = true;
     if (filters.specialty) where.specialization = { has: filters.specialty };

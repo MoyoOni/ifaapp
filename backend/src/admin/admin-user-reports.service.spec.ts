@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from '../notifications/notification.service';
 import { AdminUsersService } from './admin-users.service';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
+import { safeguardingMockProviders } from '../../test/mocks/safeguarding.mock';
 
 describe('AdminUserReportsService', () => {
   let service: AdminUserReportsService;
@@ -46,6 +47,7 @@ describe('AdminUserReportsService', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
+        ...safeguardingMockProviders(),
         AdminUserReportsService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: NotificationService, useValue: mockNotificationService },

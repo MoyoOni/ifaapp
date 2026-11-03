@@ -4,6 +4,7 @@ import { MemorialService } from './memorial.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CrisisDetectionService } from '../shared/services/crisis-detection.service';
 import { NotificationService } from '../notifications/notification.service';
+import { safeguardingMockProviders } from '../../test/mocks/safeguarding.mock';
 
 // COMMUNITY_BACKLOG.md FOR-015 / ProBacklog-v1.md item #3: soft-deleted --
 // grief/remembrance content someone wrote about a lost loved one shouldn't
@@ -28,6 +29,7 @@ describe('MemorialService', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
+        ...safeguardingMockProviders(),
         MemorialService,
         { provide: PrismaService, useValue: mockPrismaService },
         CrisisDetectionService,

@@ -8,6 +8,7 @@ import { EmailService } from '../notifications/email.service';
 import { CrisisDetectionService } from '../shared/services/crisis-detection.service';
 import { ContentFlagMatcherService } from '../shared/services/content-flag-matcher.service';
 import { UsersService } from '../users/users.service';
+import { safeguardingMockProviders } from '../../test/mocks/safeguarding.mock';
 
 // COMMUNITY_BACKLOG.md FOR-004: "Structured thread series for core concepts"
 // + "Integration with Academy course recommendations". Scoped to just
@@ -36,6 +37,7 @@ describe('ForumService — learning pathways (COMMUNITY_BACKLOG.md FOR-004)', ()
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
+        ...safeguardingMockProviders(),
         ForumService,
         ForumDiscoveryService,
         { provide: PrismaService, useValue: mockPrismaService },

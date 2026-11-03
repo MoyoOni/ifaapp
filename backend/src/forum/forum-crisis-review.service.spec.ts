@@ -8,6 +8,7 @@ import { EmailService } from '../notifications/email.service';
 import { CrisisDetectionService } from '../shared/services/crisis-detection.service';
 import { ContentFlagMatcherService } from '../shared/services/content-flag-matcher.service';
 import { UsersService } from '../users/users.service';
+import { safeguardingMockProviders } from '../../test/mocks/safeguarding.mock';
 
 // COMMUNITY_BACKLOG.md FOR-002 fix: a post automatically flagged by crisis
 // detection used to stay fully visible to everyone for the entire time it
@@ -41,6 +42,7 @@ describe('ForumService — crisis-signal review restriction (FOR-002)', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
+        ...safeguardingMockProviders(),
         ForumService,
         ForumCrisisService,
         { provide: PrismaService, useValue: mockPrismaService },

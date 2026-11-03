@@ -12,6 +12,7 @@ import {
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
+import { safeguardingMockProviders } from '../../test/mocks/safeguarding.mock';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -67,6 +68,7 @@ describe('UsersService', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
+        ...safeguardingMockProviders(),
         UsersService,
         {
           provide: PrismaService,

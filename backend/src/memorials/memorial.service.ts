@@ -4,6 +4,7 @@ import { CreateMemorialDto } from './dto/memorial.dto';
 import { CrisisDetectionService } from '../shared/services/crisis-detection.service';
 import { NotificationService } from '../notifications/notification.service';
 import { notifyForumAdmins } from '../forum/notify-forum-admins';
+import { RestrictionsService } from '../safeguarding/restrictions.service';
 
 // COMMUNITY_BACKLOG.md FOR-015: Ancestral Remembrance Wall. No admin review
 // queue by design -- grief content should post immediately, same as any
@@ -16,10 +17,12 @@ export class MemorialService {
   constructor(
     private prisma: PrismaService,
     private readonly crisisDetection: CrisisDetectionService,
-    private readonly notificationService: NotificationService
+    private readonly notificationService: NotificationService,
+    private readonly restrictions: RestrictionsService
   ) {}
 
   async create(dto: CreateMemorialDto, authorId: string) {
+    await this.restrictions.assertNot(authorId, 'PAUSE_POSTING'); // SAFE-05
     // Z1-803: still posts immediately (see above), but distress written here
     // reaches the admin crisis queue like a forum or circle post would.
     const crisisDetected = this.crisisDetection.detect(dto.message);

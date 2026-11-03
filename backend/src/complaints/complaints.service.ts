@@ -7,6 +7,7 @@ import {
 } from '../notifications/notification.service';
 import { FileComplaintDto } from './dto/file-complaint.dto';
 import { isUrgentReason, safeguardingAdminsWhere } from '../safeguarding/safeguarding';
+import { SafeguardingCasesService } from '../safeguarding/cases.service';
 
 // COMMUNITY_BACKLOG.md FOR-016: client-facing side of PractitionerComplaint.
 // Found while implementing FOR-016 that admin-complaints.service.ts could
@@ -18,7 +19,8 @@ import { isUrgentReason, safeguardingAdminsWhere } from '../safeguarding/safegua
 export class ComplaintsService {
   constructor(
     private prisma: PrismaService,
-    private readonly notificationService: NotificationService
+    private readonly notificationService: NotificationService,
+    private readonly cases: SafeguardingCasesService
   ) {}
 
   async file(dto: FileComplaintDto, clientId: string) {
@@ -48,6 +50,16 @@ export class ComplaintsService {
         matchedKeywords,
         urgent,
       },
+    });
+    // Every concern about a practitioner is a safeguarding case (SAFE-02).
+    await this.cases.openQuietly({
+      source: 'COMPLAINT',
+      sourceId: complaint.id,
+      subjectId: dto.practitionerId,
+      reporterId: clientId,
+      category: dto.reason,
+      summary: dto.description,
+      priority: urgent ? 1 : 2,
     });
 
     // Concerns about practitioners are safeguarding matters: only the

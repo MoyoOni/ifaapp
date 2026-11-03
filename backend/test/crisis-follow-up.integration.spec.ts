@@ -34,7 +34,7 @@ describe('Crisis follow-up', () => {
       .send({ email: `crisis-${Date.now()}-${Math.floor(Math.random() * 1e6)}@example.com`, password: 'SecurePassword123!', name: admin ? `Admin ${userIds.length}` : 'Crisis Test', role })
       .expect(201);
     userIds.push(res.body.user.id);
-    if (admin) await prisma.user.update({ where: { id: res.body.user.id }, data: { role: 'ADMIN' } });
+    if (admin) await prisma.user.update({ where: { id: res.body.user.id }, data: { role: 'ADMIN', adminSubRole: 'SAFEGUARDING' } });
     return { id: res.body.user.id as string, token: res.body.accessToken as string };
   }
 

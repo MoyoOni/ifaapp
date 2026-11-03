@@ -7,6 +7,7 @@ import {
 } from '../notifications/notification.service';
 import { FileUserReportDto } from './dto/file-user-report.dto';
 import { isSafeguardingReason, isUrgentReason, safeguardingAdminsWhere } from '../safeguarding/safeguarding';
+import { SafeguardingCasesService } from '../safeguarding/cases.service';
 
 // Whole-app audit loose end: generic version of complaints.service.ts's
 // PractitionerComplaint flow, for reporting any user (not just a babalawo).
@@ -16,7 +17,8 @@ import { isSafeguardingReason, isUrgentReason, safeguardingAdminsWhere } from '.
 export class UserReportsService {
   constructor(
     private prisma: PrismaService,
-    private readonly notificationService: NotificationService
+    private readonly notificationService: NotificationService,
+    private readonly cases: SafeguardingCasesService
   ) {}
 
   async file(dto: FileUserReportDto, reporterId: string) {
@@ -47,6 +49,17 @@ export class UserReportsService {
         urgent,
       },
     });
+    if (safeguarding) {
+      await this.cases.openQuietly({
+        source: 'USER_REPORT',
+        sourceId: report.id,
+        subjectId: dto.reportedUserId,
+        reporterId,
+        category: dto.reason,
+        summary: dto.description,
+        priority: urgent ? 1 : 2,
+      });
+    }
 
     // A safeguarding report goes only to the admins who may read it
     // (SAFE-03); spam, impersonation and the like stay with moderators.

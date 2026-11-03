@@ -52,7 +52,7 @@ describe('Event attendance XP (PATCH /events/:id/attendees/:userId/attendance)',
     organizer = await newUser();
     freeMember = await newUser();
     devotedMember = await newUser();
-    await prisma.user.update({ where: { id: devotedMember.id }, data: { subscriptionStatus: 'DEVOTED' } });
+    await prisma.user.update({ where: { id: devotedMember.id }, data: { subscriptionStatus: 'DEVOTED', subscriptionEnd: new Date(Date.now() + 30 * 86400000) } });
 
     const stamp = `${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
     eventId = (

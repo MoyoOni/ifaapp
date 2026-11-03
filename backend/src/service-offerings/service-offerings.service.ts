@@ -2,10 +2,14 @@ import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/commo
 import { PrismaService } from '../prisma/prisma.service';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { CreateServiceOfferingDto, UpdateServiceOfferingDto } from './dto/service-offering.dto';
+import { StandardsService } from '../safeguarding/standards.service';
 
 @Injectable()
 export class ServiceOfferingsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private standards: StandardsService
+  ) {}
 
   async getForBabalawo(babalawoId: string) {
     return this.prisma.serviceOffering.findMany({
@@ -16,6 +20,7 @@ export class ServiceOfferingsService {
 
   async create(babalawoId: string, dto: CreateServiceOfferingDto, currentUser: CurrentUserPayload) {
     this.assertOwnerOrAdmin(babalawoId, currentUser);
+    await this.standards.assertAccepted(babalawoId); // SAFE-12
 
     return this.prisma.serviceOffering.create({
       data: { babalawoId, ...dto },

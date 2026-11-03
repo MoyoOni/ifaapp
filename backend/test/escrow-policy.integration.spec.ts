@@ -19,6 +19,7 @@ import { GlobalExceptionFilter } from '../src/common/filters/global-exception.fi
 import { PrismaService } from '../src/prisma/prisma.service';
 import { WalletService } from '../src/wallet/wallet.service';
 import { UserRole } from '@ile-ase/common';
+import { PRACTITIONER_STANDARDS } from '../src/safeguarding/standards';
 
 describe('Escrow policy', () => {
   let app: INestApplication;
@@ -80,6 +81,8 @@ describe('Escrow policy', () => {
     wallet = app.get(WalletService);
 
     vendorUser = await newUser(UserRole.VENDOR);
+    // Practitioner and Vendor Standards (docs/safeguarding SAFE-12).
+    await prisma.user.update({ where: { id: vendorUser.id }, data: { standardsVersionAccepted: PRACTITIONER_STANDARDS.version } });
     buyer = await newUser(UserRole.CLIENT);
     vendorId = (await prisma.vendor.create({ data: { userId: vendorUser.id, businessName: 'Escrow Shop', status: 'APPROVED' } })).id;
     const product = await http()

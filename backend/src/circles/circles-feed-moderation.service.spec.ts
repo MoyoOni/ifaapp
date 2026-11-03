@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CrisisDetectionService } from '../shared/services/crisis-detection.service';
 import { ContentFlagMatcherService } from '../shared/services/content-flag-matcher.service';
 import { NotificationService } from '../notifications/notification.service';
+import { safeguardingMockProviders } from '../../test/mocks/safeguarding.mock';
 
 // COMMUNITY_BACKLOG.md FOR-005 (platform owner decision, July 29, 2026):
 // content moderation queue for Circle feed posts, mirroring
@@ -39,6 +40,7 @@ describe('CirclesService feed moderation', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
+        ...safeguardingMockProviders(),
         CirclesService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: CrisisDetectionService, useValue: { detect: jest.fn().mockReturnValue(false) } },

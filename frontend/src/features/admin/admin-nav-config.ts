@@ -2,8 +2,7 @@ import {
   Activity, AlertTriangle, Award, BarChart3, BookOpen, Building2, Crown,
   DollarSign, Flag, Hash, Lock, Mail, Megaphone, MessageSquare, RotateCcw,
   ScrollText, Settings, Shield, ShieldAlert, Star, Store, Tag, TrendingUp,
-  Users, type LucideIcon,
-} from 'lucide-react';
+  Users, type LucideIcon, ShieldCheck } from 'lucide-react';
 import { AdminSubRole } from '@common';
 
 export type AdminTab =
@@ -16,7 +15,7 @@ export type AdminTab =
   | 'practitioners' | 'featured' | 'complaints' | 'user-reports' | 'announcements'
   | 'trust-scores' | 'refunds' | 'cultural-content' | 'featured-content' | 'community' | 'forum-intelligence' | 'integrity'
   | 'campaigns' | 'promos' | 'referrals' | 'market-intelligence' | 'forecasting' | 'lifecycle' | 'security' | 'cultural-quiz'
-  | 'trust-score-audit' | 'platform-settings' | 'marketplace-admin' | 'academy-admin' | 'compliance' | 'crisis-alerts';
+  | 'trust-score-audit' | 'platform-settings' | 'marketplace-admin' | 'academy-admin' | 'compliance' | 'crisis-alerts' | 'safeguarding-cases';
 
 export interface AdminNavItem {
   id: AdminTab;
@@ -83,6 +82,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
       { id: 'practitioners', label: 'Practitioner Performance', icon: Activity },
       { id: 'featured', label: 'Featured Practitioners', icon: Crown },
       // Safeguarding concerns: Safeguarding and Super admins only (SAFE-03).
+      { id: 'safeguarding-cases', label: 'Safeguarding Cases', icon: ShieldCheck, requiredAdminSubRoles: [AdminSubRole.SAFEGUARDING, AdminSubRole.SUPER] },
       { id: 'complaints', label: 'Practitioner Complaints', icon: AlertTriangle, requiredAdminSubRoles: [AdminSubRole.SAFEGUARDING, AdminSubRole.SUPER] },
       { id: 'inactive-practitioners', label: 'Inactive Practitioners', icon: Activity },
     ],

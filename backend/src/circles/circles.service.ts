@@ -17,6 +17,7 @@ import {
   NotificationCategory,
 } from '../notifications/notification.service';
 import { DEVOTED_FIELDS, isDevoted } from '../subscriptions/devoted';
+import { RestrictionsService } from '../safeguarding/restrictions.service';
 
 /**
  * Circles Service
@@ -30,7 +31,8 @@ export class CirclesService {
     private prisma: PrismaService,
     private readonly crisisDetection: CrisisDetectionService,
     private readonly notificationService: NotificationService,
-    private readonly flagMatcher: ContentFlagMatcherService
+    private readonly flagMatcher: ContentFlagMatcherService,
+    private readonly restrictions: RestrictionsService
   ) {}
 
   // COMMUNITY_BACKLOG.md FOR-015: mirrors ForumService's private notifyAdmins
@@ -795,6 +797,7 @@ export class CirclesService {
   }
 
   async addFeedPostComment(postId: string, authorId: string, content: string) {
+    await this.restrictions.assertNot(authorId, 'PAUSE_POSTING'); // SAFE-05
     const post = await this.prisma.circleFeedPost.findUnique({ where: { id: postId } });
     if (!post) throw new NotFoundException('Post not found');
 
@@ -851,6 +854,7 @@ export class CirclesService {
     if (patronOnly && membership.role !== 'PATRON' && membership.role !== 'ADMIN') {
       throw new ForbiddenException('Only patrons can create patron-only posts');
     }
+    await this.restrictions.assertNot(currentUser.id, 'PAUSE_POSTING'); // SAFE-05
 
     const crisisDetected = this.crisisDetection.detect(content);
 

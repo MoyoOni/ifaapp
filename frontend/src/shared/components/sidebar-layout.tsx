@@ -41,6 +41,7 @@ import { isDevModeActive } from '@/shared/utils/dev-mode';
 import { decodeJwtPayload } from '@/shared/utils/jwt';
 import { AnnouncementBanner } from './announcement-banner';
 import { VisitorAuthCard } from './visitor-auth-card';
+import { StandardsPrompt } from '@/features/safeguarding/standards-prompt';
 
 interface SidebarLayoutProps {
     children: React.ReactNode;
@@ -688,6 +689,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                 </header>
 
                 <AnnouncementBanner />
+                <StandardsPrompt />
 
                 {/* Scrollable View Content */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-6 lg:p-8">

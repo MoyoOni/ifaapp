@@ -18,6 +18,7 @@ import { CirclesModule } from './circles/circles.module';
 import { MemorialModule } from './memorials/memorial.module';
 import { WellbeingModule } from './wellbeing/wellbeing.module';
 import { SupportResourcesModule } from './support-resources/support-resources.module';
+import { SafeguardingModule } from './safeguarding/safeguarding.module';
 import { DreamModule } from './dreams/dream.module';
 import { HealingModule } from './healing/healing.module';
 import { TechHelpModule } from './tech-help/tech-help.module';
@@ -89,6 +90,7 @@ import { MaintenanceModeMiddleware } from './middleware/maintenance-mode.middlew
     MemorialModule,
     WellbeingModule,
     SupportResourcesModule,
+    SafeguardingModule,
     DreamModule,
     HealingModule,
     TechHelpModule,

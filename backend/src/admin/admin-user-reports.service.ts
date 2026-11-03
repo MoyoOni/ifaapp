@@ -11,13 +11,15 @@ import { AdminUsersService } from './admin-users.service';
 import { Prisma } from '@prisma/client';
 import { AdminSubRole } from '@ile-ase/common';
 import { SAFEGUARDING_REASONS } from '../safeguarding/safeguarding';
+import { SafeguardingCasesService } from '../safeguarding/cases.service';
 
 @Injectable()
 export class AdminUserReportsService {
   constructor(
     private prisma: PrismaService,
     private notificationService: NotificationService,
-    private adminUsersService: AdminUsersService
+    private adminUsersService: AdminUsersService,
+    private cases: SafeguardingCasesService
   ) {}
 
   /**
@@ -96,6 +98,7 @@ export class AdminUserReportsService {
         resolutionNotes: dto.resolutionNotes,
       },
     });
+    await this.cases.recordSourceOutcome('USER_REPORT', id, `${dto.action}: ${dto.resolutionNotes}`, admin.id, true);
 
     await this.notificationService.createNotification({
       userId: report.reporterId,

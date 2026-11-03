@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CrisisDetectionService } from '../shared/services/crisis-detection.service';
 import { ContentFlagMatcherService } from '../shared/services/content-flag-matcher.service';
 import { NotificationService } from '../notifications/notification.service';
+import { safeguardingMockProviders } from '../../test/mocks/safeguarding.mock';
 
 // Focused spec for the circle feed like/comment methods (whole-app audit
 // loose end) -- the main circles.service.spec.ts is entirely describe.skip'd
@@ -39,6 +40,7 @@ describe('CirclesService feed reactions', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
+        ...safeguardingMockProviders(),
         CirclesService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: CrisisDetectionService, useValue: { detect: jest.fn().mockReturnValue(false) } },

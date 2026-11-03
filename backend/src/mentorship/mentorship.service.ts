@@ -18,6 +18,8 @@ import {
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { CreateMentorshipBookingDto, SetMeetingDto } from './dto/mentorship.dto';
 import { DEVOTED_FIELDS, isDevoted } from '../subscriptions/devoted';
+import { RestrictionsService } from '../safeguarding/restrictions.service';
+import { PRACTITIONER_STANDARDS } from '../safeguarding/standards';
 
 /**
  * SHOP_BACKLOG.md MSP-023 -- paid mentorship sessions (owner's decisions,
@@ -40,7 +42,8 @@ export class MentorshipService {
     private readonly prisma: PrismaService,
     @Inject(forwardRef(() => WalletService))
     private readonly walletService: WalletService,
-    private readonly notificationService: NotificationService
+    private readonly notificationService: NotificationService,
+    private readonly restrictions: RestrictionsService
   ) {}
 
   /** Mentorship offerings from verified babalawos, for anyone to browse. */
@@ -50,7 +53,14 @@ export class MentorshipService {
         isMentorship: true,
         isActive: true,
         deletedAt: null,
-        babalawo: { role: UserRole.BABALAWO, verified: true },
+        babalawo: {
+          role: UserRole.BABALAWO,
+          verified: true,
+          // SAFE-12 / SAFE-05: only practitioners who accepted the current
+          // standards and are not paused or hidden.
+          standardsVersionAccepted: PRACTITIONER_STANDARDS.version,
+          id: { notIn: [...(await this.restrictions.userIdsUnder('PAUSE_BOOKINGS')), ...(await this.restrictions.userIdsUnder('HIDE_PROFILE'))] },
+        },
       },
       include: {
         babalawo: { select: { id: true, name: true, yorubaName: true, avatar: true, slug: true, culturalLevel: true } },
@@ -66,11 +76,18 @@ export class MentorshipService {
     }
     const offering = await this.prisma.serviceOffering.findFirst({
       where: { id: dto.offeringId, isMentorship: true, isActive: true, deletedAt: null },
-      include: { babalawo: { select: { id: true, name: true, role: true, verified: true } } },
+      include: { babalawo: { select: { id: true, name: true, role: true, verified: true, standardsVersionAccepted: true } } },
     });
-    if (!offering || offering.babalawo.role !== UserRole.BABALAWO || !offering.babalawo.verified) {
+    if (
+      !offering ||
+      offering.babalawo.role !== UserRole.BABALAWO ||
+      !offering.babalawo.verified ||
+      offering.babalawo.standardsVersionAccepted !== PRACTITIONER_STANDARDS.version
+    ) {
       throw new NotFoundException('Mentorship offering not found');
     }
+    await this.restrictions.assertNot(offering.babalawoId, 'PAUSE_BOOKINGS'); // SAFE-05
+    await this.restrictions.assertContactAllowed(currentUser.id, offering.babalawoId);
     if (offering.babalawoId === currentUser.id) {
       throw new BadRequestException('You cannot book your own session');
     }

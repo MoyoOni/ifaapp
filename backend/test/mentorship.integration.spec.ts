@@ -16,6 +16,7 @@ import { GlobalExceptionFilter } from '../src/common/filters/global-exception.fi
 import { PrismaService } from '../src/prisma/prisma.service';
 import { WalletService } from '../src/wallet/wallet.service';
 import { UserRole } from '@ile-ase/common';
+import { PRACTITIONER_STANDARDS } from '../src/safeguarding/standards';
 
 describe('Mentorship sessions', () => {
   let app: INestApplication;
@@ -62,7 +63,7 @@ describe('Mentorship sessions', () => {
     await app.init();
     prisma = app.get(PrismaService);
 
-    babalawo = await newUser(UserRole.BABALAWO, { verified: true });
+    babalawo = await newUser(UserRole.BABALAWO, { verified: true, standardsVersionAccepted: PRACTITIONER_STANDARDS.version });
     devoted = await newUser(UserRole.CLIENT, { subscriptionStatus: 'DEVOTED', subscriptionEnd: new Date(Date.now() + 90 * 86400000) });
     await prisma.subscription.create({
       data: { userId: devoted.id, plan: 'QUARTERLY', status: 'ACTIVE', startDate: new Date(), endDate: new Date(Date.now() + 90 * 86400000), amountPaid: 2500000 },

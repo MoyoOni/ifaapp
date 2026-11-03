@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CrisisDetectionService } from '../shared/services/crisis-detection.service';
 import { ContentFlagMatcherService } from '../shared/services/content-flag-matcher.service';
 import { NotificationService } from '../notifications/notification.service';
+import { safeguardingMockProviders } from '../../test/mocks/safeguarding.mock';
 
 // Focused spec for suggestCircle() (whole-app audit Phase 3d) -- the main
 // circles.service.spec.ts is entirely describe.skip'd against a stale
@@ -23,6 +24,7 @@ describe('CirclesService.suggestCircle', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
+        ...safeguardingMockProviders(),
         CirclesService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: CrisisDetectionService, useValue: {} },

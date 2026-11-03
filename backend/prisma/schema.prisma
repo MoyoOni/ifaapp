@@ -45,6 +45,10 @@ model User {
   hasOnboarded              Boolean                  @default(false)
   slug                      String?                  @unique
   adminSubRole              String? // FINANCE, MODERATOR, COMPLIANCE, SUPPORT, SAFEGUARDING, SUPER
+  // docs/safeguarding SAFE-12: the version of the practitioner standards
+  // this person last accepted, and when.
+  standardsVersionAccepted  String?
+  standardsAcceptedAt       DateTime?
   templeId                  String?
   averageRating             Float?                   @default(0.0)
   createdAt                 DateTime                 @default(now())
@@ -3442,4 +3446,59 @@ model SupportResource {
   updatedAt   DateTime @updatedAt
 
   @@index([isActive, sortOrder])
+}
+
+// docs/safeguarding SAFE-02 (November 3, 2026): one case per safeguarding
+// matter, whatever route it arrived by, with a running log.
+model SafeguardingCase {
+  id         String                  @id @default(uuid())
+  ref        String                  @unique // SG-0001
+  source     String // COMPLAINT | USER_REPORT | CRISIS | EMAIL | OTHER
+  sourceId   String? // the complaint / report / crisis item, when there is one
+  subjectId  String? // the person the concern is about, when known
+  reporterId String?
+  category   String
+  summary    String
+  priority   Int                     @default(2) // 1 critical, 2 high, 3 standard (Part B §13)
+  status     String                  @default("OPEN") // OPEN | INVESTIGATING | CLOSED
+  handlerId  String?
+  closedAt   DateTime?
+  createdAt  DateTime                @default(now())
+  updatedAt  DateTime                @updatedAt
+  entries    SafeguardingCaseEntry[]
+
+  @@unique([source, sourceId])
+  @@index([status, priority])
+  @@index([subjectId])
+}
+
+model SafeguardingCaseEntry {
+  id        String           @id @default(uuid())
+  caseId    String
+  authorId  String?
+  kind      String // NOTE | CONTACT | MEASURE | DECISION | SYSTEM
+  text      String
+  createdAt DateTime         @default(now())
+  case      SafeguardingCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+}
+
+// docs/safeguarding SAFE-05 (November 3, 2026): restrictions narrower than
+// suspending the whole account.
+model AccountRestriction {
+  id              String    @id @default(uuid())
+  userId          String
+  type            String // PAUSE_BOOKINGS | PAUSE_SELLING | HIDE_PROFILE | PAUSE_POSTING | NO_CONTACT
+  protectedUserId String? // NO_CONTACT only: the member being protected
+  reason          String
+  caseId          String?
+  createdById     String
+  expiresAt       DateTime?
+  liftedAt        DateTime?
+  liftedById      String?
+  createdAt       DateTime  @default(now())
+
+  @@index([userId, type])
+  @@index([protectedUserId])
 }

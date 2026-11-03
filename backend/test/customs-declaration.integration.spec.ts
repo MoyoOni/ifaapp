@@ -15,6 +15,7 @@ import { AppModule } from '../src/app.module';
 import { GlobalExceptionFilter } from '../src/common/filters/global-exception.filter';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { UserRole } from '@ile-ase/common';
+import { PRACTITIONER_STANDARDS } from '../src/safeguarding/standards';
 
 describe('Customs declaration', () => {
   let app: INestApplication;
@@ -53,6 +54,8 @@ describe('Customs declaration', () => {
     prisma = app.get(PrismaService);
 
     vendorUser = await newUser(UserRole.VENDOR);
+    // Practitioner and Vendor Standards (docs/safeguarding SAFE-12).
+    await prisma.user.update({ where: { id: vendorUser.id }, data: { standardsVersionAccepted: PRACTITIONER_STANDARDS.version } });
     buyer = await newUser(UserRole.CLIENT);
     vendorId = (await prisma.vendor.create({ data: { userId: vendorUser.id, businessName: 'Ọjà Ifá', status: 'APPROVED' } })).id;
 

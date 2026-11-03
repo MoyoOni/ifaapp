@@ -21,6 +21,7 @@ import { CrisisDetectionService } from '../shared/services/crisis-detection.serv
 import { ContentFlagMatcherService } from '../shared/services/content-flag-matcher.service';
 import { UsersService } from '../users/users.service';
 import { notifyForumAdmins } from './notify-forum-admins';
+import { RestrictionsService } from '../safeguarding/restrictions.service';
 
 @Injectable()
 export class ForumService {
@@ -42,7 +43,8 @@ export class ForumService {
     private readonly notificationService: NotificationService,
     private readonly crisisDetection: CrisisDetectionService,
     private readonly usersService: UsersService,
-    private readonly flagMatcher: ContentFlagMatcherService
+    private readonly flagMatcher: ContentFlagMatcherService,
+    private readonly restrictions: RestrictionsService
   ) {}
 
   // ==================== Categories ====================
@@ -453,6 +455,7 @@ Share your reflections, questions, and experiences below. All levels welcome.
   }
 
   async createThread(dto: CreateThreadDto, currentUser: CurrentUserPayload) {
+    await this.restrictions.assertNot(currentUser.id, 'PAUSE_POSTING'); // SAFE-05
     // All authenticated users can start threads. Practitioners' Inner Circle requires BABALAWO role.
     // Monthly thread limit (THREAD_MONTHLY_LIMIT = 25) is intentionally disabled during platform growth phase.
 
@@ -952,6 +955,7 @@ Share your reflections, questions, and experiences below. All levels welcome.
   }
 
   async createPost(dto: CreatePostDto, currentUser: CurrentUserPayload) {
+    await this.restrictions.assertNot(currentUser.id, 'PAUSE_POSTING'); // SAFE-05
     // Verify thread exists and is not locked
     const thread = await this.prisma.forumThread.findUnique({
       where: { id: dto.threadId },

@@ -3,6 +3,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { UserReportsService } from './user-reports.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from '../notifications/notification.service';
+import { safeguardingMockProviders } from '../../test/mocks/safeguarding.mock';
 
 describe('UserReportsService', () => {
   let service: UserReportsService;
@@ -32,6 +33,7 @@ describe('UserReportsService', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
+        ...safeguardingMockProviders(),
         UserReportsService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: NotificationService, useValue: mockNotificationService },

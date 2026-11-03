@@ -9,17 +9,17 @@ A policy must not promise protections the platform cannot deliver. Each requirem
 | ID | Requirement | Priority | Status today | Evidence / what's missing |
 |---|---|---|---|---|
 | SAFE-01 | Raise a concern from every profile | P0 | **Exists** (3 Nov 2026) | A Babalawo's profile files a concern (`complaints`); every other profile files a report (`user-reports`) — so anyone can be reported. Both forms now carry sexual misconduct / unwanted contact, harassment or intimidation, controlling behaviour, fear-based manipulation, financial exploitation and breach of confidentiality. *(Corrects the first version of this table, which said only Babalawos could be reported.)* |
-| SAFE-02 | Secure safeguarding case register | P0 | **Partial** | Complaints have status, resolution notes, resolver and keyword flags; crisis flags have claim/resolve history. **Missing:** one register across complaints, crisis flags and email reports; priority level; assigned handler; interim measures and communications log per case. |
+| SAFE-02 | Secure safeguarding case register | P0 | **Exists** (3 Nov 2026) | Admin → **Safeguarding Cases**: every concern about a practitioner and every safeguarding report opens a case automatically (reference SG-0001…, priority, status, handler, running log of contacts, measures and decisions); concerns that arrive by email are logged by hand; resolving the original report records the decision and closes the case. Crisis flags keep their own claim/resolve queue, and the register shows how many are waiting. |
 | SAFE-03 | Restricted access to safeguarding reports | P0 | **Exists** (3 Nov 2026) | New **Safeguarding** admin sub-role. Practitioner concerns, the crisis queue and safeguarding-category user reports are readable and actionable only by Safeguarding and Super admins (guards + service filter; `test/safeguarding-access.integration.spec.ts`); moderators keep spam/impersonation reports; notifications go only to those who may read them. **Owner to do:** give the Safeguarding Lead this sub-role (admin → Users). |
-| SAFE-04 | Escalate urgent reports | P0 | **Partial** | Sexual-misconduct reports and keyword matches are marked **Urgent**, sorted first and send an urgent in-app alert to Safeguarding/Super admins; crisis language notifies admins. **Missing:** an out-of-app alert (email/SMS) to the Safeguarding Lead — email depends on SES leaving the sandbox. |
-| SAFE-05 | Temporarily restrict practitioner accounts | P0 | **Partial** | Whole-account suspension exists (admin Users, and "Suspend bookings" when resolving a complaint). **Missing:** narrower measures — stop new bookings / hide profile only; block contact between two named people. |
+| SAFE-04 | Escalate urgent reports | P0 | **Exists — needs setup** (3 Nov 2026) | Sexual-misconduct reports, keyword matches and any case raised to P1 alert Safeguarding/Super admins in-app, and also by **Telegram** once the bot is set up (README; `scripts/set-prod-safeguarding-telegram.sh`). The message carries only the case reference. Email joins when SES leaves the sandbox. |
+| SAFE-05 | Temporarily restrict practitioner accounts | P0 | **Exists** (3 Nov 2026) | From a case: **pause new bookings** (no new mentorship bookings, offerings hidden), **pause selling** (products hidden, no new orders), **hide profile** (out of search, directory and guide finder; name and photo only), **pause posting** (forum, circles, comments, remembrance wall), **no contact with the reporter** (no bookings or orders between them, each sees only the other's name and photo). Each has a reason, optional end date and is logged on the case; whole-account suspension remains in Users. |
 | SAFE-06 | Evidence preservation and case history | P0 | **Partial** | Complaint evidence links, bookings, payments, escrow, audit log and soft-deletion of most member content. **Missing:** a "legal hold" so nothing linked to an open case can be erased (GDPR erasure currently could). |
 | SAFE-07 | Secure communication with reporting members | P0 | **Partial** | Members see their complaint status in their account and get a notification on resolution. **Missing:** a two-way, private case conversation (messaging is paused platform-wide). Until then: email from the safeguarding address. |
 | SAFE-08 | Conflict-of-interest declarations | P1 | **Missing** | Manual (recorded on the case) until built. |
 | SAFE-09 | Case status and follow-up tracking | P1 | **Partial** | OPEN / UNDER_REVIEW / RESOLVED / DISMISSED on complaints; crisis follow-up history. No follow-up reminders. |
 | SAFE-10 | Anonymous reporting | P1 | **Missing** | Every complaint is tied to the reporter's account. |
 | SAFE-11 | Safeguarding dashboard with anonymised metrics | P1 | **Missing** | The admin overview shows open crisis-flag counts only. |
-| SAFE-12 | Practitioners accept the safeguarding standards | P0 | **Missing** | Not part of Babalawo/vendor onboarding. Needs an acceptance step recording version and time (the same pattern as the oral-history licence). |
+| SAFE-12 | Practitioners accept the safeguarding standards | P0 | **Exists — draft wording** (3 Nov 2026) | Babalawos and vendors are asked on sign-in to accept the Practitioner and Vendor Standards (`backend/src/safeguarding/standards.ts`, drawn from Part A); version and time are recorded; offerings and products can't be created, and mentorship isn't listed or bookable, until they accept. **When Part A is approved,** replace the text and change `version` — everyone is asked again. |
 | SAFE-13 | Retention and deletion controls for safeguarding records | P0 | **Missing** | No retention schedule; depends on decision 11. |
 | SAFE-14 | Independent appeal and review process | P1 | **Missing** | Manual by email until built. |
 | SAFE-15 | Documented external referral procedure | P0 | **Partial** | Part B §20 documents it; the admin-managed **Support directory** (Crisis Alerts → Support directory) holds the organisations members see. **Missing:** real organisations entered (it is empty), and a referral record on the case. |
@@ -35,7 +35,7 @@ Already in place and relied on by Part A: held payments (escrow, released on con
 3. Which elders are authorised to give cultural advice on cases?
 4. Who may access confidential safeguarding records?
 5. ~~Concern categories (SAFE-01)~~ — added as recommended, 3 November 2026; change them if the elders prefer other wording.
-6. Is account suspension acceptable as the only interim restriction until SAFE-05 is built?
+6. ~~Interim restrictions~~ — built (SAFE-05).
 7. Payment protection as described in Part A §3 matches the platform (escrow) — but payments are switched off until a live Paystack key is in place; confirm wording at publication.
 8. The approved emergency escalation route (SAFE-04): who is called, how, out of hours?
 9. Minimum age is 18 (Terms). How are reports that may involve a minor handled?
@@ -61,8 +61,7 @@ If a feature is not yet available, change the Part A wording to describe what ex
 ## Recommended build order
 
 1. ~~SAFE-01~~ and ~~SAFE-03~~ — done 3 November 2026.
-2. **SAFE-12** — practitioner acceptance of the standards at onboarding (needs Part A approved, so the accepted text is final).
-3. **SAFE-02** — a single case view across complaints, user reports, crisis flags and email-logged reports, with priority, handler, measures and communications.
+2. ~~SAFE-12~~, ~~SAFE-02~~, ~~SAFE-05~~ — done 3 November 2026 (SAFE-12 with draft wording; SAFE-04 alerts need the Telegram setup).
 4. **SAFE-04 + SAFE-06** — Priority-1 escalation to the Safeguarding Lead; a legal hold that blocks erasure while a case is open.
 5. **SAFE-05** — booking-only / profile-hidden restrictions.
 6. **SAFE-13** — retention schedule (after decision 11).

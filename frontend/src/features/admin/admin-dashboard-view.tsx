@@ -60,6 +60,7 @@ import AdminMarketplaceTab from './admin-marketplace-tab';
 import AdminAcademyTab from './admin-academy-tab';
 import AdminComplianceTab from './admin-compliance-tab';
 import AdminCrisisAlertsTab from './admin-crisis-alerts-tab';
+import SafeguardingCasesTab from './safeguarding-cases-tab';
 
 import { AdminUser, VerificationApplication } from './admin-shared-components';
 import { useToast } from '@/shared/components/toast';
@@ -312,6 +313,8 @@ const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ initialTab }) =
         return <TabErrorBoundary fallback={<TabFallback icon={BookOpen} label="Academy" />} tabName="academy-admin"><AdminAcademyTab /></TabErrorBoundary>;
       case 'compliance':
         return <TabErrorBoundary fallback={<TabFallback icon={Shield} label="Data & Compliance" />} tabName="compliance"><AdminComplianceTab /></TabErrorBoundary>;
+      case 'safeguarding-cases':
+        return <TabErrorBoundary fallback={<TabFallback icon={AlertTriangle} label="Safeguarding Cases" />} tabName="safeguarding-cases"><SafeguardingCasesTab /></TabErrorBoundary>;
       case 'crisis-alerts':
         return <TabErrorBoundary fallback={<TabFallback icon={AlertTriangle} label="Crisis Alerts" />} tabName="crisis-alerts"><AdminCrisisAlertsTab /></TabErrorBoundary>;
       default:
