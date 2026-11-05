@@ -45,8 +45,8 @@ describe('Safeguarding cases, restrictions and standards', () => {
     member = await newUser(UserRole.CLIENT);
     subject = await newUser(UserRole.CLIENT);
     babalawo = await newUser(UserRole.BABALAWO);
-    const cat = await prisma.forumCategory.findFirst({ where: { slug: { not: 'inner-circle' } } });
-    categoryId = cat!.id;
+    // Its own category: CI starts from an empty, unseeded database.
+    categoryId = (await prisma.forumCategory.create({ data: { name: 'Safeguarding test', slug: `sg-test-${Date.now()}` } })).id;
   });
 
   afterAll(async () => {
@@ -55,6 +55,7 @@ describe('Safeguarding cases, restrictions and standards', () => {
     await prisma.accountRestriction.deleteMany({ where: { userId: { in: userIds } } });
     await prisma.serviceOffering.deleteMany({ where: { babalawoId: babalawo.id } });
     await prisma.forumThread.deleteMany({ where: { authorId: { in: userIds } } });
+    await prisma.forumCategory.deleteMany({ where: { id: categoryId } });
     await prisma.userReport.deleteMany({ where: { reporterId: { in: userIds } } });
     await prisma.notification.deleteMany({ where: { userId: { in: userIds } } });
     await prisma.user.deleteMany({ where: { id: { in: userIds } } });

@@ -29,6 +29,7 @@ export function assertLivePayments(env: NodeJS.ProcessEnv = process.env, provide
   if (testKey) {
     const message = 'Payments are not switched on yet. Please check back soon.';
     // userMessage too, or the error filter replaces it with a generic 503 line.
-    throw new ServiceUnavailableException({ message, userMessage: message });
+    // `expected`: a deliberate refusal, not a fault -- not reported to Sentry.
+    throw new ServiceUnavailableException({ message, userMessage: message, expected: true });
   }
 }

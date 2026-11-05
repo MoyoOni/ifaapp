@@ -34,8 +34,17 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     const { status, message } = this.resolveStatusAndMessage(exception);
 
+    // A refusal the platform makes on purpose (payments switched off until a
+    // live key exists, a plan not set up yet) is answered as a 503 but is not
+    // a fault: log it, don't page anyone through Sentry for every member who
+    // tries (November 5, 2026).
+    const body = exception instanceof HttpException ? exception.getResponse() : null;
+    const expected = typeof body === 'object' && body !== null && (body as { expected?: boolean }).expected === true;
+
     // Log server errors with full stack; client errors at warn level
-    if (status >= 500) {
+    if (expected) {
+      this.logger.warn(`${request.method} ${request.url} ${status} — ${message} (expected)`);
+    } else if (status >= 500) {
       this.logger.error(
         `${request.method} ${request.url} ${status} — ${message}`,
         exception instanceof Error ? exception.stack : String(exception)
@@ -48,7 +57,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     // filter previously had no Sentry reporting at all (a separate,
     // near-duplicate SentryExceptionFilter did, but neither filter was ever
     // registered via app.useGlobalFilters()).
-    if (status >= 500 || !(exception instanceof HttpException)) {
+    if (!expected && (status >= 500 || !(exception instanceof HttpException))) {
       captureException(exception, {
         url: request.url,
         method: request.method,

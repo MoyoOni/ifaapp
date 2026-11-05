@@ -81,7 +81,7 @@ export class SubscriptionsService {
         `Cannot initiate ${plan} checkout: ${plan === 'QUARTERLY' ? 'PAYSTACK_DEVOTED_QUARTERLY_PLAN' : 'PAYSTACK_DEVOTED_ANNUAL_PLAN'} is not configured`
       );
       const message = 'Devoted subscriptions are not available yet. Please check back soon.';
-      throw new ServiceUnavailableException({ message, userMessage: message });
+      throw new ServiceUnavailableException({ message, userMessage: message, expected: true });
     }
 
     const amount = plan === 'QUARTERLY' ? 2_500_000 : 10_000_000; // kobo
