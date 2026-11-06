@@ -369,6 +369,7 @@ export class AdminController {
    */
   @Get('payments/unverified')
   @Roles(UserRole.ADMIN)
+  @AdminRoles(AdminSubRole.FINANCE, AdminSubRole.COMPLIANCE, AdminSubRole.SUPER)
   async getUnverifiedPayments(
     @CurrentUser() currentUser: CurrentUserPayload,
     @Query('hours') hours?: number
@@ -382,6 +383,7 @@ export class AdminController {
    */
   @Post('payments/verify/:transactionId')
   @Roles(UserRole.ADMIN)
+  @AdminRoles(AdminSubRole.FINANCE, AdminSubRole.COMPLIANCE, AdminSubRole.SUPER)
   async manuallyVerifyPayment(
     @Param('transactionId') transactionId: string,
     @CurrentUser() currentUser: CurrentUserPayload

@@ -73,6 +73,7 @@ describe('PaymentsService', () => {
     payment: {
       findUnique: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       findMany: jest.fn(),
       create: jest.fn().mockResolvedValue({ id: 'payment-1' }),
     },
@@ -286,7 +287,7 @@ describe('PaymentsService', () => {
   });
 
   describe('manuallyVerifyPayment (provider must confirm, November 6, 2026)', () => {
-    const pending = { id: 'p-1', transactionId: 'ref-9', provider: 'PAYSTACK', amount: 1000, currency: 'NGN', status: 'PENDING', verified: false };
+    const pending = { id: 'p-1', userId: 'user-id', transactionId: 'ref-9', provider: 'PAYSTACK', purpose: 'WALLET_TOPUP', amount: 1000, currency: 'NGN', status: 'PENDING', verified: false };
     const paystack = (status: string, kobo: number, currency = 'NGN') =>
       mockPaystackApi.verifyTransaction.mockResolvedValue({ status: true, data: { status, amount: kobo, currency, reference: 'ref-9' } });
 
@@ -306,12 +307,25 @@ describe('PaymentsService', () => {
       expect(mockPrismaService.payment.update).not.toHaveBeenCalled();
     });
 
-    it('marks it verified once the provider confirms the full charge', async () => {
+    it('settles it exactly as the webhook would, once the provider confirms the full charge', async () => {
       mockPrismaService.payment.findUnique.mockResolvedValue(pending);
-      mockPrismaService.payment.update.mockResolvedValue({ ...pending, verified: true });
+      mockWalletService.depositFunds.mockResolvedValue({ transaction: { id: 'tx-9', webhookReceived: true } });
       paystack('success', 100000);
       await service.manuallyVerifyPayment('ref-9', 'admin-1');
-      expect(mockPrismaService.payment.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ verified: true, verifiedBy: 'admin-1' }) }));
+      expect(mockPrismaService.payment.updateMany).toHaveBeenCalledWith({
+        where: { id: 'p-1', status: { not: 'success' } },
+        data: expect.objectContaining({ status: 'success', verified: true, verifiedBy: 'admin-1' }),
+      });
+      // Same idempotency key as the Paystack webhook: a late webhook can't credit again.
+      expect(mockWalletService.depositFunds).toHaveBeenCalledWith('user-id', expect.objectContaining({ amount: 1000 }), undefined, 'paystack:ref-9', expect.anything());
+    });
+
+    it('delivers nothing if a webhook settled it a moment earlier', async () => {
+      mockPrismaService.payment.findUnique.mockResolvedValue(pending);
+      mockPrismaService.payment.updateMany.mockResolvedValueOnce({ count: 0 });
+      paystack('success', 100000);
+      await service.manuallyVerifyPayment('ref-9', 'admin-1');
+      expect(mockWalletService.depositFunds).not.toHaveBeenCalled();
     });
 
     it('does nothing for a payment that is already verified', async () => {
@@ -712,7 +726,7 @@ describe('PaymentsService', () => {
         },
       };
       const verifiedTx = { id: 987, status: 'successful', tx_ref: 'ILEASE_ref-456', amount: 5000, currency: 'NGN' };
-      const topUp = { id: 'pay-fw', userId: 'user-id', transactionId: 'ILEASE_ref-456', amount: 5000, currency: 'NGN', purpose: 'WALLET_TOPUP', status: 'PENDING' };
+      const topUp = { id: 'pay-fw', userId: 'user-id', transactionId: 'ILEASE_ref-456', amount: 5000, currency: 'NGN', purpose: 'WALLET_TOPUP', provider: 'FLUTTERWAVE', status: 'PENDING' };
 
       it('credits the payer on the Payment record, not whoever the webhook body names', async () => {
         mockFlutterwaveApi.verifyById.mockResolvedValue({ status: 'success', data: verifiedTx });

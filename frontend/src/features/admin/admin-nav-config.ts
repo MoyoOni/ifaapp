@@ -131,7 +131,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     items: [
       { id: 'financial-command', label: 'Financial Command', icon: DollarSign },
       { id: 'withdrawals', label: 'Payout Approvals', icon: DollarSign, requiredAdminSubRoles: [AdminSubRole.FINANCE, AdminSubRole.SUPER] },
-      { id: 'payment-verification', label: 'Payment Verification', icon: DollarSign },
+      { id: 'payment-verification', label: 'Payment Verification', icon: DollarSign, requiredAdminSubRoles: [AdminSubRole.FINANCE, AdminSubRole.COMPLIANCE, AdminSubRole.SUPER] },
       { id: 'refunds', label: 'Refund Management', icon: RotateCcw, requiredAdminSubRoles: [AdminSubRole.FINANCE, AdminSubRole.SUPER] },
       { id: 'subscriptions', label: 'Subscriptions', icon: Crown, requiredAdminSubRoles: [AdminSubRole.FINANCE, AdminSubRole.SUPER] },
       { id: 'market-intelligence', label: 'Market Intelligence', icon: TrendingUp },

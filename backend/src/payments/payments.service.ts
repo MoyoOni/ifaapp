@@ -603,13 +603,7 @@ export class PaymentsService {
             captureException(new Error(message), { reference, charged, expected });
             return { success: false, reference, message: 'Amount mismatch' };
           }
-          if (payment.status !== 'success') {
-            await this.prisma.payment.update({
-              where: { id: payment.id },
-              data: { status: 'success', verified: true, verifiedAt: new Date() },
-            });
-            await this.processSuccessfulPayment(payment.id);
-          } else {
+          if (!(await this.settleConfirmedPayment(payment))) {
             this.logger.log(`Paystack webhook replay for reference ${reference} — order payment already processed, skipping`);
           }
           return { success: true, reference, amount: data.amount / 100, currency: data.currency };
@@ -812,33 +806,8 @@ export class PaymentsService {
       return { success: false, reference, message: 'Amount mismatch' };
     }
 
-    await this.prisma.payment.update({
-      where: { id: payment.id },
-      data: { status: 'success', verified: true, verifiedAt: new Date() },
-    });
-
-    if (payment.purpose === PaymentPurpose.MARKETPLACE_ORDER || payment.purpose === PaymentPurpose.MENTORSHIP_SESSION) {
-      await this.processSuccessfulPayment(payment.id);
-    } else {
-      // Anything else tops up the payer's wallet by what they were asked to
-      // pay. Keyed by the reference (EMG-03) so a retried webhook can't
-      // credit twice; the notification is an outbox event in the same
-      // transaction (P1-01).
-      const amount = expected;
-      const currency = payment.currency as Currency;
-      const result = await this.walletService.depositFunds(
-        payment.userId,
-        { amount, currency, reference },
-        undefined,
-        `flutterwave:${reference}`,
-        { eventType: 'PAYMENT_RECEIVED', payload: { userId: payment.userId, amount, currency, reference } }
-      );
-      if (result.transaction && !result.transaction.webhookReceived) {
-        await this.prisma.transaction.update({
-          where: { id: result.transaction.id },
-          data: { webhookReceived: true, webhookReceivedAt: new Date() },
-        });
-      }
+    if (!(await this.settleConfirmedPayment(payment))) {
+      this.logger.log(`Flutterwave webhook for ${reference} raced another settlement — already processed`);
     }
 
     return { success: true, reference, amount: tx.amount, currency: tx.currency };
@@ -1087,24 +1056,53 @@ export class PaymentsService {
       );
     }
 
-    // Update the payment as verified
-    const updatedPayment = await this.prisma.payment.update({
-      where: {
-        id: payment.id,
-      },
-      data: {
-        verified: true,
-        verifiedAt: new Date(),
-        verifiedBy: verifiedById,
-      },
+    // Settles exactly like the webhook would have (for a missed webhook).
+    await this.settleConfirmedPayment(payment, verifiedById);
+    return this.prisma.payment.findUnique({ where: { id: payment.id } });
+  }
+
+  /**
+   * The one way a provider-confirmed payment becomes paid (November 6, 2026;
+   * the Paystack webhook, Flutterwave webhook and admin verification each
+   * used to do it their own way). Claiming the row and marking it paid is a
+   * single conditional write, so a webhook and an admin -- or two webhook
+   * retries -- can't both deliver. Returns false if it was already settled.
+   */
+  private async settleConfirmedPayment(
+    payment: { id: string; userId: string; transactionId: string; amount: unknown; currency: string; purpose: string; provider: string; status: string },
+    verifiedBy?: string
+  ): Promise<boolean> {
+    if (payment.status === 'success') return false;
+    const claimed = await this.prisma.payment.updateMany({
+      where: { id: payment.id, status: { not: 'success' } },
+      data: { status: 'success', verified: true, verifiedAt: new Date(), ...(verifiedBy ? { verifiedBy } : {}) },
     });
+    if (claimed.count === 0) return false;
 
-    // Process the payment if successful
-    if (updatedPayment.status === 'success') {
-      await this.processSuccessfulPayment(updatedPayment.id);
+    if (payment.purpose === PaymentPurpose.MARKETPLACE_ORDER || payment.purpose === PaymentPurpose.MENTORSHIP_SESSION) {
+      await this.processSuccessfulPayment(payment.id);
+      return true;
     }
-
-    return updatedPayment;
+    // Anything else tops up the payer's wallet by what they were asked to
+    // pay. Keyed by the reference (EMG-03) so nothing can credit twice; the
+    // notification is an outbox event in the same transaction (P1-01).
+    const amount = Number(payment.amount);
+    const currency = payment.currency as Currency;
+    const reference = payment.transactionId;
+    const result = await this.walletService.depositFunds(
+      payment.userId,
+      { amount, currency, reference },
+      undefined,
+      `${payment.provider.toLowerCase()}:${reference}`,
+      { eventType: 'PAYMENT_RECEIVED', payload: { userId: payment.userId, amount, currency, reference } }
+    );
+    if (result.transaction && !result.transaction.webhookReceived) {
+      await this.prisma.transaction.update({
+        where: { id: result.transaction.id },
+        data: { webhookReceived: true, webhookReceivedAt: new Date() },
+      });
+    }
+    return true;
   }
 
   /**
@@ -1137,7 +1135,13 @@ export class PaymentsService {
           reference: payment.transactionId,
           description: 'Wallet top-up via payment gateway',
         };
-        await this.walletService.depositFunds(payment.userId, depositData);
+        // Same key the webhooks use, so this can never credit a second time.
+        await this.walletService.depositFunds(
+          payment.userId,
+          depositData,
+          undefined,
+          `${String(payment.provider).toLowerCase()}:${payment.transactionId}`
+        );
         break;
 
       case PaymentPurpose.BOOKING:
