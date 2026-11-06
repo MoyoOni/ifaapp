@@ -8,7 +8,6 @@ import { AuditService } from './services/audit.service';
 import { ImpersonationService } from './services/impersonation.service';
 import { SesEmailService } from './services/ses-email.service';
 import { PiiMaskingUtil } from './utils/pii-masking.util';
-import { AuditInterceptor } from './interceptors/audit.interceptor';
 import { JwtAuthGuard } from './guards/auth.guard';
 import { CrisisDetectionService } from './services/crisis-detection.service';
 import { ContentFlagMatcherService } from './services/content-flag-matcher.service';
@@ -32,7 +31,6 @@ import { ContentFlagMatcherService } from './services/content-flag-matcher.servi
     AuditService,
     ImpersonationService,
     PiiMaskingUtil,
-    AuditInterceptor,
     JwtAuthGuard,
     SesEmailService,
     CrisisDetectionService,
@@ -43,7 +41,6 @@ import { ContentFlagMatcherService } from './services/content-flag-matcher.servi
     AuditService,
     ImpersonationService,
     PiiMaskingUtil,
-    AuditInterceptor,
     JwtModule,
     JwtAuthGuard,
     SesEmailService,

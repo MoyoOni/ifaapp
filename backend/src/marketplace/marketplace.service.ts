@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import {
   Injectable,
   NotFoundException,
@@ -74,6 +75,9 @@ import { StandardsService } from '../safeguarding/standards.service';
  * Vendor verification, product listings, orders, and reviews
  * NOTE: Similar verification rigor to Babalawo verification
  */
+/** What a failed Prisma write tells us (P2002 = unique constraint). */
+type PrismaError = Error & { code?: string; meta?: { target?: string | string[] } };
+
 @Injectable()
 export class MarketplaceService {
   private readonly logger = new Logger(MarketplaceService.name);
@@ -204,7 +208,7 @@ export class MarketplaceService {
   }
 
   async findAllVendors(status?: VendorStatus) {
-    const where: any = {};
+    const where: Prisma.VendorWhereInput = {};
 
     if (status) {
       where.status = status;
@@ -248,7 +252,7 @@ export class MarketplaceService {
       throw new ForbiddenException('Only admins can change vendor status');
     }
 
-    const updateData: any = {};
+    const updateData: Prisma.VendorUpdateInput = {};
 
     if (dto.status) {
       updateData.status = dto.status;
@@ -322,7 +326,8 @@ export class MarketplaceService {
           },
         },
       });
-    } catch (error: any) {
+    } catch (caught) {
+      const error = caught as PrismaError;
       if (error.code === 'P2002' && error.meta?.target?.includes?.('slug')) {
         throw new BadRequestException('This storefront URL is already taken. Please choose another.');
       }
@@ -545,7 +550,7 @@ export class MarketplaceService {
     search?: string,
     elderEndorsedOnly?: boolean
   ) {
-    const where: any = {};
+    const where: Prisma.ProductWhereInput = {};
 
     if (vendorId) {
       where.vendorId = vendorId;
@@ -566,25 +571,27 @@ export class MarketplaceService {
     // VENDOR_BACKLOG.md VND-017: "Marketplace filter: Show only Elder
     // Endorsed" -- a nested relation filter, since the certification tier
     // lives on Vendor, not Product.
+    const vendorFilter: Prisma.VendorWhereInput = {};
     if (elderEndorsedOnly) {
-      where.vendor = { culturalCertificationTier: 'ELDER_ENDORSED' };
+      vendorFilter.culturalCertificationTier = 'ELDER_ENDORSED';
     }
     // SAFE-05: a shop whose selling is paused, or whose owner is hidden,
     // doesn't appear.
     const pausedSellers = [...(await this.restrictions.userIdsUnder('PAUSE_SELLING')), ...(await this.restrictions.userIdsUnder('HIDE_PROFILE'))];
     if (pausedSellers.length > 0) {
-      where.vendor = { ...(where.vendor ?? {}), userId: { notIn: pausedSellers } };
+      vendorFilter.userId = { notIn: pausedSellers };
     }
+    if (Object.keys(vendorFilter).length > 0) where.vendor = vendorFilter;
 
     // SHOP_BACKLOG.md MSP-001: keyword search across name/description, plus
     // any subcategory whose cultural-taxonomy note mentions the term (e.g.
     // "Osun" surfaces items in a subcategory whose note mentions Osun even
     // if no individual product's own text does).
-    const searchOr = search
+    const searchOr: Prisma.ProductWhereInput[] | null = search
       ? [
-          { name: { contains: search, mode: 'insensitive' } },
-          { description: { contains: search, mode: 'insensitive' } },
-          { longDescription: { contains: search, mode: 'insensitive' } },
+          { name: { contains: search, mode: Prisma.QueryMode.insensitive } },
+          { description: { contains: search, mode: Prisma.QueryMode.insensitive } },
+          { longDescription: { contains: search, mode: Prisma.QueryMode.insensitive } },
           // VENDOR_BACKLOG.md VND-023: exact-tag match, not substring -- Prisma
           // has no ILIKE-on-array-element support without raw SQL, and tags
           // are short exact keywords by design (a vendor picks "beads", a
@@ -966,7 +973,8 @@ export class MarketplaceService {
 
     try {
       await this.prisma.productEndorsement.create({ data: { productId, userId } });
-    } catch (error: any) {
+    } catch (caught) {
+      const error = caught as PrismaError;
       if (error.code !== 'P2002') throw error;
       // Already endorsed -- treat as a no-op success, not an error.
     }
@@ -1101,7 +1109,8 @@ export class MarketplaceService {
       return await this.prisma.eventProductFeature.create({
         data: { eventId, productId: dto.productId, vendorId: vendor.id },
       });
-    } catch (error: any) {
+    } catch (caught) {
+      const error = caught as PrismaError;
       if (error.code === 'P2002') {
         throw new BadRequestException(
           'You have already requested featuring for this product on this event'
@@ -1581,7 +1590,7 @@ export class MarketplaceService {
       throw new ForbiddenException('You can only update your own products');
     }
 
-    const updateData: any = { ...dto };
+    const updateData: Prisma.ProductUpdateInput = { ...dto };
     delete updateData.status; // Handle status separately
     delete updateData.scheduledAt;
     delete updateData.expectedDeliveryDate;
@@ -2202,7 +2211,8 @@ export class MarketplaceService {
           });
           created++;
         }
-      } catch (err: any) {
+      } catch (caught) {
+        const err = caught as Error;
         errors.push({ row: i + 2, error: err.message }); // +2: 1-indexed, plus header row
       }
     }
@@ -2559,7 +2569,7 @@ export class MarketplaceService {
     // decrement itself*, evaluated by Postgres as part of one statement, so a
     // losing concurrent request gets `count === 0` and the whole order is
     // rolled back — no order is ever created against stock that isn't there.
-    const order = await this.prisma.$transaction(async (tx: any) => {
+    const order = await this.prisma.$transaction(async (tx) => {
       for (const item of dto.items) {
         const product = products.find((p: any) => p.id === item.productId);
         const variant = item.variantId ? variants.find((v) => v.id === item.variantId) : undefined;
@@ -2605,7 +2615,7 @@ export class MarketplaceService {
       // concurrent orders both grabbing the "last use" of a capped
       // promotion can't both win.
       if (appliedPromotion) {
-        const promoUpdateWhere: any = { id: appliedPromotion.promotionId };
+        const promoUpdateWhere: Prisma.VendorPromotionWhereInput = { id: appliedPromotion.promotionId };
         const promo = await tx.vendorPromotion.findUnique({ where: { id: appliedPromotion.promotionId } });
         if (promo?.maxUses !== null && promo?.maxUses !== undefined) {
           promoUpdateWhere.usedCount = { lt: promo.maxUses };
@@ -2775,7 +2785,7 @@ export class MarketplaceService {
   ) {
     await this.assertOwnsVendorOrAdmin(vendorId, currentUser);
 
-    const where: any = { vendorId };
+    const where: Prisma.OrderWhereInput = { vendorId };
     if (filters?.status) where.status = filters.status;
     if (filters?.paymentMethod) where.paymentMethod = filters.paymentMethod;
     if (filters?.dateFrom || filters?.dateTo) {
@@ -2834,7 +2844,7 @@ export class MarketplaceService {
   }
 
   async findAllOrders(currentUser: CurrentUserPayload, vendorId?: string) {
-    const where: any = {};
+    const where: Prisma.OrderWhereInput = {};
 
     if (currentUser.role === 'VENDOR') {
       // Vendors see their own orders
@@ -2985,7 +2995,7 @@ export class MarketplaceService {
       throw new ForbiddenException('Only the vendor can set shipping details');
     }
 
-    const updateData: any = {};
+    const updateData: Prisma.OrderUpdateInput = {};
 
     if (dto.status) {
       updateData.status = dto.status;
@@ -3153,7 +3163,8 @@ export class MarketplaceService {
       try {
         await this.updateOrder(orderId, dto, currentUser);
         updated++;
-      } catch (err: any) {
+      } catch (caught) {
+        const err = caught as Error;
         errors.push({ orderId, error: err.message });
       }
     }
@@ -3663,7 +3674,8 @@ export class MarketplaceService {
 
     try {
       return await this.prisma.vendorPromotion.create({ data: data as any });
-    } catch (err: any) {
+    } catch (caught) {
+      const err = caught as PrismaError;
       if (err.code === 'P2002') {
         throw new BadRequestException('You already have a promotion with this code');
       }
@@ -3675,7 +3687,7 @@ export class MarketplaceService {
     await this.assertOwnsVendorOrAdmin(vendorId, currentUser);
 
     const now = new Date();
-    const where: any = { vendorId };
+    const where: Prisma.VendorPromotionWhereInput = { vendorId };
     if (status === 'active') {
       where.isActive = true;
       where.OR = [{ expiresAt: null }, { expiresAt: { gte: now } }];
