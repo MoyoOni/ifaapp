@@ -8,10 +8,11 @@ import {
   Logger,
 } from '@nestjs/common';
 import { randomUUID, randomBytes, createHash } from 'crypto';
-import { JwtService } from '@nestjs/jwt';
+import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
-import { OAuth2Client } from 'google-auth-library';
+import { OAuth2Client, TokenPayload } from 'google-auth-library';
+import { User } from '@prisma/client';
 import { PrismaService } from '@/prisma/prisma.service';
 import { RedisCacheService } from '../cache/redis-cache.service';
 import { TOKEN_DENYLIST_PREFIX } from './token-denylist.constants';
@@ -109,7 +110,7 @@ export class AuthService {
     const tokens = await this.generateTokens({
       sub: user.id,
       email: user.email,
-      role: user.role as any,
+      role: user.role as UserRole,
       verified: user.verified,
     });
 
@@ -142,7 +143,6 @@ export class AuthService {
         yorubaName: user.yorubaName,
         culturalLevel: user.culturalLevel,
         hasOnboarded: user.hasOnboarded,
-        adminSubRole: (user as any).adminSubRole ?? undefined,
       },
       ...tokens,
     };
@@ -210,7 +210,7 @@ Aboru Aboye.`;
     }
   }
 
-  async validateUser(emailOrPhone: string, password: string): Promise<any> {
+  async validateUser(emailOrPhone: string, password: string): Promise<Omit<User, 'passwordHash'> | null> {
     // Support Nigerian phone numbers: if input looks like a phone number, look up by phone
     const isPhone = /^[+]?[0-9]{10,14}$/.test(emailOrPhone.replace(/\s/g, ''));
     const user = isPhone
@@ -281,7 +281,7 @@ Aboru Aboye.`;
     const tokens = await this.generateTokens({
       sub: user.id,
       email: user.email,
-      role: user.role as any,
+      role: user.role as UserRole,
       verified: user.verified,
     });
 
@@ -295,7 +295,7 @@ Aboru Aboye.`;
         yorubaName: user.yorubaName,
         culturalLevel: user.culturalLevel,
         hasOnboarded: user.hasOnboarded,
-        adminSubRole: (user as any).adminSubRole ?? undefined,
+        adminSubRole: user.adminSubRole ?? undefined,
       },
       ...tokens,
     };
@@ -330,7 +330,7 @@ Aboru Aboye.`;
     const tokens = await this.generateTokens({
       sub: user.id,
       email: user.email,
-      role: user.role as any,
+      role: user.role as UserRole,
       verified: user.verified,
     });
 
@@ -347,7 +347,7 @@ Aboru Aboye.`;
         yorubaName: user.yorubaName,
         culturalLevel: user.culturalLevel,
         hasOnboarded: user.hasOnboarded,
-        adminSubRole: (user as any).adminSubRole ?? undefined,
+        adminSubRole: user.adminSubRole ?? undefined,
       },
       ...tokens,
     };
@@ -393,7 +393,7 @@ Aboru Aboye.`;
     }
     const client = new OAuth2Client(clientId);
 
-    let payload: any;
+    let payload: TokenPayload | undefined;
     try {
       const ticket = await client.verifyIdToken({ idToken: credential, audience: clientId });
       payload = ticket.getPayload();
@@ -403,6 +403,11 @@ Aboru Aboye.`;
 
     if (!payload?.email) {
       throw new UnauthorizedException('Google token missing email');
+    }
+    // findOrCreateGoogleUser links to an existing account by email, so the
+    // address must be one Google has verified (November 6, 2026).
+    if (payload.email_verified !== true) {
+      throw new UnauthorizedException('Google has not verified this email address');
     }
 
     return this.findOrCreateGoogleUser({
@@ -431,7 +436,7 @@ Aboru Aboye.`;
     const tokens = await this.generateTokens({
       sub: user.id,
       email: user.email,
-      role: user.role as any,
+      role: user.role as UserRole,
       verified: user.verified,
     });
 
@@ -445,7 +450,7 @@ Aboru Aboye.`;
         yorubaName: user.yorubaName,
         culturalLevel: user.culturalLevel,
         hasOnboarded: user.hasOnboarded,
-        adminSubRole: (user as any).adminSubRole ?? undefined,
+        adminSubRole: user.adminSubRole ?? undefined,
       },
       ...tokens,
     };
@@ -486,7 +491,7 @@ Aboru Aboye.`;
       const tokens = await this.generateTokens({
         sub: user.id,
         email: user.email,
-        role: user.role as any,
+        role: user.role as UserRole,
         verified: user.verified,
       });
 
@@ -503,7 +508,7 @@ Aboru Aboye.`;
   }
 
   async initiateImpersonation(
-    adminUser: any,
+    adminUser: Parameters<ImpersonationService['initiateImpersonation']>[0],
     targetUserId: string,
     reason: string
   ): Promise<{ token: string }> {
@@ -582,15 +587,14 @@ Aboru Aboye.`;
 
     const accessToken = this.jwtService.sign(sessionPayload, {
       secret: jwtSecret,
-      // `as any`: @nestjs/jwt's `expiresIn` type wants a `StringValue` template
-      // literal from `ms`, not `string` — matches the existing cast in
-      // auth.module.ts's JwtModule.registerAsync default signOptions.
-      expiresIn: this.configService.get<string>('JWT_EXPIRES_IN', '15m') as any,
+      // @nestjs/jwt's `expiresIn` type wants a `StringValue` template literal
+      // from `ms`, not `string`; the config value is one ("15m").
+      expiresIn: this.configService.get<string>('JWT_EXPIRES_IN', '15m') as JwtSignOptions['expiresIn'],
     });
 
     const refreshToken = this.jwtService.sign(sessionPayload, {
       secret: jwtRefreshSecret,
-      expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '7d') as any,
+      expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '7d') as JwtSignOptions['expiresIn'],
     });
 
     return {
@@ -757,7 +761,7 @@ Aboru Aboye.`;
     return this.generateTokens({
       sub: user.id,
       email: user.email,
-      role: user.role as any,
+      role: user.role as UserRole,
       verified: user.verified,
     });
   }

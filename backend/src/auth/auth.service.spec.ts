@@ -1,3 +1,4 @@
+import { OAuth2Client } from 'google-auth-library';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -427,6 +428,32 @@ describe('AuthService', () => {
   });
 
   describe('verifyGoogleToken', () => {
+    // November 6, 2026: sign-in links to an existing account by email, so an
+    // address Google hasn't verified must not get in.
+    it('refuses a Google token whose email Google has not verified', async () => {
+      jest.spyOn(configService, 'get').mockImplementation((key: string) => (key === 'GOOGLE_CLIENT_ID' ? 'client-id' : 'irrelevant'));
+      const verify = jest.spyOn(OAuth2Client.prototype, 'verifyIdToken').mockImplementation(async () => ({
+        getPayload: () => ({ sub: 'g-1', email: 'victim@example.com', email_verified: false }),
+      }) as never);
+      const linkSpy = jest.spyOn(service, 'findOrCreateGoogleUser');
+
+      await expect(service.verifyGoogleToken('credential')).rejects.toThrow('Google has not verified this email address');
+      expect(linkSpy).not.toHaveBeenCalled();
+      verify.mockRestore();
+    });
+
+    it('signs in with a verified Google email', async () => {
+      jest.spyOn(configService, 'get').mockImplementation((key: string) => (key === 'GOOGLE_CLIENT_ID' ? 'client-id' : 'irrelevant'));
+      const verify = jest.spyOn(OAuth2Client.prototype, 'verifyIdToken').mockImplementation(async () => ({
+        getPayload: () => ({ sub: 'g-1', email: 'ade@example.com', email_verified: true, name: 'Adé' }),
+      }) as never);
+      const linkSpy = jest.spyOn(service, 'findOrCreateGoogleUser').mockResolvedValue({} as never);
+
+      await service.verifyGoogleToken('credential');
+      expect(linkSpy).toHaveBeenCalledWith(expect.objectContaining({ googleId: 'g-1', email: 'ade@example.com' }));
+      verify.mockRestore();
+    });
+
     it('refuses to verify when GOOGLE_CLIENT_ID is not configured, instead of silently verifying with no audience restriction', async () => {
       // Regression guard: production ran with GOOGLE_CLIENT_ID entirely
       // unset for a while -- new OAuth2Client(undefined) + audience:
