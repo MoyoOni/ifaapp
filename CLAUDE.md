@@ -39,7 +39,7 @@ After completing any task:
 
 **Payments, email and notifications (November 2, 2026):** production's Paystack key is a *test* key, so `backend/src/payments/live-payments.ts` refuses every payment and Devoted checkout (503) until a live key is set; Devoted plan codes are unset. SES production access was granted November 4, 2026 (email reaches any address; verified live November 5). WhatsApp has no credentials on production (nothing is sent; the UI hides it). Marketing email is opt-in (`NotificationPreferences.emailMarketing`, default false) and admin campaigns honour it. Check these before assuming members receive anything. `SesEmailService` silently skips reserved domains (`example.com`, `.invalid`, `.test`) — erased accounts get `@deleted.iluase.invalid`.
 
-**Access control (November 6, 2026):** bans and suspensions are enforced on login, every request and token refresh (`accountBlock()` in `auth/strategies/jwt.strategy.ts`); admin force-logout sets `User.sessionsRevokedAt`. Before then neither ended access.
+**Access control (November 6, 2026, live):** bans and suspensions are enforced on login, every request and token refresh (`accountBlock()` in `auth/strategies/jwt.strategy.ts`); admin force-logout sets `User.sessionsRevokedAt`. Before then neither ended access.
 
 **Paused / Deprioritized Platform Dependencies — Single Source of Truth:**
 - **Consultations & 1:1 Messaging** — paused platform-wide per `MVP_PIVOT_BACKLOG.md` (frontend-only, reversible; all 14 PIV-XXX stories verified done July 28, 2026). Blocks several items listed in `ILUASE_V1_BACKLOG.md` — see that doc's "📌 Paused Platform Features" section for the full current list rather than restating it here every time something new depends on it.
