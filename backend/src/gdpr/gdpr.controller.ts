@@ -9,6 +9,7 @@ import {
   HttpCode,
   HttpStatus,
   BadRequestException,
+  HttpException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../shared/guards/auth.guard';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
@@ -63,7 +64,9 @@ export class GdprController {
       // and send confirmation email before actually deleting, but for this implementation:
       return await this.gdprService.deleteUser(user.id, user);
     } catch (error) {
-      if (error instanceof BadRequestException) {
+      // Pass deliberate answers through as they are (e.g. 409 for the
+      // safeguarding legal hold), not flattened into a 400.
+      if (error instanceof HttpException) {
         throw error;
       }
       throw new BadRequestException(`Could not delete user account: ${(error as Error).message}`);

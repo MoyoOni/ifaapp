@@ -1,4 +1,5 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException, ConflictException, Logger } from '@nestjs/common';
+import { SafeguardingCasesService } from '../safeguarding/cases.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 
@@ -6,7 +7,10 @@ import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 export class GdprService {
   private readonly logger = new Logger(GdprService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cases: SafeguardingCasesService
+  ) {}
 
   /**
    * Exports all personal data for a user in compliance with GDPR Article 20 (right to data portability)
@@ -339,6 +343,23 @@ export class GdprService {
         throw new BadRequestException('User not found');
       }
 
+      // SAFE-06 legal hold (docs/safeguarding): erasure would destroy the
+      // posts, messages and reviews an open safeguarding case relies on.
+      // The member is told only to get in touch -- never that a case
+      // exists, which could tip off the person reported. An admin sees why.
+      const held = await this.cases.openCasesInvolving(userId);
+      if (held.length > 0) {
+        for (const c of held) {
+          await this.cases.addEntry(c.id, 'MEASURE', 'An erasure request for a person on this case was held (legal hold) until the case is closed.', admin.id);
+        }
+        const byAdmin = admin.role === 'ADMIN' && admin.id !== userId;
+        throw new ConflictException(
+          byAdmin
+            ? `Held: this person is part of open safeguarding case ${held.map((c) => c.ref).join(', ')}. Close the case before erasing their data.`
+            : 'Your account can’t be deleted right now. Please contact hello@iluase.com and we’ll help.'
+        );
+      }
+
       // Perform the deletion/anonymization
       const result = await this.prisma.$transaction(async (tx) => {
         // Anonymize user record instead of deleting it completely for legal reasons
@@ -429,7 +450,7 @@ export class GdprService {
       );
       return result;
     } catch (error) {
-      if (error instanceof BadRequestException) {
+      if (error instanceof BadRequestException || error instanceof ConflictException) {
         throw error;
       }
       this.logger.error(

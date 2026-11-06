@@ -78,6 +78,17 @@ export class SafeguardingCasesService {
     }
   }
 
+  /**
+   * SAFE-06 legal hold: the open cases this person is part of, as subject
+   * or reporter. While there are any, their data must not be erased.
+   */
+  async openCasesInvolving(userId: string) {
+    return this.prisma.safeguardingCase.findMany({
+      where: { status: { not: 'CLOSED' }, OR: [{ subjectId: userId }, { reporterId: userId }] },
+      select: { id: true, ref: true },
+    });
+  }
+
   /** When the complaint or report behind a case is resolved, record it there. */
   async recordSourceOutcome(source: CaseSource, sourceId: string, text: string, authorId: string, close: boolean) {
     const c = await this.prisma.safeguardingCase.findUnique({ where: { source_sourceId: { source, sourceId } } });
