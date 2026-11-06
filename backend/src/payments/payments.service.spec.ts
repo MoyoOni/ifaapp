@@ -285,6 +285,43 @@ describe('PaymentsService', () => {
     });
   });
 
+  describe('manuallyVerifyPayment (provider must confirm, November 6, 2026)', () => {
+    const pending = { id: 'p-1', transactionId: 'ref-9', provider: 'PAYSTACK', amount: 1000, currency: 'NGN', status: 'PENDING', verified: false };
+    const paystack = (status: string, kobo: number, currency = 'NGN') =>
+      mockPaystackApi.verifyTransaction.mockResolvedValue({ status: true, data: { status, amount: kobo, currency, reference: 'ref-9' } });
+
+    it('refuses when the provider has no successful charge, changing nothing', async () => {
+      mockPrismaService.payment.findUnique.mockResolvedValue(pending);
+      paystack('abandoned', 100000);
+      await expect(service.manuallyVerifyPayment('ref-9', 'admin-1')).rejects.toThrow(/nothing was changed/);
+      expect(mockPrismaService.payment.update).not.toHaveBeenCalled();
+    });
+
+    it('refuses an underpayment or the wrong currency', async () => {
+      mockPrismaService.payment.findUnique.mockResolvedValue(pending);
+      paystack('success', 50000);
+      await expect(service.manuallyVerifyPayment('ref-9', 'admin-1')).rejects.toThrow(BadRequestException);
+      paystack('success', 100000, 'USD');
+      await expect(service.manuallyVerifyPayment('ref-9', 'admin-1')).rejects.toThrow(BadRequestException);
+      expect(mockPrismaService.payment.update).not.toHaveBeenCalled();
+    });
+
+    it('marks it verified once the provider confirms the full charge', async () => {
+      mockPrismaService.payment.findUnique.mockResolvedValue(pending);
+      mockPrismaService.payment.update.mockResolvedValue({ ...pending, verified: true });
+      paystack('success', 100000);
+      await service.manuallyVerifyPayment('ref-9', 'admin-1');
+      expect(mockPrismaService.payment.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ verified: true, verifiedBy: 'admin-1' }) }));
+    });
+
+    it('does nothing for a payment that is already verified', async () => {
+      mockPrismaService.payment.findUnique.mockResolvedValue({ ...pending, verified: true });
+      await service.manuallyVerifyPayment('ref-9', 'admin-1');
+      expect(mockPaystackApi.verifyTransaction).not.toHaveBeenCalled();
+      expect(mockPrismaService.payment.update).not.toHaveBeenCalled();
+    });
+  });
+
   describe('verifyPayment', () => {
     it('should verify Paystack payment', async () => {
       mockPaystackApi.verifyTransaction.mockResolvedValue({

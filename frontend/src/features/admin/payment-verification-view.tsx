@@ -10,10 +10,10 @@ interface UnverifiedPayment {
   userId: string;
   amount: number;
   currency: string;
-  reference: string;
+  transactionId: string;
   status: string;
   createdAt: string;
-  user: { id: string; name: string; email: string };
+  user: { id: string; name: string; email: string } | null;
 }
 
 const PaymentVerificationView: React.FC = () => {
@@ -114,14 +114,14 @@ const PaymentVerificationView: React.FC = () => {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-medium text-foreground">
-                    ₦{payment.amount.toLocaleString()}
+                    {Number(payment.amount).toLocaleString()} {payment.currency}
                   </span>
                   <span className="text-xs px-2 py-0.5 rounded-full border bg-yellow-500/20 text-yellow-400 border-yellow-500/30 font-medium">
                     {payment.status}
                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground mt-0.5">
-                  {payment.user.name} — Ref: {payment.reference}
+                  {payment.user?.name ?? 'Unknown member'} — Ref: {payment.transactionId}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {new Date(payment.createdAt).toLocaleString()}
@@ -129,7 +129,7 @@ const PaymentVerificationView: React.FC = () => {
               </div>
               <div className="flex gap-2 shrink-0">
                 <button
-                  onClick={() => verifyMutation.mutate(payment.id)}
+                  onClick={() => verifyMutation.mutate(payment.transactionId)}
                   disabled={verifyMutation.isPending}
                   className="px-3 py-1.5 text-sm bg-green-500/10 dark:text-green-400 text-green-600 rounded-lg hover:bg-green-500/20 transition-colors flex items-center gap-1 disabled:opacity-50"
                 >

@@ -140,7 +140,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       // 6. Generic Error → 500
       return {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: err.message || 'Internal server error',
+        // The real message stays in the logs and Sentry (the stack carries
+        // it); production clients don't get internals.
+        message:
+          process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message || 'Internal server error',
       };
     }
 

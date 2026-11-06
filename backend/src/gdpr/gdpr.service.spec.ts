@@ -3,6 +3,7 @@ import { BadRequestException, ConflictException } from '@nestjs/common';
 import { GdprService } from './gdpr.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SafeguardingCasesService } from '../safeguarding/cases.service';
+import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { isUndeliverable } from '../shared/services/ses-email.service';
 
 // Code-health pass (November 6, 2026): export and erasure had no tests.
@@ -30,12 +31,24 @@ describe('GdprService', () => {
     forumPost: many(),
     subscription: many(),
     payment: many(),
-    $transaction: jest.fn((fn: (t: typeof tx) => unknown) => fn(tx)),
+    $transaction: jest.fn<Promise<unknown>, [(t: typeof tx) => unknown]>((fn) =>
+      Promise.resolve(fn(tx))
+    ),
   };
   const cases = { openCasesInvolving: jest.fn(), addEntry: jest.fn() };
 
-  const member = { id: 'm-1', sub: 'm-1', email: 'ade@example.com', role: 'CLIENT' } as any;
-  const admin = { id: 'a-1', sub: 'a-1', email: 'admin@example.com', role: 'ADMIN' } as any;
+  const member = {
+    id: 'm-1',
+    sub: 'm-1',
+    email: 'ade@example.com',
+    role: 'CLIENT',
+  } as CurrentUserPayload;
+  const admin = {
+    id: 'a-1',
+    sub: 'a-1',
+    email: 'admin@example.com',
+    role: 'ADMIN',
+  } as CurrentUserPayload;
 
   beforeEach(async () => {
     jest.clearAllMocks();

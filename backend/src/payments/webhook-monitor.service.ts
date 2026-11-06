@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PaymentsService } from './payments.service';
+import { captureException } from '../sentry';
 
 /**
  * Webhook Monitor Service
@@ -25,11 +26,11 @@ export class WebhookMonitorService {
           `Found ${unverifiedPayments.length} payments without webhook confirmation after 24 hours`
         );
 
-        // In production, you would send alerts here (email, Slack, etc.)
-        // For now, just log
+        // Most are abandoned checkouts, so this logs rather than alerts;
+        // telling those from a missed webhook needs the provider's answer.
         unverifiedPayments.forEach((payment) => {
           this.logger.warn(
-            `Unverified payment: ${payment.transactionId} - ${payment.amount} ${payment.currency} - User: ${payment.user.email}`
+            `Unverified payment: ${payment.transactionId} - ${payment.amount} ${payment.currency} - user ${payment.userId}`
           );
         });
       } else {
@@ -38,6 +39,7 @@ export class WebhookMonitorService {
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       this.logger.error(`Webhook monitoring job failed: ${err.message}`, err.stack);
+      captureException(err, { job: 'webhook-monitor' });
     }
   }
 

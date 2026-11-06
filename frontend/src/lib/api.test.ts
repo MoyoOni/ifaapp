@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import axios, { type InternalAxiosRequestConfig } from 'axios';
+import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 
 vi.mock('@sentry/react', () => ({ captureException: vi.fn(), setUser: vi.fn(), setContext: vi.fn(), addBreadcrumb: vi.fn() }));
 
@@ -94,5 +94,29 @@ describe('api client — token refresh', () => {
     expect(localStorage.getItem('accessToken')).toBeNull();
     expect(localStorage.getItem('refreshToken')).toBeNull();
     expect(window.location.href).toBe('/login');
+  });
+});
+
+// November 6, 2026: the backend's error filter nests the reason under
+// `error`, but screens read response.data.message, so members only ever saw
+// "Request failed with status code 403".
+type ErrorBody = { message?: string; error?: { message?: string } };
+
+describe('api client — error reasons', () => {
+  const failWith = (status: number, data: unknown) => (config: InternalAxiosRequestConfig) => {
+    return Promise.reject(new AxiosError(`Request failed with status code ${status}`, undefined, config, undefined, { status, data, headers: {}, config, statusText: '' }));
+  };
+
+  it('surfaces the server\'s reason as response.data.message for a refusal', async () => {
+    api.defaults.adapter = failWith(403, { success: false, error: { message: 'This account has been banned.' } });
+    const err: AxiosError<ErrorBody> = await api.post('/auth/login', {}).catch((e) => e);
+    expect(err.response?.data.message).toBe('This account has been banned.');
+    expect(err.response?.data.error?.message).toBe('This account has been banned.');
+  });
+
+  it('keeps an unexpected server error\'s text off screen', async () => {
+    api.defaults.adapter = failWith(500, { success: false, error: { message: 'Internal server error' } });
+    const err: AxiosError<ErrorBody> = await api.get('/anything').catch((e) => e);
+    expect(err.response?.data.message).toBeUndefined();
   });
 });

@@ -36,4 +36,17 @@ describe('GlobalExceptionFilter', () => {
     expect(status).toHaveBeenCalledWith(400);
     expect(captureException).not.toHaveBeenCalled();
   });
+
+  it('does not send an unexpected error\'s internal message to clients in production', () => {
+    const env = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    try {
+      filter.catch(new Error('relation "users" column "x" does not exist'), host);
+      expect(status).toHaveBeenCalledWith(500);
+      expect(JSON.stringify(json.mock.calls[0][0])).not.toContain('relation');
+      expect(captureException).toHaveBeenCalled();
+    } finally {
+      process.env.NODE_ENV = env;
+    }
+  });
 });

@@ -80,6 +80,16 @@ api.interceptors.response.use(
     return response;
   },
   async (error) => {
+    // The backend's error filter answers { success, error: { message } }, but
+    // ~100 screens read response.data.message, so until November 6, 2026
+    // members only ever saw "Request failed with status code 4xx" instead of
+    // the reason (a ban, a held erasure, a refused payment). Mirror it.
+    const body = error.response?.data;
+    const status = error.response?.status ?? 0;
+    const deliberate = status < 500 || status === 503;
+    if (deliberate && body && typeof body === 'object' && body.message === undefined && typeof body.error?.message === 'string') {
+      body.message = body.error.message;
+    }
     const originalRequest = error.config;
     // Any answer from the API (even a 4xx) means it's reachable.
     setServerUnreachable(isUnreachableError(error));

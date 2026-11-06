@@ -4,6 +4,9 @@ import { AdminUsersService } from './admin-users.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from '../notifications/notification.service';
 import { AuditService } from './audit.service';
+import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
+import { AdminSubRole, UserRole, VerificationStage } from '@ile-ase/common';
+import { ApproveVerificationDto } from './dto/approve-verification.dto';
 
 // P2-04: moved from admin.service.spec.ts along with the getAllUsers/
 // getVerificationApplications logic itself, when AdminService was split.
@@ -263,9 +266,22 @@ describe('AdminUsersService privileged actions', () => {
   const audit = { logAction: jest.fn() };
   const notifications = { createNotification: jest.fn() };
 
-  const superAdmin = { id: 'super-1', sub: 'super-1', email: 'super@example.com', role: 'ADMIN', adminSubRole: 'SUPER', verified: true } as any;
+  const superAdmin = {
+    id: 'super-1',
+    sub: 'super-1',
+    email: 'super@example.com',
+    role: 'ADMIN',
+    adminSubRole: 'SUPER',
+    verified: true,
+  } as CurrentUserPayload;
   const moderator = { ...superAdmin, id: 'mod-1', sub: 'mod-1', adminSubRole: 'MODERATOR' };
-  const client = { id: 'client-1', sub: 'client-1', email: 'c@example.com', role: 'CLIENT', verified: true } as any;
+  const client = {
+    id: 'client-1',
+    sub: 'client-1',
+    email: 'c@example.com',
+    role: 'CLIENT',
+    verified: true,
+  } as CurrentUserPayload;
   const member = { id: 'member-1', email: 'm@example.com', role: 'CLIENT', adminSubRole: null };
 
   beforeEach(async () => {
@@ -279,15 +295,32 @@ describe('AdminUsersService privileged actions', () => {
       ],
     }).compile();
     service = module.get(AdminUsersService);
-    prisma.user.update.mockImplementation(({ where, data }) => Promise.resolve({ id: where.id ?? 'x', ...data }));
+    prisma.user.update.mockImplementation(({ where, data }) =>
+      Promise.resolve({ id: where.id ?? 'x', ...data })
+    );
   });
 
   describe('super-admin-only actions', () => {
     it.each([
-      ['impersonateUser', (u: any) => service.impersonateUser(u, 'member-1', 'Investigating a support ticket')],
-      ['createOrUpdateAdmin', (u: any) => service.createOrUpdateAdmin(u, { email: 'a@example.com', name: 'A', adminSubRole: 'SUPPORT' })],
-      ['getAdminUsers', (u: any) => service.getAdminUsers(u)],
-      ['removeAdminPrivileges', (u: any) => service.removeAdminPrivileges(u, 'other-admin')],
+      [
+        'impersonateUser',
+        (u: CurrentUserPayload) =>
+          service.impersonateUser(u, 'member-1', 'Investigating a support ticket'),
+      ],
+      [
+        'createOrUpdateAdmin',
+        (u: CurrentUserPayload) =>
+          service.createOrUpdateAdmin(u, {
+            email: 'a@example.com',
+            name: 'A',
+            adminSubRole: 'SUPPORT',
+          }),
+      ],
+      ['getAdminUsers', (u: CurrentUserPayload) => service.getAdminUsers(u)],
+      [
+        'removeAdminPrivileges',
+        (u: CurrentUserPayload) => service.removeAdminPrivileges(u, 'other-admin'),
+      ],
     ])('%s refuses a non-super admin and a non-admin', async (_name, call) => {
       await expect(call(moderator)).rejects.toThrow(ForbiddenException);
       await expect(call(client)).rejects.toThrow(ForbiddenException);
@@ -296,52 +329,104 @@ describe('AdminUsersService privileged actions', () => {
     });
 
     it('impersonation needs a real reason and is audited', async () => {
-      await expect(service.impersonateUser(superAdmin, 'member-1', 'because')).rejects.toThrow(BadRequestException);
+      await expect(service.impersonateUser(superAdmin, 'member-1', 'because')).rejects.toThrow(
+        BadRequestException
+      );
       prisma.user.findUnique.mockResolvedValue(member);
-      const res = await service.impersonateUser(superAdmin, 'member-1', 'Investigating a support ticket');
+      const res = await service.impersonateUser(
+        superAdmin,
+        'member-1',
+        'Investigating a support ticket'
+      );
       expect(res.impersonationLogged).toBe(true);
-      expect(audit.logAction).toHaveBeenCalledWith(expect.objectContaining({ action: 'IMPERSONATE_USER', entityId: 'member-1', adminId: 'super-1' }));
+      expect(audit.logAction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'IMPERSONATE_USER',
+          entityId: 'member-1',
+          adminId: 'super-1',
+        })
+      );
     });
 
     it('createOrUpdateAdmin rejects an unknown sub-role and accepts SAFEGUARDING', async () => {
-      await expect(service.createOrUpdateAdmin(superAdmin, { email: 'a@example.com', name: 'A', adminSubRole: 'OWNER' })).rejects.toThrow(BadRequestException);
+      await expect(
+        service.createOrUpdateAdmin(superAdmin, {
+          email: 'a@example.com',
+          name: 'A',
+          adminSubRole: 'OWNER',
+        })
+      ).rejects.toThrow(BadRequestException);
 
       prisma.user.findUnique.mockResolvedValue({ ...member, email: 'a@example.com' });
-      prisma.user.update.mockResolvedValue({ ...member, role: 'ADMIN', adminSubRole: 'SAFEGUARDING' });
-      await service.createOrUpdateAdmin(superAdmin, { email: 'a@example.com', name: 'A', adminSubRole: 'SAFEGUARDING' });
-      expect(prisma.user.update).toHaveBeenCalledWith(expect.objectContaining({ data: { role: 'ADMIN', adminSubRole: 'SAFEGUARDING' } }));
-      expect(audit.logAction).toHaveBeenCalledWith(expect.objectContaining({ action: 'ADMIN_USER_UPDATED' }));
+      prisma.user.update.mockResolvedValue({
+        ...member,
+        role: 'ADMIN',
+        adminSubRole: 'SAFEGUARDING',
+      });
+      await service.createOrUpdateAdmin(superAdmin, {
+        email: 'a@example.com',
+        name: 'A',
+        adminSubRole: 'SAFEGUARDING',
+      });
+      expect(prisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { role: 'ADMIN', adminSubRole: 'SAFEGUARDING' } })
+      );
+      expect(audit.logAction).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'ADMIN_USER_UPDATED' })
+      );
     });
 
     it('removeAdminPrivileges refuses self-removal and non-admin targets, and demotes to CLIENT', async () => {
-      await expect(service.removeAdminPrivileges(superAdmin, 'super-1')).rejects.toThrow(BadRequestException);
+      await expect(service.removeAdminPrivileges(superAdmin, 'super-1')).rejects.toThrow(
+        BadRequestException
+      );
       prisma.user.findUnique.mockResolvedValue(member);
-      await expect(service.removeAdminPrivileges(superAdmin, 'member-1')).rejects.toThrow('User is not an admin');
+      await expect(service.removeAdminPrivileges(superAdmin, 'member-1')).rejects.toThrow(
+        'User is not an admin'
+      );
 
-      prisma.user.findUnique.mockResolvedValue({ id: 'other-admin', role: 'ADMIN', adminSubRole: 'FINANCE' });
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'other-admin',
+        role: 'ADMIN',
+        adminSubRole: 'FINANCE',
+      });
       await service.removeAdminPrivileges(superAdmin, 'other-admin');
-      expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: 'other-admin' }, data: { role: 'CLIENT', adminSubRole: null } });
-      expect(audit.logAction).toHaveBeenCalledWith(expect.objectContaining({ action: 'ADMIN_PRIVILEGES_REMOVED', payload: expect.objectContaining({ previousAdminSubRole: 'FINANCE' }) }));
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'other-admin' },
+        data: { role: 'CLIENT', adminSubRole: null },
+      });
+      expect(audit.logAction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'ADMIN_PRIVILEGES_REMOVED',
+          payload: expect.objectContaining({ previousAdminSubRole: 'FINANCE' }),
+        })
+      );
     });
   });
 
   describe('moderation: suspend, warn, ban, unban', () => {
     const calls = {
-      suspendUser: (u: any, id: string) => service.suspendUser(u, id, { reason: 'Harassment', durationDays: 3 }),
-      warnUser: (u: any, id: string) => service.warnUser(u, id, { message: 'Please keep it respectful' }),
-      banUser: (u: any, id: string) => service.banUser(u, id, { reason: 'Repeated harassment' }),
+      suspendUser: (u: CurrentUserPayload, id: string) =>
+        service.suspendUser(u, id, { reason: 'Harassment', durationDays: 3 }),
+      warnUser: (u: CurrentUserPayload, id: string) =>
+        service.warnUser(u, id, { message: 'Please keep it respectful' }),
+      banUser: (u: CurrentUserPayload, id: string) =>
+        service.banUser(u, id, { reason: 'Repeated harassment' }),
     };
 
-    it.each(Object.entries(calls))('%s: non-admins, missing users, self and other admins are refused', async (_name, call) => {
-      await expect(call(client, 'member-1')).rejects.toThrow(ForbiddenException);
-      prisma.user.findUnique.mockResolvedValue(null);
-      await expect(call(moderator, 'nobody')).rejects.toThrow(NotFoundException);
-      prisma.user.findUnique.mockResolvedValue({ ...moderator, role: 'ADMIN' });
-      await expect(call(moderator, 'mod-1')).rejects.toThrow(BadRequestException);
-      prisma.user.findUnique.mockResolvedValue({ id: 'super-1', role: 'ADMIN' });
-      await expect(call(moderator, 'super-1')).rejects.toThrow(ForbiddenException);
-      expect(prisma.user.update).not.toHaveBeenCalled();
-    });
+    it.each(Object.entries(calls))(
+      '%s: non-admins, missing users, self and other admins are refused',
+      async (_name, call) => {
+        await expect(call(client, 'member-1')).rejects.toThrow(ForbiddenException);
+        prisma.user.findUnique.mockResolvedValue(null);
+        await expect(call(moderator, 'nobody')).rejects.toThrow(NotFoundException);
+        prisma.user.findUnique.mockResolvedValue({ ...moderator, role: 'ADMIN' });
+        await expect(call(moderator, 'mod-1')).rejects.toThrow(BadRequestException);
+        prisma.user.findUnique.mockResolvedValue({ id: 'super-1', role: 'ADMIN' });
+        await expect(call(moderator, 'super-1')).rejects.toThrow(ForbiddenException);
+        expect(prisma.user.update).not.toHaveBeenCalled();
+      }
+    );
 
     it('suspends for the requested number of days, audits and tells the member', async () => {
       prisma.user.findUnique.mockResolvedValue(member);
@@ -350,69 +435,138 @@ describe('AdminUsersService privileged actions', () => {
       const until: Date = prisma.user.update.mock.calls[0][0].data.suspendedUntil;
       expect(until.getTime() - before).toBeGreaterThanOrEqual(3 * 86_400_000);
       expect(until.getTime() - before).toBeLessThan(3 * 86_400_000 + 5000);
-      expect(audit.logAction).toHaveBeenCalledWith(expect.objectContaining({ action: 'SUSPEND_USER', reason: 'Harassment' }));
-      expect(notifications.createNotification).toHaveBeenCalledWith(expect.objectContaining({ userId: 'member-1', title: 'Account Suspended' }));
+      expect(audit.logAction).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'SUSPEND_USER', reason: 'Harassment' })
+      );
+      expect(notifications.createNotification).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: 'member-1', title: 'Account Suspended' })
+      );
     });
 
     it('a warning increments the count', async () => {
       prisma.user.findUnique.mockResolvedValue(member);
       prisma.user.update.mockResolvedValue({ ...member, warnCount: 2 });
       await service.warnUser(moderator, 'member-1', { message: 'Please keep it respectful' });
-      expect(prisma.user.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ warnCount: { increment: 1 } }) }));
-      expect(audit.logAction).toHaveBeenCalledWith(expect.objectContaining({ action: 'WARN_USER', payload: expect.objectContaining({ warnCount: 2 }) }));
+      expect(prisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ warnCount: { increment: 1 } }) })
+      );
+      expect(audit.logAction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'WARN_USER',
+          payload: expect.objectContaining({ warnCount: 2 }),
+        })
+      );
     });
 
     it('a ban records the reason', async () => {
       prisma.user.findUnique.mockResolvedValue(member);
       await service.banUser(moderator, 'member-1', { reason: 'Repeated harassment' });
-      expect(prisma.user.update).toHaveBeenCalledWith(expect.objectContaining({ data: { bannedAt: expect.any(Date), banReason: 'Repeated harassment' } }));
+      expect(prisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: { bannedAt: expect.any(Date), banReason: 'Repeated harassment' },
+        })
+      );
     });
 
     it('unban clears both a ban and a suspension, and says which it was', async () => {
-      await expect(service.unbanUser(client, 'member-1', { reason: 'x' })).rejects.toThrow(ForbiddenException);
-      prisma.user.findUnique.mockResolvedValue({ ...member, bannedAt: new Date(), suspendedUntil: null });
+      await expect(service.unbanUser(client, 'member-1', { reason: 'x' })).rejects.toThrow(
+        ForbiddenException
+      );
+      prisma.user.findUnique.mockResolvedValue({
+        ...member,
+        bannedAt: new Date(),
+        suspendedUntil: null,
+      });
       await service.unbanUser(moderator, 'member-1', { reason: 'Appeal upheld' });
-      expect(prisma.user.update).toHaveBeenCalledWith(expect.objectContaining({ data: { bannedAt: null, banReason: null, suspendedUntil: null } }));
-      expect(notifications.createNotification).toHaveBeenCalledWith(expect.objectContaining({ title: 'Account Reinstated' }));
+      expect(prisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { bannedAt: null, banReason: null, suspendedUntil: null } })
+      );
+      expect(notifications.createNotification).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Account Reinstated' })
+      );
 
-      prisma.user.findUnique.mockResolvedValue({ ...member, bannedAt: null, suspendedUntil: new Date(Date.now() + 86_400_000) });
+      prisma.user.findUnique.mockResolvedValue({
+        ...member,
+        bannedAt: null,
+        suspendedUntil: new Date(Date.now() + 86_400_000),
+      });
       await service.unbanUser(moderator, 'member-1', { reason: 'Served enough' });
-      expect(notifications.createNotification).toHaveBeenLastCalledWith(expect.objectContaining({ title: 'Suspension Lifted' }));
-      expect(audit.logAction).toHaveBeenLastCalledWith(expect.objectContaining({ payload: expect.objectContaining({ wasBanned: false, wasSuspended: true }) }));
+      expect(notifications.createNotification).toHaveBeenLastCalledWith(
+        expect.objectContaining({ title: 'Suspension Lifted' })
+      );
+      expect(audit.logAction).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          payload: expect.objectContaining({ wasBanned: false, wasSuspended: true }),
+        })
+      );
     });
   });
 
   describe('changeUserRole', () => {
     it('refuses non-admins and changing your own role', async () => {
-      await expect(service.changeUserRole(client, 'member-1', { role: 'VENDOR' } as any)).rejects.toThrow(ForbiddenException);
-      await expect(service.changeUserRole(moderator, 'mod-1', { role: 'VENDOR' } as any)).rejects.toThrow(BadRequestException);
+      await expect(
+        service.changeUserRole(client, 'member-1', { role: UserRole.VENDOR })
+      ).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.changeUserRole(moderator, 'mod-1', { role: UserRole.VENDOR })
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('any admin can move a member between CLIENT, BABALAWO and VENDOR', async () => {
       prisma.user.findUnique.mockResolvedValue(member);
-      await service.changeUserRole(moderator, 'member-1', { role: 'VENDOR' } as any);
-      expect(prisma.user.update).toHaveBeenCalledWith(expect.objectContaining({ data: { role: 'VENDOR', adminSubRole: null } }));
-      expect(audit.logAction).toHaveBeenCalledWith(expect.objectContaining({ action: 'CHANGE_USER_ROLE', payload: expect.objectContaining({ previousRole: 'CLIENT' }) }));
+      await service.changeUserRole(moderator, 'member-1', { role: UserRole.VENDOR });
+      expect(prisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { role: 'VENDOR', adminSubRole: null } })
+      );
+      expect(audit.logAction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'CHANGE_USER_ROLE',
+          payload: expect.objectContaining({ previousRole: 'CLIENT' }),
+        })
+      );
     });
 
     it('only a super admin can grant or revoke ADMIN, and a sub-role is required', async () => {
       prisma.user.findUnique.mockResolvedValue(member);
-      await expect(service.changeUserRole(moderator, 'member-1', { role: 'ADMIN', adminSubRole: 'SUPPORT' } as any)).rejects.toThrow(ForbiddenException);
-      prisma.user.findUnique.mockResolvedValue({ id: 'fin-1', role: 'ADMIN', adminSubRole: 'FINANCE' });
-      await expect(service.changeUserRole(moderator, 'fin-1', { role: 'CLIENT' } as any)).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.changeUserRole(moderator, 'member-1', {
+          role: UserRole.ADMIN,
+          adminSubRole: AdminSubRole.SUPPORT,
+        })
+      ).rejects.toThrow(ForbiddenException);
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'fin-1',
+        role: 'ADMIN',
+        adminSubRole: 'FINANCE',
+      });
+      await expect(
+        service.changeUserRole(moderator, 'fin-1', { role: UserRole.CLIENT })
+      ).rejects.toThrow(ForbiddenException);
 
       prisma.user.findUnique.mockResolvedValue(member);
-      await expect(service.changeUserRole(superAdmin, 'member-1', { role: 'ADMIN' } as any)).rejects.toThrow(/adminSubRole is required/);
-      await service.changeUserRole(superAdmin, 'member-1', { role: 'ADMIN', adminSubRole: 'SAFEGUARDING' } as any);
-      expect(prisma.user.update).toHaveBeenCalledWith(expect.objectContaining({ data: { role: 'ADMIN', adminSubRole: 'SAFEGUARDING' } }));
+      await expect(
+        service.changeUserRole(superAdmin, 'member-1', { role: UserRole.ADMIN })
+      ).rejects.toThrow(/adminSubRole is required/);
+      await service.changeUserRole(superAdmin, 'member-1', {
+        role: UserRole.ADMIN,
+        adminSubRole: AdminSubRole.SAFEGUARDING,
+      });
+      expect(prisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { role: 'ADMIN', adminSubRole: 'SAFEGUARDING' } })
+      );
     });
   });
 
   describe('sessions and flags', () => {
     it('force logout sets the cut-off that ends every token, not just the history rows', async () => {
       await service.forceLogoutUser('member-1');
-      expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: 'member-1' }, data: { sessionsRevokedAt: expect.any(Date) } });
-      expect(prisma.userSession.updateMany).toHaveBeenCalledWith(expect.objectContaining({ where: { userId: 'member-1', isActive: true } }));
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'member-1' },
+        data: { sessionsRevokedAt: expect.any(Date) },
+      });
+      expect(prisma.userSession.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { userId: 'member-1', isActive: true } })
+      );
     });
 
     it('setCommunityCarer 404s for a missing user', async () => {
@@ -422,31 +576,65 @@ describe('AdminUsersService privileged actions', () => {
   });
 
   describe('verification and vendor review', () => {
+    const approve: ApproveVerificationDto = {
+      currentStage: VerificationStage.APPROVED,
+      approved: true,
+    };
     it('approving promotes to a verified Babalawo and notifies them', async () => {
-      await expect(service.approveVerification('app-1', {} as any, client)).rejects.toThrow(ForbiddenException);
+      await expect(service.approveVerification('app-1', approve, client)).rejects.toThrow(
+        ForbiddenException
+      );
       prisma.verificationApplication.findUnique.mockResolvedValue(null);
-      await expect(service.approveVerification('app-1', {} as any, moderator)).rejects.toThrow(NotFoundException);
+      await expect(service.approveVerification('app-1', approve, moderator)).rejects.toThrow(
+        NotFoundException
+      );
 
-      prisma.verificationApplication.findUnique.mockResolvedValue({ id: 'app-1', userId: 'member-1', lineage: 'Òyó' });
-      await service.approveVerification('app-1', {} as any, moderator);
-      expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: 'member-1' }, data: { verified: true, role: 'BABALAWO' } });
-      expect(notifications.createNotification).toHaveBeenCalledWith(expect.objectContaining({ title: 'Verification Approved' }));
+      prisma.verificationApplication.findUnique.mockResolvedValue({
+        id: 'app-1',
+        userId: 'member-1',
+        lineage: 'Òyó',
+      });
+      await service.approveVerification('app-1', approve, moderator);
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'member-1' },
+        data: { verified: true, role: 'BABALAWO' },
+      });
+      expect(notifications.createNotification).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Verification Approved' })
+      );
     });
 
     it('rejecting leaves the role alone and records the reason', async () => {
-      prisma.verificationApplication.findUnique.mockResolvedValue({ id: 'app-1', userId: 'member-1', lineage: 'Òyó' });
-      await service.rejectVerification('app-1', { reason: 'Lineage not confirmed' } as any, moderator);
+      prisma.verificationApplication.findUnique.mockResolvedValue({
+        id: 'app-1',
+        userId: 'member-1',
+        lineage: 'Òyó',
+      });
+      await service.rejectVerification(
+        'app-1',
+        { ...approve, approved: false, reason: 'Lineage not confirmed' },
+        moderator
+      );
       expect(prisma.user.update).not.toHaveBeenCalled();
-      expect(prisma.verificationApplication.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ rejectionReason: 'Lineage not confirmed' }) }));
+      expect(prisma.verificationApplication.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ rejectionReason: 'Lineage not confirmed' }),
+        })
+      );
     });
 
     it('bulk verify reports each application separately and carries on past failures', async () => {
-      await expect(service.bulkVerifyApplications({ appIds: [], action: 'approve' } as any, moderator)).rejects.toThrow(BadRequestException);
+      await expect(
+        service.bulkVerifyApplications({ appIds: [], action: 'approve' }, moderator)
+      ).rejects.toThrow(BadRequestException);
       prisma.verificationApplication.findUnique
         .mockResolvedValueOnce({ id: 'a', userId: 'u-a' })
         .mockResolvedValueOnce(null)
         .mockRejectedValueOnce(new Error('db down'));
-      const res = await service.bulkVerifyApplications({ appIds: ['a', 'b', 'c'], action: 'approve' } as any, moderator);
+      const res = await service.bulkVerifyApplications(
+        { appIds: ['a', 'b', 'c'], action: 'approve' },
+        moderator
+      );
       expect(res.results).toEqual([
         { id: 'a', success: true },
         { id: 'b', success: false, error: 'Not found' },
@@ -456,10 +644,24 @@ describe('AdminUsersService privileged actions', () => {
 
     it('vendor review only acts on pending applications', async () => {
       prisma.vendor.findUnique.mockResolvedValue({ id: 'v-1', status: 'APPROVED' });
-      await expect(service.reviewVendorApplication('v-1', { approved: true }, moderator)).rejects.toThrow('not pending');
+      await expect(
+        service.reviewVendorApplication('v-1', { approved: true }, moderator)
+      ).rejects.toThrow('not pending');
       prisma.vendor.findUnique.mockResolvedValue({ id: 'v-1', status: 'PENDING' });
-      await service.reviewVendorApplication('v-1', { approved: false, rejectionReason: 'Items not authentic' }, moderator);
-      expect(prisma.vendor.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'REJECTED', verifiedAt: null, reviewedBy: 'mod-1' }) }));
+      await service.reviewVendorApplication(
+        'v-1',
+        { approved: false, rejectionReason: 'Items not authentic' },
+        moderator
+      );
+      expect(prisma.vendor.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            status: 'REJECTED',
+            verifiedAt: null,
+            reviewedBy: 'mod-1',
+          }),
+        })
+      );
     });
   });
 });

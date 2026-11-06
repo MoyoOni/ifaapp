@@ -1053,9 +1053,12 @@ export class PaymentsService {
           gte: cutoffTime,
         },
       },
+      // Was `user: true`, which sent each payer's whole row -- password
+      // hash included -- to the admin screen (November 6, 2026).
       include: {
-        user: true,
+        user: { select: { id: true, name: true, email: true } },
       },
+      orderBy: { createdAt: 'desc' },
     });
   }
 
@@ -1072,6 +1075,16 @@ export class PaymentsService {
 
     if (!payment) {
       throw new BadRequestException('Payment not found');
+    }
+    if (payment.verified) return payment;
+
+    // November 6, 2026: an admin's say-so used to be enough. Now the
+    // provider must confirm a successful charge covering the payment first.
+    const confirmed = await this.verifyPayment(payment.transactionId, payment.provider as PaymentProvider);
+    if (!confirmed.success || confirmed.amount + 0.005 < Number(payment.amount) || confirmed.currency !== payment.currency) {
+      throw new BadRequestException(
+        `${payment.provider} has no successful charge of ${Number(payment.amount)} ${payment.currency} for this payment; nothing was changed.`
+      );
     }
 
     // Update the payment as verified

@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { WalletService } from './wallet.service';
+import { captureException } from '../sentry';
 
 /**
  * Escrow Expiry Service
@@ -26,6 +27,8 @@ export class EscrowExpiryService {
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       this.logger.error(`Escrow expiry job failed: ${err.message}`, err.stack);
+      // These move money; a failure must reach someone.
+      captureException(err, { job: 'escrow-expiry' });
     }
   }
 
@@ -43,6 +46,7 @@ export class EscrowExpiryService {
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       this.logger.error(`Escrow auto-release job failed: ${err.message}`, err.stack);
+      captureException(err, { job: 'escrow-auto-release' });
     }
   }
 
