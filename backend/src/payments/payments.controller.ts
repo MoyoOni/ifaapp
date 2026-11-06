@@ -66,15 +66,17 @@ export class PaymentsController {
       throw new NotFoundException('User not found');
     }
 
-    // Get IP address for geolocation
-    const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    // CloudFront's viewer-country header, when the distribution forwards it.
+    // (Until November 6, 2026 the member's IP was sent to ip-api.com over
+    // plain HTTP to look this up.)
+    const viewerCountry = req.headers['cloudfront-viewer-country'];
 
     return this.paymentsService.initializePayment(
       currentUser.id,
       dto,
       user.email,
       user.name,
-      ipAddress as string,
+      typeof viewerCountry === 'string' ? viewerCountry : undefined,
       preferredProvider,
       convertToCurrency as Currency
     );

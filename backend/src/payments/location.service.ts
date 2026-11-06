@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 
 /**
@@ -10,57 +9,37 @@ import { PrismaService } from '../prisma/prisma.service';
 export class LocationService {
   private readonly logger = new Logger(LocationService.name);
 
-  constructor(
-    private configService: ConfigService,
-    private prisma: PrismaService
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   /**
-   * Get user country from profile or IP
+   * The member's country: from their profile, else the country CloudFront
+   * saw the request come from (passed in by the caller).
    */
-  async getUserCountry(userId: string, ipAddress?: string): Promise<string | null> {
+  async getUserCountry(userId: string, viewerCountry?: string): Promise<string | null> {
     try {
-      // First, try to get from user profile
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
         select: { location: true },
       });
-
-      if (user?.location) {
-        // Try to extract country from location string
-        // Location format could be "Lagos, Nigeria" or "NG" or "Nigeria"
-        const country = this.extractCountryFromLocation(user.location);
-        if (country) {
-          return country;
-        }
-      }
-
-      // Fallback to IP geolocation if available
-      if (ipAddress) {
-        return await this.getCountryFromIP(ipAddress);
-      }
-
-      return null;
+      const fromProfile = user?.location ? this.extractCountryFromLocation(user.location) : null;
+      if (fromProfile) return fromProfile;
     } catch (error) {
       this.logger.error(`Failed to get user country: ${(error as Error).message}`);
-      return null;
     }
+    return viewerCountry && /^[A-Z]{2}$/i.test(viewerCountry) ? viewerCountry.toUpperCase() : null;
   }
 
   /**
-   * Extract country code from location string
+   * Country code from a free-text location such as "Lagos, Nigeria", "NG"
+   * or "Nigeria". Whole words only: matching substrings used to read
+   * "Okuku, Osun" as the UK.
    */
-  private extractCountryFromLocation(location: string): string | null {
-    // Common country names and codes
-    const countryMap: Record<string, string> = {
+  extractCountryFromLocation(location: string): string | null {
+    const countries: Record<string, string> = {
       nigeria: 'NG',
-      'nigeria,': 'NG',
-      'nigeria.': 'NG',
       ghana: 'GH',
       kenya: 'KE',
       'south africa': 'ZA',
-      'south africa,': 'ZA',
-      'south africa.': 'ZA',
       tanzania: 'TZ',
       uganda: 'UG',
       'united kingdom': 'GB',
@@ -72,42 +51,13 @@ export class LocationService {
       uae: 'AE',
     };
 
-    const lowerLocation = location.toLowerCase().trim();
+    const lower = location.toLowerCase().trim();
+    if (/^[a-z]{2}$/.test(lower)) return lower.toUpperCase();
 
-    // Check if it's already a country code (2 letters)
-    if (lowerLocation.length === 2 && /^[a-z]{2}$/i.test(lowerLocation)) {
-      return lowerLocation.toUpperCase();
+    for (const [name, code] of Object.entries(countries)) {
+      if (new RegExp(`(^|[^\\p{L}])${name}($|[^\\p{L}])`, 'u').test(lower)) return code;
     }
-
-    // Check country map
-    for (const [key, code] of Object.entries(countryMap)) {
-      if (lowerLocation.includes(key)) {
-        return code;
-      }
-    }
-
     return null;
-  }
-
-  /**
-   * Get country from IP address using free IP geolocation API
-   */
-  private async getCountryFromIP(ipAddress: string): Promise<string | null> {
-    try {
-      // Use ip-api.com (free, no API key required)
-      // Rate limit: 45 requests/minute
-      const response = await fetch(`http://ip-api.com/json/${ipAddress}?fields=countryCode`);
-
-      if (!response.ok) {
-        return null;
-      }
-
-      const data = await response.json();
-      return data.countryCode || null;
-    } catch (error) {
-      this.logger.warn(`IP geolocation failed: ${(error as Error).message}`);
-      return null;
-    }
   }
 
   /**

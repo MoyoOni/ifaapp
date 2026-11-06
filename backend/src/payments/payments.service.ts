@@ -83,7 +83,7 @@ export class PaymentsService {
     currency: Currency,
     userId: string,
     preferredProvider?: PaymentProvider,
-    ipAddress?: string
+    viewerCountry?: string
   ): Promise<PaymentProvider> {
     // User preference override (if provided)
     if (preferredProvider) {
@@ -91,7 +91,7 @@ export class PaymentsService {
     }
 
     // Get user country
-    const countryCode = await this.locationService.getUserCountry(userId, ipAddress);
+    const countryCode = await this.locationService.getUserCountry(userId, viewerCountry);
 
     // Use location service to determine provider
     const provider = this.locationService.getProviderForCountry(countryCode, currency);
@@ -138,7 +138,7 @@ export class PaymentsService {
     dto: InitializePaymentDto,
     userEmail: string,
     userName: string,
-    ipAddress?: string,
+    viewerCountry?: string,
     preferredProvider?: PaymentProvider,
     convertToCurrency?: Currency
   ) {
@@ -192,7 +192,7 @@ export class PaymentsService {
       paymentCurrency,
       userId,
       preferredProvider,
-      ipAddress
+      viewerCountry
     );
     if (provider === PaymentProvider.FLUTTERWAVE) assertLivePayments(process.env, 'FLUTTERWAVE');
 
