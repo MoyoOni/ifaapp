@@ -30,6 +30,19 @@ export function issuedBeforePasswordChange(iat: number | undefined, passwordChan
   return iat < Math.floor(passwordChangedAt.getTime() / 1000);
 }
 
+/**
+ * Why a banned or suspended account can't sign in or keep a session, or null.
+ * Until November 6, 2026 nothing read these fields: an admin ban or
+ * suspension only sent the member an email and they carried on as before.
+ */
+export function accountBlock(user: { bannedAt?: Date | null; suspendedUntil?: Date | null }, now = new Date()): string | null {
+  if (user.bannedAt) return 'This account has been banned. Contact hello@iluase.com if you think this is a mistake.';
+  if (user.suspendedUntil && user.suspendedUntil > now) {
+    return `This account is suspended until ${user.suspendedUntil.toDateString()}.`;
+  }
+  return null;
+}
+
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
@@ -66,6 +79,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (issuedBeforePasswordChange(payload.iat, user.passwordChangedAt)) {
       throw new UnauthorizedException('Session ended because the password was changed');
     }
+    if (issuedBeforePasswordChange(payload.iat, user.sessionsRevokedAt)) {
+      throw new UnauthorizedException('Session ended by an administrator');
+    }
+
+    const blocked = accountBlock(user);
+    if (blocked) throw new UnauthorizedException(blocked);
 
     return {
       id: user.id,

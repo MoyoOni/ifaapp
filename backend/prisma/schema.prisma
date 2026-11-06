@@ -41,6 +41,8 @@ model User {
   // refresh reject any token issued before it, which signs the account out
   // of every other session (JWTs are otherwise only revocable one by one).
   passwordChangedAt         DateTime?
+  // Admin "force logout": same cut-off as passwordChangedAt, without a password change.
+  sessionsRevokedAt         DateTime?
   emailVerifiedAt           DateTime?
   hasOnboarded              Boolean                  @default(false)
   slug                      String?                  @unique

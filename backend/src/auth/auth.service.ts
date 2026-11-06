@@ -1,6 +1,7 @@
 import {
   Injectable,
   UnauthorizedException,
+  ForbiddenException,
   ConflictException,
   NotFoundException,
   BadRequestException,
@@ -18,7 +19,7 @@ import { MessagingService } from '../messaging/messaging.service';
 import { LoginDto } from './dto/login.dto';
 import { Request } from 'express';
 import { RegisterDto } from './dto/register.dto';
-import { JwtPayload, issuedBeforePasswordChange } from './strategies/jwt.strategy';
+import { JwtPayload, accountBlock, issuedBeforePasswordChange } from './strategies/jwt.strategy';
 import { UserRole } from '@common/enums/user-role.enum';
 import { UserService } from '../modules/user/user.service';
 import { ImpersonationService } from '../shared/services/impersonation.service';
@@ -274,6 +275,9 @@ Aboru Aboye.`;
       });
     }
 
+    const blocked = accountBlock(user);
+    if (blocked) throw new ForbiddenException(blocked);
+
     const tokens = await this.generateTokens({
       sub: user.id,
       email: user.email,
@@ -316,6 +320,11 @@ Aboru Aboye.`;
         failReason: 'Invalid credentials',
       });
       throw new UnauthorizedException('Invalid credentials');
+    }
+    const blocked = accountBlock(user);
+    if (blocked) {
+      this.logSessionSilently({ userId: user.id, email: user.email, ip, ua, success: false, failReason: 'Account blocked' });
+      throw new ForbiddenException(blocked);
     }
 
     const tokens = await this.generateTokens({
@@ -469,6 +478,9 @@ Aboru Aboye.`;
 
       if (issuedBeforePasswordChange(payload.iat, user.passwordChangedAt)) {
         throw new UnauthorizedException('Session ended because the password was changed');
+      }
+      if (issuedBeforePasswordChange(payload.iat, user.sessionsRevokedAt) || accountBlock(user)) {
+        throw new UnauthorizedException('Account blocked');
       }
 
       const tokens = await this.generateTokens({

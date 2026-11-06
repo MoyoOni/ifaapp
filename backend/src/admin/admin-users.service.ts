@@ -608,6 +608,12 @@ export class AdminUsersService {
   }
 
   async forceLogoutUser(userId: string) {
+    // Until November 6, 2026 this only marked the session-history rows and
+    // every token the person held kept working; the cut-off ends them.
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { sessionsRevokedAt: new Date() },
+    });
     await this.prisma.userSession.updateMany({
       where: { userId, isActive: true },
       data: { isActive: false, loggedOutAt: new Date() },

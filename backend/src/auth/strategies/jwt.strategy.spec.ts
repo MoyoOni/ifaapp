@@ -3,7 +3,7 @@ import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisCacheService } from '../../cache/redis-cache.service';
-import { JwtStrategy } from './jwt.strategy';
+import { JwtStrategy, accountBlock } from './jwt.strategy';
 import { UserRole } from '@ile-ase/common';
 
 describe('JwtStrategy', () => {
@@ -91,5 +91,35 @@ describe('JwtStrategy', () => {
     await expect(strategy.validate({ ...basePayload, jti: 'live-jti' })).rejects.toThrow(
       UnauthorizedException
     );
+  });
+
+  describe('banned and suspended accounts (enforced from November 6, 2026)', () => {
+    const user = { id: 'user-1', email: 'test@example.com', role: UserRole.CLIENT, verified: true, adminSubRole: null };
+
+    it('rejects every request from a banned account', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({ ...user, bannedAt: new Date() });
+      await expect(strategy.validate(basePayload)).rejects.toThrow(/banned/);
+    });
+
+    it('rejects requests while a suspension runs, and lets them through once it has ended', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({ ...user, suspendedUntil: new Date(Date.now() + 86_400_000) });
+      await expect(strategy.validate(basePayload)).rejects.toThrow(/suspended until/);
+
+      mockPrismaService.user.findUnique.mockResolvedValue({ ...user, suspendedUntil: new Date(Date.now() - 1000) });
+      await expect(strategy.validate(basePayload)).resolves.toMatchObject({ id: 'user-1' });
+    });
+
+    it('ends tokens issued before an admin force-logout, but not ones issued after', async () => {
+      const revokedAt = new Date('2026-11-06T10:00:00Z');
+      const before = Math.floor(revokedAt.getTime() / 1000) - 60;
+      mockPrismaService.user.findUnique.mockResolvedValue({ ...user, sessionsRevokedAt: revokedAt });
+      await expect(strategy.validate({ ...basePayload, iat: before })).rejects.toThrow(/administrator/);
+      await expect(strategy.validate({ ...basePayload, iat: before + 120 })).resolves.toMatchObject({ id: 'user-1' });
+    });
+
+    it('accountBlock: null for an ordinary account', () => {
+      expect(accountBlock({})).toBeNull();
+      expect(accountBlock({ bannedAt: null, suspendedUntil: null })).toBeNull();
+    });
   });
 });

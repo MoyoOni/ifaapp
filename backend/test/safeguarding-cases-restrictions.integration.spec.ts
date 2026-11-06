@@ -81,6 +81,10 @@ describe('Safeguarding cases, restrictions and standards', () => {
     expect(after.body.status).toBe('CLOSED');
     expect(after.body.entries.map((e: { kind: string }) => e.kind)).toEqual(['SYSTEM', 'CONTACT', 'DECISION']);
     await http().get('/safeguarding/cases').set(as(member.token)).expect(403);
+
+    // The suspension really ends access (it didn't before November 6, 2026).
+    await http().get('/users/me').set(as(subject.token)).expect(401);
+    await prisma.user.update({ where: { id: subject.id }, data: { suspendedUntil: null } });
   });
 
   it('logs a case that arrived by email', async () => {

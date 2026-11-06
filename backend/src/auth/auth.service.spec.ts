@@ -281,6 +281,26 @@ describe('AuthService', () => {
     });
   });
 
+  describe('login refused for banned or suspended accounts', () => {
+    const base = { id: 'user123', email: 'test@example.com', passwordHash: 'h', role: UserRole.CLIENT };
+
+    it('refuses a banned account with the right password, and says why', async () => {
+      (mockPrismaService.user.findUnique as jest.Mock).mockResolvedValue({ ...base, bannedAt: new Date() });
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      const signSpy = jest.spyOn(jwtService, 'sign');
+
+      await expect(service.login({ email: base.email, password: 'pw' })).rejects.toThrow(/banned/);
+      expect(signSpy).not.toHaveBeenCalled();
+    });
+
+    it('refuses a suspended account until the suspension ends', async () => {
+      (mockPrismaService.user.findUnique as jest.Mock).mockResolvedValue({ ...base, suspendedUntil: new Date(Date.now() + 86_400_000) });
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      await expect(service.login({ email: base.email, password: 'pw' })).rejects.toThrow(/suspended until/);
+    });
+  });
+
   describe('logout / token revocation', () => {
     beforeEach(() => {
       mockRedisCacheService.set.mockClear();

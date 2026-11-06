@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, ConflictException, Logger } from '@nestjs/common';
 import { SafeguardingCasesService } from '../safeguarding/cases.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { erasedEmail } from '../shared/services/ses-email.service';
 import { CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 
 @Injectable()
@@ -366,8 +367,15 @@ export class GdprService {
         await tx.user.update({
           where: { id: userId },
           data: {
-            email: `deleted_${Date.now()}_${userId}@example.com`,
+            email: erasedEmail(userId),
             name: '[Deleted User]',
+            // Until November 6, 2026 these were kept: Google sign-in still
+            // found the erased account by googleId and logged straight back
+            // in, open sessions carried on, and the share link still resolved.
+            passwordHash: '',
+            googleId: null,
+            slug: null,
+            sessionsRevokedAt: new Date(),
             phone: null,
             whatsappNumber: null,
             avatar: null,
