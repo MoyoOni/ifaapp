@@ -1,4 +1,4 @@
-package com.ilease.app;
+package com.iluase.app;
 
 import com.getcapacitor.BridgeActivity;
 

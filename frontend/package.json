@@ -16,10 +16,10 @@
     "e2e:ui": "playwright test --ui"
   },
   "dependencies": {
-    "@capacitor/android": "^8.4.1",
-    "@capacitor/barcode-scanner": "^3.0.2",
+    "@capacitor/android": "8.5.3",
     "@capacitor/camera": "^8.2.0",
     "@capacitor/device": "^8.0.2",
+    "@capacitor/ios": "8.5.3",
     "@capacitor/push-notifications": "^8.1.1",
     "@ile-ase/common": "file:../common",
     "@radix-ui/react-dialog": "^1.1.2",
@@ -50,8 +50,9 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@capacitor/cli": "^8.4.1",
-    "@capacitor/core": "^8.4.1",
+    "@capacitor/assets": "4.0.0",
+    "@capacitor/cli": "8.4.1",
+    "@capacitor/core": "8.5.3",
     "@playwright/test": "^1.58.1",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
