@@ -2,6 +2,7 @@ import axios, { AxiosInstance } from 'axios';
 import { setServerUnreachable, isUnreachableError } from '@/shared/utils/server-reachability';
 import { parseApiError, reportApiError } from '@/shared/utils/api-error';
 import { setLogContext } from '@/shared/utils/logger';
+import { API_BASE_URL, apiUrl } from './api-base';
 
 const REQUEST_ID_HEADER = 'x-request-id';
 
@@ -22,7 +23,7 @@ function generateRequestId(): string {
  * PRODUCTION: All API errors are reported to Sentry immediately.
  */
 const api: AxiosInstance = axios.create({
-  baseURL: '/api',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -57,7 +58,7 @@ function refreshAccessToken(): Promise<string> {
     refreshInFlight = (async () => {
       const refreshToken = localStorage.getItem('refreshToken');
       if (!refreshToken) throw new Error('No refresh token available');
-      const response = await axios.post('/api/auth/refresh', { refreshToken });
+      const response = await axios.post(apiUrl('/auth/refresh'), { refreshToken });
       const { accessToken, refreshToken: rotatedRefreshToken } = response.data;
       localStorage.setItem('accessToken', accessToken);
       if (rotatedRefreshToken) localStorage.setItem('refreshToken', rotatedRefreshToken);

@@ -4,6 +4,7 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 vi.mock('@sentry/react', () => ({ captureException: vi.fn(), setUser: vi.fn(), setContext: vi.fn(), addBreadcrumb: vi.fn() }));
 
 import api from './api';
+import { apiUrl } from './api-base';
 
 // A fake server behind the real interceptor chain: only the current valid
 // access token gets a 200; anything else is a 401.
@@ -49,7 +50,7 @@ describe('api client — token refresh', () => {
     const res = await api.get('/anything');
 
     expect(res.data).toEqual({ ok: true });
-    expect(refreshPost).toHaveBeenCalledWith('/api/auth/refresh', { refreshToken: 'refresh-1' });
+    expect(refreshPost).toHaveBeenCalledWith(apiUrl('/auth/refresh'), { refreshToken: 'refresh-1' });
     expect(localStorage.getItem('accessToken')).toBe('access-1');
     // the server revokes the token it was given, so keeping refresh-1 would break the next refresh
     expect(localStorage.getItem('refreshToken')).toBe('refresh-2');
@@ -65,7 +66,7 @@ describe('api client — token refresh', () => {
     refreshPost.mockResolvedValueOnce({ data: { accessToken: 'access-2', refreshToken: 'refresh-3' } });
     await api.get('/second');
 
-    expect(refreshPost).toHaveBeenNthCalledWith(2, '/api/auth/refresh', { refreshToken: 'refresh-2' });
+    expect(refreshPost).toHaveBeenNthCalledWith(2, apiUrl('/auth/refresh'), { refreshToken: 'refresh-2' });
     expect(localStorage.getItem('refreshToken')).toBe('refresh-3');
   });
 

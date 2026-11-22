@@ -4,6 +4,7 @@ import { Badge } from '../../shared/components/ui/badge';
 import { Button } from '../../shared/components/ui/button';
 import { Download, Calendar, Clock, User, NotebookPen } from 'lucide-react';
 import api from '@/lib/api';
+import { apiUrl } from '@/lib/api-base';
 import { useAuth } from '@/shared/hooks/use-auth';
 
 interface Appointment {
@@ -35,7 +36,7 @@ const SessionHistoryWithReceipts: React.FC = () => {
   }, [user?.id]);
 
   const downloadReceipt = (appointmentId: string) => {
-    window.open(`/api/appointments/${appointmentId}/receipt`, '_blank');
+    window.open(apiUrl(`/appointments/${appointmentId}/receipt`), '_blank');
   };
 
   if (loading) {

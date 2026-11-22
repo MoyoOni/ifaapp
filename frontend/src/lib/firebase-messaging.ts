@@ -39,6 +39,10 @@ function getFirebaseMessaging(): Messaging | null {
  * Register push notifications using Capacitor's native plugin for mobile apps
  */
 async function registerNativePush(): Promise<void> {
+  // Native push is off until Firebase is configured for the app (google-services.json /
+  // APNs): PushNotifications.register() without it crashes Android natively, past any catch.
+  if (import.meta.env.VITE_PUSH_ENABLED !== 'true') return;
+
   try {
     // Called on every login — clear prior listeners first so they don't stack
     await PushNotifications.removeAllListeners();

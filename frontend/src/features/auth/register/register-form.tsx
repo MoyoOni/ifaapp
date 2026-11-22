@@ -6,6 +6,7 @@ import { UserRole } from '@common';
 import appLogo from '@/assets/logo.png';
 import GoogleAuthButton from '../components/google-auth-button';
 import { logger } from '@/shared/utils/logger';
+import { apiUrl } from '@/lib/api-base';
 
 function getPasswordStrength(pw: string): { score: number; label: string; color: string } {
   const checks = [pw.length >= 8, /[A-Z]/.test(pw), /[0-9]/.test(pw), /[^A-Za-z0-9]/.test(pw)];
@@ -64,7 +65,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ selectedRole, onSuccess, on
     // Validate referral code if provided
     if (refCode.trim()) {
       try {
-        const response = await fetch(`/api/users/referral/validate/${refCode.trim()}`);
+        const response = await fetch(apiUrl(`/users/referral/validate/${refCode.trim()}`));
         const result = await response.json();
         
         if (!result.valid) {
