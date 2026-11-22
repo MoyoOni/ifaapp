@@ -289,7 +289,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
     };
 
     return (
-        <div className="min-h-screen bg-background flex font-sans text-foreground">
+        <div className="h-dvh bg-background flex font-sans text-foreground">
 
             {/* Desktop Sidebar (Left) - Collapsible */}
             <aside
