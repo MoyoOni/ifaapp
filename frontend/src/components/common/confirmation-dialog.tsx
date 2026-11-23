@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { tapHaptic } from '@/lib/native';
 
 interface ConfirmationDialogProps {
   isOpen: boolean;
@@ -80,7 +81,10 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
             <button
               type="button"
               className="px-4 py-2 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary/90 rounded-lg transition-colors"
-              onClick={onConfirm}
+              onClick={() => {
+                tapHaptic('medium');
+                onConfirm();
+              }}
             >
               {confirmText}
             </button>

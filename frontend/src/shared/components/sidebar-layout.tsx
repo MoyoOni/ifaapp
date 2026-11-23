@@ -41,6 +41,7 @@ import { isDevModeActive } from '@/shared/utils/dev-mode';
 import { decodeJwtPayload } from '@/shared/utils/jwt';
 import { AnnouncementBanner } from './announcement-banner';
 import ServerUnreachableBanner, { useRegisterBannerShell } from './server-unreachable-banner';
+import { tapHaptic } from '@/lib/native';
 import { VisitorAuthCard } from './visitor-auth-card';
 import { StandardsPrompt } from '@/features/safeguarding/standards-prompt';
 
@@ -722,6 +723,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                                         key={tab.id}
                                         type="button"
                                         onClick={() => {
+                                            tapHaptic('light');
                                             if (tab.action === 'more') {
                                                 toggleMobileMenu();
                                             } else if (tab.path) {

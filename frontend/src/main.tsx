@@ -11,6 +11,7 @@ import { DevRoleSwitcher } from './shared/components/dev-role-switcher';
 import { initSentry } from './shared/config/sentry';
 import { logger } from './shared/utils/logger';
 import App from './App';
+import { initNativeShell } from './lib/native';
 import './index.css';
 
 
@@ -102,3 +103,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     </QueryClientProvider>
   </React.StrictMode>
 );
+
+// No-op on the website; in the iOS/Android app: back button, keyboard,
+// status bar and splash behaviour (see lib/native.ts).
+initNativeShell();

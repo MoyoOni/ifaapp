@@ -16,6 +16,15 @@ const config: CapacitorConfig = {
     contentInset: 'always',
   },
   plugins: {
+    SplashScreen: {
+      // JS hides the splash as soon as the first screen has content
+      // (lib/native.ts). This native auto-hide is the safety net: even if
+      // the JS bundle fails to load, the splash is gone after 3s.
+      launchAutoHide: true,
+      launchShowDuration: 3000,
+      backgroundColor: '#252423',
+      showSpinner: false,
+    },
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
