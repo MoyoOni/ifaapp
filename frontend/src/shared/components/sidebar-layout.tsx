@@ -38,7 +38,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { ProfileMenuDropdown } from './profile-menu-dropdown';
 import { User as UserType } from '@common';
 import { isDevModeActive } from '@/shared/utils/dev-mode';
-import { decodeJwtPayload } from '@/shared/utils/jwt';
 import { AnnouncementBanner } from './announcement-banner';
 import ServerUnreachableBanner, { useRegisterBannerShell } from './server-unreachable-banner';
 import { tapHaptic } from '@/lib/native';
@@ -177,7 +176,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
     // still has a session; take the role from its token so they keep their
     // own navigation instead of the visitor's.
     const navRole = user?.role ?? (isAuthenticated
-        ? decodeJwtPayload<{ role?: string }>(tokenStore.getAccessToken() ?? '')?.role
+        ? tokenStore.getClaims()?.role
         : undefined);
 
     // Get role-based navigation items

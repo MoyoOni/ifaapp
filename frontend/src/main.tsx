@@ -113,8 +113,9 @@ function renderApp(): void {
 
 // In the iOS/Android app, load the session tokens from the Keychain before the
 // first render (the splash covers it, and init never rejects). The website
-// renders synchronously, exactly as before.
-if (isNativeApp) {
+// renders at once, unless an older session still has tokens in localStorage:
+// then it first swaps them for httpOnly cookies (one request, capped at 2.5s).
+if (isNativeApp || localStorage.getItem('refreshToken')) {
   void tokenStore.init().finally(renderApp);
 } else {
   renderApp();

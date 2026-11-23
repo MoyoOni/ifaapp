@@ -53,7 +53,8 @@ describe('useAuth — devLogin production guard (P0-02)', () => {
 
     expect(result.current.user).not.toBeNull();
     expect(result.current.user?.role).toBe(UserRole.CLIENT);
-    expect(window.localStorage.getItem('accessToken')).toBe('dev-token');
+    // A client-side session marker, never a fake token in localStorage.
+    expect(JSON.parse(window.localStorage.getItem('session') ?? '{}')).toMatchObject({ dev: true, role: UserRole.CLIENT });
   });
 
   it('does not fabricate a session when devLogin is called in production', () => {
@@ -66,6 +67,7 @@ describe('useAuth — devLogin production guard (P0-02)', () => {
 
     expect(result.current.user).toBeNull();
     expect(window.localStorage.getItem('accessToken')).toBeNull();
+    expect(window.localStorage.getItem('session')).toBeNull();
     expect(window.localStorage.getItem('dev_mode_role')).toBeNull();
   });
 

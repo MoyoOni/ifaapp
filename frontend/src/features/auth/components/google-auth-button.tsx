@@ -42,10 +42,9 @@ const GoogleLoginButton: React.FC<GoogleAuthButtonProps> = ({ onSuccess, onError
         credential: credentialResponse.credential,
       });
 
-      const { user, accessToken, refreshToken } = response.data;
+      const { user } = response.data;
       const mappedUser = mapAuthUserToUser(user);
-      tokenStore.setAccessToken(accessToken);
-      tokenStore.setRefreshToken(refreshToken);
+      tokenStore.saveSession(response.data);
       localStorage.setItem('userId', mappedUser.id);
       // Every other auth entry point (login/register/quickAccess) sets both
       // of these together -- this one only set `user`, leaving

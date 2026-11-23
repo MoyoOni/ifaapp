@@ -50,7 +50,7 @@ describe('api client — token refresh', () => {
     const res = await api.get('/anything');
 
     expect(res.data).toEqual({ ok: true });
-    expect(refreshPost).toHaveBeenCalledWith(apiUrl('/auth/refresh'), { refreshToken: 'refresh-1' });
+    expect(refreshPost).toHaveBeenCalledWith(apiUrl('/auth/refresh'), { refreshToken: 'refresh-1' }, expect.anything());
     expect(localStorage.getItem('accessToken')).toBe('access-1');
     // the server revokes the token it was given, so keeping refresh-1 would break the next refresh
     expect(localStorage.getItem('refreshToken')).toBe('refresh-2');
@@ -66,7 +66,7 @@ describe('api client — token refresh', () => {
     refreshPost.mockResolvedValueOnce({ data: { accessToken: 'access-2', refreshToken: 'refresh-3' } });
     await api.get('/second');
 
-    expect(refreshPost).toHaveBeenNthCalledWith(2, apiUrl('/auth/refresh'), { refreshToken: 'refresh-2' });
+    expect(refreshPost).toHaveBeenNthCalledWith(2, apiUrl('/auth/refresh'), { refreshToken: 'refresh-2' }, expect.anything());
     expect(localStorage.getItem('refreshToken')).toBe('refresh-3');
   });
 
@@ -94,6 +94,68 @@ describe('api client — token refresh', () => {
 
     expect(localStorage.getItem('accessToken')).toBeNull();
     expect(localStorage.getItem('refreshToken')).toBeNull();
+    expect(window.location.href).toBe('/login');
+  });
+});
+
+// The website's session lives in httpOnly cookies: no token in JS, and every
+// request opts into cookie transport with a header (the backend's CSRF guard).
+describe('api client — cookie session (website)', () => {
+  let refreshPost: ReturnType<typeof vi.spyOn>;
+  let cookieValid = false;
+  const seenTransport: (string | undefined)[] = [];
+  const originalLocation = window.location;
+
+  function cookieAdapter(config: InternalAxiosRequestConfig) {
+    const headers = config.headers as Record<string, string>;
+    seenTransport.push(headers['X-Auth-Transport']);
+    if (!headers.Authorization && headers['X-Auth-Transport'] === 'cookie' && cookieValid) {
+      return Promise.resolve({ data: { ok: true }, status: 200, statusText: 'OK', headers: {}, config });
+    }
+    const err: any = new Error('Request failed with status code 401');
+    err.isAxiosError = true; err.config = config;
+    err.response = { status: 401, data: {}, headers: {}, config, statusText: 'Unauthorized' };
+    return Promise.reject(err);
+  }
+
+  beforeEach(() => {
+    localStorage.clear();
+    seenTransport.length = 0;
+    cookieValid = false;
+    localStorage.setItem('session', JSON.stringify({ userId: 'u1', role: 'CLIENT' }));
+    api.defaults.adapter = cookieAdapter as any;
+    Object.defineProperty(window, 'location', { value: { href: '/current' }, writable: true });
+    refreshPost = vi.spyOn(axios, 'post');
+  });
+  afterEach(() => {
+    refreshPost.mockRestore();
+    Object.defineProperty(window, 'location', { value: originalLocation, writable: true });
+  });
+
+  it('marks every request for cookie transport and never sends a Bearer header', async () => {
+    cookieValid = true;
+    await api.get('/anything');
+    expect(seenTransport).toEqual(['cookie']);
+  });
+
+  it('refreshes through the cookie (empty body) and retries without a token', async () => {
+    refreshPost.mockImplementation(async () => {
+      cookieValid = true; // the server rotated the cookies
+      return { data: { session: { userId: 'u1', role: 'CLIENT' } } };
+    });
+    const res = await api.get('/anything');
+    expect(res.data).toEqual({ ok: true });
+    expect(refreshPost).toHaveBeenCalledWith(apiUrl('/auth/refresh'), {}, expect.objectContaining({
+      headers: { 'X-Auth-Transport': 'cookie' }, withCredentials: true,
+    }));
+    expect(localStorage.getItem('accessToken')).toBeNull();
+    expect(localStorage.getItem('refreshToken')).toBeNull();
+  });
+
+  it('ends the session when the cookie refresh fails', async () => {
+    refreshPost.mockRejectedValue(new Error('Invalid refresh token'));
+    await expect(api.get('/anything')).rejects.toBeTruthy();
+    expect(localStorage.getItem('session')).toBeNull();
     expect(window.location.href).toBe('/login');
   });
 });

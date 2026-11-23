@@ -3,7 +3,7 @@ import { setServerUnreachable, isUnreachableError } from '@/shared/utils/server-
 import { parseApiError, reportApiError } from '@/shared/utils/api-error';
 import { setLogContext } from '@/shared/utils/logger';
 import { API_BASE_URL, apiUrl } from './api-base';
-import { tokenStore } from './token-store';
+import { tokenStore, AUTH_TRANSPORT_HEADER, type AuthPayload } from './token-store';
 
 const REQUEST_ID_HEADER = 'x-request-id';
 
@@ -28,7 +28,14 @@ const api: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  // Website: the session lives in httpOnly cookies (same origin).
+  withCredentials: tokenStore.usesCookies,
 });
+
+/** Headers that select the auth transport (cookie on the website, Bearer in the app). */
+function transportHeaders(): Record<string, string> {
+  return tokenStore.usesCookies ? { [AUTH_TRANSPORT_HEADER]: 'cookie' } : {};
+}
 
 // Request interceptor: auth token + request ID for tracing
 api.interceptors.request.use(
@@ -36,6 +43,9 @@ api.interceptors.request.use(
     const token = tokenStore.getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    for (const [name, value] of Object.entries(transportHeaders())) {
+      config.headers[name] = value;
     }
     if (!config.headers[REQUEST_ID_HEADER]) {
       config.headers[REQUEST_ID_HEADER] = generateRequestId();
@@ -51,19 +61,23 @@ api.interceptors.request.use(
 // given and returns a new pair. So (1) BOTH tokens must be stored, otherwise the
 // second refresh (about 30 minutes in) sends a revoked token and logs the user
 // out, and (2) concurrent 401s must share ONE refresh -- each extra call would
-// present the already-spent token and fail, logging the user out.
-let refreshInFlight: Promise<string> | null = null;
+// present the already-spent token and fail, logging the user out. On the
+// website the pair rotates inside httpOnly cookies; the same single-flight rule
+// applies. Resolves to the new Bearer token, or null in cookie transport.
+let refreshInFlight: Promise<string | null> | null = null;
 
-function refreshAccessToken(): Promise<string> {
+function refreshAccessToken(): Promise<string | null> {
   if (!refreshInFlight) {
     refreshInFlight = (async () => {
       const refreshToken = tokenStore.getRefreshToken();
-      if (!refreshToken) throw new Error('No refresh token available');
-      const response = await axios.post(apiUrl('/auth/refresh'), { refreshToken });
-      const { accessToken, refreshToken: rotatedRefreshToken } = response.data;
-      tokenStore.setAccessToken(accessToken);
-      if (rotatedRefreshToken) tokenStore.setRefreshToken(rotatedRefreshToken);
-      return accessToken as string;
+      if (!refreshToken && !tokenStore.usesCookies) throw new Error('No refresh token available');
+      const response = await axios.post<AuthPayload>(
+        apiUrl('/auth/refresh'),
+        refreshToken ? { refreshToken } : {},
+        { headers: transportHeaders(), withCredentials: tokenStore.usesCookies },
+      );
+      tokenStore.saveSession(response.data);
+      return tokenStore.getAccessToken();
     })().finally(() => {
       refreshInFlight = null;
     });
@@ -99,14 +113,14 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      if (tokenStore.getRefreshToken()) {
+      if (tokenStore.canRefresh()) {
         try {
           const accessToken = await refreshAccessToken();
-          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+          if (accessToken) originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+          else delete originalRequest.headers.Authorization;
           return api(originalRequest);
         } catch (refreshError) {
-          tokenStore.removeAccessToken();
-          tokenStore.removeRefreshToken();
+          tokenStore.clear();
           window.location.href = '/login';
         }
       }

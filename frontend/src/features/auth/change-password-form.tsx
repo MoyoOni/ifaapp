@@ -30,8 +30,7 @@ const ChangePasswordForm: React.FC = () => {
     try {
       const res = await api.post('/auth/change-password', { currentPassword: current, newPassword: next });
       // The old tokens were issued before the change and are no longer valid.
-      tokenStore.setAccessToken(res.data.accessToken);
-      tokenStore.setRefreshToken(res.data.refreshToken);
+      tokenStore.saveSession(res.data);
       success('Password changed. You have been signed out on your other devices.');
       reset();
     } catch (err) {

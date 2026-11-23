@@ -22,23 +22,71 @@ async function loadStore(native: boolean) {
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
 beforeEach(() => {
+  vi.unstubAllGlobals();
   keychain.clear();
   localStorage.clear();
   vi.clearAllMocks();
 });
 
-describe('tokenStore on the website', () => {
-  it('reads and writes straight through to localStorage', async () => {
+describe('tokenStore on the website (httpOnly cookie session)', () => {
+  const fetchMock = vi.fn();
+  beforeEach(() => { fetchMock.mockReset(); vi.stubGlobal('fetch', fetchMock); });
+
+  it('keeps only public session claims, never tokens, for a cookie session', async () => {
+    const store = await loadStore(false);
+    expect(store.usesCookies).toBe(true);
+    store.saveSession({ session: { userId: 'u1', role: 'CLIENT' } });
+    expect(store.hasSession()).toBe(true);
+    expect(store.getAccessToken()).toBeNull();
+    expect(store.getClaims()).toEqual({ userId: 'u1', role: 'CLIENT' });
+    expect(localStorage.getItem('accessToken')).toBeNull();
+    expect(localStorage.getItem('refreshToken')).toBeNull();
+    expect(localStorage.getItem('session')).not.toBeNull();
+    store.clear();
+    expect(store.hasSession()).toBe(false);
+    expect(secureStorage.set).not.toHaveBeenCalled();
+  });
+
+  it('falls back to Bearer tokens if a response still carries them (backend without cookie support)', async () => {
+    const store = await loadStore(false);
+    store.saveSession({ accessToken: 'a1', refreshToken: 'r1' });
+    expect(localStorage.getItem('accessToken')).toBe('a1');
+    expect(store.getRefreshToken()).toBe('r1');
+    expect(store.hasSession()).toBe(true);
+  });
+
+  it('migrates a legacy localStorage session to cookies once, then deletes the tokens', async () => {
+    localStorage.setItem('accessToken', 'legacy-a');
+    localStorage.setItem('refreshToken', 'legacy-r');
+    fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => ({ session: { userId: 'u1', role: 'CLIENT' } }) });
     const store = await loadStore(false);
     await store.init();
-    store.setTokens('a1', 'r1');
-    expect(localStorage.getItem('accessToken')).toBe('a1');
-    expect(localStorage.getItem('refreshToken')).toBe('r1');
-    localStorage.setItem('accessToken', 'changed-elsewhere');
-    expect(store.getAccessToken()).toBe('changed-elsewhere'); // no cache on web
-    store.clearTokens();
+    const [, init] = fetchMock.mock.calls[0];
+    expect(init.headers['X-Auth-Transport']).toBe('cookie');
+    expect(JSON.parse(init.body)).toEqual({ refreshToken: 'legacy-r' });
     expect(localStorage.getItem('accessToken')).toBeNull();
-    expect(secureStorage.set).not.toHaveBeenCalled();
+    expect(localStorage.getItem('refreshToken')).toBeNull();
+    expect(store.getClaims()?.userId).toBe('u1');
+  });
+
+  it('drops a dead legacy session (401) but keeps it through a network failure', async () => {
+    localStorage.setItem('refreshToken', 'legacy-r');
+    fetchMock.mockResolvedValue({ ok: false, status: 401, json: async () => ({}) });
+    let store = await loadStore(false);
+    await store.init();
+    expect(localStorage.getItem('refreshToken')).toBeNull();
+
+    localStorage.setItem('refreshToken', 'legacy-r');
+    fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
+    store = await loadStore(false);
+    await expect(store.init()).resolves.toBeUndefined();
+    expect(localStorage.getItem('refreshToken')).toBe('legacy-r');
+  });
+
+  it('does nothing on init when there is no legacy session', async () => {
+    const store = await loadStore(false);
+    await store.init();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
 
@@ -81,6 +129,17 @@ describe('tokenStore in the native app', () => {
     expect(store.getAccessToken()).toBeNull();
   });
 
+  it('impersonation keeps the single token and drops the admin refresh token', async () => {
+    keychain.set('refreshToken', 'admin-r');
+    const store = await loadStore(true);
+    await store.init();
+    store.saveSession({ token: 'imp-a' });
+    await flush();
+    expect(store.getAccessToken()).toBe('imp-a');
+    expect(store.getRefreshToken()).toBeNull();
+    expect(store.usesCookies).toBe(false);
+  });
+
   it('initialises only once however often init() is called', async () => {
     const store = await loadStore(true);
     await Promise.all([store.init(), store.init(), store.init()]);
@@ -90,12 +149,12 @@ describe('tokenStore in the native app', () => {
   it('writes through to the Keychain (device-only, no iCloud sync) and clears on logout', async () => {
     const store = await loadStore(true);
     await store.init();
-    store.setTokens('a2', 'r2');
+    store.saveSession({ accessToken: 'a2', refreshToken: 'r2' });
     expect(store.getAccessToken()).toBe('a2'); // readable immediately from the cache
     await flush();
     expect(secureStorage.set).toHaveBeenCalledWith('accessToken', 'a2', false, false, 3);
     expect(keychain.get('refreshToken')).toBe('r2');
-    store.clearTokens();
+    store.clear();
     await flush();
     expect(store.getAccessToken()).toBeNull();
     expect(keychain.size).toBe(0);

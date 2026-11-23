@@ -23,8 +23,13 @@ export interface AuthUserResponse {
   adminSubRole?: string | null;
 }
 
+/**
+ * Bearer transport (native app) returns the tokens; cookie transport (website)
+ * returns `session` claims instead and keeps the tokens in httpOnly cookies.
+ */
 export interface AuthResponse {
   user: AuthUserResponse;
-  accessToken: string;
-  refreshToken: string;
+  accessToken?: string;
+  refreshToken?: string;
+  session?: import('@/lib/token-store').SessionClaims;
 }

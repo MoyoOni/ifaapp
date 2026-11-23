@@ -11,7 +11,7 @@ import { decodeJwtPayload } from '@/shared/utils/jwt';
 import type { User } from '@/types/user';
 import type { AuthResponse } from '@/types/api/auth';
 import { mapAuthUserToUser, mapDemoUserToUser } from '@/types/api/mappers/auth.mapper';
-import { tokenStore } from '@/lib/token-store';
+import { tokenStore, type AuthPayload } from '@/lib/token-store';
 
 interface AuthState {
   user: User | null;
@@ -44,7 +44,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
  */
 function useAuthState(): AuthContextValue {
   const [user, setUser] = useState<User | null>(null);
-  const [tokenCheck, setTokenCheck] = useState(() => !!tokenStore.getAccessToken());
+  const [tokenCheck, setTokenCheck] = useState(() => tokenStore.hasSession());
   const [isInitializing, setIsInitializing] = useState(true);
   const isAuthenticated = tokenCheck;
   const userId = user?.id || localStorage.getItem('userId');
@@ -83,8 +83,7 @@ function useAuthState(): AuthContextValue {
         // retries and the tokens survive.
         const status = error?.response?.status;
         if (status === 401 || status === 403 || status === 404) {
-          tokenStore.removeAccessToken();
-          tokenStore.removeRefreshToken();
+          tokenStore.clear();
           localStorage.removeItem('userId');
           setTokenCheck(false);
           return null;
@@ -98,17 +97,14 @@ function useAuthState(): AuthContextValue {
   // Update user state when data is fetched; set user in log context for tracing
   useEffect(() => {
     if (userData) {
-      // isImpersonated/impersonatedBy are JWT session claims, not persisted
-      // User fields — GET /users/:id can never return them. Read them off
-      // the current access token instead of silently leaving them unset.
-      const storedToken = tokenStore.getAccessToken();
-      const claims = storedToken
-        ? decodeJwtPayload<{ isImpersonated?: boolean; impersonatedBy?: string }>(storedToken)
-        : null;
+      // isImpersonated/impersonatorId are session claims, not persisted User
+      // fields — GET /users/:id can never return them. (Until November 2026 this
+      // read a claim named `impersonatedBy`, which the server never issues.)
+      const claims = tokenStore.getClaims();
       setUser({
         ...userData,
         isImpersonated: claims?.isImpersonated ?? false,
-        impersonatorId: claims?.impersonatedBy,
+        impersonatorId: claims?.impersonatorId,
       });
       localStorage.setItem('userId', userData.id);
       setLogContext({ userId: userData.id });
@@ -125,8 +121,7 @@ function useAuthState(): AuthContextValue {
   // Check localStorage on mount (only once)
   useEffect(() => {
     const storedUserId = localStorage.getItem('userId');
-    const storedToken = tokenStore.getAccessToken();
-    if (storedUserId && storedToken && !tokenCheck) {
+    if (storedUserId && tokenStore.hasSession() && !tokenCheck) {
       setTokenCheck(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -135,11 +130,10 @@ function useAuthState(): AuthContextValue {
   const login = async (email: string, password: string) => {
     try {
       const response = await api.post<AuthResponse>('/auth/login', { email, password });
-      const { user: userResponse, accessToken, refreshToken } = response.data;
+      const { user: userResponse } = response.data;
       const mappedUser = mapAuthUserToUser(userResponse);
 
-      tokenStore.setAccessToken(accessToken);
-      tokenStore.setRefreshToken(refreshToken);
+      tokenStore.saveSession(response.data);
       localStorage.setItem('userId', mappedUser.id);
 
       setTokenCheck(true);
@@ -163,10 +157,10 @@ function useAuthState(): AuthContextValue {
       const response = await api.post<AuthResponse>('/auth/quick-access', { email });
       logger.log('Quick Access: Response received', response.data);
 
-      const { user: userResponse, accessToken, refreshToken } = response.data;
+      const { user: userResponse } = response.data;
 
       // Validate response has required fields
-      if (!userResponse || !accessToken || !userResponse.id) {
+      if (!userResponse || !userResponse.id || !(response.data.accessToken || response.data.session)) {
         throw new Error('Invalid response from server');
       }
 
@@ -175,8 +169,7 @@ function useAuthState(): AuthContextValue {
       // but this stays defensive against older seeded rows.
       const mappedUser = { ...mapAuthUserToUser(userResponse), hasOnboarded: userResponse.hasOnboarded ?? true };
 
-      tokenStore.setAccessToken(accessToken);
-      tokenStore.setRefreshToken(refreshToken);
+      tokenStore.saveSession(response.data);
       localStorage.setItem('userId', mappedUser.id);
 
       setTokenCheck(true);
@@ -199,11 +192,10 @@ function useAuthState(): AuthContextValue {
         ...(phone ? { phone } : {}),
         ...(referredByCode ? { referredByCode } : {}),
       });
-      const { user: userResponse, accessToken, refreshToken } = response.data;
+      const { user: userResponse } = response.data;
       const mappedUser = mapAuthUserToUser(userResponse);
 
-      tokenStore.setAccessToken(accessToken);
-      tokenStore.setRefreshToken(refreshToken);
+      tokenStore.saveSession(response.data);
       localStorage.setItem('userId', mappedUser.id);
 
       setTokenCheck(true);
@@ -226,9 +218,11 @@ function useAuthState(): AuthContextValue {
     // actually sent (a tick later), so relying on it here sent the request with
     // no Authorization header, 401'd, and the server-side revocation never
     // happened -- every logout left its tokens valid until they expired.
+    // On the website the tokens are httpOnly cookies the browser sends itself;
+    // the server revokes the session and clears them.
     const accessToken = tokenStore.getAccessToken();
     const refreshToken = tokenStore.getRefreshToken();
-    if (accessToken || refreshToken) {
+    if (accessToken || refreshToken || tokenStore.hasSession()) {
       // Send the refresh token too: the access token only lives 15 minutes, and
       // once it has expired the server can still revoke the session from the
       // (7-day) refresh token alone.
@@ -242,8 +236,7 @@ function useAuthState(): AuthContextValue {
     }
     clearLogContext();
     deregisterPushNotifications().catch(() => {});
-    tokenStore.removeAccessToken();
-    tokenStore.removeRefreshToken();
+    tokenStore.clear();
     localStorage.removeItem('userId');
     setTokenCheck(false);
     setUser(null);
@@ -290,8 +283,8 @@ function useAuthState(): AuthContextValue {
       setLogContext({ userId: devUser.id });
       localStorage.setItem('userId', devUser.id);
       localStorage.setItem('dev_mode_role', role);
-      // Set a dummy token so standard checks pass
-      tokenStore.setAccessToken('dev-token');
+      // Mark a client-side session so standard checks pass (no backend tokens)
+      tokenStore.markDevSession(devUser.id, role);
 
       // No reload needed - React will handle state updates
     }
@@ -333,27 +326,29 @@ function useAuthState(): AuthContextValue {
         // that actually establishes an impersonation session is
         // POST /auth/impersonate, which returns a single short-lived
         // (30 min) { token } — no refresh token, by design.
-        const response = await api.post<{ token: string }>('/auth/impersonate', { userId, reason });
-        const { token } = response.data;
-        const claims = decodeJwtPayload<{ sub: string }>(token);
-        if (!claims?.sub) {
-          throw new Error('Invalid impersonation token returned by server');
+        const response = await api.post<AuthPayload>('/auth/impersonate', { userId, reason });
+        // Bearer transport returns { token }; cookie transport sets the cookie
+        // and returns { session }.
+        const targetId = response.data.session?.userId
+          ?? (response.data.token ? decodeJwtPayload<{ sub: string }>(response.data.token)?.sub : undefined);
+        if (!targetId) {
+          throw new Error('Invalid impersonation response from server');
         }
 
-        tokenStore.setAccessToken(token);
         // No refresh token for an impersonation session — leaving the
         // original admin's refresh token in place would let the axios 401
         // interceptor silently swap back to the admin's own identity the
         // moment the 30-minute impersonation token expires, without
-        // surfacing that transition anywhere. Ending impersonation is a
-        // full logout (see ImpersonationBanner's onStop) until a proper
+        // surfacing that transition anywhere. saveSession drops it (and the
+        // server clears the refresh cookie). Ending impersonation is a full
+        // logout (see ImpersonationBanner's onStop) until a proper
         // session-restore flow exists.
-        tokenStore.removeRefreshToken();
-        localStorage.setItem('userId', claims.sub);
+        tokenStore.saveSession(response.data);
+        localStorage.setItem('userId', targetId);
         localStorage.setItem('impersonationStartedAt', new Date().toISOString());
 
         setTokenCheck(true);
-        setLogContext({ userId: claims.sub });
+        setLogContext({ userId: targetId });
 
         // Force a page reload to the root to clear any admin-specific states
         window.location.href = '/';
