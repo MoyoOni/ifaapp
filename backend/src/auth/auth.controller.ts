@@ -12,9 +12,11 @@ import {
   UnauthorizedException,
   BadRequestException,
   Req,
+  Res,
   Headers,
+  UseInterceptors,
 } from '@nestjs/common';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { IsString } from 'class-validator';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -36,6 +38,13 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags, ApiBody } from '@nes
 import { RegisterDto } from './dto/register.dto';
 import { QuickAccessDto } from './dto/quick-access.dto';
 import { LogoutDto } from './dto/logout.dto';
+import {
+  ACCESS_COOKIE,
+  REFRESH_COOKIE,
+  SessionCookieInterceptor,
+  clearSessionCookies,
+  cookieToken,
+} from './session-cookies';
 
 // DTO for impersonation request
 class ImpersonateUserDto {
@@ -51,6 +60,9 @@ class GoogleTokenDto {
 
 @ApiTags('auth')
 @Controller('auth')
+// Website sessions (X-Auth-Transport: cookie) get httpOnly cookies instead of
+// tokens in the body — see session-cookies.ts. Bearer clients are unaffected.
+@UseInterceptors(SessionCookieInterceptor)
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);
 
@@ -122,9 +134,19 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Log out and revoke the session (accepts an access and/or refresh token)' })
   @ApiResponse({ status: 200, description: 'Successfully logged out' })
-  async logout(@Body() body: LogoutDto, @Headers('authorization') authorization?: string) {
-    const accessToken = authorization?.startsWith('Bearer ') ? authorization.slice(7) : undefined;
-    return this.authService.revokeSession({ accessToken, refreshToken: body?.refreshToken });
+  async logout(
+    @Body() body: LogoutDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+    @Headers('authorization') authorization?: string,
+  ) {
+    const accessToken = authorization?.startsWith('Bearer ')
+      ? authorization.slice(7)
+      : cookieToken(req, ACCESS_COOKIE);
+    const refreshToken = body?.refreshToken ?? cookieToken(req, REFRESH_COOKIE);
+    const result = await this.authService.revokeSession({ accessToken, refreshToken });
+    clearSessionCookies(res);
+    return result;
   }
 
   @Post('impersonate')
@@ -184,8 +206,8 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Invalid refresh token' })
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  async refresh(@Body('refreshToken') refreshToken: string) {
-    return this.authService.refreshToken(refreshToken);
+  async refresh(@Body('refreshToken') refreshToken: string, @Req() req: Request) {
+    return this.authService.refreshToken(refreshToken || cookieToken(req, REFRESH_COOKIE) || '');
   }
 
   /**

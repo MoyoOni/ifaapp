@@ -6,6 +6,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { RedisCacheService } from '../../cache/redis-cache.service';
 import { UserRole } from '@ile-ase/common';
 import { TOKEN_DENYLIST_PREFIX } from '../token-denylist.constants';
+import { ACCESS_COOKIE, cookieToken } from '../session-cookies';
 
 export interface JwtPayload {
   sub: string; // userId
@@ -55,7 +56,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new Error('JWT_SECRET environment variable is required');
     }
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      // Bearer header first (native apps, older bundles); otherwise the website's
+      // httpOnly cookie, read only when the request opted into cookie transport.
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+        (req) => cookieToken(req, ACCESS_COOKIE) ?? null,
+      ]),
       ignoreExpiration: false,
       secretOrKey: jwtSecret,
     });

@@ -3,6 +3,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { Reflector } from '@nestjs/core';
 import { ImpersonationService } from '../services/impersonation.service';
 import { Request } from 'express';
+import { ACCESS_COOKIE, cookieToken } from '@/auth/session-cookies';
 
 export interface ExtendedUser {
   id: string;
@@ -38,7 +39,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     // sacred forum threads were hidden from every signed-in member too.
     if (isPublic) {
       const request = context.switchToHttp().getRequest<Request>();
-      if (request.headers.authorization?.startsWith('Bearer ')) {
+      if (request.headers.authorization?.startsWith('Bearer ') || cookieToken(request, ACCESS_COOKIE)) {
         try {
           await super.canActivate(context);
           this.attachImpersonationInfo(request);
