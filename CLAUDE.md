@@ -39,6 +39,8 @@ After completing any task:
 
 **Payments, email and notifications (November 2, 2026):** production's Paystack key is a *test* key, so `backend/src/payments/live-payments.ts` refuses every payment and Devoted checkout (503) until a live key is set; Devoted plan codes are unset. SES production access was granted November 4, 2026 (email reaches any address; verified live November 5). WhatsApp has no credentials on production (nothing is sent; the UI hides it). Marketing email is opt-in (`NotificationPreferences.emailMarketing`, default false) and admin campaigns honour it. Check these before assuming members receive anything. `SesEmailService` silently skips reserved domains (`example.com`, `.invalid`, `.test`) — erased accounts get `@deleted.iluase.invalid`.
 
+**Website sessions move to httpOnly cookies (November 23, 2026, on `feat/mobile-native-feel`, NOT yet deployed):** once deployed, the website no longer keeps tokens in localStorage; existing sessions migrate on first load. Deploy the backend first (the frontend falls back to Bearer if it isn't, so order can't lock anyone out). Native apps keep Bearer tokens. See Conventions → Sessions.
+
 **Access control (November 6, 2026, live):** bans and suspensions are enforced on login, every request and token refresh (`accountBlock()` in `auth/strategies/jwt.strategy.ts`); admin force-logout sets `User.sessionsRevokedAt`. Before then neither ended access.
 
 **Paused / Deprioritized Platform Dependencies — Single Source of Truth:**
@@ -128,7 +130,7 @@ Production is one EC2 box behind CloudFront — see Current Status → Infrastru
 ## Conventions
 
 - **API URLs** go through `apiUrl()` / `API_BASE_URL` in `frontend/src/lib/api-base.ts` (relative `/api` on the web, absolute in the native apps). Don't hard-code `/api/...` in `fetch` calls.
-- **Session tokens** are read and written only through `tokenStore` (`frontend/src/lib/token-store.ts`) — never `localStorage.getItem('accessToken')` directly. On native it is a Keychain/Keystore-backed cache loaded before first render.
+- **Sessions** go only through `tokenStore` (`frontend/src/lib/token-store.ts`): `saveSession(response.data)`, `hasSession()`, `getClaims()`, `clear()` — never `localStorage.getItem('accessToken')` directly. Two transports (backend `auth/session-cookies.ts`): the **website** sends `X-Auth-Transport: cookie` and its tokens live in httpOnly cookies JS can't read (`iluase_at` on `/api`, `iluase_rt` on `/api/auth`); the **native app** uses Bearer tokens kept in the Keychain/Keystore. The backend reads the cookies only when that header is present (CSRF guard), so `fetch` calls on the website must send it — use the `api` client.
 - **Native plugin calls** (haptics, status bar, keyboard, back button, splash) live in `frontend/src/lib/native.ts` and are no-ops on the web. Use `tapHaptic()` rather than importing `@capacitor/haptics` in a component.
 - **Dialogs** use `shared/components/ui/dialog.tsx`, which is a bottom sheet below 640px. Prefer it over a hand-built `fixed inset-0` overlay. Confirmations use `useConfirm` + `ConfirmationDialog`, never `window.confirm()`.
 - **Navigation** that should animate uses `navigateWithTransition()` (`shared/utils/nav-transition.ts`); React Router's `viewTransition` option does nothing with `<BrowserRouter>`.
