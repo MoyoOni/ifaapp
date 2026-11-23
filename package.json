@@ -10,7 +10,7 @@
     "build": "npm run build --workspaces --if-present",
     "build:vercel": "npm --prefix common run build && npm --prefix frontend run build",
     "test": "npm run test --workspaces --if-present",
-    "test:e2e": "cd frontend && npm run test:e2e"
+    "test:e2e": "npm run e2e -w frontend --"
   },
   "keywords": [],
   "author": "",
