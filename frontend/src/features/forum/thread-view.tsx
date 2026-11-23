@@ -11,6 +11,7 @@ import { useConfirm } from '@/hooks/use-confirm';
 import { getSocket } from '@/lib/socket';
 import { CulturalOrientationGate } from './cultural-orientation-gate';
 import YorubaDiacriticToolbar from '@/shared/components/yoruba-diacritic-toolbar';
+import { Dialog, DialogContent, DialogTitle } from '@/shared/components/ui/dialog';
 
 interface ForumPost {
   id: string;
@@ -1125,9 +1126,8 @@ const ThreadView: React.FC<ThreadViewProps> = ({ threadId, onBack }) => {
       <ConfirmationDialog />
 
       {/* Report Modal */}
-      {reportingPostId && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-background border border-border rounded-2xl w-full max-w-md p-6 space-y-4">
+      <Dialog open={!!reportingPostId} onOpenChange={(open) => { if (!open) setReportingPostId(null); }}>
+        <DialogContent className="max-w-md w-full space-y-4">
             {reportSubmitted ? (
               <div className="text-center py-6">
                 <div className="text-3xl mb-3">✅</div>
@@ -1137,7 +1137,7 @@ const ThreadView: React.FC<ThreadViewProps> = ({ threadId, onBack }) => {
             ) : (
               <>
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-bold text-foreground flex items-center gap-2"><Flag size={16} className="text-red-400" /> Report Post</h3>
+                  <DialogTitle className="font-bold text-foreground flex items-center gap-2"><Flag size={16} className="text-red-400" /> Report Post</DialogTitle>
                   <button type="button" onClick={() => setReportingPostId(null)} className="text-muted-foreground hover:text-foreground">✕</button>
                 </div>
                 <div className="space-y-3">
@@ -1171,17 +1171,15 @@ const ThreadView: React.FC<ThreadViewProps> = ({ threadId, onBack }) => {
                 </div>
               </>
             )}
-          </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {/* F9-602: Mental Health Crisis Resources Modal */}
-      {crisisModalVisible && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-background border border-border rounded-2xl w-full max-w-md p-6 space-y-4 animate-in fade-in duration-300">
+      <Dialog open={!!crisisModalVisible} onOpenChange={(open) => { if (!open) setCrisisModalVisible(false); }}>
+        <DialogContent className="max-w-md w-full space-y-4">
             <div className="text-center">
               <div className="text-3xl mb-2">🙏🏾</div>
-              <h3 className="text-lg font-bold text-foreground">You are not alone.</h3>
+              <DialogTitle className="font-bold text-foreground">You are not alone.</DialogTitle>
             </div>
             <p className="text-sm text-muted-foreground">
               If you're going through something difficult right now, support is available:
@@ -1210,14 +1208,12 @@ const ThreadView: React.FC<ThreadViewProps> = ({ threadId, onBack }) => {
             >
               Thank you — I understand
             </button>
-          </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {/* F9-604: Elder Quiet Flag Modal */}
-      {elderFlagPostId && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-background border border-border rounded-2xl w-full max-w-md p-6 space-y-4">
+      <Dialog open={!!elderFlagPostId} onOpenChange={(open) => { if (!open) { setElderFlagPostId(null); setElderFlagSubmitted(false); }; }}>
+        <DialogContent className="max-w-md w-full space-y-4">
             {elderFlagSubmitted ? (
               <div className="text-center py-6">
                 <div className="text-3xl mb-3">🔱</div>
@@ -1234,7 +1230,7 @@ const ThreadView: React.FC<ThreadViewProps> = ({ threadId, onBack }) => {
             ) : (
               <>
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-bold text-foreground">🔱 Flag as Culturally Inaccurate</h3>
+                  <DialogTitle className="font-bold text-foreground">🔱 Flag as Culturally Inaccurate</DialogTitle>
                   <button type="button" onClick={() => setElderFlagPostId(null)} className="text-muted-foreground hover:text-foreground">✕</button>
                 </div>
                 <p className="text-sm text-muted-foreground">
@@ -1265,14 +1261,12 @@ const ThreadView: React.FC<ThreadViewProps> = ({ threadId, onBack }) => {
                 </div>
               </>
             )}
-          </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {/* F9-705: Micro-Tip Modal */}
-      {tipPostId && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-background border border-border rounded-2xl w-full max-w-sm p-6 space-y-5">
+      <Dialog open={!!tipPostId} onOpenChange={(open) => { if (!open) { setTipPostId(null); setTipSuccess(false); }; }}>
+        <DialogContent className="max-w-sm w-full space-y-5">
             {tipSuccess ? (
               <div className="text-center py-4 space-y-3">
                 <div className="text-4xl">🙏🏾</div>
@@ -1289,7 +1283,7 @@ const ThreadView: React.FC<ThreadViewProps> = ({ threadId, onBack }) => {
             ) : (
               <>
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-bold text-foreground flex items-center gap-2">💝 Support This Wisdom</h3>
+                  <DialogTitle className="font-bold text-foreground flex items-center gap-2">💝 Support This Wisdom</DialogTitle>
                   <button type="button" onClick={() => setTipPostId(null)} className="text-muted-foreground hover:text-foreground">✕</button>
                 </div>
                 <p className="text-sm text-muted-foreground">
@@ -1340,9 +1334,8 @@ const ThreadView: React.FC<ThreadViewProps> = ({ threadId, onBack }) => {
                 </div>
               </>
             )}
-          </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {/* F9-902: Cultural Orientation Gate */}
       <CulturalOrientationGate
