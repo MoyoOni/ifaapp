@@ -2,7 +2,7 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/use-auth';
 import { UserRole, AdminSubRole } from '@common';
-import { LoadingSpinner } from './loading-spinner';
+import { BrandedLoadingScreen } from './branded-loading-screen';
 import { logger } from '@/shared/utils/logger';
 import { useQueryClient } from '@tanstack/react-query';
 import { CloudOff } from 'lucide-react';
@@ -58,11 +58,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // Show loading state while checking auth
   if (isLoading) {
     logger.info('[ProtectedRoute] Loading...');
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-muted/40">
-        <LoadingSpinner />
-      </div>
-    );
+    return <BrandedLoadingScreen />;
   }
 
   if (!user && isAuthenticated && unreachable) {
@@ -146,11 +142,7 @@ export const RequireAuth: React.FC<{ children: React.ReactNode }> = ({ children 
   const unreachable = useServerUnreachable();
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-muted/40">
-        <LoadingSpinner />
-      </div>
-    );
+    return <BrandedLoadingScreen />;
   }
 
   if (!user && isAuthenticated && unreachable) {
