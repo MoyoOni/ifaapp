@@ -11,6 +11,7 @@ import { decodeJwtPayload } from '@/shared/utils/jwt';
 import type { User } from '@/types/user';
 import type { AuthResponse } from '@/types/api/auth';
 import { mapAuthUserToUser, mapDemoUserToUser } from '@/types/api/mappers/auth.mapper';
+import { tokenStore } from '@/lib/token-store';
 
 interface AuthState {
   user: User | null;
@@ -43,7 +44,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
  */
 function useAuthState(): AuthContextValue {
   const [user, setUser] = useState<User | null>(null);
-  const [tokenCheck, setTokenCheck] = useState(() => !!localStorage.getItem('accessToken'));
+  const [tokenCheck, setTokenCheck] = useState(() => !!tokenStore.getAccessToken());
   const [isInitializing, setIsInitializing] = useState(true);
   const isAuthenticated = tokenCheck;
   const userId = user?.id || localStorage.getItem('userId');
@@ -82,8 +83,8 @@ function useAuthState(): AuthContextValue {
         // retries and the tokens survive.
         const status = error?.response?.status;
         if (status === 401 || status === 403 || status === 404) {
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
+          tokenStore.removeAccessToken();
+          tokenStore.removeRefreshToken();
           localStorage.removeItem('userId');
           setTokenCheck(false);
           return null;
@@ -100,7 +101,7 @@ function useAuthState(): AuthContextValue {
       // isImpersonated/impersonatedBy are JWT session claims, not persisted
       // User fields — GET /users/:id can never return them. Read them off
       // the current access token instead of silently leaving them unset.
-      const storedToken = localStorage.getItem('accessToken');
+      const storedToken = tokenStore.getAccessToken();
       const claims = storedToken
         ? decodeJwtPayload<{ isImpersonated?: boolean; impersonatedBy?: string }>(storedToken)
         : null;
@@ -124,7 +125,7 @@ function useAuthState(): AuthContextValue {
   // Check localStorage on mount (only once)
   useEffect(() => {
     const storedUserId = localStorage.getItem('userId');
-    const storedToken = localStorage.getItem('accessToken');
+    const storedToken = tokenStore.getAccessToken();
     if (storedUserId && storedToken && !tokenCheck) {
       setTokenCheck(true);
     }
@@ -137,8 +138,8 @@ function useAuthState(): AuthContextValue {
       const { user: userResponse, accessToken, refreshToken } = response.data;
       const mappedUser = mapAuthUserToUser(userResponse);
 
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
+      tokenStore.setAccessToken(accessToken);
+      tokenStore.setRefreshToken(refreshToken);
       localStorage.setItem('userId', mappedUser.id);
 
       setTokenCheck(true);
@@ -174,8 +175,8 @@ function useAuthState(): AuthContextValue {
       // but this stays defensive against older seeded rows.
       const mappedUser = { ...mapAuthUserToUser(userResponse), hasOnboarded: userResponse.hasOnboarded ?? true };
 
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
+      tokenStore.setAccessToken(accessToken);
+      tokenStore.setRefreshToken(refreshToken);
       localStorage.setItem('userId', mappedUser.id);
 
       setTokenCheck(true);
@@ -201,8 +202,8 @@ function useAuthState(): AuthContextValue {
       const { user: userResponse, accessToken, refreshToken } = response.data;
       const mappedUser = mapAuthUserToUser(userResponse);
 
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
+      tokenStore.setAccessToken(accessToken);
+      tokenStore.setRefreshToken(refreshToken);
       localStorage.setItem('userId', mappedUser.id);
 
       setTokenCheck(true);
@@ -225,8 +226,8 @@ function useAuthState(): AuthContextValue {
     // actually sent (a tick later), so relying on it here sent the request with
     // no Authorization header, 401'd, and the server-side revocation never
     // happened -- every logout left its tokens valid until they expired.
-    const accessToken = localStorage.getItem('accessToken');
-    const refreshToken = localStorage.getItem('refreshToken');
+    const accessToken = tokenStore.getAccessToken();
+    const refreshToken = tokenStore.getRefreshToken();
     if (accessToken || refreshToken) {
       // Send the refresh token too: the access token only lives 15 minutes, and
       // once it has expired the server can still revoke the session from the
@@ -241,8 +242,8 @@ function useAuthState(): AuthContextValue {
     }
     clearLogContext();
     deregisterPushNotifications().catch(() => {});
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    tokenStore.removeAccessToken();
+    tokenStore.removeRefreshToken();
     localStorage.removeItem('userId');
     setTokenCheck(false);
     setUser(null);
@@ -290,7 +291,7 @@ function useAuthState(): AuthContextValue {
       localStorage.setItem('userId', devUser.id);
       localStorage.setItem('dev_mode_role', role);
       // Set a dummy token so standard checks pass
-      localStorage.setItem('accessToken', 'dev-token');
+      tokenStore.setAccessToken('dev-token');
 
       // No reload needed - React will handle state updates
     }
@@ -339,7 +340,7 @@ function useAuthState(): AuthContextValue {
           throw new Error('Invalid impersonation token returned by server');
         }
 
-        localStorage.setItem('accessToken', token);
+        tokenStore.setAccessToken(token);
         // No refresh token for an impersonation session — leaving the
         // original admin's refresh token in place would let the axios 401
         // interceptor silently swap back to the admin's own identity the
@@ -347,7 +348,7 @@ function useAuthState(): AuthContextValue {
         // surfacing that transition anywhere. Ending impersonation is a
         // full logout (see ImpersonationBanner's onStop) until a proper
         // session-restore flow exists.
-        localStorage.removeItem('refreshToken');
+        tokenStore.removeRefreshToken();
         localStorage.setItem('userId', claims.sub);
         localStorage.setItem('impersonationStartedAt', new Date().toISOString());
 

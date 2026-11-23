@@ -45,6 +45,7 @@ import { tapHaptic } from '@/lib/native';
 import { navigateWithTransition, type NavTransition } from '@/shared/utils/nav-transition';
 import { VisitorAuthCard } from './visitor-auth-card';
 import { StandardsPrompt } from '@/features/safeguarding/standards-prompt';
+import { tokenStore } from '@/lib/token-store';
 
 interface SidebarLayoutProps {
     children: React.ReactNode;
@@ -176,7 +177,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
     // still has a session; take the role from its token so they keep their
     // own navigation instead of the visitor's.
     const navRole = user?.role ?? (isAuthenticated
-        ? decodeJwtPayload<{ role?: string }>(localStorage.getItem('accessToken') ?? '')?.role
+        ? decodeJwtPayload<{ role?: string }>(tokenStore.getAccessToken() ?? '')?.role
         : undefined);
 
     // Get role-based navigation items

@@ -6,6 +6,7 @@ import { useAuth } from '@/shared/hooks/use-auth';
 import { logger } from '@/shared/utils/logger';
 import { mapAuthUserToUser } from '@/types/api/mappers/auth.mapper';
 import type { AuthResponse } from '@/types/api/auth';
+import { tokenStore } from '@/lib/token-store';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
@@ -43,8 +44,8 @@ const GoogleLoginButton: React.FC<GoogleAuthButtonProps> = ({ onSuccess, onError
 
       const { user, accessToken, refreshToken } = response.data;
       const mappedUser = mapAuthUserToUser(user);
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
+      tokenStore.setAccessToken(accessToken);
+      tokenStore.setRefreshToken(refreshToken);
       localStorage.setItem('userId', mappedUser.id);
       // Every other auth entry point (login/register/quickAccess) sets both
       // of these together -- this one only set `user`, leaving

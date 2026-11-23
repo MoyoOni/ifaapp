@@ -3,6 +3,7 @@ import { Lock, Loader2, AlertCircle } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/shared/components/toast';
 import { parseApiError } from '@/shared/utils/api-error';
+import { tokenStore } from '@/lib/token-store';
 
 // Settings' "Change Password" used to navigate to /profile, which has no
 // password fields, so nobody could change their password. The backend ends
@@ -29,8 +30,8 @@ const ChangePasswordForm: React.FC = () => {
     try {
       const res = await api.post('/auth/change-password', { currentPassword: current, newPassword: next });
       // The old tokens were issued before the change and are no longer valid.
-      localStorage.setItem('accessToken', res.data.accessToken);
-      localStorage.setItem('refreshToken', res.data.refreshToken);
+      tokenStore.setAccessToken(res.data.accessToken);
+      tokenStore.setRefreshToken(res.data.refreshToken);
       success('Password changed. You have been signed out on your other devices.');
       reset();
     } catch (err) {

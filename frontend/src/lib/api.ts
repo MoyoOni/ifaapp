@@ -3,6 +3,7 @@ import { setServerUnreachable, isUnreachableError } from '@/shared/utils/server-
 import { parseApiError, reportApiError } from '@/shared/utils/api-error';
 import { setLogContext } from '@/shared/utils/logger';
 import { API_BASE_URL, apiUrl } from './api-base';
+import { tokenStore } from './token-store';
 
 const REQUEST_ID_HEADER = 'x-request-id';
 
@@ -32,7 +33,7 @@ const api: AxiosInstance = axios.create({
 // Request interceptor: auth token + request ID for tracing
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('accessToken');
+    const token = tokenStore.getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -56,12 +57,12 @@ let refreshInFlight: Promise<string> | null = null;
 function refreshAccessToken(): Promise<string> {
   if (!refreshInFlight) {
     refreshInFlight = (async () => {
-      const refreshToken = localStorage.getItem('refreshToken');
+      const refreshToken = tokenStore.getRefreshToken();
       if (!refreshToken) throw new Error('No refresh token available');
       const response = await axios.post(apiUrl('/auth/refresh'), { refreshToken });
       const { accessToken, refreshToken: rotatedRefreshToken } = response.data;
-      localStorage.setItem('accessToken', accessToken);
-      if (rotatedRefreshToken) localStorage.setItem('refreshToken', rotatedRefreshToken);
+      tokenStore.setAccessToken(accessToken);
+      if (rotatedRefreshToken) tokenStore.setRefreshToken(rotatedRefreshToken);
       return accessToken as string;
     })().finally(() => {
       refreshInFlight = null;
@@ -98,14 +99,14 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      if (localStorage.getItem('refreshToken')) {
+      if (tokenStore.getRefreshToken()) {
         try {
           const accessToken = await refreshAccessToken();
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
           return api(originalRequest);
         } catch (refreshError) {
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
+          tokenStore.removeAccessToken();
+          tokenStore.removeRefreshToken();
           window.location.href = '/login';
         }
       }

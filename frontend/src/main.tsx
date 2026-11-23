@@ -11,7 +11,8 @@ import { DevRoleSwitcher } from './shared/components/dev-role-switcher';
 import { initSentry } from './shared/config/sentry';
 import { logger } from './shared/utils/logger';
 import App from './App';
-import { initNativeShell } from './lib/native';
+import { initNativeShell, isNativeApp } from './lib/native';
+import { tokenStore } from './lib/token-store';
 import './index.css';
 
 
@@ -83,27 +84,38 @@ const queryClient = new QueryClient({
   },
 });
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <LanguageProvider>
-          <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-            <CartProvider>
-              <ToastProvider>
-                <ModalProvider>
-                  <App />
-                  <DevRoleSwitcher />
-                </ModalProvider>
-              </ToastProvider>
-            </CartProvider>
-          </ThemeProvider>
-        </LanguageProvider>
-      </AuthProvider>
-    </QueryClientProvider>
-  </React.StrictMode>
-);
+function renderApp(): void {
+  ReactDOM.createRoot(document.getElementById('root')!).render(
+    <React.StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <LanguageProvider>
+            <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+              <CartProvider>
+                <ToastProvider>
+                  <ModalProvider>
+                    <App />
+                    <DevRoleSwitcher />
+                  </ModalProvider>
+                </ToastProvider>
+              </CartProvider>
+            </ThemeProvider>
+          </LanguageProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </React.StrictMode>
+  );
 
-// No-op on the website; in the iOS/Android app: back button, keyboard,
-// status bar and splash behaviour (see lib/native.ts).
-initNativeShell();
+  // No-op on the website; in the iOS/Android app: back button, keyboard,
+  // status bar and splash behaviour (see lib/native.ts).
+  initNativeShell();
+}
+
+// In the iOS/Android app, load the session tokens from the Keychain before the
+// first render (the splash covers it, and init never rejects). The website
+// renders synchronously, exactly as before.
+if (isNativeApp) {
+  void tokenStore.init().finally(renderApp);
+} else {
+  renderApp();
+}
