@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useId } from 'react';
 import { createPortal } from 'react-dom';
 import { tapHaptic } from '@/lib/native';
 
@@ -8,6 +8,8 @@ interface ConfirmationDialogProps {
   message: string;
   confirmText?: string;
   cancelText?: string;
+  /** Red confirm button for irreversible actions (deleting an account, a product). */
+  destructive?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -18,10 +20,13 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
   message,
   confirmText = 'Confirm',
   cancelText = 'Cancel',
+  destructive = false,
   onConfirm,
   onCancel
 }) => {
   const [mounted, setMounted] = useState(false);
+  const titleId = useId();
+  const messageId = useId();
 
   useEffect(() => {
     setMounted(true);
@@ -63,12 +68,16 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
       onClick={handleBackdropClick}
     >
       <div 
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={messageId}
         className="bg-card rounded-xl border border-input w-full max-w-md shadow-xl animate-in fade-in-90 zoom-in-90"
         onClick={(e) => e.stopPropagation()} // Prevent click propagation to backdrop
       >
         <div className="p-6">
-          <h3 className="text-lg font-bold text-foreground mb-2">{title}</h3>
-          <p className="text-sm text-muted-foreground mb-6">{message}</p>
+          <h3 id={titleId} className="text-lg font-bold text-foreground mb-2">{title}</h3>
+          <p id={messageId} className="text-sm text-muted-foreground mb-6">{message}</p>
           
           <div className="flex justify-end gap-3">
             <button
@@ -80,7 +89,11 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
             </button>
             <button
               type="button"
-              className="px-4 py-2 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary/90 rounded-lg transition-colors"
+              className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors ${
+                destructive
+                  ? 'text-white bg-red-600 hover:bg-red-700'
+                  : 'text-primary-foreground bg-primary hover:bg-primary/90'
+              }`}
               onClick={() => {
                 tapHaptic('medium');
                 onConfirm();

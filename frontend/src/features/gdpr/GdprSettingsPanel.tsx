@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Download, Trash2, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/shared/hooks/use-auth';
+import { useConfirm } from '@/hooks/use-confirm';
 import { useToast } from '@/shared/components/toast';
 import api from '@/lib/api';
 import { logger } from '@/shared/utils/logger';
@@ -17,8 +19,10 @@ interface User {
 }
 
 export const GdprSettingsPanel: React.FC = () => {
-  const { user } = useAuth() as { user: User | null };
+  const { user, logout } = useAuth() as { user: User | null; logout: () => void };
   const { success, error } = useToast();
+  const { confirm, ConfirmationDialog } = useConfirm();
+  const navigate = useNavigate();
   const [isDeleting, setIsDeleting] = useState(false);
   // Since we only have forumDigestOptIn in the schema, we'll only use that
   const [consentPrefs, setConsentPrefs] = useState<ConsentPreferences>({
@@ -47,17 +51,29 @@ export const GdprSettingsPanel: React.FC = () => {
   };
 
   const handleDeleteAccount = async () => {
-    if (!window.confirm('Are you sure you want to delete your account? This action cannot be undone and all your personal data will be permanently removed.')) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: 'Delete your account?',
+      message: 'This cannot be undone. Your profile and personal data will be permanently removed.',
+      confirmText: 'Delete my account',
+      cancelText: 'Keep my account',
+      destructive: true,
+    }).catch(() => false);
+    if (!confirmed) return;
 
     setIsDeleting(true);
     try {
       const { data } = await api.delete('/gdpr/delete-account');
-      success(data.message || 'Account deletion initiated');
+      success(data.message || 'Your account has been deleted');
+      // The account no longer exists: end the session on this device too,
+      // instead of leaving the member signed in to a deleted account.
+      logout();
+      navigate('/', { replace: true });
     } catch (err) {
       logger.error('Deletion error:', err);
-      error('Failed to delete account. Please try again.');
+      // A deliberate refusal (e.g. 409 while a safeguarding case holds the
+      // data) carries its reason; show it rather than "try again".
+      const reason = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      error(reason || 'Failed to delete account. Please try again.');
     } finally {
       setIsDeleting(false);
     }
@@ -186,6 +202,7 @@ export const GdprSettingsPanel: React.FC = () => {
           {savingPrefs ? 'Saving...' : 'Save Preferences'}
         </button>
       </div>
+      <ConfirmationDialog />
     </div>
   );
 };

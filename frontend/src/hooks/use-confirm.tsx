@@ -6,6 +6,7 @@ interface ConfirmOptions {
   message: string;
   confirmText?: string;
   cancelText?: string;
+  destructive?: boolean;
 }
 
 export const useConfirm = () => {
@@ -16,9 +17,9 @@ export const useConfirm = () => {
     reject: (reason?: any) => void 
   } | null>(null);
 
-  const confirm = useCallback(({ message, title = 'Confirm Action', confirmText, cancelText }: ConfirmOptions): Promise<boolean> => {
+  const confirm = useCallback(({ message, title = 'Confirm Action', confirmText, cancelText, destructive }: ConfirmOptions): Promise<boolean> => {
     return new Promise((resolve, reject) => {
-      setOptions({ message, title, confirmText, cancelText });
+      setOptions({ message, title, confirmText, cancelText, destructive });
       setResolveReject({ resolve, reject });
       setIsOpen(true);
     });
@@ -48,6 +49,7 @@ export const useConfirm = () => {
         message={options.message}
         confirmText={options.confirmText}
         cancelText={options.cancelText}
+        destructive={options.destructive}
         onConfirm={handleConfirm}
         onCancel={handleCancel}
       />
