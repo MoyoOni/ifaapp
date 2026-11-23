@@ -29,6 +29,7 @@ import {
   TransactionHistoryView,
   PersonalAwoDashboard,
 } from './lazy-views';
+import { navigateWithTransition } from '@/shared/utils/nav-transition';
 
 // P2-04: route-wiring "glue" components extracted verbatim from App.tsx —
 // each one just reads a URL param / auth state and renders a feature view,
@@ -259,7 +260,7 @@ export const ForumHomePage: React.FC = () => {
   const navigate = useNavigate();
   return (
     <ForumHomeView
-      onSelectThread={(threadId: string) => navigate(`/forum/${threadId}`)}
+      onSelectThread={(threadId: string) => navigateWithTransition(navigate, `/forum/${threadId}`, 'push')}
       onCreateThread={() => navigate('/forum')}
     />
   );

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import api from '@/lib/api';
 import { useToast } from '@/shared/components/toast';
+import { navigateWithTransition } from '@/shared/utils/nav-transition';
 
 
 interface Temple {
@@ -317,7 +318,7 @@ const ClientTempleBrowseView: React.FC = () => {
                   {temple.slug && (
                     <button
                       type="button"
-                      onClick={() => navigate(`/temples/${temple.slug}`)}
+                      onClick={() => navigateWithTransition(navigate, `/temples/${temple.slug}`, 'push')}
                       className="flex items-center justify-center gap-2 px-3 py-2 bg-muted text-foreground rounded-lg hover:bg-muted text-sm transition-colors"
                     >
                       <Users size={15} /> View

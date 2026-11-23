@@ -26,6 +26,7 @@ import { PersonalAwoPanel } from '@/shared/components/personal-awo-panel';
 import { JourneyCtaCard } from '@/shared/components/journey-cta-card';
 import ReferralPanel from '@/features/devoted/referral-panel';
 import { STAGGER_DELAY_1, STAGGER_DELAY_3, STAGGER_DELAY_4 } from '@/shared/constants/motion';
+import { navigateWithTransition } from '@/shared/utils/nav-transition';
 
 const PersonalDashboardView: React.FC = () => {
   const navigate = useNavigate();
@@ -360,7 +361,7 @@ const PersonalDashboardView: React.FC = () => {
                   dashboard.communities.temples.map(temp => (
                     <div
                       key={temp.id}
-                      onClick={() => navigate(`/temples/${temp.slug || temp.id}`)}
+                      onClick={() => navigateWithTransition(navigate, `/temples/${temp.slug || temp.id}`, 'push')}
                       className="flex items-center gap-3 p-3 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors cursor-pointer"
                     >
                       <div className="bg-emerald-100 dark:bg-emerald-900/30 p-2 rounded-xl text-emerald-700 dark:text-emerald-400">
@@ -389,7 +390,7 @@ const PersonalDashboardView: React.FC = () => {
                   dashboard.communities.circles.map(circle => (
                     <div
                       key={circle.id}
-                      onClick={() => navigate(`/circles/${circle.slug || circle.id}`)}
+                      onClick={() => navigateWithTransition(navigate, `/circles/${circle.slug || circle.id}`, 'push')}
                       className="flex items-center gap-3 p-3 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors cursor-pointer"
                     >
                       <div className="bg-teal-100 dark:bg-teal-900/30 p-2 rounded-xl text-teal-700 dark:text-teal-400">

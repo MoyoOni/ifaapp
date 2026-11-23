@@ -12,6 +12,7 @@ import { Input, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, B
 import api from '@/lib/api';
 import { Skeleton, SkeletonText } from '@/shared/components/skeleton';
 import { useSubscription } from '@/features/subscription/use-subscription';
+import { navigateWithTransition } from '@/shared/utils/nav-transition';
 
 interface CircleDirectoryProps {
   onSelectCircle?: (circleId: string) => void; // Keep for backward compatibility
@@ -58,7 +59,7 @@ const CircleDirectory: React.FC<CircleDirectoryProps> = ({ onSelectCircle, onCre
       return;
     }
     onSelectCircle?.(circle.id);
-    navigate(`/circles/${circle.slug || circle.id}`);
+    navigateWithTransition(navigate, `/circles/${circle.slug || circle.id}`, 'push');
   };
 
   const getPrivacyLabel = (privacy: string) => {

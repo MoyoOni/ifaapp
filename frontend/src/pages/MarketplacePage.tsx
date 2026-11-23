@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import MarketplaceView from '@/features/marketplace/marketplace-view';
+import { navigateWithTransition } from '@/shared/utils/nav-transition';
 
 const MarketplacePage: React.FC = () => {
   const navigate = useNavigate();
@@ -13,7 +14,7 @@ const MarketplacePage: React.FC = () => {
         } else if (productId === 'my-orders') {
           navigate('/my-orders');
         } else {
-          navigate(`/marketplace/${productId}`);
+          navigateWithTransition(navigate, `/marketplace/${productId}`, 'push');
         }
       }}
     />
