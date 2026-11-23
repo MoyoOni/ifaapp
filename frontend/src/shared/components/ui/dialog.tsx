@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useId, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useDragControls, useReducedMotion, type PanInfo } from 'framer-motion';
 import { X } from 'lucide-react';
@@ -27,6 +27,7 @@ function useIsSheet(): boolean {
 interface DialogLayout {
   isSheet: boolean;
   startDrag: (event: React.PointerEvent) => void;
+  titleId?: string;
 }
 
 const DialogLayoutContext = createContext<DialogLayout>({ isSheet: false, startDrag: () => {} });
@@ -41,6 +42,7 @@ export const Dialog: React.FC<DialogProps> = ({ open, onOpenChange, children }) 
   const isSheet = useIsSheet();
   const reduceMotion = useReducedMotion();
   const dragControls = useDragControls();
+  const titleId = useId();
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onOpenChange?.(false); };
@@ -78,6 +80,9 @@ export const Dialog: React.FC<DialogProps> = ({ open, onOpenChange, children }) 
             transition={{ duration: reduceMotion ? 0 : 0.2 }}
           />
           <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
             className={`relative z-50 w-full ${isSheet ? '' : 'max-w-lg'}`}
             {...panelMotion}
             transition={panelTransition}
@@ -88,7 +93,7 @@ export const Dialog: React.FC<DialogProps> = ({ open, onOpenChange, children }) 
             dragElastic={{ top: 0, bottom: 0.6 }}
             onDragEnd={isSheet ? onDragEnd : undefined}
           >
-            <DialogLayoutContext.Provider value={{ isSheet, startDrag: (event) => dragControls.start(event) }}>
+            <DialogLayoutContext.Provider value={{ isSheet, startDrag: (event) => dragControls.start(event), titleId }}>
               {children}
             </DialogLayoutContext.Provider>
           </motion.div>
@@ -131,9 +136,10 @@ export const DialogHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ c
   <div className={`flex flex-col space-y-1.5 mb-4 ${className}`} {...props} />
 );
 
-export const DialogTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = ({ className = '', ...props }) => (
-  <h2 className={`text-lg font-semibold text-foreground ${className}`} {...props} />
-);
+export const DialogTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = ({ className = '', ...props }) => {
+  const { titleId } = useContext(DialogLayoutContext);
+  return <h2 id={titleId} className={`text-lg font-semibold text-foreground ${className}`} {...props} />;
+};
 
 export const DialogFooter: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className = '', ...props }) => (
   <div className={`flex justify-end gap-3 mt-6 ${className}`} {...props} />

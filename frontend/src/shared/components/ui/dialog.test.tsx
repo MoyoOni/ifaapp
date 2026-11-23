@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { Dialog, DialogContent } from './dialog';
+import { Dialog, DialogContent, DialogTitle } from './dialog';
 
 function mockViewport(phone: boolean) {
   Object.defineProperty(window, 'matchMedia', {
@@ -28,6 +28,17 @@ describe('Dialog', () => {
   afterEach(() => {
     // @ts-expect-error - remove the per-test mock
     delete window.matchMedia;
+  });
+
+  it('is announced as a modal dialog named by its title', () => {
+    mockViewport(false);
+    render(
+      <Dialog open onOpenChange={vi.fn()}>
+        <DialogContent><DialogTitle>Send a warning</DialogTitle></DialogContent>
+      </Dialog>,
+    );
+    const dialog = screen.getByRole('dialog', { name: 'Send a warning' });
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
   });
 
   it('renders as a bottom sheet with a drag handle on phone widths', () => {
