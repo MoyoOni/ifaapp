@@ -32,9 +32,10 @@ export default defineConfig(({ mode }) => {
       dedupe: ['react', 'react-dom'],
     },
     server: {
-      port: 8100,
+      port: 5173,
       proxy: {
         '/api': {
+          // Matches PORT in backend/.env (the backend's own default is 3000).
           target: 'http://localhost:8080',
           changeOrigin: true,
         },
