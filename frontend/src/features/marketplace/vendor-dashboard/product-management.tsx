@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
 import { useToast } from '@/shared/components/toast';
+import { useConfirm } from '@/hooks/use-confirm';
 import VendorProductForm from '../vendor-product-form';
 
 interface Product {
@@ -134,6 +135,7 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ vendorId, activeT
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { confirm, ConfirmationDialog } = useConfirm();
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [historyProduct, setHistoryProduct] = useState<Product | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -313,6 +315,7 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ vendorId, activeT
 
   return (
     <div className="space-y-6">
+      <ConfirmationDialog />
       {editingProduct && (
         <VendorProductForm
           initialData={editingProduct as any}
@@ -476,7 +479,14 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ vendorId, activeT
               <Button
                 size="sm"
                 variant="destructive"
-                onClick={() => { if (confirm(`Delete ${selectedIds.size} product(s)? Any with order history will be archived instead.`)) bulkDeleteMutation.mutate(); }}
+                onClick={async () => {
+                  const ok = await confirm({
+                    title: 'Delete products',
+                    message: `Delete ${selectedIds.size} product(s)? Any with order history will be archived instead.`,
+                    confirmText: 'Delete',
+                  });
+                  if (ok) bulkDeleteMutation.mutate();
+                }}
                 disabled={bulkDeleteMutation.isPending}
               >
                 {bulkDeleteMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}

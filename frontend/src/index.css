@@ -72,6 +72,41 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Touch behaviour: no grey tap flash, no double-tap zoom delay. */
+  html {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  /* The signed-in shell is fixed-height with its own scroller; stop the whole
+     page bouncing/chaining while inner lists keep momentum scrolling. */
+  html,
+  body {
+    overscroll-behavior-y: none;
+  }
+
+  /* Controls shouldn't trigger text selection or the iOS long-press callout.
+     Content text stays selectable. */
+  nav,
+  button,
+  [role='button'],
+  [role='tab'] {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Fallback press feedback for every tappable element on touch screens.
+     The shared Button adds its own richer active state on top. */
+  @media (pointer: coarse) {
+    button:active,
+    a:active,
+    [role='button']:active {
+      opacity: 0.85;
+      transition: opacity 100ms ease-out;
+    }
+  }
 }
 
 /* Custom scrollbar styling */
