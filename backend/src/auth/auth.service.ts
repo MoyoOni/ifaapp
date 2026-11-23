@@ -392,10 +392,20 @@ Aboru Aboye.`;
       throw new UnauthorizedException('Google sign-in is not configured');
     }
     const client = new OAuth2Client(clientId);
+    // The native apps' Google SDKs issue ID tokens addressed to their own OAuth
+    // clients (iOS / Android), not the website's. GOOGLE_NATIVE_CLIENT_IDS is a
+    // comma-separated list of those; unset, only the website's client is accepted.
+    const audience = [
+      clientId,
+      ...(this.configService.get<string>('GOOGLE_NATIVE_CLIENT_IDS') ?? '')
+        .split(',')
+        .map((id) => id.trim())
+        .filter(Boolean),
+    ];
 
     let payload: TokenPayload | undefined;
     try {
-      const ticket = await client.verifyIdToken({ idToken: credential, audience: clientId });
+      const ticket = await client.verifyIdToken({ idToken: credential, audience });
       payload = ticket.getPayload();
     } catch {
       throw new UnauthorizedException('Invalid Google token');

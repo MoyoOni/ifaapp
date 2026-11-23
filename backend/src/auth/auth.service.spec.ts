@@ -454,6 +454,32 @@ describe('AuthService', () => {
       verify.mockRestore();
     });
 
+    it('accepts ID tokens from the native apps\' Google clients when configured', async () => {
+      jest.spyOn(configService, 'get').mockImplementation((key: string) =>
+        key === 'GOOGLE_CLIENT_ID' ? 'web-client' : key === 'GOOGLE_NATIVE_CLIENT_IDS' ? ' ios-client , android-client ,' : 'irrelevant'
+      );
+      const verify = jest.spyOn(OAuth2Client.prototype, 'verifyIdToken').mockImplementation(async () => ({
+        getPayload: () => ({ sub: 'g-2', email: 'ade@example.com', email_verified: true }),
+      }) as never);
+      jest.spyOn(service, 'findOrCreateGoogleUser').mockResolvedValue({} as never);
+
+      await service.verifyGoogleToken('credential');
+      expect(verify).toHaveBeenCalledWith({ idToken: 'credential', audience: ['web-client', 'ios-client', 'android-client'] });
+      verify.mockRestore();
+    });
+
+    it('accepts only the website client when no native clients are configured', async () => {
+      jest.spyOn(configService, 'get').mockImplementation((key: string) => (key === 'GOOGLE_CLIENT_ID' ? 'web-client' : undefined));
+      const verify = jest.spyOn(OAuth2Client.prototype, 'verifyIdToken').mockImplementation(async () => ({
+        getPayload: () => ({ sub: 'g-3', email: 'ade@example.com', email_verified: true }),
+      }) as never);
+      jest.spyOn(service, 'findOrCreateGoogleUser').mockResolvedValue({} as never);
+
+      await service.verifyGoogleToken('credential');
+      expect(verify).toHaveBeenCalledWith({ idToken: 'credential', audience: ['web-client'] });
+      verify.mockRestore();
+    });
+
     it('refuses to verify when GOOGLE_CLIENT_ID is not configured, instead of silently verifying with no audience restriction', async () => {
       // Regression guard: production ran with GOOGLE_CLIENT_ID entirely
       // unset for a while -- new OAuth2Client(undefined) + audience:
