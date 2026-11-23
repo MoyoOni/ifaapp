@@ -55,7 +55,6 @@
     "@nestjs/swagger": "^11.4.7",
     "@nestjs/terminus": "^11.1.1",
     "@nestjs/throttler": "^6.5.0",
-    "@nestjs/typeorm": "^11.0.1",
     "@nestjs/websockets": "^11.1.14",
     "@prisma/client": "^5.20.0",
     "@sentry/node": "^10.78.0",
@@ -86,7 +85,6 @@
     "rxjs": "^7.8.1",
     "socket.io": "^4.7.5",
     "swagger-ui-express": "^5.0.1",
-    "typeorm": "^0.3.28",
     "zod": "^3.25.76"
   },
   "devDependencies": {
