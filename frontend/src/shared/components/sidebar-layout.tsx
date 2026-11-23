@@ -40,6 +40,7 @@ import { User as UserType } from '@common';
 import { isDevModeActive } from '@/shared/utils/dev-mode';
 import { decodeJwtPayload } from '@/shared/utils/jwt';
 import { AnnouncementBanner } from './announcement-banner';
+import ServerUnreachableBanner, { useRegisterBannerShell } from './server-unreachable-banner';
 import { VisitorAuthCard } from './visitor-auth-card';
 import { StandardsPrompt } from '@/features/safeguarding/standards-prompt';
 
@@ -108,6 +109,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
     const { isDevoted } = useSubscription();
     const navigate = useNavigate();
     const location = useLocation();
+    useRegisterBannerShell();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -688,6 +690,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                     </div>
                 </header>
 
+                <ServerUnreachableBanner inShell />
                 <AnnouncementBanner />
                 <StandardsPrompt />
 
