@@ -42,6 +42,7 @@ import { decodeJwtPayload } from '@/shared/utils/jwt';
 import { AnnouncementBanner } from './announcement-banner';
 import ServerUnreachableBanner, { useRegisterBannerShell } from './server-unreachable-banner';
 import { tapHaptic } from '@/lib/native';
+import { navigateWithTransition, type NavTransition } from '@/shared/utils/nav-transition';
 import { VisitorAuthCard } from './visitor-auth-card';
 import { StandardsPrompt } from '@/features/safeguarding/standards-prompt';
 
@@ -211,8 +212,8 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
 
     const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
 
-    const handleNavClick = (path: string) => {
-        navigate(path);
+    const handleNavClick = (path: string, transition: NavTransition = 'tab') => {
+        navigateWithTransition(navigate, path, transition);
         setIsMobileMenuOpen(false);
         setIsProfileMenuOpen(false); // Close profile menu when navigating
     };
@@ -696,7 +697,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({
                 <StandardsPrompt />
 
                 {/* Scrollable View Content */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-6 lg:p-8">
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-6 lg:p-8" data-vt-page>
                     <div className="max-w-7xl mx-auto pb-20">
                         {children}
                     </div>
