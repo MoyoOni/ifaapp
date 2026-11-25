@@ -4,7 +4,7 @@ import { UserRole, AdminSubRole } from '@common';
 import api from '@/lib/api';
 import { DEMO_USERS } from '@/demo';
 import { logger, setLogContext, clearLogContext } from '@/shared/utils/logger';
-import * as Sentry from '@sentry/react';
+import { reportError } from '@/shared/config/sentry';
 import { registerPushNotifications, deregisterPushNotifications } from '@/lib/firebase-messaging';
 import { isDevModeActive } from '@/shared/utils/dev-mode';
 import { decodeJwtPayload } from '@/shared/utils/jwt';
@@ -69,10 +69,7 @@ function useAuthState(): AuthContextValue {
         logger.error(`[useAuth] Fetch error:`, error);
 
         // Always capture errors to Sentry
-        Sentry.captureException(error, {
-          tags: { type: 'auth_user_fetch' },
-          extra: { userId }
-        });
+        reportError(error, 'auth_user_fetch');
 
         // Only an authoritative "this session is gone" answer may end the
         // session. A 401 here means the api client's refresh already failed;
@@ -147,10 +144,7 @@ function useAuthState(): AuthContextValue {
       registerPushNotifications().catch(() => {});
     } catch (error: any) {
       // Always capture authentication errors to Sentry
-      Sentry.captureException(error, {
-        tags: { type: 'auth_login' },
-        extra: { email }
-      });
+      reportError(error, 'auth_login');
       const errorMessage = error.response?.data?.message || error.message || 'Login failed';
       throw new Error(errorMessage);
     }

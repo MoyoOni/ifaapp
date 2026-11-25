@@ -1,6 +1,6 @@
 import { AxiosError } from 'axios';
-import { logger, getLogContext } from './logger';
-import { captureException } from '@/shared/config/sentry';
+import { logger } from './logger';
+import { reportError } from '@/shared/config/sentry';
 
 /** Standard API error shape (PB-202.5); backend returns { success: false, error: StandardApiError }. */
 export interface StandardApiError {
@@ -149,35 +149,17 @@ export function parseApiError(error: unknown): ParsedApiError {
 }
 
 /**
- * Report API error for logging and mandatory error tracking (Sentry).
- * Call from catch blocks or in the API response interceptor.
- * 
- * PRODUCTION: All API errors are captured and sent to Sentry.
+ * Report an API error for logging and error tracking (Sentry).
+ * Called from the API response interceptor.
+ *
+ * Only an allow-listed diagnostic leaves the app (method, templated route, status, Axios code,
+ * the request's own x-request-id). Never the original error, its message, the request body,
+ * headers, query string or server message, and never a user identifier.
  */
 export function reportApiError(
   error: unknown,
-  context?: { action?: string; endpoint?: string }
+  _context?: { action?: string; endpoint?: string }
 ): void {
-  const parsed = parseApiError(error);
-  const axiosError = error as AxiosError;
-  const detail =
-    axiosError.response?.status != null
-      ? `status ${axiosError.response.status}`
-      : parsed.isNetworkError
-        ? 'network error'
-        : 'unknown';
-  const ctx = context?.action ?? context?.endpoint ?? '';
-  
-  // PRODUCTION: Always log error and capture to Sentry
-  logger.error(`API error ${ctx} (${detail}):`, parsed.userMessage, error);
-  const logCtx = getLogContext();
-  captureException(error, {
-    action: context?.action,
-    endpoint: context?.endpoint,
-    statusCode: parsed.statusCode,
-    userMessage: parsed.userMessage,
-    isNetworkError: parsed.isNetworkError,
-    traceId: logCtx.traceId,
-    userId: logCtx.userId,
-  });
+  logger.error('API request failed', error); // the logger reduces the error to a Diagnostic
+  reportError(error, 'api_error');
 }

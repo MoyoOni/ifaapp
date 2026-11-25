@@ -27,7 +27,7 @@ export class TabErrorBoundary extends React.Component<TabErrorBoundaryProps, Tab
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    logger.error(`[TabErrorBoundary] Tab "${this.props.tabName ?? 'unknown'}" crashed:`, error, info.componentStack);
+    logger.error('[TabErrorBoundary] Tab crashed:', this.props.tabName ?? 'unknown', error, info.componentStack);
   }
 
   // Reset when switching to a different tab (children change)

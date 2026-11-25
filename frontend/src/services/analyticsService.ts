@@ -123,7 +123,7 @@ class AnalyticsService {
       this.cache.set(cacheKey, { data, timestamp: Date.now() });
       return data;
     } catch (error) {
-      logger.error(`Failed to fetch top ${type}:`, error);
+      logger.error('Failed to fetch top analytics items:', type, error);
       throw error;
     }
   }

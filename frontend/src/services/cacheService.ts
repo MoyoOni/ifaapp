@@ -50,7 +50,7 @@ class CacheService {
         }
       }
     } catch (error) {
-      logger.warn(`[CacheService] Failed to read from localStorage for key: ${key}`, error);
+      logger.warn('[CacheService] Failed to read from localStorage', key, error);
     }
 
     // Cache miss or expired
@@ -94,7 +94,7 @@ class CacheService {
           try {
             localStorage.setItem(`cache:${key}`, JSON.stringify(entry));
           } catch {
-            logger.warn(`[CacheService] Failed to store in localStorage: ${key}`);
+            logger.warn('[CacheService] Failed to store in localStorage', key);
           }
         }
       }
@@ -127,7 +127,7 @@ class CacheService {
               }
             }
           } catch (error) {
-            logger.warn(`[CacheService] Failed to check localStorage key: ${key}`, error);
+            logger.warn('[CacheService] Failed to check localStorage key', key, error);
           }
         }
       }

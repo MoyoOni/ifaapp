@@ -1,6 +1,6 @@
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 import api from '@/lib/api';
-import * as Sentry from '@sentry/react';
+import { reportError } from '@/shared/config/sentry';
 
 /**
  * Configuration for API query with demo fallback
@@ -77,10 +77,7 @@ export function useApiQuery<TData, TParams = Record<string, unknown>>({
           throw error;
         }
         // Unexpected errors — report to Sentry
-        Sentry.captureException(error, {
-          tags: { endpoint, type: 'api_query' },
-          extra: { params }
-        });
+        reportError(error, 'api_query');
         throw error;
       }
 
@@ -150,10 +147,7 @@ export function usePaginatedApiQuery<TItem, TParams = Record<string, unknown>>({
         const response = await api.get(endpoint, { params: cleanParams });
         return response.data;
       } catch (error) {
-        Sentry.captureException(error, {
-          tags: { endpoint, type: 'paginated_api_query' },
-          extra: { params, page, pageSize }
-        });
+        reportError(error, 'paginated_api_query');
         throw error;
       }
     },

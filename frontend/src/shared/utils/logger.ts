@@ -1,8 +1,12 @@
 /**
  * Centralized logger for the Ilé Àṣẹ frontend.
  * In production, only warn and error are emitted to reduce noise and avoid leaking debug info.
- * Supports trace ID (from API x-request-id) and user context for log correlation.
+ *
+ * warn/error never emit raw values: the first argument must be a constant string (enforced by
+ * telemetry-guard.test.ts) and every other argument is reduced by safeLogArgs(). Console output
+ * is captured by error tracking, so a raw error here once meant a member's password in Sentry.
  */
+import { safeLogArgs, safeRequestId } from './telemetry-safe';
 
 const isDev = typeof process !== 'undefined' && process.env?.NODE_ENV === 'development';
 
@@ -37,8 +41,8 @@ export function clearLogContext(): void {
 
 function prefix(): string {
   const parts = ['[Ilé Àṣẹ]'];
-  if (logContext.traceId) parts.push(`[${logContext.traceId}]`);
-  if (logContext.userId) parts.push(`[user:${logContext.userId}]`);
+  const requestId = safeRequestId(logContext.traceId); // only a validated UUID, never a raw value
+  if (requestId) parts.push(`[${requestId}]`);
   return parts.join(' ');
 }
 
@@ -67,31 +71,13 @@ export const logger = {
   warn(...args: unknown[]): void {
     // Always emit warnings (useful in production for monitoring)
     // eslint-disable-next-line no-console
-    console.warn(prefix(), ...args);
+    console.warn(prefix(), ...safeLogArgs(args));
   },
 
   error(...args: unknown[]): void {
     // Always emit errors (critical for production debugging)
     // eslint-disable-next-line no-console
-    console.error(prefix(), ...args);
-  },
-
-  /**
-   * Structured logging with context
-   */
-  structured(level: 'debug' | 'log' | 'info' | 'warn' | 'error', data: Record<string, unknown>): void {
-    const logData = {
-      timestamp: new Date().toISOString(),
-      level,
-      context: getLogContext(),
-      ...data,
-    };
-    
-    if (level === 'error' || level === 'warn') {
-      console[level](prefix(), JSON.stringify(logData, null, 2));
-    } else if (isDev) {
-      console[level](prefix(), JSON.stringify(logData, null, 2));
-    }
+    console.error(prefix(), ...safeLogArgs(args));
   },
 };
 

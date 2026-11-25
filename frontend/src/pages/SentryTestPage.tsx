@@ -1,5 +1,5 @@
 import React from 'react';
-import { captureException } from '@/shared/config/sentry';
+import { reportError } from '@/shared/config/sentry';
 
 /**
  * Test page for verifying Sentry error tracking.
@@ -21,11 +21,7 @@ export default function SentryTestPage() {
         try {
             throw new Error('[TEST] Manually captured frontend error');
         } catch (error) {
-            captureException(error, {
-                testContext: 'manual-capture-button',
-                timestamp: new Date().toISOString(),
-                userAgent: navigator.userAgent,
-            });
+            reportError(error, 'sentry_test');
             setLastError('Error manually captured! Check Sentry dashboard.');
         }
     };
@@ -50,10 +46,7 @@ export default function SentryTestPage() {
                 throw new Error(`[TEST] Network error: ${response.status}`);
             }
         } catch (error) {
-            captureException(error, {
-                testContext: 'network-error-test',
-                endpoint: 'https://api.example.com/nonexistent-endpoint',
-            });
+            reportError(error, 'sentry_test');
             setLastError('Network error captured! Check Sentry dashboard.');
         }
     };

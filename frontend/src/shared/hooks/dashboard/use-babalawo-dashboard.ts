@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuth } from '../use-auth';
 import type { BabalawoDashboardSummary } from './types';
-import * as Sentry from '@sentry/react';
+import { reportError } from '@/shared/config/sentry';
 import { isDevModeActive } from '@/shared/utils/dev-mode';
 
 export function useBabalawoDashboard(userId?: string) {
@@ -20,10 +20,7 @@ export function useBabalawoDashboard(userId?: string) {
         const response = await api.get(`/dashboard/babalawo/${effectiveUserId}/summary`);
         return response.data;
       } catch (err) {
-        Sentry.captureException(err, {
-          tags: { type: 'dashboard_babalawo_fetch' },
-          extra: { userId: effectiveUserId }
-        });
+        reportError(err, 'dashboard_babalawo_fetch');
         throw err;
       }
     },
