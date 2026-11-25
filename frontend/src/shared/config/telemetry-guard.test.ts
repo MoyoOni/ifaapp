@@ -17,6 +17,8 @@ const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const SENTRY_CONFIG = path.join('shared', 'config', 'sentry.ts');
 const LOGGER_MODULE = path.join('shared', 'utils', 'logger.ts');
 const TEMPLATES_FILE = path.join(SRC, 'shared', 'utils', 'route-templates.ts');
+/** Tests that parse every source file (~380): normally ~2 s, but must not fail under CPU load (e.g. a parallel Docker build). */
+const SOURCE_SCAN_TIMEOUT_MS = 60_000;
 
 /** src/test holds test-only infrastructure (setup, factories); a guard test asserts no app file imports it. */
 const TEST_SUPPORT = path.join(SRC, 'test');
@@ -109,6 +111,37 @@ const enclosingFunction = (n: ts.Node): ts.SignatureDeclaration | null => {
   for (let p: ts.Node | undefined = n.parent; p; p = p.parent) if (ts.isFunctionLike(p)) return p;
   return null;
 };
+/**
+ * True if this expression is written to: the target of any assignment (including compound and
+ * destructuring assignment), ++/--, a `for…of`/`for…in` target, or `delete`.
+ */
+function isWriteTarget(n: ts.Node): boolean {
+  let cur: ts.Node = n;
+  let p = cur.parent;
+  while (p && (ts.isObjectLiteralExpression(p) || ts.isArrayLiteralExpression(p) || ts.isShorthandPropertyAssignment(p)
+    || (ts.isPropertyAssignment(p) && p.initializer === cur) || ts.isSpreadElement(p) || ts.isSpreadAssignment(p)
+    || ts.isParenthesizedExpression(p))) { cur = p; p = p.parent; }
+  if (!p) return false;
+  if (ts.isBinaryExpression(p) && p.left === cur
+    && p.operatorToken.kind >= ts.SyntaxKind.FirstAssignment && p.operatorToken.kind <= ts.SyntaxKind.LastAssignment) return true;
+  if ((ts.isForOfStatement(p) || ts.isForInStatement(p)) && p.initializer === cur) return true;
+  if (cur !== n) return false;
+  if ((ts.isPrefixUnaryExpression(p) || ts.isPostfixUnaryExpression(p))
+    && (p.operator === ts.SyntaxKind.PlusPlusToken || p.operator === ts.SyntaxKind.MinusMinusToken)) return true;
+  return ts.isDeleteExpression(p);
+}
+/** Every identifier in `scope` that refers to `binding` (by nearest-binding resolution). */
+function referencesTo(scope: ts.Node, binding: ts.Node, name: string): ts.Identifier[] {
+  const out: ts.Identifier[] = [];
+  const visit = (n: ts.Node): void => {
+    const p = n.parent;
+    const isDeclarationName = (ts.isVariableDeclaration(p) || ts.isParameter(p) || ts.isBindingElement(p)) && p.name === n;
+    if (ts.isIdentifier(n) && n.text === name && !isDeclarationName && isValueReference(n) && nearestBinding(n) === binding) out.push(n);
+    ts.forEachChild(n, visit);
+  };
+  visit(scope);
+  return out;
+}
 
 // ── Logger guard ────────────────────────────────────────────────────────────────────────────────
 /**
@@ -209,12 +242,15 @@ const NON_REQUEST_MEMBERS = new Set(['interceptors', 'defaults', 'isAxiosError',
 // `create` returns a new client: it must be bound to a plain variable, which is then tracked like the import.
 /**
  * The one retry: in lib/api.ts, inside the error handler of `<client>.interceptors.response.use(…, (error) => …)`,
- * `return <client>(originalRequest)` where `const originalRequest = error.config` is declared in that same handler.
+ * `return <client>(originalRequest)` where `const originalRequest = error.config` is declared in that same handler,
+ * `error` there is the handler's own parameter, and the config is never re-pointed: the only writes allowed are
+ * `originalRequest._retry` and `originalRequest.headers.*`, and it is not aliased or passed anywhere else.
  */
 const RETRY = { file: 'lib/api.ts', argument: 'originalRequest' } as const;
 /**
  * The one forwarder: in use-api-query.ts, `<client>.get(endpoint, …)` where `endpoint` is bound by the first
- * parameter of the exported useApiQuery / usePaginatedApiQuery function (whose callers pass a literal endpoint).
+ * parameter of the exported useApiQuery / usePaginatedApiQuery function (whose callers pass a literal endpoint)
+ * and is never assigned anywhere in that function.
  */
 const FORWARD = { file: 'shared/hooks/use-api-query.ts', method: 'get', argument: 'endpoint' } as const;
 /** Exact origins (scheme://host[:port]) of the app itself: an absolute URL on one of these is inventoried like a '/…' path. */
@@ -317,8 +353,43 @@ function inventoryOf(file: string, absPath: string, text: string): Inventory {
     if (!(ts.isCallExpression(use) && use.arguments[1] === fn && use.expression.getText(sf) === `${clientName}.interceptors.response.use`)) return false;
     const errorParam = fn.parameters[0];
     const b = nearestBinding(arg);
-    return !!b && ts.isVariableDeclaration(b) && enclosingFunction(b) === fn && !!b.initializer
-      && !!errorParam && ts.isIdentifier(errorParam.name) && b.initializer.getText(sf) === `${errorParam.name.text}.config`;
+    if (!b || !ts.isVariableDeclaration(b) || enclosingFunction(b) !== fn || !b.initializer || !errorParam) return false;
+    if (!ts.isVariableDeclarationList(b.parent) || !(b.parent.flags & ts.NodeFlags.Const)) return false;
+    // The initializer is exactly `<error>.config`, where <error> resolves to the handler's own parameter.
+    const init = b.initializer;
+    if (!(ts.isPropertyAccessExpression(init) && init.name.text === 'config' && ts.isIdentifier(init.expression)
+      && nearestBinding(init.expression) === errorParam)) return false;
+    // Every other use of originalRequest must leave its URL/config intact.
+    for (const ref of referencesTo(fn, b, RETRY.argument)) {
+      if (ref === arg) continue;
+      let top: ts.Expression = ref;
+      const path: string[] = [];
+      while ((ts.isPropertyAccessExpression(top.parent) || ts.isElementAccessExpression(top.parent)) && top.parent.expression === top) {
+        const pa = top.parent;
+        path.push(ts.isPropertyAccessExpression(pa) ? pa.name.text
+          : ts.isStringLiteralLike(pa.argumentExpression) ? pa.argumentExpression.text : '<computed>');
+        top = pa;
+      }
+      if (path.length) {
+        if (!isWriteTarget(top)) continue; // a read of a member
+        const allowedWrite = (path[0] === '_retry' && path.length === 1) || (path[0] === 'headers' && path.length >= 2 && !path.includes('<computed>'));
+        if (!allowedWrite) return false;
+        continue;
+      }
+      // A bare reference is allowed only as a truth test: climb through &&, ||, ! and parentheses;
+      // the chain must end as the test of an if / while / ternary (so its value can never be captured).
+      let top2: ts.Node = ref;
+      while ((ts.isBinaryExpression(top2.parent) && (top2.parent.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken
+          || top2.parent.operatorToken.kind === ts.SyntaxKind.BarBarToken))
+        || (ts.isPrefixUnaryExpression(top2.parent) && top2.parent.operator === ts.SyntaxKind.ExclamationToken)
+        || ts.isParenthesizedExpression(top2.parent)) top2 = top2.parent;
+      const tp = top2.parent;
+      const condition = (ts.isIfStatement(tp) && tp.expression === top2) || (ts.isWhileStatement(tp) && tp.expression === top2)
+        || (ts.isConditionalExpression(tp) && tp.condition === top2)
+        || (ts.isPrefixUnaryExpression(top2) && top2.operator === ts.SyntaxKind.ExclamationToken && top2 !== ref && !ts.isBinaryExpression(tp));
+      if (!condition) return false; // aliased, passed to another function, reassigned, …
+    }
+    return true;
   };
   /** Is this exactly the hook forwarder call (see FORWARD)? */
   const isTheForward = (member: string, arg: ts.Expression | undefined): boolean => {
@@ -326,7 +397,9 @@ function inventoryOf(file: string, absPath: string, text: string): Inventory {
     const b = nearestBinding(arg);
     if (!b || !ts.isParameter(b)) return false;
     const fn = b.parent;
-    return ts.isFunctionDeclaration(fn) && !!fn.name && QUERY_HOOKS.has(fn.name.text) && fn.parameters[0] === b && ts.isSourceFile(fn.parent);
+    if (!(ts.isFunctionDeclaration(fn) && !!fn.name && QUERY_HOOKS.has(fn.name.text) && fn.parameters[0] === b && ts.isSourceFile(fn.parent))) return false;
+    // `endpoint` must still be the caller's value: never assigned anywhere in the hook.
+    return !referencesTo(fn, b, FORWARD.argument).some((ref) => isWriteTarget(ref));
   };
 
   const checkClientUse = (ref: ts.Expression, name: string) => {
@@ -523,7 +596,7 @@ describe('telemetry guards', () => {
   it('every logger use in the app is a direct method call, and error/warn start with a constant string', () => {
     const offenders = files.filter((f) => rel(f) !== LOGGER_MODULE).flatMap((f) => loggerOffenders(rel(f), read(f)));
     expect(offenders).toEqual([]);
-  });
+  }, SOURCE_SCAN_TIMEOUT_MS);
 
   it('the logger check itself catches every known bypass', () => {
     const imp = "import { logger } from '@/shared/utils/logger';\n";
@@ -641,7 +714,9 @@ describe('telemetry guards', () => {
     // v7: the retry and forwarder exemptions cover only their exact call; anything else in those files fails.
     const retryFile = 'lib/api.ts';
     const created = "import axios from 'axios';\nconst api = axios.create({ baseURL: '/api' });\n";
-    const retry = 'api.interceptors.response.use((r) => r, async (error) => {\n  const originalRequest = error.config;\n  return api(originalRequest);\n});';
+    const retry = 'api.interceptors.response.use((r) => r, async (error) => {\n  const originalRequest = error.config;\n'
+      + '  if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {\n    originalRequest._retry = true;\n'
+      + '    originalRequest.headers.Authorization = `Bearer ${token}`;\n    return api(originalRequest);\n  }\n  report({ endpoint: originalRequest?.url });\n});';
     expect(at(`${created}export default api;\n${retry}`, retryFile).problems).toEqual([]);
     const notTheRetry: Record<string, string> = {
       otherConfig: 'api({ url: someVar });',
@@ -657,11 +732,26 @@ describe('telemetry guards', () => {
       forInShadow: 'api.interceptors.response.use((r) => r, async (error) => { const originalRequest = error.config; for (const originalRequest in table) { return api(originalRequest); } });',
       forShadow: 'api.interceptors.response.use((r) => r, async (error) => { const originalRequest = error.config; for (let originalRequest = next(); originalRequest; ) { return api(originalRequest); } });',
       blockFunctionShadow: 'api.interceptors.response.use((r) => r, async (error) => { const originalRequest = error.config; { function originalRequest() {} return api(originalRequest); } });',
+      // v10: `error` must be the handler's parameter, and the config must not be re-pointed
+      forgedError: 'api.interceptors.response.use((r) => r, async (error) => { { const error = forged(); const originalRequest = error.config; return api(originalRequest); } });',
+      letReassigned: 'api.interceptors.response.use((r) => r, async (error) => { let originalRequest = error.config; originalRequest = other; return api(originalRequest); });',
+      urlMutation: "api.interceptors.response.use((r) => r, async (error) => { const originalRequest = error.config; originalRequest.url = '/x/' + id; return api(originalRequest); });",
+      bracketUrlMutation: "api.interceptors.response.use((r) => r, async (error) => { const originalRequest = error.config; originalRequest['url'] = path; return api(originalRequest); });",
+      paramsMutation: 'api.interceptors.response.use((r) => r, async (error) => { const originalRequest = error.config; originalRequest.params = p; return api(originalRequest); });',
+      baseUrlMutation: "api.interceptors.response.use((r) => r, async (error) => { const originalRequest = error.config; originalRequest.baseURL += '/x'; return api(originalRequest); });",
+      deleteMember: 'api.interceptors.response.use((r) => r, async (error) => { const originalRequest = error.config; delete originalRequest.url; return api(originalRequest); });',
+      objectAssign: 'api.interceptors.response.use((r) => r, async (error) => { const originalRequest = error.config; Object.assign(originalRequest, { url: x }); return api(originalRequest); });',
+      aliasMutation: 'api.interceptors.response.use((r) => r, async (error) => { const originalRequest = error.config; const r2 = originalRequest; r2.url = x; return api(originalRequest); });',
+      computedHeaderWrite: 'api.interceptors.response.use((r) => r, async (error) => { const originalRequest = error.config; originalRequest.headers[k] = v; return api(originalRequest); });',
+      aliasThroughLogical: 'api.interceptors.response.use((r) => r, async (error) => { const originalRequest = error.config; const r2 = ok && originalRequest; r2.url = x; return api(originalRequest); });',
+      passedToFunction: 'api.interceptors.response.use((r) => r, async (error) => { const originalRequest = error.config; rewrite(originalRequest); return api(originalRequest); });',
     };
-    for (const [label, code] of Object.entries(notTheRetry)) expect(at(created + code, retryFile).problems, `retry file: ${label}`).not.toEqual([]);
+    // Each must fail because the request itself was refused the exemption (not for an unrelated reason).
+    const refused = (problems: string[]) => problems.some((x) => /\bapi(\.(get|post|request))?\(config\)|\bapi\.(get|post|request)\b/.test(x));
+    for (const [label, code] of Object.entries(notTheRetry)) expect(refused(at(created + code, retryFile).problems), `retry file: ${label}`).toBe(true);
     const forwardFile = 'shared/hooks/use-api-query.ts';
     const imp = "import api from '@/lib/api';\n";
-    expect(at(`${imp}export function useApiQuery({ endpoint, params }) { return async () => api.get(endpoint, { params }); }`, forwardFile).problems).toEqual([]);
+    expect(at(`${imp}export function useApiQuery({ endpoint, params }) { if (!ok) throw new Error(\`API failed: \${endpoint}\`); return async () => api.get(endpoint, { params }); }`, forwardFile).problems).toEqual([]);
     const notTheForward: Record<string, string> = {
       otherMethod: 'export function useApiQuery({ endpoint }) { return api.post(endpoint); }',
       otherArgument: 'export function useApiQuery({ endpoint }) { return api.get(otherPath); }',
@@ -675,8 +765,15 @@ describe('telemetry guards', () => {
       forShadow: 'export function useApiQuery({ endpoint }) { for (let endpoint = first(); endpoint; ) { return api.get(endpoint); } }',
       catchShadow: 'export function useApiQuery({ endpoint }) { try { go(); } catch (endpoint) { return api.get(endpoint); } }',
       blockClassShadow: 'export function useApiQuery({ endpoint }) { { class endpoint {} return api.get(endpoint); } }',
+      // v10: `endpoint` must never be assigned inside the hook
+      reassigned: 'export function useApiQuery({ endpoint }) { endpoint = buildDynamicPath(); return api.get(endpoint); }',
+      compoundAssigned: 'export function useApiQuery({ endpoint }) { endpoint += suffix; return api.get(endpoint); }',
+      destructuringAssigned: 'export function useApiQuery({ endpoint }) { ({ endpoint } = other); return api.get(endpoint); }',
+      arrayDestructuringAssigned: 'export function useApiQuery({ endpoint }) { [endpoint] = list; return api.get(endpoint); }',
+      forOfTarget: 'export function useApiQuery({ endpoint }) { for (endpoint of list) {} return api.get(endpoint); }',
+      assignedInNestedFunction: 'export function useApiQuery({ endpoint }) { const later = () => { endpoint = other; }; later(); return async () => api.get(endpoint); }',
     };
-    for (const [label, code] of Object.entries(notTheForward)) expect(at(imp + code, forwardFile).problems, `forwarder file: ${label}`).not.toEqual([]);
+    for (const [label, code] of Object.entries(notTheForward)) expect(refused(at(imp + code, forwardFile).problems), `forwarder file: ${label}`).toBe(true);
     // v7: legitimate uses of globals stay allowed.
     expect(at("if (typeof window !== 'undefined' && 'serviceWorker' in navigator) { window.location.href = '/'; }\nconst ua = navigator.userAgent;").problems).toEqual([]);
     expect(at("import api from '@/lib/api';\nconst o = { api };").problems, 'shorthand property is a value use').not.toEqual([]);
@@ -709,7 +806,7 @@ describe('telemetry guards', () => {
         && (resolveSpec(f, st.moduleSpecifier.text) ?? '').startsWith(TEST_SUPPORT));
     });
     expect(offenders.map(rel)).toEqual([]);
-  });
+  }, SOURCE_SCAN_TIMEOUT_MS);
 
   it('route templates are exactly the app routes and API request paths, and every API path is statically known', () => {
     const { api, page, problems } = inventory();
@@ -717,7 +814,7 @@ describe('telemetry guards', () => {
     expect(problems).toEqual([]);
     expect([...PAGE_ROUTE_TEMPLATES].sort()).toEqual([...page].sort());
     expect([...API_ROUTE_TEMPLATES].sort()).toEqual([...api].sort());
-  });
+  }, SOURCE_SCAN_TIMEOUT_MS);
 
   it('templates contain only plain route words and :param', () => {
     const shape = (t: string) => t.split('/').slice(1).filter(Boolean).every((s) => s === ':param' || /^[a-z][a-z0-9-]{0,40}$/.test(s));
