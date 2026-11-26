@@ -2,6 +2,7 @@ import { ExecutionContext } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ThrottlerModuleOptions, ThrottlerOptions } from '@nestjs/throttler';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
+import { ResilientThrottlerStorage } from './resilient-throttler-storage';
 
 // Matched by name rather than imported to avoid a config -> auth module import
 // cycle; throttler.config.spec.ts asserts AuthController still has this name.
@@ -65,6 +66,15 @@ export const getThrottlerConfig = (configService: ConfigService): ThrottlerModul
 
   return {
     throttlers,
-    storage: new ThrottlerStorageRedisService(redisUrl),
+    // Fail fast instead of queueing commands while Redis is down (ioredis defaults: offline queue, 20 retries per
+    // command), which hung every request; ResilientThrottlerStorage then decides per limiter (auth 503, others open).
+    storage: new ResilientThrottlerStorage(
+      new ThrottlerStorageRedisService(redisUrl, {
+        enableOfflineQueue: false,
+        maxRetriesPerRequest: 1,
+        connectTimeout: 2000,
+        commandTimeout: 2000,
+      })
+    ),
   };
 };
