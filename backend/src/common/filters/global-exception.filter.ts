@@ -10,6 +10,11 @@ import { Request, Response } from 'express';
 import { mapToStandardError } from '../errors';
 import { captureException } from '../../sentry';
 
+/** The request's path without query string or fragment (which may carry tokens), for logs and error reports. */
+export function requestPath(url: string | undefined): string {
+  return (url ?? '').split(/[?#]/)[0] || '/';
+}
+
 /**
  * Global exception filter that catches ALL unhandled exceptions and maps them
  * to appropriate HTTP status codes. Prevents generic 500s for known error types.
@@ -22,6 +27,7 @@ import { captureException } from '../../sentry';
  *   - HttpException subclasses → their native status
  *   - Everything else → 500 Internal Server Error
  */
+
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(GlobalExceptionFilter.name);
@@ -41,16 +47,20 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const body = exception instanceof HttpException ? exception.getResponse() : null;
     const expected = typeof body === 'object' && body !== null && (body as { expected?: boolean }).expected === true;
 
+    // Path only: a query string can carry secrets (the deprecated GET /auth/verify-email?token=… did), and these lines
+    // go to the container logs and backend Sentry.
+    const path = requestPath(request.url);
+
     // Log server errors with full stack; client errors at warn level
     if (expected) {
-      this.logger.warn(`${request.method} ${request.url} ${status} — ${message} (expected)`);
+      this.logger.warn(`${request.method} ${path} ${status} — ${message} (expected)`);
     } else if (status >= 500) {
       this.logger.error(
-        `${request.method} ${request.url} ${status} — ${message}`,
+        `${request.method} ${path} ${status} — ${message}`,
         exception instanceof Error ? exception.stack : String(exception)
       );
     } else if (status >= 400) {
-      this.logger.warn(`${request.method} ${request.url} ${status} — ${message}`);
+      this.logger.warn(`${request.method} ${path} ${status} — ${message}`);
     }
 
     // Report unexpected (5xx / non-HttpException) failures to Sentry — this
@@ -59,7 +69,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     // registered via app.useGlobalFilters()).
     if (!expected && (status >= 500 || !(exception instanceof HttpException))) {
       captureException(exception, {
-        url: request.url,
+        url: path,
         method: request.method,
         requestId,
       });

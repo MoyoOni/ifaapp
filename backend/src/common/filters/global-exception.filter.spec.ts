@@ -1,5 +1,5 @@
-import { ArgumentsHost, BadRequestException, ServiceUnavailableException } from '@nestjs/common';
-import { GlobalExceptionFilter } from './global-exception.filter';
+import { ArgumentsHost, BadRequestException, Logger, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
+import { GlobalExceptionFilter, requestPath } from './global-exception.filter';
 import { captureException } from '../../sentry';
 
 jest.mock('../../sentry', () => ({ captureException: jest.fn() }));
@@ -48,5 +48,33 @@ describe('GlobalExceptionFilter', () => {
     } finally {
       process.env.NODE_ENV = env;
     }
+  });
+
+  // November 26, 2026: logs and backend Sentry got request.url with its query string, so a failed
+  // GET /auth/verify-email?token=… (deprecated, kept during the rollout) wrote the token to the logs.
+  it('never logs or reports a query string (tokens)', () => {
+    const SECRET = 'tok-SECRET-123';
+    const hostFor = (url: string) =>
+      ({ switchToHttp: () => ({ getResponse: () => ({ status }), getRequest: () => ({ method: 'GET', url, headers: {} }) }) }) as unknown as ArgumentsHost;
+    const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    const error = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    try {
+      filter.catch(new NotFoundException('Invalid or expired verification token'), hostFor(`/api/auth/verify-email?token=${SECRET}`));
+      filter.catch(new Error('boom'), hostFor(`/api/auth/verify-email?token=${SECRET}#x`));
+      const logged = JSON.stringify([...warn.mock.calls, ...error.mock.calls]);
+      expect(logged).toContain('/api/auth/verify-email');
+      expect(logged).not.toContain(SECRET);
+      expect(JSON.stringify((captureException as jest.Mock).mock.calls)).not.toContain(SECRET);
+      expect((captureException as jest.Mock).mock.calls[0][1]).toMatchObject({ url: '/api/auth/verify-email' });
+    } finally {
+      warn.mockRestore();
+      error.mockRestore();
+    }
+  });
+
+  it('requestPath keeps only the path', () => {
+    expect(requestPath('/api/x?token=a&b=c')).toBe('/api/x');
+    expect(requestPath('/api/x#frag')).toBe('/api/x');
+    expect(requestPath(undefined)).toBe('/');
   });
 });
