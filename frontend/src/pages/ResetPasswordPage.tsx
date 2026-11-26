@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Lock, Loader2, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import api from '@/lib/api';
 import { parseApiError } from '@/shared/utils/api-error';
+import { useLinkToken } from '@/shared/hooks/use-link-token';
 
-// Target of the emailed reset link (/reset-password?token=...). The email
+// Target of the emailed reset link (/reset-password#token=..., or ?token=... in older emails). The email
 // template has always linked here, but neither this page nor the backend
 // endpoint existed.
 const MIN_LENGTH = 8;
 
 const ResetPasswordPage: React.FC = () => {
-  const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
+  const token = useLinkToken();
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [submitting, setSubmitting] = useState(false);

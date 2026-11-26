@@ -26,6 +26,7 @@ import { UserService } from '../modules/user/user.service';
 import { ImpersonationService } from '../shared/services/impersonation.service';
 import { SesEmailService } from '../shared/services/ses-email.service';
 import { generateSlug } from '../users/slug.util';
+import { tokenLink } from './token-link';
 
 @Injectable()
 export class AuthService {
@@ -546,7 +547,7 @@ Aboru Aboye.`;
 
   private async sendVerificationEmail(email: string, name: string, token: string): Promise<void> {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173';
-    const verifyUrl = `${frontendUrl}/verify-email?token=${token}`;
+    const verifyUrl = tokenLink(frontendUrl, '/verify-email', token);
 
     const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
   <div style="background:linear-gradient(135deg,#B45309 0%,#92400E 100%);padding:30px;text-align:center;border-radius:10px 10px 0 0;">
@@ -851,7 +852,7 @@ Aboru Aboye.`;
 
   private async sendEmailChangeConfirmation(email: string, name: string, token: string): Promise<void> {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173';
-    const confirmUrl = `${frontendUrl}/confirm-email-change?token=${token}`;
+    const confirmUrl = tokenLink(frontendUrl, '/confirm-email-change', token);
     const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
   <div style="background:linear-gradient(135deg,#B45309 0%,#92400E 100%);padding:30px;text-align:center;border-radius:10px 10px 0 0;">
     <h1 style="color:#FDFCF0;margin:0;font-size:28px;">Ìlú Àṣẹ</h1>
@@ -887,7 +888,7 @@ Aboru Aboye.`;
 
   private async sendPasswordResetEmail(email: string, name: string, token: string): Promise<void> {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173';
-    const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
+    const resetUrl = tokenLink(frontendUrl, '/reset-password', token);
 
     const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
   <div style="background:linear-gradient(135deg,#B45309 0%,#92400E 100%);padding:30px;text-align:center;border-radius:10px 10px 0 0;">

@@ -170,3 +170,25 @@ describe('ConfirmEmailChangePage', () => {
   });
 });
 
+
+// Emailed links now carry the token in the URL fragment (never sent to a server); older ?token= links still work.
+describe('emailed links with the token in the fragment', () => {
+  it('ResetPasswordPage uses #token=', async () => {
+    apiPost.mockResolvedValue({ data: { message: 'ok' } });
+    wrap(<ResetPasswordPage />, '/reset-password#token=frag789');
+
+    fireEvent.change(screen.getByLabelText('New password'), { target: { value: 'BrandNewPass456!' } });
+    fireEvent.change(screen.getByLabelText('Confirm new password'), { target: { value: 'BrandNewPass456!' } });
+    fireEvent.click(screen.getByRole('button', { name: /Reset password/i }));
+
+    expect(await screen.findByText(/Your password has been reset/i)).toBeInTheDocument();
+    expect(apiPost).toHaveBeenCalledWith('/auth/reset-password', { token: 'frag789', password: 'BrandNewPass456!' });
+  });
+
+  it('ConfirmEmailChangePage uses #token=', async () => {
+    apiPost.mockResolvedValue({ data: { email: 'new@example.com' } });
+    wrap(<ConfirmEmailChangePage />, '/confirm-email-change#token=frag789');
+    expect(await screen.findByText(/new@example.com/)).toBeInTheDocument();
+    expect(apiPost).toHaveBeenCalledWith('/auth/confirm-email-change', { token: 'frag789' });
+  });
+});

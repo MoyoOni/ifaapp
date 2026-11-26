@@ -142,6 +142,16 @@ describe('EmailService', () => {
       expect(htmlArg).toContain(mockResetToken);
     });
 
+    it('puts the reset token in the URL fragment, not the query string', async () => {
+      (sesEmailService.sendEmail as jest.Mock).mockResolvedValue(undefined);
+
+      await service.sendPasswordResetEmail(mockEmail, mockResetToken, mockUserName);
+
+      const htmlArg = (sesEmailService.sendEmail as jest.Mock).mock.calls[0][2] as string;
+      expect(htmlArg).toContain(`${mockFrontendUrl}/reset-password#token=${mockResetToken}`);
+      expect(htmlArg).not.toContain('?token=');
+    });
+
     it('should use fallback frontend URL when FRONTEND_URL is not configured', async () => {
       (configService.get as jest.Mock).mockReturnValue(null);
       (sesEmailService.sendEmail as jest.Mock).mockResolvedValue(undefined);

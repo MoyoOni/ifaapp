@@ -1,17 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
+import { useLinkToken } from '@/shared/hooks/use-link-token';
 
 type Status = 'loading' | 'success' | 'error' | 'missing-token';
 
 const VerifyEmailPage: React.FC = () => {
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [status, setStatus] = useState<Status>('loading');
   const [message, setMessage] = useState('');
 
-  const token = searchParams.get('token');
+  // From the link's #token= (or ?token= in older emails); removed from the address bar after reading.
+  const token = useLinkToken();
   // Single-use token: verify exactly once. React StrictMode runs effects twice
   // in development, and the second call reported the (already successful)
   // link as "invalid or already used".
@@ -26,7 +27,8 @@ const VerifyEmailPage: React.FC = () => {
     verified.current = true;
 
     api
-      .get(`/auth/verify-email?token=${encodeURIComponent(token)}`)
+      // In the body, not the URL, so the token is not written to access logs.
+      .post('/auth/verify-email', { token })
       .then((res: { data?: { message?: string } }) => {
         setMessage(res.data?.message || 'Email verified successfully.');
         setStatus('success');

@@ -470,6 +470,23 @@ describe('AuthService', () => {
     });
   });
 
+  describe('emailed token links keep the token out of the query string', () => {
+    // The token goes in the URL fragment, which browsers never send to a server (CloudFront/nginx logs, Referer).
+    const senders: Array<[string, string, (svc: any) => Promise<void>]> = [
+      ['verification', '/verify-email#token=tok-123', (svc) => svc.sendVerificationEmail('a@b.test', 'Àdùkẹ́', 'tok-123')],
+      ['email change', '/confirm-email-change#token=tok-123', (svc) => svc.sendEmailChangeConfirmation('a@b.test', 'Àdùkẹ́', 'tok-123')],
+      ['password reset', '/reset-password#token=tok-123', (svc) => svc.sendPasswordResetEmail('a@b.test', 'Àdùkẹ́', 'tok-123')],
+    ];
+    it.each(senders)('%s email links to %s', async (_label, expected, send) => {
+      jest.spyOn(configService, 'get').mockImplementation(((key: string) => (key === 'FRONTEND_URL' ? 'https://iluase.com' : undefined)) as any);
+      mockSesEmailService.sendEmail.mockClear().mockResolvedValue(undefined);
+      await send(service);
+      const html = mockSesEmailService.sendEmail.mock.calls[0][2] as string;
+      expect(html).toContain(`https://iluase.com${expected}`);
+      expect(html).not.toContain('?token=');
+    });
+  });
+
   it('should be defined', () => {
     expect(service).toBeDefined();
   });

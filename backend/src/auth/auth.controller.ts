@@ -165,9 +165,31 @@ export class AuthController {
     return { message: 'Impersonation ended successfully' };
   }
 
+  /**
+   * Preferred: the token travels in the request body, so it is not written to CloudFront/nginx access logs.
+   * Emailed links carry it in the URL fragment (see token-link.ts) and the page posts it here.
+   */
+  @Post('verify-email')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify email address via token (token in the body)' })
+  @ApiBody({ schema: { properties: { token: { type: 'string' } } } })
+  @ApiResponse({ status: 200, description: 'Email verified successfully' })
+  @ApiResponse({ status: 400, description: 'Missing token' })
+  @ApiResponse({ status: 404, description: 'Invalid or expired token' })
+  async verifyEmailPost(@Body('token') token: unknown) {
+    if (typeof token !== 'string' || !token) {
+      throw new BadRequestException('Verification token is required');
+    }
+    return this.authService.verifyEmail(token);
+  }
+
+  /**
+   * Deprecated: kept only so a frontend deployed before the POST route keeps working during the rollout.
+   * Remove once the POST-using frontend is live (ILUASE_V1_BACKLOG.md).
+   */
   @Get('verify-email')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Verify email address via token' })
+  @ApiOperation({ summary: 'Verify email address via token (deprecated: use POST)', deprecated: true })
   @ApiResponse({ status: 200, description: 'Email verified successfully' })
   @ApiResponse({ status: 400, description: 'Missing token' })
   @ApiResponse({ status: 404, description: 'Invalid or expired token' })

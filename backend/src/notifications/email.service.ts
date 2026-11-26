@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { SesEmailService } from '../shared/services/ses-email.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
+import { tokenLink } from '../auth/token-link';
 
 /**
  * Email notification service.
@@ -37,7 +38,7 @@ export class EmailService {
 
   async sendPasswordResetEmail(email: string, resetToken: string, userName: string) {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173';
-    const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
+    const resetUrl = tokenLink(frontendUrl, '/reset-password', resetToken);
     const html = this.renderPasswordResetTemplate(userName, resetUrl);
 
     await this.sesEmailService.sendEmail(email, 'Password Reset Request - Ìlú Àṣẹ', html);

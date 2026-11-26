@@ -1,16 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 import { parseApiError } from '@/shared/utils/api-error';
+import { useLinkToken } from '@/shared/hooks/use-link-token';
 
 type Status = 'loading' | 'success' | 'error' | 'missing-token';
 
 // Target of the link emailed to the NEW address when a member changes their
-// email in Settings (/confirm-email-change?token=...).
+// email in Settings (/confirm-email-change#token=..., or ?token=... in older emails).
 const ConfirmEmailChangePage: React.FC = () => {
-  const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
+  const token = useLinkToken();
   const [status, setStatus] = useState<Status>(token ? 'loading' : 'missing-token');
   const [message, setMessage] = useState('');
   // The link is single-use, so confirm exactly once -- React StrictMode runs
