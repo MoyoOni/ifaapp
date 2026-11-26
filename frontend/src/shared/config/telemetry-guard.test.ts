@@ -54,58 +54,69 @@ function isValueReference(id: ts.Identifier): boolean {
   return true;
 }
 
-/** True if `name` occurs in a binding name (identifier, or object/array destructuring). */
-function binds(name: ts.BindingName, text: string): boolean {
-  if (ts.isIdentifier(name)) return name.text === text;
-  return name.elements.some((el) => !ts.isOmittedExpression(el) && binds(el.name, text));
+/*
+ * Binding resolution uses the TypeScript checker itself (v14), not a hand-written scope walk: each parsed file gets a
+ * one-file program (no lib, no module resolution), so every scoping rule (function-scoped `var` in nested blocks or
+ * `for` initialisers, hoisted function declarations, block-scoped let/const/class, catch clauses, named function
+ * expressions) is the compiler's. With no lib and no resolution, an import resolves to its import declaration and a
+ * global (Promise, window, …) resolves to nothing; both count as "not locally bound".
+ */
+const checkers = new WeakMap<ts.SourceFile, ts.TypeChecker>();
+function checkerFor(sf: ts.SourceFile): ts.TypeChecker {
+  const cached = checkers.get(sf);
+  if (cached) return cached;
+  const options: ts.CompilerOptions = {
+    noLib: true, noResolve: true, types: [], noEmit: true, allowJs: true,
+    target: ts.ScriptTarget.Latest, module: ts.ModuleKind.ESNext, jsx: ts.JsxEmit.Preserve,
+  };
+  const host = ts.createCompilerHost(options);
+  host.getSourceFile = (name) => (name === sf.fileName ? sf : undefined);
+  host.fileExists = (name) => name === sf.fileName;
+  host.readFile = (name) => (name === sf.fileName ? sf.text : undefined);
+  const program = ts.createProgram({ rootNames: [sf.fileName], options, host });
+  // Fail loudly rather than resolve against a different parse of the file (node identity matters below).
+  if (program.getSourceFile(sf.fileName) !== sf) throw new Error(`symbol resolution: program did not adopt ${sf.fileName}`);
+  const checker = program.getTypeChecker();
+  checkers.set(sf, checker);
+  return checker;
 }
-/** True if this identifier refers to a local binding (parameter, block variable, catch clause) rather than the import. */
-function isShadowed(id: ts.Identifier): boolean {
-  for (let p: ts.Node | undefined = id.parent; p && !ts.isSourceFile(p); p = p.parent) {
-    if (ts.isFunctionLike(p) && p.parameters.some((param) => binds(param.name, id.text))) return true;
-    if (ts.isCatchClause(p) && p.variableDeclaration && binds(p.variableDeclaration.name, id.text)) return true;
-    if (ts.isBlock(p) || ts.isCaseClause(p) || ts.isDefaultClause(p)) {
-      for (const st of p.statements) {
-        if (ts.isVariableStatement(st) && st.declarationList.declarations.some((d) => binds(d.name, id.text))) return true;
-        if ((ts.isFunctionDeclaration(st) || ts.isClassDeclaration(st)) && st.name?.text === id.text) return true;
-      }
-    }
-    if ((ts.isForStatement(p) || ts.isForOfStatement(p) || ts.isForInStatement(p)) && p.initializer && ts.isVariableDeclarationList(p.initializer)
-      && p.initializer.declarations.some((d) => binds(d.name, id.text))) return true;
+function symbolOf(id: ts.Identifier): ts.Symbol | undefined {
+  const checker = checkerFor(id.getSourceFile());
+  if (ts.isShorthandPropertyAssignment(id.parent) && id.parent.name === id) return checker.getShorthandAssignmentValueSymbol(id.parent);
+  // `export { x }` / `export { x as y }`: the local name refers to what `x` is bound to, not to the export itself.
+  if (ts.isExportSpecifier(id.parent) && !id.parent.parent.parent.moduleSpecifier && (id.parent.propertyName ?? id.parent.name) === id) {
+    return checker.getExportSpecifierLocalTargetSymbol(id.parent);
   }
-  return false;
+  return checker.getSymbolAtLocation(id);
 }
+const isImportDeclarationNode = (d: ts.Node): boolean =>
+  ts.isImportSpecifier(d) || ts.isImportClause(d) || ts.isNamespaceImport(d) || ts.isImportEqualsDeclaration(d);
 
 /**
- * The declaration that binds this identifier, searching outward through every scope that can bind a
- * name: function parameters, a named function/class expression's own name, `for` / `for…of` /
- * `for…in` initialisers, catch clauses, and variable, function and class declarations in blocks.
- * Null if the name is not bound in this file.
+ * The local declaration this identifier resolves to (compiler symbol resolution), or null if it resolves to an import
+ * or to nothing in this file (a global). A destructured name is reported as its whole parameter / variable declaration.
  */
 function nearestBinding(id: ts.Identifier): ts.Node | null {
-  for (let p: ts.Node | undefined = id.parent; p; p = p.parent) {
-    if (ts.isFunctionLike(p)) {
-      const prm = p.parameters.find((x) => binds(x.name, id.text));
-      if (prm) return prm;
-      if ((ts.isFunctionExpression(p) || ts.isClassExpression(p)) && p.name?.text === id.text) return p;
-    }
-    if ((ts.isForStatement(p) || ts.isForOfStatement(p) || ts.isForInStatement(p))
-      && p.initializer && ts.isVariableDeclarationList(p.initializer)) {
-      const d = p.initializer.declarations.find((x) => binds(x.name, id.text));
-      if (d) return d;
-    }
-    if (ts.isCatchClause(p) && p.variableDeclaration && binds(p.variableDeclaration.name, id.text)) return p.variableDeclaration;
-    if (ts.isBlock(p) || ts.isSourceFile(p) || ts.isCaseClause(p) || ts.isDefaultClause(p) || ts.isModuleBlock(p)) {
-      for (const st of p.statements) {
-        if (ts.isVariableStatement(st)) {
-          const d = st.declarationList.declarations.find((x) => binds(x.name, id.text));
-          if (d) return d;
-        }
-        if ((ts.isFunctionDeclaration(st) || ts.isClassDeclaration(st)) && st.name?.text === id.text) return st;
-      }
-    }
+  const local = (symbolOf(id)?.declarations ?? []).filter((d) => !isImportDeclarationNode(d));
+  let d: ts.Node | undefined = local[0];
+  if (!d) return null;
+  while (ts.isBindingElement(d) || ts.isObjectBindingPattern(d) || ts.isArrayBindingPattern(d)) d = d.parent;
+  return d;
+}
+/** Module-scope symbols of a file, by name (imports included). */
+const moduleScopes = new WeakMap<ts.SourceFile, Map<string, ts.Symbol>>();
+function moduleSymbol(sf: ts.SourceFile, name: string): ts.Symbol | undefined {
+  let m = moduleScopes.get(sf);
+  if (!m) {
+    m = new Map(checkerFor(sf).getSymbolsInScope(sf, ts.SymbolFlags.Value | ts.SymbolFlags.Alias).map((x) => [x.name, x]));
+    moduleScopes.set(sf, m);
   }
-  return null;
+  return m.get(name);
+}
+/** True if this identifier resolves to a binding inside a function or block, i.e. not the module-level name (import). */
+function isShadowed(id: ts.Identifier): boolean {
+  const sym = symbolOf(id);
+  return !!sym && nearestBinding(id) !== null && sym !== moduleSymbol(id.getSourceFile(), id.text);
 }
 const enclosingFunction = (n: ts.Node): ts.SignatureDeclaration | null => {
   for (let p: ts.Node | undefined = n.parent; p; p = p.parent) if (ts.isFunctionLike(p)) return p;
@@ -862,6 +873,13 @@ describe('telemetry guards', () => {
       responseDataReplaced: 'api.interceptors.response.use((r) => r, async (error) => { error.response.data = error.config; const originalRequest = error.config; return api(originalRequest); });',
       responseDataNestedRead: 'api.interceptors.response.use((r) => r, async (error) => { use(error.response.data.config); const originalRequest = error.config; return api(originalRequest); });',
       otherErrorFieldWrite: 'api.interceptors.response.use((r) => r, async (error) => { error.request = forged; const originalRequest = error.config; return api(originalRequest); });',
+      // v14: shadowing resolved by the compiler (function-scoped var in nested blocks / for initialisers, hoisted functions)
+      nestedVarShadowConsumer: 'api.interceptors.response.use((r) => r, async (error) => { { var isUnreachableError = (e) => { e.response.config.url = buildDynamicPath(); return false; }; } setServerUnreachable(isUnreachableError(error)); const originalRequest = error.config; return api(originalRequest); });',
+      nestedVarShadowParse: 'api.interceptors.response.use((r) => r, async (error) => { if (ok) { var parseApiError = (e) => { e.config.url = x; return {}; }; } parseApiError(error); const originalRequest = error.config; return api(originalRequest); });',
+      nestedVarShadowPromise: 'api.interceptors.response.use((r) => r, async (error) => { { var Promise = { reject: (e) => { e.config.url = x; } }; } Promise.reject(error); const originalRequest = error.config; return api(originalRequest); });',
+      forVarShadowConsumer: 'api.interceptors.response.use((r) => r, async (error) => { for (var reportApiError of evil) {} reportApiError(error); const originalRequest = error.config; return api(originalRequest); });',
+      hoistedFunctionShadow: 'api.interceptors.response.use((r) => r, async (error) => { isUnreachableError(error); const originalRequest = error.config; return api(originalRequest); function isUnreachableError(e) { e.config.url = x; } });',
+      sameBlockConstShadow: 'api.interceptors.response.use((r) => r, async (error) => { { const parseApiError = evil; parseApiError(error); } const originalRequest = error.config; return api(originalRequest); });',
     };
     // Each must fail because the request itself was refused the exemption (not for an unrelated reason).
     const refused = (problems: string[]) => problems.some((x) => /\bapi(\.(get|post|request))?\(config\)|\bapi\.(get|post|request)\b/.test(x));
