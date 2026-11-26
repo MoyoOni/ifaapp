@@ -4,6 +4,8 @@ interface ImportMetaEnv {
   readonly MODE: string;
   readonly VITE_API_URL?: string;
   readonly VITE_SENTRY_DSN?: string;
+  /** 'true' turns Sentry on (production image, native store builds); anything else leaves it off. */
+  readonly VITE_SENTRY_ENABLED?: string;
   /** Sentry sample rates (P3-02) — see shared/config/sentry.ts for defaults if unset. */
   readonly VITE_SENTRY_TRACES_SAMPLE_RATE?: string;
   readonly VITE_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE?: string;

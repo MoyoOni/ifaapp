@@ -25,22 +25,21 @@ COPY frontend ./frontend
 
 # Build frontend (pass build args as env vars)
 #
-# VITE_GOOGLE_CLIENT_ID default matches frontend/.env.production's real
-# value -- that file itself never reaches this build (`.dockerignore`
-# excludes .env.* broadly, `.env.production` included, despite the root
-# .gitignore's deliberate exception marking it safe to track since it's
-# public, non-secret VITE_-prefixed config). deploy.sh also never passes
-# this as an explicit --build-arg. Without a real default here, this ARG
-# silently built as an empty string, and GoogleAuthButton renders nothing
-# at all when its client ID is empty -- Google Sign-In was invisible in
-# production with no error anywhere. Follows the same pattern already
-# working correctly for VITE_API_URL below.
+# frontend/.env.production DOES reach this build (corrected November 26, 2026; this comment used to say it never
+# did): the root .dockerignore's `.env` / `.env.*` patterns match only at the context root, not frontend/.env.production,
+# which is tracked on purpose (public VITE_ config) and supplies VITE_SENTRY_DSN. The explicit defaults below still
+# matter: deploy.sh passes no --build-arg, and an empty VITE_GOOGLE_CLIENT_ID once hid Google Sign-In in production.
+#
+# VITE_SENTRY_ENABLED=true is what turns Sentry on: only this image (and native store builds) should report to
+# production Sentry, never a developer's local `vite build`/`vite preview`.
 ARG VITE_API_URL=https://iluase.com/api
 ARG VITE_BASE_PATH=/
 ARG VITE_GOOGLE_CLIENT_ID=559744613223-klf56010kv4dm2c2lbd3f3imgrmgcls5.apps.googleusercontent.com
+ARG VITE_SENTRY_ENABLED=true
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_BASE_PATH=$VITE_BASE_PATH
 ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
+ENV VITE_SENTRY_ENABLED=$VITE_SENTRY_ENABLED
 
 RUN cd frontend && NODE_OPTIONS="--max-old-space-size=4096" npx vite build
 

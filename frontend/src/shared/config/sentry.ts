@@ -17,7 +17,13 @@ import {
   type RouteKind,
 } from '@/shared/utils/telemetry-safe';
 
-const dsn = import.meta.env.VITE_SENTRY_DSN as string | undefined;
+/**
+ * Sentry runs only in builds that ask for it: VITE_SENTRY_ENABLED=true, set by frontend/Dockerfile.production (and
+ * required for store builds of the native apps). frontend/.env.production carries the production DSN, so without this
+ * switch a developer's local `vite build` + `vite preview` reported to production Sentry (found November 23, 2026).
+ */
+const sentryEnabled = import.meta.env.VITE_SENTRY_ENABLED === 'true';
+const dsn = sentryEnabled ? (import.meta.env.VITE_SENTRY_DSN as string | undefined) : undefined;
 const env = import.meta.env.MODE;
 const isProd = env === 'production';
 
