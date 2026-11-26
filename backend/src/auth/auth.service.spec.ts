@@ -9,7 +9,7 @@ import { MessagingService } from '../messaging/messaging.service';
 import { UserService } from '../modules/user/user.service';
 import { ImpersonationService } from '../shared/services/impersonation.service';
 import { SesEmailService } from '../shared/services/ses-email.service';
-import { RedisCacheService } from '../cache/redis-cache.service';
+import { RedisCacheService, SessionStoreUnavailableException } from '../cache/redis-cache.service';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -54,11 +54,29 @@ describe('AuthService', () => {
     sendEmail: jest.fn(),
   };
 
+  // In-memory stand-in for Redis with real SET-NX semantics; `down = true` makes the strict methods fail closed.
+  const store = new Map<string, unknown>();
+  const redisState = { down: false };
+  const strictGuard = () => {
+    if (redisState.down) throw new SessionStoreUnavailableException();
+  };
   const mockRedisCacheService = {
     get: jest.fn().mockResolvedValue(null),
     set: jest.fn().mockResolvedValue(true),
     exists: jest.fn().mockResolvedValue(false),
     del: jest.fn().mockResolvedValue(true),
+    existsStrict: jest.fn(async (key: string) => (strictGuard(), store.has(key))),
+    setStrict: jest.fn(async (key: string, value: unknown, _ttl: number) => {
+      strictGuard();
+      store.set(key, value);
+    }),
+    setIfAbsentStrict: jest.fn(async (key: string, value: unknown, _ttl: number) => {
+      strictGuard();
+      if (store.has(key)) return false;
+      store.set(key, value);
+      return true;
+    }),
+    getStrict: jest.fn(async (key: string) => (strictGuard(), store.has(key) ? store.get(key) : null)),
   };
 
   beforeEach(async () => {
@@ -303,68 +321,95 @@ describe('AuthService', () => {
   });
 
   describe('logout / token revocation', () => {
+    const user = { id: 'user123', email: 'test@example.com', role: UserRole.CLIENT, verified: true };
+    const refreshPayload = (jti: string | undefined) =>
+      ({ sub: 'user123', email: user.email, role: UserRole.CLIENT, verified: true, jti, exp: Math.floor(Date.now() / 1000) + 1000 }) as any;
+
     beforeEach(() => {
-      mockRedisCacheService.set.mockClear();
-      mockRedisCacheService.exists.mockClear();
-      mockRedisCacheService.exists.mockResolvedValue(false);
+      store.clear();
+      redisState.down = false;
+      Object.values(mockRedisCacheService).forEach((fn) => (fn as jest.Mock).mockClear());
+      (mockPrismaService.user.findUnique as jest.Mock).mockResolvedValue(user);
     });
+    afterEach(() => jest.restoreAllMocks());
 
     it('logout() denylists the session jti with a TTL capped to the token`s own remaining lifetime', async () => {
-      const nowSeconds = Math.floor(Date.now() / 1000);
-      const exp = nowSeconds + 900; // 15 minutes out
+      const exp = Math.floor(Date.now() / 1000) + 900; // 15 minutes out
 
       await service.logout('session-jti-1', exp);
 
-      expect(mockRedisCacheService.set).toHaveBeenCalledWith(
-        'auth:denylist:session-jti-1',
-        '1',
-        expect.any(Number)
-      );
-      const ttlArg = mockRedisCacheService.set.mock.calls[0][2];
+      expect(mockRedisCacheService.setStrict).toHaveBeenCalledWith('auth:denylist:session-jti-1', '1', expect.any(Number));
+      const ttlArg = mockRedisCacheService.setStrict.mock.calls[0][2];
       expect(ttlArg).toBeGreaterThan(0);
       expect(ttlArg).toBeLessThanOrEqual(900);
     });
 
-    it('refreshToken() rejects a refresh token whose jti has already been revoked', async () => {
-      jest.spyOn(jwtService, 'verify').mockReturnValue({
-        sub: 'user123',
-        email: 'test@example.com',
-        role: UserRole.CLIENT,
-        verified: true,
-        jti: 'revoked-jti',
-        exp: Math.floor(Date.now() / 1000) + 1000,
-      } as any);
-      mockRedisCacheService.exists.mockResolvedValue(true); // already denylisted
+    it('logout() fails closed (503) when Redis cannot record the revocation, instead of reporting success', async () => {
+      redisState.down = true;
+      await expect(service.logout('session-jti-1', undefined)).rejects.toBeInstanceOf(SessionStoreUnavailableException);
+    });
+
+    it('refreshToken() rejects a refresh token revoked by logout, immediately', async () => {
+      jest.spyOn(jwtService, 'verify').mockReturnValue(refreshPayload('revoked-jti'));
+      store.set('auth:denylist:revoked-jti', '1');
+      const started = Date.now();
 
       await expect(service.refreshToken('some.refresh.token')).rejects.toThrow(UnauthorizedException);
+      expect(Date.now() - started).toBeLessThan(500); // no waiting for a rotation result that will never come
     });
 
     it('refreshToken() rotates: the spent refresh token is denylisted so it cannot be replayed', async () => {
-      const oldExp = Math.floor(Date.now() / 1000) + 1000;
-      jest.spyOn(jwtService, 'verify').mockReturnValue({
-        sub: 'user123',
-        email: 'test@example.com',
-        role: UserRole.CLIENT,
-        verified: true,
-        jti: 'old-jti',
-        exp: oldExp,
-      } as any);
+      jest.spyOn(jwtService, 'verify').mockReturnValue(refreshPayload('old-jti'));
       jest.spyOn(jwtService, 'sign').mockReturnValue('new-token' as any);
-      (mockPrismaService.user.findUnique as jest.Mock).mockResolvedValue({
-        id: 'user123',
-        email: 'test@example.com',
-        role: UserRole.CLIENT,
-        verified: true,
-      });
 
       const result = await service.refreshToken('some.refresh.token');
 
       expect(result).toMatchObject({ accessToken: 'new-token', refreshToken: 'new-token' });
-      expect(mockRedisCacheService.set).toHaveBeenCalledWith(
-        'auth:denylist:old-jti',
-        '1',
-        expect.any(Number)
-      );
+      expect(store.get('auth:denylist:old-jti')).toBe('rotated');
+      expect(mockRedisCacheService.setIfAbsentStrict).toHaveBeenCalledWith('auth:denylist:old-jti', 'rotated', expect.any(Number));
+    });
+
+    it('refreshToken() is atomic: concurrent refreshes of one token mint ONE new session and all get it', async () => {
+      jest.spyOn(jwtService, 'verify').mockReturnValue(refreshPayload('shared-jti'));
+      let n = 0;
+      const sign = jest.spyOn(jwtService, 'sign').mockImplementation(() => `token-${++n}` as any);
+
+      const results = await Promise.all([1, 2, 3, 4, 5].map(() => service.refreshToken('some.refresh.token')));
+
+      expect(sign).toHaveBeenCalledTimes(2); // one access + one refresh token, i.e. one session
+      results.forEach((r) => expect(r).toEqual(results[0]));
+    });
+
+    it('refreshToken() refuses a token spent by rotation once the grace result is gone', async () => {
+      jest.spyOn(jwtService, 'verify').mockReturnValue(refreshPayload('spent-jti'));
+      store.set('auth:denylist:spent-jti', 'rotated'); // rotated earlier; auth:rotation:spent-jti has expired
+
+      await expect(service.refreshToken('some.refresh.token')).rejects.toThrow('Refresh token has been revoked');
+    });
+
+    it('refreshToken() rejects a token without a jti (it could not be spent atomically)', async () => {
+      jest.spyOn(jwtService, 'verify').mockReturnValue(refreshPayload(undefined));
+      await expect(service.refreshToken('some.refresh.token')).rejects.toThrow(UnauthorizedException);
+      expect(mockRedisCacheService.setIfAbsentStrict).not.toHaveBeenCalled();
+    });
+
+    it('refreshToken() reports infrastructure failures as themselves, not as 401', async () => {
+      jest.spyOn(jwtService, 'verify').mockReturnValue(refreshPayload('jti-x'));
+      redisState.down = true;
+      await expect(service.refreshToken('some.refresh.token')).rejects.toBeInstanceOf(SessionStoreUnavailableException);
+
+      redisState.down = false;
+      const dbDown = new Error('database connection lost');
+      (mockPrismaService.user.findUnique as jest.Mock).mockRejectedValueOnce(dbDown);
+      await expect(service.refreshToken('some.refresh.token')).rejects.toBe(dbDown);
+      expect(store.has('auth:denylist:jti-x')).toBe(false); // nothing spent by a failed attempt
+    });
+
+    it('refreshToken() still answers 401 for a bad signature', async () => {
+      jest.spyOn(jwtService, 'verify').mockImplementation(() => {
+        throw new Error('invalid signature');
+      });
+      await expect(service.refreshToken('forged')).rejects.toThrow('Invalid refresh token');
     });
 
     describe('revokeSession() — logout that works after the access token has expired', () => {
@@ -375,7 +420,6 @@ describe('AuthService', () => {
         jest.spyOn(configService, 'get').mockImplementation(((key: string) =>
           ({ JWT_SECRET: ACCESS_SECRET, JWT_REFRESH_SECRET: REFRESH_SECRET } as Record<string, string>)[key]) as any);
       });
-      afterEach(() => jest.restoreAllMocks());
 
       const sign = (secret: string, jti: string, expiresIn: string) =>
         jwtService.sign({ sub: 'user123', jti }, { secret, expiresIn });
@@ -388,13 +432,13 @@ describe('AuthService', () => {
           message: 'Logged out successfully',
         });
 
-        expect(mockRedisCacheService.set).toHaveBeenCalledTimes(1);
-        expect(mockRedisCacheService.set).toHaveBeenCalledWith('auth:denylist:sess-1', '1', expect.any(Number));
+        expect(mockRedisCacheService.setStrict).toHaveBeenCalledTimes(1);
+        expect(mockRedisCacheService.setStrict).toHaveBeenCalledWith('auth:denylist:sess-1', '1', expect.any(Number));
       });
 
       it('revokes from a valid access token alone', async () => {
         await service.revokeSession({ accessToken: sign(ACCESS_SECRET, 'sess-2', '15m') });
-        expect(mockRedisCacheService.set).toHaveBeenCalledWith('auth:denylist:sess-2', '1', expect.any(Number));
+        expect(mockRedisCacheService.setStrict).toHaveBeenCalledWith('auth:denylist:sess-2', '1', expect.any(Number));
       });
 
       it('denylists a shared jti only once when both tokens are presented', async () => {
@@ -402,7 +446,14 @@ describe('AuthService', () => {
           accessToken: sign(ACCESS_SECRET, 'sess-3', '15m'),
           refreshToken: sign(REFRESH_SECRET, 'sess-3', '7d'),
         });
-        expect(mockRedisCacheService.set).toHaveBeenCalledTimes(1);
+        expect(mockRedisCacheService.setStrict).toHaveBeenCalledTimes(1);
+      });
+
+      it('does NOT report success when the revocation cannot be recorded (Redis down)', async () => {
+        redisState.down = true;
+        await expect(service.revokeSession({ accessToken: sign(ACCESS_SECRET, 'sess-5', '15m') })).rejects.toBeInstanceOf(
+          SessionStoreUnavailableException
+        );
       });
 
       it('ignores forged, wrong-secret and garbage tokens: nothing is revoked, and it still succeeds', async () => {
@@ -411,18 +462,18 @@ describe('AuthService', () => {
           refreshToken: 'not.a.jwt',
         });
         expect(result).toEqual({ message: 'Logged out successfully' });
-        expect(mockRedisCacheService.set).not.toHaveBeenCalled();
+        expect(mockRedisCacheService.setStrict).not.toHaveBeenCalled();
       });
 
       it('does not let an access token stand in for a refresh token (secrets are not interchangeable)', async () => {
         // an access token presented in the refresh slot must fail verification against the refresh secret
         await service.revokeSession({ refreshToken: sign(ACCESS_SECRET, 'sess-4', '15m') });
-        expect(mockRedisCacheService.set).not.toHaveBeenCalled();
+        expect(mockRedisCacheService.setStrict).not.toHaveBeenCalled();
       });
 
       it('succeeds with no tokens at all', async () => {
         await expect(service.revokeSession({})).resolves.toEqual({ message: 'Logged out successfully' });
-        expect(mockRedisCacheService.set).not.toHaveBeenCalled();
+        expect(mockRedisCacheService.setStrict).not.toHaveBeenCalled();
       });
     });
   });

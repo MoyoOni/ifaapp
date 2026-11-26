@@ -15,7 +15,7 @@ import { OAuth2Client, TokenPayload } from 'google-auth-library';
 import { User } from '@prisma/client';
 import { PrismaService } from '@/prisma/prisma.service';
 import { RedisCacheService } from '../cache/redis-cache.service';
-import { TOKEN_DENYLIST_PREFIX } from './token-denylist.constants';
+import { ROTATED_MARKER, ROTATION_GRACE_SECONDS, TOKEN_DENYLIST_PREFIX, TOKEN_ROTATION_PREFIX } from './token-denylist.constants';
 import { MessagingService } from '../messaging/messaging.service';
 import { LoginDto } from './dto/login.dto';
 import { Request } from 'express';
@@ -457,55 +457,69 @@ Aboru Aboye.`;
     };
   }
 
+  /**
+   * Exchanges a refresh token for a new pair and spends the old one (rotation).
+   *
+   * - Spending is ONE atomic Redis `SET … NX` on the token's jti, so two concurrent refreshes can never both mint
+   *   independent sessions from one token. A concurrent or retried refresh of the same token within
+   *   ROTATION_GRACE_SECONDS gets the pair the first one issued (same session); after that, or after logout, 401.
+   * - Only the session's own state gives 401 (bad/expired/revoked token, user gone, password changed, blocked).
+   *   Infrastructure failures surface as themselves: Redis unavailable → 503, database or configuration → 500, so a
+   *   client can tell an outage from a dead session instead of signing the member out.
+   */
   async refreshToken(refreshToken: string) {
+    const jwtRefreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET');
+    if (!jwtRefreshSecret) {
+      throw new Error('JWT_REFRESH_SECRET environment variable is required');
+    }
+    let payload: JwtPayload;
     try {
-      const jwtRefreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET');
-      if (!jwtRefreshSecret) {
-        throw new Error('JWT_REFRESH_SECRET environment variable is required');
-      }
-      const payload = this.jwtService.verify<JwtPayload>(refreshToken, {
-        secret: jwtRefreshSecret,
-      });
+      payload = this.jwtService.verify<JwtPayload>(refreshToken, { secret: jwtRefreshSecret });
+    } catch {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+    // Every refresh token issued by generateTokens() carries a jti; without one it cannot be spent atomically.
+    if (!payload.jti) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
 
-      if (
-        payload.jti &&
-        (await this.redisCache.exists(`${TOKEN_DENYLIST_PREFIX}${payload.jti}`))
-      ) {
-        throw new UnauthorizedException('Refresh token has been revoked');
-      }
+    const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    if (issuedBeforePasswordChange(payload.iat, user.passwordChangedAt)) {
+      throw new UnauthorizedException('Session ended because the password was changed');
+    }
+    if (issuedBeforePasswordChange(payload.iat, user.sessionsRevokedAt) || accountBlock(user)) {
+      throw new UnauthorizedException('Account blocked');
+    }
 
-      const user = await this.prisma.user.findUnique({
-        where: { id: payload.sub },
-      });
-
-      if (!user) {
-        throw new UnauthorizedException('User not found');
-      }
-
-      if (issuedBeforePasswordChange(payload.iat, user.passwordChangedAt)) {
-        throw new UnauthorizedException('Session ended because the password was changed');
-      }
-      if (issuedBeforePasswordChange(payload.iat, user.sessionsRevokedAt) || accountBlock(user)) {
-        throw new UnauthorizedException('Account blocked');
-      }
-
+    const denyKey = `${TOKEN_DENYLIST_PREFIX}${payload.jti}`;
+    const resultKey = `${TOKEN_ROTATION_PREFIX}${payload.jti}`;
+    if (await this.redisCache.setIfAbsentStrict(denyKey, ROTATED_MARKER, this.secondsUntil(payload.exp))) {
       const tokens = await this.generateTokens({
         sub: user.id,
         email: user.email,
         role: user.role as UserRole,
         verified: user.verified,
       });
-
-      // Rotate: the refresh token just spent can't be replayed even though
-      // it hasn't naturally expired yet.
-      if (payload.jti) {
-        await this.logout(payload.jti, payload.exp);
-      }
-
+      await this.redisCache.setStrict(resultKey, tokens, ROTATION_GRACE_SECONDS);
       return tokens;
-    } catch (error) {
-      throw new UnauthorizedException('Invalid refresh token');
     }
+
+    // Already spent. Revoked by logout → 401 now. Spent by a concurrent refresh → wait briefly for its result.
+    for (let attempt = 0; attempt < 15; attempt++) {
+      const shared = await this.redisCache.getStrict<{ accessToken: string; refreshToken: string }>(resultKey);
+      if (shared) return shared;
+      if (attempt === 0 && (await this.redisCache.getStrict<string>(denyKey)) !== ROTATED_MARKER) break;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    throw new UnauthorizedException('Refresh token has been revoked');
+  }
+
+  /** Seconds until a JWT `exp` (at least 1); 7 days when the token has no expiry claim. */
+  private secondsUntil(exp?: number): number {
+    return exp ? Math.max(exp - Math.floor(Date.now() / 1000), 1) : 7 * 24 * 60 * 60;
   }
 
   async initiateImpersonation(
@@ -611,8 +625,8 @@ Aboru Aboye.`;
    * block and don't accumulate in Redis forever.
    */
   async logout(jti: string, exp?: number): Promise<{ message: string }> {
-    const ttlSeconds = exp ? Math.max(exp - Math.floor(Date.now() / 1000), 1) : 7 * 24 * 60 * 60;
-    await this.redisCache.set(`${TOKEN_DENYLIST_PREFIX}${jti}`, '1', ttlSeconds);
+    // Strict: if Redis cannot record the revocation this throws (503) instead of reporting a logout that did nothing.
+    await this.redisCache.setStrict(`${TOKEN_DENYLIST_PREFIX}${jti}`, '1', this.secondsUntil(exp));
     return { message: 'Logged out successfully' };
   }
 
@@ -632,14 +646,16 @@ Aboru Aboye.`;
     const revoked = new Set<string>();
     for (const { token, secret } of candidates) {
       if (!token || !secret) continue;
+      let payload: JwtPayload;
       try {
-        const payload = this.jwtService.verify<JwtPayload>(token, { secret });
-        if (payload.jti && !revoked.has(payload.jti)) {
-          revoked.add(payload.jti);
-          await this.logout(payload.jti, payload.exp);
-        }
+        payload = this.jwtService.verify<JwtPayload>(token, { secret });
       } catch {
-        // nothing to revoke for an unverifiable or expired token
+        continue; // nothing to revoke for an unverifiable or expired token
+      }
+      // Outside the try: a failure to RECORD the revocation must surface (503), not be reported as a logout.
+      if (payload.jti && !revoked.has(payload.jti)) {
+        revoked.add(payload.jti);
+        await this.logout(payload.jti, payload.exp);
       }
     }
     return { message: 'Logged out successfully' };

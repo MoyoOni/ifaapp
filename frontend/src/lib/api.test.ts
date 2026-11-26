@@ -95,6 +95,32 @@ describe('api client — token refresh', () => {
     expect(localStorage.getItem('refreshToken')).toBeNull();
     expect(window.location.href).toBe('/login');
   });
+
+  const refreshFailure = (status?: number) => {
+    const err = new AxiosError(status ? `Request failed with status code ${status}` : 'Network Error', status ? 'ERR_BAD_RESPONSE' : 'ERR_NETWORK');
+    if (status) err.response = { status, data: {}, headers: {}, statusText: '', config: {} as InternalAxiosRequestConfig };
+    return err;
+  };
+
+  it('signs out when the server rejects the refresh (401)', async () => {
+    localStorage.setItem('accessToken', 'stale');
+    localStorage.setItem('refreshToken', 'revoked');
+    refreshPost.mockRejectedValue(refreshFailure(401));
+
+    await expect(api.get('/anything')).rejects.toBeTruthy();
+    expect(localStorage.getItem('refreshToken')).toBeNull();
+    expect(window.location.href).toBe('/login');
+  });
+
+  it.each([503, 500, undefined])('keeps the session when the refresh fails for an outage (%s), not a rejection', async (status) => {
+    localStorage.setItem('accessToken', 'stale');
+    localStorage.setItem('refreshToken', 'still-valid');
+    refreshPost.mockRejectedValue(refreshFailure(status));
+
+    await expect(api.get('/anything')).rejects.toBeTruthy();
+    expect(localStorage.getItem('refreshToken')).toBe('still-valid');
+    expect(window.location.href).toBe('/current');
+  });
 });
 
 // November 6, 2026: the backend's error filter nests the reason under

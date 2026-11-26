@@ -14,6 +14,9 @@ export interface JwtPayload {
   verified: boolean;
   isImpersonated?: boolean;
   impersonatorId?: string;
+  /** Set on impersonation tokens (ImpersonationService): the admin's user ID and email. */
+  impersonatedBy?: string;
+  impersonatedByEmail?: string;
   jti?: string; // unique per token pair, used for logout/revocation
   exp?: number; // standard JWT claim, populated by passport-jwt at verify time
   iat?: number; // standard JWT claim (seconds), set automatically when signing
@@ -63,8 +66,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: JwtPayload) {
     // Revoked on logout (see AuthService.logout) — a stateless JWT is otherwise
-    // valid until natural expiry with no way to invalidate it early.
-    if (payload.jti && (await this.redisCache.exists(`${TOKEN_DENYLIST_PREFIX}${payload.jti}`))) {
+    // valid until natural expiry with no way to invalidate it early. Strict: if
+    // Redis cannot answer this fails closed (503) rather than accepting the token.
+    if (payload.jti && (await this.redisCache.existsStrict(`${TOKEN_DENYLIST_PREFIX}${payload.jti}`))) {
       throw new UnauthorizedException('Token has been revoked');
     }
 
@@ -99,7 +103,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       verified: user.verified,
       adminSubRole: user.adminSubRole ?? undefined,
       isImpersonated: payload.isImpersonated || false,
-      impersonatorId: payload.impersonatorId,
+      // Impersonation tokens carry the admin as `impersonatedBy`; this read only `impersonatorId` (never set), so
+      // JwtAuthGuard's getImpersonationInfo() saw no admin and reset isImpersonated to false on every request.
+      impersonatorId: payload.impersonatorId ?? payload.impersonatedBy,
+      impersonatedBy: payload.impersonatedBy,
+      impersonatedByEmail: payload.impersonatedByEmail,
       jti: payload.jti,
       exp: payload.exp,
     };

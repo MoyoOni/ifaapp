@@ -159,8 +159,12 @@ export class AuthController {
     if (!user.isImpersonated) {
       return { message: 'Not currently impersonating any user' };
     }
-
-    this.logger.log(`User ${user.id} ending impersonation session (was impersonating)`);
+    // Revoke the impersonation token itself (it used to stay valid for its full 30 minutes). A token issued before
+    // impersonation tokens carried a jti cannot be revoked and simply expires.
+    if (user.jti) {
+      await this.authService.logout(user.jti, user.exp);
+    }
+    this.logger.log(`Impersonation session for user ${user.id} ended by admin ${user.impersonatedBy ?? 'unknown'}`);
 
     return { message: 'Impersonation ended successfully' };
   }

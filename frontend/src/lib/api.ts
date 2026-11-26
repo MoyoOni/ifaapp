@@ -52,6 +52,13 @@ api.interceptors.request.use(
 // present the already-spent token and fail, logging the user out.
 let refreshInFlight: Promise<string> | null = null;
 
+/** True if a failed refresh means the session is over (rejected by the server, or nothing to refresh with). */
+function refreshRejectedSession(refreshError: unknown): boolean {
+  if (!axios.isAxiosError(refreshError)) return true;
+  const status = refreshError.response?.status;
+  return status === 400 || status === 401 || status === 403;
+}
+
 function refreshAccessToken(): Promise<string> {
   if (!refreshInFlight) {
     refreshInFlight = (async () => {
@@ -103,9 +110,13 @@ api.interceptors.response.use(
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
           return api(originalRequest);
         } catch (refreshError) {
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
-          window.location.href = '/login';
+          // Sign out only when the server rejected the session. During an outage (503 while the session store is
+          // down, other 5xx, no connection) the session may still be valid: keep it, and the request fails normally.
+          if (refreshRejectedSession(refreshError)) {
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            window.location.href = '/login';
+          }
         }
       }
     }

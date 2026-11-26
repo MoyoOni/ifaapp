@@ -1,6 +1,21 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, RedisClientType } from 'redis';
+
+/**
+ * Thrown by the *Strict methods when Redis cannot answer. Session security (token revocation and refresh rotation)
+ * depends on Redis, so those checks fail CLOSED with a 503 instead of treating every token as valid. Deliberate
+ * trade-off (November 26, 2026): during a Redis outage signed-in requests get 503 rather than letting logged-out or
+ * revoked sessions keep working. Public routes stay available (their optional auth treats the caller as anonymous).
+ */
+export class SessionStoreUnavailableException extends ServiceUnavailableException {
+  constructor() {
+    super('Sign-in is temporarily unavailable. Please try again in a moment.');
+  }
+}
+
+/** How long a strict call may wait for Redis before failing closed. */
+const STRICT_TIMEOUT_MS = 2000;
 
 /**
  * Redis Cache Service
@@ -32,12 +47,14 @@ export class RedisCacheService implements OnModuleInit, OnModuleDestroy {
       this.client = createClient({
         url: redisUrl,
         socket: {
+          // Never give up: session checks fail closed while Redis is away, so a client that stopped reconnecting
+          // (it used to after 10 tries, about 3 seconds) would turn a short Redis restart into an outage that
+          // lasted until the backend restarted.
           reconnectStrategy: (retries: number) => {
-            if (retries > 10) {
-              this.logger.error('Redis reconnection attempts exceeded');
-              return false;
+            if (retries === 10 || (retries > 10 && retries % 60 === 0)) {
+              this.logger.error(`Redis still unreachable after ${retries} reconnection attempts; retrying`);
             }
-            return Math.min(retries * 50, 2000);
+            return Math.min(retries * 100, 5000);
           },
         },
       });
@@ -80,6 +97,52 @@ export class RedisCacheService implements OnModuleInit, OnModuleDestroy {
    */
   isAvailable(): boolean {
     return this.isConnected && this.client !== null;
+  }
+
+  /** Runs a Redis command for a session-security check; throws SessionStoreUnavailableException instead of guessing. */
+  private async strict<T>(what: string, run: (client: RedisClientType) => Promise<T>): Promise<T> {
+    if (!this.isAvailable()) {
+      this.logger.error(`Session store unavailable (${what}): Redis not connected`);
+      throw new SessionStoreUnavailableException();
+    }
+    let timer: NodeJS.Timeout | undefined;
+    try {
+      return await Promise.race([
+        run(this.client!),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => reject(new Error(`timed out after ${STRICT_TIMEOUT_MS} ms`)), STRICT_TIMEOUT_MS);
+        }),
+      ]);
+    } catch (error) {
+      this.logger.error(`Session store unavailable (${what}): ${(error as Error)?.message ?? error}`);
+      throw new SessionStoreUnavailableException();
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+
+  /** EXISTS for session security: throws (fails closed) when Redis cannot answer. */
+  async existsStrict(key: string): Promise<boolean> {
+    return this.strict('exists', async (c) => (await c.exists(key)) === 1);
+  }
+
+  /** SET with TTL for session security: throws (fails closed) when Redis cannot store it. */
+  async setStrict<T>(key: string, value: T, ttlSeconds: number): Promise<void> {
+    await this.strict('set', (c) => c.setEx(key, Math.max(1, Math.ceil(ttlSeconds)), JSON.stringify(value)));
+  }
+
+  /** Atomic SET … NX EX: true if this call created the key, false if it already existed. Throws when Redis cannot answer. */
+  async setIfAbsentStrict<T>(key: string, value: T, ttlSeconds: number): Promise<boolean> {
+    const reply = await this.strict('set-nx', (c) =>
+      c.sendCommand(['SET', key, JSON.stringify(value), 'EX', String(Math.max(1, Math.ceil(ttlSeconds))), 'NX'])
+    );
+    return reply === 'OK';
+  }
+
+  /** GET for session security: null if absent; throws when Redis cannot answer. */
+  async getStrict<T>(key: string): Promise<T | null> {
+    const value = await this.strict('get', (c) => c.get(key));
+    return value === null || value === undefined ? null : (JSON.parse(String(value)) as T);
   }
 
   /**

@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '@/modules/user/user.service';
@@ -58,6 +59,8 @@ export class ImpersonationService {
       isImpersonated: true,
       impersonatedBy: adminUser.id,
       impersonatedByEmail: adminUser.email,
+      // Revocable like any session: logout and POST /auth/end-impersonation denylist this jti.
+      jti: randomUUID(),
     };
 
     const token = this.jwtService.sign(payload, {

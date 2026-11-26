@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
-import { RedisCacheService } from '../../cache/redis-cache.service';
+import { RedisCacheService, SessionStoreUnavailableException } from '../../cache/redis-cache.service';
 import { JwtStrategy, accountBlock } from './jwt.strategy';
 import { UserRole } from '@ile-ase/common';
 
@@ -16,7 +16,7 @@ describe('JwtStrategy', () => {
   };
 
   const mockRedisCacheService = {
-    exists: jest.fn(),
+    existsStrict: jest.fn(),
   };
 
   const mockConfigService = {
@@ -45,17 +45,17 @@ describe('JwtStrategy', () => {
   };
 
   it('rejects a token whose jti is on the revocation denylist, without looking up the user', async () => {
-    mockRedisCacheService.exists.mockResolvedValue(true);
+    mockRedisCacheService.existsStrict.mockResolvedValue(true);
 
     await expect(strategy.validate({ ...basePayload, jti: 'revoked-jti' })).rejects.toThrow(
       UnauthorizedException
     );
-    expect(mockRedisCacheService.exists).toHaveBeenCalledWith('auth:denylist:revoked-jti');
+    expect(mockRedisCacheService.existsStrict).toHaveBeenCalledWith('auth:denylist:revoked-jti');
     expect(mockPrismaService.user.findUnique).not.toHaveBeenCalled();
   });
 
   it('accepts a token whose jti is not denylisted and returns the user with jti/exp passed through', async () => {
-    mockRedisCacheService.exists.mockResolvedValue(false);
+    mockRedisCacheService.existsStrict.mockResolvedValue(false);
     mockPrismaService.user.findUnique.mockResolvedValue({
       id: 'user-1',
       email: 'test@example.com',
@@ -80,12 +80,33 @@ describe('JwtStrategy', () => {
 
     const result = await strategy.validate({ ...basePayload });
 
-    expect(mockRedisCacheService.exists).not.toHaveBeenCalled();
+    expect(mockRedisCacheService.existsStrict).not.toHaveBeenCalled();
     expect(result).toMatchObject({ id: 'user-1' });
   });
 
+  it('fails closed (503) when Redis cannot say whether the token is revoked', async () => {
+    mockRedisCacheService.existsStrict.mockRejectedValue(new SessionStoreUnavailableException());
+
+    await expect(strategy.validate({ ...basePayload, jti: 'any-jti' })).rejects.toBeInstanceOf(SessionStoreUnavailableException);
+    expect(mockPrismaService.user.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('passes the impersonating admin through, so JwtAuthGuard keeps isImpersonated (it was reset to false)', async () => {
+    mockRedisCacheService.existsStrict.mockResolvedValue(false);
+    mockPrismaService.user.findUnique.mockResolvedValue({ id: 'user-1', email: 'test@example.com', role: UserRole.CLIENT, verified: true });
+
+    const result = await strategy.validate({
+      ...basePayload, jti: 'imp-jti', isImpersonated: true, impersonatedBy: 'admin-9', impersonatedByEmail: 'admin@iluase.test',
+    });
+
+    expect(result).toMatchObject({ isImpersonated: true, impersonatedBy: 'admin-9', impersonatorId: 'admin-9', jti: 'imp-jti' });
+    const { ImpersonationService } = await import('../../shared/services/impersonation.service');
+    const info = new ImpersonationService({} as any, {} as any, {} as any).getImpersonationInfo(result);
+    expect(info).toEqual({ isImpersonated: true, impersonatedBy: 'admin-9', impersonatedByEmail: 'admin@iluase.test' });
+  });
+
   it('rejects when the user no longer exists', async () => {
-    mockRedisCacheService.exists.mockResolvedValue(false);
+    mockRedisCacheService.existsStrict.mockResolvedValue(false);
     mockPrismaService.user.findUnique.mockResolvedValue(null);
 
     await expect(strategy.validate({ ...basePayload, jti: 'live-jti' })).rejects.toThrow(
