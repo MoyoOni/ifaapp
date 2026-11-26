@@ -245,8 +245,13 @@ const NON_REQUEST_MEMBERS = new Set(['interceptors', 'defaults', 'isAxiosError',
  * `return <client>(originalRequest)` where `const originalRequest = error.config` is declared in that same handler,
  * `error` there is the handler's own parameter, and the config is never re-pointed: the only writes allowed are
  * `originalRequest._retry` and `originalRequest.headers.*`, and it is not aliased or passed anywhere else.
+ * `error.config` is the same object, so it gets the same protection anywhere in the handler (before or after
+ * the const): no writes through `error.config…`, no other use of `error.config` as a value, and `error` itself
+ * is only read, given non-config fields, or passed to the read-only consumers below.
  */
 const RETRY = { file: 'lib/api.ts', argument: 'originalRequest' } as const;
+/** Functions the retry handler may pass `error` to: each only reads it (checked by hand; none writes `config`). */
+const READ_ONLY_ERROR_CONSUMERS = new Set(['isUnreachableError', 'parseApiError', 'reportApiError', 'Promise.reject']);
 /**
  * The one forwarder: in use-api-query.ts, `<client>.get(endpoint, …)` where `endpoint` is bound by the first
  * parameter of the exported useApiQuery / usePaginatedApiQuery function (whose callers pass a literal endpoint)
@@ -388,6 +393,38 @@ function inventoryOf(file: string, absPath: string, text: string): Inventory {
         || (ts.isConditionalExpression(tp) && tp.condition === top2)
         || (ts.isPrefixUnaryExpression(top2) && top2.operator === ts.SyntaxKind.ExclamationToken && top2 !== ref && !ts.isBinaryExpression(tp));
       if (!condition) return false; // aliased, passed to another function, reassigned, …
+    }
+    // error.config is the same object as originalRequest: protect it through `error` too.
+    const errorName = ts.isIdentifier(errorParam.name) ? errorParam.name.text : null;
+    if (errorName === null) return false;
+    for (const ref of referencesTo(fn, errorParam, errorName)) {
+      if (ref === init.expression) continue; // the approved `const originalRequest = error.config`
+      let eff: ts.Expression = ref; // look through `(error as X)`, `error!`, `(error)`
+      while (ts.isAsExpression(eff.parent) || ts.isParenthesizedExpression(eff.parent) || ts.isNonNullExpression(eff.parent)
+        || ts.isSatisfiesExpression(eff.parent) || ts.isTypeAssertionExpression(eff.parent)) eff = eff.parent;
+      let top: ts.Expression = eff;
+      const path: string[] = [];
+      while ((ts.isPropertyAccessExpression(top.parent) || ts.isElementAccessExpression(top.parent)) && top.parent.expression === top) {
+        const pa = top.parent;
+        path.push(ts.isPropertyAccessExpression(pa) ? pa.name.text
+          : ts.isStringLiteralLike(pa.argumentExpression) ? pa.argumentExpression.text : '<computed>');
+        top = pa;
+      }
+      if (path.length) {
+        if (path[0] === '<computed>') return false;          // error[k]: could be config
+        if (path[0] !== 'config') continue;                    // reads/writes of other fields (response, userMessage, …)
+        if (isWriteTarget(top)) return false;                  // error.config… = / += / delete / ++
+        if (path.length === 1) return false;                   // error.config used as a value (alias, argument, spread)
+        continue;                                              // a read of error.config.<field>
+      }
+      if (isWriteTarget(eff)) return false;                    // error = …
+      const q = eff.parent;
+      if (ts.isCallExpression(q) && q.arguments.some((a) => a === eff)) {
+        const callee = q.expression;
+        const calleeName = ts.isIdentifier(callee) || ts.isPropertyAccessExpression(callee) ? callee.getText(sf) : '';
+        if (READ_ONLY_ERROR_CONSUMERS.has(calleeName)) continue;
+      }
+      return false;                                            // aliased, destructured, spread, passed elsewhere
     }
     return true;
   };
@@ -714,9 +751,12 @@ describe('telemetry guards', () => {
     // v7: the retry and forwarder exemptions cover only their exact call; anything else in those files fails.
     const retryFile = 'lib/api.ts';
     const created = "import axios from 'axios';\nconst api = axios.create({ baseURL: '/api' });\n";
-    const retry = 'api.interceptors.response.use((r) => r, async (error) => {\n  const originalRequest = error.config;\n'
+    const retry = 'api.interceptors.response.use((r) => r, async (error) => {\n  const body = error.response?.data;\n  const originalRequest = error.config;\n'
+      + '  setServerUnreachable(isUnreachableError(error));\n'
       + '  if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {\n    originalRequest._retry = true;\n'
-      + '    originalRequest.headers.Authorization = `Bearer ${token}`;\n    return api(originalRequest);\n  }\n  report({ endpoint: originalRequest?.url });\n});';
+      + '    originalRequest.headers.Authorization = `Bearer ${token}`;\n    return api(originalRequest);\n  }\n'
+      + '  const parsed = parseApiError(error);\n  (error as E).userMessage = parsed.userMessage;\n'
+      + '  reportApiError(error, { endpoint: originalRequest?.url });\n  return Promise.reject(error);\n});';
     expect(at(`${created}export default api;\n${retry}`, retryFile).problems).toEqual([]);
     const notTheRetry: Record<string, string> = {
       otherConfig: 'api({ url: someVar });',
@@ -745,6 +785,21 @@ describe('telemetry guards', () => {
       computedHeaderWrite: 'api.interceptors.response.use((r) => r, async (error) => { const originalRequest = error.config; originalRequest.headers[k] = v; return api(originalRequest); });',
       aliasThroughLogical: 'api.interceptors.response.use((r) => r, async (error) => { const originalRequest = error.config; const r2 = ok && originalRequest; r2.url = x; return api(originalRequest); });',
       passedToFunction: 'api.interceptors.response.use((r) => r, async (error) => { const originalRequest = error.config; rewrite(originalRequest); return api(originalRequest); });',
+      // v11: error.config is the same object as originalRequest; it must not be changed through `error` either
+      configMutatedBefore: 'api.interceptors.response.use((r) => r, async (error) => { error.config.url = buildDynamicPath(); const originalRequest = error.config; return api(originalRequest); });',
+      configMutatedAfter: 'api.interceptors.response.use((r) => r, async (error) => { const originalRequest = error.config; error.config.url = x; return api(originalRequest); });',
+      configReplaced: 'api.interceptors.response.use((r) => r, async (error) => { error.config = forged; const originalRequest = error.config; return api(originalRequest); });',
+      configBracketWrite: "api.interceptors.response.use((r) => r, async (error) => { error['config'].url = x; const originalRequest = error.config; return api(originalRequest); });",
+      configCastWrite: 'api.interceptors.response.use((r) => r, async (error) => { (error as E).config.params = p; const originalRequest = error.config; return api(originalRequest); });',
+      configDeleteMember: 'api.interceptors.response.use((r) => r, async (error) => { delete error.config.baseURL; const originalRequest = error.config; return api(originalRequest); });',
+      configAliased: 'api.interceptors.response.use((r) => r, async (error) => { const c = error.config; c.url = x; const originalRequest = error.config; return api(originalRequest); });',
+      configPassedOn: 'api.interceptors.response.use((r) => r, async (error) => { rewrite(error.config); const originalRequest = error.config; return api(originalRequest); });',
+      configDestructured: 'api.interceptors.response.use((r) => r, async (error) => { const { config } = error; config.url = x; const originalRequest = error.config; return api(originalRequest); });',
+      errorPassedToUnknown: 'api.interceptors.response.use((r) => r, async (error) => { mutate(error); const originalRequest = error.config; return api(originalRequest); });',
+      errorObjectAssign: 'api.interceptors.response.use((r) => r, async (error) => { Object.assign(error, { config: forged }); const originalRequest = error.config; return api(originalRequest); });',
+      errorReassigned: 'api.interceptors.response.use((r) => r, async (error) => { error = forged; const originalRequest = error.config; return api(originalRequest); });',
+      errorAliased: 'api.interceptors.response.use((r) => r, async (error) => { const e = error; e.config.url = x; const originalRequest = error.config; return api(originalRequest); });',
+      errorComputedMember: 'api.interceptors.response.use((r) => r, async (error) => { error[k].url = x; const originalRequest = error.config; return api(originalRequest); });',
     };
     // Each must fail because the request itself was refused the exemption (not for an unrelated reason).
     const refused = (problems: string[]) => problems.some((x) => /\bapi(\.(get|post|request))?\(config\)|\bapi\.(get|post|request)\b/.test(x));
