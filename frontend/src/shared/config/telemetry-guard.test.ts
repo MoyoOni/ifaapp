@@ -263,6 +263,12 @@ const READ_ONLY_ERROR_CONSUMERS: ReadonlyMap<string, string> = new Map([
 /** Members of originalRequest the handler may read (plain values: nothing can escape through them) and write. */
 const RETRY_READABLE = new Set(['_retry', 'url']);
 /**
+ * The only member paths of the handler's `error` it may use (besides `config` in the approved initializer). Everything
+ * else is refused, notably `error.response.config`: it is the same request config object as `error.config`.
+ */
+const ERROR_READABLE = new Set(['response.status', 'response.data']);
+const ERROR_WRITABLE = new Set(['userMessage', 'isNetworkError']);
+/**
  * The one forwarder: in use-api-query.ts, `<client>.get(endpoint, …)` where `endpoint` is bound by the first
  * parameter of the exported useApiQuery / usePaginatedApiQuery function (whose callers pass a literal endpoint)
  * and is never assigned anywhere in that function.
@@ -444,9 +450,14 @@ function inventoryOf(file: string, absPath: string, text: string): Inventory {
         top = pa;
       }
       if (path.length) {
-        if (path[0] === '<computed>') return false;          // error[k]: could be config
-        if (path[0] === 'config') return false;                // error.config is allowed ONLY as the approved initializer
-        continue;                                              // reads/writes of other fields (response, userMessage, …)
+        // Allow-list: reads of response.status / response.data; writes to userMessage / isNetworkError. Everything
+        // else (error.config other than the initializer, error.response.config, computed members, other fields) fails.
+        if (isWriteTarget(top)) {
+          if (!(path.length === 1 && ERROR_WRITABLE.has(path[0]))) return false;
+        } else if (!ERROR_READABLE.has(path.join('.'))) {
+          return false;
+        }
+        continue;
       }
       if (isWriteTarget(eff)) return false;                    // error = …
       const q = eff.parent;
@@ -783,7 +794,8 @@ describe('telemetry guards', () => {
       + '  setServerUnreachable(isUnreachableError(error));\n'
       + '  if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {\n    originalRequest._retry = true;\n'
       + '    originalRequest.headers.Authorization = `Bearer ${token}`;\n    return api(originalRequest);\n  }\n'
-      + '  const parsed = parseApiError(error);\n  (error as E).userMessage = parsed.userMessage;\n'
+      + '  const status = error.response?.status ?? 0;\n'
+      + '  const parsed = parseApiError(error);\n  (error as E).userMessage = parsed.userMessage;\n  (error as E).isNetworkError = parsed.isNetworkError;\n'
       + '  reportApiError(error, { endpoint: originalRequest?.url });\n  return Promise.reject(error);\n});';
     expect(at(`${created}export default api;\n${retry}`, retryFile).problems).toEqual([]);
     const notTheRetry: Record<string, string> = {
@@ -839,6 +851,17 @@ describe('telemetry guards', () => {
       shadowedConsumer: 'api.interceptors.response.use((r) => r, async (error) => { const isUnreachableError = (e) => { e.config.url = x; return false; }; isUnreachableError(error); const originalRequest = error.config; return api(originalRequest); });',
       shadowedConsumerFunction: 'api.interceptors.response.use((r) => r, async (error) => { { function parseApiError(e) { e.config.url = x; } parseApiError(error); } const originalRequest = error.config; return api(originalRequest); });',
       shadowedPromise: 'api.interceptors.response.use((r) => r, async (error) => { const Promise = Evil; Promise.reject(error); const originalRequest = error.config; return api(originalRequest); });',
+      // v13: error.response.config is the same object as error.config; only response.status / response.data are usable
+      responseConfigWrite: 'api.interceptors.response.use((r) => r, async (error) => { error.response.config.url = buildDynamicPath(); const originalRequest = error.config; return api(originalRequest); });',
+      responseConfigOptionalWrite: 'api.interceptors.response.use((r) => r, async (error) => { Object.assign(error.response?.config, { url: x }); const originalRequest = error.config; return api(originalRequest); });',
+      responseConfigBracket: "api.interceptors.response.use((r) => r, async (error) => { error['response']['config'].url = x; const originalRequest = error.config; return api(originalRequest); });",
+      responseConfigAlias: 'api.interceptors.response.use((r) => r, async (error) => { const rc = error.response.config; rc.url = x; const originalRequest = error.config; return api(originalRequest); });',
+      responseAliasNested: 'api.interceptors.response.use((r) => r, async (error) => { const resp = error.response; resp.config.url = x; const originalRequest = error.config; return api(originalRequest); });',
+      responseDestructured: 'api.interceptors.response.use((r) => r, async (error) => { const { config } = error.response; config.params = p; const originalRequest = error.config; return api(originalRequest); });',
+      responseRequestRef: 'api.interceptors.response.use((r) => r, async (error) => { const req = error.response.request; mutate(req); const originalRequest = error.config; return api(originalRequest); });',
+      responseDataReplaced: 'api.interceptors.response.use((r) => r, async (error) => { error.response.data = error.config; const originalRequest = error.config; return api(originalRequest); });',
+      responseDataNestedRead: 'api.interceptors.response.use((r) => r, async (error) => { use(error.response.data.config); const originalRequest = error.config; return api(originalRequest); });',
+      otherErrorFieldWrite: 'api.interceptors.response.use((r) => r, async (error) => { error.request = forged; const originalRequest = error.config; return api(originalRequest); });',
     };
     // Each must fail because the request itself was refused the exemption (not for an unrelated reason).
     const refused = (problems: string[]) => problems.some((x) => /\bapi(\.(get|post|request))?\(config\)|\bapi\.(get|post|request)\b/.test(x));
