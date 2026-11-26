@@ -250,8 +250,18 @@ const NON_REQUEST_MEMBERS = new Set(['interceptors', 'defaults', 'isAxiosError',
  * is only read, given non-config fields, or passed to the read-only consumers below.
  */
 const RETRY = { file: 'lib/api.ts', argument: 'originalRequest' } as const;
-/** Functions the retry handler may pass `error` to: each only reads it (checked by hand; none writes `config`). */
-const READ_ONLY_ERROR_CONSUMERS = new Set(['isUnreachableError', 'parseApiError', 'reportApiError', 'Promise.reject']);
+/**
+ * Functions the retry handler may pass `error` to, each identified by its import (module + exported name), so a
+ * local function with the same name is not trusted. Each only reads `error` (checked by hand; none writes
+ * `config`). `Promise.reject` is allowed only while `Promise` is the global.
+ */
+const READ_ONLY_ERROR_CONSUMERS: ReadonlyMap<string, string> = new Map([
+  ['isUnreachableError', path.join(SRC, 'shared', 'utils', 'server-reachability')],
+  ['parseApiError', path.join(SRC, 'shared', 'utils', 'api-error')],
+  ['reportApiError', path.join(SRC, 'shared', 'utils', 'api-error')],
+]);
+/** Members of originalRequest the handler may read (plain values: nothing can escape through them) and write. */
+const RETRY_READABLE = new Set(['_retry', 'url']);
 /**
  * The one forwarder: in use-api-query.ts, `<client>.get(endpoint, …)` where `endpoint` is bound by the first
  * parameter of the exported useApiQuery / usePaginatedApiQuery function (whose callers pass a literal endpoint)
@@ -313,9 +323,17 @@ function inventoryOf(file: string, absPath: string, text: string): Inventory {
   const clientNamespaces = new Set<string>();
   const hooks = new Set<string>();
   const hookNamespaces = new Set<string>();
+  /** Every named import of this file: local name -> exported name and resolved module path. */
+  const importedNames = new Map<string, { exported: string; module: string | null }>();
   for (const st of sf.statements) {
     if (!ts.isImportDeclaration(st) || !ts.isStringLiteral(st.moduleSpecifier)) continue;
     const spec = st.moduleSpecifier.text;
+    const nbAll = st.importClause?.namedBindings;
+    if (st.importClause?.name) importedNames.set(st.importClause.name.text, { exported: 'default', module: resolveSpec(absPath, spec) });
+    if (nbAll && ts.isNamedImports(nbAll)) {
+      for (const el of nbAll.elements) importedNames.set(el.name.text, { exported: (el.propertyName ?? el.name).text, module: resolveSpec(absPath, spec) });
+    }
+    if (nbAll && ts.isNamespaceImport(nbAll)) importedNames.set(nbAll.name.text, { exported: '*', module: resolveSpec(absPath, spec) });
     const clause = st.importClause;
     const nb = clause?.namedBindings;
     if (spec === 'axios' || isApiModule(absPath, spec)) {
@@ -348,6 +366,18 @@ function inventoryOf(file: string, absPath: string, text: string): Inventory {
     add(n, raw, what);
   };
 
+  /** Is this callee one of READ_ONLY_ERROR_CONSUMERS by import identity (or the global Promise.reject)? */
+  const isReadOnlyConsumer = (callee: ts.Expression): boolean => {
+    if (ts.isPropertyAccessExpression(callee)) {
+      return callee.name.text === 'reject' && ts.isIdentifier(callee.expression) && callee.expression.text === 'Promise'
+        && nearestBinding(callee.expression) === null && !importedNames.has('Promise');
+    }
+    if (!ts.isIdentifier(callee) || nearestBinding(callee) !== null) return false; // locally declared: not the import
+    const imp = importedNames.get(callee.text);
+    const expectedModule = imp ? READ_ONLY_ERROR_CONSUMERS.get(imp.exported) : undefined;
+    return !!imp && !!expectedModule && imp.module === expectedModule;
+  };
+
   /** Is this exactly the token-refresh retry call (see RETRY)? */
   const isTheRetry = (call: ts.CallExpression, clientName: string): boolean => {
     const arg = call.arguments[0];
@@ -376,9 +406,12 @@ function inventoryOf(file: string, absPath: string, text: string): Inventory {
         top = pa;
       }
       if (path.length) {
-        if (!isWriteTarget(top)) continue; // a read of a member
-        const allowedWrite = (path[0] === '_retry' && path.length === 1) || (path[0] === 'headers' && path.length >= 2 && !path.includes('<computed>'));
-        if (!allowedWrite) return false;
+        if (isWriteTarget(top)) {
+          const allowedWrite = (path[0] === '_retry' && path.length === 1) || (path[0] === 'headers' && path.length >= 2 && !path.includes('<computed>'));
+          if (!allowedWrite) return false;
+        } else if (!(path.length === 1 && RETRY_READABLE.has(path[0]))) {
+          return false; // e.g. `const p = originalRequest.params`: a nested object escaping as a value
+        }
         continue;
       }
       // A bare reference is allowed only as a truth test: climb through &&, ||, ! and parentheses;
@@ -412,18 +445,12 @@ function inventoryOf(file: string, absPath: string, text: string): Inventory {
       }
       if (path.length) {
         if (path[0] === '<computed>') return false;          // error[k]: could be config
-        if (path[0] !== 'config') continue;                    // reads/writes of other fields (response, userMessage, …)
-        if (isWriteTarget(top)) return false;                  // error.config… = / += / delete / ++
-        if (path.length === 1) return false;                   // error.config used as a value (alias, argument, spread)
-        continue;                                              // a read of error.config.<field>
+        if (path[0] === 'config') return false;                // error.config is allowed ONLY as the approved initializer
+        continue;                                              // reads/writes of other fields (response, userMessage, …)
       }
       if (isWriteTarget(eff)) return false;                    // error = …
       const q = eff.parent;
-      if (ts.isCallExpression(q) && q.arguments.some((a) => a === eff)) {
-        const callee = q.expression;
-        const calleeName = ts.isIdentifier(callee) || ts.isPropertyAccessExpression(callee) ? callee.getText(sf) : '';
-        if (READ_ONLY_ERROR_CONSUMERS.has(calleeName)) continue;
-      }
+      if (ts.isCallExpression(q) && q.arguments.some((a) => a === eff) && isReadOnlyConsumer(q.expression)) continue;
       return false;                                            // aliased, destructured, spread, passed elsewhere
     }
     return true;
@@ -750,7 +777,8 @@ describe('telemetry guards', () => {
     for (const [name, code] of Object.entries(bad)) expect(at(code).problems, name).not.toEqual([]);
     // v7: the retry and forwarder exemptions cover only their exact call; anything else in those files fails.
     const retryFile = 'lib/api.ts';
-    const created = "import axios from 'axios';\nconst api = axios.create({ baseURL: '/api' });\n";
+    const created = "import axios from 'axios';\nimport { setServerUnreachable, isUnreachableError } from '@/shared/utils/server-reachability';\n"
+      + "import { parseApiError, reportApiError } from '@/shared/utils/api-error';\nconst api = axios.create({ baseURL: '/api' });\n";
     const retry = 'api.interceptors.response.use((r) => r, async (error) => {\n  const body = error.response?.data;\n  const originalRequest = error.config;\n'
       + '  setServerUnreachable(isUnreachableError(error));\n'
       + '  if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {\n    originalRequest._retry = true;\n'
@@ -800,10 +828,27 @@ describe('telemetry guards', () => {
       errorReassigned: 'api.interceptors.response.use((r) => r, async (error) => { error = forged; const originalRequest = error.config; return api(originalRequest); });',
       errorAliased: 'api.interceptors.response.use((r) => r, async (error) => { const e = error; e.config.url = x; const originalRequest = error.config; return api(originalRequest); });',
       errorComputedMember: 'api.interceptors.response.use((r) => r, async (error) => { error[k].url = x; const originalRequest = error.config; return api(originalRequest); });',
+      // v12: nested objects must not escape from error.config or originalRequest
+      nestedConfigParams: 'api.interceptors.response.use((r) => r, async (error) => { const params = error.config.params; params.token = buildDynamicToken(); const originalRequest = error.config; return api(originalRequest); });',
+      nestedConfigRead: 'api.interceptors.response.use((r) => r, async (error) => { log(error.config.url); const originalRequest = error.config; return api(originalRequest); });',
+      nestedConfigReceiver: "api.interceptors.response.use((r) => r, async (error) => { error.config.headers.set('X', v); const originalRequest = error.config; return api(originalRequest); });",
+      originalRequestParamsEscape: 'api.interceptors.response.use((r) => r, async (error) => { const originalRequest = error.config; const p = originalRequest.params; p.token = x; return api(originalRequest); });',
+      originalRequestHeadersEscape: 'api.interceptors.response.use((r) => r, async (error) => { const originalRequest = error.config; const h = originalRequest.headers; rewrite(h); return api(originalRequest); });',
+      originalRequestMethodReceiver: "api.interceptors.response.use((r) => r, async (error) => { const originalRequest = error.config; originalRequest.params.append('t', x); return api(originalRequest); });",
+      // v12: permitted consumers are trusted by import identity, not by name
+      shadowedConsumer: 'api.interceptors.response.use((r) => r, async (error) => { const isUnreachableError = (e) => { e.config.url = x; return false; }; isUnreachableError(error); const originalRequest = error.config; return api(originalRequest); });',
+      shadowedConsumerFunction: 'api.interceptors.response.use((r) => r, async (error) => { { function parseApiError(e) { e.config.url = x; } parseApiError(error); } const originalRequest = error.config; return api(originalRequest); });',
+      shadowedPromise: 'api.interceptors.response.use((r) => r, async (error) => { const Promise = Evil; Promise.reject(error); const originalRequest = error.config; return api(originalRequest); });',
     };
     // Each must fail because the request itself was refused the exemption (not for an unrelated reason).
     const refused = (problems: string[]) => problems.some((x) => /\bapi(\.(get|post|request))?\(config\)|\bapi\.(get|post|request)\b/.test(x));
     for (const [label, code] of Object.entries(notTheRetry)) expect(refused(at(created + code, retryFile).problems), `retry file: ${label}`).toBe(true);
+    const handlerUsing = (consumerCall: string) => `api.interceptors.response.use((r) => r, async (error) => { ${consumerCall}; const originalRequest = error.config; return api(originalRequest); });`;
+    const bareClient = "import axios from 'axios';\nconst api = axios.create({ baseURL: '/api' });\n";
+    expect(refused(at(bareClient + handlerUsing('isUnreachableError(error)'), retryFile).problems), 'consumer not imported').toBe(true);
+    expect(refused(at(`${bareClient}import { isUnreachableError } from './evil-module';\n${handlerUsing('isUnreachableError(error)')}`, retryFile).problems), 'consumer imported from another module').toBe(true);
+    expect(refused(at(`${bareClient}import { mutateConfig as isUnreachableError } from '@/shared/utils/server-reachability';\n${handlerUsing('isUnreachableError(error)')}`, retryFile).problems), 'other export aliased to the trusted name').toBe(true);
+    expect(at(`${bareClient}import { isUnreachableError as reach } from '@/shared/utils/server-reachability';\n${handlerUsing('reach(error)')}`, retryFile).problems, 'the real export under an alias is still trusted').toEqual([]);
     const forwardFile = 'shared/hooks/use-api-query.ts';
     const imp = "import api from '@/lib/api';\n";
     expect(at(`${imp}export function useApiQuery({ endpoint, params }) { if (!ok) throw new Error(\`API failed: \${endpoint}\`); return async () => api.get(endpoint, { params }); }`, forwardFile).problems).toEqual([]);
