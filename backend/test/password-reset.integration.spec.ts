@@ -45,7 +45,9 @@ describe('Password reset and change', () => {
   const lastResetToken = (email: string): string => {
     const call = [...sendEmail.mock.calls].reverse().find(([to, subject]) => to === email && /reset your password/i.test(subject));
     if (!call) throw new Error(`no reset email sent to ${email}`);
-    return /reset-password\?token=([a-f0-9]+)/.exec(call[2])![1];
+    // Links carry the token in the URL fragment (never sent to a server), not the query string.
+    expect(call[2]).not.toContain('?token=');
+    return /reset-password#token=([a-f0-9]+)/.exec(call[2])![1];
   };
 
   beforeAll(async () => {
@@ -163,7 +165,8 @@ describe('Password reset and change', () => {
     const lastConfirmToken = (email: string): string => {
       const call = [...sendEmail.mock.calls].reverse().find(([to, subject]) => to === email && /confirm your new email/i.test(subject));
       if (!call) throw new Error(`no confirmation email sent to ${email}`);
-      return /confirm-email-change\?token=([a-f0-9]+)/.exec(call[2])![1];
+      expect(call[2]).not.toContain('?token=');
+      return /confirm-email-change#token=([a-f0-9]+)/.exec(call[2])![1];
     };
     const requestChange = (token: string, newEmail: string, currentPassword = 'OriginalPass123!') =>
       http().post('/auth/change-email').set('Authorization', `Bearer ${token}`).send({ newEmail, currentPassword });
